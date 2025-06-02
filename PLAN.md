@@ -1,4 +1,4 @@
-# Rediacc Web Application Design Plan
+# Rediacc Web Application Implementation Plan
 
 ## 1. Application Overview
 
@@ -10,6 +10,64 @@ Transform the Rediacc CLI into a web-based graphical interface that maintains al
 - **Progressive Disclosure**: Complex operations revealed through logical navigation
 - **Context Awareness**: Interface adapts based on user permissions and resource state
 - **Visual Feedback**: Clear indication of operations, progress, and results
+
+### Technology Stack (MANDATORY - NO OTHER PACKAGES ALLOWED)
+
+The following packages constitute the COMPLETE technology stack for this project. Developers must NOT add any additional packages without explicit approval:
+
+```json
+{
+  "dependencies": {
+    // Core Framework
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.x",
+    "typescript": "^5.x",
+    
+    // State Management
+    "@reduxjs/toolkit": "^2.x",
+    "react-redux": "^9.x",
+    
+    // API & Server State
+    "@tanstack/react-query": "^5.x",
+    "axios": "^1.x",
+    
+    // UI Component Library
+    "antd": "^5.x",
+    "@ant-design/icons": "^5.x",
+    
+    // Form Handling & Validation
+    "react-hook-form": "^7.x",
+    "zod": "^3.x",
+    
+    // Utilities
+    "date-fns": "^3.x",
+    "lodash": "^4.x",
+    
+    // Specialized Components
+    "@monaco-editor/react": "^4.x",
+    "react-hot-toast": "^2.x"
+  },
+  "devDependencies": {
+    "vite": "^5.x",
+    "@types/react": "^18.x",
+    "@types/react-dom": "^18.x",
+    "@types/lodash": "^4.x",
+    "@vitejs/plugin-react": "^4.x"
+  }
+}
+```
+
+### Technology Justification
+
+- **Redux Toolkit**: Chosen for complex state management with built-in best practices
+- **Ant Design**: Provides comprehensive enterprise-grade components, especially tables and forms
+- **React Query**: Handles server state, caching, and token chaining requirements
+- **Axios**: Required for request/response interceptors to handle token rotation
+- **React Hook Form + Zod**: Optimal combination for form handling with TypeScript-first validation
+- **Vite**: Fastest build tool for improved developer experience
+- **Monaco Editor**: Essential for JSON vault editing functionality
+- **React Hot Toast**: Lightweight notification system for user feedback
 
 ## 2. Application Architecture
 
@@ -51,35 +109,41 @@ Application Root
 └── Notification System
 ```
 
+### 2.3 Implementation Architecture
+
+All components must be built using Ant Design components as the foundation. Custom styling should be minimal and use Ant Design's theming system. The application structure follows Redux Toolkit patterns with feature-based organization.
+
 ## 3. Navigation Structure
 
 ### 3.1 Primary Navigation Menu
 
+Navigation must be implemented using Ant Design's Menu component in the sidebar with React Router for routing.
+
 #### **Dashboard**
-- Overview statistics
-- Recent activities
-- Quick actions
+- Overview statistics (using Ant Design Card and Statistic components)
+- Recent activities (using Ant Design Timeline component)
+- Quick actions (using Ant Design Button components)
 
 #### **Resources**
 - **Teams**
-  - List Teams
-  - Create Team
-  - Team Details (inspect/update/delete)
-  - Team Members Management
+  - List Teams (Ant Design Table with built-in sorting/filtering)
+  - Create Team (Ant Design Form with React Hook Form integration)
+  - Team Details (Ant Design Descriptions component)
+  - Team Members Management (Ant Design Table with row actions)
 - **Regions & Infrastructure**
   - **Regions**
     - List Regions
     - Create Region
     - Region Management
   - **Bridges**
-    - List Bridges (filtered by region)
+    - List Bridges (filtered by region using Ant Design Select)
     - Create Bridge
     - Bridge Management
   - **Machines**
     - List Machines (filtered by team)
     - Create Machine
     - Machine Details
-    - Machine Vault Configuration
+    - Machine Vault Configuration (Monaco Editor in Ant Design Modal)
 - **Storage & Data**
   - **Repositories**
     - List Repositories
@@ -96,17 +160,17 @@ Application Root
 
 #### **Queue Management**
 - **Queue Dashboard**
-  - Active Queue Items
-  - Queue Statistics
+  - Active Queue Items (Ant Design Table with auto-refresh via React Query)
+  - Queue Statistics (Ant Design Statistic components)
 - **Queue Operations**
   - Add Function to Queue
     - Select machine first to auto-populate bridge
     - Bridge is required but determined by machine assignment
-  - Available Functions Browser
-  - Queue Item Details
+  - Available Functions Browser (Ant Design Tree component)
+  - Queue Item Details (Ant Design Drawer component)
 - **Machine Queues**
-  - View by Machine
-  - Batch Operations
+  - View by Machine (Ant Design Tabs)
+  - Batch Operations (Ant Design Table with row selection)
 
 #### **Users & Permissions**
 - **User Management**
@@ -152,6 +216,8 @@ Application Root
 
 ### 4.1 Common Components
 
+All UI components must be built using Ant Design components. No custom UI components should be created unless absolutely necessary.
+
 #### **Resource List View**
 ```
 ┌─────────────────────────────────────────────────┐
@@ -168,6 +234,14 @@ Application Root
 │ [Pagination Controls]                           │
 └─────────────────────────────────────────────────┘
 ```
+
+- Container: Ant Design Card
+- Search/Filter: Ant Design Input.Search and Select
+- Create Button: Ant Design Button with "primary" type
+- Data Display: Ant Design Table with pagination
+- Row Actions: Ant Design Button.Group or Dropdown
+- Loading State: Ant Design Spin
+- Empty State: Ant Design Empty
 
 **API Endpoints for List Views:**
 - Teams: `POST /api/StoredProcedure/GetCompanyTeams`
@@ -198,6 +272,12 @@ Application Root
 └─────────────────────────────────────────────────┘
 ```
 
+- Container: Ant Design Card with tabs
+- Info Display: Ant Design Descriptions
+- Actions: Ant Design Button components
+- Related Resources: Ant Design Tabs with embedded Tables
+- Confirmation Dialogs: Ant Design Modal.confirm
+
 **API Endpoints for Detail Views:**
 - Team Members: `POST /api/StoredProcedure/GetTeamMembers` (Body: `{"teamName": "team"}`)
 - Delete Actions:
@@ -210,6 +290,8 @@ Application Root
   - Schedule: `POST /api/StoredProcedure/DeleteSchedule`
 
 ### 4.2 Form Components
+
+All forms must use React Hook Form with Ant Design Form components for consistent styling. Validation must be implemented using Zod schemas.
 
 #### **Standard Creation Form**
 ```
@@ -234,8 +316,15 @@ Application Root
 └─────────────────────────────────────────────────┘
 ```
 
+- Form Container: Ant Design Form with React Hook Form Controller
+- Input Fields: Ant Design Input
+- Dropdowns: Ant Design Select with search enabled
+- Advanced Options: Ant Design Collapse
+- Submit Buttons: Ant Design Button with loading state
+- Validation Errors: Ant Design Form.Item error display
+
 **Dropdown Population:**
-All dropdowns in forms are populated using the `GetDropdownValues` endpoint, which returns permission-aware options for the current user. This single API call provides all necessary dropdown data, improving performance and consistency.
+All dropdowns in forms are populated using the `GetDropdownValues` endpoint, which returns permission-aware options for the current user. This single API call provides all necessary dropdown data, improving performance and consistency. Results must be cached using React Query.
 
 #### **Vault Configuration Modal**
 ```
@@ -252,6 +341,12 @@ All dropdowns in forms are populated using the `GetDropdownValues` endpoint, whi
 │ [Validate] [Cancel] [Save]                      │
 └─────────────────────────────────────────────────┘
 ```
+
+- Modal: Ant Design Modal
+- JSON Editor: Monaco Editor component
+- Version Control: Ant Design InputNumber
+- Validation: Real-time JSON validation with error display
+- Actions: Ant Design Button.Group
 
 **Vault Update API Endpoints:**
 - Team: `POST /api/StoredProcedure/UpdateTeamVault`
@@ -293,6 +388,12 @@ All dropdowns in forms are populated using the `GetDropdownValues` endpoint, whi
 └─────────────────────────────────────────────────┘
 ```
 
+- Container: Ant Design Card
+- Search: Ant Design Input.Search
+- Function List: Ant Design Tree or Collapse
+- Selection: Radio buttons for single selection
+- Details Display: Ant Design Descriptions
+
 #### **Queue Function Configuration**
 ```
 ┌─────────────────────────────────────────────────┐
@@ -315,6 +416,13 @@ All dropdowns in forms are populated using the `GetDropdownValues` endpoint, whi
 │ [Cancel] [Add to Queue]                         │
 └─────────────────────────────────────────────────┘
 ```
+
+- Form: Ant Design Form with dynamic fields
+- Parameter Inputs: Ant Design Input/Select based on type
+- Machine Selection: Ant Design Select with grouping by team
+- Bridge Display: Ant Design Input (disabled, auto-populated)
+- Priority: Ant Design Slider
+- Submit: Ant Design Button with loading state
 
 **Note:** The bridge is automatically determined based on the selected machine's assignment and is passed as a required parameter to the API.
 
@@ -349,6 +457,8 @@ Start → Login Screen → Enter Credentials → Validate
                                  Load Dropdown Values
 ```
 
+Authentication must use Axios interceptors to handle token rotation automatically. React Query must be configured to handle authentication state.
+
 **API Calls:**
 - Login: `POST /api/StoredProcedure/CreateAuthenticationRequest`
   - Headers: `Rediacc-UserEmail`, `Rediacc-UserHash`
@@ -375,6 +485,8 @@ Resource List → Click Create → Load Dropdown Data
                          Success: Show in List
                          Failure: Show Errors
 ```
+
+Forms must use React Hook Form with Zod validation. Success/error feedback must use React Hot Toast.
 
 **API Calls by Resource Type:**
 - Team: `POST /api/StoredProcedure/CreateTeam`
@@ -408,6 +520,8 @@ Queue Dashboard → Add Function → Browse Functions
                         Monitor in Dashboard
 ```
 
+Queue operations must use React Query's mutation hooks with optimistic updates for better UX.
+
 **API Calls:**
 - Create Queue Item: `POST /api/StoredProcedure/CreateQueueItem`
   - Body: `{"teamName": "team", "machineName": "machine", "bridgeName": "bridge", "queueVault": "{...}"}`
@@ -420,159 +534,207 @@ Queue Dashboard → Add Function → Browse Functions
 
 ## 6. State Management Strategy
 
-### 6.1 Application State Structure
+### 6.1 Redux Toolkit Structure
+
+The application must use Redux Toolkit with the following slice organization:
 
 ```
-AppState
+store/
+├── auth/
+│   ├── authSlice.ts
+│   └── authSelectors.ts
+├── resources/
+│   ├── teamsSlice.ts
+│   ├── regionsSlice.ts
+│   ├── bridgesSlice.ts
+│   ├── machinesSlice.ts
+│   ├── repositoriesSlice.ts
+│   ├── storageSlice.ts
+│   └── schedulesSlice.ts
+├── queue/
+│   └── queueSlice.ts
+├── ui/
+│   └── uiSlice.ts
+└── store.ts
+```
+
+### 6.2 React Query Integration
+
+React Query must handle all server state with the following configuration:
+- Stale time: 5 minutes for resource lists
+- Cache time: 10 minutes
+- Refetch on window focus: enabled for queue items only
+- Query key factory pattern for consistent keys
+
+### 6.3 Application State Structure
+
+```
+AppState (Redux)
 ├── Authentication
 │   ├── isAuthenticated
 │   ├── user
 │   ├── token
 │   └── company
-├── Resources
-│   ├── teams[]
-│   ├── regions[]
-│   ├── bridges[]
-│   ├── machines[]
-│   ├── repositories[]
-│   ├── storage[]
-│   └── schedules[]
-├── Queue
-│   ├── items[]
-│   ├── functions[]
-│   └── activeOperations[]
 ├── UI
 │   ├── activeView
 │   ├── selectedResource
 │   ├── filters
-│   ├── modals
-│   └── dropdownData
-│       ├── teams[]
-│       ├── regions[]
-│       ├── bridgesByRegion{}
-│       ├── machinesByTeam{}
-│       ├── users[]
-│       ├── permissionGroups[]
-│       └── queueFunctions[]
+│   └── modals
 └── Notifications[]
+
+ServerState (React Query)
+├── Resources
+│   ├── teams
+│   ├── regions
+│   ├── bridges
+│   ├── machines
+│   ├── repositories
+│   ├── storage
+│   └── schedules
+├── Queue
+│   ├── items
+│   └── functions
+└── Dropdown Data
+    ├── cached values
+    └── last fetch time
 ```
 
-### 6.2 Data Flow Patterns
+### 6.4 Data Flow Patterns
 
 #### **Initial App Load**
-1. User authenticates
-2. Load company information
-3. Fetch dropdown values
-4. Cache dropdown data in state
-5. Navigate to dashboard
+1. User authenticates (Redux action)
+2. Load company information (React Query)
+3. Fetch dropdown values (React Query with 30min cache)
+4. Navigate to dashboard (React Router)
 
 #### **List Views**
-1. Component mounts → Request data
-2. Display loading state
-3. Receive data → Update state
-4. Render list with data
-5. Handle user interactions
+1. Component mounts → React Query hook fetches data
+2. Display Ant Design Spin while loading
+3. Render Ant Design Table with data
+4. Handle pagination/filtering locally when possible
+5. Refetch on CRUD operations using React Query invalidation
 
 #### **Form Submissions**
-1. User fills form → Local validation
-2. Show validation errors if any
-3. Submit to backend
-4. Show progress indicator
-5. Handle response (success/error)
-6. Update relevant lists/views
-7. Refresh dropdown data if needed
+1. React Hook Form handles form state
+2. Zod validates on change/submit
+3. React Query mutation on submit
+4. Show Ant Design Spin on submit button
+5. Success: Invalidate queries + React Hot Toast
+6. Error: Show field errors or toast
 
 #### **Dropdown Data Management**
-1. Fetch on app initialization
-2. Cache in application state
-3. Refresh on resource creation/deletion
-4. Use cached data for all forms
-5. Provide context-specific filtering
+1. Fetch once on app load using React Query
+2. Store with 30-minute stale time
+3. Invalidate and refetch after resource CRUD operations
+4. Provide via React Query hooks to all forms
+5. Filter client-side based on user selections
 
 ## 7. Advanced Features
 
 ### 7.1 Bulk Operations
 
-- Multi-select in list views
-- Batch actions dropdown
-- Progress tracking for bulk operations
-- Rollback capabilities
+Implementation using Ant Design Table rowSelection:
+- Multi-select checkbox column
+- Bulk actions in table toolbar
+- Ant Design Modal for confirmation
+- Progress tracking with Ant Design Progress
+- Batch API calls with React Query mutations
 
 ### 7.2 Real-time Updates
 
-- Queue status updates
-- Machine status monitoring
-- Active session tracking
-- Resource change notifications
+Optional WebSocket integration for:
+- Queue status updates (badge on menu item)
+- Machine status monitoring (status column in table)
+- Active session tracking (update user count)
+- Resource change notifications (React Hot Toast)
 
 ### 7.3 Search and Filtering
 
-- Global search across resources
-- Advanced filters per resource type
-- Saved filter presets
-- Quick filters in navigation
+Using Ant Design components:
+- Global search in header (Input.Search)
+- Column filters in tables (built-in Table filters)
+- Advanced filter drawer (Drawer with Form)
+- Saved filters in localStorage
+- Quick filters as Tags
 
 ### 7.4 Keyboard Navigation
 
-- Hotkeys for common actions
-- Tab navigation through forms
-- Escape to close modals
-- Enter to submit forms
+Implement using native React and Ant Design features:
+- Ant Design Modal escape handling
+- Form submit on enter (React Hook Form)
+- Table keyboard navigation (built-in)
+- Menu keyboard navigation (built-in)
+- Custom hotkeys via useEffect hooks
 
 ### 7.5 Smart Dropdowns
 
-- Type-ahead search in dropdowns
-- Hierarchical display (bridges by region, machines by team)
-- Permission-aware filtering
-- Recently used items at top
-- Metadata display (counts, status)
+Enhance Ant Design Select components with:
+- Built-in search functionality
+- Option grouping (OptGroup)
+- Custom option rendering with metadata
+- Virtual scrolling for large lists
+- Loading state while fetching
 
 ## 8. Error Handling and Feedback
 
 ### 8.1 Error States
 
-- **Form Validation**: Inline field errors
-- **API Errors**: Toast notifications
-- **Network Errors**: Retry mechanisms
-- **Permission Errors**: Clear messaging
+All error handling through consistent patterns:
+- **Form Validation**: Ant Design Form.Item error messages
+- **API Errors**: React Hot Toast notifications
+- **Network Errors**: React Query retry with Ant Design Alert
+- **Permission Errors**: Ant Design Modal.error
 
 ### 8.2 Success Feedback
 
-- **Creation Success**: Toast + redirect
-- **Update Success**: Inline confirmation
-- **Deletion Success**: List update animation
-- **Queue Success**: Status indicator
+Consistent success patterns:
+- **Creation Success**: React Hot Toast + redirect
+- **Update Success**: React Hot Toast + UI update
+- **Deletion Success**: React Hot Toast + remove from list
+- **Queue Success**: Ant Design Badge update
+
+### 8.3 Loading States
+
+Use Ant Design loading components:
+- **Page Loading**: Ant Design Spin (centered)
+- **Button Loading**: Button loading prop
+- **Table Loading**: Table loading prop
+- **Lazy Loading**: React.lazy with Spin
 
 ## 9. Responsive Design Considerations
 
 ### 9.1 Layout Adaptations
 
-- **Desktop**: Full sidebar + content
-- **Tablet**: Collapsible sidebar
-- **Mobile**: Bottom navigation + stacked layout
+Using Ant Design Grid and responsive utilities:
+- **Desktop**: Fixed sidebar + content (Ant Design Layout)
+- **Tablet**: Collapsible sidebar (Layout.Sider collapsible)
+- **Mobile**: Bottom tab navigation (Ant Design Tabs)
 
 ### 9.2 Component Adaptations
 
-- Tables → Cards on mobile
-- Multi-column forms → Single column
-- Modals → Full-screen sheets
-- Hover actions → Touch-friendly buttons
+Ant Design responsive features:
+- **Tables**: Scroll on mobile (scroll={{ x: true }})
+- **Forms**: Single column on mobile (Col span)
+- **Modals**: Full screen on mobile (custom CSS)
+- **Menus**: Drawer on mobile instead of sidebar
 
 ## 10. Security and Permissions
 
 ### 10.1 UI Adaptations
 
-- Hide/disable unauthorized actions
-- Role-based menu items
-- Permission-aware forms
-- Contextual help for permissions
+Permission handling via Redux selectors:
+- Disable unauthorized Ant Design Buttons
+- Hide menu items based on permissions
+- Show permission messages in Empty components
+- Conditional rendering based on user role
 
 ### 10.2 Session Management
 
-- Auto-logout on inactivity
-- Session expiry warnings
-- Token refresh handling
-- Multi-session awareness
+Implemented with Redux and Axios interceptors:
+- Token rotation on each request
+- Auto-logout on 401 responses
+- Session timeout warnings (Ant Design Modal)
+- Multi-session detection and handling
 
 ## 11. API Endpoint Reference
 
@@ -763,3 +925,101 @@ The `GetDropdownValues` endpoint returns a comprehensive JSON structure containi
   "userRole": "admin|user"
 }
 ```
+
+## 12. API Integration Guidelines
+
+### 12.1 Axios Configuration
+
+Central Axios instance with:
+- Base URL configuration
+- Request interceptor for auth headers
+- Response interceptor for token rotation
+- Error interceptor for consistent handling
+
+### 12.2 React Query Patterns
+
+Consistent query/mutation patterns:
+- Query key factories for resources
+- Mutation with optimistic updates
+- Error boundary integration
+- Invalidation strategies
+
+### 12.3 Type Safety
+
+Full TypeScript coverage:
+- API response types generated from docs
+- Zod schemas for runtime validation
+- Type-safe React Query hooks
+- Strict mode enabled
+
+## 13. Development Guidelines
+
+### 13.1 Component Structure
+
+Follow consistent patterns:
+- Functional components only
+- Custom hooks for business logic
+- Ant Design components for all UI
+- CSS modules only when necessary
+
+### 13.2 File Organization
+
+```
+src/
+├── api/
+│   ├── client.ts
+│   ├── queries/
+│   └── mutations/
+├── components/
+│   ├── common/
+│   ├── forms/
+│   └── layouts/
+├── features/
+│   ├── auth/
+│   ├── resources/
+│   └── queue/
+├── hooks/
+├── pages/
+├── store/
+├── types/
+└── utils/
+```
+
+### 13.3 Best Practices
+
+1. **No Custom UI Components**: Use Ant Design exclusively
+2. **Consistent State Management**: Redux for client state, React Query for server state
+3. **Type Safety**: Full TypeScript coverage with strict mode
+4. **Form Handling**: Always use React Hook Form + Zod
+5. **API Calls**: Always through Axios instance
+6. **Error Handling**: Consistent patterns across the app
+7. **Performance**: Lazy load routes, memoize expensive computations
+
+### 13.4 Performance Guidelines
+
+- Use React.lazy for route-based code splitting
+- Implement virtual scrolling for large lists (Ant Design Table virtual)
+- Memoize expensive computations with useMemo
+- Optimize re-renders with React.memo
+- Use React Query's stale-while-revalidate pattern
+
+## 14. Testing Strategy
+
+While not adding testing libraries to the package list, the architecture supports testing:
+- Components designed for testability
+- Pure functions in utils
+- Centralized API layer
+- Predictable state management
+
+## 15. Deployment Considerations
+
+Build configuration with Vite:
+- Environment variables for API endpoints
+- Production optimizations enabled
+- Source maps for error tracking
+- Asset optimization
+- Proper CSP headers
+
+---
+
+This plan represents the complete technical specification for the Rediacc web application. Developers must adhere strictly to the specified technology stack and patterns outlined in this document. Any deviations or additional packages require explicit approval and documentation updates.
