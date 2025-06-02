@@ -324,7 +324,7 @@ All forms must use React Hook Form with Ant Design Form components for consisten
 - Validation Errors: Ant Design Form.Item error display
 
 **Dropdown Population:**
-All dropdowns in forms are populated using the `GetDropdownValues` endpoint, which returns permission-aware options for the current user. This single API call provides all necessary dropdown data, improving performance and consistency. Results must be cached using React Query.
+All dropdowns in forms are populated using the `GetLookupData` endpoint, which returns permission-aware options for the current user. This single API call provides all necessary dropdown data, improving performance and consistency. Results must be cached using React Query.
 
 #### **Vault Configuration Modal**
 ```
@@ -465,7 +465,7 @@ Authentication must use Axios interceptors to handle token rotation automaticall
   - Body: `{"name": "session_name"}`
 - Get Company: `POST /api/StoredProcedure/GetUserCompany`
   - Headers: `Rediacc-UserEmail`, `Rediacc-UserHash`
-- Get Dropdown Values: `POST /api/StoredProcedure/GetDropdownValues`
+- Get Dropdown Values: `POST /api/StoredProcedure/GetLookupData`
   - Headers: `Rediacc-RequestToken`
   - Body: `{}`
 - Logout: `POST /api/StoredProcedure/DeleteUserRequest`
@@ -766,7 +766,7 @@ All authenticated endpoints require `Rediacc-RequestToken` header.
 | Sessions | `GetUserRequests` | `{}` |
 | Resource Limits | `GetCompanyResourceLimits` | `{}` |
 | Subscription | `GetSubscriptionDetails` | `{}` |
-| **Dropdown Values** | **`GetDropdownValues`** | **`{}`** or **`{"context": "optional_context"}`** |
+| **Dropdown Values** | **`GetLookupData`** | **`{}`** or **`{"context": "optional_context"}`** |
 
 #### **Create Operations**
 | Resource | Endpoint | Body |
@@ -880,7 +880,7 @@ All API responses follow this structure:
 
 ### 11.8 Dropdown Values Response Structure
 
-The `GetDropdownValues` endpoint returns a comprehensive JSON structure containing all dropdown options filtered by user permissions:
+The `GetLookupData` endpoint returns a comprehensive JSON structure containing all dropdown options filtered by user permissions:
 
 ```json
 {
