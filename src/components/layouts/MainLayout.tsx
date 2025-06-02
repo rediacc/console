@@ -23,6 +23,7 @@ import { selectUser, selectCompany } from '@/store/auth/authSelectors'
 import { logout } from '@/store/auth/authSlice'
 import { clearAuthData } from '@/utils/auth'
 import apiClient from '@/api/client'
+import MessageHistory from '@/components/common/MessageHistory'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
@@ -221,9 +222,7 @@ const MainLayout: React.FC = () => {
             )}
           </Space>
           <Space size={16}>
-            <Badge count={0} showZero={false}>
-              <ThunderboltOutlined style={{ fontSize: 20 }} />
-            </Badge>
+            <MessageHistory />
             <Dropdown menu={userMenu} placement="bottomRight" arrow>
               <Space style={{ cursor: 'pointer' }}>
                 <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#556b2f' }} />

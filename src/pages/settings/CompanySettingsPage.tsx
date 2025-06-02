@@ -15,7 +15,7 @@ import {
   LineChartOutlined,
   PieChartOutlined,
 } from '@ant-design/icons'
-import { Line, Pie, Column, Gauge } from '@ant-design/charts'
+import { Line, Pie, Column } from '@ant-design/charts'
 import VaultConfigModal from '@/components/common/VaultConfigModal'
 import { 
   useSubscriptionDetails, 
@@ -89,8 +89,10 @@ const CompanySettingsPage: React.FC = () => {
     colorField: 'category',
     radius: 0.8,
     label: {
-      type: 'spider',
-      content: '{name}: ${value}',
+      formatter: (data: any) => {
+        if (!data) return '';
+        return `${data.category || ''}: $${data.amount || 0}`;
+      },
     },
     color: ['#556b2f', '#7d9b49', '#808000', '#a5b4fc'],
   }

@@ -1,22 +1,19 @@
 import React from 'react'
-import { Row, Col, Card, Statistic, Space, Typography, Spin, Progress, Timeline, Badge } from 'antd'
+import { Row, Col, Card, Statistic, Space, Typography, Spin, Progress, Timeline, Badge, Button } from 'antd'
 import {
   TeamOutlined,
   CloudServerOutlined,
   DatabaseOutlined,
   ThunderboltOutlined,
   UserOutlined,
-  GlobalOutlined,
-  ApiOutlined,
   CheckCircleOutlined,
-  CloseCircleOutlined,
   SyncOutlined,
   RiseOutlined,
-  FallOutlined,
+  NotificationOutlined,
 } from '@ant-design/icons'
-import { Pie, Column, Line, Gauge, Bar, Area } from '@ant-design/charts'
+import { Pie, Column, Line, Bar } from '@ant-design/charts'
 import { useDashboardMetrics, useQueueAnalytics, useTeamComparison } from '@/api/queries/dashboard'
-import { format } from 'date-fns'
+import { showMessage } from '@/utils/messages'
 
 const { Title, Text } = Typography
 
@@ -45,8 +42,10 @@ const DashboardPage: React.FC = () => {
     colorField: 'type',
     radius: 0.8,
     label: {
-      type: 'spider',
-      content: '{name}: {value}',
+      formatter: (data: any) => {
+        if (!data) return '';
+        return `${data.type || ''}: ${data.value || 0}`;
+      },
     },
     color: ['#556b2f', '#7d9b49', '#808000', '#a5b4fc'],
   }
@@ -120,42 +119,40 @@ const DashboardPage: React.FC = () => {
     color: ['#556b2f', '#7d9b49', '#808000'],
   }
 
-  // System health gauge config
-  const systemHealthScore = metrics?.systemHealth
-    ? (metrics.systemHealth.activeBridges / metrics.systemHealth.totalBridges) * 100
-    : 0
-
-  const systemHealthConfig = {
-    percent: systemHealthScore / 100,
-    range: {
-      color: systemHealthScore > 80 ? '#52c41a' : systemHealthScore > 60 ? '#faad14' : '#ff4d4f',
-    },
-    indicator: {
-      pointer: {
-        style: {
-          stroke: '#556b2f',
-        },
-      },
-      pin: {
-        style: {
-          stroke: '#556b2f',
-        },
-      },
-    },
-    statistic: {
-      content: {
-        style: {
-          fontSize: '24px',
-          color: '#556b2f',
-        },
-        formatter: () => `${systemHealthScore.toFixed(0)}%`,
-      },
-    },
+  // System health score - handle division by zero
+  const calculateHealthScore = () => {
+    if (!metrics?.systemHealth || metrics.systemHealth.totalBridges === 0) {
+      return 100 // Default to 100% if no bridges exist yet
+    }
+    return (metrics.systemHealth.activeBridges / metrics.systemHealth.totalBridges) * 100
   }
+  
+  const systemHealthScore = calculateHealthScore()
 
   return (
     <Space direction="vertical" size={24} style={{ width: '100%' }}>
-      <Title level={3}>Dashboard</Title>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Title level={3}>Dashboard</Title>
+        <Space>
+          <Button 
+            icon={<NotificationOutlined />}
+            onClick={() => showMessage('success', 'This is a success message example')}
+          >
+            Test Success
+          </Button>
+          <Button 
+            danger
+            onClick={() => showMessage('error', 'This is an error message example')}
+          >
+            Test Error
+          </Button>
+          <Button 
+            onClick={() => showMessage('info', 'This is an info message example')}
+          >
+            Test Info
+          </Button>
+        </Space>
+      </div>
       
       {/* Summary Statistics */}
       <Row gutter={[16, 16]}>
@@ -223,9 +220,26 @@ const DashboardPage: React.FC = () => {
           <Card title="System Health" extra={<Text type="secondary">Infrastructure Status</Text>}>
             <Row gutter={16}>
               <Col span={12}>
-                <Gauge {...systemHealthConfig} height={200} />
-                <div style={{ textAlign: 'center', marginTop: 16 }}>
-                  <Text strong>Overall Health</Text>
+                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                  <Progress
+                    type="circle"
+                    percent={systemHealthScore}
+                    size={180}
+                    strokeColor={systemHealthScore > 80 ? '#52c41a' : systemHealthScore > 60 ? '#faad14' : '#ff4d4f'}
+                    format={(percent) => (
+                      <div>
+                        <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#556b2f' }}>
+                          {Math.round(percent || 0)}%
+                        </div>
+                        <div style={{ fontSize: '14px', color: '#8c8c8c' }}>
+                          Health Score
+                        </div>
+                      </div>
+                    )}
+                  />
+                  <div style={{ marginTop: 16 }}>
+                    <Text strong>Overall Health</Text>
+                  </div>
                 </div>
               </Col>
               <Col span={12}>
@@ -233,17 +247,25 @@ const DashboardPage: React.FC = () => {
                   <div>
                     <Text type="secondary">Active Regions</Text>
                     <Progress
-                      percent={(metrics?.systemHealth.activeRegions / metrics?.systemHealth.totalRegions) * 100 || 0}
+                      percent={
+                        metrics?.systemHealth?.totalRegions && metrics.systemHealth.totalRegions > 0
+                          ? (metrics.systemHealth.activeRegions / metrics.systemHealth.totalRegions) * 100
+                          : 100
+                      }
                       strokeColor="#556b2f"
-                      format={() => `${metrics?.systemHealth.activeRegions}/${metrics?.systemHealth.totalRegions}`}
+                      format={() => `${metrics?.systemHealth?.activeRegions || 0}/${metrics?.systemHealth?.totalRegions || 0}`}
                     />
                   </div>
                   <div>
                     <Text type="secondary">Active Bridges</Text>
                     <Progress
-                      percent={(metrics?.systemHealth.activeBridges / metrics?.systemHealth.totalBridges) * 100 || 0}
+                      percent={
+                        metrics?.systemHealth?.totalBridges && metrics.systemHealth.totalBridges > 0
+                          ? (metrics.systemHealth.activeBridges / metrics.systemHealth.totalBridges) * 100
+                          : 100
+                      }
                       strokeColor="#7d9b49"
-                      format={() => `${metrics?.systemHealth.activeBridges}/${metrics?.systemHealth.totalBridges}`}
+                      format={() => `${metrics?.systemHealth?.activeBridges || 0}/${metrics?.systemHealth?.totalBridges || 0}`}
                     />
                   </div>
                   <div>

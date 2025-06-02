@@ -7,7 +7,7 @@ import { loginSuccess } from '@/store/auth/authSlice'
 import { saveAuthData } from '@/utils/auth'
 import { base64HashPassword } from '@/utils/password'
 import apiClient from '@/api/client'
-import toast from 'react-hot-toast'
+import { showMessage } from '@/utils/messages'
 
 const { Title, Text } = Typography
 
@@ -65,7 +65,7 @@ const LoginPage: React.FC = () => {
         company,
       }))
 
-      toast.success('Login successful!')
+      showMessage('success', 'Login successful!')
       navigate('/dashboard')
     } catch (error: any) {
       console.error('Login error:', error)

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
-import toast from 'react-hot-toast'
+import { showMessage } from '@/utils/messages'
 
 export interface Team {
   teamName: string
@@ -56,10 +56,10 @@ export const useCreateTeam = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['teams'] })
       queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      toast.success(`Team "${variables.teamName}" created successfully`)
+      showMessage('success', `Team "${variables.teamName}" created successfully`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to create team')
+      showMessage('error', error.message || 'Failed to create team')
     },
   })
 }
@@ -76,10 +76,10 @@ export const useUpdateTeamName = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['teams'] })
       queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      toast.success(`Team renamed to "${variables.newTeamName}"`)
+      showMessage('success', `Team renamed to "${variables.newTeamName}"`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update team name')
+      showMessage('error', error.message || 'Failed to update team name')
     },
   })
 }
@@ -95,10 +95,10 @@ export const useUpdateTeamVault = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['teams'] })
-      toast.success(`Team vault updated for "${variables.teamName}"`)
+      showMessage('success', `Team vault updated for "${variables.teamName}"`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update team vault')
+      showMessage('error', error.message || 'Failed to update team vault')
     },
   })
 }
@@ -115,10 +115,10 @@ export const useDeleteTeam = () => {
     onSuccess: (_, teamName) => {
       queryClient.invalidateQueries({ queryKey: ['teams'] })
       queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      toast.success(`Team "${teamName}" deleted successfully`)
+      showMessage('success', `Team "${teamName}" deleted successfully`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete team')
+      showMessage('error', error.message || 'Failed to delete team')
     },
   })
 }
@@ -134,10 +134,10 @@ export const useAddTeamMember = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['team-members', variables.teamName] })
-      toast.success(`User "${variables.newUserEmail}" added to team`)
+      showMessage('success', `User "${variables.newUserEmail}" added to team`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to add team member')
+      showMessage('error', error.message || 'Failed to add team member')
     },
   })
 }
@@ -153,10 +153,10 @@ export const useRemoveTeamMember = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['team-members', variables.teamName] })
-      toast.success(`User "${variables.removeUserEmail}" removed from team`)
+      showMessage('success', `User "${variables.removeUserEmail}" removed from team`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to remove team member')
+      showMessage('error', error.message || 'Failed to remove team member')
     },
   })
 }
