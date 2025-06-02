@@ -125,7 +125,7 @@ const MainLayout: React.FC = () => {
     {
       key: '/users',
       icon: <UserOutlined />,
-      label: 'Users',
+      label: 'User Management',
     },
     {
       key: '/settings',
