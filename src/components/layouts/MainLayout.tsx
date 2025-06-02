@@ -81,20 +81,15 @@ const MainLayout: React.FC = () => {
       label: 'Dashboard',
     },
     {
+      key: '/organization',
+      icon: <TeamOutlined />,
+      label: 'Organization',
+    },
+    {
       key: 'resources',
       icon: <DatabaseOutlined />,
       label: 'Resources',
       children: [
-        {
-          key: '/teams',
-          icon: <TeamOutlined />,
-          label: 'Teams',
-        },
-        {
-          key: '/regions',
-          icon: <GlobalOutlined />,
-          label: 'Regions',
-        },
         {
           key: '/bridges',
           icon: <ApiOutlined />,

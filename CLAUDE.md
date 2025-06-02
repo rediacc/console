@@ -87,16 +87,15 @@ Frontend (React) → HTTP REST API → Middleware (.NET) → SQL Server
 /login          - Login page
 /register       - Registration page  
 /               - Dashboard
-/teams          - Team management
+/organization   - Organization management (Teams & Regions tabs)
 /users          - User management
-/regions        - Region management
-/bridges        - Bridge management (TODO)
-/machines       - Machine management (TODO)
-/repositories   - Repository management (TODO)
-/storage        - Storage management (TODO)
-/schedules      - Schedule management (TODO)
+/bridges        - Bridge management
+/machines       - Machine management
+/repositories   - Repository management
+/storage        - Storage management
+/schedules      - Schedule management
 /queue          - Queue management
-/permissions    - Permissions management (TODO)
+/settings       - Company settings
 ```
 
 ## State Management
@@ -159,9 +158,15 @@ All pages and features from PLAN.md have been implemented:
 4. ✅ Storage Management - Filter by team, CRUD operations, vault configuration, usage visualization
 5. ✅ Schedules Management - Filter by team, CRUD operations, vault configuration
 
+### Organization Management
+6. ✅ Organization Management - Combined Teams and Regions management in tabbed interface
+   - Teams tab: Create/delete teams, view member count and resource counts
+   - Regions tab: Create/delete regions, configure vault, view bridge count
+
 ### User & Permission Management
-6. ✅ Permissions Management - Permission groups, assign permissions, assign users
-7. ✅ Users Management - User list, create, activate/deactivate, update details
+7. ✅ User Management - Combined Users and Permissions management in tabbed interface
+   - Permissions tab: Permission groups, assign permissions to groups
+   - Users tab: User list, create, activate/deactivate, assign permission groups
 
 ### Company Settings
 8. ✅ Company Settings - Subscription details, resource limits, usage analytics with charts
