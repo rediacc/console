@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Typography, Button, Space, Modal, Popconfirm, Tag, Switch, Tooltip } from 'antd'
+import { Typography, Button, Space, Modal, Popconfirm, Tag, Switch, Tooltip, Select } from 'antd'
 import { 
   PlusOutlined, 
   EditOutlined, 
@@ -24,32 +24,32 @@ import {
   useUpdateScheduleStatus,
   Schedule 
 } from '@/api/queries/schedules'
+import { useDropdownData } from '@/api/queries/useDropdownData'
 import { createScheduleSchema, CreateScheduleForm } from '@/utils/validation'
 import { format, formatDistanceToNow } from 'date-fns'
 
 const { Title, Text } = Typography
 
 const SchedulesPage: React.FC = () => {
+  const [selectedTeam, setSelectedTeam] = useState<string>('')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [vaultModalConfig, setVaultModalConfig] = useState<{
     open: boolean
     schedule?: Schedule
   }>({ open: false })
 
-  const { data: schedules, isLoading } = useSchedules()
+  const { data: dropdownData } = useDropdownData()
+  const { data: schedules, isLoading } = useSchedules(selectedTeam)
   const createScheduleMutation = useCreateSchedule()
   const deleteScheduleMutation = useDeleteSchedule()
   const updateVaultMutation = useUpdateScheduleVault()
-  const updateStatusMutation = useUpdateScheduleStatus()
 
   const form = useForm<CreateScheduleForm>({
-    resolver: zodResolver(createScheduleSchema),
+    resolver: zodResolver(createScheduleSchema) as any,
     defaultValues: {
+      teamName: '',
       scheduleName: '',
       scheduleVault: '{}',
-      description: '',
-      cronExpression: '',
-      isActive: true,
     },
   })
 
@@ -63,9 +63,12 @@ const SchedulesPage: React.FC = () => {
     }
   }
 
-  const handleDeleteSchedule = async (scheduleName: string) => {
+  const handleDeleteSchedule = async (schedule: Schedule) => {
     try {
-      await deleteScheduleMutation.mutateAsync(scheduleName)
+      await deleteScheduleMutation.mutateAsync({
+        teamName: schedule.teamName,
+        scheduleName: schedule.scheduleName,
+      })
     } catch (error) {
       // Error handled by mutation
     }
@@ -75,22 +78,12 @@ const SchedulesPage: React.FC = () => {
     if (!vaultModalConfig.schedule) return
 
     await updateVaultMutation.mutateAsync({
+      teamName: vaultModalConfig.schedule.teamName,
       scheduleName: vaultModalConfig.schedule.scheduleName,
       scheduleVault: vault,
       vaultVersion: version,
     })
     setVaultModalConfig({ open: false })
-  }
-
-  const handleToggleStatus = async (schedule: Schedule) => {
-    try {
-      await updateStatusMutation.mutateAsync({
-        scheduleName: schedule.scheduleName,
-        isActive: !schedule.isActive,
-      })
-    } catch (error) {
-      // Error handled by mutation
-    }
   }
 
   const formatCronExpression = (cron: string) => {
@@ -134,20 +127,17 @@ const SchedulesPage: React.FC = () => {
       dataIndex: 'isActive',
       key: 'isActive',
       width: 100,
-      render: (isActive: boolean, record: Schedule) => (
-        <Space>
-          <Switch
-            checked={isActive}
-            onChange={() => handleToggleStatus(record)}
-            loading={updateStatusMutation.isPending}
-            checkedChildren={<PlayCircleOutlined />}
-            unCheckedChildren={<PauseCircleOutlined />}
-          />
-          <Tag color={isActive ? 'success' : 'default'}>
-            {isActive ? 'Active' : 'Inactive'}
-          </Tag>
-        </Space>
+      render: (isActive: boolean) => (
+        <Tag color={isActive ? 'success' : 'default'}>
+          {isActive ? 'Active' : 'Inactive'}
+        </Tag>
       ),
+    },
+    {
+      title: 'Team',
+      dataIndex: 'teamName',
+      key: 'teamName',
+      render: (text: string) => <Tag color="green">{text}</Tag>,
     },
     {
       title: 'Cron Expression',
@@ -238,7 +228,7 @@ const SchedulesPage: React.FC = () => {
           <Popconfirm
             title="Delete Schedule"
             description={`Are you sure you want to delete schedule "${record.scheduleName}"?`}
-            onConfirm={() => handleDeleteSchedule(record.scheduleName)}
+            onConfirm={() => handleDeleteSchedule(record)}
             okText="Yes"
             cancelText="No"
             okButtonProps={{ danger: true }}
@@ -259,54 +249,61 @@ const SchedulesPage: React.FC = () => {
 
   const formFields = [
     {
+      name: 'teamName',
+      label: 'Team',
+      placeholder: 'Select team',
+      required: true,
+      type: 'select' as const,
+      options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
+    },
+    {
       name: 'scheduleName',
       label: 'Schedule Name',
       placeholder: 'Enter schedule name',
       required: true,
-    },
-    {
-      name: 'description',
-      label: 'Description',
-      placeholder: 'Enter description (optional)',
-    },
-    {
-      name: 'cronExpression',
-      label: 'Cron Expression',
-      placeholder: '0 0 * * * (e.g., daily at midnight)',
-      required: true,
-      help: 'Format: minute hour day month weekday',
-    },
-    {
-      name: 'isActive',
-      label: 'Active',
-      type: 'switch' as const,
-      valuePropName: 'checked',
     },
   ]
 
   return (
     <Space direction="vertical" size={24} style={{ width: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Title level={3}>Schedule Management</Title>
+        <Title level={3}>Schedules</Title>
+        <Space>
+          <Select
+            placeholder="Select a team"
+            style={{ width: 200 }}
+            onChange={setSelectedTeam}
+            value={selectedTeam}
+            allowClear
+            options={dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || []}
+          />
+          <Button 
+            type="primary" 
+            icon={<PlusOutlined />}
+            onClick={() => {
+              form.setValue('teamName', selectedTeam)
+              setIsCreateModalOpen(true)
+            }}
+            style={{ background: '#556b2f', borderColor: '#556b2f' }}
+            disabled={!selectedTeam}
+          >
+            Create Schedule
+          </Button>
+        </Space>
       </div>
       
       <ResourceListView
-        title={<Title level={4} style={{ margin: 0 }}>Schedules</Title>}
+        title={
+          <Title level={4} style={{ margin: 0 }}>
+            {selectedTeam ? `Schedules in ${selectedTeam}` : 'Select a team to view schedules'}
+          </Title>
+        }
         loading={isLoading}
         data={schedules}
         columns={columns}
         rowKey="scheduleName"
         searchPlaceholder="Search schedules..."
-        actions={
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />}
-            onClick={() => setIsCreateModalOpen(true)}
-            style={{ background: '#556b2f', borderColor: '#556b2f' }}
-          >
-            Create Schedule
-          </Button>
-        }
+        emptyText={!selectedTeam ? "Please select a team to view schedules" : undefined}
       />
 
       <Modal

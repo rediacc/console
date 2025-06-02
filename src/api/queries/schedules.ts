@@ -4,45 +4,42 @@ import toast from 'react-hot-toast'
 
 export interface Schedule {
   scheduleName: string
+  teamName: string
   scheduleVault: string
   vaultVersion: number
-  description: string
-  isActive: boolean
-  cronExpression: string
-  nextRunTime: string
-  lastRunTime: string
-  queueCount: number
-  createdAt: string
-  updatedAt: string
+  description?: string
+  isActive?: boolean
+  cronExpression?: string
+  nextRunTime?: string
+  lastRunTime?: string
+  queueCount?: number
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface CreateScheduleRequest {
+  teamName: string
   scheduleName: string
-  scheduleVault: string
-  description?: string
-  cronExpression: string
-  isActive?: boolean
+  scheduleVault?: string
 }
 
 export interface UpdateScheduleVaultRequest {
+  teamName: string
   scheduleName: string
   scheduleVault: string
   vaultVersion: number
 }
 
-export interface UpdateScheduleStatusRequest {
-  scheduleName: string
-  isActive: boolean
-}
-
-// Get all schedules
-export const useSchedules = () => {
-  return useQuery({
-    queryKey: ['schedules'],
+// Get schedules for a team
+export const useSchedules = (teamName?: string) => {
+  return useQuery<Schedule[]>({
+    queryKey: ['schedules', teamName],
     queryFn: async () => {
-      const response = await apiClient.get<Schedule>('/GetSchedules')
-      return response.tables?.[0]?.data || []
+      if (!teamName) return []
+      const response = await apiClient.get<Schedule[]>('/GetTeamSchedules', { teamName })
+      return response.tables[1]?.data || []
     },
+    enabled: !!teamName,
   })
 }
 
@@ -52,15 +49,20 @@ export const useCreateSchedule = () => {
 
   return useMutation({
     mutationFn: async (data: CreateScheduleRequest) => {
-      const response = await apiClient.post('/CreateSchedule', data)
+      const response = await apiClient.post('/CreateSchedule', {
+        teamName: data.teamName,
+        scheduleName: data.scheduleName,
+        scheduleVault: data.scheduleVault || '{}',
+      })
       return response
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['schedules'] })
-      toast.success('Schedule created successfully')
+      queryClient.invalidateQueries({ queryKey: ['teams'] })
+      toast.success(`Schedule "${variables.scheduleName}" created successfully`)
     },
     onError: (error: any) => {
-      console.error('Failed to create schedule:', error)
+      toast.error(error.message || 'Failed to create schedule')
     },
   })
 }
@@ -70,16 +72,36 @@ export const useDeleteSchedule = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (scheduleName: string) => {
-      const response = await apiClient.delete('/DeleteSchedule', { scheduleName })
+    mutationFn: async (data: { teamName: string; scheduleName: string }) => {
+      const response = await apiClient.delete('/DeleteSchedule', data)
       return response
     },
-    onSuccess: () => {
+    onSuccess: (_, data) => {
       queryClient.invalidateQueries({ queryKey: ['schedules'] })
-      toast.success('Schedule deleted successfully')
+      queryClient.invalidateQueries({ queryKey: ['teams'] })
+      toast.success(`Schedule "${data.scheduleName}" deleted successfully`)
     },
     onError: (error: any) => {
-      console.error('Failed to delete schedule:', error)
+      toast.error(error.message || 'Failed to delete schedule')
+    },
+  })
+}
+
+// Update schedule name
+export const useUpdateScheduleName = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (data: { teamName: string; currentScheduleName: string; newScheduleName: string }) => {
+      const response = await apiClient.put('/UpdateScheduleName', data)
+      return response
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['schedules'] })
+      toast.success(`Schedule renamed to "${variables.newScheduleName}"`)
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to update schedule name')
     },
   })
 }
@@ -93,31 +115,12 @@ export const useUpdateScheduleVault = () => {
       const response = await apiClient.put('/UpdateScheduleVault', data)
       return response
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['schedules'] })
-      toast.success('Schedule vault updated successfully')
-    },
-    onError: (error: any) => {
-      console.error('Failed to update schedule vault:', error)
-    },
-  })
-}
-
-// Update schedule status (activate/deactivate)
-export const useUpdateScheduleStatus = () => {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (data: UpdateScheduleStatusRequest) => {
-      const response = await apiClient.put('/UpdateScheduleStatus', data)
-      return response
-    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['schedules'] })
-      toast.success(`Schedule ${variables.isActive ? 'activated' : 'deactivated'} successfully`)
+      toast.success(`Schedule vault updated for "${variables.scheduleName}"`)
     },
     onError: (error: any) => {
-      console.error('Failed to update schedule status:', error)
+      toast.error(error.message || 'Failed to update schedule vault')
     },
   })
 }

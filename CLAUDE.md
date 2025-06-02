@@ -148,16 +148,46 @@ Files are output to:
 ./go test
 ```
 
-## Pending Implementation
-The following pages show "Coming Soon":
-1. Bridges Management
-2. Machines Management  
-3. Repositories Management
-4. Storage Management
-5. Schedules Management
-6. Permissions Management
+## Implemented Features
 
-These need to be implemented following the same patterns as Teams and Regions pages.
+All pages and features from PLAN.md have been implemented:
+
+### Resource Management
+1. ✅ Bridges Management - Filter by region, CRUD operations, vault configuration
+2. ✅ Machines Management - Filter by team, CRUD operations, vault configuration  
+3. ✅ Repositories Management - Filter by team, CRUD operations, vault configuration
+4. ✅ Storage Management - Filter by team, CRUD operations, vault configuration, usage visualization
+5. ✅ Schedules Management - Filter by team, CRUD operations, vault configuration
+
+### User & Permission Management
+6. ✅ Permissions Management - Permission groups, assign permissions, assign users
+7. ✅ Users Management - User list, create, activate/deactivate, update details
+
+### Company Settings
+8. ✅ Company Settings - Subscription details, resource limits, usage analytics with charts
+   - Subscription tab with billing information and cost breakdown
+   - Resource limits tab with usage gauges
+   - Usage analytics tab with trend charts
+
+### Dashboard
+9. ✅ Dashboard - Comprehensive analytics with @ant-design/charts
+   - Resource distribution (Pie chart)
+   - Queue activity trends (Line chart)
+   - System health (Gauge chart)
+   - Team comparisons (Bar chart)
+   - Recent activity timeline
+
+### Queue Management
+10. ✅ Queue Management - View queue items, add functions, status tracking
+
+All pages follow consistent patterns:
+- Resource listing with filters
+- Create/Edit/Delete operations
+- Vault configuration with Monaco Editor
+- Proper validation with React Hook Form + Zod
+- Toast notifications for user feedback
+- Loading states and error handling
+- Data visualization with @ant-design/charts
 
 ## Important Files
 - `PLAN.md` - Original implementation specification
