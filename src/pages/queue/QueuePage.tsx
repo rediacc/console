@@ -18,8 +18,9 @@ const QueuePage: React.FC = () => {
   const [priority, setPriority] = useState(5)
   const [description, setDescription] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [viewTeam, setViewTeam] = useState<string>('') // Team for viewing queue items
   
-  const { data: queueItems, isLoading } = useQueueItems()
+  const { data: queueItems, isLoading } = useQueueItems(viewTeam)
   const { data: dropdownData } = useDropdownData()
   const createQueueItemMutation = useCreateQueueItem()
 
@@ -166,88 +167,108 @@ const QueuePage: React.FC = () => {
     <Space direction="vertical" size={24} style={{ width: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Title level={3}>Queue Management</Title>
+        <Select
+          style={{ width: 300 }}
+          placeholder="Select a team to view queue items"
+          value={viewTeam}
+          onChange={setViewTeam}
+          options={dropdownData?.teams || []}
+          allowClear
+        />
       </div>
 
-      {/* Queue Statistics */}
-      <Row gutter={16}>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="Total Queue Items"
-              value={queueItems?.length || 0}
-              prefix={<ThunderboltOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="Pending"
-              value={queueItems?.filter(item => item.status === 'pending').length || 0}
-              valueStyle={{ color: '#faad14' }}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="Processing"
-              value={queueItems?.filter(item => item.status === 'processing').length || 0}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="Completed"
-              value={queueItems?.filter(item => item.status === 'completed').length || 0}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-      </Row>
+      {/* Show message if no team selected */}
+      {!viewTeam ? (
+        <Card>
+          <Empty 
+            description="Please select a team to view queue items"
+            style={{ padding: '40px 0' }}
+          />
+        </Card>
+      ) : (
+        <>
+          {/* Queue Statistics */}
+          <Row gutter={16}>
+            <Col span={6}>
+              <Card>
+                <Statistic
+                  title="Total Queue Items"
+                  value={queueItems?.length || 0}
+                  prefix={<ThunderboltOutlined />}
+                />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card>
+                <Statistic
+                  title="Pending"
+                  value={queueItems?.filter(item => item.status === 'pending').length || 0}
+                  valueStyle={{ color: '#faad14' }}
+                />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card>
+                <Statistic
+                  title="Processing"
+                  value={queueItems?.filter(item => item.status === 'processing').length || 0}
+                  valueStyle={{ color: '#1890ff' }}
+                />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card>
+                <Statistic
+                  title="Completed"
+                  value={queueItems?.filter(item => item.status === 'completed').length || 0}
+                  valueStyle={{ color: '#52c41a' }}
+                />
+              </Card>
+            </Col>
+          </Row>
 
-      <Tabs defaultActiveKey="active">
-        <Tabs.TabPane 
-          tab={
-            <Space>
-              <Badge count={queueItems?.filter(item => item.status !== 'completed').length || 0}>
-                <span>Active Queue</span>
-              </Badge>
-            </Space>
-          } 
-          key="active"
-        >
-          <ResourceListView
-            loading={isLoading}
-            data={queueItems?.filter(item => item.status !== 'completed') || []}
-            columns={queueColumns}
-            rowKey="taskId"
-            searchPlaceholder="Search queue items..."
-            actions={
-              <Button 
-                type="primary" 
-                icon={<PlusOutlined />}
-                onClick={() => setIsAddModalOpen(true)}
-                style={{ background: '#556b2f', borderColor: '#556b2f' }}
-              >
-                Add Function to Queue
-              </Button>
-            }
-          />
-        </Tabs.TabPane>
-        
-        <Tabs.TabPane tab="Completed" key="completed">
-          <ResourceListView
-            loading={isLoading}
-            data={queueItems?.filter(item => item.status === 'completed') || []}
-            columns={queueColumns}
-            rowKey="taskId"
-            searchPlaceholder="Search completed items..."
-          />
-        </Tabs.TabPane>
-      </Tabs>
+          <Tabs defaultActiveKey="active">
+            <Tabs.TabPane 
+              tab={
+                <Space>
+                  <Badge count={queueItems?.filter(item => item.status !== 'completed').length || 0}>
+                    <span>Active Queue</span>
+                  </Badge>
+                </Space>
+              } 
+              key="active"
+            >
+              <ResourceListView
+                loading={isLoading}
+                data={queueItems?.filter(item => item.status !== 'completed') || []}
+                columns={queueColumns}
+                rowKey="taskId"
+                searchPlaceholder="Search queue items..."
+                actions={
+                  <Button 
+                    type="primary" 
+                    icon={<PlusOutlined />}
+                    onClick={() => setIsAddModalOpen(true)}
+                    style={{ background: '#556b2f', borderColor: '#556b2f' }}
+                  >
+                    Add Function to Queue
+                  </Button>
+                }
+              />
+            </Tabs.TabPane>
+            
+            <Tabs.TabPane tab="Completed" key="completed">
+              <ResourceListView
+                loading={isLoading}
+                data={queueItems?.filter(item => item.status === 'completed') || []}
+                columns={queueColumns}
+                rowKey="taskId"
+                searchPlaceholder="Search completed items..."
+              />
+            </Tabs.TabPane>
+          </Tabs>
+        </>
+      )}
 
       <Modal
         title="Add Function to Queue"

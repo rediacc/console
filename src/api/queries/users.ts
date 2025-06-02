@@ -22,8 +22,18 @@ export const useUsers = () => {
   return useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      const response = await apiClient.get<User[]>('/GetCompanyUsers')
-      return response.tables[1]?.data || []
+      const response = await apiClient.get('/GetCompanyUsers')
+      const users = response.tables[1]?.data || []
+      
+      // Map PermissionsName to permissionGroupName to match our interface
+      return users.map((user: any) => ({
+        ...user,
+        userEmail: user.UserEmail || user.userEmail,
+        companyName: user.CompanyName || user.companyName,
+        activated: user.Activated !== undefined ? user.Activated : user.activated,
+        permissionGroupName: user.PermissionsName || user.permissionsName || user.permissionGroupName,
+        lastActive: user.lastActive
+      }))
     },
   })
 }

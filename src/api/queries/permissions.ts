@@ -31,7 +31,15 @@ export const usePermissionGroupDetails = (groupName: string) => {
     queryKey: ['permissionGroup', groupName],
     queryFn: async () => {
       const response = await apiClient.get('/GetPermissionGroupDetails', { permissionGroupName: groupName })
-      return response.tables[1]?.data[0] || {}
+      const permissionRows = response.tables[1]?.data || []
+      
+      // Transform the rows into a single object with permissions array
+      const permissions = permissionRows.map((row: any) => row.PermissionName || row.permissionName)
+      
+      return {
+        permissionGroupName: groupName,
+        permissions: permissions
+      }
     },
     enabled: !!groupName,
   })
@@ -88,6 +96,7 @@ export const useAddPermissionToGroup = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['permissionGroup', variables.permissionGroupName] })
+      queryClient.invalidateQueries({ queryKey: ['permissionGroups'] }) // Update permission counts
       toast.success(`Permission "${variables.permissionName}" added to group`)
     },
     onError: (error: any) => {
@@ -107,6 +116,7 @@ export const useRemovePermissionFromGroup = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['permissionGroup', variables.permissionGroupName] })
+      queryClient.invalidateQueries({ queryKey: ['permissionGroups'] }) // Update permission counts
       toast.success(`Permission "${variables.permissionName}" removed from group`)
     },
     onError: (error: any) => {

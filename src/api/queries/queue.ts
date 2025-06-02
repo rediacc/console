@@ -189,12 +189,15 @@ export const useQueueItems = (teamName?: string) => {
   return useQuery({
     queryKey: ['queue-items', teamName],
     queryFn: async () => {
-      const endpoint = teamName ? '/GetTeamQueueItems' : '/GetCompanyQueueItems'
-      const params = teamName ? { teamName } : {}
-      const response = await apiClient.get<QueueItem[]>(endpoint, params)
+      // Queue items are always retrieved per team
+      if (!teamName) {
+        return [] // Return empty array if no team is selected
+      }
+      const response = await apiClient.get<QueueItem[]>('/GetTeamQueueItems', { teamName })
       return response.tables[1]?.data || []
     },
     refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
+    enabled: !!teamName, // Only run query if teamName is provided
   })
 }
 
