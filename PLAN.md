@@ -1,4 +1,18 @@
-# Rediacc Web Application Implementation Plan
+### 7.7 Infrastructure Insights
+
+Visual analytics dashboard using @ant-design/charts:
+- **Performance Monitoring**:
+  - Line charts for response time trends
+  - Area charts for resource utilization
+  - Heatmaps for activity patterns
+- **Resource Analysis**:
+  - Bar charts for team comparisons
+  - Pie charts for resource distribution
+  - Sankey diagrams for data flow
+- **Predictive Analytics**:
+  - Trend lines with forecasting
+  - Anomaly detection visualization
+  - Capacity planning projections# Rediacc Web Application Implementation Plan
 
 ## 1. Application Overview
 
@@ -47,7 +61,10 @@ The following packages constitute the COMPLETE technology stack for this project
     
     // Specialized Components
     "@monaco-editor/react": "^4.x",
-    "react-hot-toast": "^2.x"
+    "react-hot-toast": "^2.x",
+    
+    // Data Visualization
+    "@ant-design/charts": "^2.x"
   },
   "devDependencies": {
     "vite": "^5.x",
@@ -69,6 +86,7 @@ The following packages constitute the COMPLETE technology stack for this project
 - **Vite**: Fastest build tool for improved developer experience
 - **Monaco Editor**: Essential for JSON vault editing functionality
 - **React Hot Toast**: Lightweight notification system for user feedback
+- **Ant Design Charts**: Professional data visualization for dashboard metrics and analytics
 
 ## 2. Application Architecture
 
@@ -113,7 +131,7 @@ Application Root
 
 ### 2.3 Implementation Architecture
 
-All components must be built using Ant Design components as the foundation with subtle enhancements for better user experience. Custom styling should be minimal and use Ant Design's theming system. The application structure follows Redux Toolkit patterns with feature-based organization.
+All components must be built using Ant Design components as the foundation with subtle enhancements for better user experience. Custom styling should be minimal and use Ant Design's theming system. The application structure follows Redux Toolkit patterns with feature-based organization. Charts should follow Ant Design's color palette for visual consistency.
 
 ## 3. Navigation Structure
 
@@ -123,7 +141,11 @@ Navigation must be implemented using Ant Design's Menu component in the sidebar 
 
 #### **Dashboard**
 - Overview statistics with visual cards (using Ant Design Card and Statistic components)
-- System health visualization
+- System health visualization with charts:
+  - Line Chart for performance trends
+  - Area Chart for resource utilization
+  - Column Chart for team comparisons
+  - Progress rings for capacity metrics
 - Recent activities (using Ant Design Timeline component)
 - Quick actions (using Ant Design Button components)
 
@@ -145,7 +167,7 @@ Navigation must be implemented using Ant Design's Menu component in the sidebar 
   - **Machines**
     - List Machines (filtered by team)
     - Create Machine
-    - Machine Details
+    - Machine Details (with performance charts)
     - Machine Vault Configuration (Monaco Editor in Ant Design Modal)
 - **Storage & Data**
   - **Repositories**
@@ -164,7 +186,11 @@ Navigation must be implemented using Ant Design's Menu component in the sidebar 
 #### **Queue Management**
 - **Queue Dashboard**
   - Active Queue Items (Ant Design Table with auto-refresh via React Query)
-  - Queue Statistics (Ant Design Statistic components with progress indicators)
+  - Queue Statistics:
+    - Success rate gauge chart
+    - Processing time line chart
+    - Queue depth area chart
+    - Task distribution pie chart
 - **Queue Operations**
   - Add Function to Queue
     - Select machine first to auto-populate bridge
@@ -207,8 +233,12 @@ Navigation must be implemented using Ant Design's Menu component in the sidebar 
 - **Subscription**
   - Plan Details
     - API: `POST /api/StoredProcedure/GetSubscriptionDetails`
-  - Resource Limits
+  - Resource Limits (with usage visualization)
     - API: `POST /api/StoredProcedure/GetCompanyResourceLimits`
+  - Usage Analytics Dashboard:
+    - Resource consumption trends
+    - Cost analysis charts
+    - Team comparison metrics
 - **Company Vault**
   - Vault Configuration
     - API: `POST /api/StoredProcedure/UpdateCompanyVault`
@@ -219,7 +249,7 @@ Navigation must be implemented using Ant Design's Menu component in the sidebar 
 
 ### 4.1 Common Components
 
-All UI components must be built using Ant Design components with subtle enhancements for improved user experience.
+All UI components must be built using Ant Design components with subtle enhancements for improved user experience. Use @ant-design/charts for data-heavy visualizations and Ant Design Statistics/Progress for simple metrics.
 
 #### **Resource List View**
 ```
@@ -281,6 +311,10 @@ All UI components must be built using Ant Design components with subtle enhancem
 - Info Display: Ant Design Descriptions with status badges
 - Actions: Ant Design Button components with icons
 - Related Resources: Ant Design Tabs with embedded Tables
+- Performance Metrics: @ant-design/charts components for:
+  - Activity timeline (Line Chart)
+  - Resource utilization (Gauge Chart)
+  - Task completion trends (Area Chart)
 - Confirmation Dialogs: Ant Design Modal.confirm with clear messaging
 
 **API Endpoints for Detail Views:**
@@ -603,6 +637,10 @@ ServerState (React Query)
 ├── Queue
 │   ├── items
 │   └── functions
+├── Metrics (for charts)
+│   ├── performance data
+│   ├── usage statistics
+│   └── trend data
 └── Dropdown Data
     ├── cached values
     └── last fetch time
@@ -622,6 +660,7 @@ ServerState (React Query)
 3. Render Ant Design Table with data
 4. Handle pagination/filtering locally when possible
 5. Refetch on CRUD operations using React Query invalidation
+6. Display mini charts for key metrics in table rows when applicable
 
 #### **Form Submissions**
 1. React Hook Form handles form state
@@ -648,6 +687,7 @@ Implementation using Ant Design Table rowSelection:
 - Ant Design Modal for confirmation
 - Progress tracking with Ant Design Progress
 - Batch API calls with React Query mutations
+- Export selected data for external analysis
 
 ### 7.2 Real-time Updates
 
@@ -686,12 +726,38 @@ Enhance Ant Design Select components with:
 
 ### 7.6 Dashboard Visualizations
 
-Enhanced dashboard with:
+Enhanced dashboard with @ant-design/charts:
 - Health indicators with color coding
 - Activity timeline with smooth updates
-- Resource usage charts (using Ant Design Charts)
+- Resource usage charts:
+  - Line charts for trends over time
+  - Bar charts for resource comparisons
+  - Pie charts for distribution analysis
+  - Area charts for capacity utilization
+- Interactive features:
+  - Zoom and pan for time series
+  - Click to drill down
+  - Hover tooltips with details
+  - Legend toggling
 - Quick stats with trend indicators
 - System alerts and notifications
+- Real-time metrics updates
+
+### 7.7 Infrastructure Insights
+
+Visual analytics dashboard using @ant-design/charts:
+- **Performance Monitoring**:
+  - Line charts for response time trends
+  - Area charts for resource utilization
+  - Heatmaps for activity patterns
+- **Resource Analysis**:
+  - Bar charts for team comparisons
+  - Pie charts for resource distribution
+  - Sankey diagrams for data flow
+- **Predictive Analytics**:
+  - Trend lines with forecasting
+  - Anomaly detection visualization
+  - Capacity planning projections
 
 ## 8. Error Handling and Feedback
 
@@ -718,6 +784,7 @@ Use Ant Design loading components:
 - **Button Loading**: Button loading prop
 - **Table Loading**: Table loading prop
 - **Lazy Loading**: React.lazy with Spin
+- **Chart Loading**: Skeleton loaders for chart containers
 
 ## 9. Responsive Design Considerations
 
@@ -735,6 +802,7 @@ Ant Design responsive features:
 - **Forms**: Single column on mobile (Col span)
 - **Modals**: Full screen on mobile (custom CSS)
 - **Menus**: Drawer on mobile instead of sidebar
+- **Charts**: Responsive sizing, simplified on mobile, alternative table view for accessibility
 
 ## 10. Security and Permissions
 
@@ -895,6 +963,7 @@ All API responses follow this structure:
 - Actual data typically starts at table index 1
 - All timestamps are in ISO format
 - Vault data must be valid JSON strings
+- When using data for charts, transform API responses to match @ant-design/charts data format
 
 ### 11.8 Dropdown Values Response Structure
 
@@ -961,6 +1030,8 @@ Consistent query/mutation patterns:
 - Mutation with optimistic updates
 - Error boundary integration
 - Invalidation strategies
+- Data transformation hooks for chart formatting
+- Aggregation queries for dashboard metrics
 
 ### 12.3 Type Safety
 
@@ -968,6 +1039,7 @@ Full TypeScript coverage:
 - API response types generated from docs
 - Zod schemas for runtime validation
 - Type-safe React Query hooks
+- Chart data types from @ant-design/charts
 - Strict mode enabled
 
 ## 13. Development Guidelines
@@ -991,11 +1063,13 @@ src/
 ├── components/
 │   ├── common/
 │   ├── forms/
-│   └── layouts/
+│   ├── layouts/
+│   └── charts/
 ├── features/
 │   ├── auth/
 │   ├── resources/
-│   └── queue/
+│   ├── queue/
+│   └── dashboard/
 ├── hooks/
 ├── pages/
 ├── store/
@@ -1012,6 +1086,7 @@ src/
 5. **API Calls**: Always through Axios instance
 6. **Error Handling**: Consistent patterns across the app
 7. **Performance**: Lazy load routes, memoize expensive computations
+8. **Data Visualization**: Use @ant-design/charts for complex visualizations, Ant Design components for simple metrics
 
 ### 13.4 Performance Guidelines
 
@@ -1020,6 +1095,11 @@ src/
 - Memoize expensive computations with useMemo
 - Optimize re-renders with React.memo
 - Use React Query's stale-while-revalidate pattern
+- For dashboard visualizations:
+  - Use @ant-design/charts for complex data analysis
+  - Use Ant Design Statistics/Progress for simple metrics
+  - Lazy load chart components on dashboard
+  - Throttle chart updates to prevent excessive re-renders
 
 ## 14. Testing Strategy
 
@@ -1028,6 +1108,8 @@ While not adding testing libraries to the package list, the architecture support
 - Pure functions in utils
 - Centralized API layer
 - Predictable state management
+- Chart components can be mocked for testing
+- Data transformation functions are pure and testable
 
 ## 15. Deployment Considerations
 
@@ -1037,6 +1119,10 @@ Build configuration with Vite:
 - Source maps for error tracking
 - Asset optimization
 - Proper CSP headers
+- Chart library optimization:
+  - Tree-shaking to include only used chart types
+  - Lazy loading for chart-heavy pages
+  - CDN delivery for chart assets if needed
 
 ---
 
