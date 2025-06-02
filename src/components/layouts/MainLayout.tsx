@@ -86,33 +86,6 @@ const MainLayout: React.FC = () => {
       label: 'Organization',
     },
     {
-      key: 'resources',
-      icon: <DatabaseOutlined />,
-      label: 'Resources',
-      children: [
-        {
-          key: '/machines',
-          icon: <CloudServerOutlined />,
-          label: 'Machines',
-        },
-        {
-          key: '/repositories',
-          icon: <DatabaseOutlined />,
-          label: 'Repositories',
-        },
-        {
-          key: '/storages',
-          icon: <HddOutlined />,
-          label: 'Storage',
-        },
-        {
-          key: '/schedules',
-          icon: <ScheduleOutlined />,
-          label: 'Schedules',
-        },
-      ],
-    },
-    {
       key: '/queue',
       icon: <ThunderboltOutlined />,
       label: 'Queue Management',

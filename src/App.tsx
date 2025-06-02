@@ -10,10 +10,6 @@ import MainLayout from '@/components/layouts/MainLayout'
 import LoginPage from '@/pages/LoginPage'
 import DashboardPage from '@/pages/DashboardPage'
 import OrganizationPage from '@/pages/organization/OrganizationPage'
-import MachinesPage from '@/pages/resources/MachinesPage'
-import RepositoriesPage from '@/pages/resources/RepositoriesPage'
-import StoragesPage from '@/pages/resources/StoragesPage'
-import SchedulesPage from '@/pages/resources/SchedulesPage'
 import QueuePage from '@/pages/queue/QueuePage'
 import UsersAndPermissionsPage from '@/pages/users/UsersAndPermissionsPage'
 import CompanySettingsPage from '@/pages/settings/CompanySettingsPage'
@@ -61,12 +57,6 @@ const App: React.FC = () => {
             
             {/* Organization */}
             <Route path="/organization" element={<OrganizationPage />} />
-            
-            {/* Resources */}
-            <Route path="/machines" element={<MachinesPage />} />
-            <Route path="/repositories" element={<RepositoriesPage />} />
-            <Route path="/storages" element={<StoragesPage />} />
-            <Route path="/schedules" element={<SchedulesPage />} />
             
             {/* Queue */}
             <Route path="/queue" element={<QueuePage />} />

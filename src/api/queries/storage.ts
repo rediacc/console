@@ -29,10 +29,11 @@ export const useCreateStorage = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async (data: { teamName: string; storageName: string; storageVault?: string }) => {
+    mutationFn: async (data: { teamName: string; storageName: string; storageType: string; storageVault?: string }) => {
       const response = await apiClient.post('/CreateStorage', {
         teamName: data.teamName,
         storageName: data.storageName,
+        storageType: data.storageType,
         storageVault: data.storageVault || '{}',
       })
       return response
