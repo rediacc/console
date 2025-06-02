@@ -100,6 +100,8 @@ Application Root
   - Queue Statistics
 - **Queue Operations**
   - Add Function to Queue
+    - Select machine first to auto-populate bridge
+    - Bridge is required but determined by machine assignment
   - Available Functions Browser
   - Queue Item Details
 - **Machine Queues**
@@ -305,10 +307,13 @@ Application Root
 │ │ └─────────────────────────────────────┘     │ │
 │ └─────────────────────────────────────────────┘ │
 │ Target Machine: [Select Machine ▼]              │
+│ Target Bridge: [Auto-populated from Machine]    │
 │ Priority: [1-10 slider]                         │
 │ [Cancel] [Add to Queue]                         │
 └─────────────────────────────────────────────────┘
 ```
+
+**Note:** The bridge is automatically determined based on the selected machine's assignment and is passed as a required parameter to the API.
 
 **Queue Vault Structure:**
 ```json
@@ -320,7 +325,8 @@ Application Root
     "param2": "value2"
   },
   "description": "User-provided description",
-  "priority": 5
+  "priority": 5,
+  "bridge": "bridge_name"
 }
 ```
 
@@ -394,7 +400,7 @@ Queue Dashboard → Add Function → Browse Functions
 
 **API Calls:**
 - Create Queue Item: `POST /api/StoredProcedure/CreateQueueItem`
-  - Body: `{"teamName": "team", "machineName": "machine", "queueVault": "{...}"}`
+  - Body: `{"teamName": "team", "machineName": "machine", "bridgeName": "bridge", "queueVault": "{...}"}`
 - Get Queue Items: `POST /api/StoredProcedure/GetQueueItemsNext`
   - Body: `{"machineName": "machine", "itemCount": 5}`
 - Update Response: `POST /api/StoredProcedure/UpdateQueueItemResponse`
@@ -627,12 +633,17 @@ All authenticated endpoints require `Rediacc-RequestToken` header.
 
 | Operation | Endpoint | Body |
 |-----------|----------|------|
-| Create Queue Item | `CreateQueueItem` | `{"teamName": "team", "machineName": "machine", "queueVault": "{...}"}` |
+| Create Queue Item | `CreateQueueItem` | `{"teamName": "team", "machineName": "machine", "bridgeName": "bridge", "queueVault": "{...}"}` |
 | Get Next Items | `GetQueueItemsNext` | `{"machineName": "machine", "itemCount": 5}` |
 | Update Response | `UpdateQueueItemResponse` | `{"taskId": "id", "responseVault": "{}"}` |
 | Complete Item | `UpdateQueueItemToCompleted` | `{"taskId": "id", "finalVault": "{}"}` |
 | List Team Items | `GetTeamQueueItems` | `{"teamName": "team"}` |
 | Delete Item | `DeleteQueueItem` | `{"taskId": "id"}` |
+
+**Important Notes for Queue Creation:**
+- The `bridgeName` parameter is now required when creating queue items
+- The API validates that the specified machine is actually assigned to the specified bridge
+- If the machine is not assigned to the bridge, the API returns error code 6
 
 ### 11.7 Response Handling
 
