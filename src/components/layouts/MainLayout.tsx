@@ -91,11 +91,6 @@ const MainLayout: React.FC = () => {
       label: 'Resources',
       children: [
         {
-          key: '/bridges',
-          icon: <ApiOutlined />,
-          label: 'Bridges',
-        },
-        {
           key: '/machines',
           icon: <CloudServerOutlined />,
           label: 'Machines',

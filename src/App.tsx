@@ -10,7 +10,6 @@ import MainLayout from '@/components/layouts/MainLayout'
 import LoginPage from '@/pages/LoginPage'
 import DashboardPage from '@/pages/DashboardPage'
 import OrganizationPage from '@/pages/organization/OrganizationPage'
-import BridgesPage from '@/pages/resources/BridgesPage'
 import MachinesPage from '@/pages/resources/MachinesPage'
 import RepositoriesPage from '@/pages/resources/RepositoriesPage'
 import StoragesPage from '@/pages/resources/StoragesPage'
@@ -64,7 +63,6 @@ const App: React.FC = () => {
             <Route path="/organization" element={<OrganizationPage />} />
             
             {/* Resources */}
-            <Route path="/bridges" element={<BridgesPage />} />
             <Route path="/machines" element={<MachinesPage />} />
             <Route path="/repositories" element={<RepositoriesPage />} />
             <Route path="/storages" element={<StoragesPage />} />

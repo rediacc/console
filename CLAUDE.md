@@ -87,9 +87,8 @@ Frontend (React) → HTTP REST API → Middleware (.NET) → SQL Server
 /login          - Login page
 /register       - Registration page  
 /               - Dashboard
-/organization   - Organization management (Teams & Regions tabs)
-/users          - User management
-/bridges        - Bridge management
+/organization   - Organization management (Teams & Regions/Bridges tabs)
+/users          - User management (Users & Permissions tabs)
 /machines       - Machine management
 /repositories   - Repository management
 /storage        - Storage management
@@ -152,30 +151,31 @@ Files are output to:
 All pages and features from PLAN.md have been implemented:
 
 ### Resource Management
-1. ✅ Bridges Management - Filter by region, CRUD operations, vault configuration
-2. ✅ Machines Management - Filter by team, CRUD operations, vault configuration  
-3. ✅ Repositories Management - Filter by team, CRUD operations, vault configuration
-4. ✅ Storage Management - Filter by team, CRUD operations, vault configuration, usage visualization
-5. ✅ Schedules Management - Filter by team, CRUD operations, vault configuration
+1. ✅ Machines Management - Filter by team, CRUD operations, vault configuration  
+2. ✅ Repositories Management - Filter by team, CRUD operations, vault configuration
+3. ✅ Storage Management - Filter by team, CRUD operations, vault configuration, usage visualization
+4. ✅ Schedules Management - Filter by team, CRUD operations, vault configuration
 
 ### Organization Management
-6. ✅ Organization Management - Combined Teams and Regions management in tabbed interface
+5. ✅ Organization Management - Combined Teams, Regions, and Bridges management in tabbed interface
    - Teams tab: Create/delete teams, view member count and resource counts
-   - Regions tab: Create/delete regions, configure vault, view bridge count
+   - Regions & Infrastructure tab: 
+     - Regions table: Create/delete regions, configure vault, view bridge count, select region
+     - Bridges table: Shows bridges for selected region, create/delete bridges, configure vault
 
 ### User & Permission Management
-7. ✅ User Management - Combined Users and Permissions management in tabbed interface
+6. ✅ User Management - Combined Users and Permissions management in tabbed interface
    - Permissions tab: Permission groups, assign permissions to groups
    - Users tab: User list, create, activate/deactivate, assign permission groups
 
 ### Company Settings
-8. ✅ Company Settings - Subscription details, resource limits, usage analytics with charts
+7. ✅ Company Settings - Subscription details, resource limits, usage analytics with charts
    - Subscription tab with billing information and cost breakdown
    - Resource limits tab with usage gauges
    - Usage analytics tab with trend charts
 
 ### Dashboard
-9. ✅ Dashboard - Comprehensive analytics with @ant-design/charts
+8. ✅ Dashboard - Comprehensive analytics with @ant-design/charts
    - Resource distribution (Pie chart)
    - Queue activity trends (Line chart)
    - System health (Gauge chart)
@@ -183,7 +183,7 @@ All pages and features from PLAN.md have been implemented:
    - Recent activity timeline
 
 ### Queue Management
-10. ✅ Queue Management - View queue items, add functions, status tracking
+9. ✅ Queue Management - View queue items, add functions, status tracking
 
 All pages follow consistent patterns:
 - Resource listing with filters
