@@ -16,8 +16,7 @@ import RepositoriesPage from '@/pages/resources/RepositoriesPage'
 import StoragesPage from '@/pages/resources/StoragesPage'
 import SchedulesPage from '@/pages/resources/SchedulesPage'
 import QueuePage from '@/pages/queue/QueuePage'
-import UsersPage from '@/pages/users/UsersPage'
-import PermissionsPage from '@/pages/users/PermissionsPage'
+import UsersAndPermissionsPage from '@/pages/users/UsersAndPermissionsPage'
 import CompanySettingsPage from '@/pages/settings/CompanySettingsPage'
 
 const App: React.FC = () => {
@@ -75,8 +74,7 @@ const App: React.FC = () => {
             <Route path="/queue" element={<QueuePage />} />
             
             {/* Users & Permissions */}
-            <Route path="/users" element={<UsersPage />} />
-            <Route path="/permissions" element={<PermissionsPage />} />
+            <Route path="/users" element={<UsersAndPermissionsPage />} />
             
             {/* Settings */}
             <Route path="/settings" element={<CompanySettingsPage />} />

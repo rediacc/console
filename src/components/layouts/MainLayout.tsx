@@ -123,21 +123,9 @@ const MainLayout: React.FC = () => {
       label: 'Queue Management',
     },
     {
-      key: 'users',
+      key: '/users',
       icon: <UserOutlined />,
-      label: 'Users & Permissions',
-      children: [
-        {
-          key: '/users',
-          icon: <UserOutlined />,
-          label: 'Users',
-        },
-        {
-          key: '/permissions',
-          icon: <SafetyOutlined />,
-          label: 'Permissions',
-        },
-      ],
+      label: 'Users',
     },
     {
       key: '/settings',
