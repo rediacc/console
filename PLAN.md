@@ -1,18 +1,4 @@
-### 7.7 Infrastructure Insights
-
-Visual analytics dashboard using @ant-design/charts:
-- **Performance Monitoring**:
-  - Line charts for response time trends
-  - Area charts for resource utilization
-  - Heatmaps for activity patterns
-- **Resource Analysis**:
-  - Bar charts for team comparisons
-  - Pie charts for resource distribution
-  - Sankey diagrams for data flow
-- **Predictive Analytics**:
-  - Trend lines with forecasting
-  - Anomaly detection visualization
-  - Capacity planning projections# Rediacc Web Application Implementation Plan
+# Rediacc Web Application Implementation Plan
 
 ## 1. Application Overview
 
@@ -142,11 +128,11 @@ Navigation must be implemented using Ant Design's Menu component in the sidebar 
 #### **Dashboard**
 - Overview statistics with visual cards (using Ant Design Card and Statistic components)
 - System health visualization with charts:
-  - Line Chart for performance trends
-  - Area Chart for resource utilization
-  - Column Chart for team comparisons
-  - Progress rings for capacity metrics
-- Recent activities (using Ant Design Timeline component)
+  - Donut Chart for resource distribution
+  - Area Chart for queue activity trends
+  - Bar Chart for team comparisons
+  - Progress rings for usage vs limits
+- Recent activities (using Ant Design Timeline component from audit log)
 - Quick actions (using Ant Design Button components)
 
 #### **Resources**
@@ -167,7 +153,7 @@ Navigation must be implemented using Ant Design's Menu component in the sidebar 
   - **Machines**
     - List Machines (filtered by team)
     - Create Machine
-    - Machine Details (with performance charts)
+    - Machine Details (with queue statistics)
     - Machine Vault Configuration (Monaco Editor in Ant Design Modal)
 - **Storage & Data**
   - **Repositories**
@@ -187,10 +173,10 @@ Navigation must be implemented using Ant Design's Menu component in the sidebar 
 - **Queue Dashboard**
   - Active Queue Items (Ant Design Table with auto-refresh via React Query)
   - Queue Statistics:
-    - Success rate gauge chart
-    - Processing time line chart
-    - Queue depth area chart
-    - Task distribution pie chart
+    - Status distribution pie chart
+    - Processing time bar chart
+    - Queue trend line chart
+    - Items by machine bar chart
 - **Queue Operations**
   - Add Function to Queue
     - Select machine first to auto-populate bridge
@@ -236,9 +222,9 @@ Navigation must be implemented using Ant Design's Menu component in the sidebar 
   - Resource Limits (with usage visualization)
     - API: `POST /api/StoredProcedure/GetCompanyResourceLimits`
   - Usage Analytics Dashboard:
-    - Resource consumption trends
-    - Cost analysis charts
-    - Team comparison metrics
+    - Resource usage vs limits gauge charts
+    - Monthly activity trends from audit log
+    - Team resource distribution charts
 - **Company Vault**
   - Vault Configuration
     - API: `POST /api/StoredProcedure/UpdateCompanyVault`
@@ -311,10 +297,10 @@ All UI components must be built using Ant Design components with subtle enhancem
 - Info Display: Ant Design Descriptions with status badges
 - Actions: Ant Design Button components with icons
 - Related Resources: Ant Design Tabs with embedded Tables
-- Performance Metrics: @ant-design/charts components for:
-  - Activity timeline (Line Chart)
-  - Resource utilization (Gauge Chart)
-  - Task completion trends (Area Chart)
+- Queue Metrics: @ant-design/charts components for:
+  - Queue items over time (Line Chart)
+  - Status distribution (Pie Chart)
+  - Processing time trends (Bar Chart)
 - Confirmation Dialogs: Ant Design Modal.confirm with clear messaging
 
 **API Endpoints for Detail Views:**
@@ -637,10 +623,11 @@ ServerState (React Query)
 ├── Queue
 │   ├── items
 │   └── functions
-├── Metrics (for charts)
-│   ├── performance data
-│   ├── usage statistics
-│   └── trend data
+├── Analytics (for charts)
+│   ├── dashboard metrics
+│   ├── queue analytics
+│   ├── team comparisons
+│   └── usage trends
 └── Dropdown Data
     ├── cached values
     └── last fetch time
@@ -660,7 +647,7 @@ ServerState (React Query)
 3. Render Ant Design Table with data
 4. Handle pagination/filtering locally when possible
 5. Refetch on CRUD operations using React Query invalidation
-6. Display mini charts for key metrics in table rows when applicable
+6. Display mini statistics in table rows when applicable
 
 #### **Form Submissions**
 1. React Hook Form handles form state
@@ -727,37 +714,51 @@ Enhance Ant Design Select components with:
 ### 7.6 Dashboard Visualizations
 
 Enhanced dashboard with @ant-design/charts:
-- Health indicators with color coding
-- Activity timeline with smooth updates
-- Resource usage charts:
-  - Line charts for trends over time
-  - Bar charts for resource comparisons
-  - Pie charts for distribution analysis
-  - Area charts for capacity utilization
+- Resource distribution indicators:
+  - Donut charts for resource type distribution
+  - Gauge charts for usage vs limits
+  - Progress bars for subscription timeline
+- Queue analytics:
+  - Line charts for queue trends over time
+  - Bar charts for processing time distribution
+  - Pie charts for status distribution
+- Team insights:
+  - Bar charts for resource comparison
+  - Stacked charts for queue activity
+  - Radar charts for team capabilities
 - Interactive features:
-  - Zoom and pan for time series
   - Click to drill down
   - Hover tooltips with details
   - Legend toggling
-- Quick stats with trend indicators
-- System alerts and notifications
-- Real-time metrics updates
+- Quick stats with trend indicators from audit log
 
-### 7.7 Infrastructure Insights
+### 7.7 Analytics Dashboard
 
-Visual analytics dashboard using @ant-design/charts:
-- **Performance Monitoring**:
-  - Line charts for response time trends
-  - Area charts for resource utilization
-  - Heatmaps for activity patterns
-- **Resource Analysis**:
-  - Bar charts for team comparisons
-  - Pie charts for resource distribution
-  - Sankey diagrams for data flow
-- **Predictive Analytics**:
-  - Trend lines with forecasting
-  - Anomaly detection visualization
-  - Capacity planning projections
+Visual analytics using @ant-design/charts based on available data:
+- **Resource Analytics**:
+  - Donut charts for resource type distribution
+  - Bar charts for team resource comparison
+  - Gauge charts for usage vs limits
+- **Queue Analytics**:
+  - Line charts for queue items over time
+  - Bar charts for processing time distribution
+  - Stacked charts for queue status by team
+- **Activity Monitoring**:
+  - Timeline charts from audit log data
+  - Monthly activity trend analysis
+  - Subscription usage tracking
+
+**New Chart API Endpoints:**
+- Dashboard Metrics: `POST /api/StoredProcedure/GetDashboardMetrics`
+  - Body: `{"daysBack": 30}`
+- Queue Analytics: `POST /api/StoredProcedure/GetQueueAnalytics`
+  - Body: `{"teamName": "optional", "daysBack": 7}`
+- Team Comparisons: `POST /api/StoredProcedure/GetTeamComparisonMetrics`
+  - Body: `{}`
+- Resource Trends: `POST /api/StoredProcedure/GetResourceUsageTrends`
+  - Body: `{"monthsBack": 6}`
+- Subscription Analytics: `POST /api/StoredProcedure/GetSubscriptionAnalytics`
+  - Body: `{}`
 
 ## 8. Error Handling and Feedback
 
@@ -930,12 +931,17 @@ All authenticated endpoints require `Rediacc-RequestToken` header.
 | List Team Items | `GetTeamQueueItems` | `{"teamName": "team"}` |
 | Delete Item | `DeleteQueueItem` | `{"taskId": "id"}` |
 
-**Important Notes for Queue Creation:**
-- The `bridgeName` parameter is now required when creating queue items
-- The API validates that the specified machine is actually assigned to the specified bridge
-- If the machine is not assigned to the bridge, the API returns error code 6
+### 11.7 Analytics Endpoints
 
-### 11.7 Response Handling
+| Operation | Endpoint | Body |
+|-----------|----------|------|
+| Dashboard Metrics | `GetDashboardMetrics` | `{"daysBack": 30}` |
+| Queue Analytics | `GetQueueAnalytics` | `{"teamName": "optional", "daysBack": 7}` |
+| Team Comparisons | `GetTeamComparisonMetrics` | `{}` |
+| Resource Trends | `GetResourceUsageTrends` | `{"monthsBack": 6}` |
+| Subscription Analytics | `GetSubscriptionAnalytics` | `{}` |
+
+### 11.8 Response Handling
 
 All API responses follow this structure:
 ```json
@@ -965,7 +971,7 @@ All API responses follow this structure:
 - Vault data must be valid JSON strings
 - When using data for charts, transform API responses to match @ant-design/charts data format
 
-### 11.8 Dropdown Values Response Structure
+### 11.9 Dropdown Values Response Structure
 
 The `GetLookupData` endpoint returns a comprehensive JSON structure containing all dropdown options filtered by user permissions:
 
@@ -1069,7 +1075,8 @@ src/
 │   ├── auth/
 │   ├── resources/
 │   ├── queue/
-│   └── dashboard/
+│   ├── dashboard/
+│   └── analytics/
 ├── hooks/
 ├── pages/
 ├── store/
@@ -1086,7 +1093,7 @@ src/
 5. **API Calls**: Always through Axios instance
 6. **Error Handling**: Consistent patterns across the app
 7. **Performance**: Lazy load routes, memoize expensive computations
-8. **Data Visualization**: Use @ant-design/charts for complex visualizations, Ant Design components for simple metrics
+8. **Data Visualization**: Use @ant-design/charts for all visualizations
 
 ### 13.4 Performance Guidelines
 
@@ -1095,11 +1102,11 @@ src/
 - Memoize expensive computations with useMemo
 - Optimize re-renders with React.memo
 - Use React Query's stale-while-revalidate pattern
-- For dashboard visualizations:
-  - Use @ant-design/charts for complex data analysis
-  - Use Ant Design Statistics/Progress for simple metrics
-  - Lazy load chart components on dashboard
+- For analytics visualizations:
+  - Use @ant-design/charts for all data visualizations
+  - Lazy load chart components on analytics pages
   - Throttle chart updates to prevent excessive re-renders
+  - Cache chart data transformations
 
 ## 14. Testing Strategy
 
@@ -1121,9 +1128,9 @@ Build configuration with Vite:
 - Proper CSP headers
 - Chart library optimization:
   - Tree-shaking to include only used chart types
-  - Lazy loading for chart-heavy pages
+  - Lazy loading for analytics-heavy pages
   - CDN delivery for chart assets if needed
 
 ---
 
-This plan represents the complete technical specification for the Rediacc web application with balanced user experience enhancements. Developers must adhere strictly to the specified technology stack and patterns outlined in this document. Any deviations or additional packages require explicit approval and documentation updates.
+This plan represents the complete technical specification for the Rediacc web application with realistic chart implementations based on available data. Developers must adhere strictly to the specified technology stack and patterns outlined in this document. Any deviations or additional packages require explicit approval and documentation updates.
