@@ -3,13 +3,14 @@
 ## 1. Application Overview
 
 ### Purpose
-Transform the Rediacc CLI into a web-based graphical interface that maintains all functionality while providing an intuitive user experience through visual menus, forms, and interactive components.
+Transform the Rediacc CLI into a web-based graphical interface that maintains all functionality while providing an intuitive and engaging user experience through visual menus, forms, interactive components, and thoughtful design patterns.
 
 ### Core Principles
 - **Feature Parity**: Every CLI command must have a corresponding web interface
 - **Progressive Disclosure**: Complex operations revealed through logical navigation
 - **Context Awareness**: Interface adapts based on user permissions and resource state
-- **Visual Feedback**: Clear indication of operations, progress, and results
+- **Visual Feedback**: Clear indication of operations, progress, and results with smooth transitions
+- **User Engagement**: Thoughtful micro-interactions and visual polish to enhance productivity
 
 ### Technology Stack (MANDATORY - NO OTHER PACKAGES ALLOWED)
 
@@ -75,7 +76,7 @@ The following packages constitute the COMPLETE technology stack for this project
 
 ```
 ┌─────────────────────────────────────────────────┐
-│                  Header/Navigation               │
+│              Header/Navigation Bar               │
 ├─────────────────┬───────────────────────────────┤
 │                 │                                │
 │    Sidebar      │         Main Content          │
@@ -96,6 +97,7 @@ Application Root
 │   ├── Header Component
 │   │   ├── User Info
 │   │   ├── Company Info
+│   │   ├── System Health Indicator
 │   │   └── Logout
 │   ├── Navigation Sidebar
 │   │   ├── Resource Management
@@ -111,16 +113,17 @@ Application Root
 
 ### 2.3 Implementation Architecture
 
-All components must be built using Ant Design components as the foundation. Custom styling should be minimal and use Ant Design's theming system. The application structure follows Redux Toolkit patterns with feature-based organization.
+All components must be built using Ant Design components as the foundation with subtle enhancements for better user experience. Custom styling should be minimal and use Ant Design's theming system. The application structure follows Redux Toolkit patterns with feature-based organization.
 
 ## 3. Navigation Structure
 
 ### 3.1 Primary Navigation Menu
 
-Navigation must be implemented using Ant Design's Menu component in the sidebar with React Router for routing.
+Navigation must be implemented using Ant Design's Menu component in the sidebar with React Router for routing, enhanced with smooth transitions and visual feedback.
 
 #### **Dashboard**
-- Overview statistics (using Ant Design Card and Statistic components)
+- Overview statistics with visual cards (using Ant Design Card and Statistic components)
+- System health visualization
 - Recent activities (using Ant Design Timeline component)
 - Quick actions (using Ant Design Button components)
 
@@ -161,7 +164,7 @@ Navigation must be implemented using Ant Design's Menu component in the sidebar 
 #### **Queue Management**
 - **Queue Dashboard**
   - Active Queue Items (Ant Design Table with auto-refresh via React Query)
-  - Queue Statistics (Ant Design Statistic components)
+  - Queue Statistics (Ant Design Statistic components with progress indicators)
 - **Queue Operations**
   - Add Function to Queue
     - Select machine first to auto-populate bridge
@@ -216,7 +219,7 @@ Navigation must be implemented using Ant Design's Menu component in the sidebar 
 
 ### 4.1 Common Components
 
-All UI components must be built using Ant Design components. No custom UI components should be created unless absolutely necessary.
+All UI components must be built using Ant Design components with subtle enhancements for improved user experience.
 
 #### **Resource List View**
 ```
@@ -228,20 +231,21 @@ All UI components must be built using Ant Design components. No custom UI compon
 │ ┌─────────────────────────────────────────────┐ │
 │ │ Name    │ Status │ Details │ Actions        │ │
 │ ├─────────┼────────┼─────────┼────────────────┤ │
-│ │ Item 1  │ Active │ ...     │ [▼][✏][🗑]    │ │
-│ │ Item 2  │ Active │ ...     │ [▼][✏][🗑]    │ │
+│ │ Item 1  │ ● Active│ ...     │ [▼][✏][🗑]    │ │
+│ │ Item 2  │ ● Active│ ...     │ [▼][✏][🗑]    │ │
 │ └─────────────────────────────────────────────┘ │
 │ [Pagination Controls]                           │
 └─────────────────────────────────────────────────┘
 ```
 
-- Container: Ant Design Card
+- Container: Ant Design Card with subtle shadow
 - Search/Filter: Ant Design Input.Search and Select
 - Create Button: Ant Design Button with "primary" type
 - Data Display: Ant Design Table with pagination
+- Status Indicators: Color-coded badges for visual clarity
 - Row Actions: Ant Design Button.Group or Dropdown
-- Loading State: Ant Design Spin
-- Empty State: Ant Design Empty
+- Loading State: Ant Design Spin with descriptive text
+- Empty State: Ant Design Empty with helpful action prompt
 
 **API Endpoints for List Views:**
 - Teams: `POST /api/StoredProcedure/GetCompanyTeams`
@@ -263,6 +267,7 @@ All UI components must be built using Ant Design components. No custom UI compon
 │ │                 │ [Edit] [Delete]         │  │
 │ │ Key: Value      │ [Vault Config]          │  │
 │ │ Key: Value      │ [Additional Actions]    │  │
+│ │ Status: ● Active│                         │  │
 │ └─────────────────┴─────────────────────────┘  │
 │ ┌─────────────────────────────────────────────┐ │
 │ │ Related Resources Tab                       │ │
@@ -273,10 +278,10 @@ All UI components must be built using Ant Design components. No custom UI compon
 ```
 
 - Container: Ant Design Card with tabs
-- Info Display: Ant Design Descriptions
-- Actions: Ant Design Button components
+- Info Display: Ant Design Descriptions with status badges
+- Actions: Ant Design Button components with icons
 - Related Resources: Ant Design Tabs with embedded Tables
-- Confirmation Dialogs: Ant Design Modal.confirm
+- Confirmation Dialogs: Ant Design Modal.confirm with clear messaging
 
 **API Endpoints for Detail Views:**
 - Team Members: `POST /api/StoredProcedure/GetTeamMembers` (Body: `{"teamName": "team"}`)
@@ -291,7 +296,7 @@ All UI components must be built using Ant Design components. No custom UI compon
 
 ### 4.2 Form Components
 
-All forms must use React Hook Form with Ant Design Form components for consistent styling. Validation must be implemented using Zod schemas.
+All forms must use React Hook Form with Ant Design Form components for consistent styling. Validation must be implemented using Zod schemas with user-friendly error messages.
 
 #### **Standard Creation Form**
 ```
@@ -302,6 +307,7 @@ All forms must use React Hook Form with Ant Design Form components for consisten
 │ │ ┌─────────────────────────────────────┐     │ │
 │ │ │ Field Label *                       │     │ │
 │ │ │ [Input Field                      ] │     │ │
+│ │ │ Help text for guidance             │     │ │
 │ │ └─────────────────────────────────────┘     │ │
 │ │ ┌─────────────────────────────────────┐     │ │
 │ │ │ Dropdown Label                     │     │ │
@@ -317,11 +323,12 @@ All forms must use React Hook Form with Ant Design Form components for consisten
 ```
 
 - Form Container: Ant Design Form with React Hook Form Controller
-- Input Fields: Ant Design Input
+- Input Fields: Ant Design Input with validation feedback
 - Dropdowns: Ant Design Select with search enabled
+- Help Text: Contextual guidance for complex fields
 - Advanced Options: Ant Design Collapse
 - Submit Buttons: Ant Design Button with loading state
-- Validation Errors: Ant Design Form.Item error display
+- Validation Errors: Ant Design Form.Item error display with helpful messages
 
 **Dropdown Population:**
 All dropdowns in forms are populated using the `GetLookupData` endpoint, which returns permission-aware options for the current user. This single API call provides all necessary dropdown data, improving performance and consistency. Results must be cached using React Query.
@@ -337,15 +344,16 @@ All dropdowns in forms are populated using the `GetLookupData` endpoint, which r
 │ │   ...                                       │ │
 │ │ }                                           │ │
 │ └─────────────────────────────────────────────┘ │
+│ □ Format JSON  □ Validate on type               │
 │ Version: [1] □ Auto-increment                   │
 │ [Validate] [Cancel] [Save]                      │
 └─────────────────────────────────────────────────┘
 ```
 
 - Modal: Ant Design Modal
-- JSON Editor: Monaco Editor component
+- JSON Editor: Monaco Editor component with syntax highlighting
 - Version Control: Ant Design InputNumber
-- Validation: Real-time JSON validation with error display
+- Validation: Real-time JSON validation with inline error display
 - Actions: Ant Design Button.Group
 
 **Vault Update API Endpoints:**
@@ -390,7 +398,7 @@ All dropdowns in forms are populated using the `GetLookupData` endpoint, which r
 
 - Container: Ant Design Card
 - Search: Ant Design Input.Search
-- Function List: Ant Design Tree or Collapse
+- Function List: Ant Design Tree or Collapse with categories
 - Selection: Radio buttons for single selection
 - Details Display: Ant Design Descriptions
 
@@ -421,7 +429,7 @@ All dropdowns in forms are populated using the `GetLookupData` endpoint, which r
 - Parameter Inputs: Ant Design Input/Select based on type
 - Machine Selection: Ant Design Select with grouping by team
 - Bridge Display: Ant Design Input (disabled, auto-populated)
-- Priority: Ant Design Slider
+- Priority: Ant Design Slider with numeric display
 - Submit: Ant Design Button with loading state
 
 **Note:** The bridge is automatically determined based on the selected machine's assignment and is passed as a required parameter to the API.
@@ -486,7 +494,7 @@ Resource List → Click Create → Load Dropdown Data
                          Failure: Show Errors
 ```
 
-Forms must use React Hook Form with Zod validation. Success/error feedback must use React Hot Toast.
+Forms must use React Hook Form with Zod validation. Success/error feedback must use React Hot Toast with appropriate messaging.
 
 **API Calls by Resource Type:**
 - Team: `POST /api/StoredProcedure/CreateTeam`
@@ -518,6 +526,7 @@ Queue Dashboard → Add Function → Browse Functions
                            Submit to Queue
                                       ↓
                         Monitor in Dashboard
+                        (with progress updates)
 ```
 
 Queue operations must use React Query's mutation hooks with optimistic updates for better UX.
@@ -675,15 +684,24 @@ Enhance Ant Design Select components with:
 - Virtual scrolling for large lists
 - Loading state while fetching
 
+### 7.6 Dashboard Visualizations
+
+Enhanced dashboard with:
+- Health indicators with color coding
+- Activity timeline with smooth updates
+- Resource usage charts (using Ant Design Charts)
+- Quick stats with trend indicators
+- System alerts and notifications
+
 ## 8. Error Handling and Feedback
 
 ### 8.1 Error States
 
 All error handling through consistent patterns:
-- **Form Validation**: Ant Design Form.Item error messages
-- **API Errors**: React Hot Toast notifications
+- **Form Validation**: Ant Design Form.Item error messages with helpful text
+- **API Errors**: React Hot Toast notifications with user-friendly messages
 - **Network Errors**: React Query retry with Ant Design Alert
-- **Permission Errors**: Ant Design Modal.error
+- **Permission Errors**: Ant Design Modal.error with clear explanations
 
 ### 8.2 Success Feedback
 
@@ -1022,4 +1040,4 @@ Build configuration with Vite:
 
 ---
 
-This plan represents the complete technical specification for the Rediacc web application. Developers must adhere strictly to the specified technology stack and patterns outlined in this document. Any deviations or additional packages require explicit approval and documentation updates.
+This plan represents the complete technical specification for the Rediacc web application with balanced user experience enhancements. Developers must adhere strictly to the specified technology stack and patterns outlined in this document. Any deviations or additional packages require explicit approval and documentation updates.
