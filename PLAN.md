@@ -234,6 +234,9 @@ Application Root
 └─────────────────────────────────────────────────┘
 ```
 
+**Dropdown Population:**
+All dropdowns in forms are populated using the `GetDropdownValues` endpoint, which returns permission-aware options for the current user. This single API call provides all necessary dropdown data, improving performance and consistency.
+
 #### **Vault Configuration Modal**
 ```
 ┌─────────────────────────────────────────────────┐
@@ -342,6 +345,8 @@ Start → Login Screen → Enter Credentials → Validate
          ↓                              Success/Fail
          ↓                                    ↓
     Session Storage ← Dashboard ← Load User Context
+                                        ↓
+                                 Load Dropdown Values
 ```
 
 **API Calls:**
@@ -350,13 +355,18 @@ Start → Login Screen → Enter Credentials → Validate
   - Body: `{"name": "session_name"}`
 - Get Company: `POST /api/StoredProcedure/GetUserCompany`
   - Headers: `Rediacc-UserEmail`, `Rediacc-UserHash`
+- Get Dropdown Values: `POST /api/StoredProcedure/GetDropdownValues`
+  - Headers: `Rediacc-RequestToken`
+  - Body: `{}`
 - Logout: `POST /api/StoredProcedure/DeleteUserRequest`
   - Headers: `Rediacc-RequestToken`
 
 ### 5.2 Resource Creation Flow
 
 ```
-Resource List → Click Create → Fill Form → Validate
+Resource List → Click Create → Load Dropdown Data
+                                   ↓
+                               Fill Form → Validate
                                    ↓
                             Optional Vault Config
                                    ↓
@@ -435,11 +445,26 @@ AppState
 │   ├── activeView
 │   ├── selectedResource
 │   ├── filters
-│   └── modals
+│   ├── modals
+│   └── dropdownData
+│       ├── teams[]
+│       ├── regions[]
+│       ├── bridgesByRegion{}
+│       ├── machinesByTeam{}
+│       ├── users[]
+│       ├── permissionGroups[]
+│       └── queueFunctions[]
 └── Notifications[]
 ```
 
 ### 6.2 Data Flow Patterns
+
+#### **Initial App Load**
+1. User authenticates
+2. Load company information
+3. Fetch dropdown values
+4. Cache dropdown data in state
+5. Navigate to dashboard
 
 #### **List Views**
 1. Component mounts → Request data
@@ -455,6 +480,14 @@ AppState
 4. Show progress indicator
 5. Handle response (success/error)
 6. Update relevant lists/views
+7. Refresh dropdown data if needed
+
+#### **Dropdown Data Management**
+1. Fetch on app initialization
+2. Cache in application state
+3. Refresh on resource creation/deletion
+4. Use cached data for all forms
+5. Provide context-specific filtering
 
 ## 7. Advanced Features
 
@@ -485,6 +518,14 @@ AppState
 - Tab navigation through forms
 - Escape to close modals
 - Enter to submit forms
+
+### 7.5 Smart Dropdowns
+
+- Type-ahead search in dropdowns
+- Hierarchical display (bridges by region, machines by team)
+- Permission-aware filtering
+- Recently used items at top
+- Metadata display (counts, status)
 
 ## 8. Error Handling and Feedback
 
@@ -563,6 +604,7 @@ All authenticated endpoints require `Rediacc-RequestToken` header.
 | Sessions | `GetUserRequests` | `{}` |
 | Resource Limits | `GetCompanyResourceLimits` | `{}` |
 | Subscription | `GetSubscriptionDetails` | `{}` |
+| **Dropdown Values** | **`GetDropdownValues`** | **`{}`** or **`{"context": "optional_context"}`** |
 
 #### **Create Operations**
 | Resource | Endpoint | Body |
@@ -673,3 +715,51 @@ All API responses follow this structure:
 - Actual data typically starts at table index 1
 - All timestamps are in ISO format
 - Vault data must be valid JSON strings
+
+### 11.8 Dropdown Values Response Structure
+
+The `GetDropdownValues` endpoint returns a comprehensive JSON structure containing all dropdown options filtered by user permissions:
+
+```json
+{
+  "teams": [{"value": "name", "label": "name"}],
+  "allTeams": [{"value": "name", "label": "name", "memberCount": 5}],
+  "regions": [{"value": "name", "label": "name", "bridgeCount": 3}],
+  "bridgesByRegion": [{
+    "regionName": "region",
+    "bridges": [{"value": "name", "label": "name", "machineCount": 2}]
+  }],
+  "machinesByTeam": [{
+    "teamName": "team",
+    "machines": [{
+      "value": "name",
+      "label": "name",
+      "bridgeName": "bridge",
+      "regionName": "region"
+    }]
+  }],
+  "users": [{"value": "email", "label": "email", "status": "active"}],
+  "permissionGroups": [{
+    "value": "name",
+    "label": "name",
+    "userCount": 10,
+    "permissionCount": 5
+  }],
+  "queueFunctions": [{
+    "category": "Repository Functions",
+    "functions": [{
+      "value": "repo_new",
+      "label": "Create Repository",
+      "description": "Create new repository"
+    }]
+  }],
+  "subscriptionPlans": [{
+    "value": "ELITE",
+    "label": "Elite",
+    "description": "Enterprise tier with unlimited access"
+  }],
+  "requestContext": "optional_context",
+  "currentUser": "user@example.com",
+  "userRole": "admin|user"
+}
+```
