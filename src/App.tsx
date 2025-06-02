@@ -9,8 +9,7 @@ import AuthLayout from '@/components/layouts/AuthLayout'
 import MainLayout from '@/components/layouts/MainLayout'
 import LoginPage from '@/pages/LoginPage'
 import DashboardPage from '@/pages/DashboardPage'
-import TeamsPage from '@/pages/resources/TeamsPage'
-import RegionsPage from '@/pages/resources/RegionsPage'
+import OrganizationPage from '@/pages/OrganizationPage'
 import BridgesPage from '@/pages/resources/BridgesPage'
 import MachinesPage from '@/pages/resources/MachinesPage'
 import RepositoriesPage from '@/pages/resources/RepositoriesPage'
@@ -62,9 +61,10 @@ const App: React.FC = () => {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             
+            {/* Organization */}
+            <Route path="/organization" element={<OrganizationPage />} />
+            
             {/* Resources */}
-            <Route path="/teams" element={<TeamsPage />} />
-            <Route path="/regions" element={<RegionsPage />} />
             <Route path="/bridges" element={<BridgesPage />} />
             <Route path="/machines" element={<MachinesPage />} />
             <Route path="/repositories" element={<RepositoriesPage />} />

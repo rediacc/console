@@ -25,6 +25,32 @@ export const useRegions = () => {
   })
 }
 
+// Query object for regions (for consistency)
+export const regionsQueries = {
+  list: () => ({
+    queryKey: ['regions'],
+    queryFn: async () => {
+      const response = await apiClient.get<Region[]>('/GetCompanyRegions')
+      return response.tables[1]?.data || []
+    },
+  }),
+  create: async (data: { regionName: string; regionVault?: string }) => {
+    const response = await apiClient.post('/CreateRegion', {
+      regionName: data.regionName,
+      regionVault: data.regionVault || '{}',
+    })
+    return response
+  },
+  update: async (regionName: string, data: Partial<Region>) => {
+    // Not used in current implementation
+    throw new Error('Use updateRegionName or updateRegionVault instead')
+  },
+  delete: async (regionName: string) => {
+    const response = await apiClient.delete('/DeleteRegion', { regionName })
+    return response
+  },
+}
+
 // Get bridges for a region
 export const useRegionBridges = (regionName: string) => {
   return useQuery({
