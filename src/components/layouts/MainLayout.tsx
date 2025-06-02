@@ -24,6 +24,7 @@ import { logout } from '@/store/auth/authSlice'
 import { clearAuthData } from '@/utils/auth'
 import apiClient from '@/api/client'
 import MessageHistory from '@/components/common/MessageHistory'
+import logoBlack from '@/assets/logo_black.png'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
@@ -173,11 +174,17 @@ const MainLayout: React.FC = () => {
             alignItems: 'center',
             justifyContent: 'center',
             borderBottom: '1px solid #f0f0f0',
+            padding: '0 16px',
           }}
         >
-          <Text strong style={{ fontSize: collapsed ? 20 : 24, color: '#556b2f' }}>
-            {collapsed ? 'R' : 'Rediacc'}
-          </Text>
+          <img
+            src={logoBlack}
+            alt="Rediacc Logo"
+            style={{
+              height: collapsed ? 32 : 40,
+              width: 'auto',
+            }}
+          />
         </div>
         <Menu
           mode="inline"

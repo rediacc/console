@@ -8,6 +8,7 @@ import { saveAuthData } from '@/utils/auth'
 import { base64HashPassword } from '@/utils/password'
 import apiClient from '@/api/client'
 import { showMessage } from '@/utils/messages'
+import logoBlack from '@/assets/logo_black.png'
 
 const { Title, Text } = Typography
 
@@ -84,10 +85,14 @@ const LoginPage: React.FC = () => {
     >
       <Space direction="vertical" size={24} style={{ width: '100%' }}>
         <div style={{ textAlign: 'center' }}>
-          <Title level={2} style={{ marginBottom: 8, color: '#556b2f' }}>
-            Rediacc Console
-          </Title>
-          <Text type="secondary">Sign in to your account</Text>
+          <img
+            src={logoBlack}
+            alt="Rediacc Logo"
+            style={{
+              height: 60,
+              marginBottom: 32,
+            }}
+          />
         </div>
 
         {error && (
