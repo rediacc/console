@@ -29,32 +29,6 @@ export const useTeams = () => {
   })
 }
 
-// Query object for teams (for consistency)
-export const teamsQueries = {
-  list: () => ({
-    queryKey: ['teams'],
-    queryFn: async () => {
-      const response = await apiClient.get<Team[]>('/GetCompanyTeams')
-      return response.tables[1]?.data || []
-    },
-  }),
-  create: async (data: { teamName: string; teamVault?: string }) => {
-    const response = await apiClient.post('/CreateTeam', {
-      teamName: data.teamName,
-      teamVault: data.teamVault || '{}',
-    })
-    return response
-  },
-  update: async (teamName: string, data: Partial<Team>) => {
-    // Not used in current implementation
-    throw new Error('Use updateTeamName or updateTeamVault instead')
-  },
-  delete: async (teamName: string) => {
-    const response = await apiClient.delete('/DeleteTeam', { teamName })
-    return response
-  },
-}
-
 // Get team members
 export const useTeamMembers = (teamName: string) => {
   return useQuery({
