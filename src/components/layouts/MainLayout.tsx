@@ -126,7 +126,7 @@ const MainLayout: React.FC = () => {
             alignItems: 'center',
             justifyContent: 'center',
             borderBottom: '1px solid #f0f0f0',
-            padding: '0 16px',
+            padding: collapsed ? '0 8px' : '0 16px',
           }}
         >
           <img
@@ -135,8 +135,9 @@ const MainLayout: React.FC = () => {
             style={{
               height: 32,
               width: 'auto',
-              maxWidth: 150,
+              maxWidth: collapsed ? 64 : 150,
               objectFit: 'contain',
+              transition: 'max-width 0.3s ease',
             }}
           />
         </div>
