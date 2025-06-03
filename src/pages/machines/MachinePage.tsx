@@ -5,12 +5,12 @@ import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocation } from 'react-router-dom';
-import { useMachines, useDeleteMachine, useCreateMachine, useUpdateMachineName, useUpdateMachineVault } from '../../api/queries/machines';
+import { useMachines, useDeleteMachine, useCreateMachine, useUpdateMachineName, useUpdateMachineBridge, useUpdateMachineVault } from '../../api/queries/machines';
 import { useDropdownData } from '../../api/queries/useDropdownData';
 import { useTeams } from '../../api/queries/teams';
 import VaultConfigModal from '../../components/common/VaultConfigModal';
 import ResourceForm from '../../components/forms/ResourceForm';
-import { createMachineSchema, CreateMachineForm } from '../../utils/validation';
+import { createMachineSchema, CreateMachineForm, editMachineSchema, EditMachineForm } from '../../utils/validation';
 import type { Machine } from '../../types';
 
 const { Option } = Select;
@@ -35,6 +35,8 @@ export const MachinePage: React.FC = () => {
   const { data: teamsData } = useTeams();
   const deleteMachineMutation = useDeleteMachine();
   const createMachineMutation = useCreateMachine();
+  const updateMachineNameMutation = useUpdateMachineName();
+  const updateMachineBridgeMutation = useUpdateMachineBridge();
   const updateMachineVaultMutation = useUpdateMachineVault();
 
   // Machine form setup
@@ -46,6 +48,16 @@ export const MachinePage: React.FC = () => {
       regionName: '',
       bridgeName: '',
       machineVault: '{}',
+    },
+  });
+
+  // Edit machine form setup
+  const editMachineForm = useForm<EditMachineForm>({
+    resolver: zodResolver(editMachineSchema) as any,
+    defaultValues: {
+      machineName: '',
+      regionName: '',
+      bridgeName: '',
     },
   });
 
@@ -109,6 +121,28 @@ export const MachinePage: React.FC = () => {
     }
   }, [selectedRegionForMachine, filteredBridgesForMachine, machineForm]);
 
+  // Get filtered bridges for edit form
+  const selectedRegionForEdit = editMachineForm.watch('regionName');
+  const filteredBridgesForEdit = React.useMemo(() => {
+    if (!selectedRegionForEdit || !dropdownData?.bridgesByRegion) return [];
+    
+    const regionData = dropdownData.bridgesByRegion.find(
+      (r: any) => r.regionName === selectedRegionForEdit
+    );
+    return regionData?.bridges?.map((b: any) => ({ 
+      value: b.value, 
+      label: b.label 
+    })) || [];
+  }, [selectedRegionForEdit, dropdownData]);
+
+  // Clear bridge selection when region changes in edit form
+  React.useEffect(() => {
+    const currentBridge = editMachineForm.getValues('bridgeName');
+    if (currentBridge && !filteredBridgesForEdit.find((b: any) => b.value === currentBridge)) {
+      editMachineForm.setValue('bridgeName', '');
+    }
+  }, [selectedRegionForEdit, filteredBridgesForEdit, editMachineForm]);
+
   // Machine form fields (same as OrganizationPage)
   const machineFormFields = [
     {
@@ -141,6 +175,33 @@ export const MachinePage: React.FC = () => {
       label: tOrg('machines.machineName'),
       placeholder: tOrg('machines.placeholders.enterMachineName'),
       required: true,
+    },
+  ];
+
+  // Edit machine form fields
+  const editMachineFormFields = [
+    {
+      name: 'machineName',
+      label: tOrg('machines.machineName'),
+      placeholder: tOrg('machines.placeholders.enterMachineName'),
+      required: true,
+    },
+    {
+      name: 'regionName',
+      label: tOrg('general.region'),
+      placeholder: tOrg('regions.placeholders.selectRegion'),
+      required: true,
+      type: 'select' as const,
+      options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
+    },
+    {
+      name: 'bridgeName',
+      label: tOrg('bridges.bridge'),
+      placeholder: selectedRegionForEdit ? tOrg('bridges.placeholders.selectBridge') : tOrg('bridges.placeholders.selectRegionFirst'),
+      required: true,
+      type: 'select' as const,
+      options: filteredBridgesForEdit,
+      disabled: !selectedRegionForEdit,
     },
   ];
 
@@ -180,6 +241,38 @@ export const MachinePage: React.FC = () => {
       setIsCreateModalOpen(false);
       machineForm.reset();
       message.success(t('createSuccess'));
+    } catch (error) {
+      // Error handled by mutation
+    }
+  };
+
+  // Handle edit machine
+  const handleEditMachine = async (data: EditMachineForm) => {
+    if (!selectedMachine) return;
+    
+    try {
+      // Check if name changed
+      if (data.machineName !== selectedMachine.machineName) {
+        await updateMachineNameMutation.mutateAsync({
+          teamName: selectedMachine.teamName,
+          currentMachineName: selectedMachine.machineName,
+          newMachineName: data.machineName,
+        });
+      }
+      
+      // Check if bridge changed
+      if (data.bridgeName !== selectedMachine.bridgeName) {
+        await updateMachineBridgeMutation.mutateAsync({
+          teamName: selectedMachine.teamName,
+          machineName: data.machineName, // Use the new name if it was changed
+          newBridgeName: data.bridgeName,
+        });
+      }
+      
+      message.success(t('updateSuccess'));
+      setIsEditModalOpen(false);
+      setSelectedMachine(null);
+      editMachineForm.reset();
     } catch (error) {
       // Error handled by mutation
     }
@@ -282,6 +375,15 @@ export const MachinePage: React.FC = () => {
                 icon: <EditOutlined />,
                 onClick: () => {
                   setSelectedMachine(record);
+                  // Find the region for this machine's bridge
+                  const region = dropdownData?.bridgesByRegion?.find(r => 
+                    r.bridges?.some(b => b.value === record.bridgeName)
+                  );
+                  editMachineForm.reset({
+                    machineName: record.machineName,
+                    regionName: region?.regionName || '',
+                    bridgeName: record.bridgeName,
+                  });
                   setIsEditModalOpen(true);
                 },
               },
@@ -335,6 +437,15 @@ export const MachinePage: React.FC = () => {
                         }} />,
                         <EditOutlined key="edit" onClick={() => {
                           setSelectedMachine(machine);
+                          // Find the region for this machine's bridge
+                          const region = dropdownData?.bridgesByRegion?.find(r => 
+                            r.bridges?.some(b => b.value === machine.bridgeName)
+                          );
+                          editMachineForm.reset({
+                            machineName: machine.machineName,
+                            regionName: region?.regionName || '',
+                            bridgeName: machine.bridgeName,
+                          });
                           setIsEditModalOpen(true);
                         }} />,
                         <DeleteOutlined key="delete" onClick={() => handleDelete(machine)} />,
@@ -489,11 +600,23 @@ export const MachinePage: React.FC = () => {
           onCancel={() => {
             setIsEditModalOpen(false);
             setSelectedMachine(null);
+            editMachineForm.reset();
           }}
           footer={null}
         >
-          <p>{t('form.title.edit')}</p>
-          {/* Machine edit form will be implemented later */}
+          <ResourceForm
+            form={editMachineForm}
+            fields={editMachineFormFields}
+            onSubmit={handleEditMachine}
+            submitText={tCommon('actions.save')}
+            cancelText={tCommon('actions.cancel')}
+            onCancel={() => {
+              setIsEditModalOpen(false);
+              setSelectedMachine(null);
+              editMachineForm.reset();
+            }}
+            loading={updateMachineNameMutation.isPending || updateMachineBridgeMutation.isPending}
+          />
         </Modal>
       )}
 

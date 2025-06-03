@@ -126,6 +126,7 @@ export const editBridgeSchema = z.object({
 
 export const editMachineSchema = z.object({
   machineName: machineNameSchema,
+  regionName: regionNameSchema,
   bridgeName: bridgeNameSchema,
 })
 
