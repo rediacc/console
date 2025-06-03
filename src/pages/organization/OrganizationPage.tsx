@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Card, Tabs, Button, Space, Modal, Popconfirm, Tag, Typography, Form, Input, Table, Row, Col, Empty, Tooltip, Progress, Badge } from 'antd'
+import { Card, Tabs, Button, Space, Modal, Popconfirm, Tag, Typography, Form, Input, Table, Row, Col, Empty, Badge } from 'antd'
 import { 
   TeamOutlined, 
   GlobalOutlined, 
@@ -12,14 +12,7 @@ import {
   CloudServerOutlined,
   DatabaseOutlined,
   HddOutlined,
-  ScheduleOutlined,
-  InfoCircleOutlined,
-  CheckCircleOutlined,
-  StopOutlined,
-  SyncOutlined,
-  ThunderboltOutlined,
-  FieldTimeOutlined,
-  ClockCircleOutlined
+  ScheduleOutlined
 } from '@ant-design/icons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -102,7 +95,6 @@ import {
 } from '@/utils/validation'
 
 const { Title, Text } = Typography
-const { TabPane } = Tabs
 
 const OrganizationPage: React.FC = () => {
   const { t } = useTranslation('organization')
@@ -253,8 +245,6 @@ const OrganizationPage: React.FC = () => {
     defaultValues: {
       teamName: '',
       scheduleName: '',
-      scheduleDescription: '',
-      cronExpression: '',
       scheduleVault: '{}',
     },
   })
@@ -583,7 +573,7 @@ const OrganizationPage: React.FC = () => {
       title: t('regions.regionName'),
       dataIndex: 'regionName',
       key: 'regionName',
-      render: (text: string, record: Region) => (
+      render: (text: string) => (
         <Space>
           <GlobalOutlined style={{ color: '#556b2f' }} />
           <strong>{text}</strong>
@@ -822,24 +812,6 @@ const OrganizationPage: React.FC = () => {
       ),
     },
     {
-      title: t('repositories.size'),
-      dataIndex: 'size',
-      key: 'size',
-      width: 100,
-      render: (size: number) => t('repositories.sizeFormat', { size: (size / (1024 * 1024)).toFixed(2) }),
-    },
-    {
-      title: t('repositories.status'),
-      dataIndex: 'status',
-      key: 'status',
-      width: 120,
-      render: (status: string) => {
-        const color = status === 'active' ? 'success' : status === 'syncing' ? 'processing' : 'default'
-        const icon = status === 'active' ? <CheckCircleOutlined /> : status === 'syncing' ? <SyncOutlined spin /> : <StopOutlined />
-        return <Tag icon={icon} color={color}>{t(`repositories.${status}`)}</Tag>
-      },
-    },
-    {
       title: t('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
@@ -960,73 +932,18 @@ const OrganizationPage: React.FC = () => {
       title: t('schedules.scheduleName'),
       dataIndex: 'scheduleName',
       key: 'scheduleName',
-      render: (text: string, record: Schedule) => (
+      render: (text: string) => (
         <Space>
           <ScheduleOutlined style={{ color: '#556b2f' }} />
           <strong>{text}</strong>
-          {record.scheduleDescription && (
-            <Tooltip title={record.scheduleDescription}>
-              <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
-            </Tooltip>
-          )}
         </Space>
       ),
     },
     {
-      title: t('schedules.status'),
-      dataIndex: 'isActive',
-      key: 'isActive',
-      width: 100,
-      render: (isActive: boolean) => (
-        <Tag icon={isActive ? <CheckCircleOutlined /> : <StopOutlined />} color={isActive ? 'success' : 'default'}>
-          {isActive ? t('schedules.active') : t('schedules.inactive')}
-        </Tag>
-      ),
-    },
-    {
-      title: t('schedules.cron'),
-      dataIndex: 'cronExpression',
-      key: 'cronExpression',
-      width: 150,
-      render: (cron: string) => (
-        <Tooltip title={t('schedules.cronExpressionHelp', { cron })}>
-          <Tag icon={<FieldTimeOutlined />}>{cron}</Tag>
-        </Tooltip>
-      ),
-    },
-    {
-      title: t('schedules.nextRun'),
-      dataIndex: 'nextRun',
-      key: 'nextRun',
-      width: 180,
-      render: (date: string) => (
-        <Space>
-          <ClockCircleOutlined />
-          {date ? new Date(date).toLocaleString() : t('schedules.na')}
-        </Space>
-      ),
-    },
-    {
-      title: t('schedules.lastRun'),
-      dataIndex: 'lastRun',
-      key: 'lastRun',
-      width: 180,
-      render: (date: string) => date ? new Date(date).toLocaleString() : t('schedules.never'),
-    },
-    {
-      title: t('schedules.queue'),
-      dataIndex: 'queueCount',
-      key: 'queueCount',
-      width: 80,
-      render: (count: number) => (
-        <Badge count={count} showZero style={{ backgroundColor: count > 0 ? '#52c41a' : '#d9d9d9' }} />
-      ),
-    },
-    {
-      title: t('general.vault'),
+      title: t('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
-      width: 80,
+      width: 120,
       render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
     },
     {
@@ -1090,7 +1007,7 @@ const OrganizationPage: React.FC = () => {
       placeholder: t('regions.placeholders.selectRegion'),
       required: true,
       type: 'select' as const,
-      options: dropdownData?.regions?.map(r => ({ value: r.value, label: r.label })) || [],
+      options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
     },
     {
       name: 'bridgeName',
@@ -1106,9 +1023,9 @@ const OrganizationPage: React.FC = () => {
     if (!selectedRegionForMachine || !dropdownData?.bridgesByRegion) return []
     
     const regionData = dropdownData.bridgesByRegion.find(
-      r => r.regionName === selectedRegionForMachine
+      (r: any) => r.regionName === selectedRegionForMachine
     )
-    return regionData?.bridges?.map(b => ({ 
+    return regionData?.bridges?.map((b: any) => ({ 
       value: b.value, 
       label: b.label 
     })) || []
@@ -1117,7 +1034,7 @@ const OrganizationPage: React.FC = () => {
   // Clear bridge selection when region changes
   React.useEffect(() => {
     const currentBridge = machineForm.getValues('bridgeName')
-    if (currentBridge && !filteredBridgesForMachine.find(b => b.value === currentBridge)) {
+    if (currentBridge && !filteredBridgesForMachine.find((b: any) => b.value === currentBridge)) {
       machineForm.setValue('bridgeName', '')
     }
   }, [selectedRegionForMachine, filteredBridgesForMachine])
@@ -1143,7 +1060,7 @@ const OrganizationPage: React.FC = () => {
       placeholder: t('regions.placeholders.selectRegion'),
       required: true,
       type: 'select' as const,
-      options: dropdownData?.regions?.map(r => ({ value: r.value, label: r.label })) || [],
+      options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
     },
     {
       name: 'bridgeName',
@@ -1203,18 +1120,6 @@ const OrganizationPage: React.FC = () => {
       name: 'scheduleName',
       label: t('schedules.scheduleName'),
       placeholder: t('schedules.placeholders.enterScheduleName'),
-      required: true,
-    },
-    {
-      name: 'scheduleDescription',
-      label: t('schedules.description'),
-      placeholder: t('schedules.placeholders.enterDescription'),
-      required: false,
-    },
-    {
-      name: 'cronExpression',
-      label: t('schedules.cronExpression'),
-      placeholder: t('schedules.placeholders.cronExample'),
       required: true,
     },
   ]

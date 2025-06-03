@@ -16,7 +16,7 @@
     "machines": "Máquinas",
     "repositories": "Repositorios",
     "storage": "Almacenamiento",
-    "schedules": "Programaciones",
+    "schedules": "Horarios",
     "addMember": "Agregar Miembro",
     "removeMember": "Eliminar Miembro",
     "noTeams": "No se encontraron equipos",
@@ -105,14 +105,9 @@
     "editRepository": "Editar Repositorio",
     "deleteRepository": "Eliminar Repositorio",
     "repositoryName": "Nombre del Repositorio",
-    "size": "Tamaño",
-    "status": "Estado",
-    "active": "activo",
-    "syncing": "sincronizando",
     "noRepositories": "No se encontraron repositorios en este equipo",
     "totalRepositories": "Total {{total}} repositorios",
     "confirmDelete": "¿Está seguro de que desea eliminar el repositorio \"{{repositoryName}}\"?",
-    "sizeFormat": "{{size}} MB",
     "placeholders": {
       "enterRepositoryName": "Ingrese el nombre del repositorio"
     }
@@ -128,33 +123,6 @@
     "confirmDelete": "¿Está seguro de que desea eliminar el almacenamiento \"{{storageName}}\"?",
     "placeholders": {
       "enterStorageName": "Ingrese el nombre del almacenamiento"
-    }
-  },
-  "schedules": {
-    "title": "Programaciones",
-    "createSchedule": "Crear Programación",
-    "editSchedule": "Editar Programación",
-    "deleteSchedule": "Eliminar Programación",
-    "scheduleName": "Nombre de la Programación",
-    "description": "Descripción",
-    "cron": "Cron",
-    "cronExpression": "Expresión Cron",
-    "nextRun": "Próxima Ejecución",
-    "lastRun": "Última Ejecución",
-    "queue": "Cola",
-    "status": "Estado",
-    "active": "Activa",
-    "inactive": "Inactiva",
-    "noSchedules": "No se encontraron programaciones en este equipo",
-    "totalSchedules": "Total {{total}} programaciones",
-    "confirmDelete": "¿Está seguro de que desea eliminar la programación \"{{scheduleName}}\"?",
-    "cronExpressionHelp": "Expresión cron: {{cron}}",
-    "never": "Nunca",
-    "na": "N/D",
-    "placeholders": {
-      "enterScheduleName": "Ingrese el nombre de la programación",
-      "enterDescription": "Ingrese la descripción (opcional)",
-      "cronExample": "ej., 0 0 * * * (diariamente a medianoche)"
     }
   },
   "general": {
@@ -177,10 +145,23 @@
     "team": "Equipo",
     "configureVault": "Configurar Bóveda - {{name}}"
   },
+  "schedules": {
+    "title": "Horarios",
+    "createSchedule": "Crear Horario",
+    "editSchedule": "Editar Horario",
+    "deleteSchedule": "Eliminar Horario",
+    "scheduleName": "Nombre del Horario",
+    "noSchedules": "No se encontraron horarios en este equipo",
+    "totalSchedules": "Total {{total}} horarios",
+    "confirmDelete": "¿Está seguro de que desea eliminar el horario \"{{scheduleName}}\"?",
+    "placeholders": {
+      "enterScheduleName": "Ingrese el nombre del horario"
+    }
+  },
   "resourceTabs": {
     "machines": "Máquinas",
     "repositories": "Repositorios",
     "storage": "Almacenamiento",
-    "schedules": "Programaciones"
+    "schedules": "Horarios"
   }
 }

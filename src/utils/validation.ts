@@ -94,8 +94,6 @@ export const createStorageSchema = z.object({
 export const createScheduleSchema = z.object({
   teamName: teamNameSchema,
   scheduleName: scheduleNameSchema,
-  scheduleDescription: z.string().optional().default(''),
-  cronExpression: z.string().min(1, 'Cron expression is required'),
   scheduleVault: vaultSchema.optional().default('{}'),
 })
 

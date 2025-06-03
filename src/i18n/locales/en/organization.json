@@ -105,14 +105,9 @@
     "editRepository": "Edit Repository",
     "deleteRepository": "Delete Repository",
     "repositoryName": "Repository Name",
-    "size": "Size",
-    "status": "Status",
-    "active": "active",
-    "syncing": "syncing",
     "noRepositories": "No repositories found in this team",
     "totalRepositories": "Total {{total}} repositories",
     "confirmDelete": "Are you sure you want to delete repository \"{{repositoryName}}\"?",
-    "sizeFormat": "{{size}} MB",
     "placeholders": {
       "enterRepositoryName": "Enter repository name"
     }
@@ -128,33 +123,6 @@
     "confirmDelete": "Are you sure you want to delete storage \"{{storageName}}\"?",
     "placeholders": {
       "enterStorageName": "Enter storage name"
-    }
-  },
-  "schedules": {
-    "title": "Schedules",
-    "createSchedule": "Create Schedule",
-    "editSchedule": "Edit Schedule",
-    "deleteSchedule": "Delete Schedule",
-    "scheduleName": "Schedule Name",
-    "description": "Description",
-    "cron": "Cron",
-    "cronExpression": "Cron Expression",
-    "nextRun": "Next Run",
-    "lastRun": "Last Run",
-    "queue": "Queue",
-    "status": "Status",
-    "active": "Active",
-    "inactive": "Inactive",
-    "noSchedules": "No schedules found in this team",
-    "totalSchedules": "Total {{total}} schedules",
-    "confirmDelete": "Are you sure you want to delete schedule \"{{scheduleName}}\"?",
-    "cronExpressionHelp": "Cron expression: {{cron}}",
-    "never": "Never",
-    "na": "N/A",
-    "placeholders": {
-      "enterScheduleName": "Enter schedule name",
-      "enterDescription": "Enter description (optional)",
-      "cronExample": "e.g., 0 0 * * * (daily at midnight)"
     }
   },
   "general": {
@@ -176,6 +144,19 @@
     "region": "Region",
     "team": "Team",
     "configureVault": "Configure Vault - {{name}}"
+  },
+  "schedules": {
+    "title": "Schedules",
+    "createSchedule": "Create Schedule",
+    "editSchedule": "Edit Schedule",
+    "deleteSchedule": "Delete Schedule",
+    "scheduleName": "Schedule Name",
+    "noSchedules": "No schedules found in this team",
+    "totalSchedules": "Total {{total}} schedules",
+    "confirmDelete": "Are you sure you want to delete schedule \"{{scheduleName}}\"?",
+    "placeholders": {
+      "enterScheduleName": "Enter schedule name"
+    }
   },
   "resourceTabs": {
     "machines": "Machines",

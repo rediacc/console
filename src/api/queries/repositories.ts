@@ -5,8 +5,6 @@ import toast from 'react-hot-toast'
 export interface Repository {
   repositoryName: string
   teamName: string
-  size: number
-  status: string
   vaultVersion: number
 }
 
@@ -22,8 +20,6 @@ export const useRepositories = (teamName?: string) => {
       return repositories.map((repo: any) => ({
         repositoryName: repo.repoName,
         teamName: repo.teamName,
-        size: parseInt(repo.repoSize) || 0,
-        status: repo.status || 'inactive',
         vaultVersion: repo.vaultVersion || 1,
       }))
     },

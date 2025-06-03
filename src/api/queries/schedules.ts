@@ -7,14 +7,6 @@ export interface Schedule {
   teamName: string
   scheduleVault: string
   vaultVersion: number
-  description?: string
-  isActive?: boolean
-  cronExpression?: string
-  nextRunTime?: string
-  lastRunTime?: string
-  queueCount?: number
-  createdAt?: string
-  updatedAt?: string
 }
 
 export interface CreateScheduleRequest {
