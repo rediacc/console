@@ -18,6 +18,8 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
+import { useSelector } from 'react-redux'
+import { RootState } from '@/store/store'
 import ResourceListView from '@/components/common/ResourceListView'
 import ResourceForm from '@/components/forms/ResourceForm'
 import VaultConfigModal from '@/components/common/VaultConfigModal'
@@ -112,9 +114,17 @@ const { Title, Text } = Typography
 const OrganizationPage: React.FC = () => {
   const { t } = useTranslation(['organization', 'machines'])
   const navigate = useNavigate()
+  const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const [activeTab, setActiveTab] = useState('teams')
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null)
   const [teamResourcesTab, setTeamResourcesTab] = useState('machines')
+  
+  // Ensure we're on the teams tab in simple mode
+  React.useEffect(() => {
+    if (uiMode === 'simple' && activeTab !== 'teams') {
+      setActiveTab('teams')
+    }
+  }, [uiMode, activeTab])
   
   // Team state
   const [isCreateTeamModalOpen, setIsCreateTeamModalOpen] = useState(false)
@@ -1328,7 +1338,7 @@ const OrganizationPage: React.FC = () => {
                 <Tabs
                   activeKey={teamResourcesTab}
                   onChange={setTeamResourcesTab}
-                  items={teamResourcesTabs}
+                  items={uiMode === 'simple' ? teamResourcesTabs.filter(tab => tab.key !== 'schedules') : teamResourcesTabs}
                 />
               )}
             </Card>
@@ -1448,7 +1458,7 @@ const OrganizationPage: React.FC = () => {
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}
-          items={tabItems}
+          items={uiMode === 'simple' ? tabItems.filter(tab => tab.key === 'teams') : tabItems}
         />
       </Card>
 

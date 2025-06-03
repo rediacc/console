@@ -13,6 +13,8 @@ import {
 } from '@ant-design/icons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useSelector } from 'react-redux'
+import { RootState } from '@/store/store'
 import ResourceListView from '@/components/common/ResourceListView'
 import ResourceForm from '@/components/forms/ResourceForm'
 import { useDropdownData } from '@/api/queries/useDropdownData'
@@ -93,7 +95,13 @@ const AVAILABLE_PERMISSIONS = [
 ]
 
 const UsersAndPermissionsPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('permissions')
+  const uiMode = useSelector((state: RootState) => state.ui.uiMode)
+  const [activeTab, setActiveTab] = useState('users')
+  
+  // Set initial tab based on UI mode
+  React.useEffect(() => {
+    setActiveTab(uiMode === 'simple' ? 'users' : 'permissions')
+  }, [uiMode])
   
   // User state
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false)
@@ -430,74 +438,79 @@ const UsersAndPermissionsPage: React.FC = () => {
     },
   ]
 
-  const tabItems = [
-    {
-      key: 'permissions',
-      label: (
-        <span>
-          <SafetyOutlined />
-          Permissions
-        </span>
-      ),
-      children: (
-        <ResourceListView
-          title={
-            <Space>
-              <span style={{ fontSize: 16, fontWeight: 500 }}>Permission Groups</span>
-              <span style={{ fontSize: 14, color: '#666' }}>Manage permission groups and their assignments</span>
-            </Space>
-          }
-          loading={permissionsLoading}
-          data={permissionGroups}
-          columns={permissionColumns}
-          rowKey="permissionGroupName"
-          searchPlaceholder="Search permission groups..."
-          actions={
-            <Button 
-              type="primary" 
-              icon={<PlusOutlined />}
-              onClick={() => setIsCreateModalOpen(true)}
-            >
-              Create Group
-            </Button>
-          }
-        />
-      ),
-    },
-    {
-      key: 'users',
-      label: (
-        <span>
-          <UserOutlined />
-          Users
-        </span>
-      ),
-      children: (
-        <ResourceListView
-          title={
-            <Space>
-              <span style={{ fontSize: 16, fontWeight: 500 }}>Users</span>
-              <span style={{ fontSize: 14, color: '#666' }}>Manage users and their permissions</span>
-            </Space>
-          }
-          loading={usersLoading}
-          data={users}
-          columns={userColumns}
-          rowKey="userEmail"
-          searchPlaceholder="Search users..."
-          actions={
-            <Button 
-              type="primary" 
-              icon={<PlusOutlined />}
-              onClick={() => setIsCreateUserModalOpen(true)}
-            >
-              Create User
-            </Button>
-          }
-        />
-      ),
-    },
-  ]
+  // Define tab configurations
+  const usersTab = {
+    key: 'users',
+    label: (
+      <span>
+        <UserOutlined />
+        Users
+      </span>
+    ),
+    children: (
+      <ResourceListView
+        title={
+          <Space>
+            <span style={{ fontSize: 16, fontWeight: 500 }}>Users</span>
+            <span style={{ fontSize: 14, color: '#666' }}>Manage users and their permissions</span>
+          </Space>
+        }
+        loading={usersLoading}
+        data={users}
+        columns={userColumns}
+        rowKey="userEmail"
+        searchPlaceholder="Search users..."
+        actions={
+          <Button 
+            type="primary" 
+            icon={<PlusOutlined />}
+            onClick={() => setIsCreateUserModalOpen(true)}
+          >
+            Create User
+          </Button>
+        }
+      />
+    ),
+  }
+
+  const permissionsTab = {
+    key: 'permissions',
+    label: (
+      <span>
+        <SafetyOutlined />
+        Permissions
+      </span>
+    ),
+    children: (
+      <ResourceListView
+        title={
+          <Space>
+            <span style={{ fontSize: 16, fontWeight: 500 }}>Permission Groups</span>
+            <span style={{ fontSize: 14, color: '#666' }}>Manage permission groups and their assignments</span>
+          </Space>
+        }
+        loading={permissionsLoading}
+        data={permissionGroups}
+        columns={permissionColumns}
+        rowKey="permissionGroupName"
+        searchPlaceholder="Search permission groups..."
+        actions={
+          <Button 
+            type="primary" 
+            icon={<PlusOutlined />}
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            Create Group
+          </Button>
+        }
+      />
+    ),
+  }
+
+  // Compose tabs based on UI mode
+  const tabItems = uiMode === 'simple' 
+    ? [usersTab]
+    : [permissionsTab, usersTab]
 
   return (
     <>

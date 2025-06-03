@@ -35,6 +35,13 @@ export const MachinePage: React.FC = () => {
   const [groupBy, setGroupBy] = useState<'bridge' | 'team' | 'region'>('bridge');
   const [filteredInfo, setFilteredInfo] = useState<Record<string, FilterValue | null>>({});
 
+  // Force table view in simple mode
+  React.useEffect(() => {
+    if (uiMode === 'simple' && viewMode !== 'table') {
+      setViewMode('table');
+    }
+  }, [uiMode, viewMode]);
+
   // Fetch all machines (we'll need to update the API to support this)
   const { data: machinesData, isLoading: isLoadingMachines } = useMachines();
   const { data: dropdownData } = useDropdownData();
@@ -371,151 +378,159 @@ export const MachinePage: React.FC = () => {
   }, [machines]);
 
 
-  const allColumns: ColumnsType<Machine> = [
-    {
-      title: t('machineName'),
-      dataIndex: 'machineName',
-      key: 'machineName',
-      sorter: (a: Machine, b: Machine) => a.machineName.localeCompare(b.machineName),
-      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
-        <div style={{ padding: 8 }}>
-          <Input
-            placeholder={t('searchMachineName')}
-            value={selectedKeys[0]}
-            onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
-            onPressEnter={() => confirm()}
-            style={{ marginBottom: 8, display: 'block' }}
-          />
-          <Space>
-            <Button
-              type="primary"
-              onClick={() => confirm()}
-              icon={<SearchOutlined />}
-              size="small"
-              style={{ width: 90 }}
-            >
-              {tCommon('actions.search')}
-            </Button>
-            <Button
-              onClick={() => clearFilters && clearFilters()}
-              size="small"
-              style={{ width: 90 }}
-            >
-              {tCommon('actions.reset')}
-            </Button>
-          </Space>
-        </div>
-      ),
-      filterIcon: (filtered: boolean) => (
-        <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
-      ),
-      onFilter: (value: string | number | boolean, record: Machine) => 
-        record.machineName.toLowerCase().includes(value.toString().toLowerCase()),
-    },
-    {
-      title: t('team'),
-      dataIndex: 'teamName',
-      key: 'teamName',
-      render: (teamName: string) => <Tag color="blue">{teamName}</Tag>,
-      sorter: (a: Machine, b: Machine) => a.teamName.localeCompare(b.teamName),
-      filters: uniqueTeams,
-      onFilter: (value: string | number | boolean, record: Machine) => record.teamName === value,
-      filterSearch: true,
-      hidden: uiMode === 'simple',
-    },
-    {
-      title: t('region'),
-      dataIndex: 'regionName',
-      key: 'regionName',
-      render: (regionName: string) => regionName ? <Tag color="purple">{regionName}</Tag> : '-',
-      sorter: (a: Machine, b: Machine) => (a.regionName || '').localeCompare(b.regionName || ''),
-      filters: uniqueRegions,
-      onFilter: (value: string | number | boolean, record: Machine) => record.regionName === value,
-      filterSearch: true,
-      hidden: uiMode === 'simple',
-    },
-    {
-      title: t('bridge'),
-      dataIndex: 'bridgeName',
-      key: 'bridgeName',
-      render: (bridgeName: string) => <Tag color="green">{bridgeName}</Tag>,
-      sorter: (a: Machine, b: Machine) => a.bridgeName.localeCompare(b.bridgeName),
-      filters: uniqueBridges,
-      onFilter: (value: string | number | boolean, record: Machine) => record.bridgeName === value,
-      filterSearch: true,
-      hidden: uiMode === 'simple',
-    },
-    {
-      title: t('queueItems'),
-      dataIndex: 'queueCount',
-      key: 'queueCount',
-      align: 'center' as const,
-      sorter: (a: Machine, b: Machine) => a.queueCount - b.queueCount,
-    },
-    {
-      title: t('vaultVersion'),
-      dataIndex: 'vaultVersion',
-      key: 'vaultVersion',
-      align: 'center' as const,
-      sorter: (a: Machine, b: Machine) => a.vaultVersion - b.vaultVersion,
-    },
-    {
-      title: tCommon('table.actions'),
-      key: 'actions',
-      align: 'center' as const,
-      render: (_: unknown, record: Machine) => (
-        <Dropdown
-          menu={{
-            items: [
-              {
-                key: 'vault',
-                label: t('vault'),
-                icon: <KeyOutlined />,
-                onClick: () => {
-                  setSelectedMachine(record);
-                  setIsVaultModalOpen(true);
-                },
-              },
-              {
-                key: 'edit',
-                label: tCommon('actions.edit'),
-                icon: <EditOutlined />,
-                onClick: () => {
-                  setSelectedMachine(record);
-                  // Find the region for this machine's bridge
-                  const region = dropdownData?.bridgesByRegion?.find(r => 
-                    r.bridges?.some(b => b.value === record.bridgeName)
-                  );
-                  editMachineForm.reset({
-                    machineName: record.machineName,
-                    regionName: region?.regionName || '',
-                    bridgeName: record.bridgeName,
-                  });
-                  setIsEditModalOpen(true);
-                },
-              },
-              {
-                type: 'divider',
-              },
-              {
-                key: 'delete',
-                label: tCommon('actions.delete'),
-                icon: <DeleteOutlined />,
-                danger: true,
-                onClick: () => handleDelete(record),
-              },
-            ],
-          }}
-          trigger={['click']}
-        >
-          <Button type="text" icon={<MoreOutlined />} />
-        </Dropdown>
-      ),
-    },
-  ];
+  const columns: ColumnsType<Machine> = React.useMemo(() => {
+    const baseColumns: ColumnsType<Machine> = [
+      {
+        title: t('machineName'),
+        dataIndex: 'machineName',
+        key: 'machineName',
+        sorter: (a: Machine, b: Machine) => a.machineName.localeCompare(b.machineName),
+        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+          <div style={{ padding: 8 }}>
+            <Input
+              placeholder={t('searchMachineName')}
+              value={selectedKeys[0]}
+              onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+              onPressEnter={() => confirm()}
+              style={{ marginBottom: 8, display: 'block' }}
+            />
+            <Space>
+              <Button
+                type="primary"
+                onClick={() => confirm()}
+                icon={<SearchOutlined />}
+                size="small"
+                style={{ width: 90 }}
+              >
+                {tCommon('actions.search')}
+              </Button>
+              <Button
+                onClick={() => clearFilters && clearFilters()}
+                size="small"
+                style={{ width: 90 }}
+              >
+                {tCommon('actions.reset')}
+              </Button>
+            </Space>
+          </div>
+        ),
+        filterIcon: (filtered: boolean) => (
+          <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
+        ),
+        onFilter: (value: string | number | boolean, record: Machine) => 
+          record.machineName.toLowerCase().includes(value.toString().toLowerCase()),
+      },
+    ];
 
-  // Filter out hidden columns based on UI mode
-  const columns = allColumns.filter(col => !(col as any).hidden);
+    // Only add these columns in expert mode
+    if (uiMode === 'expert') {
+      baseColumns.push(
+        {
+          title: t('team'),
+          dataIndex: 'teamName',
+          key: 'teamName',
+          render: (teamName: string) => <Tag color="blue">{teamName}</Tag>,
+          sorter: (a: Machine, b: Machine) => a.teamName.localeCompare(b.teamName),
+          filters: uniqueTeams,
+          onFilter: (value: string | number | boolean, record: Machine) => record.teamName === value,
+          filterSearch: true,
+        },
+        {
+          title: t('region'),
+          dataIndex: 'regionName',
+          key: 'regionName',
+          render: (regionName: string) => regionName ? <Tag color="purple">{regionName}</Tag> : '-',
+          sorter: (a: Machine, b: Machine) => (a.regionName || '').localeCompare(b.regionName || ''),
+          filters: uniqueRegions,
+          onFilter: (value: string | number | boolean, record: Machine) => record.regionName === value,
+          filterSearch: true,
+        },
+        {
+          title: t('bridge'),
+          dataIndex: 'bridgeName',
+          key: 'bridgeName',
+          render: (bridgeName: string) => <Tag color="green">{bridgeName}</Tag>,
+          sorter: (a: Machine, b: Machine) => a.bridgeName.localeCompare(b.bridgeName),
+          filters: uniqueBridges,
+          onFilter: (value: string | number | boolean, record: Machine) => record.bridgeName === value,
+          filterSearch: true,
+        }
+      );
+    }
+
+    // Always include these columns
+    baseColumns.push(
+      {
+        title: t('queueItems'),
+        dataIndex: 'queueCount',
+        key: 'queueCount',
+        align: 'center' as const,
+        sorter: (a: Machine, b: Machine) => a.queueCount - b.queueCount,
+      },
+      {
+        title: t('vaultVersion'),
+        dataIndex: 'vaultVersion',
+        key: 'vaultVersion',
+        align: 'center' as const,
+        sorter: (a: Machine, b: Machine) => a.vaultVersion - b.vaultVersion,
+      },
+      {
+        title: tCommon('table.actions'),
+        key: 'actions',
+        align: 'center' as const,
+        render: (_: unknown, record: Machine) => (
+          <Dropdown
+            menu={{
+              items: [
+                {
+                  key: 'vault',
+                  label: t('vault'),
+                  icon: <KeyOutlined />,
+                  onClick: () => {
+                    setSelectedMachine(record);
+                    setIsVaultModalOpen(true);
+                  },
+                },
+                {
+                  key: 'edit',
+                  label: tCommon('actions.edit'),
+                  icon: <EditOutlined />,
+                  onClick: () => {
+                    setSelectedMachine(record);
+                    // Find the region for this machine's bridge
+                    const region = dropdownData?.bridgesByRegion?.find(r => 
+                      r.bridges?.some(b => b.value === record.bridgeName)
+                    );
+                    editMachineForm.reset({
+                      machineName: record.machineName,
+                      regionName: region?.regionName || '',
+                      bridgeName: record.bridgeName,
+                    });
+                    setIsEditModalOpen(true);
+                  },
+                },
+                {
+                  type: 'divider',
+                },
+                {
+                  key: 'delete',
+                  label: tCommon('actions.delete'),
+                  icon: <DeleteOutlined />,
+                  danger: true,
+                  onClick: () => handleDelete(record),
+                },
+              ],
+            }}
+            trigger={['click']}
+          >
+            <Button type="text" icon={<MoreOutlined />} />
+          </Dropdown>
+        ),
+      }
+    );
+
+    return baseColumns;
+  }, [uiMode, t, tCommon, uniqueTeams, uniqueRegions, uniqueBridges, dropdownData, editMachineForm]);
 
   const renderGridView = () => {
     return (
@@ -622,94 +637,98 @@ export const MachinePage: React.FC = () => {
             </Button>
           </div>
 
-          <div style={{ marginBottom: 16 }}>
-            <Space align="center" size="large">
-              <Space align="center">
-                <span style={{ marginRight: 8, fontWeight: 500 }}>{t('viewMode')}:</span>
-                <Segmented
-                  options={[
-                    { label: t('tableView'), value: 'table', icon: <TableOutlined /> },
-                    { label: t('gridView'), value: 'grid', icon: <AppstoreOutlined /> },
-                  ]}
-                  value={viewMode}
-                  onChange={(value) => setViewMode(value as 'table' | 'grid')}
-                />
-              </Space>
-              
-              {viewMode === 'grid' && (
-                <Space align="center">
-                  <span style={{ marginRight: 8, fontWeight: 500 }}>{t('groupBy')}:</span>
-                  <Select
-                    style={{ width: 150 }}
-                    value={groupBy}
-                    onChange={setGroupBy}
-                  >
-                    <Option value="bridge">{t('groupByBridge')}</Option>
-                    <Option value="team">{t('groupByTeam')}</Option>
-                    <Option value="region">{t('groupByRegion')}</Option>
-                  </Select>
+          {uiMode === 'expert' && (
+            <>
+              <div style={{ marginBottom: 16 }}>
+                <Space align="center" size="large">
+                  <Space align="center">
+                    <span style={{ marginRight: 8, fontWeight: 500 }}>{t('viewMode')}:</span>
+                    <Segmented
+                      options={[
+                        { label: t('tableView'), value: 'table', icon: <TableOutlined /> },
+                        { label: t('gridView'), value: 'grid', icon: <AppstoreOutlined /> },
+                      ]}
+                      value={viewMode}
+                      onChange={(value) => setViewMode(value as 'table' | 'grid')}
+                    />
+                  </Space>
+                  
+                  {viewMode === 'grid' && (
+                    <Space align="center">
+                      <span style={{ marginRight: 8, fontWeight: 500 }}>{t('groupBy')}:</span>
+                      <Select
+                        style={{ width: 150 }}
+                        value={groupBy}
+                        onChange={setGroupBy}
+                      >
+                        <Option value="bridge">{t('groupByBridge')}</Option>
+                        <Option value="team">{t('groupByTeam')}</Option>
+                        <Option value="region">{t('groupByRegion')}</Option>
+                      </Select>
+                    </Space>
+                  )}
                 </Space>
-              )}
-            </Space>
-          </div>
+              </div>
 
-          <Space wrap>
-            <Select
-              style={{ width: 200 }}
-              placeholder={t('filterByRegion')}
-              allowClear
-              value={filterRegion}
-              onChange={setFilterRegion}
-              suffixIcon={<FilterOutlined />}
-            >
-              {regions.map((region) => (
-                <Option key={region.value} value={region.value}>
-                  {region.label}
-                </Option>
-              ))}
-            </Select>
+              <Space wrap>
+                <Select
+                  style={{ width: 200 }}
+                  placeholder={t('filterByRegion')}
+                  allowClear
+                  value={filterRegion}
+                  onChange={setFilterRegion}
+                  suffixIcon={<FilterOutlined />}
+                >
+                  {regions.map((region) => (
+                    <Option key={region.value} value={region.value}>
+                      {region.label}
+                    </Option>
+                  ))}
+                </Select>
 
-            <Select
-              style={{ width: 200 }}
-              placeholder={t('filterByBridge')}
-              allowClear
-              value={filterBridge}
-              onChange={setFilterBridge}
-              suffixIcon={<FilterOutlined />}
-            >
-              {bridges.map((bridge) => (
-                <Option key={bridge.value} value={bridge.value}>
-                  {bridge.label}
-                </Option>
-              ))}
-            </Select>
+                <Select
+                  style={{ width: 200 }}
+                  placeholder={t('filterByBridge')}
+                  allowClear
+                  value={filterBridge}
+                  onChange={setFilterBridge}
+                  suffixIcon={<FilterOutlined />}
+                >
+                  {bridges.map((bridge) => (
+                    <Option key={bridge.value} value={bridge.value}>
+                      {bridge.label}
+                    </Option>
+                  ))}
+                </Select>
 
-            <Select
-              style={{ width: 200 }}
-              placeholder={t('filterByTeam')}
-              allowClear
-              value={filterTeam}
-              onChange={setFilterTeam}
-              suffixIcon={<FilterOutlined />}
-            >
-              {teams.map((team) => (
-                <Option key={team.teamName} value={team.teamName}>
-                  {team.teamName}
-                </Option>
-              ))}
-            </Select>
+                <Select
+                  style={{ width: 200 }}
+                  placeholder={t('filterByTeam')}
+                  allowClear
+                  value={filterTeam}
+                  onChange={setFilterTeam}
+                  suffixIcon={<FilterOutlined />}
+                >
+                  {teams.map((team) => (
+                    <Option key={team.teamName} value={team.teamName}>
+                      {team.teamName}
+                    </Option>
+                  ))}
+                </Select>
 
-            {viewMode === 'table' && Object.keys(filteredInfo).length > 0 && (
-              <Button
-                onClick={() => setFilteredInfo({})}
-                size="small"
-              >
-                {t('clearFilters')}
-              </Button>
-            )}
-          </Space>
+                {viewMode === 'table' && Object.keys(filteredInfo).length > 0 && (
+                  <Button
+                    onClick={() => setFilteredInfo({})}
+                    size="small"
+                  >
+                    {t('clearFilters')}
+                  </Button>
+                )}
+              </Space>
+            </>
+          )}
 
-          {viewMode === 'table' ? (
+          {viewMode === 'table' || uiMode === 'simple' ? (
             <Table
               columns={columns}
               dataSource={filteredMachines}
