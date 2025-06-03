@@ -350,7 +350,14 @@ const OrganizationPage: React.FC = () => {
   // Machine handlers
   const handleCreateMachine = async (data: CreateMachineForm) => {
     try {
-      await createMachineMutation.mutateAsync(data)
+      // Extract only the fields needed by the API (exclude regionName)
+      const { teamName, bridgeName, machineName, machineVault } = data
+      await createMachineMutation.mutateAsync({
+        teamName,
+        bridgeName,
+        machineName,
+        machineVault
+      })
       setIsCreateMachineModalOpen(false)
       machineForm.reset()
     } catch (error) {
@@ -1121,6 +1128,28 @@ const OrganizationPage: React.FC = () => {
     },
   ]
 
+  // Get filtered bridges based on selected region
+  const selectedRegionForMachine = machineForm.watch('regionName')
+  const filteredBridgesForMachine = React.useMemo(() => {
+    if (!selectedRegionForMachine || !dropdownData?.bridgesByRegion) return []
+    
+    const regionData = dropdownData.bridgesByRegion.find(
+      r => r.regionName === selectedRegionForMachine
+    )
+    return regionData?.bridges?.map(b => ({ 
+      value: b.value, 
+      label: b.label 
+    })) || []
+  }, [selectedRegionForMachine, dropdownData])
+
+  // Clear bridge selection when region changes
+  React.useEffect(() => {
+    const currentBridge = machineForm.getValues('bridgeName')
+    if (currentBridge && !filteredBridgesForMachine.find(b => b.value === currentBridge)) {
+      machineForm.setValue('bridgeName', '')
+    }
+  }, [selectedRegionForMachine, filteredBridgesForMachine])
+
   const machineFormFields = [
     {
       name: 'teamName',
@@ -1147,11 +1176,11 @@ const OrganizationPage: React.FC = () => {
     {
       name: 'bridgeName',
       label: 'Bridge',
-      placeholder: 'Select bridge',
+      placeholder: selectedRegionForMachine ? 'Select bridge' : 'Select a region first',
       required: true,
       type: 'select' as const,
-      options: dropdownData?.bridges?.map(b => ({ value: b.value, label: b.label })) || [],
-      dependencies: ['regionName'],
+      options: filteredBridgesForMachine,
+      disabled: !selectedRegionForMachine,
     },
   ]
 

@@ -80,6 +80,7 @@ export const createBridgeSchema = z.object({
 
 export const createMachineSchema = z.object({
   teamName: teamNameSchema,
+  regionName: regionNameSchema,
   bridgeName: bridgeNameSchema,
   machineName: machineNameSchema,
   machineVault: vaultSchema.optional().default('{}'),
@@ -87,19 +88,22 @@ export const createMachineSchema = z.object({
 
 export const createRepositorySchema = z.object({
   teamName: teamNameSchema,
-  repoName: repositoryNameSchema,
-  repoVault: vaultSchema.optional().default('{}'),
+  repositoryName: repositoryNameSchema,
+  repositoryVault: vaultSchema.optional().default('{}'),
 })
 
 export const createStorageSchema = z.object({
   teamName: teamNameSchema,
   storageName: storageNameSchema,
+  storageType: z.enum(['local', 'network', 'cloud']).default('local'),
   storageVault: vaultSchema.optional().default('{}'),
 })
 
 export const createScheduleSchema = z.object({
   teamName: teamNameSchema,
   scheduleName: scheduleNameSchema,
+  scheduleDescription: z.string().optional().default(''),
+  cronExpression: z.string().min(1, 'Cron expression is required'),
   scheduleVault: vaultSchema.optional().default('{}'),
 })
 
