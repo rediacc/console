@@ -29,7 +29,6 @@ const LanguageSelector: React.FC = () => {
       style={{ width: 100 }}
       suffixIcon={<GlobalOutlined />}
       dropdownMatchSelectWidth={false}
-      size="large"
     >
       {languages.map((lang) => (
         <Option key={lang.code} value={lang.code}>

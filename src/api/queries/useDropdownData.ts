@@ -71,7 +71,7 @@ export const useDropdownData = (context?: string) => {
               try {
                 dropdownData[field] = JSON.parse(dropdownData[field]);
               } catch (e) {
-                // Silently handle parse errors
+                console.error(`Failed to parse ${field}:`, e);
               }
             }
           });
@@ -98,6 +98,7 @@ export const useDropdownData = (context?: string) => {
           
           return dropdownData as DropdownData;
         } catch (e) {
+          console.error('Failed to parse dropdown data:', e);
           // Return structure with empty arrays on parse error
           return {
             teams: [],

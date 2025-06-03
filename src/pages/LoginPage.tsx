@@ -59,7 +59,7 @@ const LoginPage: React.FC = () => {
           company = companyResponse.tables[0].data[0].name
         }
       } catch (error) {
-        // Silently handle company info fetch failure
+        console.error('Failed to get company info:', error)
       }
 
       // Save auth data
@@ -75,6 +75,7 @@ const LoginPage: React.FC = () => {
       showMessage('success', t('common:messages.success'))
       navigate('/organization')
     } catch (error: any) {
+      console.error('Login error:', error)
       setError(error.message || t('auth:login.errors.invalidCredentials'))
     } finally {
       setLoading(false)

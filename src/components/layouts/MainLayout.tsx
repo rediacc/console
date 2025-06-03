@@ -345,7 +345,7 @@ const MainLayout: React.FC = () => {
               </Text>
             )}
           </Space>
-          <Space size={16}>
+          <Space size={16} align="center">
             <LanguageSelector />
             <ThemeToggle />
             <MessageHistory />
