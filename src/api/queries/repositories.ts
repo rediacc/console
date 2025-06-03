@@ -3,9 +3,9 @@ import apiClient from '@/api/client'
 import toast from 'react-hot-toast'
 
 export interface Repository {
-  repoName: string
+  repositoryName: string
   teamName: string
-  repoSize: string
+  size: number
   status: string
   vaultVersion: number
 }
@@ -16,8 +16,16 @@ export const useRepositories = (teamName?: string) => {
     queryKey: ['repositories', teamName],
     queryFn: async () => {
       if (!teamName) return []
-      const response = await apiClient.get<Repository[]>('/GetTeamRepositories', { teamName })
-      return response.tables[1]?.data || []
+      const response = await apiClient.get<any>('/GetTeamRepositories', { teamName })
+      // Map API response to UI format
+      const repositories = response.tables[1]?.data || []
+      return repositories.map((repo: any) => ({
+        repositoryName: repo.repoName,
+        teamName: repo.teamName,
+        size: parseInt(repo.repoSize) || 0,
+        status: repo.status || 'inactive',
+        vaultVersion: repo.vaultVersion || 1,
+      }))
     },
     enabled: !!teamName,
   })
@@ -28,18 +36,18 @@ export const useCreateRepository = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async (data: { teamName: string; repoName: string; repoVault?: string }) => {
+    mutationFn: async (data: { teamName: string; repositoryName: string; repositoryVault?: string }) => {
       const response = await apiClient.post('/CreateRepository', {
         teamName: data.teamName,
-        repoName: data.repoName,
-        repoVault: data.repoVault || '{}',
+        repoName: data.repositoryName, // Map repositoryName to repoName for API
+        repoVault: data.repositoryVault || '{}', // Map repositoryVault to repoVault for API
       })
       return response
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['repositories'] })
       queryClient.invalidateQueries({ queryKey: ['teams'] })
-      toast.success(`Repository "${variables.repoName}" created successfully`)
+      toast.success(`Repository "${variables.repositoryName}" created successfully`)
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to create repository')
@@ -52,13 +60,17 @@ export const useUpdateRepositoryName = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async (data: { teamName: string; currentRepoName: string; newRepoName: string }) => {
-      const response = await apiClient.put('/UpdateRepositoryName', data)
+    mutationFn: async (data: { teamName: string; currentRepositoryName: string; newRepositoryName: string }) => {
+      const response = await apiClient.put('/UpdateRepositoryName', {
+        teamName: data.teamName,
+        currentRepoName: data.currentRepositoryName, // Map to API format
+        newRepoName: data.newRepositoryName, // Map to API format
+      })
       return response
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['repositories'] })
-      toast.success(`Repository renamed to "${variables.newRepoName}"`)
+      toast.success(`Repository renamed to "${variables.newRepositoryName}"`)
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to update repository name')
@@ -71,13 +83,18 @@ export const useUpdateRepositoryVault = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async (data: { teamName: string; repoName: string; repoVault: string; vaultVersion: number }) => {
-      const response = await apiClient.put('/UpdateRepositoryVault', data)
+    mutationFn: async (data: { teamName: string; repositoryName: string; repositoryVault: string; vaultVersion: number }) => {
+      const response = await apiClient.put('/UpdateRepositoryVault', {
+        teamName: data.teamName,
+        repoName: data.repositoryName, // Map repositoryName to repoName for API
+        repoVault: data.repositoryVault, // Map repositoryVault to repoVault for API
+        vaultVersion: data.vaultVersion,
+      })
       return response
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['repositories'] })
-      toast.success(`Repository vault updated for "${variables.repoName}"`)
+      toast.success(`Repository vault updated for "${variables.repositoryName}"`)
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to update repository vault')
@@ -90,14 +107,17 @@ export const useDeleteRepository = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async (data: { teamName: string; repoName: string }) => {
-      const response = await apiClient.delete('/DeleteRepository', data)
+    mutationFn: async (data: { teamName: string; repositoryName: string }) => {
+      const response = await apiClient.delete('/DeleteRepository', {
+        teamName: data.teamName,
+        repoName: data.repositoryName, // Map repositoryName to repoName for API
+      })
       return response
     },
     onSuccess: (_, data) => {
       queryClient.invalidateQueries({ queryKey: ['repositories'] })
       queryClient.invalidateQueries({ queryKey: ['teams'] })
-      toast.success(`Repository "${data.repoName}" deleted successfully`)
+      toast.success(`Repository "${data.repositoryName}" deleted successfully`)
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to delete repository')
