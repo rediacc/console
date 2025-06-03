@@ -1415,7 +1415,7 @@ const OrganizationPage: React.FC = () => {
                       }}
                       style={{ background: '#556b2f', borderColor: '#556b2f' }}
                     >
-                      Create {teamResourcesTab.slice(0, -1).charAt(0).toUpperCase() + teamResourcesTab.slice(1, -1)}
+                      Create {teamResourcesTab === 'storage' ? 'Storage' : teamResourcesTab.slice(0, -1).charAt(0).toUpperCase() + teamResourcesTab.slice(1, -1)}
                     </Button>
                   </Space>
                 )}
