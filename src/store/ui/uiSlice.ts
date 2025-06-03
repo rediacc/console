@@ -15,6 +15,7 @@ interface UIState {
   filters: Record<string, any>
   messages: Message[]
   unreadMessageCount: number
+  uiMode: 'simple' | 'expert'
   modals: {
     vaultConfig: {
       open: boolean
@@ -24,6 +25,11 @@ interface UIState {
   }
 }
 
+const getStoredUiMode = (): 'simple' | 'expert' => {
+  const stored = localStorage.getItem('uiMode')
+  return stored === 'expert' ? 'expert' : 'simple'
+}
+
 const initialState: UIState = {
   sidebarCollapsed: false,
   activeView: 'organization',
@@ -31,6 +37,7 @@ const initialState: UIState = {
   filters: {},
   messages: [],
   unreadMessageCount: 0,
+  uiMode: getStoredUiMode(),
   modals: {
     vaultConfig: {
       open: false,
@@ -97,6 +104,15 @@ const uiSlice = createSlice({
       state.messages = []
       state.unreadMessageCount = 0
     },
+    setUiMode: (state, action: PayloadAction<'simple' | 'expert'>) => {
+      state.uiMode = action.payload
+      localStorage.setItem('uiMode', action.payload)
+    },
+    toggleUiMode: (state) => {
+      const newMode = state.uiMode === 'simple' ? 'expert' : 'simple'
+      state.uiMode = newMode
+      localStorage.setItem('uiMode', newMode)
+    },
   },
 })
 
@@ -111,6 +127,8 @@ export const {
   markMessageAsRead,
   markAllMessagesAsRead,
   clearMessages,
+  setUiMode,
+  toggleUiMode,
 } = uiSlice.actions
 
 export default uiSlice.reducer

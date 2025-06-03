@@ -86,5 +86,10 @@
   "theme": {
     "light": "Claro",
     "dark": "Oscuro"
+  },
+  "uiMode": {
+    "simple": "Simple",
+    "expert": "Experto",
+    "switching": "Cambiando a modo {{mode}}..."
   }
 }

@@ -6,6 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store/store';
 import { useMachines, useDeleteMachine, useCreateMachine, useUpdateMachineName, useUpdateMachineBridge, useUpdateMachineVault } from '../../api/queries/machines';
 import { useDropdownData } from '../../api/queries/useDropdownData';
 import { useTeams } from '../../api/queries/teams';
@@ -21,6 +23,7 @@ export const MachinePage: React.FC = () => {
   const { t: tCommon } = useTranslation('common');
   const { t: tOrg } = useTranslation('organization');
   const location = useLocation();
+  const uiMode = useSelector((state: RootState) => state.ui.uiMode);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -368,7 +371,7 @@ export const MachinePage: React.FC = () => {
   }, [machines]);
 
 
-  const columns: ColumnsType<Machine> = [
+  const allColumns: ColumnsType<Machine> = [
     {
       title: t('machineName'),
       dataIndex: 'machineName',
@@ -418,6 +421,7 @@ export const MachinePage: React.FC = () => {
       filters: uniqueTeams,
       onFilter: (value: string | number | boolean, record: Machine) => record.teamName === value,
       filterSearch: true,
+      hidden: uiMode === 'simple',
     },
     {
       title: t('region'),
@@ -428,6 +432,7 @@ export const MachinePage: React.FC = () => {
       filters: uniqueRegions,
       onFilter: (value: string | number | boolean, record: Machine) => record.regionName === value,
       filterSearch: true,
+      hidden: uiMode === 'simple',
     },
     {
       title: t('bridge'),
@@ -438,6 +443,7 @@ export const MachinePage: React.FC = () => {
       filters: uniqueBridges,
       onFilter: (value: string | number | boolean, record: Machine) => record.bridgeName === value,
       filterSearch: true,
+      hidden: uiMode === 'simple',
     },
     {
       title: t('queueItems'),
@@ -507,6 +513,9 @@ export const MachinePage: React.FC = () => {
       ),
     },
   ];
+
+  // Filter out hidden columns based on UI mode
+  const columns = allColumns.filter(col => !(col as any).hidden);
 
   const renderGridView = () => {
     return (

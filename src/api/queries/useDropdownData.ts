@@ -53,7 +53,6 @@ export const useDropdownData = (context?: string) => {
       
       // The stored procedure returns data wrapped in a 'dropdownValues' field as JSON string
       const rawData = response.tables[1]?.data[0] || response.tables[0]?.data[0];
-      console.log('GetLookupData raw response:', rawData);
       if (rawData?.dropdownValues) {
         try {
           // Parse the JSON string if it's a string
@@ -72,7 +71,7 @@ export const useDropdownData = (context?: string) => {
               try {
                 dropdownData[field] = JSON.parse(dropdownData[field]);
               } catch (e) {
-                console.error(`Failed to parse ${field}:`, e);
+                // Silently handle parse errors
               }
             }
           });
@@ -99,7 +98,6 @@ export const useDropdownData = (context?: string) => {
           
           return dropdownData as DropdownData;
         } catch (e) {
-          console.error('Failed to parse dropdown data:', e);
           // Return structure with empty arrays on parse error
           return {
             teams: [],
