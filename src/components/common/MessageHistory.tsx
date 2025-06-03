@@ -155,7 +155,7 @@ const MessageHistory: React.FC = () => {
       arrow
       trigger={['click']}
     >
-      <Badge count={unreadCount} offset={[-2, 2]}>
+      <Badge count={unreadCount} offset={[-2, 2]} style={{ cursor: 'pointer' }}>
         <BellOutlined 
           style={{ 
             fontSize: 20, 

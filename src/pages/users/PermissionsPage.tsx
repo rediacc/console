@@ -1,12 +1,11 @@
 import React, { useState } from 'react'
-import { Typography, Button, Space, Modal, Popconfirm, Tag, List, Card, Input, Select, Badge, Tabs } from 'antd'
+import { Typography, Button, Space, Modal, Popconfirm, List, Card, Input, Select, Badge, Tabs } from 'antd'
 import { 
   PlusOutlined, 
   DeleteOutlined, 
   SafetyOutlined, 
   UserOutlined,
-  KeyOutlined,
-  TeamOutlined
+  KeyOutlined
 } from '@ant-design/icons'
 import ResourceListView from '@/components/common/ResourceListView'
 import { 
@@ -194,47 +193,88 @@ const PermissionsPage: React.FC = () => {
       title: 'Actions',
       key: 'actions',
       width: 250,
-      render: (_: any, record: PermissionGroup) => (
-        <Space>
-          <Button
-            type="link"
-            icon={<KeyOutlined />}
-            onClick={() => {
-              setSelectedGroup(record)
-              setIsManageModalOpen(true)
-            }}
-          >
-            Permissions
-          </Button>
-          <Button
-            type="link"
-            icon={<UserOutlined />}
-            onClick={() => {
-              setSelectedGroup(record)
-              setIsAssignModalOpen(true)
-            }}
-          >
-            Assign User
-          </Button>
-          <Popconfirm
-            title="Delete Permission Group"
-            description={`Are you sure you want to delete group "${record.permissionGroupName}"?`}
-            onConfirm={() => handleDeleteGroup(record.permissionGroupName)}
-            okText="Yes"
-            cancelText="No"
-            okButtonProps={{ danger: true }}
-          >
-            <Button 
-              type="link" 
-              danger 
-              icon={<DeleteOutlined />}
-              loading={deleteGroupMutation.isPending}
+      render: (_: any, record: PermissionGroup) => {
+        // Check if this is a protected system group
+        const isProtectedGroup = record.permissionGroupName === 'Administrators' || 
+                                record.permissionGroupName === 'Machines'
+        
+        if (isProtectedGroup) {
+          return (
+            <Space>
+              <Button
+                type="link"
+                icon={<KeyOutlined />}
+                onClick={() => {
+                  toast.error(`The ${record.permissionGroupName} group is a protected system group and cannot be modified`)
+                }}
+              >
+                Permissions
+              </Button>
+              <Button
+                type="link"
+                icon={<UserOutlined />}
+                onClick={() => {
+                  setSelectedGroup(record)
+                  setIsAssignModalOpen(true)
+                }}
+              >
+                Assign User
+              </Button>
+              <Button 
+                type="link" 
+                danger 
+                icon={<DeleteOutlined />}
+                disabled
+                title={`The ${record.permissionGroupName} group is a protected system group and cannot be deleted`}
+              >
+                Delete
+              </Button>
+            </Space>
+          )
+        }
+        
+        return (
+          <Space>
+            <Button
+              type="link"
+              icon={<KeyOutlined />}
+              onClick={() => {
+                setSelectedGroup(record)
+                setIsManageModalOpen(true)
+              }}
             >
-              Delete
+              Permissions
             </Button>
-          </Popconfirm>
-        </Space>
-      ),
+            <Button
+              type="link"
+              icon={<UserOutlined />}
+              onClick={() => {
+                setSelectedGroup(record)
+                setIsAssignModalOpen(true)
+              }}
+            >
+              Assign User
+            </Button>
+            <Popconfirm
+              title="Delete Permission Group"
+              description={`Are you sure you want to delete group "${record.permissionGroupName}"?`}
+              onConfirm={() => handleDeleteGroup(record.permissionGroupName)}
+              okText="Yes"
+              cancelText="No"
+              okButtonProps={{ danger: true }}
+            >
+              <Button 
+                type="link" 
+                danger 
+                icon={<DeleteOutlined />}
+                loading={deleteGroupMutation.isPending}
+              >
+                Delete
+              </Button>
+            </Popconfirm>
+          </Space>
+        )
+      },
     },
   ]
 
@@ -254,7 +294,7 @@ const PermissionsPage: React.FC = () => {
       <ResourceListView
         title={<Title level={4} style={{ margin: 0 }}>Permission Groups</Title>}
         loading={isLoading}
-        data={permissionGroups}
+        data={permissionGroups || []}
         columns={columns}
         rowKey="permissionGroupName"
         searchPlaceholder="Search permission groups..."
@@ -349,7 +389,7 @@ const PermissionsPage: React.FC = () => {
                       onChange={setSelectedPermission}
                       showSearch
                       filterOption={(input, option) =>
-                        (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                        (String(option?.label ?? '')).toLowerCase().includes(input.toLowerCase())
                       }
                     >
                       {Object.entries(permissionsByCategory).map(([category, perms]) => (
@@ -408,7 +448,7 @@ const PermissionsPage: React.FC = () => {
           onChange={setSelectedUser}
           showSearch
           filterOption={(input, option) =>
-            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+            (String(option?.label ?? '')).toLowerCase().includes(input.toLowerCase())
           }
           options={dropdownData?.users?.map(u => ({ 
             value: u.value, 
