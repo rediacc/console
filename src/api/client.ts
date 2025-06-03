@@ -81,8 +81,13 @@ class ApiClient {
       },
       (error) => {
         if (error.response?.status === 401) {
+          // Check if it's specifically a validation error on page refresh
+          const errorMessage = error.response?.data?.tables?.[0]?.data?.[0]?.message
+          if (errorMessage?.includes('Invalid request credential')) {
+            // Only show this message once, not for each failed request
+            showMessage('error', 'Session expired. Please login again.')
+          }
           store.dispatch(logout())
-          showMessage('error', 'Session expired. Please login again.')
           window.location.href = `${import.meta.env.BASE_URL}login`
         } else if (error.response?.status >= 500) {
           showMessage('error', 'Server error. Please try again later.')

@@ -156,15 +156,21 @@ export const useDashboardMetrics = (daysBack: number = 30) => {
         
         return metrics
       } catch (error) {
+        // If the error is authentication-related, don't try fallback queries
+        if (error.response?.status === 401) {
+          throw error
+        }
+        
         // Fallback to the old method if new endpoint fails
-        const teamsResponse = await apiClient.get('/GetCompanyTeams')
-        const teams = teamsResponse.tables[1]?.data || []
-        
-        const regionsResponse = await apiClient.get('/GetCompanyRegions')
-        const regions = regionsResponse.tables[1]?.data || []
-        
-        const usersResponse = await apiClient.get('/GetCompanyUsers')
-        const users = usersResponse.tables[1]?.data || []
+        try {
+          const teamsResponse = await apiClient.get('/GetCompanyTeams')
+          const teams = teamsResponse.tables[1]?.data || []
+          
+          const regionsResponse = await apiClient.get('/GetCompanyRegions')
+          const regions = regionsResponse.tables[1]?.data || []
+          
+          const usersResponse = await apiClient.get('/GetCompanyUsers')
+          const users = usersResponse.tables[1]?.data || []
         
         const totalTeams = teams.length
         const totalMachines = teams.reduce((sum: number, team: any) => sum + (team.machineCount || 0), 0)
@@ -200,6 +206,27 @@ export const useDashboardMetrics = (daysBack: number = 30) => {
         }
         
         return mockMetrics
+        } catch (fallbackError) {
+          // If even the fallback fails, return empty metrics
+          console.error('Dashboard metrics failed:', fallbackError)
+          return {
+            totalTeams: 0,
+            totalMachines: 0,
+            totalRepositories: 0,
+            totalUsers: 0,
+            activeQueueItems: 0,
+            completedQueueItems: 0,
+            failedQueueItems: 0,
+            resourceUsageByTeam: [],
+            queueActivityByDay: [],
+            systemHealth: {
+              activeBridges: 0,
+              totalBridges: 0,
+              activeRegions: 0,
+              totalRegions: 0
+            }
+          } as DashboardMetrics
+        }
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
