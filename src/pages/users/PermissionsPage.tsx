@@ -23,54 +23,6 @@ import toast from 'react-hot-toast'
 
 const { Title, Text } = Typography
 
-// Available permissions in the system
-const AVAILABLE_PERMISSIONS = [
-  // Company Management
-  { name: 'company.view', category: 'Company', description: 'View company details' },
-  { name: 'company.update', category: 'Company', description: 'Update company settings' },
-  { name: 'company.vault', category: 'Company', description: 'Manage company vault' },
-  
-  // User Management
-  { name: 'users.view', category: 'Users', description: 'View users' },
-  { name: 'users.create', category: 'Users', description: 'Create new users' },
-  { name: 'users.update', category: 'Users', description: 'Update user details' },
-  { name: 'users.delete', category: 'Users', description: 'Delete users' },
-  { name: 'users.activate', category: 'Users', description: 'Activate/deactivate users' },
-  
-  // Team Management
-  { name: 'teams.view', category: 'Teams', description: 'View teams' },
-  { name: 'teams.create', category: 'Teams', description: 'Create teams' },
-  { name: 'teams.update', category: 'Teams', description: 'Update team details' },
-  { name: 'teams.delete', category: 'Teams', description: 'Delete teams' },
-  { name: 'teams.members', category: 'Teams', description: 'Manage team members' },
-  
-  // Infrastructure
-  { name: 'regions.view', category: 'Infrastructure', description: 'View regions' },
-  { name: 'regions.create', category: 'Infrastructure', description: 'Create regions' },
-  { name: 'regions.update', category: 'Infrastructure', description: 'Update regions' },
-  { name: 'regions.delete', category: 'Infrastructure', description: 'Delete regions' },
-  { name: 'bridges.all', category: 'Infrastructure', description: 'All bridge permissions' },
-  { name: 'machines.all', category: 'Infrastructure', description: 'All machine permissions' },
-  
-  // Resources
-  { name: 'repositories.all', category: 'Resources', description: 'All repository permissions' },
-  { name: 'storage.all', category: 'Resources', description: 'All storage permissions' },
-  { name: 'schedules.all', category: 'Resources', description: 'All schedule permissions' },
-  
-  // Queue Management
-  { name: 'queue.view', category: 'Queue', description: 'View queue items' },
-  { name: 'queue.create', category: 'Queue', description: 'Create queue items' },
-  { name: 'queue.update', category: 'Queue', description: 'Update queue items' },
-  { name: 'queue.delete', category: 'Queue', description: 'Delete queue items' },
-  
-  // Permissions
-  { name: 'permissions.view', category: 'Permissions', description: 'View permission groups' },
-  { name: 'permissions.create', category: 'Permissions', description: 'Create permission groups' },
-  { name: 'permissions.update', category: 'Permissions', description: 'Update permission groups' },
-  { name: 'permissions.delete', category: 'Permissions', description: 'Delete permission groups' },
-  { name: 'permissions.assign', category: 'Permissions', description: 'Assign users to groups' },
-]
-
 const PermissionsPage: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isManageModalOpen, setIsManageModalOpen] = useState(false)
@@ -278,12 +230,8 @@ const PermissionsPage: React.FC = () => {
     },
   ]
 
-  // Group permissions by category
-  const permissionsByCategory = AVAILABLE_PERMISSIONS.reduce((acc, perm) => {
-    if (!acc[perm.category]) acc[perm.category] = []
-    acc[perm.category].push(perm)
-    return acc
-  }, {} as Record<string, typeof AVAILABLE_PERMISSIONS>)
+  // Get available permissions from dropdown data
+  const availablePermissions = dropdownData?.permissions || []
 
   return (
     <Space direction="vertical" size={24} style={{ width: '100%' }}>
@@ -367,7 +315,6 @@ const PermissionsPage: React.FC = () => {
                         <List.Item.Meta
                           avatar={<KeyOutlined />}
                           title={permission}
-                          description={AVAILABLE_PERMISSIONS.find(p => p.name === permission)?.description}
                         />
                       </List.Item>
                     )}
@@ -383,33 +330,25 @@ const PermissionsPage: React.FC = () => {
                 <Space direction="vertical" style={{ width: '100%' }} size={16}>
                   <Space style={{ width: '100%' }}>
                     <Select
-                      placeholder="Select permission to add"
+                      placeholder={availablePermissions.length > 0 ? "Select permission to add" : "No permissions available (admin access required)"}
                       style={{ width: 400 }}
                       value={selectedPermission}
                       onChange={setSelectedPermission}
                       showSearch
+                      disabled={availablePermissions.length === 0}
                       filterOption={(input, option) =>
                         (String(option?.label ?? '')).toLowerCase().includes(input.toLowerCase())
                       }
                     >
-                      {Object.entries(permissionsByCategory).map(([category, perms]) => (
-                        <Select.OptGroup key={category} label={category}>
-                          {perms.map(perm => (
-                            <Select.Option 
-                              key={perm.name} 
-                              value={perm.name}
-                              label={perm.name}
-                              disabled={groupDetails?.permissions?.includes(perm.name)}
-                            >
-                              <div>
-                                <div>{perm.name}</div>
-                                <Text type="secondary" style={{ fontSize: 12 }}>
-                                  {perm.description}
-                                </Text>
-                              </div>
-                            </Select.Option>
-                          ))}
-                        </Select.OptGroup>
+                      {availablePermissions.map(perm => (
+                        <Select.Option 
+                          key={perm.name} 
+                          value={perm.name}
+                          label={perm.name}
+                          disabled={groupDetails?.permissions?.includes(perm.name)}
+                        >
+                          {perm.name}
+                        </Select.Option>
                       ))}
                     </Select>
                     <Button
@@ -422,6 +361,12 @@ const PermissionsPage: React.FC = () => {
                       Add Permission
                     </Button>
                   </Space>
+                  {availablePermissions.length === 0 && (
+                    <Text type="secondary">
+                      Note: Only administrators can view and manage permissions. 
+                      If you need to manage permissions, please contact your system administrator.
+                    </Text>
+                  )}
                 </Space>
               ),
             },

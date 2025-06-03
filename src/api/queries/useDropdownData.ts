@@ -25,6 +25,10 @@ export interface DropdownData {
     userCount: number
     permissionCount: number
   }>
+  permissions: Array<{
+    name: string
+    value: string
+  }>
   queueFunctions: Array<{
     category: string
     functions: Array<{
@@ -63,7 +67,7 @@ export const useDropdownData = (context?: string) => {
           // Parse all nested JSON strings
           const fieldsToParser = [
             'teams', 'allTeams', 'regions', 'bridgesByRegion', 
-            'machinesByTeam', 'users', 'permissionGroups', 'subscriptionPlans'
+            'machinesByTeam', 'users', 'permissionGroups', 'permissions', 'subscriptionPlans'
           ];
           
           fieldsToParser.forEach(field => {
@@ -108,6 +112,7 @@ export const useDropdownData = (context?: string) => {
             machinesByTeam: [],
             users: [],
             permissionGroups: [],
+            permissions: [],
             queueFunctions: [],
             subscriptionPlans: []
           } as DropdownData;
@@ -126,6 +131,7 @@ export const useDropdownData = (context?: string) => {
         machinesByTeam: [],
         users: [],
         permissionGroups: [],
+        permissions: [],
         queueFunctions: [],
         subscriptionPlans: [],
         ...fallbackData
