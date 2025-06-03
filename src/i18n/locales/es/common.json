@@ -30,7 +30,8 @@
     "configure": "Configurar",
     "activate": "Activar",
     "deactivate": "Desactivar",
-    "assign": "Asignar"
+    "assign": "Asignar",
+    "reset": "Restablecer"
   },
   "status": {
     "active": "Activo",
