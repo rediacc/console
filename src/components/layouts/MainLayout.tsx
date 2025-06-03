@@ -91,15 +91,26 @@ const MainLayout: React.FC = () => {
     // Toggle the mode
     dispatch(toggleUiMode())
     
-    // Determine the first visible menu item for the new mode
+    // Determine the new mode
     const newMode = uiMode === 'simple' ? 'expert' : 'simple'
-    const firstVisibleItem = allMenuItems.find(item => 
-      newMode === 'expert' || item.showInSimple
+    
+    // Check if current page is visible in the new mode
+    const currentPath = location.pathname
+    const currentMenuItem = allMenuItems.find(item => item.key === currentPath)
+    
+    const isCurrentPageVisibleInNewMode = currentMenuItem && (
+      newMode === 'expert' || currentMenuItem.showInSimple
     )
     
-    // Navigate to the first visible menu item
-    if (firstVisibleItem) {
-      navigate(firstVisibleItem.key)
+    // Only navigate if current page is not visible in new mode
+    if (!isCurrentPageVisibleInNewMode) {
+      const firstVisibleItem = allMenuItems.find(item => 
+        newMode === 'expert' || item.showInSimple
+      )
+      
+      if (firstVisibleItem) {
+        navigate(firstVisibleItem.key)
+      }
     }
     
     // Clear transition state after animation

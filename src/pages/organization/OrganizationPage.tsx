@@ -702,13 +702,13 @@ const OrganizationPage: React.FC = () => {
         </Space>
       ),
     },
-    {
+    ...(uiMode === 'expert' ? [{
       title: t('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
       width: 120,
       render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
-    },
+    }] : []),
     {
       title: t('general.actions'),
       key: 'actions',
@@ -779,13 +779,13 @@ const OrganizationPage: React.FC = () => {
         </Space>
       ),
     },
-    {
+    ...(uiMode === 'expert' ? [{
       title: t('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
       width: 120,
       render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
-    },
+    }] : []),
     {
       title: t('general.actions'),
       key: 'actions',
@@ -859,13 +859,13 @@ const OrganizationPage: React.FC = () => {
         <Badge count={count} showZero style={{ backgroundColor: count > 0 ? '#52c41a' : '#d9d9d9' }} />
       ),
     },
-    {
+    ...(uiMode === 'expert' ? [{
       title: t('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
       width: 120,
       render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
-    },
+    }] : []),
   ]
 
   // Repository columns
@@ -881,13 +881,13 @@ const OrganizationPage: React.FC = () => {
         </Space>
       ),
     },
-    {
+    ...(uiMode === 'expert' ? [{
       title: t('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
       width: 120,
       render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
-    },
+    }] : []),
     {
       title: t('general.actions'),
       key: 'actions',
@@ -946,13 +946,13 @@ const OrganizationPage: React.FC = () => {
         </Space>
       ),
     },
-    {
+    ...(uiMode === 'expert' ? [{
       title: t('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
       width: 120,
       render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
-    },
+    }] : []),
     {
       title: t('general.actions'),
       key: 'actions',
@@ -1011,13 +1011,13 @@ const OrganizationPage: React.FC = () => {
         </Space>
       ),
     },
-    {
+    ...(uiMode === 'expert' ? [{
       title: t('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
       width: 120,
       render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
-    },
+    }] : []),
     {
       title: t('general.actions'),
       key: 'actions',

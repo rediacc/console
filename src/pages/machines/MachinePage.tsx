@@ -484,14 +484,21 @@ export const MachinePage: React.FC = () => {
         key: 'queueCount',
         align: 'center' as const,
         sorter: (a: Machine, b: Machine) => a.queueCount - b.queueCount,
-      },
-      {
+      }
+    );
+
+    // Only add vault version column in expert mode
+    if (uiMode === 'expert') {
+      baseColumns.push({
         title: t('vaultVersion'),
         dataIndex: 'vaultVersion',
         key: 'vaultVersion',
         align: 'center' as const,
         sorter: (a: Machine, b: Machine) => a.vaultVersion - b.vaultVersion,
-      },
+      });
+    }
+
+    baseColumns.push(
       {
         title: tCommon('table.actions'),
         key: 'actions',
