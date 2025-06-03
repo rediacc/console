@@ -22,12 +22,13 @@ import ResourceForm from '@/components/forms/ResourceForm'
 import VaultConfigModal from '@/components/common/VaultConfigModal'
 
 // Team queries
-import { useTeams, useCreateTeam, useDeleteTeam, Team } from '@/api/queries/teams'
+import { useTeams, useCreateTeam, useUpdateTeamName, useDeleteTeam, Team } from '@/api/queries/teams'
 
 // Region queries
 import { 
   useRegions, 
   useCreateRegion, 
+  useUpdateRegionName,
   useDeleteRegion, 
   useUpdateRegionVault, 
   Region 
@@ -37,6 +38,7 @@ import {
 import { 
   useBridges, 
   useCreateBridge, 
+  useUpdateBridgeName,
   useDeleteBridge, 
   useUpdateBridgeVault, 
   Bridge 
@@ -46,6 +48,8 @@ import {
 import { 
   useMachines, 
   useCreateMachine, 
+  useUpdateMachineName,
+  useUpdateMachineBridge,
   useDeleteMachine, 
   useUpdateMachineVault, 
   Machine 
@@ -55,6 +59,7 @@ import {
 import { 
   useRepositories, 
   useCreateRepository, 
+  useUpdateRepositoryName,
   useDeleteRepository, 
   useUpdateRepositoryVault, 
   Repository 
@@ -64,6 +69,7 @@ import {
 import { 
   useStorage, 
   useCreateStorage, 
+  useUpdateStorageName,
   useDeleteStorage, 
   useUpdateStorageVault, 
   Storage 
@@ -73,6 +79,7 @@ import {
 import { 
   useSchedules, 
   useCreateSchedule, 
+  useUpdateScheduleName,
   useDeleteSchedule, 
   useUpdateScheduleVault, 
   Schedule 
@@ -91,7 +98,21 @@ import {
   createStorageSchema,
   CreateStorageForm,
   createScheduleSchema,
-  CreateScheduleForm
+  CreateScheduleForm,
+  editTeamSchema,
+  EditTeamForm,
+  editRegionSchema,
+  EditRegionForm,
+  editBridgeSchema,
+  EditBridgeForm,
+  editMachineSchema,
+  EditMachineForm,
+  editRepositorySchema,
+  EditRepositoryForm,
+  editStorageSchema,
+  EditStorageForm,
+  editScheduleSchema,
+  EditScheduleForm
 } from '@/utils/validation'
 
 const { Title, Text } = Typography
@@ -104,10 +125,12 @@ const OrganizationPage: React.FC = () => {
   
   // Team state
   const [isCreateTeamModalOpen, setIsCreateTeamModalOpen] = useState(false)
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null)
   const [teamForm] = Form.useForm()
   
   // Region state
   const [isCreateRegionModalOpen, setIsCreateRegionModalOpen] = useState(false)
+  const [editingRegion, setEditingRegion] = useState<Region | null>(null)
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
   const [regionVaultModalConfig, setRegionVaultModalConfig] = useState<{
     open: boolean
@@ -116,6 +139,7 @@ const OrganizationPage: React.FC = () => {
 
   // Bridge state
   const [isCreateBridgeModalOpen, setIsCreateBridgeModalOpen] = useState(false)
+  const [editingBridge, setEditingBridge] = useState<Bridge | null>(null)
   const [bridgeVaultModalConfig, setBridgeVaultModalConfig] = useState<{
     open: boolean
     bridge?: Bridge
@@ -123,6 +147,7 @@ const OrganizationPage: React.FC = () => {
 
   // Machine state
   const [isCreateMachineModalOpen, setIsCreateMachineModalOpen] = useState(false)
+  const [editingMachine, setEditingMachine] = useState<Machine | null>(null)
   const [machineVaultModalConfig, setMachineVaultModalConfig] = useState<{
     open: boolean
     machine?: Machine
@@ -130,6 +155,7 @@ const OrganizationPage: React.FC = () => {
 
   // Repository state
   const [isCreateRepositoryModalOpen, setIsCreateRepositoryModalOpen] = useState(false)
+  const [editingRepository, setEditingRepository] = useState<Repository | null>(null)
   const [repositoryVaultModalConfig, setRepositoryVaultModalConfig] = useState<{
     open: boolean
     repository?: Repository
@@ -137,6 +163,7 @@ const OrganizationPage: React.FC = () => {
 
   // Storage state
   const [isCreateStorageModalOpen, setIsCreateStorageModalOpen] = useState(false)
+  const [editingStorage, setEditingStorage] = useState<Storage | null>(null)
   const [storageVaultModalConfig, setStorageVaultModalConfig] = useState<{
     open: boolean
     storage?: Storage
@@ -144,6 +171,7 @@ const OrganizationPage: React.FC = () => {
 
   // Schedule state
   const [isCreateScheduleModalOpen, setIsCreateScheduleModalOpen] = useState(false)
+  const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null)
   const [scheduleVaultModalConfig, setScheduleVaultModalConfig] = useState<{
     open: boolean
     schedule?: Schedule
@@ -155,41 +183,49 @@ const OrganizationPage: React.FC = () => {
   // Team hooks
   const { data: teams = [], isLoading: teamsLoading } = useTeams()
   const createTeamMutation = useCreateTeam()
+  const updateTeamNameMutation = useUpdateTeamName()
   const deleteTeamMutation = useDeleteTeam()
 
   // Region hooks
   const { data: regions = [], isLoading: regionsLoading } = useRegions()
   const createRegionMutation = useCreateRegion()
+  const updateRegionNameMutation = useUpdateRegionName()
   const deleteRegionMutation = useDeleteRegion()
   const updateRegionVaultMutation = useUpdateRegionVault()
 
   // Bridge hooks
   const { data: bridges = [], isLoading: bridgesLoading } = useBridges(selectedRegion || undefined)
   const createBridgeMutation = useCreateBridge()
+  const updateBridgeNameMutation = useUpdateBridgeName()
   const deleteBridgeMutation = useDeleteBridge()
   const updateBridgeVaultMutation = useUpdateBridgeVault()
 
   // Machine hooks
   const { data: machines = [], isLoading: machinesLoading } = useMachines(selectedTeam || undefined)
   const createMachineMutation = useCreateMachine()
+  const updateMachineNameMutation = useUpdateMachineName()
+  const updateMachineBridgeMutation = useUpdateMachineBridge()
   const deleteMachineMutation = useDeleteMachine()
   const updateMachineVaultMutation = useUpdateMachineVault()
 
   // Repository hooks
   const { data: repositories = [], isLoading: repositoriesLoading } = useRepositories(selectedTeam || undefined)
   const createRepositoryMutation = useCreateRepository()
+  const updateRepositoryNameMutation = useUpdateRepositoryName()
   const deleteRepositoryMutation = useDeleteRepository()
   const updateRepositoryVaultMutation = useUpdateRepositoryVault()
 
   // Storage hooks
   const { data: storages = [], isLoading: storagesLoading } = useStorage(selectedTeam || undefined)
   const createStorageMutation = useCreateStorage()
+  const updateStorageNameMutation = useUpdateStorageName()
   const deleteStorageMutation = useDeleteStorage()
   const updateStorageVaultMutation = useUpdateStorageVault()
 
   // Schedule hooks
   const { data: schedules = [], isLoading: schedulesLoading } = useSchedules(selectedTeam || undefined)
   const createScheduleMutation = useCreateSchedule()
+  const updateScheduleNameMutation = useUpdateScheduleName()
   const deleteScheduleMutation = useDeleteSchedule()
   const updateScheduleVaultMutation = useUpdateScheduleVault()
 
@@ -260,6 +296,20 @@ const OrganizationPage: React.FC = () => {
     }
   }
 
+  const handleEditTeam = async (values: EditTeamForm) => {
+    if (!editingTeam) return
+    try {
+      await updateTeamNameMutation.mutateAsync({
+        currentTeamName: editingTeam.teamName,
+        newTeamName: values.teamName,
+      })
+      setEditingTeam(null)
+      teamForm.resetFields()
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
   const handleDeleteTeam = async (teamName: string) => {
     try {
       await deleteTeamMutation.mutateAsync(teamName)
@@ -276,6 +326,20 @@ const OrganizationPage: React.FC = () => {
     try {
       await createRegionMutation.mutateAsync(data)
       setIsCreateRegionModalOpen(false)
+      regionForm.reset()
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
+  const handleEditRegion = async (values: EditRegionForm) => {
+    if (!editingRegion) return
+    try {
+      await updateRegionNameMutation.mutateAsync({
+        currentRegionName: editingRegion.regionName,
+        newRegionName: values.regionName,
+      })
+      setEditingRegion(null)
       regionForm.reset()
     } catch (error) {
       // Error handled by mutation
@@ -309,6 +373,21 @@ const OrganizationPage: React.FC = () => {
     try {
       await createBridgeMutation.mutateAsync(data)
       setIsCreateBridgeModalOpen(false)
+      bridgeForm.reset()
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
+  const handleEditBridge = async (values: EditBridgeForm) => {
+    if (!editingBridge) return
+    try {
+      await updateBridgeNameMutation.mutateAsync({
+        regionName: editingBridge.regionName,
+        currentBridgeName: editingBridge.bridgeName,
+        newBridgeName: values.bridgeName,
+      })
+      setEditingBridge(null)
       bridgeForm.reset()
     } catch (error) {
       // Error handled by mutation
@@ -356,6 +435,28 @@ const OrganizationPage: React.FC = () => {
     }
   }
 
+  const handleEditMachine = async (values: EditMachineForm) => {
+    if (!editingMachine) return
+    try {
+      await updateMachineNameMutation.mutateAsync({
+        teamName: editingMachine.teamName,
+        currentMachineName: editingMachine.machineName,
+        newMachineName: values.machineName,
+      })
+      if (values.bridgeName !== editingMachine.bridgeName) {
+        await updateMachineBridgeMutation.mutateAsync({
+          teamName: editingMachine.teamName,
+          machineName: values.machineName,
+          newBridgeName: values.bridgeName,
+        })
+      }
+      setEditingMachine(null)
+      machineForm.reset()
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
   const handleDeleteMachine = async (machine: Machine) => {
     try {
       await deleteMachineMutation.mutateAsync({
@@ -384,6 +485,21 @@ const OrganizationPage: React.FC = () => {
     try {
       await createRepositoryMutation.mutateAsync(data)
       setIsCreateRepositoryModalOpen(false)
+      repositoryForm.reset()
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
+  const handleEditRepository = async (values: EditRepositoryForm) => {
+    if (!editingRepository) return
+    try {
+      await updateRepositoryNameMutation.mutateAsync({
+        teamName: editingRepository.teamName,
+        currentRepositoryName: editingRepository.repositoryName,
+        newRepositoryName: values.repositoryName,
+      })
+      setEditingRepository(null)
       repositoryForm.reset()
     } catch (error) {
       // Error handled by mutation
@@ -424,6 +540,21 @@ const OrganizationPage: React.FC = () => {
     }
   }
 
+  const handleEditStorage = async (values: EditStorageForm) => {
+    if (!editingStorage) return
+    try {
+      await updateStorageNameMutation.mutateAsync({
+        teamName: editingStorage.teamName,
+        currentStorageName: editingStorage.storageName,
+        newStorageName: values.storageName,
+      })
+      setEditingStorage(null)
+      storageForm.reset()
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
   const handleDeleteStorage = async (storage: Storage) => {
     try {
       await deleteStorageMutation.mutateAsync({
@@ -452,6 +583,21 @@ const OrganizationPage: React.FC = () => {
     try {
       await createScheduleMutation.mutateAsync(data)
       setIsCreateScheduleModalOpen(false)
+      scheduleForm.reset()
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
+  const handleEditSchedule = async (values: EditScheduleForm) => {
+    if (!editingSchedule) return
+    try {
+      await updateScheduleNameMutation.mutateAsync({
+        teamName: editingSchedule.teamName,
+        currentScheduleName: editingSchedule.scheduleName,
+        newScheduleName: values.scheduleName,
+      })
+      setEditingSchedule(null)
       scheduleForm.reset()
     } catch (error) {
       // Error handled by mutation
@@ -540,7 +686,8 @@ const OrganizationPage: React.FC = () => {
             type="link" 
             icon={<EditOutlined />}
             onClick={() => {
-              // TODO: Implement edit functionality
+              setEditingTeam(record)
+              teamForm.setFieldsValue({ teamName: record.teamName })
             }}
           >
             {t('general.edit')}
@@ -616,7 +763,8 @@ const OrganizationPage: React.FC = () => {
             type="link" 
             icon={<EditOutlined />}
             onClick={() => {
-              // TODO: Implement edit functionality
+              setEditingRegion(record)
+              regionForm.setValue('regionName', record.regionName)
             }}
           >
             {t('general.edit')}
@@ -692,7 +840,8 @@ const OrganizationPage: React.FC = () => {
             type="link" 
             icon={<EditOutlined />}
             onClick={() => {
-              // TODO: Implement edit functionality
+              setEditingBridge(record)
+              bridgeForm.setValue('bridgeName', record.bridgeName)
             }}
           >
             {t('general.edit')}
@@ -740,8 +889,8 @@ const OrganizationPage: React.FC = () => {
     },
     {
       title: t('machines.queueItems'),
-      dataIndex: 'queueItemCount',
-      key: 'queueItemCount',
+      dataIndex: 'queueCount',
+      key: 'queueCount',
       width: 120,
       render: (count: number) => (
         <Badge count={count} showZero style={{ backgroundColor: count > 0 ? '#52c41a' : '#d9d9d9' }} />
@@ -771,7 +920,9 @@ const OrganizationPage: React.FC = () => {
             type="link" 
             icon={<EditOutlined />}
             onClick={() => {
-              // TODO: Implement edit functionality
+              setEditingMachine(record)
+              machineForm.setValue('machineName', record.machineName)
+              machineForm.setValue('bridgeName', record.bridgeName)
             }}
           >
             {t('general.edit')}
@@ -835,7 +986,8 @@ const OrganizationPage: React.FC = () => {
             type="link" 
             icon={<EditOutlined />}
             onClick={() => {
-              // TODO: Implement edit functionality
+              setEditingRepository(record)
+              repositoryForm.setValue('repositoryName', record.repositoryName)
             }}
           >
             {t('general.edit')}
@@ -899,7 +1051,8 @@ const OrganizationPage: React.FC = () => {
             type="link" 
             icon={<EditOutlined />}
             onClick={() => {
-              // TODO: Implement edit functionality
+              setEditingStorage(record)
+              storageForm.setValue('storageName', record.storageName)
             }}
           >
             {t('general.edit')}
@@ -963,7 +1116,8 @@ const OrganizationPage: React.FC = () => {
             type="link" 
             icon={<EditOutlined />}
             onClick={() => {
-              // TODO: Implement edit functionality
+              setEditingSchedule(record)
+              scheduleForm.setValue('scheduleName', record.scheduleName)
             }}
           >
             {t('general.edit')}
@@ -1510,6 +1664,53 @@ const OrganizationPage: React.FC = () => {
         </Form>
       </Modal>
 
+      {/* Edit Team Modal */}
+      <Modal
+        title={t('teams.editTeam')}
+        open={!!editingTeam}
+        onCancel={() => {
+          setEditingTeam(null)
+          teamForm.resetFields()
+        }}
+        footer={null}
+      >
+        <Form
+          form={teamForm}
+          layout="vertical"
+          onFinish={handleEditTeam}
+        >
+          <Form.Item
+            name="teamName"
+            label={t('teams.teamName')}
+            rules={[
+              { required: true, message: t('teams.validation.teamNameRequired') },
+              { pattern: /^[a-zA-Z0-9-_]+$/, message: t('teams.validation.teamNamePattern') },
+            ]}
+          >
+            <Input placeholder={t('teams.placeholders.enterTeamName')} />
+          </Form.Item>
+
+          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+            <Space>
+              <Button onClick={() => {
+                setEditingTeam(null)
+                teamForm.resetFields()
+              }}>
+                {t('general.cancel')}
+              </Button>
+              <Button 
+                type="primary" 
+                htmlType="submit"
+                loading={updateTeamNameMutation.isPending}
+                style={{ background: '#556b2f', borderColor: '#556b2f' }}
+              >
+                {t('general.save')}
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
       {/* Region Modals */}
       <Modal
         title={t('regions.createRegion')}
@@ -1543,6 +1744,35 @@ const OrganizationPage: React.FC = () => {
         initialVersion={regionVaultModalConfig.region?.vaultVersion || 1}
         loading={updateRegionVaultMutation.isPending}
       />
+
+      {/* Edit Region Modal */}
+      <Modal
+        title={t('regions.editRegion')}
+        open={!!editingRegion}
+        onCancel={() => {
+          setEditingRegion(null)
+          regionForm.reset()
+        }}
+        footer={null}
+      >
+        <ResourceForm
+          form={regionForm}
+          fields={[{
+            name: 'regionName',
+            label: t('regions.regionName'),
+            placeholder: t('regions.placeholders.enterRegionName'),
+            required: true,
+          }]}
+          onSubmit={handleEditRegion}
+          submitText={t('general.save')}
+          cancelText={t('general.cancel')}
+          onCancel={() => {
+            setEditingRegion(null)
+            regionForm.reset()
+          }}
+          loading={updateRegionNameMutation.isPending}
+        />
+      </Modal>
 
       {/* Bridge Modals */}
       <Modal
@@ -1578,6 +1808,35 @@ const OrganizationPage: React.FC = () => {
         loading={updateBridgeVaultMutation.isPending}
       />
 
+      {/* Edit Bridge Modal */}
+      <Modal
+        title={t('bridges.editBridge')}
+        open={!!editingBridge}
+        onCancel={() => {
+          setEditingBridge(null)
+          bridgeForm.reset()
+        }}
+        footer={null}
+      >
+        <ResourceForm
+          form={bridgeForm}
+          fields={[{
+            name: 'bridgeName',
+            label: t('bridges.bridgeName'),
+            placeholder: t('bridges.placeholders.enterBridgeName'),
+            required: true,
+          }]}
+          onSubmit={handleEditBridge}
+          submitText={t('general.save')}
+          cancelText={t('general.cancel')}
+          onCancel={() => {
+            setEditingBridge(null)
+            bridgeForm.reset()
+          }}
+          loading={updateBridgeNameMutation.isPending}
+        />
+      </Modal>
+
       {/* Machine Modals */}
       <Modal
         title={t('machines.createMachine')}
@@ -1611,6 +1870,45 @@ const OrganizationPage: React.FC = () => {
         initialVersion={machineVaultModalConfig.machine?.vaultVersion || 1}
         loading={updateMachineVaultMutation.isPending}
       />
+
+      {/* Edit Machine Modal */}
+      <Modal
+        title={t('machines.editMachine')}
+        open={!!editingMachine}
+        onCancel={() => {
+          setEditingMachine(null)
+          machineForm.reset()
+        }}
+        footer={null}
+      >
+        <ResourceForm
+          form={machineForm}
+          fields={[
+            {
+              name: 'machineName',
+              label: t('machines.machineName'),
+              placeholder: t('machines.placeholders.enterMachineName'),
+              required: true,
+            },
+            {
+              name: 'bridgeName',
+              label: t('bridges.bridge'),
+              type: 'select',
+              placeholder: t('machines.placeholders.selectBridge'),
+              required: true,
+              options: dropdownData?.bridges?.map(b => ({ label: b, value: b })) || [],
+            },
+          ]}
+          onSubmit={handleEditMachine}
+          submitText={t('general.save')}
+          cancelText={t('general.cancel')}
+          onCancel={() => {
+            setEditingMachine(null)
+            machineForm.reset()
+          }}
+          loading={updateMachineNameMutation.isPending || updateMachineBridgeMutation.isPending}
+        />
+      </Modal>
 
       {/* Repository Modals */}
       <Modal
@@ -1646,6 +1944,35 @@ const OrganizationPage: React.FC = () => {
         loading={updateRepositoryVaultMutation.isPending}
       />
 
+      {/* Edit Repository Modal */}
+      <Modal
+        title={t('repositories.editRepository')}
+        open={!!editingRepository}
+        onCancel={() => {
+          setEditingRepository(null)
+          repositoryForm.reset()
+        }}
+        footer={null}
+      >
+        <ResourceForm
+          form={repositoryForm}
+          fields={[{
+            name: 'repositoryName',
+            label: t('repositories.repositoryName'),
+            placeholder: t('repositories.placeholders.enterRepositoryName'),
+            required: true,
+          }]}
+          onSubmit={handleEditRepository}
+          submitText={t('general.save')}
+          cancelText={t('general.cancel')}
+          onCancel={() => {
+            setEditingRepository(null)
+            repositoryForm.reset()
+          }}
+          loading={updateRepositoryNameMutation.isPending}
+        />
+      </Modal>
+
       {/* Storage Modals */}
       <Modal
         title={t('storage.createStorage')}
@@ -1680,6 +2007,35 @@ const OrganizationPage: React.FC = () => {
         loading={updateStorageVaultMutation.isPending}
       />
 
+      {/* Edit Storage Modal */}
+      <Modal
+        title={t('storage.editStorage')}
+        open={!!editingStorage}
+        onCancel={() => {
+          setEditingStorage(null)
+          storageForm.reset()
+        }}
+        footer={null}
+      >
+        <ResourceForm
+          form={storageForm}
+          fields={[{
+            name: 'storageName',
+            label: t('storage.storageName'),
+            placeholder: t('storage.placeholders.enterStorageName'),
+            required: true,
+          }]}
+          onSubmit={handleEditStorage}
+          submitText={t('general.save')}
+          cancelText={t('general.cancel')}
+          onCancel={() => {
+            setEditingStorage(null)
+            storageForm.reset()
+          }}
+          loading={updateStorageNameMutation.isPending}
+        />
+      </Modal>
+
       {/* Schedule Modals */}
       <Modal
         title={t('schedules.createSchedule')}
@@ -1713,6 +2069,35 @@ const OrganizationPage: React.FC = () => {
         initialVersion={scheduleVaultModalConfig.schedule?.vaultVersion || 1}
         loading={updateScheduleVaultMutation.isPending}
       />
+
+      {/* Edit Schedule Modal */}
+      <Modal
+        title={t('schedules.editSchedule')}
+        open={!!editingSchedule}
+        onCancel={() => {
+          setEditingSchedule(null)
+          scheduleForm.reset()
+        }}
+        footer={null}
+      >
+        <ResourceForm
+          form={scheduleForm}
+          fields={[{
+            name: 'scheduleName',
+            label: t('schedules.scheduleName'),
+            placeholder: t('schedules.placeholders.enterScheduleName'),
+            required: true,
+          }]}
+          onSubmit={handleEditSchedule}
+          submitText={t('general.save')}
+          cancelText={t('general.cancel')}
+          onCancel={() => {
+            setEditingSchedule(null)
+            scheduleForm.reset()
+          }}
+          loading={updateScheduleNameMutation.isPending}
+        />
+      </Modal>
     </>
   )
 }

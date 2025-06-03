@@ -1,9 +1,5 @@
 import { z } from 'zod'
 
-// Common patterns
-const namePattern = /^[a-zA-Z0-9-_@/]+$/
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
 // Resource name schemas
 export const teamNameSchema = z.string()
   .min(1, 'Team name is required')
@@ -115,6 +111,36 @@ export const queueItemSchema = z.object({
   queueVault: vaultSchema,
 })
 
+// Edit schemas
+export const editTeamSchema = z.object({
+  teamName: teamNameSchema,
+})
+
+export const editRegionSchema = z.object({
+  regionName: regionNameSchema,
+})
+
+export const editBridgeSchema = z.object({
+  bridgeName: bridgeNameSchema,
+})
+
+export const editMachineSchema = z.object({
+  machineName: machineNameSchema,
+  bridgeName: bridgeNameSchema,
+})
+
+export const editRepositorySchema = z.object({
+  repositoryName: repositoryNameSchema,
+})
+
+export const editStorageSchema = z.object({
+  storageName: storageNameSchema,
+})
+
+export const editScheduleSchema = z.object({
+  scheduleName: scheduleNameSchema,
+})
+
 // Type exports
 export type CreateTeamForm = z.infer<typeof createTeamSchema>
 export type CreateRegionForm = z.infer<typeof createRegionSchema>
@@ -126,3 +152,10 @@ export type CreateScheduleForm = z.infer<typeof createScheduleSchema>
 export type CreateUserForm = z.infer<typeof createUserSchema>
 export type LoginForm = z.infer<typeof loginSchema>
 export type QueueItemForm = z.infer<typeof queueItemSchema>
+export type EditTeamForm = z.infer<typeof editTeamSchema>
+export type EditRegionForm = z.infer<typeof editRegionSchema>
+export type EditBridgeForm = z.infer<typeof editBridgeSchema>
+export type EditMachineForm = z.infer<typeof editMachineSchema>
+export type EditRepositoryForm = z.infer<typeof editRepositorySchema>
+export type EditStorageForm = z.infer<typeof editStorageSchema>
+export type EditScheduleForm = z.infer<typeof editScheduleSchema>

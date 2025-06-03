@@ -139,6 +139,7 @@
     "versionFormat": "v{{version}}",
     "create": "Create",
     "cancel": "Cancel",
+    "save": "Save",
     "yes": "Yes",
     "no": "No",
     "region": "Region",
