@@ -56,7 +56,7 @@ const MainLayout: React.FC = () => {
       key: '/organization',
       icon: <TeamOutlined />,
       label: t('navigation.organization'),
-      showInSimple: false,
+      showInSimple: true,
     },
     {
       key: '/users',

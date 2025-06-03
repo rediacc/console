@@ -172,27 +172,31 @@ const OrganizationPage: React.FC = () => {
   const { data: dropdownData } = useDropdownData()
 
   // Team hooks
-  const { data: teams = [], isLoading: teamsLoading } = useTeams()
+  const { data: teams, isLoading: teamsLoading } = useTeams()
+  const teamsList = teams || []
   const createTeamMutation = useCreateTeam()
   const updateTeamNameMutation = useUpdateTeamName()
   const deleteTeamMutation = useDeleteTeam()
 
   // Region hooks
-  const { data: regions = [], isLoading: regionsLoading } = useRegions()
+  const { data: regions, isLoading: regionsLoading } = useRegions()
+  const regionsList = regions || []
   const createRegionMutation = useCreateRegion()
   const updateRegionNameMutation = useUpdateRegionName()
   const deleteRegionMutation = useDeleteRegion()
   const updateRegionVaultMutation = useUpdateRegionVault()
 
   // Bridge hooks
-  const { data: bridges = [], isLoading: bridgesLoading } = useBridges(selectedRegion || undefined)
+  const { data: bridges, isLoading: bridgesLoading } = useBridges(selectedRegion || undefined)
+  const bridgesList = bridges || []
   const createBridgeMutation = useCreateBridge()
   const updateBridgeNameMutation = useUpdateBridgeName()
   const deleteBridgeMutation = useDeleteBridge()
   const updateBridgeVaultMutation = useUpdateBridgeVault()
 
   // Machine hooks
-  const { data: machines = [], isLoading: machinesLoading } = useMachines(selectedTeam || undefined)
+  const { data: machines, isLoading: machinesLoading } = useMachines(selectedTeam || undefined)
+  const machinesList = machines || []
 
   // Repository hooks
   const { data: repositories = [], isLoading: repositoriesLoading } = useRepositories(selectedTeam || undefined)
@@ -214,6 +218,17 @@ const OrganizationPage: React.FC = () => {
   const updateScheduleNameMutation = useUpdateScheduleName()
   const deleteScheduleMutation = useDeleteSchedule()
   const updateScheduleVaultMutation = useUpdateScheduleVault()
+
+  // Set default selected team in Simple mode
+  React.useEffect(() => {
+    if (uiMode === 'simple' && !selectedTeam && teamsList.length > 0) {
+      // Check if "Private Team" exists
+      const privateTeam = teamsList.find(team => team.teamName === 'Private Team')
+      if (privateTeam) {
+        setSelectedTeam('Private Team')
+      }
+    }
+  }, [uiMode, selectedTeam, teamsList])
 
   // Forms
   const regionForm = useForm<CreateRegionForm>({
@@ -402,6 +417,31 @@ const OrganizationPage: React.FC = () => {
   }
 
   // Machine handlers removed - handled in MachinePage
+
+  // Set default values for Simple mode when modals open
+  React.useEffect(() => {
+    if (isCreateRepositoryModalOpen && uiMode === 'simple') {
+      repositoryForm.setValue('teamName', 'Private Team');
+    }
+  }, [isCreateRepositoryModalOpen, uiMode, repositoryForm]);
+
+  React.useEffect(() => {
+    if (isCreateStorageModalOpen && uiMode === 'simple') {
+      storageForm.setValue('teamName', 'Private Team');
+    }
+  }, [isCreateStorageModalOpen, uiMode, storageForm]);
+
+  React.useEffect(() => {
+    if (isCreateScheduleModalOpen && uiMode === 'simple') {
+      scheduleForm.setValue('teamName', 'Private Team');
+    }
+  }, [isCreateScheduleModalOpen, uiMode, scheduleForm]);
+
+  React.useEffect(() => {
+    if (isCreateBridgeModalOpen && uiMode === 'simple') {
+      bridgeForm.setValue('regionName', 'Private Region');
+    }
+  }, [isCreateBridgeModalOpen, uiMode, bridgeForm]);
 
   // Repository handlers
   const handleCreateRepository = async (data: CreateRepositoryForm) => {
@@ -804,12 +844,12 @@ const OrganizationPage: React.FC = () => {
         </Space>
       ),
     },
-    {
+    ...(uiMode !== 'simple' ? [{
       title: t('bridges.bridge'),
       dataIndex: 'bridgeName',
       key: 'bridgeName',
       render: (bridge: string) => <Tag color="blue">{bridge}</Tag>,
-    },
+    }] : []),
     {
       title: t('machines.queueItems'),
       dataIndex: 'queueCount',
@@ -1033,75 +1073,111 @@ const OrganizationPage: React.FC = () => {
     },
   ]
 
-  const bridgeFormFields = [
-    {
-      name: 'regionName',
-      label: t('general.region'),
-      placeholder: t('regions.placeholders.selectRegion'),
-      required: true,
-      type: 'select' as const,
-      options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
-    },
-    {
-      name: 'bridgeName',
-      label: t('bridges.bridgeName'),
-      placeholder: t('bridges.placeholders.enterBridgeName'),
-      required: true,
-    },
-  ]
+  const bridgeFormFields = uiMode === 'simple'
+    ? [
+        {
+          name: 'bridgeName',
+          label: t('bridges.bridgeName'),
+          placeholder: t('bridges.placeholders.enterBridgeName'),
+          required: true,
+        },
+      ]
+    : [
+        {
+          name: 'regionName',
+          label: t('general.region'),
+          placeholder: t('regions.placeholders.selectRegion'),
+          required: true,
+          type: 'select' as const,
+          options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
+        },
+        {
+          name: 'bridgeName',
+          label: t('bridges.bridgeName'),
+          placeholder: t('bridges.placeholders.enterBridgeName'),
+          required: true,
+        },
+      ]
 
   // Machine form fields removed - handled in MachinePage
 
-  const repositoryFormFields = [
-    {
-      name: 'teamName',
-      label: t('general.team'),
-      placeholder: t('teams.placeholders.selectTeam'),
-      required: true,
-      type: 'select' as const,
-      options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
-    },
-    {
-      name: 'repositoryName',
-      label: t('repositories.repositoryName'),
-      placeholder: t('repositories.placeholders.enterRepositoryName'),
-      required: true,
-    },
-  ]
+  const repositoryFormFields = uiMode === 'simple'
+    ? [
+        {
+          name: 'repositoryName',
+          label: t('repositories.repositoryName'),
+          placeholder: t('repositories.placeholders.enterRepositoryName'),
+          required: true,
+        },
+      ]
+    : [
+        {
+          name: 'teamName',
+          label: t('general.team'),
+          placeholder: t('teams.placeholders.selectTeam'),
+          required: true,
+          type: 'select' as const,
+          options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
+        },
+        {
+          name: 'repositoryName',
+          label: t('repositories.repositoryName'),
+          placeholder: t('repositories.placeholders.enterRepositoryName'),
+          required: true,
+        },
+      ]
 
-  const storageFormFields = [
-    {
-      name: 'teamName',
-      label: t('general.team'),
-      placeholder: t('teams.placeholders.selectTeam'),
-      required: true,
-      type: 'select' as const,
-      options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
-    },
-    {
-      name: 'storageName',
-      label: t('storage.storageName'),
-      placeholder: t('storage.placeholders.enterStorageName'),
-      required: true,
-    },
-  ]
+  const storageFormFields = uiMode === 'simple'
+    ? [
+        {
+          name: 'storageName',
+          label: t('storage.storageName'),
+          placeholder: t('storage.placeholders.enterStorageName'),
+          required: true,
+        },
+      ]
+    : [
+        {
+          name: 'teamName',
+          label: t('general.team'),
+          placeholder: t('teams.placeholders.selectTeam'),
+          required: true,
+          type: 'select' as const,
+          options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
+        },
+        {
+          name: 'storageName',
+          label: t('storage.storageName'),
+          placeholder: t('storage.placeholders.enterStorageName'),
+          required: true,
+        },
+      ]
 
-  const scheduleFormFields = [
-    {
-      name: 'teamName',
-      label: t('general.team'),
-      placeholder: t('teams.placeholders.selectTeam'),
-      required: true,
-      type: 'select' as const,
-      options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
-    },
-    {
-      name: 'scheduleName',
-      label: t('schedules.scheduleName'),
-      placeholder: t('schedules.placeholders.enterScheduleName'),
-      required: true,
-    },
-  ]
+  const scheduleFormFields = uiMode === 'simple'
+    ? [
+        {
+          name: 'scheduleName',
+          label: t('schedules.scheduleName'),
+          placeholder: t('schedules.placeholders.enterScheduleName'),
+          required: true,
+        },
+      ]
+    : [
+        {
+          name: 'teamName',
+          label: t('general.team'),
+          placeholder: t('teams.placeholders.selectTeam'),
+          required: true,
+          type: 'select' as const,
+          options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
+        },
+        {
+          name: 'scheduleName',
+          label: t('schedules.scheduleName'),
+          placeholder: t('schedules.placeholders.enterScheduleName'),
+          required: true,
+        },
+      ]
 
   const teamResourcesTabs = [
     {
@@ -1130,11 +1206,11 @@ const OrganizationPage: React.FC = () => {
           />
           <Table
             columns={machineColumns}
-            dataSource={machines}
+            dataSource={machinesList}
             rowKey="machineName"
             loading={machinesLoading}
             pagination={{
-              total: machines?.length || 0,
+              total: machinesList.length || 0,
               pageSize: 10,
               showSizeChanger: true,
               showTotal: (total) => t('machines.totalMachines', { total }),
@@ -1237,52 +1313,57 @@ const OrganizationPage: React.FC = () => {
       ),
       children: (
         <Row gutter={[24, 24]}>
-          <Col span={24}>
-            <ResourceListView
-              title={
-                <Space>
-                  <span style={{ fontSize: 16, fontWeight: 500 }}>{t('teams.title')}</span>
-                  <span style={{ fontSize: 14, color: '#666' }}>{t('teams.selectTeamPrompt')}</span>
-                </Space>
-              }
-              loading={teamsLoading}
-              data={teams}
-              columns={teamColumns}
-              rowKey="teamName"
-              searchPlaceholder={t('teams.searchTeams')}
-              actions={
-                <Button 
-                  type="primary" 
-                  icon={<PlusOutlined />}
-                  onClick={() => setIsCreateTeamModalOpen(true)}
-                  style={{ background: '#556b2f', borderColor: '#556b2f' }}
-                >
-                  {t('teams.createTeam')}
-                </Button>
-              }
-              rowSelection={{
-                type: 'radio',
-                selectedRowKeys: selectedTeam ? [selectedTeam] : [],
-                onChange: (selectedRowKeys: React.Key[]) => {
-                  setSelectedTeam(selectedRowKeys[0] as string || null)
-                },
-              }}
-              onRow={(record) => ({
-                onClick: () => setSelectedTeam(record.teamName),
-                className: selectedTeam === record.teamName ? 'selected-row' : '',
-                style: { cursor: 'pointer' },
-              })}
-            />
-          </Col>
+          {uiMode !== 'simple' && (
+            <Col span={24}>
+              <ResourceListView
+                title={
+                  <Space>
+                    <span style={{ fontSize: 16, fontWeight: 500 }}>{t('teams.title')}</span>
+                    <span style={{ fontSize: 14, color: '#666' }}>{t('teams.selectTeamPrompt')}</span>
+                  </Space>
+                }
+                loading={teamsLoading}
+                data={teamsList}
+                columns={teamColumns}
+                rowKey="teamName"
+                searchPlaceholder={t('teams.searchTeams')}
+                actions={
+                  <Button 
+                    type="primary" 
+                    icon={<PlusOutlined />}
+                    onClick={() => setIsCreateTeamModalOpen(true)}
+                    style={{ background: '#556b2f', borderColor: '#556b2f' }}
+                  >
+                    {t('teams.createTeam')}
+                  </Button>
+                }
+                rowSelection={{
+                  type: 'radio',
+                  selectedRowKeys: selectedTeam ? [selectedTeam] : [],
+                  onChange: (selectedRowKeys: React.Key[]) => {
+                    setSelectedTeam(selectedRowKeys[0] as string || null)
+                  },
+                }}
+                onRow={(record) => ({
+                  onClick: () => setSelectedTeam(record.teamName),
+                  className: selectedTeam === record.teamName ? 'selected-row' : '',
+                  style: { cursor: 'pointer' },
+                })}
+              />
+            </Col>
+          )}
           
           <Col span={24}>
             <Card>
               <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <Title level={4} style={{ margin: 0 }}>
-                    {selectedTeam ? t('teams.resourcesInTeam', { team: selectedTeam }) : t('teams.teamResources')}
+                    {uiMode === 'simple' 
+                      ? t('teams.teamResources')
+                      : (selectedTeam ? t('teams.resourcesInTeam', { team: selectedTeam }) : t('teams.teamResources'))
+                    }
                   </Title>
-                  {!selectedTeam && (
+                  {!selectedTeam && uiMode !== 'simple' && (
                     <Text type="secondary" style={{ fontSize: 14 }}>
                       {t('teams.selectTeamToView')}
                     </Text>
@@ -1329,19 +1410,19 @@ const OrganizationPage: React.FC = () => {
                 )}
               </div>
               
-              {!selectedTeam ? (
+              {!selectedTeam && uiMode !== 'simple' ? (
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description={t('teams.selectTeamPrompt')}
                   style={{ padding: '40px 0' }}
                 />
-              ) : (
+              ) : selectedTeam ? (
                 <Tabs
                   activeKey={teamResourcesTab}
                   onChange={setTeamResourcesTab}
                   items={uiMode === 'simple' ? teamResourcesTabs.filter(tab => tab.key !== 'schedules') : teamResourcesTabs}
                 />
-              )}
+              ) : null}
             </Card>
           </Col>
         </Row>
@@ -1366,7 +1447,7 @@ const OrganizationPage: React.FC = () => {
                 </Space>
               }
               loading={regionsLoading}
-              data={regions}
+              data={regionsList}
               columns={regionColumns}
               rowKey="regionName"
               searchPlaceholder={t('regions.searchRegions')}
@@ -1432,11 +1513,11 @@ const OrganizationPage: React.FC = () => {
               ) : (
                 <Table
                   columns={bridgeColumns}
-                  dataSource={bridges}
+                  dataSource={bridgesList}
                   rowKey="bridgeName"
                   loading={bridgesLoading}
                   pagination={{
-                    total: bridges?.length || 0,
+                    total: bridgesList.length || 0,
                     pageSize: 10,
                     showSizeChanger: true,
                     showTotal: (total) => t('bridges.totalBridges', { total }),

@@ -173,40 +173,58 @@ export const MachinePage: React.FC = () => {
     }
   }, [selectedRegionForEdit, filteredBridgesForEdit, editMachineForm]);
 
+  // Set default values for Simple mode when modal opens
+  React.useEffect(() => {
+    if (isCreateModalOpen && uiMode === 'simple') {
+      machineForm.setValue('teamName', 'Private Team');
+      machineForm.setValue('regionName', 'Private Region');
+      machineForm.setValue('bridgeName', 'Private Bridge');
+    }
+  }, [isCreateModalOpen, uiMode, machineForm]);
+
   // Machine form fields (same as OrganizationPage)
-  const machineFormFields = [
-    {
-      name: 'teamName',
-      label: tOrg('general.team'),
-      placeholder: tOrg('teams.placeholders.selectTeam'),
-      required: true,
-      type: 'select' as const,
-      options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
-    },
-    {
-      name: 'regionName',
-      label: tOrg('general.region'),
-      placeholder: tOrg('regions.placeholders.selectRegion'),
-      required: true,
-      type: 'select' as const,
-      options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
-    },
-    {
-      name: 'bridgeName',
-      label: tOrg('bridges.bridge'),
-      placeholder: selectedRegionForMachine ? tOrg('bridges.placeholders.selectBridge') : tOrg('bridges.placeholders.selectRegionFirst'),
-      required: true,
-      type: 'select' as const,
-      options: filteredBridgesForMachine,
-      disabled: !selectedRegionForMachine,
-    },
-    {
-      name: 'machineName',
-      label: tOrg('machines.machineName'),
-      placeholder: tOrg('machines.placeholders.enterMachineName'),
-      required: true,
-    },
-  ];
+  const machineFormFields = uiMode === 'simple' 
+    ? [
+        {
+          name: 'machineName',
+          label: tOrg('machines.machineName'),
+          placeholder: tOrg('machines.placeholders.enterMachineName'),
+          required: true,
+        },
+      ]
+    : [
+        {
+          name: 'teamName',
+          label: tOrg('general.team'),
+          placeholder: tOrg('teams.placeholders.selectTeam'),
+          required: true,
+          type: 'select' as const,
+          options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
+        },
+        {
+          name: 'regionName',
+          label: tOrg('general.region'),
+          placeholder: tOrg('regions.placeholders.selectRegion'),
+          required: true,
+          type: 'select' as const,
+          options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
+        },
+        {
+          name: 'bridgeName',
+          label: tOrg('bridges.bridge'),
+          placeholder: selectedRegionForMachine ? tOrg('bridges.placeholders.selectBridge') : tOrg('bridges.placeholders.selectRegionFirst'),
+          required: true,
+          type: 'select' as const,
+          options: filteredBridgesForMachine,
+          disabled: !selectedRegionForMachine,
+        },
+        {
+          name: 'machineName',
+          label: tOrg('machines.machineName'),
+          placeholder: tOrg('machines.placeholders.enterMachineName'),
+          required: true,
+        },
+      ];
 
   // Edit machine form fields
   const editMachineFormFields = [
