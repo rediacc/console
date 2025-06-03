@@ -19,8 +19,16 @@ export const usePermissionGroups = () => {
   return useQuery<PermissionGroup[]>({
     queryKey: ['permissionGroups'],
     queryFn: async () => {
-      const response = await apiClient.get<PermissionGroup[]>('/GetCompanyPermissionGroups')
-      return response.tables[1]?.data || []
+      const response = await apiClient.get<any[]>('/GetCompanyPermissionGroups')
+      const data = response.tables[1]?.data || []
+      
+      // Transform the data to match our interface
+      return data.map(group => ({
+        permissionGroupName: group.PermissionGroupName || group.permissionGroupName,
+        userCount: group.UserCount || group.userCount || 0,
+        permissionCount: group.PermissionCount || group.permissionCount || 0,
+        permissions: group.Permissions ? group.Permissions.split(',').map((p: string) => p.trim()).filter((p: string) => p) : []
+      }))
     },
   })
 }
