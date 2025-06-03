@@ -26,7 +26,7 @@ interface UIState {
 
 const initialState: UIState = {
   sidebarCollapsed: false,
-  activeView: 'dashboard',
+  activeView: 'organization',
   selectedResource: null,
   filters: {},
   messages: [],

@@ -3,7 +3,6 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Layout, Menu, Avatar, Dropdown, Space, Badge, Typography } from 'antd'
 import {
-  DashboardOutlined,
   TeamOutlined,
   GlobalOutlined,
   ApiOutlined,
@@ -82,11 +81,6 @@ const MainLayout: React.FC = () => {
   }
 
   const menuItems = [
-    {
-      key: '/dashboard',
-      icon: <DashboardOutlined />,
-      label: t('navigation.dashboard'),
-    },
     {
       key: '/organization',
       icon: <TeamOutlined />,

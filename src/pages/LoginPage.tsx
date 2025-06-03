@@ -73,7 +73,7 @@ const LoginPage: React.FC = () => {
       }))
 
       showMessage('success', t('common:messages.success'))
-      navigate('/dashboard')
+      navigate('/organization')
     } catch (error: any) {
       console.error('Login error:', error)
       setError(error.message || t('auth:login.errors.invalidCredentials'))

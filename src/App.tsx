@@ -9,7 +9,6 @@ import { ThemeProvider, useTheme } from '@/context/ThemeContext'
 import AuthLayout from '@/components/layouts/AuthLayout'
 import MainLayout from '@/components/layouts/MainLayout'
 import LoginPage from '@/pages/LoginPage'
-import DashboardPage from '@/pages/DashboardPage'
 import OrganizationPage from '@/pages/organization/OrganizationPage'
 import QueuePage from '@/pages/queue/QueuePage'
 import UsersAndPermissionsPage from '@/pages/users/UsersAndPermissionsPage'
@@ -62,8 +61,7 @@ const AppContent: React.FC = () => {
                 isAuthenticated ? <MainLayout /> : <Navigate to="/login" replace />
               }
             >
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/" element={<Navigate to="/organization" replace />} />
               
               {/* Organization */}
               <Route path="/organization" element={<OrganizationPage />} />
