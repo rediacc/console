@@ -5,9 +5,6 @@ import toast from 'react-hot-toast'
 export interface Storage {
   storageName: string
   teamName: string
-  storageType: string
-  capacity: string
-  used: string
   vaultVersion: number
 }
 
@@ -29,11 +26,10 @@ export const useCreateStorage = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async (data: { teamName: string; storageName: string; storageType: string; storageVault?: string }) => {
+    mutationFn: async (data: { teamName: string; storageName: string; storageVault?: string }) => {
       const response = await apiClient.post('/CreateStorage', {
         teamName: data.teamName,
         storageName: data.storageName,
-        storageType: data.storageType,
         storageVault: data.storageVault || '{}',
       })
       return response

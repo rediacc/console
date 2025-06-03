@@ -242,7 +242,6 @@ const OrganizationPage: React.FC = () => {
     defaultValues: {
       teamName: '',
       storageName: '',
-      storageType: 'local',
       storageVault: '{}',
     },
   })
@@ -903,35 +902,6 @@ const OrganizationPage: React.FC = () => {
       ),
     },
     {
-      title: 'Type',
-      dataIndex: 'storageType',
-      key: 'storageType',
-      width: 100,
-      render: (type: string) => <Tag>{type}</Tag>,
-    },
-    {
-      title: 'Usage',
-      dataIndex: 'used',
-      key: 'used',
-      width: 200,
-      render: (used: string, record: Storage) => {
-        const usedNum = parseFloat(used) || 0
-        const capacityNum = parseFloat(record.capacity) || 0
-        const percent = capacityNum > 0 ? (usedNum / capacityNum) * 100 : 0
-        const color = percent > 90 ? '#ff4d4f' : percent > 70 ? '#faad14' : '#52c41a'
-        return (
-          <Tooltip title={`${(usedNum / (1024 ** 3)).toFixed(2)} GB / ${(capacityNum / (1024 ** 3)).toFixed(2)} GB`}>
-            <Progress 
-              percent={percent} 
-              size="small" 
-              strokeColor={color}
-              format={() => `${percent.toFixed(0)}%`}
-            />
-          </Tooltip>
-        )
-      },
-    },
-    {
       title: 'Vault Version',
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
@@ -1215,18 +1185,6 @@ const OrganizationPage: React.FC = () => {
       label: 'Storage Name',
       placeholder: 'Enter storage name',
       required: true,
-    },
-    {
-      name: 'storageType',
-      label: 'Storage Type',
-      placeholder: 'Select storage type',
-      required: true,
-      type: 'select' as const,
-      options: [
-        { value: 'local', label: 'Local' },
-        { value: 'network', label: 'Network' },
-        { value: 'cloud', label: 'Cloud' },
-      ],
     },
   ]
 

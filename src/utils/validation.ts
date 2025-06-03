@@ -88,7 +88,6 @@ export const createRepositorySchema = z.object({
 export const createStorageSchema = z.object({
   teamName: teamNameSchema,
   storageName: storageNameSchema,
-  storageType: z.enum(['local', 'network', 'cloud']).default('local'),
   storageVault: vaultSchema.optional().default('{}'),
 })
 
