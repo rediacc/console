@@ -84,13 +84,20 @@ const LoginPage: React.FC = () => {
       }}
     >
       <Space direction="vertical" size={24} style={{ width: '100%' }}>
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ 
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: 96,
+        }}>
           <img
             src={logoBlack}
             alt="Rediacc Logo"
             style={{
-              height: 60,
-              marginBottom: 32,
+              height: 32,
+              width: 'auto',
+              maxWidth: 150,
+              objectFit: 'contain',
             }}
           />
         </div>

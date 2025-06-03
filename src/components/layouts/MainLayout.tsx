@@ -132,8 +132,10 @@ const MainLayout: React.FC = () => {
             src={logoBlack}
             alt="Rediacc Logo"
             style={{
-              height: collapsed ? 32 : 40,
+              height: 32,
               width: 'auto',
+              maxWidth: 150,
+              objectFit: 'contain',
             }}
           />
         </div>
