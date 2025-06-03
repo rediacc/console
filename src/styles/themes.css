@@ -1,0 +1,368 @@
+/* Root variables - consistent across themes */
+:root {
+  /* Brand colors */
+  --color-brand-primary: #ff6b6b;
+  --color-brand-secondary: #4ecdc4;
+  
+  /* Status colors */
+  --color-success: #51cf66;
+  --color-warning: #ffd43b;
+  --color-error: #ff6b6b;
+  --color-info: #74c0fc;
+}
+
+/* Light theme variables */
+[data-theme="light"] {
+  /* Background colors */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f8f9fa;
+  --color-bg-tertiary: #e9ecef;
+  --color-bg-hover: #f1f3f5;
+  --color-bg-active: #e9ecef;
+  
+  /* Text colors */
+  --color-text-primary: #212529;
+  --color-text-secondary: #495057;
+  --color-text-tertiary: #6c757d;
+  --color-text-muted: #adb5bd;
+  --color-text-inverse: #ffffff;
+  
+  /* Border colors */
+  --color-border-primary: #dee2e6;
+  --color-border-secondary: #e9ecef;
+  --color-border-hover: #adb5bd;
+  
+  /* Shadow colors */
+  --color-shadow: rgba(0, 0, 0, 0.1);
+  --color-shadow-strong: rgba(0, 0, 0, 0.15);
+  
+  /* Component specific */
+  --color-input-bg: #ffffff;
+  --color-input-border: #ced4da;
+  --color-input-focus-border: #80bdff;
+  --color-button-primary-bg: #007bff;
+  --color-button-primary-hover: #0056b3;
+  --color-button-secondary-bg: #6c757d;
+  --color-button-secondary-hover: #545b62;
+  
+  /* Status backgrounds */
+  --color-bg-success: #d3f9d8;
+  --color-bg-warning: #fff3cd;
+  --color-bg-error: #f8d7da;
+  --color-bg-info: #d1ecf1;
+}
+
+/* Dark theme variables */
+[data-theme="dark"] {
+  /* Background colors */
+  --color-bg-primary: #0a0a0a;
+  --color-bg-secondary: #1a1a1a;
+  --color-bg-tertiary: #2a2a2a;
+  --color-bg-hover: #3a3a3a;
+  --color-bg-active: #4a4a4a;
+  
+  /* Text colors */
+  --color-text-primary: #fafafa;
+  --color-text-secondary: #e4e4e7;
+  --color-text-tertiary: #a1a1aa;
+  --color-text-muted: #71717a;
+  --color-text-inverse: #0a0a0a;
+  
+  /* Border colors */
+  --color-border-primary: #27272a;
+  --color-border-secondary: #3f3f46;
+  --color-border-hover: #52525b;
+  
+  /* Shadow colors */
+  --color-shadow: rgba(0, 0, 0, 0.3);
+  --color-shadow-strong: rgba(0, 0, 0, 0.5);
+  
+  /* Component specific */
+  --color-input-bg: #1a1a1a;
+  --color-input-border: #3f3f46;
+  --color-input-focus-border: #60a5fa;
+  --color-button-primary-bg: #3b82f6;
+  --color-button-primary-hover: #2563eb;
+  --color-button-secondary-bg: #52525b;
+  --color-button-secondary-hover: #71717a;
+  
+  /* Status backgrounds */
+  --color-bg-success: #064e3b;
+  --color-bg-warning: #78350f;
+  --color-bg-error: #7f1d1d;
+  --color-bg-info: #1e3a8a;
+}
+
+/* Theme toggle button styles */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border-primary);
+  border-radius: 0.375rem;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.theme-toggle:hover {
+  background-color: var(--color-bg-hover);
+  border-color: var(--color-border-hover);
+}
+
+.theme-toggle:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-button-primary-bg);
+}
+
+/* Utility classes for backgrounds */
+.bg-primary {
+  background-color: var(--color-bg-primary);
+}
+
+.bg-secondary {
+  background-color: var(--color-bg-secondary);
+}
+
+.bg-tertiary {
+  background-color: var(--color-bg-tertiary);
+}
+
+/* Utility classes for text */
+.text-primary {
+  color: var(--color-text-primary);
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.text-tertiary {
+  color: var(--color-text-tertiary);
+}
+
+.text-muted {
+  color: var(--color-text-muted);
+}
+
+/* Utility classes for borders */
+.border-primary {
+  border-color: var(--color-border-primary);
+}
+
+.border-secondary {
+  border-color: var(--color-border-secondary);
+}
+
+/* Smooth transitions for theme changes */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Override transitions for performance-critical elements */
+input, 
+textarea, 
+button {
+  transition: none;
+}
+
+/* Ensure proper contrast for scrollbars */
+[data-theme="dark"] {
+  scrollbar-color: #4a4a4a #1a1a1a;
+}
+
+[data-theme="dark"]::-webkit-scrollbar {
+  background-color: #1a1a1a;
+}
+
+[data-theme="dark"]::-webkit-scrollbar-thumb {
+  background-color: #4a4a4a;
+}
+
+[data-theme="dark"]::-webkit-scrollbar-thumb:hover {
+  background-color: #5a5a5a;
+}
+
+/* Ant Design specific overrides for dark theme */
+[data-theme="dark"] .ant-card {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border-primary);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-table {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-table-thead > tr > th {
+  background: var(--color-bg-tertiary);
+  border-bottom-color: var(--color-border-primary);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-table-tbody > tr > td {
+  border-bottom-color: var(--color-border-primary);
+}
+
+[data-theme="dark"] .ant-table-tbody > tr:hover > td {
+  background: var(--color-bg-hover);
+}
+
+[data-theme="dark"] .ant-menu {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-menu-item {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-menu-item:hover {
+  background: var(--color-bg-hover);
+}
+
+[data-theme="dark"] .ant-menu-item-selected {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-layout-content {
+  background: var(--color-bg-primary);
+}
+
+[data-theme="dark"] .ant-form-item-label > label {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-input,
+[data-theme="dark"] .ant-select-selector,
+[data-theme="dark"] .ant-input-number,
+[data-theme="dark"] .ant-picker {
+  background: var(--color-input-bg);
+  border-color: var(--color-input-border);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-input:hover,
+[data-theme="dark"] .ant-select-selector:hover,
+[data-theme="dark"] .ant-input-number:hover,
+[data-theme="dark"] .ant-picker:hover {
+  border-color: var(--color-input-focus-border);
+}
+
+[data-theme="dark"] .ant-modal-content {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-modal-header {
+  background: var(--color-bg-secondary);
+  border-bottom-color: var(--color-border-primary);
+}
+
+[data-theme="dark"] .ant-modal-title {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-modal-close-x {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .ant-dropdown-menu {
+  background: var(--color-bg-secondary);
+  box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.48), 0 6px 16px 0 rgba(0, 0, 0, 0.32), 0 9px 28px 8px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .ant-dropdown-menu-item {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-dropdown-menu-item:hover {
+  background: var(--color-bg-hover);
+}
+
+/* Ant Design Empty component for dark theme */
+[data-theme="dark"] .ant-empty-description {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .ant-empty-normal {
+  color: var(--color-text-tertiary);
+}
+
+[data-theme="dark"] .ant-empty-image svg {
+  opacity: 0.3;
+}
+
+/* Ant Design Typography for dark theme */
+[data-theme="dark"] .ant-typography {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-typography.ant-typography-secondary {
+  color: var(--color-text-secondary) !important;
+}
+
+[data-theme="dark"] .ant-typography.ant-typography-warning {
+  color: var(--color-warning);
+}
+
+[data-theme="dark"] .ant-typography.ant-typography-danger {
+  color: var(--color-error);
+}
+
+[data-theme="dark"] .ant-typography.ant-typography-disabled {
+  color: var(--color-text-muted);
+}
+
+/* More specific selectors for Ant Typography */
+[data-theme="dark"] span.ant-typography.ant-typography-secondary {
+  color: var(--color-text-secondary) !important;
+}
+
+[data-theme="dark"] .ant-typography-secondary {
+  color: var(--color-text-secondary) !important;
+}
+
+/* Force Typography colors in dark theme */
+body[data-theme="dark"] .ant-typography.ant-typography-secondary,
+body[data-theme="dark"] span.ant-typography-secondary,
+body[data-theme="dark"] .ant-typography-secondary {
+  color: #a1a1aa !important;
+}
+
+/* Ant Design Card for dark theme */
+[data-theme="dark"] .ant-card-body {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+/* Ant Design Layout Header for dark theme */
+[data-theme="dark"] .ant-layout-header {
+  background: var(--color-bg-secondary) !important;
+  color: var(--color-text-primary);
+}
+
+/* Ant Design Statistic for dark theme */
+[data-theme="dark"] .ant-statistic-title {
+  color: var(--color-text-secondary) !important;
+}
+
+[data-theme="dark"] .ant-statistic-content {
+  color: var(--color-text-primary);
+}
+
+/* Progress component text in dark theme */
+[data-theme="dark"] .ant-progress-text {
+  color: var(--color-text-primary) !important;
+}
+
+/* Timeline component for dark theme */
+[data-theme="dark"] .ant-timeline-item-content {
+  color: var(--color-text-primary);
+}

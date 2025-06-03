@@ -8,7 +8,9 @@ import { saveAuthData } from '@/utils/auth'
 import { base64HashPassword } from '@/utils/password'
 import apiClient from '@/api/client'
 import { showMessage } from '@/utils/messages'
+import { useTheme } from '@/context/ThemeContext'
 import logoBlack from '@/assets/logo_black.png'
+import logoWhite from '@/assets/logo_white.png'
 
 const { Title, Text } = Typography
 
@@ -23,6 +25,7 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const [form] = Form.useForm<LoginForm>()
+  const { theme } = useTheme()
 
   const handleLogin = async (values: LoginForm) => {
     setLoading(true)
@@ -91,7 +94,7 @@ const LoginPage: React.FC = () => {
           height: 96,
         }}>
           <img
-            src={logoBlack}
+            src={theme === 'dark' ? logoWhite : logoBlack}
             alt="Rediacc Logo"
             style={{
               height: 32,

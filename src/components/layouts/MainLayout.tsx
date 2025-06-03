@@ -24,7 +24,10 @@ import { logout } from '@/store/auth/authSlice'
 import { clearAuthData } from '@/utils/auth'
 import apiClient from '@/api/client'
 import MessageHistory from '@/components/common/MessageHistory'
+import { ThemeToggle } from '@/components/common/ThemeToggle'
+import { useTheme } from '@/context/ThemeContext'
 import logoBlack from '@/assets/logo_black.png'
+import logoWhite from '@/assets/logo_white.png'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
@@ -36,6 +39,7 @@ const MainLayout: React.FC = () => {
   const dispatch = useDispatch()
   const user = useSelector(selectUser)
   const company = useSelector(selectCompany)
+  const { theme } = useTheme()
 
   const handleLogout = async () => {
     try {
@@ -114,8 +118,8 @@ const MainLayout: React.FC = () => {
         collapsible
         collapsed={collapsed}
         style={{
-          background: '#fff',
-          boxShadow: '2px 0 8px rgba(0,0,0,0.06)',
+          background: theme === 'dark' ? '#1a1a1a' : '#fff',
+          boxShadow: theme === 'dark' ? '2px 0 8px rgba(0,0,0,0.3)' : '2px 0 8px rgba(0,0,0,0.06)',
         }}
       >
         <div
@@ -129,7 +133,7 @@ const MainLayout: React.FC = () => {
           }}
         >
           <img
-            src={logoBlack}
+            src={theme === 'dark' ? logoWhite : logoBlack}
             alt="Rediacc Logo"
             style={{
               height: 32,
@@ -156,8 +160,8 @@ const MainLayout: React.FC = () => {
         <Header
           style={{
             padding: '0 24px',
-            background: '#fff',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+            background: theme === 'dark' ? '#1a1a1a' : '#fff',
+            boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -182,6 +186,7 @@ const MainLayout: React.FC = () => {
             )}
           </Space>
           <Space size={16}>
+            <ThemeToggle />
             <MessageHistory />
             <Dropdown menu={userMenu} placement="bottomRight" arrow>
               <Space style={{ cursor: 'pointer' }}>

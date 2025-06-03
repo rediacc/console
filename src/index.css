@@ -1,35 +1,19 @@
 @import 'antd/dist/reset.css';
+@import './styles/themes.css';
 
 :root {
-  /* Brand colors */
+  /* Brand colors - keep these consistent */
   --color-primary: #556b2f;
   --color-secondary: #808000;
   --color-accent: #7d9b49;
   --color-primary-hover: #4c6029;
   --color-secondary-hover: #6e6e00;
 
-  /* Background colors */
-  --bg-primary: #111827;
-  --bg-secondary: #1f2937;
-  --bg-tertiary: #374151;
-
-  /* Text colors */
-  --text-primary: #111827;
-  --text-secondary: #4b5563;
-  --text-tertiary: #6b7280;
-  --text-muted: #9ca3af;
-
-  /* Status colors */
-  --color-success: #22c55e;
-  --color-error: #ef4444;
-  --color-warning: #f59e0b;
-  --color-info: #3b82f6;
-
   /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-base: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-sm: 0 1px 2px 0 var(--color-shadow);
+  --shadow-base: 0 1px 3px 0 var(--color-shadow), 0 1px 2px -1px var(--color-shadow);
+  --shadow-md: 0 4px 6px -1px var(--color-shadow), 0 2px 4px -2px var(--color-shadow);
+  --shadow-lg: 0 10px 15px -3px var(--color-shadow), 0 4px 6px -4px var(--color-shadow);
 }
 
 * {
@@ -57,8 +41,8 @@ body {
 }
 
 .ant-layout-sider {
-  background: #fff;
-  box-shadow: 1px 0 4px rgba(0, 0, 0, 0.08);
+  background: var(--color-bg-primary);
+  box-shadow: 1px 0 4px var(--color-shadow);
 }
 
 .ant-menu-light {
@@ -66,7 +50,7 @@ body {
 }
 
 .ant-menu-item-selected {
-  background-color: #f3f4f6 !important;
+  background-color: var(--color-bg-hover) !important;
 }
 
 .ant-menu-item-selected::after {
@@ -74,9 +58,9 @@ body {
 }
 
 .ant-layout-header {
-  background: #fff;
+  background: var(--color-bg-primary);
   padding: 0 24px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 4px var(--color-shadow);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -108,16 +92,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--color-bg-secondary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: var(--color-text-muted);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: var(--color-text-tertiary);
 }
 
 /* Loading spinner */
@@ -131,7 +115,7 @@ body {
 /* Chart container */
 .chart-container {
   padding: 24px;
-  background: #fff;
+  background: var(--color-bg-primary);
   border-radius: 8px;
   box-shadow: var(--shadow-base);
 }
@@ -164,7 +148,34 @@ body {
 
 /* Monaco Editor container */
 .monaco-editor-container {
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--color-border-primary);
   border-radius: 6px;
   overflow: hidden;
+}
+
+/* Table row selection styles */
+.ant-table-tbody > tr.ant-table-row-selected > td {
+  background: rgba(85, 107, 47, 0.08) !important;
+}
+
+.ant-table-tbody > tr.ant-table-row-selected:hover > td {
+  background: rgba(85, 107, 47, 0.12) !important;
+}
+
+/* Custom selected row background for light theme */
+[data-theme="light"] .selected-row {
+  background-color: rgba(85, 107, 47, 0.08) !important;
+}
+
+[data-theme="light"] .selected-row:hover {
+  background-color: rgba(85, 107, 47, 0.12) !important;
+}
+
+/* Custom selected row background for dark theme */
+[data-theme="dark"] .selected-row {
+  background-color: rgba(85, 107, 47, 0.15) !important;
+}
+
+[data-theme="dark"] .selected-row:hover {
+  background-color: rgba(85, 107, 47, 0.2) !important;
 }

@@ -1367,10 +1367,8 @@ const OrganizationPage: React.FC = () => {
               }}
               onRow={(record) => ({
                 onClick: () => setSelectedTeam(record.teamName),
-                style: { 
-                  cursor: 'pointer',
-                  backgroundColor: selectedTeam === record.teamName ? '#f0f5ff' : undefined
-                },
+                className: selectedTeam === record.teamName ? 'selected-row' : '',
+                style: { cursor: 'pointer' },
               })}
             />
           </Col>
@@ -1481,10 +1479,8 @@ const OrganizationPage: React.FC = () => {
               }}
               onRow={(record) => ({
                 onClick: () => setSelectedRegion(record.regionName),
-                style: { 
-                  cursor: 'pointer',
-                  backgroundColor: selectedRegion === record.regionName ? '#f0f5ff' : undefined
-                },
+                className: selectedRegion === record.regionName ? 'selected-row' : '',
+                style: { cursor: 'pointer' },
               })}
             />
           </Col>

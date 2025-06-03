@@ -1,5 +1,5 @@
 import React from 'react'
-import { Row, Col, Card, Statistic, Space, Typography, Spin, Progress, Timeline, Badge, Button } from 'antd'
+import { Row, Col, Card, Statistic, Space, Typography, Spin, Progress, Timeline, Badge } from 'antd'
 import {
   TeamOutlined,
   CloudServerOutlined,
@@ -9,15 +9,15 @@ import {
   CheckCircleOutlined,
   SyncOutlined,
   RiseOutlined,
-  NotificationOutlined,
 } from '@ant-design/icons'
 import { Pie, Column, Line, Bar } from '@ant-design/charts'
 import { useDashboardMetrics, useQueueAnalytics, useTeamComparison } from '@/api/queries/dashboard'
-import { showMessage } from '@/utils/messages'
+import { useTheme } from '@/context/ThemeContext'
 
 const { Title, Text } = Typography
 
 const DashboardPage: React.FC = () => {
+  const { theme } = useTheme()
   const { data: metrics, isLoading: metricsLoading } = useDashboardMetrics(30)
   const { data: queueAnalytics, isLoading: queueLoading } = useQueueAnalytics()
   const { data: teamComparison, isLoading: teamLoading } = useTeamComparison()
@@ -131,28 +131,7 @@ const DashboardPage: React.FC = () => {
 
   return (
     <Space direction="vertical" size={24} style={{ width: '100%' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Title level={3}>Dashboard</Title>
-        <Space>
-          <Button 
-            icon={<NotificationOutlined />}
-            onClick={() => showMessage('success', 'This is a success message example')}
-          >
-            Test Success
-          </Button>
-          <Button 
-            danger
-            onClick={() => showMessage('error', 'This is an error message example')}
-          >
-            Test Error
-          </Button>
-          <Button 
-            onClick={() => showMessage('info', 'This is an info message example')}
-          >
-            Test Info
-          </Button>
-        </Space>
-      </div>
+      <Title level={3}>Dashboard</Title>
       
       {/* Summary Statistics */}
       <Row gutter={[16, 16]}>
@@ -231,7 +210,7 @@ const DashboardPage: React.FC = () => {
                         <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#556b2f' }}>
                           {Math.round(percent || 0)}%
                         </div>
-                        <div style={{ fontSize: '14px', color: '#8c8c8c' }}>
+                        <div style={{ fontSize: '14px' }} className="text-secondary">
                           Health Score
                         </div>
                       </div>
@@ -368,7 +347,7 @@ const DashboardPage: React.FC = () => {
         <Row gutter={[16, 16]}>
           {metrics?.resourceUsageByTeam.slice(0, 4).map((team) => (
             <Col xs={24} sm={12} lg={6} key={team.teamName}>
-              <Card size="small" style={{ backgroundColor: '#f9fafb' }}>
+              <Card size="small" style={{ backgroundColor: theme === 'light' ? '#f9fafb' : '#2a2a2a' }}>
                 <Space direction="vertical" style={{ width: '100%' }}>
                   <Text strong>{team.teamName}</Text>
                   <Progress
