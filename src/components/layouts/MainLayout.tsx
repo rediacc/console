@@ -194,8 +194,8 @@ const MainLayout: React.FC = () => {
             <MessageHistory />
             <Dropdown menu={userMenu} placement="bottomRight" arrow>
               <Space style={{ cursor: 'pointer' }}>
-                <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#556b2f' }} />
                 <Text>{user?.email}</Text>
+                <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#556b2f' }} />
               </Space>
             </Dropdown>
           </Space>

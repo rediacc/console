@@ -9,6 +9,8 @@
   "vault": "Vault",
   "filterByBridge": "Filter by Bridge",
   "filterByTeam": "Filter by Team",
+  "groupByBridge": "Group by Bridge",
+  "groupByTeam": "Group by Team",
   "machineCount": "machine | machines",
   "confirmDelete": "Delete Machine",
   "deleteWarning": "Are you sure you want to delete machine \"{{name}}\"? This action cannot be undone.",

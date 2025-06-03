@@ -9,6 +9,8 @@
   "vault": "Vault",
   "filterByBridge": "Filtrar por Puente",
   "filterByTeam": "Filtrar por Equipo",
+  "groupByBridge": "Agrupar por Puente",
+  "groupByTeam": "Agrupar por Equipo",
   "machineCount": "máquina | máquinas",
   "confirmDelete": "Eliminar Máquina",
   "deleteWarning": "¿Está seguro de que desea eliminar la máquina \"{{name}}\"? Esta acción no se puede deshacer.",

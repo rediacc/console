@@ -27,6 +27,7 @@ export const MachinePage: React.FC = () => {
   const [filterBridge, setFilterBridge] = useState<string | undefined>(undefined);
   const [filterTeam, setFilterTeam] = useState<string | undefined>(undefined);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [groupBy, setGroupBy] = useState<'bridge' | 'team'>('bridge');
 
   // Fetch all machines (we'll need to update the API to support this)
   const { data: machinesData, isLoading: isLoadingMachines } = useMachines();
@@ -152,17 +153,18 @@ export const MachinePage: React.FC = () => {
     });
   }, [machines, filterBridge, filterTeam]);
 
-  // Group machines by bridge for grid view
-  const groupedMachinesByBridge = useMemo(() => {
+  // Group machines by bridge or team for grid view
+  const groupedMachines = useMemo(() => {
     const grouped = filteredMachines.reduce((acc, machine) => {
-      if (!acc[machine.bridgeName]) {
-        acc[machine.bridgeName] = [];
+      const key = groupBy === 'bridge' ? machine.bridgeName : machine.teamName;
+      if (!acc[key]) {
+        acc[key] = [];
       }
-      acc[machine.bridgeName].push(machine);
+      acc[key].push(machine);
       return acc;
     }, {} as Record<string, Machine[]>);
     return grouped;
-  }, [filteredMachines]);
+  }, [filteredMachines, groupBy]);
 
   // Handle create machine
   const handleCreateMachine = async (data: CreateMachineForm) => {
@@ -306,12 +308,14 @@ export const MachinePage: React.FC = () => {
   const renderGridView = () => {
     return (
       <Row gutter={[16, 16]}>
-        {Object.entries(groupedMachinesByBridge).map(([bridgeName, machines]) => (
-          <Col span={24} key={bridgeName}>
+        {Object.entries(groupedMachines).map(([groupKey, machines]) => (
+          <Col span={24} key={groupKey}>
             <Card
               title={
                 <Space>
-                  <Tag color="green" style={{ fontSize: '14px' }}>{bridgeName}</Tag>
+                  <Tag color={groupBy === 'bridge' ? 'green' : 'blue'} style={{ fontSize: '14px' }}>
+                    {groupKey}
+                  </Tag>
                   <span style={{ fontSize: '14px', color: '#666' }}>
                     {machines.length} {t('machineCount', { count: machines.length })}
                   </span>
@@ -340,9 +344,15 @@ export const MachinePage: React.FC = () => {
                         title={machine.machineName}
                         description={
                           <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                            <div>
-                              <Tag color="blue" style={{ marginRight: 0 }}>{machine.teamName}</Tag>
-                            </div>
+                            {groupBy === 'team' ? (
+                              <div>
+                                <Tag color="green" style={{ marginRight: 0 }}>{machine.bridgeName}</Tag>
+                              </div>
+                            ) : (
+                              <div>
+                                <Tag color="blue" style={{ marginRight: 0 }}>{machine.teamName}</Tag>
+                              </div>
+                            )}
                             <div style={{ fontSize: '12px', color: '#666' }}>
                               {t('queueItems')}: {machine.queueCount}
                             </div>
@@ -417,6 +427,17 @@ export const MachinePage: React.FC = () => {
               value={viewMode}
               onChange={(value) => setViewMode(value as 'table' | 'grid')}
             />
+
+            {viewMode === 'grid' && (
+              <Select
+                style={{ width: 150 }}
+                value={groupBy}
+                onChange={setGroupBy}
+              >
+                <Option value="bridge">{t('groupByBridge')}</Option>
+                <Option value="team">{t('groupByTeam')}</Option>
+              </Select>
+            )}
           </Space>
 
           {viewMode === 'table' ? (
