@@ -16,7 +16,7 @@ export interface Bridge {
 
 // Get all regions
 export const useRegions = () => {
-  return useQuery({
+  return useQuery<Region[]>({
     queryKey: ['regions'],
     queryFn: async () => {
       const response = await apiClient.get<Region[]>('/GetCompanyRegions')

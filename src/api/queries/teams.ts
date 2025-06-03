@@ -20,7 +20,7 @@ export interface TeamMember {
 
 // Get all teams
 export const useTeams = () => {
-  return useQuery({
+  return useQuery<Team[]>({
     queryKey: ['teams'],
     queryFn: async () => {
       const response = await apiClient.get<Team[]>('/GetCompanyTeams')

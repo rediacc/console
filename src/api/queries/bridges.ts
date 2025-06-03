@@ -64,9 +64,6 @@ export const useUpdateBridgeName = () => {
       queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
       toast.success(`Bridge renamed to "${variables.newBridgeName}"`)
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to update bridge name')
-    },
   })
 }
 

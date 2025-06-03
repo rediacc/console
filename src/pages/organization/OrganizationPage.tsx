@@ -49,8 +49,7 @@ import {
 
 // Machine queries
 import { 
-  useMachines, 
-  Machine 
+  useMachines
 } from '@/api/queries/machines'
 
 // Repository queries
@@ -95,17 +94,12 @@ import {
   CreateStorageForm,
   createScheduleSchema,
   CreateScheduleForm,
-  editTeamSchema,
   EditTeamForm,
-  editRegionSchema,
   EditRegionForm,
   editBridgeSchema,
   EditBridgeForm,
-  editRepositorySchema,
   EditRepositoryForm,
-  editStorageSchema,
   EditStorageForm,
-  editScheduleSchema,
   EditScheduleForm
 } from '@/utils/validation'
 
@@ -236,6 +230,13 @@ const OrganizationPage: React.FC = () => {
       regionName: '',
       bridgeName: '',
       bridgeVault: '{}',
+    },
+  })
+
+  const editBridgeForm = useForm<EditBridgeForm>({
+    resolver: zodResolver(editBridgeSchema) as any,
+    defaultValues: {
+      bridgeName: '',
     },
   })
 
@@ -371,7 +372,7 @@ const OrganizationPage: React.FC = () => {
         newBridgeName: values.bridgeName,
       })
       setEditingBridge(null)
-      bridgeForm.reset()
+      editBridgeForm.reset()
     } catch (error) {
       // Error handled by mutation
     }
@@ -763,7 +764,7 @@ const OrganizationPage: React.FC = () => {
             icon={<EditOutlined />}
             onClick={() => {
               setEditingBridge(record)
-              bridgeForm.setValue('bridgeName', record.bridgeName)
+              editBridgeForm.setValue('bridgeName', record.bridgeName)
             }}
           >
             {t('general.edit')}
@@ -1659,12 +1660,12 @@ const OrganizationPage: React.FC = () => {
         open={!!editingBridge}
         onCancel={() => {
           setEditingBridge(null)
-          bridgeForm.reset()
+          editBridgeForm.reset()
         }}
         footer={null}
       >
         <ResourceForm
-          form={bridgeForm}
+          form={editBridgeForm}
           fields={[{
             name: 'bridgeName',
             label: t('bridges.bridgeName'),
@@ -1676,7 +1677,7 @@ const OrganizationPage: React.FC = () => {
           cancelText={t('general.cancel')}
           onCancel={() => {
             setEditingBridge(null)
-            bridgeForm.reset()
+            editBridgeForm.reset()
           }}
           loading={updateBridgeNameMutation.isPending}
         />
