@@ -2,13 +2,15 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { Card, Form, Input, Button, Typography, Space, Alert } from 'antd'
-import { UserOutlined, LockOutlined } from '@ant-design/icons'
+import { UserOutlined, LockOutlined, GlobalOutlined } from '@ant-design/icons'
+import { useTranslation } from 'react-i18next'
 import { loginSuccess } from '@/store/auth/authSlice'
 import { saveAuthData } from '@/utils/auth'
 import { base64HashPassword } from '@/utils/password'
 import apiClient from '@/api/client'
 import { showMessage } from '@/utils/messages'
 import { useTheme } from '@/context/ThemeContext'
+import LanguageSelector from '@/components/common/LanguageSelector'
 import logoBlack from '@/assets/logo_black.png'
 import logoWhite from '@/assets/logo_white.png'
 
@@ -26,6 +28,7 @@ const LoginPage: React.FC = () => {
   const dispatch = useDispatch()
   const [form] = Form.useForm<LoginForm>()
   const { theme } = useTheme()
+  const { t } = useTranslation(['auth', 'common'])
 
   const handleLogin = async (values: LoginForm) => {
     setLoading(true)
@@ -69,11 +72,11 @@ const LoginPage: React.FC = () => {
         company,
       }))
 
-      showMessage('success', 'Login successful!')
+      showMessage('success', t('common:messages.success'))
       navigate('/dashboard')
     } catch (error: any) {
       console.error('Login error:', error)
-      setError(error.message || 'Login failed. Please check your credentials.')
+      setError(error.message || t('auth:login.errors.invalidCredentials'))
     } finally {
       setLoading(false)
     }
@@ -124,15 +127,15 @@ const LoginPage: React.FC = () => {
         >
           <Form.Item
             name="email"
-            label="Email"
+            label={t('auth:login.email')}
             rules={[
-              { required: true, message: 'Please enter your email' },
-              { type: 'email', message: 'Please enter a valid email' },
+              { required: true, message: t('common:messages.required') },
+              { type: 'email', message: t('common:messages.invalidEmail') },
             ]}
           >
             <Input
               prefix={<UserOutlined />}
-              placeholder="Enter your email"
+              placeholder={t('auth:login.emailPlaceholder')}
               size="large"
               autoComplete="email"
             />
@@ -140,12 +143,12 @@ const LoginPage: React.FC = () => {
 
           <Form.Item
             name="password"
-            label="Password"
-            rules={[{ required: true, message: 'Please enter your password' }]}
+            label={t('auth:login.password')}
+            rules={[{ required: true, message: t('common:messages.required') }]}
           >
             <Input.Password
               prefix={<LockOutlined />}
-              placeholder="Enter your password"
+              placeholder={t('auth:login.passwordPlaceholder')}
               size="large"
               autoComplete="current-password"
             />
@@ -164,14 +167,18 @@ const LoginPage: React.FC = () => {
                 height: 48,
               }}
             >
-              Sign In
+              {t('auth:login.signIn')}
             </Button>
           </Form.Item>
+          
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+            <LanguageSelector />
+          </div>
         </Form>
 
         <div style={{ textAlign: 'center' }}>
           <Text type="secondary">
-            Don't have an account? Contact your administrator
+            {t('auth:login.noAccount')} {t('auth:login.register')}
           </Text>
         </div>
       </Space>

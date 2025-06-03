@@ -1,0 +1,78 @@
+{
+  "title": "Dashboard",
+  "overview": {
+    "title": "Overview",
+    "welcomeBack": "Welcome back",
+    "systemStatus": "System Status",
+    "lastUpdated": "Last updated"
+  },
+  "stats": {
+    "totalTeams": "Total Teams",
+    "activeMachines": "Active Machines",
+    "repositories": "Repositories",
+    "activeQueueItems": "Active Queue Items",
+    "growthPercentage": "{{percentage}}%",
+    "totalBackups": "Total Backups",
+    "activeJobs": "Active Jobs",
+    "storageUsed": "Storage Used",
+    "successRate": "Success Rate",
+    "failedJobs": "Failed Jobs",
+    "pendingJobs": "Pending Jobs"
+  },
+  "charts": {
+    "resourceDistribution": {
+      "title": "Resource Distribution",
+      "subtitle": "All Resources",
+      "teams": "Teams",
+      "machines": "Machines",
+      "repositories": "Repositories",
+      "users": "Users"
+    },
+    "systemHealth": {
+      "title": "System Health",
+      "subtitle": "Infrastructure Status",
+      "healthScore": "Health Score",
+      "overallHealth": "Overall Health",
+      "activeRegions": "Active Regions",
+      "activeBridges": "Active Bridges",
+      "systemUptime": "System Uptime"
+    },
+    "queueActivity": {
+      "title": "Queue Activity Trend",
+      "subtitle": "Last 30 days",
+      "created": "Created",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "queueStatus": {
+      "title": "Queue Status Distribution",
+      "pending": "pending",
+      "processing": "processing",
+      "completed": "completed",
+      "failed": "failed"
+    },
+    "teamComparison": {
+      "title": "Team Resource Comparison",
+      "machines": "Machines",
+      "repositories": "Repositories",
+      "storage": "Storage"
+    }
+  },
+  "resourceUsage": {
+    "title": "Resource Usage by Team",
+    "resourceCount": "{{count}} resources"
+  },
+  "recentActivity": {
+    "title": "Recent Activity",
+    "newTeamCreated": "New team created",
+    "queueJobCompleted": "Queue job completed",
+    "newUserAdded": "New user added",
+    "machineDeployed": "Machine deployed",
+    "systemMaintenance": "System maintenance",
+    "teamDetails": "{{teamName}} team - {{time}}",
+    "jobDetails": "{{jobType}} on {{server}} - {{time}}",
+    "userDetails": "{{email}} - {{time}}",
+    "machineDetails": "{{machine}} in {{region}} - {{time}}",
+    "maintenanceDetails": "Scheduled for tomorrow 2:00 AM"
+  }
+}

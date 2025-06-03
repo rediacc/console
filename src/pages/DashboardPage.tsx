@@ -11,6 +11,7 @@ import {
   RiseOutlined,
 } from '@ant-design/icons'
 import { Pie, Column, Line, Bar } from '@ant-design/charts'
+import { useTranslation } from 'react-i18next'
 import { useDashboardMetrics, useQueueAnalytics, useTeamComparison } from '@/api/queries/dashboard'
 import { useTheme } from '@/context/ThemeContext'
 
@@ -18,6 +19,7 @@ const { Title, Text } = Typography
 
 const DashboardPage: React.FC = () => {
   const { theme } = useTheme()
+  const { t } = useTranslation('dashboard')
   const { data: metrics, isLoading: metricsLoading } = useDashboardMetrics(30)
   const { data: queueAnalytics, isLoading: queueLoading } = useQueueAnalytics()
   const { data: teamComparison, isLoading: teamLoading } = useTeamComparison()
@@ -33,10 +35,10 @@ const DashboardPage: React.FC = () => {
   // Resource distribution pie chart config
   const resourceDistributionConfig = {
     data: [
-      { type: 'Teams', value: metrics?.totalTeams || 0 },
-      { type: 'Machines', value: metrics?.totalMachines || 0 },
-      { type: 'Repositories', value: metrics?.totalRepositories || 0 },
-      { type: 'Users', value: metrics?.totalUsers || 0 },
+      { type: t('dashboard.charts.resourceDistribution.teams'), value: metrics?.totalTeams || 0 },
+      { type: t('dashboard.charts.resourceDistribution.machines'), value: metrics?.totalMachines || 0 },
+      { type: t('dashboard.charts.resourceDistribution.repositories'), value: metrics?.totalRepositories || 0 },
+      { type: t('dashboard.charts.resourceDistribution.users'), value: metrics?.totalUsers || 0 },
     ],
     angleField: 'value',
     colorField: 'type',
@@ -72,9 +74,9 @@ const DashboardPage: React.FC = () => {
 
   // Transform queue activity data for line chart
   const queueActivityData = metrics?.queueActivityByDay.flatMap(day => [
-    { date: day.date, value: day.created, type: 'Created' },
-    { date: day.date, value: day.completed, type: 'Completed' },
-    { date: day.date, value: day.failed, type: 'Failed' },
+    { date: day.date, value: day.created, type: t('dashboard.charts.queueActivity.created') },
+    { date: day.date, value: day.completed, type: t('dashboard.charts.queueActivity.completed') },
+    { date: day.date, value: day.failed, type: t('dashboard.charts.queueActivity.failed') },
   ]) || []
 
   // Queue status distribution config
@@ -105,9 +107,9 @@ const DashboardPage: React.FC = () => {
   // Team resources comparison config
   const teamResourcesConfig = {
     data: teamComparison?.teams.flatMap(team => [
-      { team: team.teamName, type: 'Machines', value: team.resources.machines },
-      { team: team.teamName, type: 'Repositories', value: team.resources.repositories },
-      { team: team.teamName, type: 'Storage', value: team.resources.storage },
+      { team: team.teamName, type: t('dashboard.charts.teamComparison.machines'), value: team.resources.machines },
+      { team: team.teamName, type: t('dashboard.charts.teamComparison.repositories'), value: team.resources.repositories },
+      { team: team.teamName, type: t('dashboard.charts.teamComparison.storage'), value: team.resources.storage },
     ]) || [],
     xField: 'team',
     yField: 'value',
@@ -131,14 +133,14 @@ const DashboardPage: React.FC = () => {
 
   return (
     <Space direction="vertical" size={24} style={{ width: '100%' }}>
-      <Title level={3}>Dashboard</Title>
+      <Title level={3}>{t('dashboard.title')}</Title>
       
       {/* Summary Statistics */}
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Total Teams"
+              title={t('dashboard.stats.totalTeams')}
               value={metrics?.totalTeams || 0}
               prefix={<TeamOutlined />}
               valueStyle={{ color: '#556b2f' }}
@@ -148,13 +150,13 @@ const DashboardPage: React.FC = () => {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Active Machines"
+              title={t('dashboard.stats.activeMachines')}
               value={metrics?.totalMachines || 0}
               prefix={<CloudServerOutlined />}
               valueStyle={{ color: '#3b82f6' }}
               suffix={
                 <Text type="success" style={{ fontSize: 14 }}>
-                  <RiseOutlined /> 12%
+                  <RiseOutlined /> {t('dashboard.stats.growthPercentage', { percentage: 12 })}
                 </Text>
               }
             />
@@ -163,7 +165,7 @@ const DashboardPage: React.FC = () => {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Repositories"
+              title={t('dashboard.stats.repositories')}
               value={metrics?.totalRepositories || 0}
               prefix={<DatabaseOutlined />}
               valueStyle={{ color: '#8b5cf6' }}
@@ -173,7 +175,7 @@ const DashboardPage: React.FC = () => {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Active Queue Items"
+              title={t('dashboard.stats.activeQueueItems')}
               value={metrics?.activeQueueItems || 0}
               prefix={<ThunderboltOutlined />}
               valueStyle={{ color: '#f59e0b' }}
@@ -191,12 +193,12 @@ const DashboardPage: React.FC = () => {
       {/* Charts Row 1 */}
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={12}>
-          <Card title="Resource Distribution" extra={<Text type="secondary">All Resources</Text>}>
+          <Card title={t('dashboard.charts.resourceDistribution.title')} extra={<Text type="secondary">{t('dashboard.charts.resourceDistribution.subtitle')}</Text>}>
             <Pie {...resourceDistributionConfig} height={300} />
           </Card>
         </Col>
         <Col xs={24} lg={12}>
-          <Card title="System Health" extra={<Text type="secondary">Infrastructure Status</Text>}>
+          <Card title={t('dashboard.charts.systemHealth.title')} extra={<Text type="secondary">{t('dashboard.charts.systemHealth.subtitle')}</Text>}>
             <Row gutter={16}>
               <Col span={12}>
                 <div style={{ textAlign: 'center', padding: '20px 0' }}>
@@ -211,20 +213,20 @@ const DashboardPage: React.FC = () => {
                           {Math.round(percent || 0)}%
                         </div>
                         <div style={{ fontSize: '14px' }} className="text-secondary">
-                          Health Score
+                          {t('dashboard.charts.systemHealth.healthScore')}
                         </div>
                       </div>
                     )}
                   />
                   <div style={{ marginTop: 16 }}>
-                    <Text strong>Overall Health</Text>
+                    <Text strong>{t('dashboard.charts.systemHealth.overallHealth')}</Text>
                   </div>
                 </div>
               </Col>
               <Col span={12}>
                 <Space direction="vertical" style={{ width: '100%' }}>
                   <div>
-                    <Text type="secondary">Active Regions</Text>
+                    <Text type="secondary">{t('dashboard.charts.systemHealth.activeRegions')}</Text>
                     <Progress
                       percent={
                         metrics?.systemHealth?.totalRegions && metrics.systemHealth.totalRegions > 0
@@ -236,7 +238,7 @@ const DashboardPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <Text type="secondary">Active Bridges</Text>
+                    <Text type="secondary">{t('dashboard.charts.systemHealth.activeBridges')}</Text>
                     <Progress
                       percent={
                         metrics?.systemHealth?.totalBridges && metrics.systemHealth.totalBridges > 0
@@ -248,7 +250,7 @@ const DashboardPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <Text type="secondary">System Uptime</Text>
+                    <Text type="secondary">{t('dashboard.charts.systemHealth.systemUptime')}</Text>
                     <Progress percent={99.9} strokeColor="#22c55e" />
                   </div>
                 </Space>
@@ -262,14 +264,14 @@ const DashboardPage: React.FC = () => {
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={16}>
           <Card 
-            title="Queue Activity Trend" 
-            extra={<Text type="secondary">Last 30 days</Text>}
+            title={t('dashboard.charts.queueActivity.title')} 
+            extra={<Text type="secondary">{t('dashboard.charts.queueActivity.subtitle')}</Text>}
           >
             <Line {...queueActivityConfig} data={queueActivityData} height={300} />
           </Card>
         </Col>
         <Col xs={24} lg={8}>
-          <Card title="Queue Status Distribution">
+          <Card title={t('dashboard.charts.queueStatus.title')}>
             <Column {...queueStatusConfig} height={300} />
           </Card>
         </Col>
@@ -278,21 +280,21 @@ const DashboardPage: React.FC = () => {
       {/* Charts Row 3 */}
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={16}>
-          <Card title="Team Resource Comparison">
+          <Card title={t('dashboard.charts.teamComparison.title')}>
             <Bar {...teamResourcesConfig} height={300} />
           </Card>
         </Col>
         <Col xs={24} lg={8}>
-          <Card title="Recent Activity">
+          <Card title={t('dashboard.recentActivity.title')}>
             <Timeline
               items={[
                 {
                   dot: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
                   children: (
                     <>
-                      <Text strong>New team created</Text>
+                      <Text strong>{t('dashboard.recentActivity.newTeamCreated')}</Text>
                       <br />
-                      <Text type="secondary">DevOps team - 2 hours ago</Text>
+                      <Text type="secondary">{t('dashboard.recentActivity.teamDetails', { teamName: 'DevOps team', time: '2 hours ago' })}</Text>
                     </>
                   ),
                 },
@@ -300,9 +302,9 @@ const DashboardPage: React.FC = () => {
                   dot: <ThunderboltOutlined style={{ color: '#f59e0b' }} />,
                   children: (
                     <>
-                      <Text strong>Queue job completed</Text>
+                      <Text strong>{t('dashboard.recentActivity.queueJobCompleted')}</Text>
                       <br />
-                      <Text type="secondary">repo_backup on prod-server-1 - 3 hours ago</Text>
+                      <Text type="secondary">{t('dashboard.recentActivity.jobDetails', { jobName: 'repo_backup', serverName: 'prod-server-1', time: '3 hours ago' })}</Text>
                     </>
                   ),
                 },
@@ -310,9 +312,9 @@ const DashboardPage: React.FC = () => {
                   dot: <UserOutlined style={{ color: '#1890ff' }} />,
                   children: (
                     <>
-                      <Text strong>New user added</Text>
+                      <Text strong>{t('dashboard.recentActivity.newUserAdded')}</Text>
                       <br />
-                      <Text type="secondary">john.doe@company.com - 5 hours ago</Text>
+                      <Text type="secondary">{t('dashboard.recentActivity.userDetails', { email: 'john.doe@company.com', time: '5 hours ago' })}</Text>
                     </>
                   ),
                 },
@@ -320,9 +322,9 @@ const DashboardPage: React.FC = () => {
                   dot: <CloudServerOutlined style={{ color: '#8b5cf6' }} />,
                   children: (
                     <>
-                      <Text strong>Machine deployed</Text>
+                      <Text strong>{t('dashboard.recentActivity.machineDeployed')}</Text>
                       <br />
-                      <Text type="secondary">staging-server-2 in US-East - 1 day ago</Text>
+                      <Text type="secondary">{t('dashboard.recentActivity.machineDetails', { machineName: 'staging-server-2', region: 'US-East', time: '1 day ago' })}</Text>
                     </>
                   ),
                 },
@@ -330,9 +332,9 @@ const DashboardPage: React.FC = () => {
                   dot: <SyncOutlined spin style={{ color: '#556b2f' }} />,
                   children: (
                     <>
-                      <Text strong>System maintenance</Text>
+                      <Text strong>{t('dashboard.recentActivity.systemMaintenance')}</Text>
                       <br />
-                      <Text type="secondary">Scheduled for tomorrow 2:00 AM</Text>
+                      <Text type="secondary">{t('dashboard.recentActivity.maintenanceDetails', { schedule: 'tomorrow 2:00 AM' })}</Text>
                     </>
                   ),
                 },
@@ -343,7 +345,7 @@ const DashboardPage: React.FC = () => {
       </Row>
 
       {/* Resource Usage by Team */}
-      <Card title="Resource Usage by Team">
+      <Card title={t('dashboard.resourceUsage.title')}>
         <Row gutter={[16, 16]}>
           {metrics?.resourceUsageByTeam.slice(0, 4).map((team) => (
             <Col xs={24} sm={12} lg={6} key={team.teamName}>
@@ -354,7 +356,7 @@ const DashboardPage: React.FC = () => {
                     percent={75}
                     size="small"
                     strokeColor="#556b2f"
-                    format={() => `${team.machines + team.repositories + team.storage} resources`}
+                    format={() => t('dashboard.resourceUsage.resourceCount', { count: team.machines + team.repositories + team.storage })}
                   />
                   <Space style={{ fontSize: 12 }}>
                     <Text type="secondary">

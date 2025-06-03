@@ -1,0 +1,186 @@
+{
+  "title": "Organización",
+  "tabs": {
+    "teamsResources": "Equipos y Recursos",
+    "regionsInfrastructure": "Regiones e Infraestructura"
+  },
+  "teams": {
+    "title": "Equipos",
+    "description": "Gestionar equipos y sus miembros",
+    "createTeam": "Crear Equipo",
+    "editTeam": "Editar Equipo",
+    "deleteTeam": "Eliminar Equipo",
+    "teamName": "Nombre del Equipo",
+    "teamDescription": "Descripción",
+    "members": "Miembros",
+    "machines": "Máquinas",
+    "repositories": "Repositorios",
+    "storage": "Almacenamiento",
+    "schedules": "Programaciones",
+    "addMember": "Agregar Miembro",
+    "removeMember": "Eliminar Miembro",
+    "noTeams": "No se encontraron equipos",
+    "searchTeams": "Buscar equipos...",
+    "selectTeamPrompt": "Seleccione un equipo para ver sus recursos",
+    "teamResources": "Recursos del Equipo",
+    "resourcesInTeam": "Recursos en {{team}}",
+    "selectTeamToView": "Seleccione un equipo arriba para ver y gestionar sus recursos",
+    "confirmDelete": "¿Está seguro de que desea eliminar el equipo \"{{teamName}}\"? Esto eliminará todos los recursos del equipo.",
+    "placeholders": {
+      "enterTeamName": "Ingrese el nombre del equipo",
+      "selectTeam": "Seleccionar equipo"
+    },
+    "validation": {
+      "teamNameRequired": "Por favor ingrese el nombre del equipo",
+      "teamNamePattern": "El nombre del equipo solo puede contener letras, números, guiones y guiones bajos"
+    }
+  },
+  "regions": {
+    "title": "Regiones",
+    "description": "Gestionar regiones y puentes",
+    "createRegion": "Crear Región",
+    "editRegion": "Editar Región",
+    "deleteRegion": "Eliminar Región",
+    "regionName": "Nombre de la Región",
+    "regionCode": "Código de Región",
+    "status": "Estado",
+    "active": "Activa",
+    "inactive": "Inactiva",
+    "bridges": "Puentes",
+    "manageBridges": "Gestionar Puentes",
+    "noRegions": "No se encontraron regiones",
+    "searchRegions": "Buscar regiones...",
+    "selectRegionPrompt": "Seleccione una región para ver sus puentes",
+    "bridgesInRegion": "Puentes en {{region}}",
+    "selectRegionToView": "Seleccione una región arriba para ver y gestionar sus puentes",
+    "confirmDelete": "¿Está seguro de que desea eliminar la región \"{{regionName}}\"? Esto eliminará todos los puentes en la región.",
+    "placeholders": {
+      "enterRegionName": "Ingrese el nombre de la región",
+      "selectRegion": "Seleccionar región"
+    }
+  },
+  "bridges": {
+    "title": "Puentes",
+    "createBridge": "Crear Puente",
+    "editBridge": "Editar Puente",
+    "deleteBridge": "Eliminar Puente",
+    "bridgeName": "Nombre del Puente",
+    "bridge": "Puente",
+    "bridgeUrl": "URL del Puente",
+    "bridgePort": "Puerto",
+    "bridgeStatus": "Estado",
+    "connected": "Conectado",
+    "disconnected": "Desconectado",
+    "testConnection": "Probar Conexión",
+    "noBridges": "No se encontraron puentes en esta región",
+    "totalBridges": "Total {{total}} puentes",
+    "confirmDelete": "¿Está seguro de que desea eliminar el puente \"{{bridgeName}}\"? Esto afectará a todas las máquinas que usan este puente.",
+    "placeholders": {
+      "enterBridgeName": "Ingrese el nombre del puente",
+      "selectBridge": "Seleccionar puente",
+      "selectRegionFirst": "Seleccione una región primero"
+    }
+  },
+  "machines": {
+    "title": "Máquinas",
+    "createMachine": "Crear Máquina",
+    "editMachine": "Editar Máquina",
+    "deleteMachine": "Eliminar Máquina",
+    "machineName": "Nombre de la Máquina",
+    "machineType": "Tipo",
+    "ipAddress": "Dirección IP",
+    "osType": "Tipo de SO",
+    "lastSeen": "Última vez visto",
+    "queueItems": "Elementos en Cola",
+    "noMachines": "No se encontraron máquinas en este equipo",
+    "totalMachines": "Total {{total}} máquinas",
+    "confirmDelete": "¿Está seguro de que desea eliminar la máquina \"{{machineName}}\"?",
+    "placeholders": {
+      "enterMachineName": "Ingrese el nombre de la máquina"
+    }
+  },
+  "repositories": {
+    "title": "Repositorios",
+    "createRepository": "Crear Repositorio",
+    "editRepository": "Editar Repositorio",
+    "deleteRepository": "Eliminar Repositorio",
+    "repositoryName": "Nombre del Repositorio",
+    "size": "Tamaño",
+    "status": "Estado",
+    "active": "activo",
+    "syncing": "sincronizando",
+    "noRepositories": "No se encontraron repositorios en este equipo",
+    "totalRepositories": "Total {{total}} repositorios",
+    "confirmDelete": "¿Está seguro de que desea eliminar el repositorio \"{{repositoryName}}\"?",
+    "sizeFormat": "{{size}} MB",
+    "placeholders": {
+      "enterRepositoryName": "Ingrese el nombre del repositorio"
+    }
+  },
+  "storage": {
+    "title": "Almacenamiento",
+    "createStorage": "Crear Almacenamiento",
+    "editStorage": "Editar Almacenamiento",
+    "deleteStorage": "Eliminar Almacenamiento",
+    "storageName": "Nombre del Almacenamiento",
+    "noStorage": "No se encontró almacenamiento en este equipo",
+    "totalStorage": "Total {{total}} unidades de almacenamiento",
+    "confirmDelete": "¿Está seguro de que desea eliminar el almacenamiento \"{{storageName}}\"?",
+    "placeholders": {
+      "enterStorageName": "Ingrese el nombre del almacenamiento"
+    }
+  },
+  "schedules": {
+    "title": "Programaciones",
+    "createSchedule": "Crear Programación",
+    "editSchedule": "Editar Programación",
+    "deleteSchedule": "Eliminar Programación",
+    "scheduleName": "Nombre de la Programación",
+    "description": "Descripción",
+    "cron": "Cron",
+    "cronExpression": "Expresión Cron",
+    "nextRun": "Próxima Ejecución",
+    "lastRun": "Última Ejecución",
+    "queue": "Cola",
+    "status": "Estado",
+    "active": "Activa",
+    "inactive": "Inactiva",
+    "noSchedules": "No se encontraron programaciones en este equipo",
+    "totalSchedules": "Total {{total}} programaciones",
+    "confirmDelete": "¿Está seguro de que desea eliminar la programación \"{{scheduleName}}\"?",
+    "cronExpressionHelp": "Expresión cron: {{cron}}",
+    "never": "Nunca",
+    "na": "N/D",
+    "placeholders": {
+      "enterScheduleName": "Ingrese el nombre de la programación",
+      "enterDescription": "Ingrese la descripción (opcional)",
+      "cronExample": "ej., 0 0 * * * (diariamente a medianoche)"
+    }
+  },
+  "general": {
+    "actions": "Acciones",
+    "search": "Buscar...",
+    "filter": "Filtrar",
+    "export": "Exportar",
+    "import": "Importar",
+    "refresh": "Actualizar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "vault": "Bóveda",
+    "vaultVersion": "Versión de Bóveda",
+    "versionFormat": "v{{version}}",
+    "create": "Crear",
+    "cancel": "Cancelar",
+    "yes": "Sí",
+    "no": "No",
+    "region": "Región",
+    "team": "Equipo",
+    "configureVault": "Configurar Bóveda - {{name}}"
+  },
+  "resourceTabs": {
+    "machines": "Máquinas",
+    "repositories": "Repositorios",
+    "storage": "Almacenamiento",
+    "schedules": "Programaciones"
+  }
+}

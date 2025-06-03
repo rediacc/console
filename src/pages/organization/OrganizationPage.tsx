@@ -23,6 +23,7 @@ import {
 } from '@ant-design/icons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useTranslation } from 'react-i18next'
 import ResourceListView from '@/components/common/ResourceListView'
 import ResourceForm from '@/components/forms/ResourceForm'
 import VaultConfigModal from '@/components/common/VaultConfigModal'
@@ -104,6 +105,7 @@ const { Title, Text } = Typography
 const { TabPane } = Tabs
 
 const OrganizationPage: React.FC = () => {
+  const { t } = useTranslation('organization')
   const [activeTab, setActiveTab] = useState('teams')
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null)
   const [teamResourcesTab, setTeamResourcesTab] = useState('machines')
@@ -492,7 +494,7 @@ const OrganizationPage: React.FC = () => {
   // Team columns
   const teamColumns = [
     {
-      title: 'Team Name',
+      title: t('teams.teamName'),
       dataIndex: 'teamName',
       key: 'teamName',
       render: (text: string) => (
@@ -503,7 +505,7 @@ const OrganizationPage: React.FC = () => {
       ),
     },
     {
-      title: 'Members',
+      title: t('teams.members'),
       dataIndex: 'memberCount',
       key: 'memberCount',
       width: 100,
@@ -515,31 +517,31 @@ const OrganizationPage: React.FC = () => {
       ),
     },
     {
-      title: 'Machines',
+      title: t('teams.machines'),
       dataIndex: 'machineCount',
       key: 'machineCount',
       width: 100,
     },
     {
-      title: 'Repositories',
+      title: t('teams.repositories'),
       dataIndex: 'repoCount',
       key: 'repoCount',
       width: 120,
     },
     {
-      title: 'Storage',
+      title: t('teams.storage'),
       dataIndex: 'storageCount',
       key: 'storageCount',
       width: 100,
     },
     {
-      title: 'Schedules',
+      title: t('teams.schedules'),
       dataIndex: 'scheduleCount',
       key: 'scheduleCount',
       width: 100,
     },
     {
-      title: 'Actions',
+      title: t('general.actions'),
       key: 'actions',
       width: 150,
       render: (_: any, record: Team) => (
@@ -551,14 +553,14 @@ const OrganizationPage: React.FC = () => {
               // TODO: Implement edit functionality
             }}
           >
-            Edit
+            {t('general.edit')}
           </Button>
           <Popconfirm
-            title="Delete Team"
-            description={`Are you sure you want to delete team "${record.teamName}"? This will remove all resources in the team.`}
+            title={t('teams.deleteTeam')}
+            description={t('teams.confirmDelete', { teamName: record.teamName })}
             onConfirm={() => handleDeleteTeam(record.teamName)}
-            okText="Yes"
-            cancelText="No"
+            okText={t('general.yes')}
+            cancelText={t('general.no')}
             okButtonProps={{ danger: true }}
           >
             <Button 
@@ -567,7 +569,7 @@ const OrganizationPage: React.FC = () => {
               icon={<DeleteOutlined />}
               loading={deleteTeamMutation.isPending}
             >
-              Delete
+              {t('general.delete')}
             </Button>
           </Popconfirm>
         </Space>
@@ -578,7 +580,7 @@ const OrganizationPage: React.FC = () => {
   // Region columns
   const regionColumns = [
     {
-      title: 'Region Name',
+      title: t('regions.regionName'),
       dataIndex: 'regionName',
       key: 'regionName',
       render: (text: string, record: Region) => (
@@ -589,7 +591,7 @@ const OrganizationPage: React.FC = () => {
       ),
     },
     {
-      title: 'Bridges',
+      title: t('regions.bridges'),
       dataIndex: 'bridgeCount',
       key: 'bridgeCount',
       width: 120,
@@ -601,14 +603,14 @@ const OrganizationPage: React.FC = () => {
       ),
     },
     {
-      title: 'Vault Version',
+      title: t('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
       width: 120,
-      render: (version: number) => <Tag>{`v${version}`}</Tag>,
+      render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
     },
     {
-      title: 'Actions',
+      title: t('general.actions'),
       key: 'actions',
       width: 200,
       render: (_: any, record: Region) => (
@@ -618,7 +620,7 @@ const OrganizationPage: React.FC = () => {
             icon={<SettingOutlined />}
             onClick={() => setRegionVaultModalConfig({ open: true, region: record })}
           >
-            Vault
+            {t('general.vault')}
           </Button>
           <Button 
             type="link" 
@@ -627,14 +629,14 @@ const OrganizationPage: React.FC = () => {
               // TODO: Implement edit functionality
             }}
           >
-            Edit
+            {t('general.edit')}
           </Button>
           <Popconfirm
-            title="Delete Region"
-            description={`Are you sure you want to delete region "${record.regionName}"? This will remove all bridges in the region.`}
+            title={t('regions.deleteRegion')}
+            description={t('regions.confirmDelete', { regionName: record.regionName })}
             onConfirm={() => handleDeleteRegion(record.regionName)}
-            okText="Yes"
-            cancelText="No"
+            okText={t('general.yes')}
+            cancelText={t('general.no')}
             okButtonProps={{ danger: true }}
           >
             <Button 
@@ -643,7 +645,7 @@ const OrganizationPage: React.FC = () => {
               icon={<DeleteOutlined />}
               loading={deleteRegionMutation.isPending}
             >
-              Delete
+              {t('general.delete')}
             </Button>
           </Popconfirm>
         </Space>
@@ -654,7 +656,7 @@ const OrganizationPage: React.FC = () => {
   // Bridge columns
   const bridgeColumns = [
     {
-      title: 'Bridge Name',
+      title: t('bridges.bridgeName'),
       dataIndex: 'bridgeName',
       key: 'bridgeName',
       render: (text: string) => (
@@ -665,7 +667,7 @@ const OrganizationPage: React.FC = () => {
       ),
     },
     {
-      title: 'Machines',
+      title: t('teams.machines'),
       dataIndex: 'machineCount',
       key: 'machineCount',
       width: 120,
@@ -677,14 +679,14 @@ const OrganizationPage: React.FC = () => {
       ),
     },
     {
-      title: 'Vault Version',
+      title: t('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
       width: 120,
-      render: (version: number) => <Tag>{`v${version}`}</Tag>,
+      render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
     },
     {
-      title: 'Actions',
+      title: t('general.actions'),
       key: 'actions',
       width: 200,
       render: (_: any, record: Bridge) => (
@@ -694,7 +696,7 @@ const OrganizationPage: React.FC = () => {
             icon={<SettingOutlined />}
             onClick={() => setBridgeVaultModalConfig({ open: true, bridge: record })}
           >
-            Vault
+            {t('general.vault')}
           </Button>
           <Button 
             type="link" 
@@ -703,14 +705,14 @@ const OrganizationPage: React.FC = () => {
               // TODO: Implement edit functionality
             }}
           >
-            Edit
+            {t('general.edit')}
           </Button>
           <Popconfirm
-            title="Delete Bridge"
-            description={`Are you sure you want to delete bridge "${record.bridgeName}"? This will affect all machines using this bridge.`}
+            title={t('bridges.deleteBridge')}
+            description={t('bridges.confirmDelete', { bridgeName: record.bridgeName })}
             onConfirm={() => handleDeleteBridge(record)}
-            okText="Yes"
-            cancelText="No"
+            okText={t('general.yes')}
+            cancelText={t('general.no')}
             okButtonProps={{ danger: true }}
           >
             <Button 
@@ -719,7 +721,7 @@ const OrganizationPage: React.FC = () => {
               icon={<DeleteOutlined />}
               loading={deleteBridgeMutation.isPending}
             >
-              Delete
+              {t('general.delete')}
             </Button>
           </Popconfirm>
         </Space>
@@ -730,7 +732,7 @@ const OrganizationPage: React.FC = () => {
   // Machine columns
   const machineColumns = [
     {
-      title: 'Machine Name',
+      title: t('machines.machineName'),
       dataIndex: 'machineName',
       key: 'machineName',
       render: (text: string) => (
@@ -741,13 +743,13 @@ const OrganizationPage: React.FC = () => {
       ),
     },
     {
-      title: 'Bridge',
+      title: t('bridges.bridge'),
       dataIndex: 'bridgeName',
       key: 'bridgeName',
       render: (bridge: string) => <Tag color="blue">{bridge}</Tag>,
     },
     {
-      title: 'Queue Items',
+      title: t('machines.queueItems'),
       dataIndex: 'queueItemCount',
       key: 'queueItemCount',
       width: 120,
@@ -756,14 +758,14 @@ const OrganizationPage: React.FC = () => {
       ),
     },
     {
-      title: 'Vault Version',
+      title: t('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
       width: 120,
-      render: (version: number) => <Tag>{`v${version}`}</Tag>,
+      render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
     },
     {
-      title: 'Actions',
+      title: t('general.actions'),
       key: 'actions',
       width: 200,
       render: (_: any, record: Machine) => (
@@ -773,7 +775,7 @@ const OrganizationPage: React.FC = () => {
             icon={<SettingOutlined />}
             onClick={() => setMachineVaultModalConfig({ open: true, machine: record })}
           >
-            Vault
+            {t('general.vault')}
           </Button>
           <Button 
             type="link" 
@@ -782,14 +784,14 @@ const OrganizationPage: React.FC = () => {
               // TODO: Implement edit functionality
             }}
           >
-            Edit
+            {t('general.edit')}
           </Button>
           <Popconfirm
-            title="Delete Machine"
-            description={`Are you sure you want to delete machine "${record.machineName}"?`}
+            title={t('machines.deleteMachine')}
+            description={t('machines.confirmDelete', { machineName: record.machineName })}
             onConfirm={() => handleDeleteMachine(record)}
-            okText="Yes"
-            cancelText="No"
+            okText={t('general.yes')}
+            cancelText={t('general.no')}
             okButtonProps={{ danger: true }}
           >
             <Button 
@@ -798,7 +800,7 @@ const OrganizationPage: React.FC = () => {
               icon={<DeleteOutlined />}
               loading={deleteMachineMutation.isPending}
             >
-              Delete
+              {t('general.delete')}
             </Button>
           </Popconfirm>
         </Space>
@@ -809,7 +811,7 @@ const OrganizationPage: React.FC = () => {
   // Repository columns
   const repositoryColumns = [
     {
-      title: 'Repository Name',
+      title: t('repositories.repositoryName'),
       dataIndex: 'repositoryName',
       key: 'repositoryName',
       render: (text: string) => (
@@ -820,32 +822,32 @@ const OrganizationPage: React.FC = () => {
       ),
     },
     {
-      title: 'Size',
+      title: t('repositories.size'),
       dataIndex: 'size',
       key: 'size',
       width: 100,
-      render: (size: number) => `${(size / (1024 * 1024)).toFixed(2)} MB`,
+      render: (size: number) => t('repositories.sizeFormat', { size: (size / (1024 * 1024)).toFixed(2) }),
     },
     {
-      title: 'Status',
+      title: t('repositories.status'),
       dataIndex: 'status',
       key: 'status',
       width: 120,
       render: (status: string) => {
         const color = status === 'active' ? 'success' : status === 'syncing' ? 'processing' : 'default'
         const icon = status === 'active' ? <CheckCircleOutlined /> : status === 'syncing' ? <SyncOutlined spin /> : <StopOutlined />
-        return <Tag icon={icon} color={color}>{status}</Tag>
+        return <Tag icon={icon} color={color}>{t(`repositories.${status}`)}</Tag>
       },
     },
     {
-      title: 'Vault Version',
+      title: t('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
       width: 120,
-      render: (version: number) => <Tag>{`v${version}`}</Tag>,
+      render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
     },
     {
-      title: 'Actions',
+      title: t('general.actions'),
       key: 'actions',
       width: 200,
       render: (_: any, record: Repository) => (
@@ -855,7 +857,7 @@ const OrganizationPage: React.FC = () => {
             icon={<SettingOutlined />}
             onClick={() => setRepositoryVaultModalConfig({ open: true, repository: record })}
           >
-            Vault
+            {t('general.vault')}
           </Button>
           <Button 
             type="link" 
@@ -864,14 +866,14 @@ const OrganizationPage: React.FC = () => {
               // TODO: Implement edit functionality
             }}
           >
-            Edit
+            {t('general.edit')}
           </Button>
           <Popconfirm
-            title="Delete Repository"
-            description={`Are you sure you want to delete repository "${record.repositoryName}"?`}
+            title={t('repositories.deleteRepository')}
+            description={t('repositories.confirmDelete', { repositoryName: record.repositoryName })}
             onConfirm={() => handleDeleteRepository(record)}
-            okText="Yes"
-            cancelText="No"
+            okText={t('general.yes')}
+            cancelText={t('general.no')}
             okButtonProps={{ danger: true }}
           >
             <Button 
@@ -880,7 +882,7 @@ const OrganizationPage: React.FC = () => {
               icon={<DeleteOutlined />}
               loading={deleteRepositoryMutation.isPending}
             >
-              Delete
+              {t('general.delete')}
             </Button>
           </Popconfirm>
         </Space>
@@ -891,7 +893,7 @@ const OrganizationPage: React.FC = () => {
   // Storage columns
   const storageColumns = [
     {
-      title: 'Storage Name',
+      title: t('storage.storageName'),
       dataIndex: 'storageName',
       key: 'storageName',
       render: (text: string) => (
@@ -902,14 +904,14 @@ const OrganizationPage: React.FC = () => {
       ),
     },
     {
-      title: 'Vault Version',
+      title: t('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
       width: 120,
-      render: (version: number) => <Tag>{`v${version}`}</Tag>,
+      render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
     },
     {
-      title: 'Actions',
+      title: t('general.actions'),
       key: 'actions',
       width: 200,
       render: (_: any, record: Storage) => (
@@ -919,7 +921,7 @@ const OrganizationPage: React.FC = () => {
             icon={<SettingOutlined />}
             onClick={() => setStorageVaultModalConfig({ open: true, storage: record })}
           >
-            Vault
+            {t('general.vault')}
           </Button>
           <Button 
             type="link" 
@@ -928,14 +930,14 @@ const OrganizationPage: React.FC = () => {
               // TODO: Implement edit functionality
             }}
           >
-            Edit
+            {t('general.edit')}
           </Button>
           <Popconfirm
-            title="Delete Storage"
-            description={`Are you sure you want to delete storage "${record.storageName}"?`}
+            title={t('storage.deleteStorage')}
+            description={t('storage.confirmDelete', { storageName: record.storageName })}
             onConfirm={() => handleDeleteStorage(record)}
-            okText="Yes"
-            cancelText="No"
+            okText={t('general.yes')}
+            cancelText={t('general.no')}
             okButtonProps={{ danger: true }}
           >
             <Button 
@@ -944,7 +946,7 @@ const OrganizationPage: React.FC = () => {
               icon={<DeleteOutlined />}
               loading={deleteStorageMutation.isPending}
             >
-              Delete
+              {t('general.delete')}
             </Button>
           </Popconfirm>
         </Space>
@@ -955,7 +957,7 @@ const OrganizationPage: React.FC = () => {
   // Schedule columns
   const scheduleColumns = [
     {
-      title: 'Schedule Name',
+      title: t('schedules.scheduleName'),
       dataIndex: 'scheduleName',
       key: 'scheduleName',
       render: (text: string, record: Schedule) => (
@@ -971,48 +973,48 @@ const OrganizationPage: React.FC = () => {
       ),
     },
     {
-      title: 'Status',
+      title: t('schedules.status'),
       dataIndex: 'isActive',
       key: 'isActive',
       width: 100,
       render: (isActive: boolean) => (
         <Tag icon={isActive ? <CheckCircleOutlined /> : <StopOutlined />} color={isActive ? 'success' : 'default'}>
-          {isActive ? 'Active' : 'Inactive'}
+          {isActive ? t('schedules.active') : t('schedules.inactive')}
         </Tag>
       ),
     },
     {
-      title: 'Cron',
+      title: t('schedules.cron'),
       dataIndex: 'cronExpression',
       key: 'cronExpression',
       width: 150,
       render: (cron: string) => (
-        <Tooltip title={`Cron expression: ${cron}`}>
+        <Tooltip title={t('schedules.cronExpressionHelp', { cron })}>
           <Tag icon={<FieldTimeOutlined />}>{cron}</Tag>
         </Tooltip>
       ),
     },
     {
-      title: 'Next Run',
+      title: t('schedules.nextRun'),
       dataIndex: 'nextRun',
       key: 'nextRun',
       width: 180,
       render: (date: string) => (
         <Space>
           <ClockCircleOutlined />
-          {date ? new Date(date).toLocaleString() : 'N/A'}
+          {date ? new Date(date).toLocaleString() : t('schedules.na')}
         </Space>
       ),
     },
     {
-      title: 'Last Run',
+      title: t('schedules.lastRun'),
       dataIndex: 'lastRun',
       key: 'lastRun',
       width: 180,
-      render: (date: string) => date ? new Date(date).toLocaleString() : 'Never',
+      render: (date: string) => date ? new Date(date).toLocaleString() : t('schedules.never'),
     },
     {
-      title: 'Queue',
+      title: t('schedules.queue'),
       dataIndex: 'queueCount',
       key: 'queueCount',
       width: 80,
@@ -1021,14 +1023,14 @@ const OrganizationPage: React.FC = () => {
       ),
     },
     {
-      title: 'Vault',
+      title: t('general.vault'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
       width: 80,
-      render: (version: number) => <Tag>{`v${version}`}</Tag>,
+      render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
     },
     {
-      title: 'Actions',
+      title: t('general.actions'),
       key: 'actions',
       width: 200,
       render: (_: any, record: Schedule) => (
@@ -1038,7 +1040,7 @@ const OrganizationPage: React.FC = () => {
             icon={<SettingOutlined />}
             onClick={() => setScheduleVaultModalConfig({ open: true, schedule: record })}
           >
-            Vault
+            {t('general.vault')}
           </Button>
           <Button 
             type="link" 
@@ -1047,14 +1049,14 @@ const OrganizationPage: React.FC = () => {
               // TODO: Implement edit functionality
             }}
           >
-            Edit
+            {t('general.edit')}
           </Button>
           <Popconfirm
-            title="Delete Schedule"
-            description={`Are you sure you want to delete schedule "${record.scheduleName}"?`}
+            title={t('schedules.deleteSchedule')}
+            description={t('schedules.confirmDelete', { scheduleName: record.scheduleName })}
             onConfirm={() => handleDeleteSchedule(record)}
-            okText="Yes"
-            cancelText="No"
+            okText={t('general.yes')}
+            cancelText={t('general.no')}
             okButtonProps={{ danger: true }}
           >
             <Button 
@@ -1063,7 +1065,7 @@ const OrganizationPage: React.FC = () => {
               icon={<DeleteOutlined />}
               loading={deleteScheduleMutation.isPending}
             >
-              Delete
+              {t('general.delete')}
             </Button>
           </Popconfirm>
         </Space>
@@ -1075,8 +1077,8 @@ const OrganizationPage: React.FC = () => {
   const regionFormFields = [
     {
       name: 'regionName',
-      label: 'Region Name',
-      placeholder: 'Enter region name',
+      label: t('regions.regionName'),
+      placeholder: t('regions.placeholders.enterRegionName'),
       required: true,
     },
   ]
@@ -1084,16 +1086,16 @@ const OrganizationPage: React.FC = () => {
   const bridgeFormFields = [
     {
       name: 'regionName',
-      label: 'Region',
-      placeholder: 'Select region',
+      label: t('general.region'),
+      placeholder: t('regions.placeholders.selectRegion'),
       required: true,
       type: 'select' as const,
       options: dropdownData?.regions?.map(r => ({ value: r.value, label: r.label })) || [],
     },
     {
       name: 'bridgeName',
-      label: 'Bridge Name',
-      placeholder: 'Enter bridge name',
+      label: t('bridges.bridgeName'),
+      placeholder: t('bridges.placeholders.enterBridgeName'),
       required: true,
     },
   ]
@@ -1123,30 +1125,30 @@ const OrganizationPage: React.FC = () => {
   const machineFormFields = [
     {
       name: 'teamName',
-      label: 'Team',
-      placeholder: 'Select team',
+      label: t('general.team'),
+      placeholder: t('teams.placeholders.selectTeam'),
       required: true,
       type: 'select' as const,
       options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
     },
     {
       name: 'machineName',
-      label: 'Machine Name',
-      placeholder: 'Enter machine name',
+      label: t('machines.machineName'),
+      placeholder: t('machines.placeholders.enterMachineName'),
       required: true,
     },
     {
       name: 'regionName',
-      label: 'Region',
-      placeholder: 'Select region',
+      label: t('general.region'),
+      placeholder: t('regions.placeholders.selectRegion'),
       required: true,
       type: 'select' as const,
       options: dropdownData?.regions?.map(r => ({ value: r.value, label: r.label })) || [],
     },
     {
       name: 'bridgeName',
-      label: 'Bridge',
-      placeholder: selectedRegionForMachine ? 'Select bridge' : 'Select a region first',
+      label: t('bridges.bridge'),
+      placeholder: selectedRegionForMachine ? t('bridges.placeholders.selectBridge') : t('bridges.placeholders.selectRegionFirst'),
       required: true,
       type: 'select' as const,
       options: filteredBridgesForMachine,
@@ -1157,16 +1159,16 @@ const OrganizationPage: React.FC = () => {
   const repositoryFormFields = [
     {
       name: 'teamName',
-      label: 'Team',
-      placeholder: 'Select team',
+      label: t('general.team'),
+      placeholder: t('teams.placeholders.selectTeam'),
       required: true,
       type: 'select' as const,
       options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
     },
     {
       name: 'repositoryName',
-      label: 'Repository Name',
-      placeholder: 'Enter repository name',
+      label: t('repositories.repositoryName'),
+      placeholder: t('repositories.placeholders.enterRepositoryName'),
       required: true,
     },
   ]
@@ -1174,16 +1176,16 @@ const OrganizationPage: React.FC = () => {
   const storageFormFields = [
     {
       name: 'teamName',
-      label: 'Team',
-      placeholder: 'Select team',
+      label: t('general.team'),
+      placeholder: t('teams.placeholders.selectTeam'),
       required: true,
       type: 'select' as const,
       options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
     },
     {
       name: 'storageName',
-      label: 'Storage Name',
-      placeholder: 'Enter storage name',
+      label: t('storage.storageName'),
+      placeholder: t('storage.placeholders.enterStorageName'),
       required: true,
     },
   ]
@@ -1191,28 +1193,28 @@ const OrganizationPage: React.FC = () => {
   const scheduleFormFields = [
     {
       name: 'teamName',
-      label: 'Team',
-      placeholder: 'Select team',
+      label: t('general.team'),
+      placeholder: t('teams.placeholders.selectTeam'),
       required: true,
       type: 'select' as const,
       options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
     },
     {
       name: 'scheduleName',
-      label: 'Schedule Name',
-      placeholder: 'Enter schedule name',
+      label: t('schedules.scheduleName'),
+      placeholder: t('schedules.placeholders.enterScheduleName'),
       required: true,
     },
     {
       name: 'scheduleDescription',
-      label: 'Description',
-      placeholder: 'Enter description (optional)',
+      label: t('schedules.description'),
+      placeholder: t('schedules.placeholders.enterDescription'),
       required: false,
     },
     {
       name: 'cronExpression',
-      label: 'Cron Expression',
-      placeholder: 'e.g., 0 0 * * * (daily at midnight)',
+      label: t('schedules.cronExpression'),
+      placeholder: t('schedules.placeholders.cronExample'),
       required: true,
     },
   ]
@@ -1223,7 +1225,7 @@ const OrganizationPage: React.FC = () => {
       label: (
         <span>
           <CloudServerOutlined />
-          Machines
+          {t('resourceTabs.machines')}
         </span>
       ),
       children: (
@@ -1236,10 +1238,10 @@ const OrganizationPage: React.FC = () => {
             total: machines?.length || 0,
             pageSize: 10,
             showSizeChanger: true,
-            showTotal: (total) => `Total ${total} machines`,
+            showTotal: (total) => t('machines.totalMachines', { total }),
           }}
           locale={{
-            emptyText: 'No machines found in this team',
+            emptyText: t('machines.noMachines'),
           }}
         />
       ),
@@ -1249,7 +1251,7 @@ const OrganizationPage: React.FC = () => {
       label: (
         <span>
           <DatabaseOutlined />
-          Repositories
+          {t('resourceTabs.repositories')}
         </span>
       ),
       children: (
@@ -1262,10 +1264,10 @@ const OrganizationPage: React.FC = () => {
             total: repositories?.length || 0,
             pageSize: 10,
             showSizeChanger: true,
-            showTotal: (total) => `Total ${total} repositories`,
+            showTotal: (total) => t('repositories.totalRepositories', { total }),
           }}
           locale={{
-            emptyText: 'No repositories found in this team',
+            emptyText: t('repositories.noRepositories'),
           }}
         />
       ),
@@ -1275,7 +1277,7 @@ const OrganizationPage: React.FC = () => {
       label: (
         <span>
           <HddOutlined />
-          Storage
+          {t('resourceTabs.storage')}
         </span>
       ),
       children: (
@@ -1288,10 +1290,10 @@ const OrganizationPage: React.FC = () => {
             total: storages?.length || 0,
             pageSize: 10,
             showSizeChanger: true,
-            showTotal: (total) => `Total ${total} storage units`,
+            showTotal: (total) => t('storage.totalStorage', { total }),
           }}
           locale={{
-            emptyText: 'No storage found in this team',
+            emptyText: t('storage.noStorage'),
           }}
         />
       ),
@@ -1301,7 +1303,7 @@ const OrganizationPage: React.FC = () => {
       label: (
         <span>
           <ScheduleOutlined />
-          Schedules
+          {t('resourceTabs.schedules')}
         </span>
       ),
       children: (
@@ -1314,10 +1316,10 @@ const OrganizationPage: React.FC = () => {
             total: schedules?.length || 0,
             pageSize: 10,
             showSizeChanger: true,
-            showTotal: (total) => `Total ${total} schedules`,
+            showTotal: (total) => t('schedules.totalSchedules', { total }),
           }}
           locale={{
-            emptyText: 'No schedules found in this team',
+            emptyText: t('schedules.noSchedules'),
           }}
         />
       ),
@@ -1330,7 +1332,7 @@ const OrganizationPage: React.FC = () => {
       label: (
         <span>
           <TeamOutlined />
-          Teams & Resources
+          {t('tabs.teamsResources')}
         </span>
       ),
       children: (
@@ -1339,15 +1341,15 @@ const OrganizationPage: React.FC = () => {
             <ResourceListView
               title={
                 <Space>
-                  <span style={{ fontSize: 16, fontWeight: 500 }}>Teams</span>
-                  <span style={{ fontSize: 14, color: '#666' }}>Select a team to view its resources</span>
+                  <span style={{ fontSize: 16, fontWeight: 500 }}>{t('teams.title')}</span>
+                  <span style={{ fontSize: 14, color: '#666' }}>{t('teams.selectTeamPrompt')}</span>
                 </Space>
               }
               loading={teamsLoading}
               data={teams}
               columns={teamColumns}
               rowKey="teamName"
-              searchPlaceholder="Search teams..."
+              searchPlaceholder={t('teams.searchTeams')}
               actions={
                 <Button 
                   type="primary" 
@@ -1355,7 +1357,7 @@ const OrganizationPage: React.FC = () => {
                   onClick={() => setIsCreateTeamModalOpen(true)}
                   style={{ background: '#556b2f', borderColor: '#556b2f' }}
                 >
-                  Create Team
+                  {t('teams.createTeam')}
                 </Button>
               }
               rowSelection={{
@@ -1378,11 +1380,11 @@ const OrganizationPage: React.FC = () => {
               <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <Title level={4} style={{ margin: 0 }}>
-                    {selectedTeam ? `Resources in ${selectedTeam}` : 'Team Resources'}
+                    {selectedTeam ? t('teams.resourcesInTeam', { team: selectedTeam }) : t('teams.teamResources')}
                   </Title>
                   {!selectedTeam && (
                     <Text type="secondary" style={{ fontSize: 14 }}>
-                      Select a team above to view and manage its resources
+                      {t('teams.selectTeamToView')}
                     </Text>
                   )}
                 </div>
@@ -1413,7 +1415,10 @@ const OrganizationPage: React.FC = () => {
                       }}
                       style={{ background: '#556b2f', borderColor: '#556b2f' }}
                     >
-                      Create {teamResourcesTab === 'storage' ? 'Storage' : teamResourcesTab.slice(0, -1).charAt(0).toUpperCase() + teamResourcesTab.slice(1, -1)}
+                      {teamResourcesTab === 'machines' && t('machines.createMachine')}
+                      {teamResourcesTab === 'repositories' && t('repositories.createRepository')}
+                      {teamResourcesTab === 'storage' && t('storage.createStorage')}
+                      {teamResourcesTab === 'schedules' && t('schedules.createSchedule')}
                     </Button>
                   </Space>
                 )}
@@ -1422,7 +1427,7 @@ const OrganizationPage: React.FC = () => {
               {!selectedTeam ? (
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description="Select a team to view its resources"
+                  description={t('teams.selectTeamPrompt')}
                   style={{ padding: '40px 0' }}
                 />
               ) : (
@@ -1442,7 +1447,7 @@ const OrganizationPage: React.FC = () => {
       label: (
         <span>
           <GlobalOutlined />
-          Regions & Infrastructure
+          {t('tabs.regionsInfrastructure')}
         </span>
       ),
       children: (
@@ -1451,15 +1456,15 @@ const OrganizationPage: React.FC = () => {
             <ResourceListView
               title={
                 <Space>
-                  <span style={{ fontSize: 16, fontWeight: 500 }}>Regions</span>
-                  <span style={{ fontSize: 14, color: '#666' }}>Select a region to view its bridges</span>
+                  <span style={{ fontSize: 16, fontWeight: 500 }}>{t('regions.title')}</span>
+                  <span style={{ fontSize: 14, color: '#666' }}>{t('regions.selectRegionPrompt')}</span>
                 </Space>
               }
               loading={regionsLoading}
               data={regions}
               columns={regionColumns}
               rowKey="regionName"
-              searchPlaceholder="Search regions..."
+              searchPlaceholder={t('regions.searchRegions')}
               actions={
                 <Button 
                   type="primary" 
@@ -1467,7 +1472,7 @@ const OrganizationPage: React.FC = () => {
                   onClick={() => setIsCreateRegionModalOpen(true)}
                   style={{ background: '#556b2f', borderColor: '#556b2f' }}
                 >
-                  Create Region
+                  {t('regions.createRegion')}
                 </Button>
               }
               rowSelection={{
@@ -1490,11 +1495,11 @@ const OrganizationPage: React.FC = () => {
               <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <Title level={4} style={{ margin: 0 }}>
-                    {selectedRegion ? `Bridges in ${selectedRegion}` : 'Bridges'}
+                    {selectedRegion ? t('regions.bridgesInRegion', { region: selectedRegion }) : t('bridges.title')}
                   </Title>
                   {!selectedRegion && (
                     <Text type="secondary" style={{ fontSize: 14 }}>
-                      Select a region above to view and manage its bridges
+                      {t('regions.selectRegionToView')}
                     </Text>
                   )}
                 </div>
@@ -1508,7 +1513,7 @@ const OrganizationPage: React.FC = () => {
                     }}
                     style={{ background: '#556b2f', borderColor: '#556b2f' }}
                   >
-                    Create Bridge
+                    {t('bridges.createBridge')}
                   </Button>
                 )}
               </div>
@@ -1516,7 +1521,7 @@ const OrganizationPage: React.FC = () => {
               {!selectedRegion ? (
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description="Select a region to view its bridges"
+                  description={t('regions.selectRegionPrompt')}
                   style={{ padding: '40px 0' }}
                 />
               ) : (
@@ -1529,10 +1534,10 @@ const OrganizationPage: React.FC = () => {
                     total: bridges?.length || 0,
                     pageSize: 10,
                     showSizeChanger: true,
-                    showTotal: (total) => `Total ${total} bridges`,
+                    showTotal: (total) => t('bridges.totalBridges', { total }),
                   }}
                   locale={{
-                    emptyText: 'No bridges found in this region',
+                    emptyText: t('bridges.noBridges'),
                   }}
                 />
               )}
@@ -1555,7 +1560,7 @@ const OrganizationPage: React.FC = () => {
 
       {/* Team Modals */}
       <Modal
-        title="Create Team"
+        title={t('teams.createTeam')}
         open={isCreateTeamModalOpen}
         onCancel={() => {
           setIsCreateTeamModalOpen(false)
@@ -1570,13 +1575,13 @@ const OrganizationPage: React.FC = () => {
         >
           <Form.Item
             name="teamName"
-            label="Team Name"
+            label={t('teams.teamName')}
             rules={[
-              { required: true, message: 'Please enter team name' },
-              { pattern: /^[a-zA-Z0-9-_]+$/, message: 'Team name can only contain letters, numbers, hyphens, and underscores' },
+              { required: true, message: t('teams.validation.teamNameRequired') },
+              { pattern: /^[a-zA-Z0-9-_]+$/, message: t('teams.validation.teamNamePattern') },
             ]}
           >
-            <Input placeholder="Enter team name" />
+            <Input placeholder={t('teams.placeholders.enterTeamName')} />
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
@@ -1585,7 +1590,7 @@ const OrganizationPage: React.FC = () => {
                 setIsCreateTeamModalOpen(false)
                 teamForm.resetFields()
               }}>
-                Cancel
+                {t('general.cancel')}
               </Button>
               <Button 
                 type="primary" 
@@ -1593,7 +1598,7 @@ const OrganizationPage: React.FC = () => {
                 loading={createTeamMutation.isPending}
                 style={{ background: '#556b2f', borderColor: '#556b2f' }}
               >
-                Create
+                {t('general.create')}
               </Button>
             </Space>
           </Form.Item>
@@ -1602,7 +1607,7 @@ const OrganizationPage: React.FC = () => {
 
       {/* Region Modals */}
       <Modal
-        title="Create Region"
+        title={t('regions.createRegion')}
         open={isCreateRegionModalOpen}
         onCancel={() => {
           setIsCreateRegionModalOpen(false)
@@ -1614,8 +1619,8 @@ const OrganizationPage: React.FC = () => {
           form={regionForm}
           fields={regionFormFields}
           onSubmit={handleCreateRegion}
-          submitText="Create"
-          cancelText="Cancel"
+          submitText={t('general.create')}
+          cancelText={t('general.cancel')}
           onCancel={() => {
             setIsCreateRegionModalOpen(false)
             regionForm.reset()
@@ -1628,7 +1633,7 @@ const OrganizationPage: React.FC = () => {
         open={regionVaultModalConfig.open}
         onCancel={() => setRegionVaultModalConfig({ open: false })}
         onSave={handleUpdateRegionVault}
-        title={`Configure Vault - ${regionVaultModalConfig.region?.regionName}`}
+        title={t('general.configureVault', { name: regionVaultModalConfig.region?.regionName || '' })}
         initialVault="{}"
         initialVersion={regionVaultModalConfig.region?.vaultVersion || 1}
         loading={updateRegionVaultMutation.isPending}
@@ -1636,7 +1641,7 @@ const OrganizationPage: React.FC = () => {
 
       {/* Bridge Modals */}
       <Modal
-        title="Create Bridge"
+        title={t('bridges.createBridge')}
         open={isCreateBridgeModalOpen}
         onCancel={() => {
           setIsCreateBridgeModalOpen(false)
@@ -1648,8 +1653,8 @@ const OrganizationPage: React.FC = () => {
           form={bridgeForm}
           fields={bridgeFormFields}
           onSubmit={handleCreateBridge}
-          submitText="Create"
-          cancelText="Cancel"
+          submitText={t('general.create')}
+          cancelText={t('general.cancel')}
           onCancel={() => {
             setIsCreateBridgeModalOpen(false)
             bridgeForm.reset()
@@ -1662,7 +1667,7 @@ const OrganizationPage: React.FC = () => {
         open={bridgeVaultModalConfig.open}
         onCancel={() => setBridgeVaultModalConfig({ open: false })}
         onSave={handleUpdateBridgeVault}
-        title={`Configure Vault - ${bridgeVaultModalConfig.bridge?.bridgeName}`}
+        title={t('general.configureVault', { name: bridgeVaultModalConfig.bridge?.bridgeName || '' })}
         initialVault="{}"
         initialVersion={bridgeVaultModalConfig.bridge?.vaultVersion || 1}
         loading={updateBridgeVaultMutation.isPending}
@@ -1670,7 +1675,7 @@ const OrganizationPage: React.FC = () => {
 
       {/* Machine Modals */}
       <Modal
-        title="Create Machine"
+        title={t('machines.createMachine')}
         open={isCreateMachineModalOpen}
         onCancel={() => {
           setIsCreateMachineModalOpen(false)
@@ -1682,8 +1687,8 @@ const OrganizationPage: React.FC = () => {
           form={machineForm}
           fields={machineFormFields}
           onSubmit={handleCreateMachine}
-          submitText="Create"
-          cancelText="Cancel"
+          submitText={t('general.create')}
+          cancelText={t('general.cancel')}
           onCancel={() => {
             setIsCreateMachineModalOpen(false)
             machineForm.reset()
@@ -1696,7 +1701,7 @@ const OrganizationPage: React.FC = () => {
         open={machineVaultModalConfig.open}
         onCancel={() => setMachineVaultModalConfig({ open: false })}
         onSave={handleUpdateMachineVault}
-        title={`Configure Vault - ${machineVaultModalConfig.machine?.machineName}`}
+        title={t('general.configureVault', { name: machineVaultModalConfig.machine?.machineName || '' })}
         initialVault="{}"
         initialVersion={machineVaultModalConfig.machine?.vaultVersion || 1}
         loading={updateMachineVaultMutation.isPending}
@@ -1704,7 +1709,7 @@ const OrganizationPage: React.FC = () => {
 
       {/* Repository Modals */}
       <Modal
-        title="Create Repository"
+        title={t('repositories.createRepository')}
         open={isCreateRepositoryModalOpen}
         onCancel={() => {
           setIsCreateRepositoryModalOpen(false)
@@ -1716,8 +1721,8 @@ const OrganizationPage: React.FC = () => {
           form={repositoryForm}
           fields={repositoryFormFields}
           onSubmit={handleCreateRepository}
-          submitText="Create"
-          cancelText="Cancel"
+          submitText={t('general.create')}
+          cancelText={t('general.cancel')}
           onCancel={() => {
             setIsCreateRepositoryModalOpen(false)
             repositoryForm.reset()
@@ -1730,7 +1735,7 @@ const OrganizationPage: React.FC = () => {
         open={repositoryVaultModalConfig.open}
         onCancel={() => setRepositoryVaultModalConfig({ open: false })}
         onSave={handleUpdateRepositoryVault}
-        title={`Configure Vault - ${repositoryVaultModalConfig.repository?.repositoryName}`}
+        title={t('general.configureVault', { name: repositoryVaultModalConfig.repository?.repositoryName || '' })}
         initialVault="{}"
         initialVersion={repositoryVaultModalConfig.repository?.vaultVersion || 1}
         loading={updateRepositoryVaultMutation.isPending}
@@ -1738,7 +1743,7 @@ const OrganizationPage: React.FC = () => {
 
       {/* Storage Modals */}
       <Modal
-        title="Create Storage"
+        title={t('storage.createStorage')}
         open={isCreateStorageModalOpen}
         onCancel={() => {
           setIsCreateStorageModalOpen(false)
@@ -1750,8 +1755,8 @@ const OrganizationPage: React.FC = () => {
           form={storageForm}
           fields={storageFormFields}
           onSubmit={handleCreateStorage}
-          submitText="Create"
-          cancelText="Cancel"
+          submitText={t('general.create')}
+          cancelText={t('general.cancel')}
           onCancel={() => {
             setIsCreateStorageModalOpen(false)
             storageForm.reset()
@@ -1764,7 +1769,7 @@ const OrganizationPage: React.FC = () => {
         open={storageVaultModalConfig.open}
         onCancel={() => setStorageVaultModalConfig({ open: false })}
         onSave={handleUpdateStorageVault}
-        title={`Configure Vault - ${storageVaultModalConfig.storage?.storageName}`}
+        title={t('general.configureVault', { name: storageVaultModalConfig.storage?.storageName || '' })}
         initialVault="{}"
         initialVersion={storageVaultModalConfig.storage?.vaultVersion || 1}
         loading={updateStorageVaultMutation.isPending}
@@ -1772,7 +1777,7 @@ const OrganizationPage: React.FC = () => {
 
       {/* Schedule Modals */}
       <Modal
-        title="Create Schedule"
+        title={t('schedules.createSchedule')}
         open={isCreateScheduleModalOpen}
         onCancel={() => {
           setIsCreateScheduleModalOpen(false)
@@ -1784,8 +1789,8 @@ const OrganizationPage: React.FC = () => {
           form={scheduleForm}
           fields={scheduleFormFields}
           onSubmit={handleCreateSchedule}
-          submitText="Create"
-          cancelText="Cancel"
+          submitText={t('general.create')}
+          cancelText={t('general.cancel')}
           onCancel={() => {
             setIsCreateScheduleModalOpen(false)
             scheduleForm.reset()
@@ -1798,7 +1803,7 @@ const OrganizationPage: React.FC = () => {
         open={scheduleVaultModalConfig.open}
         onCancel={() => setScheduleVaultModalConfig({ open: false })}
         onSave={handleUpdateScheduleVault}
-        title={`Configure Vault - ${scheduleVaultModalConfig.schedule?.scheduleName}`}
+        title={t('general.configureVault', { name: scheduleVaultModalConfig.schedule?.scheduleName || '' })}
         initialVault="{}"
         initialVersion={scheduleVaultModalConfig.schedule?.vaultVersion || 1}
         loading={updateScheduleVaultMutation.isPending}

@@ -19,12 +19,14 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons'
+import { useTranslation } from 'react-i18next'
 import { selectUser, selectCompany } from '@/store/auth/authSelectors'
 import { logout } from '@/store/auth/authSlice'
 import { clearAuthData } from '@/utils/auth'
 import apiClient from '@/api/client'
 import MessageHistory from '@/components/common/MessageHistory'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
+import LanguageSelector from '@/components/common/LanguageSelector'
 import { useTheme } from '@/context/ThemeContext'
 import logoBlack from '@/assets/logo_black.png'
 import logoWhite from '@/assets/logo_white.png'
@@ -40,6 +42,7 @@ const MainLayout: React.FC = () => {
   const user = useSelector(selectUser)
   const company = useSelector(selectCompany)
   const { theme } = useTheme()
+  const { t } = useTranslation('common')
 
   const handleLogout = async () => {
     try {
@@ -63,7 +66,7 @@ const MainLayout: React.FC = () => {
       {
         key: 'settings',
         icon: <SettingOutlined />,
-        label: 'Settings',
+        label: t('navigation.settings'),
         onClick: () => navigate('/settings'),
       },
       {
@@ -72,7 +75,7 @@ const MainLayout: React.FC = () => {
       {
         key: 'logout',
         icon: <LogoutOutlined />,
-        label: 'Logout',
+        label: t('navigation.logout'),
         onClick: handleLogout,
       },
     ],
@@ -82,27 +85,27 @@ const MainLayout: React.FC = () => {
     {
       key: '/dashboard',
       icon: <DashboardOutlined />,
-      label: 'Dashboard',
+      label: t('navigation.dashboard'),
     },
     {
       key: '/organization',
       icon: <TeamOutlined />,
-      label: 'Organization',
+      label: t('navigation.organization'),
     },
     {
       key: '/queue',
       icon: <ThunderboltOutlined />,
-      label: 'Queue Management',
+      label: t('navigation.queue'),
     },
     {
       key: '/users',
       icon: <UserOutlined />,
-      label: 'User Management',
+      label: t('navigation.users'),
     },
     {
       key: '/settings',
       icon: <SettingOutlined />,
-      label: 'Company Settings',
+      label: t('navigation.settings'),
     },
   ]
 
@@ -186,6 +189,7 @@ const MainLayout: React.FC = () => {
             )}
           </Space>
           <Space size={16}>
+            <LanguageSelector />
             <ThemeToggle />
             <MessageHistory />
             <Dropdown menu={userMenu} placement="bottomRight" arrow>

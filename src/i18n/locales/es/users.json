@@ -1,0 +1,78 @@
+{
+  "title": "Usuarios y Permisos",
+  "users": {
+    "title": "Usuarios",
+    "description": "Gestionar cuentas de usuario y acceso",
+    "createUser": "Crear Usuario",
+    "editUser": "Editar Usuario",
+    "deleteUser": "Eliminar Usuario",
+    "inviteUser": "Invitar Usuario",
+    "searchUsers": "Buscar usuarios...",
+    "noUsers": "No se encontraron usuarios",
+    "fields": {
+      "name": "Nombre",
+      "email": "Correo Electrónico",
+      "role": "Rol",
+      "status": "Estado",
+      "lastLogin": "Último Acceso",
+      "created": "Creado",
+      "actions": "Acciones"
+    },
+    "status": {
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "pending": "Pendiente",
+      "suspended": "Suspendido"
+    }
+  },
+  "permissions": {
+    "title": "Permisos",
+    "description": "Configurar control de acceso basado en roles",
+    "createRole": "Crear Rol",
+    "editRole": "Editar Rol",
+    "deleteRole": "Eliminar Rol",
+    "roleName": "Nombre del Rol",
+    "roleDescription": "Descripción",
+    "assignPermissions": "Asignar Permisos",
+    "categories": {
+      "dashboard": "Panel de Control",
+      "backup": "Gestión de Copias de Seguridad",
+      "restore": "Operaciones de Restauración",
+      "storage": "Gestión de Almacenamiento",
+      "users": "Gestión de Usuarios",
+      "system": "Configuración del Sistema",
+      "reports": "Informes y Análisis"
+    },
+    "actions": {
+      "view": "Ver",
+      "create": "Crear",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "execute": "Ejecutar"
+    }
+  },
+  "profile": {
+    "title": "Perfil de Usuario",
+    "personalInfo": "Información Personal",
+    "changePassword": "Cambiar Contraseña",
+    "twoFactor": "Autenticación de Dos Factores",
+    "enable2FA": "Habilitar 2FA",
+    "disable2FA": "Deshabilitar 2FA",
+    "apiKeys": "Claves API",
+    "generateKey": "Generar Nueva Clave",
+    "revokeKey": "Revocar Clave",
+    "sessions": "Sesiones Activas",
+    "logoutAll": "Cerrar Todas las Sesiones"
+  },
+  "form": {
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "email": "Correo Electrónico",
+    "password": "Contraseña",
+    "confirmPassword": "Confirmar Contraseña",
+    "role": "Rol",
+    "team": "Equipo",
+    "sendInvite": "Enviar Correo de Invitación",
+    "mustChangePassword": "El usuario debe cambiar la contraseña en el primer inicio de sesión"
+  }
+}

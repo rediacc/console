@@ -1,0 +1,89 @@
+{
+  "app": {
+    "name": "Consola Rediacc",
+    "tagline": "Respaldo y Recuperación Empresarial"
+  },
+  "navigation": {
+    "dashboard": "Panel de Control",
+    "organization": "Organización",
+    "users": "Usuarios",
+    "queue": "Cola",
+    "settings": "Configuración",
+    "logout": "Cerrar Sesión"
+  },
+  "actions": {
+    "create": "Crear",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "submit": "Enviar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "refresh": "Actualizar",
+    "export": "Exportar",
+    "import": "Importar",
+    "view": "Ver",
+    "close": "Cerrar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "configure": "Configurar",
+    "activate": "Activar",
+    "deactivate": "Desactivar",
+    "assign": "Asignar"
+  },
+  "status": {
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "pending": "Pendiente",
+    "running": "En Ejecución",
+    "completed": "Completado",
+    "failed": "Fallido",
+    "cancelled": "Cancelado",
+    "online": "En Línea",
+    "offline": "Fuera de Línea",
+    "healthy": "Saludable",
+    "warning": "Advertencia",
+    "error": "Error"
+  },
+  "messages": {
+    "loading": "Cargando...",
+    "saving": "Guardando...",
+    "success": "Éxito",
+    "error": "Error",
+    "warning": "Advertencia",
+    "info": "Información",
+    "confirmDelete": "¿Está seguro de que desea eliminar este elemento?",
+    "deleteSuccess": "Elemento eliminado exitosamente",
+    "createSuccess": "Elemento creado exitosamente",
+    "updateSuccess": "Elemento actualizado exitosamente",
+    "noData": "No hay datos disponibles",
+    "required": "Este campo es obligatorio",
+    "invalidEmail": "Dirección de correo electrónico inválida",
+    "passwordMismatch": "Las contraseñas no coinciden"
+  },
+  "table": {
+    "id": "ID",
+    "name": "Nombre",
+    "description": "Descripción",
+    "status": "Estado",
+    "createdAt": "Creado En",
+    "updatedAt": "Actualizado En",
+    "actions": "Acciones",
+    "total": "Total",
+    "page": "Página",
+    "of": "de",
+    "items": "elementos",
+    "showing": "Mostrando",
+    "to": "a"
+  },
+  "language": {
+    "select": "Seleccionar Idioma",
+    "en": "Inglés",
+    "es": "Español"
+  },
+  "theme": {
+    "light": "Claro",
+    "dark": "Oscuro"
+  }
+}

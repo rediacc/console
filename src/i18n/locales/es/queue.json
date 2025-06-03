@@ -1,0 +1,86 @@
+{
+  "title": "Gestión de Cola",
+  "overview": {
+    "title": "Resumen de Cola",
+    "totalJobs": "Trabajos Totales",
+    "activeJobs": "Trabajos Activos",
+    "queuedJobs": "Trabajos en Cola",
+    "completedJobs": "Trabajos Completados",
+    "failedJobs": "Trabajos Fallidos"
+  },
+  "jobs": {
+    "title": "Trabajos",
+    "searchJobs": "Buscar trabajos...",
+    "noJobs": "No se encontraron trabajos",
+    "createJob": "Crear Trabajo",
+    "cancelJob": "Cancelar Trabajo",
+    "retryJob": "Reintentar Trabajo",
+    "viewDetails": "Ver Detalles",
+    "fields": {
+      "id": "ID del Trabajo",
+      "name": "Nombre del Trabajo",
+      "type": "Tipo",
+      "status": "Estado",
+      "priority": "Prioridad",
+      "created": "Creado",
+      "started": "Iniciado",
+      "completed": "Completado",
+      "duration": "Duración",
+      "progress": "Progreso",
+      "actions": "Acciones"
+    },
+    "status": {
+      "pending": "Pendiente",
+      "queued": "En Cola",
+      "running": "En Ejecución",
+      "completed": "Completado",
+      "failed": "Fallido",
+      "cancelled": "Cancelado",
+      "retrying": "Reintentando"
+    },
+    "priority": {
+      "low": "Baja",
+      "normal": "Normal",
+      "high": "Alta",
+      "critical": "Crítica"
+    },
+    "types": {
+      "backup": "Copia de Seguridad",
+      "restore": "Restauración",
+      "replication": "Replicación",
+      "migration": "Migración",
+      "maintenance": "Mantenimiento"
+    }
+  },
+  "details": {
+    "title": "Detalles del Trabajo",
+    "generalInfo": "Información General",
+    "executionInfo": "Información de Ejecución",
+    "logs": "Registros",
+    "downloadLogs": "Descargar Registros",
+    "clearLogs": "Limpiar Registros",
+    "autoRefresh": "Actualización automática",
+    "refreshInterval": "Intervalo de actualización",
+    "errorDetails": "Detalles del Error",
+    "retryCount": "Número de Reintentos",
+    "lastError": "Último Error"
+  },
+  "filters": {
+    "title": "Filtros",
+    "dateRange": "Rango de Fechas",
+    "status": "Estado",
+    "type": "Tipo de Trabajo",
+    "priority": "Prioridad",
+    "clearFilters": "Limpiar Filtros",
+    "applyFilters": "Aplicar Filtros"
+  },
+  "actions": {
+    "pauseQueue": "Pausar Cola",
+    "resumeQueue": "Reanudar Cola",
+    "clearCompleted": "Limpiar Completados",
+    "exportQueue": "Exportar Datos de Cola",
+    "bulkActions": "Acciones Masivas",
+    "selectAll": "Seleccionar Todo",
+    "deselectAll": "Deseleccionar Todo"
+  }
+}

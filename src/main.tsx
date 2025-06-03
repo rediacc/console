@@ -2,11 +2,12 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { Provider } from 'react-redux'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ConfigProvider, App as AntApp } from 'antd'
 import { Toaster } from 'react-hot-toast'
 import { store } from './store/store'
 import App from './App'
+import { AppProviders } from './components/common/AppProviders'
 import './index.css'
+import i18n from './i18n/config'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,60 +19,76 @@ const queryClient = new QueryClient({
   },
 })
 
-const theme = {
-  token: {
-    colorPrimary: '#556b2f',
-    colorSuccess: '#22c55e',
-    colorWarning: '#f59e0b',
-    colorError: '#ef4444',
-    colorInfo: '#3b82f6',
-    colorTextBase: '#111827',
-    colorBgBase: '#ffffff',
-    borderRadius: 6,
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-  },
-  components: {
-    Button: {
-      primaryShadow: '0 2px 0 rgba(85, 107, 47, 0.1)',
-    },
-    Card: {
-      boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
-    },
-  },
-}
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <Provider store={store}>
-      <QueryClientProvider client={queryClient}>
-        <ConfigProvider theme={theme}>
-          <AntApp>
+// Wait for i18n to initialize before rendering
+i18n.on('initialized', () => {
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <Provider store={store}>
+        <QueryClientProvider client={queryClient}>
+          <AppProviders>
             <App />
             <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: '#1f2937',
-                  color: '#fff',
-                },
-                success: {
-                  iconTheme: {
-                    primary: '#22c55e',
-                    secondary: '#fff',
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
+                  style: {
+                    background: '#1f2937',
+                    color: '#fff',
                   },
-                },
-                error: {
-                  iconTheme: {
-                    primary: '#ef4444',
-                    secondary: '#fff',
+                  success: {
+                    iconTheme: {
+                      primary: '#22c55e',
+                      secondary: '#fff',
+                    },
                   },
-                },
-              }}
-            />
-          </AntApp>
-        </ConfigProvider>
-      </QueryClientProvider>
-    </Provider>
-  </React.StrictMode>
-)
+                  error: {
+                    iconTheme: {
+                      primary: '#ef4444',
+                      secondary: '#fff',
+                    },
+                  },
+                }}
+              />
+          </AppProviders>
+        </QueryClientProvider>
+      </Provider>
+    </React.StrictMode>
+  )
+})
+
+// If i18n is already initialized, render immediately
+if (i18n.isInitialized) {
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <Provider store={store}>
+        <QueryClientProvider client={queryClient}>
+          <AppProviders>
+            <App />
+            <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
+                  style: {
+                    background: '#1f2937',
+                    color: '#fff',
+                  },
+                  success: {
+                    iconTheme: {
+                      primary: '#22c55e',
+                      secondary: '#fff',
+                    },
+                  },
+                  error: {
+                    iconTheme: {
+                      primary: '#ef4444',
+                      secondary: '#fff',
+                    },
+                  },
+                }}
+              />
+          </AppProviders>
+        </QueryClientProvider>
+      </Provider>
+    </React.StrictMode>
+  )
+}

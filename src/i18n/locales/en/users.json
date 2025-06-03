@@ -1,0 +1,78 @@
+{
+  "title": "Users & Permissions",
+  "users": {
+    "title": "Users",
+    "description": "Manage user accounts and access",
+    "createUser": "Create User",
+    "editUser": "Edit User",
+    "deleteUser": "Delete User",
+    "inviteUser": "Invite User",
+    "searchUsers": "Search users...",
+    "noUsers": "No users found",
+    "fields": {
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "lastLogin": "Last Login",
+      "created": "Created",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending",
+      "suspended": "Suspended"
+    }
+  },
+  "permissions": {
+    "title": "Permissions",
+    "description": "Configure role-based access control",
+    "createRole": "Create Role",
+    "editRole": "Edit Role",
+    "deleteRole": "Delete Role",
+    "roleName": "Role Name",
+    "roleDescription": "Description",
+    "assignPermissions": "Assign Permissions",
+    "categories": {
+      "dashboard": "Dashboard",
+      "backup": "Backup Management",
+      "restore": "Restore Operations",
+      "storage": "Storage Management",
+      "users": "User Management",
+      "system": "System Settings",
+      "reports": "Reports & Analytics"
+    },
+    "actions": {
+      "view": "View",
+      "create": "Create",
+      "edit": "Edit",
+      "delete": "Delete",
+      "execute": "Execute"
+    }
+  },
+  "profile": {
+    "title": "User Profile",
+    "personalInfo": "Personal Information",
+    "changePassword": "Change Password",
+    "twoFactor": "Two-Factor Authentication",
+    "enable2FA": "Enable 2FA",
+    "disable2FA": "Disable 2FA",
+    "apiKeys": "API Keys",
+    "generateKey": "Generate New Key",
+    "revokeKey": "Revoke Key",
+    "sessions": "Active Sessions",
+    "logoutAll": "Logout All Sessions"
+  },
+  "form": {
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email Address",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "role": "Role",
+    "team": "Team",
+    "sendInvite": "Send Invitation Email",
+    "mustChangePassword": "User must change password on first login"
+  }
+}
