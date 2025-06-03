@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Card, Tabs, Button, Space, Modal, Popconfirm, Tag, Typography, Form, Input, Table, Row, Col, Empty, Badge } from 'antd'
+import { Card, Tabs, Button, Space, Modal, Popconfirm, Tag, Typography, Form, Input, Table, Row, Col, Empty, Badge, Alert } from 'antd'
 import { 
   TeamOutlined, 
   GlobalOutlined, 
@@ -17,6 +17,7 @@ import {
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import ResourceListView from '@/components/common/ResourceListView'
 import ResourceForm from '@/components/forms/ResourceForm'
 import VaultConfigModal from '@/components/common/VaultConfigModal'
@@ -47,11 +48,6 @@ import {
 // Machine queries
 import { 
   useMachines, 
-  useCreateMachine, 
-  useUpdateMachineName,
-  useUpdateMachineBridge,
-  useDeleteMachine, 
-  useUpdateMachineVault, 
   Machine 
 } from '@/api/queries/machines'
 
@@ -91,8 +87,6 @@ import {
   CreateRegionForm, 
   createBridgeSchema, 
   CreateBridgeForm,
-  createMachineSchema,
-  CreateMachineForm,
   createRepositorySchema,
   CreateRepositoryForm,
   createStorageSchema,
@@ -105,8 +99,6 @@ import {
   EditRegionForm,
   editBridgeSchema,
   EditBridgeForm,
-  editMachineSchema,
-  EditMachineForm,
   editRepositorySchema,
   EditRepositoryForm,
   editStorageSchema,
@@ -118,7 +110,8 @@ import {
 const { Title, Text } = Typography
 
 const OrganizationPage: React.FC = () => {
-  const { t } = useTranslation('organization')
+  const { t } = useTranslation(['organization', 'machines'])
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('teams')
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null)
   const [teamResourcesTab, setTeamResourcesTab] = useState('machines')
@@ -145,13 +138,7 @@ const OrganizationPage: React.FC = () => {
     bridge?: Bridge
   }>({ open: false })
 
-  // Machine state
-  const [isCreateMachineModalOpen, setIsCreateMachineModalOpen] = useState(false)
-  const [editingMachine, setEditingMachine] = useState<Machine | null>(null)
-  const [machineVaultModalConfig, setMachineVaultModalConfig] = useState<{
-    open: boolean
-    machine?: Machine
-  }>({ open: false })
+  // Machine state - removed modal states since we navigate to machines page instead
 
   // Repository state
   const [isCreateRepositoryModalOpen, setIsCreateRepositoryModalOpen] = useState(false)
@@ -202,11 +189,6 @@ const OrganizationPage: React.FC = () => {
 
   // Machine hooks
   const { data: machines = [], isLoading: machinesLoading } = useMachines(selectedTeam || undefined)
-  const createMachineMutation = useCreateMachine()
-  const updateMachineNameMutation = useUpdateMachineName()
-  const updateMachineBridgeMutation = useUpdateMachineBridge()
-  const deleteMachineMutation = useDeleteMachine()
-  const updateMachineVaultMutation = useUpdateMachineVault()
 
   // Repository hooks
   const { data: repositories = [], isLoading: repositoriesLoading } = useRepositories(selectedTeam || undefined)
@@ -247,16 +229,7 @@ const OrganizationPage: React.FC = () => {
     },
   })
 
-  const machineForm = useForm<CreateMachineForm>({
-    resolver: zodResolver(createMachineSchema) as any,
-    defaultValues: {
-      teamName: '',
-      machineName: '',
-      regionName: '',
-      bridgeName: '',
-      machineVault: '{}',
-    },
-  })
+  // Machine form removed - handled in MachinePage
 
   const repositoryForm = useForm<CreateRepositoryForm>({
     resolver: zodResolver(createRepositorySchema) as any,
@@ -417,68 +390,7 @@ const OrganizationPage: React.FC = () => {
     setBridgeVaultModalConfig({ open: false })
   }
 
-  // Machine handlers
-  const handleCreateMachine = async (data: CreateMachineForm) => {
-    try {
-      // Extract only the fields needed by the API (exclude regionName)
-      const { teamName, bridgeName, machineName, machineVault } = data
-      await createMachineMutation.mutateAsync({
-        teamName,
-        bridgeName,
-        machineName,
-        machineVault
-      })
-      setIsCreateMachineModalOpen(false)
-      machineForm.reset()
-    } catch (error) {
-      // Error handled by mutation
-    }
-  }
-
-  const handleEditMachine = async (values: EditMachineForm) => {
-    if (!editingMachine) return
-    try {
-      await updateMachineNameMutation.mutateAsync({
-        teamName: editingMachine.teamName,
-        currentMachineName: editingMachine.machineName,
-        newMachineName: values.machineName,
-      })
-      if (values.bridgeName !== editingMachine.bridgeName) {
-        await updateMachineBridgeMutation.mutateAsync({
-          teamName: editingMachine.teamName,
-          machineName: values.machineName,
-          newBridgeName: values.bridgeName,
-        })
-      }
-      setEditingMachine(null)
-      machineForm.reset()
-    } catch (error) {
-      // Error handled by mutation
-    }
-  }
-
-  const handleDeleteMachine = async (machine: Machine) => {
-    try {
-      await deleteMachineMutation.mutateAsync({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-      })
-    } catch (error) {
-      // Error handled by mutation
-    }
-  }
-
-  const handleUpdateMachineVault = async (vault: string, version: number) => {
-    if (!machineVaultModalConfig.machine) return
-
-    await updateMachineVaultMutation.mutateAsync({
-      teamName: machineVaultModalConfig.machine.teamName,
-      machineName: machineVaultModalConfig.machine.machineName,
-      machineVault: vault,
-      vaultVersion: version,
-    })
-    setMachineVaultModalConfig({ open: false })
-  }
+  // Machine handlers removed - handled in MachinePage
 
   // Repository handlers
   const handleCreateRepository = async (data: CreateRepositoryForm) => {
@@ -868,7 +780,7 @@ const OrganizationPage: React.FC = () => {
     },
   ]
 
-  // Machine columns
+  // Machine columns - simplified since actions are handled in MachinePage
   const machineColumns = [
     {
       title: t('machines.machineName'),
@@ -902,50 +814,6 @@ const OrganizationPage: React.FC = () => {
       key: 'vaultVersion',
       width: 120,
       render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
-    },
-    {
-      title: t('general.actions'),
-      key: 'actions',
-      width: 200,
-      render: (_: any, record: Machine) => (
-        <Space>
-          <Button
-            type="link"
-            icon={<SettingOutlined />}
-            onClick={() => setMachineVaultModalConfig({ open: true, machine: record })}
-          >
-            {t('general.vault')}
-          </Button>
-          <Button 
-            type="link" 
-            icon={<EditOutlined />}
-            onClick={() => {
-              setEditingMachine(record)
-              machineForm.setValue('machineName', record.machineName)
-              machineForm.setValue('bridgeName', record.bridgeName)
-            }}
-          >
-            {t('general.edit')}
-          </Button>
-          <Popconfirm
-            title={t('machines.deleteMachine')}
-            description={t('machines.confirmDelete', { machineName: record.machineName })}
-            onConfirm={() => handleDeleteMachine(record)}
-            okText={t('general.yes')}
-            cancelText={t('general.no')}
-            okButtonProps={{ danger: true }}
-          >
-            <Button 
-              type="link" 
-              danger 
-              icon={<DeleteOutlined />}
-              loading={deleteMachineMutation.isPending}
-            >
-              {t('general.delete')}
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
     },
   ]
 
@@ -1171,61 +1039,7 @@ const OrganizationPage: React.FC = () => {
     },
   ]
 
-  // Get filtered bridges based on selected region
-  const selectedRegionForMachine = machineForm.watch('regionName')
-  const filteredBridgesForMachine = React.useMemo(() => {
-    if (!selectedRegionForMachine || !dropdownData?.bridgesByRegion) return []
-    
-    const regionData = dropdownData.bridgesByRegion.find(
-      (r: any) => r.regionName === selectedRegionForMachine
-    )
-    return regionData?.bridges?.map((b: any) => ({ 
-      value: b.value, 
-      label: b.label 
-    })) || []
-  }, [selectedRegionForMachine, dropdownData])
-
-  // Clear bridge selection when region changes
-  React.useEffect(() => {
-    const currentBridge = machineForm.getValues('bridgeName')
-    if (currentBridge && !filteredBridgesForMachine.find((b: any) => b.value === currentBridge)) {
-      machineForm.setValue('bridgeName', '')
-    }
-  }, [selectedRegionForMachine, filteredBridgesForMachine])
-
-  const machineFormFields = [
-    {
-      name: 'teamName',
-      label: t('general.team'),
-      placeholder: t('teams.placeholders.selectTeam'),
-      required: true,
-      type: 'select' as const,
-      options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
-    },
-    {
-      name: 'regionName',
-      label: t('general.region'),
-      placeholder: t('regions.placeholders.selectRegion'),
-      required: true,
-      type: 'select' as const,
-      options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
-    },
-    {
-      name: 'bridgeName',
-      label: t('bridges.bridge'),
-      placeholder: selectedRegionForMachine ? t('bridges.placeholders.selectBridge') : t('bridges.placeholders.selectRegionFirst'),
-      required: true,
-      type: 'select' as const,
-      options: filteredBridgesForMachine,
-      disabled: !selectedRegionForMachine,
-    },
-    {
-      name: 'machineName',
-      label: t('machines.machineName'),
-      placeholder: t('machines.placeholders.enterMachineName'),
-      required: true,
-    },
-  ]
+  // Machine form fields removed - handled in MachinePage
 
   const repositoryFormFields = [
     {
@@ -1288,21 +1102,37 @@ const OrganizationPage: React.FC = () => {
         </span>
       ),
       children: (
-        <Table
-          columns={machineColumns}
-          dataSource={machines}
-          rowKey="machineName"
-          loading={machinesLoading}
-          pagination={{
-            total: machines?.length || 0,
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => t('machines.totalMachines', { total }),
-          }}
-          locale={{
-            emptyText: t('machines.noMachines'),
-          }}
-        />
+        <>
+          <Alert
+            message={t('machines:readOnlyNote')}
+            description={
+              <span>
+                {t('machines:readOnlyDescription')}{' '}
+                <a onClick={() => navigate('/machines', { state: { preselectedTeam: selectedTeam } })}>
+                  {t('machines:goToMachinesPage')}
+                </a>
+              </span>
+            }
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+          <Table
+            columns={machineColumns}
+            dataSource={machines}
+            rowKey="machineName"
+            loading={machinesLoading}
+            pagination={{
+              total: machines?.length || 0,
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total) => t('machines.totalMachines', { total }),
+            }}
+            locale={{
+              emptyText: t('machines.noMachines'),
+            }}
+          />
+        </>
       ),
     },
     {
@@ -1455,8 +1285,13 @@ const OrganizationPage: React.FC = () => {
                       onClick={() => {
                         switch(teamResourcesTab) {
                           case 'machines':
-                            machineForm.setValue('teamName', selectedTeam)
-                            setIsCreateMachineModalOpen(true)
+                            // Navigate to machines page with state to open create modal
+                            navigate('/machines', { 
+                              state: { 
+                                openCreateModal: true, 
+                                preselectedTeam: selectedTeam 
+                              } 
+                            })
                             break
                           case 'repositories':
                             repositoryForm.setValue('teamName', selectedTeam)
@@ -1837,78 +1672,6 @@ const OrganizationPage: React.FC = () => {
         />
       </Modal>
 
-      {/* Machine Modals */}
-      <Modal
-        title={t('machines.createMachine')}
-        open={isCreateMachineModalOpen}
-        onCancel={() => {
-          setIsCreateMachineModalOpen(false)
-          machineForm.reset()
-        }}
-        footer={null}
-      >
-        <ResourceForm
-          form={machineForm}
-          fields={machineFormFields}
-          onSubmit={handleCreateMachine}
-          submitText={t('general.create')}
-          cancelText={t('general.cancel')}
-          onCancel={() => {
-            setIsCreateMachineModalOpen(false)
-            machineForm.reset()
-          }}
-          loading={createMachineMutation.isPending}
-        />
-      </Modal>
-
-      <VaultConfigModal
-        open={machineVaultModalConfig.open}
-        onCancel={() => setMachineVaultModalConfig({ open: false })}
-        onSave={handleUpdateMachineVault}
-        title={t('general.configureVault', { name: machineVaultModalConfig.machine?.machineName || '' })}
-        initialVault="{}"
-        initialVersion={machineVaultModalConfig.machine?.vaultVersion || 1}
-        loading={updateMachineVaultMutation.isPending}
-      />
-
-      {/* Edit Machine Modal */}
-      <Modal
-        title={t('machines.editMachine')}
-        open={!!editingMachine}
-        onCancel={() => {
-          setEditingMachine(null)
-          machineForm.reset()
-        }}
-        footer={null}
-      >
-        <ResourceForm
-          form={machineForm}
-          fields={[
-            {
-              name: 'machineName',
-              label: t('machines.machineName'),
-              placeholder: t('machines.placeholders.enterMachineName'),
-              required: true,
-            },
-            {
-              name: 'bridgeName',
-              label: t('bridges.bridge'),
-              type: 'select',
-              placeholder: t('machines.placeholders.selectBridge'),
-              required: true,
-              options: dropdownData?.bridges?.map(b => ({ label: b, value: b })) || [],
-            },
-          ]}
-          onSubmit={handleEditMachine}
-          submitText={t('general.save')}
-          cancelText={t('general.cancel')}
-          onCancel={() => {
-            setEditingMachine(null)
-            machineForm.reset()
-          }}
-          loading={updateMachineNameMutation.isPending || updateMachineBridgeMutation.isPending}
-        />
-      </Modal>
 
       {/* Repository Modals */}
       <Modal

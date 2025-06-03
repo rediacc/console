@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, Button, Table, Space, Select, Tag, Dropdown, Modal, message, Row, Col, Segmented } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, MoreOutlined, KeyOutlined, FilterOutlined, AppstoreOutlined, TableOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useLocation } from 'react-router-dom';
 import { useMachines, useDeleteMachine, useCreateMachine, useUpdateMachineName, useUpdateMachineVault } from '../../api/queries/machines';
 import { useDropdownData } from '../../api/queries/useDropdownData';
 import { useTeams } from '../../api/queries/teams';
@@ -18,6 +19,7 @@ export const MachinePage: React.FC = () => {
   const { t } = useTranslation('machines');
   const { t: tCommon } = useTranslation('common');
   const { t: tOrg } = useTranslation('organization');
+  const location = useLocation();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -45,6 +47,28 @@ export const MachinePage: React.FC = () => {
       machineVault: '{}',
     },
   });
+
+  // Handle navigation state from Organization page
+  useEffect(() => {
+    if (location.state) {
+      const { openCreateModal, preselectedTeam } = location.state as { 
+        openCreateModal?: boolean; 
+        preselectedTeam?: string;
+      };
+      
+      if (openCreateModal) {
+        if (preselectedTeam) {
+          machineForm.setValue('teamName', preselectedTeam);
+          // Also set the filter to show machines from this team
+          setFilterTeam(preselectedTeam);
+        }
+        setIsCreateModalOpen(true);
+        
+        // Clear the state to prevent reopening on page refresh
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state, machineForm]);
 
   const machines = machinesData || [];
   // Extract all bridges from dropdown data

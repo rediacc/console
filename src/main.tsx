@@ -28,7 +28,7 @@ i18n.on('initialized', () => {
           <AppProviders>
             <App />
             <Toaster
-                position="top-right"
+                position="top-center"
                 toastOptions={{
                   duration: 4000,
                   style: {
@@ -65,7 +65,7 @@ if (i18n.isInitialized) {
           <AppProviders>
             <App />
             <Toaster
-                position="top-right"
+                position="top-center"
                 toastOptions={{
                   duration: 4000,
                   style: {
