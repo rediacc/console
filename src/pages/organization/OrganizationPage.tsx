@@ -1203,12 +1203,6 @@ const OrganizationPage: React.FC = () => {
       options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
     },
     {
-      name: 'machineName',
-      label: t('machines.machineName'),
-      placeholder: t('machines.placeholders.enterMachineName'),
-      required: true,
-    },
-    {
       name: 'regionName',
       label: t('general.region'),
       placeholder: t('regions.placeholders.selectRegion'),
@@ -1224,6 +1218,12 @@ const OrganizationPage: React.FC = () => {
       type: 'select' as const,
       options: filteredBridgesForMachine,
       disabled: !selectedRegionForMachine,
+    },
+    {
+      name: 'machineName',
+      label: t('machines.machineName'),
+      placeholder: t('machines.placeholders.enterMachineName'),
+      required: true,
     },
   ]
 

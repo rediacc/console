@@ -87,6 +87,11 @@ const MainLayout: React.FC = () => {
       label: t('navigation.organization'),
     },
     {
+      key: '/machines',
+      icon: <CloudServerOutlined />,
+      label: t('navigation.machines'),
+    },
+    {
       key: '/queue',
       icon: <ThunderboltOutlined />,
       label: t('navigation.queue'),

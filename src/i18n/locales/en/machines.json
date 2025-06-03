@@ -1,0 +1,31 @@
+{
+  "title": "Machines",
+  "createMachine": "Create Machine",
+  "machineName": "Machine Name",
+  "team": "Team",
+  "bridge": "Bridge",
+  "queueItems": "Queue Items",
+  "vaultVersion": "Vault Version",
+  "vault": "Vault",
+  "filterByBridge": "Filter by Bridge",
+  "filterByTeam": "Filter by Team",
+  "machineCount": "machine | machines",
+  "confirmDelete": "Delete Machine",
+  "deleteWarning": "Are you sure you want to delete machine \"{{name}}\"? This action cannot be undone.",
+  "deleteSuccess": "Machine deleted successfully",
+  "deleteError": "Failed to delete machine",
+  "createSuccess": "Machine created successfully",
+  "updateSuccess": "Machine updated successfully",
+  "vaultUpdateSuccess": "Machine vault configuration updated successfully",
+  "form": {
+    "title": {
+      "create": "Create New Machine",
+      "edit": "Edit Machine",
+      "vault": "Configure Machine Vault"
+    },
+    "selectTeam": "Select Team",
+    "selectBridge": "Select Bridge",
+    "machineNamePlaceholder": "Enter machine name",
+    "vaultConfig": "Vault Configuration (JSON)"
+  }
+}

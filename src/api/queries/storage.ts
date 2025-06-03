@@ -14,8 +14,12 @@ export const useStorage = (teamName?: string) => {
     queryKey: ['storage', teamName],
     queryFn: async () => {
       if (!teamName) return []
-      const response = await apiClient.get<Storage[]>('/GetTeamStorages', { teamName })
-      return response.tables[1]?.data || []
+      const response = await apiClient.get<any>('/GetTeamStorages', { teamName })
+      // Get data from tables with proper fallback
+      const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
+      // Ensure we have an array and filter out empty objects
+      if (!Array.isArray(data)) return []
+      return data.filter((storage: any) => storage && storage.storageName)
     },
     enabled: !!teamName,
   })

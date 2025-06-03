@@ -1,0 +1,31 @@
+{
+  "title": "Máquinas",
+  "createMachine": "Crear Máquina",
+  "machineName": "Nombre de Máquina",
+  "team": "Equipo",
+  "bridge": "Puente",
+  "queueItems": "Elementos en Cola",
+  "vaultVersion": "Versión de Vault",
+  "vault": "Vault",
+  "filterByBridge": "Filtrar por Puente",
+  "filterByTeam": "Filtrar por Equipo",
+  "machineCount": "máquina | máquinas",
+  "confirmDelete": "Eliminar Máquina",
+  "deleteWarning": "¿Está seguro de que desea eliminar la máquina \"{{name}}\"? Esta acción no se puede deshacer.",
+  "deleteSuccess": "Máquina eliminada exitosamente",
+  "deleteError": "Error al eliminar la máquina",
+  "createSuccess": "Máquina creada exitosamente",
+  "updateSuccess": "Máquina actualizada exitosamente",
+  "vaultUpdateSuccess": "Configuración de vault de máquina actualizada exitosamente",
+  "form": {
+    "title": {
+      "create": "Crear Nueva Máquina",
+      "edit": "Editar Máquina",
+      "vault": "Configurar Vault de Máquina"
+    },
+    "selectTeam": "Seleccionar Equipo",
+    "selectBridge": "Seleccionar Puente",
+    "machineNamePlaceholder": "Ingrese el nombre de la máquina",
+    "vaultConfig": "Configuración de Vault (JSON)"
+  }
+}

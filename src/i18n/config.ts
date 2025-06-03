@@ -5,6 +5,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import enAuth from './locales/en/auth.json';
 import enCommon from './locales/en/common.json';
 import enOrganization from './locales/en/organization.json';
+import enMachines from './locales/en/machines.json';
 import enUsers from './locales/en/users.json';
 import enQueue from './locales/en/queue.json';
 import enSettings from './locales/en/settings.json';
@@ -12,6 +13,7 @@ import enSettings from './locales/en/settings.json';
 import esAuth from './locales/es/auth.json';
 import esCommon from './locales/es/common.json';
 import esOrganization from './locales/es/organization.json';
+import esMachines from './locales/es/machines.json';
 import esUsers from './locales/es/users.json';
 import esQueue from './locales/es/queue.json';
 import esSettings from './locales/es/settings.json';
@@ -22,6 +24,7 @@ export const resources = {
     common: enCommon,
     auth: enAuth,
     organization: enOrganization,
+    machines: enMachines,
     users: enUsers,
     queue: enQueue,
     settings: enSettings,
@@ -30,6 +33,7 @@ export const resources = {
     common: esCommon,
     auth: esAuth,
     organization: esOrganization,
+    machines: esMachines,
     users: esUsers,
     queue: esQueue,
     settings: esSettings,
@@ -44,7 +48,7 @@ i18n
     fallbackLng: 'en',
     lng: 'en',
     debug: false,
-    ns: ['common', 'auth', 'organization', 'users', 'queue', 'settings'],
+    ns: ['common', 'auth', 'organization', 'machines', 'users', 'queue', 'settings'],
     defaultNS,
     resources,
     interpolation: {

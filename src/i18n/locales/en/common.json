@@ -5,6 +5,7 @@
   },
   "navigation": {
     "organization": "Organization",
+    "machines": "Machines",
     "users": "Users",
     "queue": "Queue",
     "settings": "Settings",

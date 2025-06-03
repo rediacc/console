@@ -28,8 +28,12 @@ export const useSchedules = (teamName?: string) => {
     queryKey: ['schedules', teamName],
     queryFn: async () => {
       if (!teamName) return []
-      const response = await apiClient.get<Schedule[]>('/GetTeamSchedules', { teamName })
-      return response.tables[1]?.data || []
+      const response = await apiClient.get<any>('/GetTeamSchedules', { teamName })
+      // Get data from tables with proper fallback
+      const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
+      // Ensure we have an array and filter out empty objects
+      if (!Array.isArray(data)) return []
+      return data.filter((schedule: any) => schedule && schedule.scheduleName)
     },
     enabled: !!teamName,
   })

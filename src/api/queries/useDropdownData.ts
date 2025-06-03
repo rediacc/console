@@ -52,7 +52,8 @@ export const useDropdownData = (context?: string) => {
       )
       
       // The stored procedure returns data wrapped in a 'dropdownValues' field as JSON string
-      const rawData = response.tables[1]?.data[0];
+      const rawData = response.tables[1]?.data[0] || response.tables[0]?.data[0];
+      console.log('GetLookupData raw response:', rawData);
       if (rawData?.dropdownValues) {
         try {
           // Parse the JSON string if it's a string
@@ -99,12 +100,37 @@ export const useDropdownData = (context?: string) => {
           return dropdownData as DropdownData;
         } catch (e) {
           console.error('Failed to parse dropdown data:', e);
-          return {} as DropdownData;
+          // Return structure with empty arrays on parse error
+          return {
+            teams: [],
+            allTeams: [],
+            regions: [],
+            bridgesByRegion: [],
+            machinesByTeam: [],
+            users: [],
+            permissionGroups: [],
+            queueFunctions: [],
+            subscriptionPlans: []
+          } as DropdownData;
         }
       }
       
       // Fallback to direct data if no dropdownValues field
-      return response.tables[1]?.data[0] || {} as DropdownData;
+      const fallbackData = response.tables[1]?.data[0] || response.tables[0]?.data[0] || {};
+      
+      // Ensure all arrays exist with empty defaults
+      return {
+        teams: [],
+        allTeams: [],
+        regions: [],
+        bridgesByRegion: [],
+        machinesByTeam: [],
+        users: [],
+        permissionGroups: [],
+        queueFunctions: [],
+        subscriptionPlans: [],
+        ...fallbackData
+      } as DropdownData;
     },
     staleTime: 30 * 60 * 1000, // 30 minutes
     gcTime: 60 * 60 * 1000, // 1 hour

@@ -5,6 +5,7 @@
   },
   "navigation": {
     "organization": "Organización",
+    "machines": "Máquinas",
     "users": "Usuarios",
     "queue": "Cola",
     "settings": "Configuración",

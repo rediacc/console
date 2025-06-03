@@ -20,7 +20,10 @@ export const useRegions = () => {
     queryKey: ['regions'],
     queryFn: async () => {
       const response = await apiClient.get<Region[]>('/GetCompanyRegions')
-      return response.tables[1]?.data || []
+      const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
+      if (!Array.isArray(data)) return []
+      // Filter out any empty or invalid region objects
+      return data.filter(region => region && region.regionName)
     },
   })
 }
@@ -31,7 +34,8 @@ export const useRegionBridges = (regionName: string) => {
     queryKey: ['region-bridges', regionName],
     queryFn: async () => {
       const response = await apiClient.get<Bridge[]>('/GetRegionBridges', { regionName })
-      return response.tables[1]?.data || []
+      const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
+      return Array.isArray(data) ? data : []
     },
     enabled: !!regionName,
   })

@@ -10,6 +10,7 @@ import AuthLayout from '@/components/layouts/AuthLayout'
 import MainLayout from '@/components/layouts/MainLayout'
 import LoginPage from '@/pages/LoginPage'
 import OrganizationPage from '@/pages/organization/OrganizationPage'
+import MachinePage from '@/pages/machines/MachinePage'
 import QueuePage from '@/pages/queue/QueuePage'
 import UsersAndPermissionsPage from '@/pages/users/UsersAndPermissionsPage'
 import CompanySettingsPage from '@/pages/settings/CompanySettingsPage'
@@ -65,6 +66,9 @@ const AppContent: React.FC = () => {
               
               {/* Organization */}
               <Route path="/organization" element={<OrganizationPage />} />
+              
+              {/* Machines */}
+              <Route path="/machines" element={<MachinePage />} />
               
               {/* Queue */}
               <Route path="/queue" element={<QueuePage />} />

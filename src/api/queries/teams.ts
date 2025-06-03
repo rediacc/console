@@ -24,7 +24,11 @@ export const useTeams = () => {
     queryKey: ['teams'],
     queryFn: async () => {
       const response = await apiClient.get<Team[]>('/GetCompanyTeams')
-      return response.tables[1]?.data || []
+      // Ensure we always return an array
+      const teams = response.tables?.[1]?.data || response.tables?.[0]?.data || []
+      if (!Array.isArray(teams)) return []
+      // Filter out any empty or invalid team objects
+      return teams.filter(team => team && team.teamName)
     },
   })
 }

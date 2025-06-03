@@ -15,13 +15,18 @@ export const useRepositories = (teamName?: string) => {
     queryFn: async () => {
       if (!teamName) return []
       const response = await apiClient.get<any>('/GetTeamRepositories', { teamName })
-      // Map API response to UI format
-      const repositories = response.tables[1]?.data || []
-      return repositories.map((repo: any) => ({
-        repositoryName: repo.repoName,
-        teamName: repo.teamName,
-        vaultVersion: repo.vaultVersion || 1,
-      }))
+      // Get data from tables with proper fallback
+      const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
+      // Ensure we have an array
+      const repositories = Array.isArray(data) ? data : []
+      // Filter out empty objects and map API response to UI format
+      return repositories
+        .filter((repo: any) => repo && repo.repoName)
+        .map((repo: any) => ({
+          repositoryName: repo.repoName,
+          teamName: repo.teamName,
+          vaultVersion: repo.vaultVersion || 1,
+        }))
     },
     enabled: !!teamName,
   })
