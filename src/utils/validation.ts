@@ -1,44 +1,37 @@
 import { z } from 'zod'
 
 // Common patterns
-const namePattern = /^[a-zA-Z0-9-_]+$/
+const namePattern = /^[a-zA-Z0-9-_@/]+$/
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 // Resource name schemas
 export const teamNameSchema = z.string()
   .min(1, 'Team name is required')
-  .max(50, 'Team name must be less than 50 characters')
-  .regex(namePattern, 'Team name can only contain letters, numbers, hyphens, and underscores')
+  .max(100, 'Team name must be less than 100 characters')
 
 export const regionNameSchema = z.string()
   .min(1, 'Region name is required')
-  .max(50, 'Region name must be less than 50 characters')
-  .regex(namePattern, 'Region name can only contain letters, numbers, hyphens, and underscores')
+  .max(100, 'Region name must be less than 100 characters')
 
 export const bridgeNameSchema = z.string()
   .min(1, 'Bridge name is required')
-  .max(50, 'Bridge name must be less than 50 characters')
-  .regex(namePattern, 'Bridge name can only contain letters, numbers, hyphens, and underscores')
+  .max(100, 'Bridge name must be less than 100 characters')
 
 export const machineNameSchema = z.string()
   .min(1, 'Machine name is required')
-  .max(50, 'Machine name must be less than 50 characters')
-  .regex(namePattern, 'Machine name can only contain letters, numbers, hyphens, and underscores')
+  .max(100, 'Machine name must be less than 100 characters')
 
 export const repositoryNameSchema = z.string()
   .min(1, 'Repository name is required')
-  .max(50, 'Repository name must be less than 50 characters')
-  .regex(/^[a-zA-Z][a-zA-Z0-9-_]*$/, 'Repository name must start with a letter and contain only letters, numbers, hyphens, and underscores')
+  .max(100, 'Repository name must be less than 100 characters')
 
 export const storageNameSchema = z.string()
   .min(1, 'Storage name is required')
-  .max(50, 'Storage name must be less than 50 characters')
-  .regex(namePattern, 'Storage name can only contain letters, numbers, hyphens, and underscores')
+  .max(100, 'Storage name must be less than 100 characters')
 
 export const scheduleNameSchema = z.string()
   .min(1, 'Schedule name is required')
-  .max(50, 'Schedule name must be less than 50 characters')
-  .regex(namePattern, 'Schedule name can only contain letters, numbers, hyphens, and underscores')
+  .max(100, 'Schedule name must be less than 100 characters')
 
 // User schemas
 export const emailSchema = z.string()
