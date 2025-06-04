@@ -24,7 +24,7 @@ import {
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { selectUser, selectCompany } from '@/store/auth/authSelectors'
-import { logout } from '@/store/auth/authSlice'
+import { logout, updateCompany } from '@/store/auth/authSlice'
 import { toggleUiMode } from '@/store/ui/uiSlice'
 import { clearAuthData } from '@/utils/auth'
 import apiClient from '@/api/client'
@@ -35,6 +35,7 @@ import { useTheme } from '@/context/ThemeContext'
 import logoBlack from '@/assets/logo_black.png'
 import logoWhite from '@/assets/logo_white.png'
 import { RootState } from '@/store/store'
+import { useDashboard } from '@/api/queries/dashboard'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
@@ -50,6 +51,16 @@ const MainLayout: React.FC = () => {
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const { theme } = useTheme()
   const { t } = useTranslation('common')
+  const { data: dashboardData } = useDashboard()
+
+  // Update company name when dashboard data is loaded
+  useEffect(() => {
+    if (dashboardData?.companyInfo?.CompanyName && dashboardData.companyInfo.CompanyName !== company) {
+      dispatch(updateCompany(dashboardData.companyInfo.CompanyName))
+      // Also update localStorage to persist the company name
+      localStorage.setItem('user_company', dashboardData.companyInfo.CompanyName)
+    }
+  }, [dashboardData, company, dispatch])
 
   // Define all menu items with visibility flags
   const allMenuItems = [

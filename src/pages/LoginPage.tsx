@@ -51,25 +51,13 @@ const LoginPage: React.FC = () => {
         throw new Error('No authentication token received')
       }
 
-      // Get company info
-      let company: string | undefined
-      try {
-        const companyResponse = await apiClient.getCompany(values.email, passwordHash)
-        if (companyResponse.tables?.[0]?.data?.[0]) {
-          company = companyResponse.tables[0].data[0].name
-        }
-      } catch (error) {
-        console.error('Failed to get company info:', error)
-      }
-
-      // Save auth data
-      saveAuthData(token, values.email, company)
+      // Save auth data (company will be set from dashboard)
+      saveAuthData(token, values.email)
 
       // Update Redux store
       dispatch(loginSuccess({
-        user: { email: values.email, company },
+        user: { email: values.email },
         token,
-        company,
       }))
 
       showMessage('success', t('common:messages.success'))

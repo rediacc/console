@@ -9,7 +9,7 @@ export const useCompanyVault = () => {
   const company = useAppSelector(selectCompany)
   
   return useQuery({
-    queryKey: ['company-vault', company?.companyId],
+    queryKey: ['company-vault', company],
     queryFn: async () => {
       const response = await apiClient.get('/GetCompanyVault')
       const vaultData = response.tables[0]?.data[0]
@@ -23,14 +23,13 @@ export const useCompanyVault = () => {
         vaultVersion: vaultData.VaultVersion || vaultData.vaultVersion || 1
       }
     },
-    enabled: !!company?.companyId
+    enabled: !!company
   })
 }
 
 // Update company vault configuration
 export const useUpdateCompanyVault = () => {
   const queryClient = useQueryClient()
-  const company = useAppSelector(selectCompany)
   
   return useMutation({
     mutationFn: async (data: { companyVault: string; vaultVersion: number }) => {

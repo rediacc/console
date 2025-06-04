@@ -39,8 +39,14 @@ const authSlice = createSlice({
     updateToken: (state, action: PayloadAction<string>) => {
       state.token = action.payload
     },
+    updateCompany: (state, action: PayloadAction<string>) => {
+      state.company = action.payload
+      if (state.user) {
+        state.user.company = action.payload
+      }
+    },
   },
 })
 
-export const { loginSuccess, logout, updateToken } = authSlice.actions
+export const { loginSuccess, logout, updateToken, updateCompany } = authSlice.actions
 export default authSlice.reducer

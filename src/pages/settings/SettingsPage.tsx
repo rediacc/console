@@ -4,7 +4,6 @@ import { SettingOutlined, BankOutlined, UserOutlined } from '@ant-design/icons'
 import VaultEditorModal from '@/components/common/VaultEditorModal'
 import { useUpdateCompanyVault, useCompanyVault } from '@/api/queries/company'
 import { useAppSelector } from '@/store/store'
-import { selectCompany } from '@/store/auth/authSelectors'
 
 const { Title, Text } = Typography
 
@@ -12,7 +11,6 @@ const SettingsPage: React.FC = () => {
   const [companyVaultModalOpen, setCompanyVaultModalOpen] = useState(false)
   const [userVaultModalOpen, setUserVaultModalOpen] = useState(false)
   
-  const company = useAppSelector(selectCompany)
   const { data: companyVault } = useCompanyVault()
   const updateVaultMutation = useUpdateCompanyVault()
 

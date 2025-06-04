@@ -120,20 +120,6 @@ class ApiClient {
     return response.data
   }
 
-  async getCompany(email: string, passwordHash: string) {
-    const response = await axios.post<ApiResponse>(
-      `${API_BASE_URL}${API_PREFIX}/GetUserCompany`,
-      {},
-      {
-        headers: {
-          'Rediacc-UserEmail': email,
-          'Rediacc-UserHash': passwordHash,
-        },
-      }
-    )
-    return response.data
-  }
-
   async activateUser(email: string, activationCode: string) {
     const response = await axios.post<ApiResponse>(
       `${API_BASE_URL}${API_PREFIX}/ActivateUserAccount`,
