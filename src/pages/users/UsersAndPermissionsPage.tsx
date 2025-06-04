@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Card, Tabs, Modal, Form, Input, Button, Space, Popconfirm, Tag, Select, Badge, List, Typography } from 'antd'
+import { Card, Tabs, Modal, Form, Input, Button, Space, Popconfirm, Tag, Select, Badge, List, Typography, Row, Col } from 'antd'
 import { 
   UserOutlined, 
   SafetyOutlined, 
@@ -8,16 +8,19 @@ import {
   KeyOutlined,
   CheckCircleOutlined,
   StopOutlined,
-  MailOutlined,
-  TeamOutlined
+  SettingOutlined,
+  BankOutlined
 } from '@ant-design/icons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
+import { useTranslation } from 'react-i18next'
 import ResourceListView from '@/components/common/ResourceListView'
 import ResourceForm from '@/components/forms/ResourceForm'
+import VaultEditorModal from '@/components/common/VaultEditorModal'
 import { useDropdownData } from '@/api/queries/useDropdownData'
+import { useUpdateCompanyVault, useCompanyVault } from '@/api/queries/company'
 import toast from 'react-hot-toast'
 
 // User queries
@@ -47,6 +50,8 @@ import { createUserSchema, CreateUserForm } from '@/utils/validation'
 const { Title, Text } = Typography
 
 const UsersAndPermissionsPage: React.FC = () => {
+  const { t } = useTranslation('settings')
+  const { t: tUsers } = useTranslation('users')
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const [activeTab, setActiveTab] = useState('users')
   
@@ -54,6 +59,10 @@ const UsersAndPermissionsPage: React.FC = () => {
   React.useEffect(() => {
     setActiveTab(uiMode === 'simple' ? 'users' : 'permissions')
   }, [uiMode])
+  
+  // Settings state
+  const [companyVaultModalOpen, setCompanyVaultModalOpen] = useState(false)
+  const [userVaultModalOpen, setUserVaultModalOpen] = useState(false)
   
   // User state
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false)
@@ -74,6 +83,10 @@ const UsersAndPermissionsPage: React.FC = () => {
 
   // Common hooks
   const { data: dropdownData } = useDropdownData()
+  
+  // Settings hooks
+  const { data: companyVault } = useCompanyVault()
+  const updateVaultMutation = useUpdateCompanyVault()
   
   // User hooks
   const { data: users = [], isLoading: usersLoading } = useUsers()
@@ -98,6 +111,21 @@ const UsersAndPermissionsPage: React.FC = () => {
       newUserPassword: '',
     },
   })
+
+  // Settings handlers
+  const handleUpdateCompanyVault = async (vault: string, version: number) => {
+    await updateVaultMutation.mutateAsync({
+      companyVault: vault,
+      vaultVersion: version,
+    })
+    setCompanyVaultModalOpen(false)
+  }
+
+  const handleUpdateUserVault = async (vault: string, version: number) => {
+    // TODO: Implement user vault update when API is available
+    console.log('User vault update:', { vault, version })
+    setUserVaultModalOpen(false)
+  }
 
   // User handlers
   const handleCreateUser = async (data: CreateUserForm) => {
@@ -462,6 +490,68 @@ const UsersAndPermissionsPage: React.FC = () => {
 
   return (
     <>
+      {/* Settings Section */}
+      <Space direction="vertical" size={24} style={{ width: '100%', marginBottom: 24 }}>
+        <Title level={3}>{t('title')}</Title>
+
+        <Row gutter={[16, 16]}>
+          {/* Company Settings Card */}
+          <Col xs={24} lg={12}>
+            <Card style={{ height: '100%' }}>
+              <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                <Space>
+                  <BankOutlined style={{ fontSize: 24, color: '#556b2f' }} />
+                  <Title level={4} style={{ margin: 0 }}>{t('company.title')}</Title>
+                </Space>
+                
+                <Text type="secondary">
+                  {t('company.description')}
+                </Text>
+
+                <Button
+                  type="primary"
+                  icon={<SettingOutlined />}
+                  onClick={() => setCompanyVaultModalOpen(true)}
+                  size="large"
+                  style={{ marginTop: 16 }}
+                >
+                  {t('company.configureVault')}
+                </Button>
+              </Space>
+            </Card>
+          </Col>
+
+          {/* User Settings Card */}
+          <Col xs={24} lg={12}>
+            <Card style={{ height: '100%' }}>
+              <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                <Space>
+                  <UserOutlined style={{ fontSize: 24, color: '#556b2f' }} />
+                  <Title level={4} style={{ margin: 0 }}>{t('personal.title')}</Title>
+                </Space>
+                
+                <Text type="secondary">
+                  {t('personal.description')}
+                </Text>
+
+                <Button
+                  type="primary"
+                  icon={<SettingOutlined />}
+                  onClick={() => setUserVaultModalOpen(true)}
+                  size="large"
+                  style={{ marginTop: 16 }}
+                >
+                  {t('personal.configureVault')}
+                </Button>
+              </Space>
+            </Card>
+          </Col>
+        </Row>
+      </Space>
+
+      {/* New Title Between Settings and Users */}
+      <Title level={3} style={{ marginBottom: 24 }}>{tUsers('title')}</Title>
+
       <Card>
         <Tabs
           activeKey={activeTab}
@@ -655,6 +745,30 @@ const UsersAndPermissionsPage: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* Company Vault Modal */}
+      <VaultEditorModal
+        open={companyVaultModalOpen}
+        onCancel={() => setCompanyVaultModalOpen(false)}
+        onSave={handleUpdateCompanyVault}
+        entityType="COMPANY"
+        title={t('company.modalTitle')}
+        initialVault={companyVault?.vault || '{}'}
+        initialVersion={companyVault?.vaultVersion || 1}
+        loading={updateVaultMutation.isPending}
+      />
+
+      {/* User Vault Modal */}
+      <VaultEditorModal
+        open={userVaultModalOpen}
+        onCancel={() => setUserVaultModalOpen(false)}
+        onSave={handleUpdateUserVault}
+        entityType="USER"
+        title={t('personal.modalTitle')}
+        initialVault={'{}'}
+        initialVersion={1}
+        loading={false}
+      />
     </>
   )
 }
