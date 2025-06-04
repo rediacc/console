@@ -97,12 +97,6 @@ const MainLayout: React.FC = () => {
       label: t('navigation.queue'),
       showInSimple: false,
     },
-    {
-      key: '/settings',
-      icon: <SettingOutlined />,
-      label: t('navigation.settings'),
-      showInSimple: true,
-    },
   ]
 
   // Handle mode transition
