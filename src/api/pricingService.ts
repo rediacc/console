@@ -1,4 +1,6 @@
 // Pricing service to fetch centralized pricing configuration
+import i18n from '../i18n/config';
+
 export interface PricingConfig {
   baseMonthlyPrices: {
     [key: string]: {
@@ -36,18 +38,24 @@ export interface PricingConfig {
   };
 }
 
-let pricingCache: PricingConfig | null = null;
-let cacheTimestamp: number | null = null;
+const pricingCache = new Map<string, PricingConfig>(); // Cache per language
+const cacheTimestamps = new Map<string, number>();
 const CACHE_DURATION = 1000 * 60 * 60; // 1 hour cache
 
 export const fetchPricingConfig = async (): Promise<PricingConfig | null> => {
+  const currentLang = i18n.language || 'en';
+  const cacheKey = currentLang;
+  
   // Return cached data if valid
-  if (pricingCache && cacheTimestamp && (Date.now() - cacheTimestamp < CACHE_DURATION)) {
-    return pricingCache;
+  const cachedData = pricingCache.get(cacheKey);
+  const cacheTimestamp = cacheTimestamps.get(cacheKey);
+  
+  if (cachedData && cacheTimestamp && (Date.now() - cacheTimestamp < CACHE_DURATION)) {
+    return cachedData;
   }
 
   try {
-    const response = await fetch('/config/pricing.json');
+    const response = await fetch(`/config/pricing.${currentLang}.json`);
     if (!response.ok) {
       throw new Error(`Failed to fetch pricing: ${response.status}`);
     }
@@ -55,17 +63,32 @@ export const fetchPricingConfig = async (): Promise<PricingConfig | null> => {
     const data: PricingConfig = await response.json();
     
     // Cache the data
-    pricingCache = data;
-    cacheTimestamp = Date.now();
+    pricingCache.set(cacheKey, data);
+    cacheTimestamps.set(cacheKey, Date.now());
     
     return data;
   } catch (error) {
     console.error('Error fetching pricing configuration:', error);
     
     // If fetch fails, return the cached data if available
-    if (pricingCache) {
+    if (cachedData) {
       console.warn('Using cached pricing data due to fetch error');
-      return pricingCache;
+      return cachedData;
+    }
+    
+    // Try fallback to English if current language fails
+    if (currentLang !== 'en') {
+      try {
+        const fallbackResponse = await fetch('/config/pricing.en.json');
+        if (fallbackResponse.ok) {
+          const fallbackData: PricingConfig = await fallbackResponse.json();
+          pricingCache.set(cacheKey, fallbackData);
+          cacheTimestamps.set(cacheKey, Date.now());
+          return fallbackData;
+        }
+      } catch (fallbackError) {
+        console.error('Fallback to English pricing also failed:', fallbackError);
+      }
     }
     
     // Return null on failure (no fallback)
@@ -88,8 +111,8 @@ export const getPlanPrice = (pricing: PricingConfig, planCode: string): number |
   
   if (!priceInfo) return null;
   
-  // Handle "Free" pricing
-  if (priceInfo.price === "Free" || priceInfo.price === "0") {
+  // Handle "Free" or "Gratis" pricing
+  if (typeof priceInfo.price === 'string' && (priceInfo.price.toLowerCase() === "free" || priceInfo.price.toLowerCase() === "gratis" || priceInfo.price === "0")) {
     return 0;
   }
   
@@ -101,6 +124,6 @@ export const getPlanPrice = (pricing: PricingConfig, planCode: string): number |
 
 // Helper function to clear cache (useful for testing)
 export const clearPricingCache = () => {
-  pricingCache = null;
-  cacheTimestamp = null;
+  pricingCache.clear();
+  cacheTimestamps.clear();
 };
