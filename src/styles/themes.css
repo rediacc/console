@@ -333,6 +333,28 @@ body[data-theme="dark"] .ant-typography-secondary {
   color: var(--color-text-primary);
 }
 
+/* Price display styles */
+.price-statistic .ant-statistic-content {
+  font-size: 1.25rem !important;
+}
+
+.price-statistic .ant-statistic-content-prefix {
+  font-size: 1rem !important;
+}
+
+.price-statistic .ant-statistic-content-suffix {
+  font-size: 0.875rem !important;
+}
+
+.price-statistic .ant-statistic-title {
+  font-size: 0.875rem !important;
+}
+
+/* Dark theme overrides for price display */
+[data-theme="dark"] .price-statistic .ant-statistic-content {
+  color: var(--color-text-primary);
+}
+
 /* Progress component text in dark theme */
 [data-theme="dark"] .ant-progress-text {
   color: var(--color-text-primary) !important;
