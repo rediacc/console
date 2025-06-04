@@ -21,6 +21,7 @@ import {
   ExperimentOutlined,
   SmileOutlined,
   SafetyCertificateOutlined,
+  PartitionOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { selectUser, selectCompany } from '@/store/auth/authSelectors'
@@ -72,6 +73,12 @@ const MainLayout: React.FC = () => {
       icon: <DashboardOutlined />,
       label: t('navigation.dashboard'),
       showInSimple: true,
+    },
+    {
+      key: '/architecture',
+      icon: <PartitionOutlined />,
+      label: t('navigation.architecture'),
+      showInSimple: false,
     },
     {
       key: '/organization',
@@ -224,7 +231,7 @@ const MainLayout: React.FC = () => {
               <Avatar 
                 icon={<UserOutlined />} 
                 size={collapsed ? 24 : 32}
-                style={{ backgroundColor: '#556b2f' }} 
+                style={{ backgroundColor: '#666666' }} 
               />
               {!collapsed && (
                 <div style={{ flex: 1, overflow: 'hidden' }}>

@@ -11,6 +11,7 @@
     "system": "System",
     "queue": "Queue",
     "settings": "Settings",
+    "architecture": "Architecture",
     "logout": "Logout"
   },
   "actions": {
@@ -33,7 +34,10 @@
     "activate": "Activate",
     "deactivate": "Deactivate",
     "assign": "Assign",
-    "reset": "Reset"
+    "reset": "Reset",
+    "retry": "Retry",
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit Fullscreen"
   },
   "status": {
     "active": "Active",
@@ -254,7 +258,7 @@
           "label": "Team Name",
           "description": "Name of the team"
         },
-        "description": {
+        "teamDescription": {
           "label": "Team Description",
           "description": "Description of team purpose and responsibilities"
         }

@@ -14,6 +14,7 @@ import OrganizationPage from '@/pages/organization/OrganizationPage'
 import MachinePage from '@/pages/machines/MachinePage'
 import QueuePage from '@/pages/queue/QueuePage'
 import SystemPage from '@/pages/system/SystemPage'
+import ArchitecturePage from '@/pages/architecture/ArchitecturePage'
 
 const AppContent: React.FC = () => {
   const { theme: currentTheme } = useTheme()
@@ -40,7 +41,7 @@ const AppContent: React.FC = () => {
         theme={{
           algorithm: currentTheme === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
           token: {
-            colorPrimary: '#556b2f',
+            colorPrimary: '#333333',
             borderRadius: 6,
             colorBgContainer: currentTheme === 'dark' ? '#1a1a1a' : '#ffffff',
             colorBgElevated: currentTheme === 'dark' ? '#2a2a2a' : '#ffffff',
@@ -81,6 +82,9 @@ const AppContent: React.FC = () => {
               
               {/* System (Users & Permissions) */}
               <Route path="/system" element={<SystemPage />} />
+              
+              {/* Architecture */}
+              <Route path="/architecture" element={<ArchitecturePage />} />
             </Route>
           </Routes>
         </BrowserRouter>

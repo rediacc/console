@@ -11,6 +11,7 @@
     "system": "Sistema",
     "queue": "Cola",
     "settings": "Configuración",
+    "architecture": "Arquitectura",
     "logout": "Cerrar Sesión"
   },
   "actions": {
@@ -33,7 +34,10 @@
     "activate": "Activar",
     "deactivate": "Desactivar",
     "assign": "Asignar",
-    "reset": "Restablecer"
+    "reset": "Restablecer",
+    "retry": "Reintentar",
+    "fullscreen": "Pantalla Completa",
+    "exitFullscreen": "Salir de Pantalla Completa"
   },
   "status": {
     "active": "Activo",
@@ -254,7 +258,7 @@
           "label": "Nombre del Equipo",
           "description": "Nombre del equipo"
         },
-        "description": {
+        "teamDescription": {
           "label": "Descripción del Equipo",
           "description": "Descripción del propósito y responsabilidades del equipo"
         }

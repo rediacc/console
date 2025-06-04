@@ -37,13 +37,13 @@ i18n.on('initialized', () => {
                   },
                   success: {
                     iconTheme: {
-                      primary: '#22c55e',
+                      primary: '#333333',
                       secondary: '#fff',
                     },
                   },
                   error: {
                     iconTheme: {
-                      primary: '#ef4444',
+                      primary: '#666666',
                       secondary: '#fff',
                     },
                   },
@@ -74,13 +74,13 @@ if (i18n.isInitialized) {
                   },
                   success: {
                     iconTheme: {
-                      primary: '#22c55e',
+                      primary: '#333333',
                       secondary: '#fff',
                     },
                   },
                   error: {
                     iconTheme: {
-                      primary: '#ef4444',
+                      primary: '#666666',
                       secondary: '#fff',
                     },
                   },

@@ -146,7 +146,7 @@ const DashboardPage = () => {
                     <Progress 
                       percent={Math.max(0, Math.min(100, (30 - dashboard.activeSubscription.DaysRemaining) / 30 * 100))}
                       status={getProgressStatus((30 - dashboard.activeSubscription.DaysRemaining) / 30 * 100)}
-                      strokeColor="#556b2f"
+                      strokeColor="#333333"
                     />
                   </div>
 
@@ -191,15 +191,15 @@ const DashboardPage = () => {
                 <Space direction="vertical" size="small" style={{ width: '100%' }}>
                   <Space>
                     {dashboard.accountHealth.ResourcesAtLimit > 0 ? (
-                      <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
+                      <ExclamationCircleOutlined style={{ color: '#666666' }} />
                     ) : (
-                      <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                      <CheckCircleOutlined style={{ color: '#333333' }} />
                     )}
                     <Text>{dashboard.accountHealth.ResourcesAtLimit} resources at limit</Text>
                   </Space>
                   
                   <Space>
-                    <ClockCircleOutlined style={{ color: '#faad14' }} />
+                    <ClockCircleOutlined style={{ color: '#999999' }} />
                     <Text>{dashboard.accountHealth.ResourcesNearLimit} resources near limit</Text>
                   </Space>
                 </Space>
@@ -265,7 +265,7 @@ const DashboardPage = () => {
                   <Progress 
                     percent={resource.ResourceLimit === 0 ? 0 : resource.UsagePercentage} 
                     status={getProgressStatus(resource.UsagePercentage)}
-                    strokeColor={resource.IsLimitReached === 1 ? '#ff4d4f' : '#556b2f'}
+                    strokeColor={resource.IsLimitReached === 1 ? '#666666' : '#333333'}
                   />
                   {resource.IsLimitReached === 1 && (
                     <Text type="danger" style={{ fontSize: 12 }}>Limit reached</Text>
@@ -288,8 +288,8 @@ const DashboardPage = () => {
                   <Card
                     bordered
                     style={{ 
-                      borderColor: plan.IsCurrentPlan === 1 ? '#556b2f' : undefined,
-                      backgroundColor: plan.IsCurrentPlan === 1 ? '#f6ffed' : undefined
+                      borderColor: plan.IsCurrentPlan === 1 ? '#333333' : undefined,
+                      backgroundColor: plan.IsCurrentPlan === 1 ? '#f5f5f5' : undefined
                     }}
                   >
                     <Space direction="vertical" size="small" style={{ width: '100%' }}>
@@ -328,7 +328,7 @@ const FeatureItem = ({ name, enabled }: { name: string; enabled: boolean }) => (
   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
     <Text>{name}</Text>
     {enabled ? (
-      <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 16 }} />
+      <CheckCircleOutlined style={{ color: '#333333', fontSize: 16 }} />
     ) : (
       <div style={{ 
         width: 16, 

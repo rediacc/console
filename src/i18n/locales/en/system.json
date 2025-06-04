@@ -74,5 +74,31 @@
     "team": "Team",
     "sendInvite": "Send Invitation Email",
     "mustChangePassword": "User must change password on first login"
+  },
+  "architecture": {
+    "title": "Company Architecture",
+    "fetchError": "Failed to fetch architecture data",
+    "noData": "No architecture data available",
+    "viewHierarchy": "Hierarchy",
+    "viewForce": "Force",
+    "viewRadial": "Radial",
+    "legend": "Legend",
+    "users": "Users",
+    "teams": "Teams", 
+    "machines": "Machines",
+    "regions": "Regions",
+    "bridges": "Bridges",
+    "repositories": "Repositories",
+    "schedules": "Schedules",
+    "storages": "Storages",
+    "nodeCompany": "Company",
+    "nodeUser": "User",
+    "nodeTeam": "Team",
+    "nodeRegion": "Region",
+    "nodeBridge": "Bridge",
+    "nodeMachine": "Machine",
+    "nodeRepository": "Repository",
+    "nodeSchedule": "Schedule",
+    "nodeStorage": "Storage"
   }
 }

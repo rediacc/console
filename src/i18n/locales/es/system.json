@@ -74,5 +74,31 @@
     "team": "Equipo",
     "sendInvite": "Enviar Correo de Invitación",
     "mustChangePassword": "El usuario debe cambiar la contraseña en el primer inicio de sesión"
+  },
+  "architecture": {
+    "title": "Arquitectura de la Empresa",
+    "fetchError": "Error al cargar los datos de arquitectura",
+    "noData": "No hay datos de arquitectura disponibles",
+    "viewHierarchy": "Jerarquía",
+    "viewForce": "Fuerza",
+    "viewRadial": "Radial",
+    "legend": "Leyenda",
+    "users": "Usuarios",
+    "teams": "Equipos", 
+    "machines": "Máquinas",
+    "regions": "Regiones",
+    "bridges": "Puentes",
+    "repositories": "Repositorios",
+    "schedules": "Horarios",
+    "storages": "Almacenamientos",
+    "nodeCompany": "Empresa",
+    "nodeUser": "Usuario",
+    "nodeTeam": "Equipo",
+    "nodeRegion": "Región",
+    "nodeBridge": "Puente",
+    "nodeMachine": "Máquina",
+    "nodeRepository": "Repositorio",
+    "nodeSchedule": "Horario",
+    "nodeStorage": "Almacenamiento"
   }
 }

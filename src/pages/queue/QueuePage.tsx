@@ -203,7 +203,6 @@ const QueuePage: React.FC = () => {
                 <Statistic
                   title="Pending"
                   value={queueItems?.filter(item => item.status === 'pending').length || 0}
-                  valueStyle={{ color: '#faad14' }}
                 />
               </Card>
             </Col>
@@ -212,7 +211,6 @@ const QueuePage: React.FC = () => {
                 <Statistic
                   title="Processing"
                   value={queueItems?.filter(item => item.status === 'processing').length || 0}
-                  valueStyle={{ color: '#1890ff' }}
                 />
               </Card>
             </Col>
@@ -221,7 +219,6 @@ const QueuePage: React.FC = () => {
                 <Statistic
                   title="Completed"
                   value={queueItems?.filter(item => item.status === 'completed').length || 0}
-                  valueStyle={{ color: '#52c41a' }}
                 />
               </Card>
             </Col>
