@@ -14,7 +14,7 @@ import OrganizationPage from '@/pages/organization/OrganizationPage'
 import MachinePage from '@/pages/machines/MachinePage'
 import QueuePage from '@/pages/queue/QueuePage'
 import UsersAndPermissionsPage from '@/pages/users/UsersAndPermissionsPage'
-import CompanySettingsPage from '@/pages/settings/CompanySettingsPage'
+import SettingsPage from '@/pages/settings/SettingsPage'
 
 const AppContent: React.FC = () => {
   const { theme: currentTheme } = useTheme()
@@ -81,7 +81,7 @@ const AppContent: React.FC = () => {
               <Route path="/users" element={<UsersAndPermissionsPage />} />
               
               {/* Settings */}
-              <Route path="/settings" element={<CompanySettingsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Routes>
         </BrowserRouter>
