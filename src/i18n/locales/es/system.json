@@ -99,6 +99,11 @@
     "nodeMachine": "Máquina",
     "nodeRepository": "Repositorio",
     "nodeSchedule": "Horario",
-    "nodeStorage": "Almacenamiento"
+    "nodeStorage": "Almacenamiento",
+    "filterEntities": "Filtrar Entidades",
+    "selectEntities": "Seleccionar tipos de entidad para mostrar",
+    "selectAll": "Seleccionar Todo",
+    "clearAll": "Limpiar Todo",
+    "noEntitiesSelected": "No hay entidades seleccionadas. Por favor seleccione al menos un tipo de entidad para mostrar."
   }
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Card, Spin, Alert, Space, Typography, Radio, Button, Tooltip, Statistic, Row, Col } from 'antd'
+import { Card, Spin, Alert, Space, Typography, Radio, Button, Tooltip, Statistic, Row, Col, Select, Checkbox } from 'antd'
 import { 
   FullscreenOutlined, 
   FullscreenExitOutlined, 
@@ -8,10 +8,10 @@ import {
   TeamOutlined,
   UserOutlined,
   ApiOutlined,
-  HddOutlined,
   GlobalOutlined,
-  DatabaseOutlined,
-  ScheduleOutlined
+  InboxOutlined,
+  ScheduleOutlined,
+  FilterOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useCompanyArchitecture } from '@/api/queries/architecture'
@@ -38,11 +38,27 @@ const ArchitecturePage: React.FC = () => {
   const { data, isLoading, error, refetch } = useCompanyArchitecture()
   const [viewMode, setViewMode] = useState<'hierarchy' | 'force' | 'radial'>('hierarchy')
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [selectedEntityTypes, setSelectedEntityTypes] = useState<string[]>([
+    'company', 'user', 'team', 'region', 'bridge', 'machine', 'repository', 'schedule', 'storage'
+  ])
   const svgRef = useRef<SVGSVGElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
 
-  // Convert the nested node structure to a flat array
-  const flattenNodes = (nodes: any): GraphNode[] => {
+  // Available entity types for filtering
+  const entityTypes = [
+    { value: 'company', label: t('architecture.nodeCompany'), icon: '🏢' },
+    { value: 'user', label: t('architecture.nodeUser'), icon: '👤' },
+    { value: 'team', label: t('architecture.nodeTeam'), icon: '👥' },
+    { value: 'region', label: t('architecture.nodeRegion'), icon: '🌍' },
+    { value: 'bridge', label: t('architecture.nodeBridge'), icon: '🌉' },
+    { value: 'machine', label: t('architecture.nodeMachine'), icon: '💻' },
+    { value: 'repository', label: t('architecture.nodeRepository'), icon: '📦' },
+    { value: 'schedule', label: t('architecture.nodeSchedule'), icon: '📅' },
+    { value: 'storage', label: t('architecture.nodeStorage'), icon: '💾' },
+  ]
+
+  // Convert the nested node structure to a flat array with filtering
+  const flattenNodes = (nodes: any, filterTypes: string[]): GraphNode[] => {
     const flatNodes: GraphNode[] = []
     
     // Process each node type
@@ -50,11 +66,16 @@ const ArchitecturePage: React.FC = () => {
       if (Array.isArray(nodeArray) && nodeArray.length > 0) {
         nodeArray.forEach((node: any) => {
           // Ensure nodeType is set correctly - some nodes already have it
-          const nodeWithType = {
-            ...node,
-            nodeType: node.nodeType || type.slice(0, -1), // Use existing nodeType or derive from key
+          const nodeType = node.nodeType || type.slice(0, -1) // Use existing nodeType or derive from key
+          
+          // Only include if the node type is in the filter
+          if (filterTypes.includes(nodeType)) {
+            const nodeWithType = {
+              ...node,
+              nodeType: nodeType,
+            }
+            flatNodes.push(nodeWithType)
           }
-          flatNodes.push(nodeWithType)
         })
       }
     })
@@ -94,12 +115,12 @@ const ArchitecturePage: React.FC = () => {
       company: '🏢',
       user: '👤',
       team: '👥',
-      region: '🌍',
-      bridge: '🌉',
+      region: '📍',
+      bridge: '🔌',
       machine: '💻',
-      repository: '📦',
+      repository: '📁',
       schedule: '📅',
-      storage: '💾',
+      storage: '☁️',
     }
     return icons[nodeType] || '📌'
   }
@@ -124,19 +145,35 @@ const ArchitecturePage: React.FC = () => {
   useEffect(() => {
     if (!data || !svgRef.current || !containerRef.current) return
 
-    const nodes = flattenNodes(data.nodes)
+    const width = containerRef.current.clientWidth || 800
+    const height = 600
+
+    const nodes = flattenNodes(data.nodes, selectedEntityTypes)
     const links = flattenRelationships(data.relationships, nodes)
     
     // Check if we have nodes
     if (nodes.length === 0) {
+      // Clear the svg and show empty state
+      d3.select(svgRef.current).selectAll('*').remove()
+      
+      const svg = d3.select(svgRef.current)
+        .attr('width', width)
+        .attr('height', height)
+      
+      svg.append('text')
+        .attr('x', width / 2)
+        .attr('y', height / 2)
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'middle')
+        .style('font-size', '16px')
+        .style('fill', '#999')
+        .text(t('architecture.noEntitiesSelected', { ns: 'system' }))
+      
       return
     }
 
     // Clear previous visualization
     d3.select(svgRef.current).selectAll('*').remove()
-
-    const width = containerRef.current.clientWidth || 800
-    const height = 600
 
     const svg = d3.select(svgRef.current)
       .attr('width', width)
@@ -504,7 +541,7 @@ const ArchitecturePage: React.FC = () => {
       }
     }, viewMode === 'force' ? 1000 : 100) // Wait longer for force simulation
 
-  }, [data, viewMode, isFullscreen])
+  }, [data, viewMode, isFullscreen, selectedEntityTypes, t])
 
   const toggleFullscreen = () => {
     if (!containerRef.current) return
@@ -546,16 +583,16 @@ const ArchitecturePage: React.FC = () => {
     return <Alert message={t('architecture.noData')} type="info" showIcon />
   }
 
-  // Count nodes by type
+  // Count nodes by type (filtered)
   const nodeCounts = {
-    users: data.nodes.users?.length || 0,
-    teams: data.nodes.teams?.length || 0,
-    machines: data.nodes.machines?.length || 0,
-    regions: data.nodes.regions?.length || 0,
-    bridges: data.nodes.bridges?.length || 0,
-    repositories: data.nodes.repositories?.length || 0,
-    schedules: data.nodes.schedules?.length || 0,
-    storages: data.nodes.storages?.length || 0,
+    users: selectedEntityTypes.includes('user') ? (data.nodes.users?.length || 0) : 0,
+    teams: selectedEntityTypes.includes('team') ? (data.nodes.teams?.length || 0) : 0,
+    machines: selectedEntityTypes.includes('machine') ? (data.nodes.machines?.length || 0) : 0,
+    regions: selectedEntityTypes.includes('region') ? (data.nodes.regions?.length || 0) : 0,
+    bridges: selectedEntityTypes.includes('bridge') ? (data.nodes.bridges?.length || 0) : 0,
+    repositories: selectedEntityTypes.includes('repository') ? (data.nodes.repositories?.length || 0) : 0,
+    schedules: selectedEntityTypes.includes('schedule') ? (data.nodes.schedules?.length || 0) : 0,
+    storages: selectedEntityTypes.includes('storage') ? (data.nodes.storages?.length || 0) : 0,
   }
 
   return (
@@ -586,6 +623,47 @@ const ArchitecturePage: React.FC = () => {
                     onClick={toggleFullscreen}
                   />
                 </Tooltip>
+              </Space>
+            </div>
+
+            {/* Filter Controls */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <Space align="center">
+                <FilterOutlined style={{ color: '#556b2f' }} />
+                <Text strong>{t('architecture.filterEntities', { ns: 'system' })}</Text>
+              </Space>
+              <Select
+                mode="multiple"
+                allowClear
+                placeholder={t('architecture.selectEntities', { ns: 'system' })}
+                value={selectedEntityTypes}
+                onChange={setSelectedEntityTypes}
+                style={{ minWidth: 400 }}
+                maxTagCount={3}
+                maxTagPlaceholder={(omittedValues) => `+${omittedValues.length} more`}
+              >
+                {entityTypes.map(type => (
+                  <Select.Option key={type.value} value={type.value}>
+                    <Space>
+                      <span>{type.icon}</span>
+                      <span>{type.label}</span>
+                    </Space>
+                  </Select.Option>
+                ))}
+              </Select>
+              <Space>
+                <Button 
+                  size="small"
+                  onClick={() => setSelectedEntityTypes(entityTypes.map(t => t.value))}
+                >
+                  {t('architecture.selectAll', { ns: 'system' })}
+                </Button>
+                <Button 
+                  size="small"
+                  onClick={() => setSelectedEntityTypes([])}
+                >
+                  {t('architecture.clearAll', { ns: 'system' })}
+                </Button>
               </Space>
             </div>
 
@@ -630,7 +708,7 @@ const ArchitecturePage: React.FC = () => {
                 <Statistic 
                   title={t('architecture.repositories')}
                   value={nodeCounts.repositories}
-                  prefix={<DatabaseOutlined />}
+                  prefix={<InboxOutlined />}
                 />
               </Col>
               <Col span={3}>
@@ -644,7 +722,7 @@ const ArchitecturePage: React.FC = () => {
                 <Statistic 
                   title={t('architecture.storages')}
                   value={nodeCounts.storages}
-                  prefix={<HddOutlined />}
+                  prefix={<CloudOutlined />}
                 />
               </Col>
             </Row>

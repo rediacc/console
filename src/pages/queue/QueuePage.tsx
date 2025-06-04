@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { Typography, Button, Space, Modal, Input, Select, Form, InputNumber, Slider, Card, Tree, Tag, Badge, Tabs, Row, Col, Statistic, Empty } from 'antd'
-import { PlusOutlined, ThunderboltOutlined, CloudServerOutlined, ApiOutlined, PlayCircleOutlined, PauseCircleOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { Typography, Button, Space, Modal, Input, Select, Form, Slider, Card, Tag, Badge, Tabs, Row, Col, Statistic, Empty } from 'antd'
+import { PlusOutlined, ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, PauseCircleOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
 import { useQueueItems, useCreateQueueItem, QUEUE_FUNCTIONS, QueueFunction } from '@/api/queries/queue'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import ResourceListView from '@/components/common/ResourceListView'
@@ -134,7 +134,7 @@ const QueuePage: React.FC = () => {
       key: 'machineName',
       render: (name: string) => (
         <Space>
-          <CloudServerOutlined />
+          <DesktopOutlined />
           {name}
         </Space>
       )
@@ -202,7 +202,7 @@ const QueuePage: React.FC = () => {
               <Card>
                 <Statistic
                   title="Pending"
-                  value={queueItems?.filter(item => item.status === 'pending').length || 0}
+                  value={queueItems?.filter((item: any) => item.status === 'pending').length || 0}
                 />
               </Card>
             </Col>
@@ -210,7 +210,7 @@ const QueuePage: React.FC = () => {
               <Card>
                 <Statistic
                   title="Processing"
-                  value={queueItems?.filter(item => item.status === 'processing').length || 0}
+                  value={queueItems?.filter((item: any) => item.status === 'processing').length || 0}
                 />
               </Card>
             </Col>
@@ -218,7 +218,7 @@ const QueuePage: React.FC = () => {
               <Card>
                 <Statistic
                   title="Completed"
-                  value={queueItems?.filter(item => item.status === 'completed').length || 0}
+                  value={queueItems?.filter((item: any) => item.status === 'completed').length || 0}
                 />
               </Card>
             </Col>
@@ -228,7 +228,7 @@ const QueuePage: React.FC = () => {
             <Tabs.TabPane 
               tab={
                 <Space>
-                  <Badge count={queueItems?.filter(item => item.status !== 'completed').length || 0}>
+                  <Badge count={queueItems?.filter((item: any) => item.status !== 'completed').length || 0}>
                     <span>Active Queue</span>
                   </Badge>
                 </Space>
@@ -237,7 +237,7 @@ const QueuePage: React.FC = () => {
             >
               <ResourceListView
                 loading={isLoading}
-                data={queueItems?.filter(item => item.status !== 'completed') || []}
+                data={queueItems?.filter((item: any) => item.status !== 'completed') || []}
                 columns={queueColumns}
                 rowKey="taskId"
                 searchPlaceholder="Search queue items..."
@@ -257,7 +257,7 @@ const QueuePage: React.FC = () => {
             <Tabs.TabPane tab="Completed" key="completed">
               <ResourceListView
                 loading={isLoading}
-                data={queueItems?.filter(item => item.status === 'completed') || []}
+                data={queueItems?.filter((item: any) => item.status === 'completed') || []}
                 columns={queueColumns}
                 rowKey="taskId"
                 searchPlaceholder="Search completed items..."

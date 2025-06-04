@@ -99,6 +99,11 @@
     "nodeMachine": "Machine",
     "nodeRepository": "Repository",
     "nodeSchedule": "Schedule",
-    "nodeStorage": "Storage"
+    "nodeStorage": "Storage",
+    "filterEntities": "Filter Entities",
+    "selectEntities": "Select entity types to display",
+    "selectAll": "Select All",
+    "clearAll": "Clear All",
+    "noEntitiesSelected": "No entities selected. Please select at least one entity type to display."
   }
 }

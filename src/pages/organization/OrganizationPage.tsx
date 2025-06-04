@@ -2,17 +2,17 @@ import React, { useState } from 'react'
 import { Card, Tabs, Button, Space, Modal, Popconfirm, Tag, Typography, Form, Input, Table, Row, Col, Empty, Badge, Alert } from 'antd'
 import { 
   TeamOutlined, 
-  GlobalOutlined, 
   PlusOutlined, 
   EditOutlined, 
   DeleteOutlined, 
   UserOutlined,
   ApiOutlined,
   SettingOutlined,
-  CloudServerOutlined,
-  DatabaseOutlined,
-  HddOutlined,
-  ScheduleOutlined
+  CloudOutlined,
+  InboxOutlined,
+  DesktopOutlined,
+  ScheduleOutlined,
+  EnvironmentOutlined
 } from '@ant-design/icons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -177,7 +177,7 @@ const OrganizationPage: React.FC = () => {
 
   // Team hooks
   const { data: teams, isLoading: teamsLoading } = useTeams()
-  const teamsList = teams || []
+  const teamsList: Team[] = teams || []
   const createTeamMutation = useCreateTeam()
   const updateTeamNameMutation = useUpdateTeamName()
   const deleteTeamMutation = useDeleteTeam()
@@ -185,7 +185,7 @@ const OrganizationPage: React.FC = () => {
 
   // Region hooks
   const { data: regions, isLoading: regionsLoading } = useRegions()
-  const regionsList = regions || []
+  const regionsList: Region[] = regions || []
   const createRegionMutation = useCreateRegion()
   const updateRegionNameMutation = useUpdateRegionName()
   const deleteRegionMutation = useDeleteRegion()
@@ -193,7 +193,7 @@ const OrganizationPage: React.FC = () => {
 
   // Bridge hooks
   const { data: bridges, isLoading: bridgesLoading } = useBridges(selectedRegion || undefined)
-  const bridgesList = bridges || []
+  const bridgesList: Bridge[] = bridges || []
   const createBridgeMutation = useCreateBridge()
   const updateBridgeNameMutation = useUpdateBridgeName()
   const deleteBridgeMutation = useDeleteBridge()
@@ -226,9 +226,9 @@ const OrganizationPage: React.FC = () => {
 
   // Set default selected team in Simple mode
   React.useEffect(() => {
-    if (uiMode === 'simple' && !selectedTeam && teamsList.length > 0) {
+    if (uiMode === 'simple' && !selectedTeam && teamsList && teamsList.length > 0) {
       // Check if "Private Team" exists
-      const privateTeam = teamsList.find(team => team.teamName === 'Private Team')
+      const privateTeam = teamsList.find((team: Team) => team.teamName === 'Private Team')
       if (privateTeam) {
         setSelectedTeam('Private Team')
       }
@@ -715,7 +715,7 @@ const OrganizationPage: React.FC = () => {
       key: 'regionName',
       render: (text: string) => (
         <Space>
-          <GlobalOutlined style={{ color: '#556b2f' }} />
+          <EnvironmentOutlined style={{ color: '#556b2f' }} />
           <strong>{text}</strong>
         </Space>
       ),
@@ -804,7 +804,7 @@ const OrganizationPage: React.FC = () => {
       width: 120,
       render: (count: number) => (
         <Space>
-          <CloudServerOutlined />
+          <DesktopOutlined />
           <span>{count}</span>
         </Space>
       ),
@@ -869,7 +869,7 @@ const OrganizationPage: React.FC = () => {
       key: 'machineName',
       render: (text: string) => (
         <Space>
-          <CloudServerOutlined style={{ color: '#556b2f' }} />
+          <DesktopOutlined style={{ color: '#556b2f' }} />
           <strong>{text}</strong>
         </Space>
       ),
@@ -906,7 +906,7 @@ const OrganizationPage: React.FC = () => {
       key: 'repositoryName',
       render: (text: string) => (
         <Space>
-          <DatabaseOutlined style={{ color: '#556b2f' }} />
+          <InboxOutlined style={{ color: '#556b2f' }} />
           <strong>{text}</strong>
         </Space>
       ),
@@ -971,7 +971,7 @@ const OrganizationPage: React.FC = () => {
       key: 'storageName',
       render: (text: string) => (
         <Space>
-          <HddOutlined style={{ color: '#556b2f' }} />
+          <CloudOutlined style={{ color: '#556b2f' }} />
           <strong>{text}</strong>
         </Space>
       ),
@@ -1214,7 +1214,7 @@ const OrganizationPage: React.FC = () => {
       key: 'machines',
       label: (
         <span>
-          <CloudServerOutlined />
+          <DesktopOutlined />
           {t('resourceTabs.machines')}
         </span>
       ),
@@ -1256,7 +1256,7 @@ const OrganizationPage: React.FC = () => {
       key: 'repositories',
       label: (
         <span>
-          <DatabaseOutlined />
+          <InboxOutlined />
           {t('resourceTabs.repositories')}
         </span>
       ),
@@ -1282,7 +1282,7 @@ const OrganizationPage: React.FC = () => {
       key: 'storage',
       label: (
         <span>
-          <HddOutlined />
+          <CloudOutlined />
           {t('resourceTabs.storage')}
         </span>
       ),
@@ -1462,7 +1462,7 @@ const OrganizationPage: React.FC = () => {
       key: 'regions',
       label: (
         <span>
-          <GlobalOutlined />
+          <EnvironmentOutlined />
           {t('tabs.regionsInfrastructure')}
         </span>
       ),
@@ -1709,7 +1709,7 @@ const OrganizationPage: React.FC = () => {
         onSave={handleUpdateRegionVault}
         entityType="REGION"
         title={t('general.configureVault', { name: regionVaultModalConfig.region?.regionName || '' })}
-        initialVault={regionVaultModalConfig.region?.vault || "{}"}
+        initialVault="{}"
         initialVersion={regionVaultModalConfig.region?.vaultVersion || 1}
         loading={updateRegionVaultMutation.isPending}
       />
@@ -1773,7 +1773,7 @@ const OrganizationPage: React.FC = () => {
         onSave={handleUpdateBridgeVault}
         entityType="BRIDGE"
         title={t('general.configureVault', { name: bridgeVaultModalConfig.bridge?.bridgeName || '' })}
-        initialVault={bridgeVaultModalConfig.bridge?.vault || "{}"}
+        initialVault="{}"
         initialVersion={bridgeVaultModalConfig.bridge?.vaultVersion || 1}
         loading={updateBridgeVaultMutation.isPending}
       />
@@ -1838,7 +1838,7 @@ const OrganizationPage: React.FC = () => {
         onSave={handleUpdateRepositoryVault}
         entityType="REPOSITORY"
         title={t('general.configureVault', { name: repositoryVaultModalConfig.repository?.repositoryName || '' })}
-        initialVault={repositoryVaultModalConfig.repository?.vault || "{}"}
+        initialVault="{}"
         initialVersion={repositoryVaultModalConfig.repository?.vaultVersion || 1}
         loading={updateRepositoryVaultMutation.isPending}
       />
@@ -1902,7 +1902,7 @@ const OrganizationPage: React.FC = () => {
         onSave={handleUpdateStorageVault}
         entityType="STORAGE"
         title={t('general.configureVault', { name: storageVaultModalConfig.storage?.storageName || '' })}
-        initialVault={storageVaultModalConfig.storage?.vault || "{}"}
+        initialVault="{}"
         initialVersion={storageVaultModalConfig.storage?.vaultVersion || 1}
         loading={updateStorageVaultMutation.isPending}
       />
@@ -1966,7 +1966,7 @@ const OrganizationPage: React.FC = () => {
         onSave={handleUpdateScheduleVault}
         entityType="SCHEDULE"
         title={t('general.configureVault', { name: scheduleVaultModalConfig.schedule?.scheduleName || '' })}
-        initialVault={scheduleVaultModalConfig.schedule?.vault || "{}"}
+        initialVault="{}"
         initialVersion={scheduleVaultModalConfig.schedule?.vaultVersion || 1}
         loading={updateScheduleVaultMutation.isPending}
       />

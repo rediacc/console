@@ -8,8 +8,8 @@ import {
   GlobalOutlined,
   ApiOutlined,
   CloudServerOutlined,
-  DatabaseOutlined,
-  HddOutlined,
+  FolderOutlined,
+  DesktopOutlined,
   ScheduleOutlined,
   ThunderboltOutlined,
   UserOutlined,
@@ -22,6 +22,7 @@ import {
   SmileOutlined,
   SafetyCertificateOutlined,
   PartitionOutlined,
+  EnvironmentOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { selectUser, selectCompany } from '@/store/auth/authSelectors'
@@ -88,7 +89,7 @@ const MainLayout: React.FC = () => {
     },
     {
       key: '/machines',
-      icon: <CloudServerOutlined />,
+      icon: <DesktopOutlined />,
       label: t('navigation.machines'),
       showInSimple: true,
     },

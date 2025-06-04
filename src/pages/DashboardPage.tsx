@@ -9,14 +9,15 @@ import {
   SafetyCertificateOutlined, 
   RiseOutlined,
   UserOutlined,
-  CloudServerOutlined,
-  DatabaseOutlined,
+  CloudOutlined,
   CalendarOutlined,
   TeamOutlined,
   ExclamationCircleOutlined,
   CrownOutlined,
-  HddOutlined,
-  ApiOutlined
+  DesktopOutlined,
+  ApiOutlined,
+  EnvironmentOutlined,
+  InboxOutlined
 } from '@ant-design/icons';
 import { useDashboard } from '../api/queries/dashboard';
 
@@ -25,12 +26,12 @@ const { Title, Text, Paragraph } = Typography;
 const resourceIcons: Record<string, React.ReactNode> = {
   'User': <UserOutlined />,
   'Team': <TeamOutlined />,
-  'Region': <CloudServerOutlined />,
+  'Region': <EnvironmentOutlined />,
   'Bridge': <ApiOutlined />,
-  'Machine': <HddOutlined />,
-  'Repo': <DatabaseOutlined />,
+  'Machine': <DesktopOutlined />,
+  'Repo': <InboxOutlined />,
   'Schedule': <CalendarOutlined />,
-  'Storage': <DatabaseOutlined />
+  'Storage': <CloudOutlined />
 };
 
 const DashboardPage = () => {
