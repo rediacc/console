@@ -154,7 +154,7 @@ const DashboardPage = () => {
                     <div style={{ paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
                       <Statistic
                         title="Billing"
-                        value={dashboard.billingInfo.Price / 100}
+                        value={dashboard.billingInfo.Price}
                         precision={2}
                         prefix="$"
                         suffix={`${dashboard.billingInfo.Currency.toUpperCase()} / ${dashboard.billingInfo.BillingInterval}`}
@@ -303,7 +303,7 @@ const DashboardPage = () => {
                       </Paragraph>
                       <div>
                         <Statistic
-                          value={plan.DefaultPrice / 100}
+                          value={plan.DefaultPrice}
                           precision={0}
                           prefix="$"
                           suffix="/month"
