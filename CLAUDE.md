@@ -197,8 +197,22 @@ All pages follow consistent patterns:
 - `src/utils/validation.ts` - Form validation schemas
 - `go` - Build and development script
 
+## Pricing Configuration
+
+The pricing is now fetched from a centralized endpoint `/config/pricing.json`:
+- **Service**: `src/api/pricingService.ts`
+- **Caching**: 1 hour cache to reduce requests
+- **Error Handling**: Prices are hidden if the endpoint is unavailable
+
+Dashboard pricing behavior:
+- Fetches pricing on component mount
+- Shows prices only when successfully loaded
+- Hides price displays if pricing cannot be fetched
+- Maps plan codes (COMMUNITY, ADVANCED, etc.) to pricing keys
+
 ## Notes
 - Created: 2025-06-02
+- Updated: 2025-06-04 - Added centralized pricing
 - NO additional packages beyond what's in PLAN.md
 - Use Ant Design components exclusively
 - Follow existing patterns for new features

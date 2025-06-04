@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Col, Row, Progress, Alert, Badge, Tag, Space, Typography, Statistic, Spin, Empty, Divider } from 'antd';
 import { 
   AlertOutlined, 
@@ -20,6 +20,7 @@ import {
   InboxOutlined
 } from '@ant-design/icons';
 import { useDashboard } from '../api/queries/dashboard';
+import { fetchPricingConfig, getPlanPrice, PricingConfig } from '../api/pricingService';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -36,6 +37,26 @@ const resourceIcons: Record<string, React.ReactNode> = {
 
 const DashboardPage = () => {
   const { data: dashboard, isLoading, error } = useDashboard();
+  const [pricing, setPricing] = useState<PricingConfig | null>(null);
+  const [pricingLoading, setPricingLoading] = useState(true);
+
+  // Fetch pricing configuration
+  useEffect(() => {
+    const loadPricing = async () => {
+      setPricingLoading(true);
+      try {
+        const pricingData = await fetchPricingConfig();
+        setPricing(pricingData);
+      } catch (error) {
+        console.error('Failed to load pricing:', error);
+        setPricing(null);
+      } finally {
+        setPricingLoading(false);
+      }
+    };
+    
+    loadPricing();
+  }, []);
 
   if (isLoading) {
     return (
@@ -151,7 +172,7 @@ const DashboardPage = () => {
                     />
                   </div>
 
-                  {dashboard.billingInfo && (
+                  {dashboard.billingInfo && !pricingLoading && pricing && (
                     <div style={{ paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
                       <Statistic
                         className="price-statistic"
@@ -304,13 +325,25 @@ const DashboardPage = () => {
                         {plan.Description}
                       </Paragraph>
                       <div>
-                        <Statistic
-                          className="price-statistic"
-                          value={plan.DefaultPrice}
-                          precision={0}
-                          prefix="$"
-                          suffix="/month"
-                        />
+                        {!pricingLoading && pricing ? (
+                          (() => {
+                            const planPrice = getPlanPrice(pricing, plan.PlanCode);
+                            return planPrice !== null ? (
+                              <Statistic
+                                className="price-statistic"
+                                value={planPrice}
+                                precision={0}
+                                prefix={planPrice > 0 ? "$" : ""}
+                                suffix={planPrice > 0 ? "/month" : ""}
+                                formatter={(value) => planPrice === 0 ? "Free" : value}
+                              />
+                            ) : (
+                              <div style={{ height: 32 }} />
+                            );
+                          })()
+                        ) : (
+                          <div style={{ height: 32 }} />
+                        )}
                         <Text type="secondary">Up to {plan.MaxUsers} users</Text>
                       </div>
                     </Space>
