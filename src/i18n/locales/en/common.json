@@ -4,6 +4,7 @@
     "tagline": "Enterprise Backup & Recovery"
   },
   "navigation": {
+    "dashboard": "Dashboard",
     "organization": "Organization",
     "machines": "Machines",
     "users": "Users",

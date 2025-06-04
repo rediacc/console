@@ -3,6 +3,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Layout, Menu, Avatar, Dropdown, Space, Badge, Typography, Switch, Button } from 'antd'
 import {
+  DashboardOutlined,
   TeamOutlined,
   GlobalOutlined,
   ApiOutlined,
@@ -52,6 +53,12 @@ const MainLayout: React.FC = () => {
 
   // Define all menu items with visibility flags
   const allMenuItems = [
+    {
+      key: '/dashboard',
+      icon: <DashboardOutlined />,
+      label: t('navigation.dashboard'),
+      showInSimple: true,
+    },
     {
       key: '/organization',
       icon: <TeamOutlined />,
