@@ -1,4 +1,5 @@
 import { createHash } from 'crypto'
+import { secureStorage } from './secureMemoryStorage'
 
 export function hashPassword(password: string): string {
   // For browser compatibility, we'll use Web Crypto API
@@ -31,25 +32,44 @@ export function base64HashPassword(password: string): string {
   return btoa(String.fromCharCode(...bytes))
 }
 
-// Session storage helpers
+// Session storage helpers using secure memory storage
 export function saveAuthData(token: string, email: string, company?: string) {
-  localStorage.setItem('auth_token', token)
-  localStorage.setItem('user_email', email)
+  secureStorage.setItem('auth_token', token)
+  secureStorage.setItem('user_email', email)
   if (company) {
-    localStorage.setItem('user_company', company)
+    secureStorage.setItem('user_company', company)
   }
 }
 
 export function getAuthData() {
   return {
-    token: localStorage.getItem('auth_token'),
-    email: localStorage.getItem('user_email'),
-    company: localStorage.getItem('user_company'),
+    token: secureStorage.getItem('auth_token'),
+    email: secureStorage.getItem('user_email'),
+    company: secureStorage.getItem('user_company'),
   }
 }
 
 export function clearAuthData() {
-  localStorage.removeItem('auth_token')
-  localStorage.removeItem('user_email')
-  localStorage.removeItem('user_company')
+  secureStorage.removeItem('auth_token')
+  secureStorage.removeItem('user_email')
+  secureStorage.removeItem('user_company')
+}
+
+// Migration helper to move existing localStorage data to secure storage
+export function migrateFromLocalStorage() {
+  const token = localStorage.getItem('auth_token')
+  const email = localStorage.getItem('user_email')
+  const company = localStorage.getItem('user_company')
+  
+  if (token || email || company) {
+    // Save to secure storage
+    if (token) secureStorage.setItem('auth_token', token)
+    if (email) secureStorage.setItem('user_email', email)
+    if (company) secureStorage.setItem('user_company', company)
+    
+    // Clear from localStorage
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('user_email')
+    localStorage.removeItem('user_company')
+  }
 }

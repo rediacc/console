@@ -26,7 +26,7 @@ import { useTranslation } from 'react-i18next'
 import { selectUser, selectCompany } from '@/store/auth/authSelectors'
 import { logout, updateCompany } from '@/store/auth/authSlice'
 import { toggleUiMode } from '@/store/ui/uiSlice'
-import { clearAuthData } from '@/utils/auth'
+import { clearAuthData, saveAuthData, getAuthData } from '@/utils/auth'
 import apiClient from '@/api/client'
 import MessageHistory from '@/components/common/MessageHistory'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
@@ -57,8 +57,11 @@ const MainLayout: React.FC = () => {
   useEffect(() => {
     if (dashboardData?.companyInfo?.CompanyName && dashboardData.companyInfo.CompanyName !== company) {
       dispatch(updateCompany(dashboardData.companyInfo.CompanyName))
-      // Also update localStorage to persist the company name
-      localStorage.setItem('user_company', dashboardData.companyInfo.CompanyName)
+      // Also update secure storage to persist the company name
+      const authData = getAuthData()
+      if (authData.token && authData.email) {
+        saveAuthData(authData.token, authData.email, dashboardData.companyInfo.CompanyName)
+      }
     }
   }, [dashboardData, company, dispatch])
 

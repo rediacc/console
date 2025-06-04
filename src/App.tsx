@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { ConfigProvider, theme } from 'antd'
 import { selectIsAuthenticated } from '@/store/auth/authSelectors'
 import { loginSuccess } from '@/store/auth/authSlice'
-import { getAuthData } from '@/utils/auth'
+import { getAuthData, migrateFromLocalStorage } from '@/utils/auth'
 import { ThemeProvider, useTheme } from '@/context/ThemeContext'
 import AuthLayout from '@/components/layouts/AuthLayout'
 import MainLayout from '@/components/layouts/MainLayout'
@@ -22,6 +22,9 @@ const AppContent: React.FC = () => {
   const isAuthenticated = useSelector(selectIsAuthenticated)
 
   useEffect(() => {
+    // Migrate any existing localStorage data to secure memory storage
+    migrateFromLocalStorage()
+    
     // Check for existing auth data on mount
     const authData = getAuthData()
     if (authData.token && authData.email) {
