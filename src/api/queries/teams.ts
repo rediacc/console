@@ -9,6 +9,7 @@ export interface Team {
   repoCount: number
   storageCount: number
   scheduleCount: number
+  vault?: string
   vaultVersion: number
 }
 

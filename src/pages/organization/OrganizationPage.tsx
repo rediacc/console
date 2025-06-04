@@ -22,10 +22,10 @@ import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 import ResourceListView from '@/components/common/ResourceListView'
 import ResourceForm from '@/components/forms/ResourceForm'
-import VaultConfigModal from '@/components/common/VaultConfigModal'
+import VaultEditorModal from '@/components/common/VaultEditorModal'
 
 // Team queries
-import { useTeams, useCreateTeam, useUpdateTeamName, useDeleteTeam, Team } from '@/api/queries/teams'
+import { useTeams, useCreateTeam, useUpdateTeamName, useDeleteTeam, useUpdateTeamVault, Team } from '@/api/queries/teams'
 
 // Region queries
 import { 
@@ -124,6 +124,10 @@ const OrganizationPage: React.FC = () => {
   const [isCreateTeamModalOpen, setIsCreateTeamModalOpen] = useState(false)
   const [editingTeam, setEditingTeam] = useState<Team | null>(null)
   const [teamForm] = Form.useForm()
+  const [teamVaultModalConfig, setTeamVaultModalConfig] = useState<{
+    open: boolean
+    team?: Team
+  }>({ open: false })
   
   // Region state
   const [isCreateRegionModalOpen, setIsCreateRegionModalOpen] = useState(false)
@@ -177,6 +181,7 @@ const OrganizationPage: React.FC = () => {
   const createTeamMutation = useCreateTeam()
   const updateTeamNameMutation = useUpdateTeamName()
   const deleteTeamMutation = useDeleteTeam()
+  const updateTeamVaultMutation = useUpdateTeamVault()
 
   // Region hooks
   const { data: regions, isLoading: regionsLoading } = useRegions()
@@ -318,6 +323,17 @@ const OrganizationPage: React.FC = () => {
     } catch (error) {
       // Error handled by mutation
     }
+  }
+
+  const handleUpdateTeamVault = async (vault: string, version: number) => {
+    if (!teamVaultModalConfig.team) return
+
+    await updateTeamVaultMutation.mutateAsync({
+      teamName: teamVaultModalConfig.team.teamName,
+      teamVault: vault,
+      vaultVersion: version,
+    })
+    setTeamVaultModalConfig({ open: false })
   }
 
   // Region handlers
@@ -639,12 +655,26 @@ const OrganizationPage: React.FC = () => {
       key: 'scheduleCount',
       width: 100,
     },
+    ...(uiMode === 'expert' ? [{
+      title: t('general.vaultVersion'),
+      dataIndex: 'vaultVersion',
+      key: 'vaultVersion',
+      width: 120,
+      render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
+    }] : []),
     {
       title: t('general.actions'),
       key: 'actions',
-      width: 150,
+      width: 200,
       render: (_: any, record: Team) => (
         <Space>
+          <Button
+            type="link"
+            icon={<SettingOutlined />}
+            onClick={() => setTeamVaultModalConfig({ open: true, team: record })}
+          >
+            {t('general.vault')}
+          </Button>
           <Button 
             type="link" 
             icon={<EditOutlined />}
@@ -1638,6 +1668,17 @@ const OrganizationPage: React.FC = () => {
         </Form>
       </Modal>
 
+      <VaultEditorModal
+        open={teamVaultModalConfig.open}
+        onCancel={() => setTeamVaultModalConfig({ open: false })}
+        onSave={handleUpdateTeamVault}
+        entityType="TEAM"
+        title={t('general.configureVault', { name: teamVaultModalConfig.team?.teamName || '' })}
+        initialVault={teamVaultModalConfig.team?.vault || "{}"}
+        initialVersion={teamVaultModalConfig.team?.vaultVersion || 1}
+        loading={updateTeamVaultMutation.isPending}
+      />
+
       {/* Region Modals */}
       <Modal
         title={t('regions.createRegion')}
@@ -1662,12 +1703,13 @@ const OrganizationPage: React.FC = () => {
         />
       </Modal>
 
-      <VaultConfigModal
+      <VaultEditorModal
         open={regionVaultModalConfig.open}
         onCancel={() => setRegionVaultModalConfig({ open: false })}
         onSave={handleUpdateRegionVault}
+        entityType="REGION"
         title={t('general.configureVault', { name: regionVaultModalConfig.region?.regionName || '' })}
-        initialVault="{}"
+        initialVault={regionVaultModalConfig.region?.vault || "{}"}
         initialVersion={regionVaultModalConfig.region?.vaultVersion || 1}
         loading={updateRegionVaultMutation.isPending}
       />
@@ -1725,12 +1767,13 @@ const OrganizationPage: React.FC = () => {
         />
       </Modal>
 
-      <VaultConfigModal
+      <VaultEditorModal
         open={bridgeVaultModalConfig.open}
         onCancel={() => setBridgeVaultModalConfig({ open: false })}
         onSave={handleUpdateBridgeVault}
+        entityType="BRIDGE"
         title={t('general.configureVault', { name: bridgeVaultModalConfig.bridge?.bridgeName || '' })}
-        initialVault="{}"
+        initialVault={bridgeVaultModalConfig.bridge?.vault || "{}"}
         initialVersion={bridgeVaultModalConfig.bridge?.vaultVersion || 1}
         loading={updateBridgeVaultMutation.isPending}
       />
@@ -1789,12 +1832,13 @@ const OrganizationPage: React.FC = () => {
         />
       </Modal>
 
-      <VaultConfigModal
+      <VaultEditorModal
         open={repositoryVaultModalConfig.open}
         onCancel={() => setRepositoryVaultModalConfig({ open: false })}
         onSave={handleUpdateRepositoryVault}
+        entityType="REPOSITORY"
         title={t('general.configureVault', { name: repositoryVaultModalConfig.repository?.repositoryName || '' })}
-        initialVault="{}"
+        initialVault={repositoryVaultModalConfig.repository?.vault || "{}"}
         initialVersion={repositoryVaultModalConfig.repository?.vaultVersion || 1}
         loading={updateRepositoryVaultMutation.isPending}
       />
@@ -1852,12 +1896,13 @@ const OrganizationPage: React.FC = () => {
         />
       </Modal>
 
-      <VaultConfigModal
+      <VaultEditorModal
         open={storageVaultModalConfig.open}
         onCancel={() => setStorageVaultModalConfig({ open: false })}
         onSave={handleUpdateStorageVault}
+        entityType="STORAGE"
         title={t('general.configureVault', { name: storageVaultModalConfig.storage?.storageName || '' })}
-        initialVault="{}"
+        initialVault={storageVaultModalConfig.storage?.vault || "{}"}
         initialVersion={storageVaultModalConfig.storage?.vaultVersion || 1}
         loading={updateStorageVaultMutation.isPending}
       />
@@ -1915,12 +1960,13 @@ const OrganizationPage: React.FC = () => {
         />
       </Modal>
 
-      <VaultConfigModal
+      <VaultEditorModal
         open={scheduleVaultModalConfig.open}
         onCancel={() => setScheduleVaultModalConfig({ open: false })}
         onSave={handleUpdateScheduleVault}
+        entityType="SCHEDULE"
         title={t('general.configureVault', { name: scheduleVaultModalConfig.schedule?.scheduleName || '' })}
-        initialVault="{}"
+        initialVault={scheduleVaultModalConfig.schedule?.vault || "{}"}
         initialVersion={scheduleVaultModalConfig.schedule?.vaultVersion || 1}
         loading={updateScheduleVaultMutation.isPending}
       />

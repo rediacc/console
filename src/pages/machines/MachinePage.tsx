@@ -11,7 +11,7 @@ import { RootState } from '../../store/store';
 import { useMachines, useDeleteMachine, useCreateMachine, useUpdateMachineName, useUpdateMachineBridge, useUpdateMachineVault } from '../../api/queries/machines';
 import { useDropdownData } from '../../api/queries/useDropdownData';
 import { useTeams } from '../../api/queries/teams';
-import VaultConfigModal from '../../components/common/VaultConfigModal';
+import VaultEditorModal from '../../components/common/VaultEditorModal';
 import ResourceForm from '../../components/forms/ResourceForm';
 import { createMachineSchema, CreateMachineForm, editMachineSchema, EditMachineForm } from '../../utils/validation';
 import type { Machine } from '../../types';
@@ -827,15 +827,16 @@ export const MachinePage: React.FC = () => {
 
       {/* Vault Configuration Modal */}
       {selectedMachine && (
-        <VaultConfigModal
+        <VaultEditorModal
           open={isVaultModalOpen}
           onCancel={() => {
             setIsVaultModalOpen(false);
             setSelectedMachine(null);
           }}
           onSave={handleUpdateVault}
+          entityType="MACHINE"
           title={t('form.title.vault')}
-          initialVault="{}"
+          initialVault={selectedMachine.vault || "{}"}
           initialVersion={selectedMachine.vaultVersion}
           loading={updateMachineVaultMutation.isPending}
         />

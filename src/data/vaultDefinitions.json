@@ -1,0 +1,565 @@
+{
+  "entities": {
+    "MACHINE": {
+      "description": "Machine configuration for SSH access and storage",
+      "required": ["ip", "user", "datastore"],
+      "optional": ["port", "hostEntry", "password"],
+      "fields": {
+        "ip": {
+          "type": "string",
+          "format": "ipv4",
+          "description": "IP address of the machine",
+          "example": "192.168.1.100"
+        },
+        "user": {
+          "type": "string",
+          "description": "SSH username for connection",
+          "example": "ubuntu"
+        },
+        "datastore": {
+          "type": "string",
+          "description": "Path to the datastore directory on the machine",
+          "example": "/mnt/datastore"
+        },
+        "port": {
+          "type": "number",
+          "default": 22,
+          "description": "SSH port number",
+          "example": 22
+        },
+        "hostEntry": {
+          "type": "string",
+          "description": "SSH known host entry for security verification",
+          "example": "192.168.1.100 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC..."
+        },
+        "password": {
+          "type": "string",
+          "description": "SSH password for authentication (optional, SSH keys preferred)",
+          "sensitive": true,
+          "example": "SecurePassword123!"
+        }
+      }
+    },
+    "REPOSITORY": {
+      "description": "Repository configuration for backup storage",
+      "required": ["name", "size", "encryption", "credential"],
+      "optional": ["retention", "schedule"],
+      "fields": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9-_]+$",
+          "description": "Repository name identifier",
+          "example": "prod-db-backup"
+        },
+        "size": {
+          "type": "string",
+          "pattern": "^[0-9]+[KMGT]$",
+          "description": "Initial repository size (K/M/G/T)",
+          "example": "128M"
+        },
+        "credential": {
+          "type": "string",
+          "description": "Repository access password (32 characters, alphanumeric + special chars)",
+          "pattern": "^[A-Za-z0-9!@#$%^&*()_+{}|:<>,.?/]{32}$",
+          "minLength": 32,
+          "maxLength": 32,
+          "example": "Kj8#mP2$vL9@nQ4&xR7!wE3*tY6^aS1+"
+        },
+        "encryption": {
+          "type": "boolean",
+          "description": "Enable encryption for repository",
+          "default": true
+        },
+        "retention": {
+          "type": "object",
+          "description": "Retention policy settings",
+          "properties": {
+            "daily": {
+              "type": "number",
+              "description": "Number of daily backups to keep",
+              "example": 7
+            },
+            "weekly": {
+              "type": "number",
+              "description": "Number of weekly backups to keep",
+              "example": 4
+            },
+            "monthly": {
+              "type": "number",
+              "description": "Number of monthly backups to keep",
+              "example": 12
+            }
+          }
+        },
+        "schedule": {
+          "type": "string",
+          "description": "Cron expression for automated backups",
+          "example": "0 2 * * *"
+        }
+      }
+    },
+    "BRIDGE": {
+      "description": "Bridge configuration for network connectivity and SSH access",
+      "required": ["name", "type", "endpoints"],
+      "optional": ["security", "loadBalancing", "ip", "user", "datastore", "port", "hostEntry", "password"],
+      "fields": {
+        "name": {
+          "type": "string",
+          "description": "Bridge identifier",
+          "example": "region1-bridge"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["standard", "high-availability", "geo-distributed"],
+          "description": "Bridge deployment type",
+          "default": "standard"
+        },
+        "endpoints": {
+          "type": "array",
+          "description": "List of endpoint configurations",
+          "items": {
+            "type": "object",
+            "properties": {
+              "host": {
+                "type": "string",
+                "description": "Endpoint hostname or IP"
+              },
+              "port": {
+                "type": "number",
+                "description": "Endpoint port"
+              },
+              "protocol": {
+                "type": "string",
+                "enum": ["tcp", "udp", "http", "https"],
+                "default": "tcp"
+              }
+            }
+          }
+        },
+        "security": {
+          "type": "object",
+          "properties": {
+            "tls": {
+              "type": "boolean",
+              "default": true
+            },
+            "authentication": {
+              "type": "string",
+              "enum": ["none", "token", "certificate"],
+              "default": "token"
+            }
+          }
+        },
+        "loadBalancing": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "algorithm": {
+              "type": "string",
+              "enum": ["round-robin", "least-connections", "ip-hash"],
+              "default": "round-robin"
+            }
+          }
+        },
+        "ip": {
+          "type": "string",
+          "format": "ipv4",
+          "description": "IP address of the bridge machine",
+          "example": "192.168.1.50"
+        },
+        "user": {
+          "type": "string",
+          "description": "SSH username for bridge connection",
+          "example": "bridge-user"
+        },
+        "datastore": {
+          "type": "string",
+          "description": "Path to the datastore directory on the bridge",
+          "example": "/mnt/bridge-datastore"
+        },
+        "port": {
+          "type": "number",
+          "default": 22,
+          "description": "SSH port number for bridge",
+          "example": 22
+        },
+        "hostEntry": {
+          "type": "string",
+          "description": "SSH known host entry for bridge security verification",
+          "example": "192.168.1.50 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC..."
+        },
+        "password": {
+          "type": "string",
+          "description": "SSH password for bridge authentication (optional, SSH keys preferred)",
+          "sensitive": true,
+          "example": "BridgeSecurePass123!"
+        }
+      }
+    },
+    "STORAGE": {
+      "description": "Storage configuration for data persistence",
+      "required": ["type", "path", "capacity"],
+      "optional": ["redundancy", "performance"],
+      "fields": {
+        "type": {
+          "type": "string",
+          "enum": ["local", "network", "cloud"],
+          "description": "Storage type",
+          "example": "local"
+        },
+        "path": {
+          "type": "string",
+          "description": "Storage path or identifier",
+          "example": "/mnt/storage/backup"
+        },
+        "capacity": {
+          "type": "string",
+          "pattern": "^[0-9]+[KMGT]$",
+          "description": "Storage capacity",
+          "example": "1T"
+        },
+        "redundancy": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "level": {
+              "type": "string",
+              "enum": ["mirror", "raid5", "raid6"],
+              "default": "mirror"
+            }
+          }
+        },
+        "performance": {
+          "type": "object",
+          "properties": {
+            "tier": {
+              "type": "string",
+              "enum": ["standard", "performance", "archive"],
+              "default": "standard"
+            },
+            "cache": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        }
+      }
+    },
+    "SCHEDULE": {
+      "description": "Schedule configuration for automated tasks",
+      "required": ["name", "cron", "task"],
+      "optional": ["timezone", "notifications", "retry"],
+      "fields": {
+        "name": {
+          "type": "string",
+          "description": "Schedule identifier",
+          "example": "daily-backup"
+        },
+        "cron": {
+          "type": "string",
+          "description": "Cron expression",
+          "example": "0 2 * * *"
+        },
+        "task": {
+          "type": "object",
+          "description": "Task configuration",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["backup", "restore", "sync", "cleanup"],
+              "description": "Task type"
+            },
+            "target": {
+              "type": "string",
+              "description": "Target resource identifier"
+            },
+            "options": {
+              "type": "object",
+              "description": "Task-specific options"
+            }
+          }
+        },
+        "timezone": {
+          "type": "string",
+          "default": "UTC",
+          "description": "Timezone for schedule execution",
+          "example": "America/New_York"
+        },
+        "notifications": {
+          "type": "object",
+          "properties": {
+            "onSuccess": {
+              "type": "boolean",
+              "default": false
+            },
+            "onFailure": {
+              "type": "boolean",
+              "default": true
+            },
+            "channels": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["email", "webhook", "slack"]
+              }
+            }
+          }
+        },
+        "retry": {
+          "type": "object",
+          "properties": {
+            "attempts": {
+              "type": "number",
+              "default": 3
+            },
+            "interval": {
+              "type": "number",
+              "description": "Retry interval in minutes",
+              "default": 5
+            }
+          }
+        }
+      }
+    },
+    "REGION": {
+      "description": "Region configuration for geographic distribution",
+      "required": ["name", "code", "location"],
+      "optional": [],
+      "fields": {
+        "name": {
+          "type": "string",
+          "description": "Region display name",
+          "example": "US East"
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z]{2}-[a-z]+-[0-9]$",
+          "description": "Region code identifier",
+          "example": "us-east-1"
+        },
+        "location": {
+          "type": "object",
+          "properties": {
+            "country": {
+              "type": "string",
+              "description": "Country code",
+              "example": "US"
+            },
+            "city": {
+              "type": "string",
+              "description": "City name",
+              "example": "Virginia"
+            },
+            "latitude": {
+              "type": "number",
+              "description": "Geographic latitude"
+            },
+            "longitude": {
+              "type": "number",
+              "description": "Geographic longitude"
+            }
+          }
+        }
+      }
+    },
+    "TEAM": {
+      "description": "Team configuration for organizational structure",
+      "required": ["name", "permissions"],
+      "optional": ["quota", "policies", "SSH_PRIVATE_KEY", "SSH_PUBLIC_KEY"],
+      "fields": {
+        "name": {
+          "type": "string",
+          "description": "Team name",
+          "example": "DevOps"
+        },
+        "permissions": {
+          "type": "array",
+          "description": "List of permission groups",
+          "items": {
+            "type": "string"
+          },
+          "example": ["backup_admin", "restore_user"]
+        },
+        "quota": {
+          "type": "object",
+          "description": "Resource quotas",
+          "properties": {
+            "machines": {
+              "type": "number",
+              "description": "Maximum number of machines"
+            },
+            "storage": {
+              "type": "string",
+              "description": "Maximum storage capacity",
+              "example": "10T"
+            },
+            "repositories": {
+              "type": "number",
+              "description": "Maximum number of repositories"
+            }
+          }
+        },
+        "policies": {
+          "type": "object",
+          "properties": {
+            "backupRetention": {
+              "type": "number",
+              "description": "Default backup retention in days",
+              "default": 30
+            },
+            "encryptionRequired": {
+              "type": "boolean",
+              "default": true
+            },
+            "approvalRequired": {
+              "type": "boolean",
+              "description": "Require approval for critical operations",
+              "default": false
+            }
+          }
+        },
+        "SSH_PRIVATE_KEY": {
+          "type": "string",
+          "description": "Base64-encoded SSH private key for team operations",
+          "sensitive": true,
+          "format": "base64",
+          "example": "LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0K..."
+        },
+        "SSH_PUBLIC_KEY": {
+          "type": "string",
+          "description": "SSH public key for team operations",
+          "pattern": "^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/=]+ .+$",
+          "example": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... team-devops"
+        }
+      }
+    },
+    "USER": {
+      "description": "User configuration for individual access and authentication",
+      "required": [],
+      "optional": ["SSH_PRIVATE_KEY", "SSH_PUBLIC_KEY"],
+      "fields": {
+        "SSH_PRIVATE_KEY": {
+          "type": "string",
+          "description": "Base64-encoded SSH private key for user operations",
+          "sensitive": true,
+          "format": "base64",
+          "example": "LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0K..."
+        },
+        "SSH_PUBLIC_KEY": {
+          "type": "string",
+          "description": "SSH public key for user operations",
+          "pattern": "^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/=]+ .+$",
+          "example": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... user@example.com"
+        }
+      }
+    },
+    "COMPANY": {
+      "description": "Company-wide configuration and security settings",
+      "required": ["UNIVERSAL_USER_ID", "UNIVERSAL_USER_NAME"],
+      "optional": ["DOCKER_JSON_CONF", "SSH_PRIVATE_KEY", "SSH_PUBLIC_KEY", "LOG_FILE"],
+      "fields": {
+        "UNIVERSAL_USER_ID": {
+          "type": "string",
+          "pattern": "^[0-9]+$",
+          "default": "777",
+          "description": "Universal user ID for system operations",
+          "example": "777"
+        },
+        "UNIVERSAL_USER_NAME": {
+          "type": "string",
+          "pattern": "^[a-z_][a-z0-9_-]*$",
+          "default": "rediacc",
+          "description": "Universal username for system operations",
+          "example": "rediacc"
+        },
+        "DOCKER_JSON_CONF": {
+          "type": "object",
+          "description": "Docker daemon configuration",
+          "properties": {
+            "insecure-registries": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "List of insecure Docker registries",
+              "example": ["http://192.168.111.1:5000"]
+            },
+            "registry-mirrors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "List of Docker registry mirrors",
+              "example": ["http://192.168.111.1:5000"]
+            },
+            "runtimes": {
+              "type": "object",
+              "description": "Additional container runtimes",
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "description": "Runtime executable path"
+                  },
+                  "args": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Runtime arguments"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "SSH_PRIVATE_KEY": {
+          "type": "string",
+          "description": "Base64-encoded SSH private key for system operations",
+          "sensitive": true,
+          "format": "base64",
+          "example": "LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0K..."
+        },
+        "SSH_PUBLIC_KEY": {
+          "type": "string",
+          "description": "SSH public key for system operations",
+          "pattern": "^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/=]+ .+$",
+          "example": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... rediacc1"
+        },
+        "LOG_FILE": {
+          "type": "string",
+          "description": "Path to the system log file",
+          "default": "/tmp/rediacc.log",
+          "example": "/tmp/rediacc.log"
+        }
+      }
+    }
+  },
+  "commonTypes": {
+    "ipAddress": {
+      "type": "string",
+      "pattern": "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+    },
+    "port": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 65535
+    },
+    "size": {
+      "type": "string",
+      "pattern": "^[0-9]+[KMGT]$",
+      "description": "Size with unit (K=KB, M=MB, G=GB, T=TB)"
+    },
+    "cronExpression": {
+      "type": "string",
+      "description": "Standard cron expression format"
+    }
+  }
+}

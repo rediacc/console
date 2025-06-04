@@ -14,9 +14,13 @@ import {
   SettingOutlined,
   LineChartOutlined,
   PieChartOutlined,
+  GlobalOutlined,
+  ApiOutlined,
+  CloudOutlined,
+  FolderOutlined,
 } from '@ant-design/icons'
 import { Line, Pie, Column } from '@ant-design/charts'
-import VaultConfigModal from '@/components/common/VaultConfigModal'
+import VaultEditorModal from '@/components/common/VaultEditorModal'
 import { 
   useSubscriptionDetails, 
   useResourceLimits, 
@@ -122,6 +126,30 @@ const CompanySettingsPage: React.FC = () => {
       current: limits.currentRepositories, 
       max: limits.maxRepositories,
       icon: <DatabaseOutlined />,
+    },
+    { 
+      title: 'Regions', 
+      current: limits.currentRegions, 
+      max: limits.maxRegions,
+      icon: <GlobalOutlined />,
+    },
+    { 
+      title: 'Bridges', 
+      current: limits.currentBridges, 
+      max: limits.maxBridges,
+      icon: <ApiOutlined />,
+    },
+    { 
+      title: 'Storage', 
+      current: limits.currentStorage, 
+      max: limits.maxStorage,
+      icon: <CloudOutlined />,
+    },
+    { 
+      title: 'Schedules', 
+      current: limits.currentSchedules, 
+      max: limits.maxSchedules,
+      icon: <ScheduleOutlined />,
     },
   ] : []
 
@@ -263,7 +291,7 @@ const CompanySettingsPage: React.FC = () => {
                   {resourceUsageData.map((resource) => {
                     const percent = getUsagePercent(resource.current, resource.max)
                     return (
-                      <Col xs={24} sm={12} lg={6} key={resource.title}>
+                      <Col xs={24} sm={12} md={8} lg={6} xl={6} key={resource.title}>
                         <Card>
                           <Space direction="vertical" style={{ width: '100%' }}>
                             <Space>
@@ -285,59 +313,17 @@ const CompanySettingsPage: React.FC = () => {
                   })}
                 </Row>
 
-                {/* Detailed Limits */}
-                <Card title="Resource Limits Details" loading={limitsLoading}>
-                  <Row gutter={[32, 16]}>
-                    <Col xs={24} lg={12}>
-                      <List
-                        itemLayout="horizontal"
-                        dataSource={[
-                          { 
-                            title: 'Storage', 
-                            current: limits?.currentStorage || 0, 
-                            max: limits?.maxStorage || 0,
-                            icon: <DatabaseOutlined />,
-                          },
-                          { 
-                            title: 'Schedules', 
-                            current: limits?.currentSchedules || 0, 
-                            max: limits?.maxSchedules || 0,
-                            icon: <ScheduleOutlined />,
-                          },
-                        ]}
-                        renderItem={(item) => {
-                          const percent = getUsagePercent(item.current, item.max)
-                          return (
-                            <List.Item>
-                              <List.Item.Meta
-                                avatar={item.icon}
-                                title={item.title}
-                                description={
-                                  <Progress
-                                    percent={percent}
-                                    strokeColor={getUsageColor(percent)}
-                                    format={() => `${item.current} / ${item.max}`}
-                                    size="small"
-                                  />
-                                }
-                              />
-                            </List.Item>
-                          )
-                        }}
-                      />
-                    </Col>
-                    <Col xs={24} lg={12}>
-                      <Space direction="vertical" style={{ width: '100%' }}>
-                        <Text type="secondary">
-                          Your current plan includes generous resource limits suitable for enterprise use.
-                          Contact support if you need to increase any limits.
-                        </Text>
-                        <Button type="primary" icon={<CrownOutlined />} block>
-                          Upgrade Plan
-                        </Button>
-                      </Space>
-                    </Col>
-                  </Row>
+                {/* Upgrade Section */}
+                <Card>
+                  <Space direction="vertical" style={{ width: '100%', textAlign: 'center' }} size={16}>
+                    <Text type="secondary" style={{ fontSize: 16 }}>
+                      Your current plan includes generous resource limits suitable for enterprise use.
+                      Contact support if you need to increase any limits.
+                    </Text>
+                    <Button type="primary" icon={<CrownOutlined />} size="large">
+                      Upgrade Plan
+                    </Button>
+                  </Space>
                 </Card>
               </Space>
             ),
@@ -400,10 +386,11 @@ const CompanySettingsPage: React.FC = () => {
         ]}
       />
 
-      <VaultConfigModal
+      <VaultEditorModal
         open={vaultModalOpen}
         onCancel={() => setVaultModalOpen(false)}
         onSave={handleUpdateVault}
+        entityType="COMPANY"
         title="Configure Company Vault"
         initialVault={companyVault?.vault || '{}'}
         initialVersion={companyVault?.vaultVersion || 1}
