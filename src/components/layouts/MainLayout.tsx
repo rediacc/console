@@ -80,12 +80,6 @@ const MainLayout: React.FC = () => {
       showInSimple: true,
     },
     {
-      key: '/users',
-      icon: <UserOutlined />,
-      label: t('navigation.users'),
-      showInSimple: true,
-    },
-    {
       key: '/machines',
       icon: <CloudServerOutlined />,
       label: t('navigation.machines'),
@@ -96,6 +90,12 @@ const MainLayout: React.FC = () => {
       icon: <ThunderboltOutlined />,
       label: t('navigation.queue'),
       showInSimple: false,
+    },
+    {
+      key: '/system',
+      icon: <SettingOutlined />,
+      label: t('navigation.system'),
+      showInSimple: true,
     },
   ]
 

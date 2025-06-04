@@ -13,7 +13,7 @@ import DashboardPage from '@/pages/DashboardPage'
 import OrganizationPage from '@/pages/organization/OrganizationPage'
 import MachinePage from '@/pages/machines/MachinePage'
 import QueuePage from '@/pages/queue/QueuePage'
-import UsersAndPermissionsPage from '@/pages/users/UsersAndPermissionsPage'
+import SystemPage from '@/pages/system/SystemPage'
 
 const AppContent: React.FC = () => {
   const { theme: currentTheme } = useTheme()
@@ -79,8 +79,8 @@ const AppContent: React.FC = () => {
               {/* Queue */}
               <Route path="/queue" element={<QueuePage />} />
               
-              {/* Users & Permissions */}
-              <Route path="/users" element={<UsersAndPermissionsPage />} />
+              {/* System (Users & Permissions) */}
+              <Route path="/system" element={<SystemPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

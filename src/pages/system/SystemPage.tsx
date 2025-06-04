@@ -49,9 +49,9 @@ import { createUserSchema, CreateUserForm } from '@/utils/validation'
 
 const { Title, Text } = Typography
 
-const UsersAndPermissionsPage: React.FC = () => {
+const SystemPage: React.FC = () => {
   const { t } = useTranslation('settings')
-  const { t: tUsers } = useTranslation('users')
+  const { t: tUsers } = useTranslation('system')
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const [activeTab, setActiveTab] = useState('users')
   
@@ -773,4 +773,4 @@ const UsersAndPermissionsPage: React.FC = () => {
   )
 }
 
-export default UsersAndPermissionsPage
+export default SystemPage

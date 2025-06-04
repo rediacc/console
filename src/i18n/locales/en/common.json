@@ -8,6 +8,7 @@
     "organization": "Organization",
     "machines": "Machines",
     "users": "Users",
+    "system": "System",
     "queue": "Queue",
     "settings": "Settings",
     "logout": "Logout"
