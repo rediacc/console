@@ -92,5 +92,210 @@
     "simple": "Simple",
     "expert": "Expert",
     "switching": "Switching to {{mode}} mode..."
+  },
+  "vaultEditor": {
+    "vaultVersion": "Vault Version:",
+    "versionAutoIncrement": "Version will auto-increment on save",
+    "importJson": "Import JSON",
+    "exportJson": "Export JSON",
+    "unsavedChanges": "Unsaved changes",
+    "versionWillIncrement": "Version will increment to {{version}}",
+    "saveVaultConfiguration": "Save Vault Configuration",
+    "validationErrors": "Validation Errors:",
+    "pleaseFixErrors": "Please fix validation errors before saving",
+    "noChangesToSave": "No changes to save",
+    "unknownEntityType": "Unknown Entity Type",
+    "unknownEntityDescription": "Entity type \"{{type}}\" is not defined in the vault definitions.",
+    "requiredFields": "Required Fields",
+    "optionalFields": "Optional Fields",
+    "extraFields": "Extra Fields (Not in Schema)",
+    "extraFieldsTooltip": "These fields were imported but are not defined in the schema",
+    "extraFieldsWarning": "Warning",
+    "extraFieldsWarningDescription": "These fields are not defined in the schema and may be ignored by the system.",
+    "rawJsonEditor": "Raw JSON Editor (Expert Mode)",
+    "rawJsonTooltip": "Direct JSON editing - Use with caution!",
+    "expertModeOnly": "Expert Mode Only",
+    "expertModeDescription": "Direct JSON editing can break system functionality if not done correctly. Only modify if you understand the vault schema and implications.",
+    "jsonError": "JSON Error",
+    "formatJson": "Format JSON",
+    "resetToFormValues": "Reset to Form Values",
+    "isRequired": "{{field}} is required",
+    "invalidFormat": "Invalid format. {{description}}",
+    "minLength": "Minimum length is {{length}}",
+    "maxLength": "Maximum length is {{length}}",
+    "minValue": "Minimum value is {{value}}",
+    "maxValue": "Maximum value is {{value}}",
+    "mustBeValidJson": "Must be valid JSON",
+    "mustBeArray": "Must be an array",
+    "mustBeValidJsonArray": "Must be valid JSON array",
+    "enterJsonObject": "Enter JSON object",
+    "enterJsonArray": "Enter JSON array",
+    "portPlaceholder": "Port number (1-65535)",
+    "example": "Example:",
+    "advanced": "Advanced",
+    "failedToSerialize": "Failed to serialize data to JSON",
+    "invalidJsonFormat": "Invalid JSON format",
+    "failedToParseJson": "Failed to parse JSON:",
+    "fields": {
+      "MACHINE": {
+        "description": "Machine configuration for SSH access and storage",
+        "ip": {
+          "label": "IP Address",
+          "description": "IP address of the machine"
+        },
+        "user": {
+          "label": "Username",
+          "description": "SSH username for connection"
+        },
+        "datastore": {
+          "label": "Datastore Path",
+          "description": "Path to the datastore directory on the machine"
+        },
+        "port": {
+          "label": "SSH Port",
+          "description": "SSH port number"
+        },
+        "hostEntry": {
+          "label": "Host Entry",
+          "description": "SSH known host entry for security verification"
+        },
+        "password": {
+          "label": "Password",
+          "description": "SSH password for authentication (optional, SSH keys preferred)"
+        }
+      },
+      "REPOSITORY": {
+        "description": "Repository configuration for backup storage",
+        "name": {
+          "label": "Repository Name",
+          "description": "Repository name identifier"
+        },
+        "size": {
+          "label": "Initial Size",
+          "description": "Initial repository size (K/M/G/T)"
+        },
+        "credential": {
+          "label": "Access Password",
+          "description": "Repository access password (32 characters, alphanumeric + special chars)"
+        },
+        "encryption": {
+          "label": "Enable Encryption",
+          "description": "Enable encryption for repository"
+        },
+        "retention": {
+          "label": "Retention Policy",
+          "description": "Retention policy settings"
+        },
+        "schedule": {
+          "label": "Backup Schedule",
+          "description": "Cron expression for automated backups"
+        }
+      },
+      "STORAGE": {
+        "description": "Storage configuration for backup destinations",
+        "type": {
+          "label": "Storage Type",
+          "description": "Type of storage backend"
+        },
+        "path": {
+          "label": "Storage Path",
+          "description": "Path or bucket name for storage"
+        },
+        "credentials": {
+          "label": "Access Credentials",
+          "description": "Authentication credentials for storage access"
+        }
+      },
+      "SCHEDULE": {
+        "description": "Schedule configuration for automated tasks",
+        "cron": {
+          "label": "Cron Expression",
+          "description": "Cron expression defining the schedule"
+        },
+        "timezone": {
+          "label": "Timezone",
+          "description": "Timezone for schedule execution"
+        },
+        "enabled": {
+          "label": "Enable Schedule",
+          "description": "Whether this schedule is active"
+        }
+      },
+      "BRIDGE": {
+        "description": "Bridge configuration for network connectivity",
+        "host": {
+          "label": "Bridge Host",
+          "description": "Hostname or IP address of the bridge"
+        },
+        "port": {
+          "label": "Bridge Port",
+          "description": "Port number for bridge connection"
+        },
+        "protocol": {
+          "label": "Protocol",
+          "description": "Communication protocol (HTTP/HTTPS)"
+        }
+      },
+      "REGION": {
+        "description": "Region configuration for geographic distribution",
+        "name": {
+          "label": "Region Name",
+          "description": "Name of the geographic region"
+        },
+        "code": {
+          "label": "Region Code",
+          "description": "Short code for the region"
+        }
+      },
+      "TEAM": {
+        "description": "Team configuration for organizational structure",
+        "name": {
+          "label": "Team Name",
+          "description": "Name of the team"
+        },
+        "description": {
+          "label": "Team Description",
+          "description": "Description of team purpose and responsibilities"
+        }
+      },
+      "USER": {
+        "description": "User configuration for personal settings",
+        "SSH_PRIVATE_KEY": {
+          "label": "SSH Private Key",
+          "description": "Base64-encoded SSH private key for user operations"
+        },
+        "SSH_PUBLIC_KEY": {
+          "label": "SSH Public Key",
+          "description": "SSH public key for user operations"
+        }
+      },
+      "COMPANY": {
+        "description": "Company configuration for organization-wide settings",
+        "UNIVERSAL_USER_ID": {
+          "label": "Universal User ID",
+          "description": "Universal user ID for system operations"
+        },
+        "UNIVERSAL_USER_NAME": {
+          "label": "Universal User Name",
+          "description": "Universal user name for system operations"
+        },
+        "DOCKER_JSON_CONF": {
+          "label": "Docker Configuration",
+          "description": "Docker registry authentication configuration"
+        },
+        "SSH_PRIVATE_KEY": {
+          "label": "SSH Private Key",
+          "description": "Base64-encoded SSH private key for company operations"
+        },
+        "SSH_PUBLIC_KEY": {
+          "label": "SSH Public Key",
+          "description": "SSH public key for company operations"
+        },
+        "LOG_FILE": {
+          "label": "Log File Path",
+          "description": "Path to the system log file"
+        }
+      }
+    }
   }
 }

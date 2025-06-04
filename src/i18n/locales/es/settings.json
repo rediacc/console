@@ -1,5 +1,17 @@
 {
   "title": "Configuración",
+  "company": {
+    "title": "Configuración de la Empresa",
+    "description": "Configure los ajustes del vault de su empresa para gestionar las configuraciones de toda la organización.",
+    "configureVault": "Configurar Vault",
+    "modalTitle": "Configurar Vault de la Empresa"
+  },
+  "personal": {
+    "title": "Configuración Personal",
+    "description": "Configure los ajustes de su vault personal para personalizar su experiencia.",
+    "configureVault": "Configurar Vault",
+    "modalTitle": "Configurar Vault del Usuario"
+  },
   "general": {
     "title": "Configuración General",
     "description": "Configurar ajustes generales de la aplicación",

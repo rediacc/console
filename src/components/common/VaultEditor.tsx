@@ -27,6 +27,7 @@ import {
 } from '@ant-design/icons'
 import Editor from '@monaco-editor/react'
 import type { UploadFile } from 'antd/es/upload/interface'
+import { useTranslation } from 'react-i18next'
 import vaultDefinitions from '../../data/vaultDefinitions.json'
 import { useAppSelector } from '@/store/store'
 
@@ -62,6 +63,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   onValidate,
   onImportExport,
 }) => {
+  const { t } = useTranslation('common')
   const [form] = Form.useForm()
   const [extraFields, setExtraFields] = useState<Record<string, any>>({})
   const [importedData, setImportedData] = useState<Record<string, any>>(initialData)
@@ -143,8 +145,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   if (!entityDef) {
     return (
       <Alert
-        message="Unknown Entity Type"
-        description={`Entity type "${entityType}" is not defined in the vault definitions.`}
+        message={t('vaultEditor.unknownEntityType')}
+        description={t('vaultEditor.unknownEntityDescription', { type: entityType })}
         type="error"
         showIcon
       />
@@ -157,7 +159,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       setRawJsonValue(JSON.stringify(data, null, 2))
       setRawJsonError(null)
     } catch (error) {
-      setRawJsonError('Failed to serialize data to JSON')
+      setRawJsonError(t('vaultEditor.failedToSerialize'))
     }
   }
 
@@ -217,7 +219,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       // Validate
       form.validateFields().catch(() => {})
     } catch (error) {
-      setRawJsonError('Invalid JSON format')
+      setRawJsonError(t('vaultEditor.invalidJsonFormat'))
     }
   }
 
@@ -242,7 +244,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           handleFormChange()
         }, 0)
       } catch (error) {
-        console.error('Failed to parse JSON:', error)
+        console.error(t('vaultEditor.failedToParseJson'), error)
       }
     }
     reader.readAsText(file as any)
@@ -276,32 +278,36 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     // Merge with common types if applicable
     const field = getFieldDefinition(fieldDef)
     
+    // Get translated field label and description
+    const fieldLabel = t(`vaultEditor.fields.${entityType}.${fieldName}.label`, { defaultValue: fieldName })
+    const fieldDescription = t(`vaultEditor.fields.${entityType}.${fieldName}.description`, { defaultValue: field.description })
+    
     const rules: any[] = []
     
     if (required) {
-      rules.push({ required: true, message: `${fieldName} is required` })
+      rules.push({ required: true, message: t('vaultEditor.isRequired', { field: fieldLabel }) })
     }
     
     if (field.pattern) {
       rules.push({
         pattern: new RegExp(field.pattern),
-        message: `Invalid format. ${field.description || ''}`,
+        message: t('vaultEditor.invalidFormat', { description: fieldDescription || '' }),
       })
     }
     
     if (field.minLength !== undefined) {
-      rules.push({ min: field.minLength, message: `Minimum length is ${field.minLength}` })
+      rules.push({ min: field.minLength, message: t('vaultEditor.minLength', { length: field.minLength }) })
     }
     
     if (field.maxLength !== undefined) {
-      rules.push({ max: field.maxLength, message: `Maximum length is ${field.maxLength}` })
+      rules.push({ max: field.maxLength, message: t('vaultEditor.maxLength', { length: field.maxLength }) })
     }
     
     if (field.minimum !== undefined) {
       rules.push({ 
         type: 'number', 
         min: field.minimum, 
-        message: `Minimum value is ${field.minimum}` 
+        message: t('vaultEditor.minValue', { value: field.minimum }) 
       })
     }
     
@@ -309,7 +315,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       rules.push({ 
         type: 'number', 
         max: field.maximum, 
-        message: `Maximum value is ${field.maximum}` 
+        message: t('vaultEditor.maxValue', { value: field.maximum }) 
       })
     }
 
@@ -325,9 +331,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           name={fieldName}
           label={
             <Space>
-              {fieldName}
-              {field.description && (
-                <Tooltip title={field.description}>
+              {fieldLabel}
+              {fieldDescription && (
+                <Tooltip title={fieldDescription}>
                   <InfoCircleOutlined />
                 </Tooltip>
               )}
@@ -347,9 +353,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           name={fieldName}
           label={
             <Space>
-              {fieldName}
-              {field.description && (
-                <Tooltip title={field.description}>
+              {fieldLabel}
+              {fieldDescription && (
+                <Tooltip title={fieldDescription}>
                   <InfoCircleOutlined />
                 </Tooltip>
               )}
@@ -375,9 +381,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           name={fieldName}
           label={
             <Space>
-              {fieldName}
-              {field.description && (
-                <Tooltip title={field.description}>
+              {fieldLabel}
+              {fieldDescription && (
+                <Tooltip title={fieldDescription}>
                   <InfoCircleOutlined />
                 </Tooltip>
               )}
@@ -402,9 +408,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           name={fieldName}
           label={
             <Space>
-              {fieldName}
-              {field.description && (
-                <Tooltip title={field.description}>
+              {fieldLabel}
+              {fieldDescription && (
+                <Tooltip title={fieldDescription}>
                   <InfoCircleOutlined />
                 </Tooltip>
               )}
@@ -421,7 +427,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                   }
                   return Promise.resolve()
                 } catch {
-                  return Promise.reject('Must be valid JSON')
+                  return Promise.reject(t('vaultEditor.mustBeValidJson'))
                 }
               },
             },
@@ -441,7 +447,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           <Input.TextArea
             {...commonProps}
             rows={4}
-            placeholder={field.example ? `Example: ${JSON.stringify(field.example, null, 2)}` : 'Enter JSON object'}
+            placeholder={field.example ? `${t('vaultEditor.example')} ${JSON.stringify(field.example, null, 2)}` : t('vaultEditor.enterJsonObject')}
           />
         </Form.Item>
       )
@@ -454,9 +460,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           name={fieldName}
           label={
             <Space>
-              {fieldName}
-              {field.description && (
-                <Tooltip title={field.description}>
+              {fieldLabel}
+              {fieldDescription && (
+                <Tooltip title={fieldDescription}>
                   <InfoCircleOutlined />
                 </Tooltip>
               )}
@@ -470,11 +476,11 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 try {
                   const parsed = typeof value === 'string' ? JSON.parse(value) : value
                   if (!Array.isArray(parsed)) {
-                    return Promise.reject('Must be an array')
+                    return Promise.reject(t('vaultEditor.mustBeArray'))
                   }
                   return Promise.resolve()
                 } catch {
-                  return Promise.reject('Must be valid JSON array')
+                  return Promise.reject(t('vaultEditor.mustBeValidJsonArray'))
                 }
               },
             },
@@ -494,7 +500,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           <Input.TextArea
             {...commonProps}
             rows={4}
-            placeholder={field.example ? `Example: ${JSON.stringify(field.example, null, 2)}` : 'Enter JSON array'}
+            placeholder={field.example ? `${t('vaultEditor.example')} ${JSON.stringify(field.example, null, 2)}` : t('vaultEditor.enterJsonArray')}
           />
         </Form.Item>
       )
@@ -507,9 +513,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           name={fieldName}
           label={
             <Space>
-              {fieldName}
-              {field.description && (
-                <Tooltip title={field.description}>
+              {fieldLabel}
+              {fieldDescription && (
+                <Tooltip title={fieldDescription}>
                   <InfoCircleOutlined />
                 </Tooltip>
               )}
@@ -522,7 +528,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
             {...commonProps}
             min={1}
             max={65535}
-            placeholder="Port number (1-65535)"
+            placeholder={t('vaultEditor.portPlaceholder')}
           />
         </Form.Item>
       )
@@ -534,9 +540,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         name={fieldName}
         label={
           <Space>
-            {fieldName}
-            {field.description && (
-              <Tooltip title={field.description}>
+            {fieldLabel}
+            {fieldDescription && (
+              <Tooltip title={fieldDescription}>
                 <InfoCircleOutlined />
               </Tooltip>
             )}
@@ -560,7 +566,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   return (
     <div>
       <Alert
-        message={entityDef.description}
+        message={t(`vaultEditor.fields.${entityType}.description`) || entityDef.description}
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
@@ -581,7 +587,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           <Collapse.Panel
             header={
               <Space>
-                <strong>Required Fields</strong>
+                <strong>{t('vaultEditor.requiredFields')}</strong>
                 <Tag color="red">{requiredFields.length}</Tag>
               </Space>
             }
@@ -603,7 +609,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           <Collapse.Panel
             header={
               <Space>
-                <strong>Optional Fields</strong>
+                <strong>{t('vaultEditor.optionalFields')}</strong>
                 <Tag>{optionalFields.length}</Tag>
               </Space>
             }
@@ -626,9 +632,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
             <Collapse.Panel
               header={
                 <Space>
-                  <strong>Extra Fields (Not in Schema)</strong>
+                  <strong>{t('vaultEditor.extraFields')}</strong>
                   <Tag color="warning">{Object.keys(extraFields).length}</Tag>
-                  <Tooltip title="These fields were imported but are not defined in the schema">
+                  <Tooltip title={t('vaultEditor.extraFieldsTooltip')}>
                     <WarningOutlined style={{ color: '#faad14' }} />
                   </Tooltip>
                 </Space>
@@ -636,8 +642,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               key="extra"
             >
               <Alert
-                message="Warning"
-                description="These fields are not defined in the schema and may be ignored by the system."
+                message={t('vaultEditor.extraFieldsWarning')}
+                description={t('vaultEditor.extraFieldsWarningDescription')}
                 type="warning"
                 showIcon
                 style={{ marginBottom: 16 }}
@@ -655,9 +661,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               header={
                 <Space>
                   <CodeOutlined />
-                  <strong>Raw JSON Editor (Expert Mode)</strong>
-                  <Tag color="red">Advanced</Tag>
-                  <Tooltip title="Direct JSON editing - Use with caution!">
+                  <strong>{t('vaultEditor.rawJsonEditor')}</strong>
+                  <Tag color="red">{t('vaultEditor.advanced')}</Tag>
+                  <Tooltip title={t('vaultEditor.rawJsonTooltip')}>
                     <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
                   </Tooltip>
                 </Space>
@@ -665,8 +671,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               key="rawjson"
             >
               <Alert
-                message="Expert Mode Only"
-                description="Direct JSON editing can break system functionality if not done correctly. Only modify if you understand the vault schema and implications."
+                message={t('vaultEditor.expertModeOnly')}
+                description={t('vaultEditor.expertModeDescription')}
                 type="error"
                 showIcon
                 icon={<ExclamationCircleOutlined />}
@@ -675,7 +681,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               
               {rawJsonError && (
                 <Alert
-                  message="JSON Error"
+                  message={t('vaultEditor.jsonError')}
                   description={rawJsonError}
                   type="error"
                   showIcon
@@ -713,7 +719,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                     }
                   }}
                 >
-                  Format JSON
+                  {t('vaultEditor.formatJson')}
                 </Button>
                 <Button
                   size="small"
@@ -723,7 +729,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                     updateRawJson(currentData)
                   }}
                 >
-                  Reset to Form Values
+                  {t('vaultEditor.resetToFormValues')}
                 </Button>
               </Space>
             </Collapse.Panel>

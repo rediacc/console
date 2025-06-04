@@ -1,5 +1,17 @@
 {
   "title": "Settings",
+  "company": {
+    "title": "Company Settings",
+    "description": "Configure your company vault settings to manage organization-wide configurations.",
+    "configureVault": "Configure Vault",
+    "modalTitle": "Configure Company Vault"
+  },
+  "personal": {
+    "title": "Personal Settings",
+    "description": "Configure your personal vault settings to customize your experience.",
+    "configureVault": "Configure Vault",
+    "modalTitle": "Configure User Vault"
+  },
   "general": {
     "title": "General Settings",
     "description": "Configure general application settings",

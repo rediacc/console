@@ -92,5 +92,210 @@
     "simple": "Simple",
     "expert": "Experto",
     "switching": "Cambiando a modo {{mode}}..."
+  },
+  "vaultEditor": {
+    "vaultVersion": "Versión del Vault:",
+    "versionAutoIncrement": "La versión se incrementará automáticamente al guardar",
+    "importJson": "Importar JSON",
+    "exportJson": "Exportar JSON",
+    "unsavedChanges": "Cambios sin guardar",
+    "versionWillIncrement": "La versión se incrementará a {{version}}",
+    "saveVaultConfiguration": "Guardar Configuración del Vault",
+    "validationErrors": "Errores de Validación:",
+    "pleaseFixErrors": "Por favor corrija los errores de validación antes de guardar",
+    "noChangesToSave": "No hay cambios para guardar",
+    "unknownEntityType": "Tipo de Entidad Desconocido",
+    "unknownEntityDescription": "El tipo de entidad \"{{type}}\" no está definido en las definiciones del vault.",
+    "requiredFields": "Campos Requeridos",
+    "optionalFields": "Campos Opcionales",
+    "extraFields": "Campos Extra (No en el Esquema)",
+    "extraFieldsTooltip": "Estos campos fueron importados pero no están definidos en el esquema",
+    "extraFieldsWarning": "Advertencia",
+    "extraFieldsWarningDescription": "Estos campos no están definidos en el esquema y pueden ser ignorados por el sistema.",
+    "rawJsonEditor": "Editor JSON Directo (Modo Experto)",
+    "rawJsonTooltip": "Edición directa de JSON - ¡Úselo con precaución!",
+    "expertModeOnly": "Solo Modo Experto",
+    "expertModeDescription": "La edición directa de JSON puede romper la funcionalidad del sistema si no se hace correctamente. Solo modifique si comprende el esquema del vault y las implicaciones.",
+    "jsonError": "Error de JSON",
+    "formatJson": "Formatear JSON",
+    "resetToFormValues": "Restablecer a Valores del Formulario",
+    "isRequired": "{{field}} es requerido",
+    "invalidFormat": "Formato inválido. {{description}}",
+    "minLength": "La longitud mínima es {{length}}",
+    "maxLength": "La longitud máxima es {{length}}",
+    "minValue": "El valor mínimo es {{value}}",
+    "maxValue": "El valor máximo es {{value}}",
+    "mustBeValidJson": "Debe ser JSON válido",
+    "mustBeArray": "Debe ser un arreglo",
+    "mustBeValidJsonArray": "Debe ser un arreglo JSON válido",
+    "enterJsonObject": "Ingrese objeto JSON",
+    "enterJsonArray": "Ingrese arreglo JSON",
+    "portPlaceholder": "Número de puerto (1-65535)",
+    "example": "Ejemplo:",
+    "advanced": "Avanzado",
+    "failedToSerialize": "Error al serializar datos a JSON",
+    "invalidJsonFormat": "Formato JSON inválido",
+    "failedToParseJson": "Error al analizar JSON:",
+    "fields": {
+      "MACHINE": {
+        "description": "Configuración de máquina para acceso SSH y almacenamiento",
+        "ip": {
+          "label": "Dirección IP",
+          "description": "Dirección IP de la máquina"
+        },
+        "user": {
+          "label": "Nombre de Usuario",
+          "description": "Nombre de usuario SSH para la conexión"
+        },
+        "datastore": {
+          "label": "Ruta del Almacén",
+          "description": "Ruta al directorio del almacén de datos en la máquina"
+        },
+        "port": {
+          "label": "Puerto SSH",
+          "description": "Número de puerto SSH"
+        },
+        "hostEntry": {
+          "label": "Entrada del Host",
+          "description": "Entrada de host conocido SSH para verificación de seguridad"
+        },
+        "password": {
+          "label": "Contraseña",
+          "description": "Contraseña SSH para autenticación (opcional, se prefieren claves SSH)"
+        }
+      },
+      "REPOSITORY": {
+        "description": "Configuración del repositorio para almacenamiento de respaldos",
+        "name": {
+          "label": "Nombre del Repositorio",
+          "description": "Identificador del nombre del repositorio"
+        },
+        "size": {
+          "label": "Tamaño Inicial",
+          "description": "Tamaño inicial del repositorio (K/M/G/T)"
+        },
+        "credential": {
+          "label": "Contraseña de Acceso",
+          "description": "Contraseña de acceso al repositorio (32 caracteres, alfanuméricos + especiales)"
+        },
+        "encryption": {
+          "label": "Habilitar Cifrado",
+          "description": "Habilitar cifrado para el repositorio"
+        },
+        "retention": {
+          "label": "Política de Retención",
+          "description": "Configuración de política de retención"
+        },
+        "schedule": {
+          "label": "Programación de Respaldo",
+          "description": "Expresión cron para respaldos automatizados"
+        }
+      },
+      "STORAGE": {
+        "description": "Configuración de almacenamiento para destinos de respaldo",
+        "type": {
+          "label": "Tipo de Almacenamiento",
+          "description": "Tipo de backend de almacenamiento"
+        },
+        "path": {
+          "label": "Ruta de Almacenamiento",
+          "description": "Ruta o nombre del bucket para almacenamiento"
+        },
+        "credentials": {
+          "label": "Credenciales de Acceso",
+          "description": "Credenciales de autenticación para acceso al almacenamiento"
+        }
+      },
+      "SCHEDULE": {
+        "description": "Configuración de programación para tareas automatizadas",
+        "cron": {
+          "label": "Expresión Cron",
+          "description": "Expresión cron que define la programación"
+        },
+        "timezone": {
+          "label": "Zona Horaria",
+          "description": "Zona horaria para la ejecución de la programación"
+        },
+        "enabled": {
+          "label": "Habilitar Programación",
+          "description": "Si esta programación está activa"
+        }
+      },
+      "BRIDGE": {
+        "description": "Configuración del puente para conectividad de red",
+        "host": {
+          "label": "Host del Puente",
+          "description": "Nombre de host o dirección IP del puente"
+        },
+        "port": {
+          "label": "Puerto del Puente",
+          "description": "Número de puerto para la conexión del puente"
+        },
+        "protocol": {
+          "label": "Protocolo",
+          "description": "Protocolo de comunicación (HTTP/HTTPS)"
+        }
+      },
+      "REGION": {
+        "description": "Configuración de región para distribución geográfica",
+        "name": {
+          "label": "Nombre de la Región",
+          "description": "Nombre de la región geográfica"
+        },
+        "code": {
+          "label": "Código de Región",
+          "description": "Código corto para la región"
+        }
+      },
+      "TEAM": {
+        "description": "Configuración del equipo para estructura organizacional",
+        "name": {
+          "label": "Nombre del Equipo",
+          "description": "Nombre del equipo"
+        },
+        "description": {
+          "label": "Descripción del Equipo",
+          "description": "Descripción del propósito y responsabilidades del equipo"
+        }
+      },
+      "USER": {
+        "description": "Configuración del usuario para ajustes personales",
+        "SSH_PRIVATE_KEY": {
+          "label": "Clave Privada SSH",
+          "description": "Clave privada SSH codificada en Base64 para operaciones del usuario"
+        },
+        "SSH_PUBLIC_KEY": {
+          "label": "Clave Pública SSH",
+          "description": "Clave pública SSH para operaciones del usuario"
+        }
+      },
+      "COMPANY": {
+        "description": "Configuración de la empresa para ajustes de toda la organización",
+        "UNIVERSAL_USER_ID": {
+          "label": "ID de Usuario Universal",
+          "description": "ID de usuario universal para operaciones del sistema"
+        },
+        "UNIVERSAL_USER_NAME": {
+          "label": "Nombre de Usuario Universal",
+          "description": "Nombre de usuario universal para operaciones del sistema"
+        },
+        "DOCKER_JSON_CONF": {
+          "label": "Configuración de Docker",
+          "description": "Configuración de autenticación del registro de Docker"
+        },
+        "SSH_PRIVATE_KEY": {
+          "label": "Clave Privada SSH",
+          "description": "Clave privada SSH codificada en Base64 para operaciones de la empresa"
+        },
+        "SSH_PUBLIC_KEY": {
+          "label": "Clave Pública SSH",
+          "description": "Clave pública SSH para operaciones de la empresa"
+        },
+        "LOG_FILE": {
+          "label": "Ruta del Archivo de Registro",
+          "description": "Ruta al archivo de registro del sistema"
+        }
+      }
+    }
   }
 }

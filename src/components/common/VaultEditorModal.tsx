@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Modal, Button, Space, message, Typography, Tag, Upload } from 'antd'
 import { InfoCircleOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons'
+import { useTranslation } from 'react-i18next'
 import VaultEditor from './VaultEditor'
 
 const { Text } = Typography
@@ -26,6 +27,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
   initialVersion = 1,
   loading = false,
 }) => {
+  const { t } = useTranslation('common')
   const [vaultData, setVaultData] = useState<Record<string, any>>({})
   const [vaultVersion, setVaultVersion] = useState(initialVersion)
   const [isValid, setIsValid] = useState(true)
@@ -56,12 +58,12 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
 
   const handleSave = async () => {
     if (!isValid) {
-      message.error('Please fix validation errors before saving')
+      message.error(t('vaultEditor.pleaseFixErrors'))
       return
     }
 
     if (!hasChanges) {
-      message.info('No changes to save')
+      message.info(t('vaultEditor.noChangesToSave'))
       return
     }
 
@@ -93,11 +95,11 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
           alignItems: 'center'
         }}>
           <Space>
-            <Text strong>Vault Version:</Text>
+            <Text strong>{t('vaultEditor.vaultVersion')}</Text>
             <Tag color="processing" style={{ margin: 0 }}>{vaultVersion}</Tag>
           </Space>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            Version will auto-increment on save
+            {t('vaultEditor.versionAutoIncrement')}
           </Text>
         </div>
 
@@ -124,7 +126,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
                 return false
               }}
             >
-              <Button icon={<UploadOutlined />}>Import JSON</Button>
+              <Button icon={<UploadOutlined />}>{t('vaultEditor.importJson')}</Button>
             </Upload>
             <Button 
               icon={<DownloadOutlined />} 
@@ -134,7 +136,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
                 }
               }}
             >
-              Export JSON
+              {t('vaultEditor.exportJson')}
             </Button>
           </Space>
           
@@ -142,14 +144,14 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
             {hasChanges && (
               <Space>
                 <span style={{ color: '#faad14' }}>
-                  <InfoCircleOutlined /> Unsaved changes
+                  <InfoCircleOutlined /> {t('vaultEditor.unsavedChanges')}
                 </span>
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  • Version will increment to {vaultVersion + 1}
+                  • {t('vaultEditor.versionWillIncrement', { version: vaultVersion + 1 })}
                 </Text>
               </Space>
             )}
-            <Button onClick={onCancel}>Cancel</Button>
+            <Button onClick={onCancel}>{t('actions.cancel')}</Button>
             <Button
               type="primary"
               onClick={handleSave}
@@ -157,7 +159,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
               disabled={!isValid || !hasChanges}
               style={{ background: '#556b2f', borderColor: '#556b2f' }}
             >
-              Save Vault Configuration
+              {t('vaultEditor.saveVaultConfiguration')}
             </Button>
           </Space>
         </div>
@@ -165,7 +167,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
 
       {validationErrors.length > 0 && (
         <div style={{ marginTop: 16, color: '#ff4d4f' }}>
-          <strong>Validation Errors:</strong>
+          <strong>{t('vaultEditor.validationErrors')}</strong>
           <ul style={{ marginTop: 8 }}>
             {validationErrors.map((error, index) => (
               <li key={index}>{error}</li>
