@@ -280,7 +280,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     
     // Get translated field label and description
     const fieldLabel = t(`vaultEditor.fields.${entityType}.${fieldName}.label`, { defaultValue: fieldName })
-    const fieldDescription = t(`vaultEditor.fields.${entityType}.${fieldName}.description`, { defaultValue: field.description })
+    const fieldDescription = t(`vaultEditor.fields.${entityType}.${fieldName}.description`)
     
     const rules: any[] = []
     
@@ -566,7 +566,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   return (
     <div>
       <Alert
-        message={t(`vaultEditor.fields.${entityType}.description`) || entityDef.description}
+        message={t(entityDef.descriptionKey)}
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
