@@ -86,14 +86,15 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
       style={{ top: 20 }}
     >
       <Space direction="vertical" style={{ width: '100%' }} size={16}>
-        <div style={{ 
-          background: '#f5f5f5', 
-          padding: '12px 16px', 
-          borderRadius: 8,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
+        <div 
+          className="bg-tertiary"
+          style={{ 
+            padding: '12px 16px', 
+            borderRadius: 8,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
           <Space>
             <Text strong>{t('vaultEditor.vaultVersion')}</Text>
             <Tag color="processing" style={{ margin: 0 }}>{vaultVersion}</Tag>
