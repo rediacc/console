@@ -29,31 +29,21 @@ export const useSchedules = (teamFilter?: string | string[]) => {
     queryFn: async () => {
       if (!teamFilter || (Array.isArray(teamFilter) && teamFilter.length === 0)) return []
       
-      // If teamFilter is an array of teams, fetch schedules from all selected teams
+      // Build params based on teamFilter
+      let params = {}
+      
       if (Array.isArray(teamFilter)) {
-        // Make sequential API calls for each team (required for token chaining)
-        const allSchedules: Schedule[] = []
-        
-        for (const teamName of teamFilter) {
-          const response = await apiClient.get<any>('/GetTeamSchedules', { teamName })
-          const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
-          if (Array.isArray(data)) {
-            allSchedules.push(...data.filter((schedule: any) => schedule && schedule.scheduleName))
-          }
-        }
-        
-        // Remove duplicates based on scheduleName
-        const uniqueSchedules = Array.from(
-          new Map(allSchedules.map(s => [s.scheduleName, s])).values()
-        )
-        return uniqueSchedules
+        // Send comma-separated teams in a single request
+        params = { teamName: teamFilter.join(',') }
       } else {
         // Single team
-        const response = await apiClient.get<any>('/GetTeamSchedules', { teamName: teamFilter })
-        const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
-        if (!Array.isArray(data)) return []
-        return data.filter((schedule: any) => schedule && schedule.scheduleName)
+        params = { teamName: teamFilter }
       }
+      
+      const response = await apiClient.get<any>('/GetTeamSchedules', params)
+      const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
+      if (!Array.isArray(data)) return []
+      return data.filter((schedule: any) => schedule && schedule.scheduleName)
     },
     enabled: !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0),
   })

@@ -15,43 +15,27 @@ export const useRepositories = (teamFilter?: string | string[]) => {
     queryFn: async () => {
       if (!teamFilter || (Array.isArray(teamFilter) && teamFilter.length === 0)) return []
       
-      // If teamFilter is an array of teams, fetch repositories from all selected teams
+      // Build params based on teamFilter
+      let params = {}
+      
       if (Array.isArray(teamFilter)) {
-        // Make sequential API calls for each team (required for token chaining)
-        const allRepositories: Repository[] = []
-        
-        for (const teamName of teamFilter) {
-          const response = await apiClient.get<any>('/GetTeamRepositories', { teamName })
-          const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
-          const repositories = Array.isArray(data) ? data : []
-          const mappedRepos = repositories
-            .filter((repo: any) => repo && repo.repoName)
-            .map((repo: any) => ({
-              repositoryName: repo.repoName,
-              teamName: repo.teamName,
-              vaultVersion: repo.vaultVersion || 1,
-            }))
-          allRepositories.push(...mappedRepos)
-        }
-        
-        // Remove duplicates based on repositoryName
-        const uniqueRepositories = Array.from(
-          new Map(allRepositories.map(r => [r.repositoryName, r])).values()
-        )
-        return uniqueRepositories
+        // Send comma-separated teams in a single request
+        params = { teamName: teamFilter.join(',') }
       } else {
         // Single team
-        const response = await apiClient.get<any>('/GetTeamRepositories', { teamName: teamFilter })
-        const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
-        const repositories = Array.isArray(data) ? data : []
-        return repositories
-          .filter((repo: any) => repo && repo.repoName)
-          .map((repo: any) => ({
-            repositoryName: repo.repoName,
-            teamName: repo.teamName,
-            vaultVersion: repo.vaultVersion || 1,
-          }))
+        params = { teamName: teamFilter }
       }
+      
+      const response = await apiClient.get<any>('/GetTeamRepositories', params)
+      const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
+      const repositories = Array.isArray(data) ? data : []
+      return repositories
+        .filter((repo: any) => repo && repo.repoName)
+        .map((repo: any) => ({
+          repositoryName: repo.repoName,
+          teamName: repo.teamName,
+          vaultVersion: repo.vaultVersion || 1,
+        }))
     },
     enabled: !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0),
   })

@@ -8,32 +8,22 @@ export const useMachines = (teamFilter?: string | string[]) => {
   return useQuery<Machine[]>({
     queryKey: ['machines', teamFilter],
     queryFn: async () => {
-      // If teamFilter is an array of teams, fetch machines from all selected teams
+      // Build params based on teamFilter
+      let params = {}
+      
       if (Array.isArray(teamFilter) && teamFilter.length > 0) {
-        // Make sequential API calls for each team (required for token chaining)
-        const allMachines: Machine[] = []
-        
-        for (const teamName of teamFilter) {
-          const response = await apiClient.get<Machine[]>('/GetTeamMachines', { teamName })
-          const machines = response.tables?.[1]?.data || response.tables?.[0]?.data || []
-          if (Array.isArray(machines)) {
-            allMachines.push(...machines.filter(machine => machine && machine.machineName))
-          }
-        }
-        
-        // Remove duplicates based on machineName
-        const uniqueMachines = Array.from(
-          new Map(allMachines.map(m => [m.machineName, m])).values()
-        )
-        return uniqueMachines
-      } else {
-        // Single team or all machines
-        const params = teamFilter && !Array.isArray(teamFilter) ? { teamName: teamFilter } : {}
-        const response = await apiClient.get<Machine[]>('/GetTeamMachines', params)
-        const machines = response.tables?.[1]?.data || response.tables?.[0]?.data || []
-        if (!Array.isArray(machines)) return []
-        return machines.filter(machine => machine && machine.machineName)
+        // Send comma-separated teams in a single request
+        params = { teamName: teamFilter.join(',') }
+      } else if (teamFilter && !Array.isArray(teamFilter)) {
+        // Single team
+        params = { teamName: teamFilter }
       }
+      // If no teamFilter, params remains empty (get all machines)
+      
+      const response = await apiClient.get<Machine[]>('/GetTeamMachines', params)
+      const machines = response.tables?.[1]?.data || response.tables?.[0]?.data || []
+      if (!Array.isArray(machines)) return []
+      return machines.filter(machine => machine && machine.machineName)
     },
   })
 }

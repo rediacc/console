@@ -15,31 +15,21 @@ export const useStorage = (teamFilter?: string | string[]) => {
     queryFn: async () => {
       if (!teamFilter || (Array.isArray(teamFilter) && teamFilter.length === 0)) return []
       
-      // If teamFilter is an array of teams, fetch storage from all selected teams
+      // Build params based on teamFilter
+      let params = {}
+      
       if (Array.isArray(teamFilter)) {
-        // Make sequential API calls for each team (required for token chaining)
-        const allStorage: Storage[] = []
-        
-        for (const teamName of teamFilter) {
-          const response = await apiClient.get<any>('/GetTeamStorages', { teamName })
-          const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
-          if (Array.isArray(data)) {
-            allStorage.push(...data.filter((storage: any) => storage && storage.storageName))
-          }
-        }
-        
-        // Remove duplicates based on storageName
-        const uniqueStorage = Array.from(
-          new Map(allStorage.map(s => [s.storageName, s])).values()
-        )
-        return uniqueStorage
+        // Send comma-separated teams in a single request
+        params = { teamName: teamFilter.join(',') }
       } else {
         // Single team
-        const response = await apiClient.get<any>('/GetTeamStorages', { teamName: teamFilter })
-        const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
-        if (!Array.isArray(data)) return []
-        return data.filter((storage: any) => storage && storage.storageName)
+        params = { teamName: teamFilter }
       }
+      
+      const response = await apiClient.get<any>('/GetTeamStorages', params)
+      const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
+      if (!Array.isArray(data)) return []
+      return data.filter((storage: any) => storage && storage.storageName)
     },
     enabled: !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0),
   })
