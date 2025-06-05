@@ -730,33 +730,6 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                   }}
                 />
               </div>
-              
-              <Space style={{ marginTop: 16 }}>
-                <Button
-                  size="small"
-                  onClick={() => {
-                    try {
-                      const formatted = JSON.stringify(JSON.parse(rawJsonValue), null, 2)
-                      setRawJsonValue(formatted)
-                      handleRawJsonChange(formatted)
-                    } catch {
-                      // Already showing error
-                    }
-                  }}
-                >
-                  {t('vaultEditor.formatJson')}
-                </Button>
-                <Button
-                  size="small"
-                  danger
-                  onClick={() => {
-                    const currentData = { ...form.getFieldsValue(), ...extraFields }
-                    updateRawJson(currentData)
-                  }}
-                >
-                  {t('vaultEditor.resetToFormValues')}
-                </Button>
-              </Space>
             </Collapse.Panel>
           )}
         </Collapse>
