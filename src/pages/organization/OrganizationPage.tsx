@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Card, Tabs, Button, Space, Modal, Popconfirm, Tag, Typography, Form, Input, Table, Row, Col, Empty, Badge, Alert } from 'antd'
+import { Card, Tabs, Button, Space, Modal, Popconfirm, Tag, Typography, Form, Input, Table, Row, Col, Empty, Badge, Alert, Spin } from 'antd'
 import { 
   TeamOutlined, 
   PlusOutlined, 
@@ -184,16 +184,18 @@ const OrganizationPage: React.FC = () => {
   const deleteTeamMutation = useDeleteTeam()
   const updateTeamVaultMutation = useUpdateTeamVault()
 
-  // Region hooks
-  const { data: regions, isLoading: regionsLoading } = useRegions()
+  // Region hooks - only fetch when regions tab is active
+  const { data: regions, isLoading: regionsLoading } = useRegions(activeTab === 'regions')
   const regionsList: Region[] = regions || []
   const createRegionMutation = useCreateRegion()
   const updateRegionNameMutation = useUpdateRegionName()
   const deleteRegionMutation = useDeleteRegion()
   const updateRegionVaultMutation = useUpdateRegionVault()
 
-  // Bridge hooks
-  const { data: bridges, isLoading: bridgesLoading } = useBridges(selectedRegion || undefined)
+  // Bridge hooks - only fetch when regions tab is active and a region is selected
+  const { data: bridges, isLoading: bridgesLoading } = useBridges(
+    activeTab === 'regions' && selectedRegion ? selectedRegion : undefined
+  )
   const bridgesList: Bridge[] = bridges || []
   const createBridgeMutation = useCreateBridge()
   const updateBridgeNameMutation = useUpdateBridgeName()
@@ -201,22 +203,28 @@ const OrganizationPage: React.FC = () => {
   const updateBridgeVaultMutation = useUpdateBridgeVault()
 
 
-  // Repository hooks
-  const { data: repositories = [], isLoading: repositoriesLoading } = useRepositories(selectedTeams.length > 0 ? selectedTeams : undefined)
+  // Repository hooks - only fetch when repository tab is active
+  const { data: repositories = [], isLoading: repositoriesLoading } = useRepositories(
+    selectedTeams.length > 0 && teamResourcesTab === 'repositories' ? selectedTeams : undefined
+  )
   const createRepositoryMutation = useCreateRepository()
   const updateRepositoryNameMutation = useUpdateRepositoryName()
   const deleteRepositoryMutation = useDeleteRepository()
   const updateRepositoryVaultMutation = useUpdateRepositoryVault()
 
-  // Storage hooks
-  const { data: storages = [], isLoading: storagesLoading } = useStorage(selectedTeams.length > 0 ? selectedTeams : undefined)
+  // Storage hooks - only fetch when storage tab is active
+  const { data: storages = [], isLoading: storagesLoading } = useStorage(
+    selectedTeams.length > 0 && teamResourcesTab === 'storage' ? selectedTeams : undefined
+  )
   const createStorageMutation = useCreateStorage()
   const updateStorageNameMutation = useUpdateStorageName()
   const deleteStorageMutation = useDeleteStorage()
   const updateStorageVaultMutation = useUpdateStorageVault()
 
-  // Schedule hooks
-  const { data: schedules = [], isLoading: schedulesLoading } = useSchedules(selectedTeams.length > 0 ? selectedTeams : undefined)
+  // Schedule hooks - only fetch when schedules tab is active
+  const { data: schedules = [], isLoading: schedulesLoading } = useSchedules(
+    selectedTeams.length > 0 && teamResourcesTab === 'schedules' ? selectedTeams : undefined
+  )
   const createScheduleMutation = useCreateSchedule()
   const updateScheduleNameMutation = useUpdateScheduleName()
   const deleteScheduleMutation = useDeleteSchedule()
@@ -1199,6 +1207,7 @@ const OrganizationPage: React.FC = () => {
           showActions={true}
           showCreateModal={isCreateMachineModalOpen}
           onCreateModalChange={setIsCreateMachineModalOpen}
+          enabled={teamResourcesTab === 'machines'}
         />
       ),
     },
@@ -1210,12 +1219,15 @@ const OrganizationPage: React.FC = () => {
           {t('resourceTabs.repositories')}
         </span>
       ),
-      children: (
+      children: repositoriesLoading ? (
+        <div style={{ textAlign: 'center', padding: '100px 0' }}>
+          <Spin size="large" tip={t('common:general.loading')} />
+        </div>
+      ) : (
         <Table
           columns={repositoryColumns}
           dataSource={repositories}
           rowKey="repositoryName"
-          loading={repositoriesLoading}
           scroll={{ x: 'max-content' }}
           pagination={{
             total: repositories?.length || 0,
@@ -1237,12 +1249,15 @@ const OrganizationPage: React.FC = () => {
           {t('resourceTabs.storage')}
         </span>
       ),
-      children: (
+      children: storagesLoading ? (
+        <div style={{ textAlign: 'center', padding: '100px 0' }}>
+          <Spin size="large" tip={t('common:general.loading')} />
+        </div>
+      ) : (
         <Table
           columns={storageColumns}
           dataSource={storages}
           rowKey="storageName"
-          loading={storagesLoading}
           scroll={{ x: 'max-content' }}
           pagination={{
             total: storages?.length || 0,
@@ -1264,12 +1279,15 @@ const OrganizationPage: React.FC = () => {
           {t('resourceTabs.schedules')}
         </span>
       ),
-      children: (
+      children: schedulesLoading ? (
+        <div style={{ textAlign: 'center', padding: '100px 0' }}>
+          <Spin size="large" tip={t('common:general.loading')} />
+        </div>
+      ) : (
         <Table
           columns={scheduleColumns}
           dataSource={schedules}
           rowKey="scheduleName"
-          loading={schedulesLoading}
           scroll={{ x: 'max-content' }}
           pagination={{
             total: schedules?.length || 0,
@@ -1504,12 +1522,15 @@ const OrganizationPage: React.FC = () => {
                   description={t('regions.selectRegionPrompt')}
                   style={{ padding: '40px 0' }}
                 />
+              ) : bridgesLoading ? (
+                <div style={{ textAlign: 'center', padding: '100px 0' }}>
+                  <Spin size="large" tip={t('common:general.loading')} />
+                </div>
               ) : (
                 <Table
                   columns={bridgeColumns}
                   dataSource={bridgesList}
                   rowKey="bridgeName"
-                  loading={bridgesLoading}
                   pagination={{
                     total: bridgesList.length || 0,
                     pageSize: 10,

@@ -15,7 +15,7 @@ export interface Bridge {
 }
 
 // Get all regions
-export const useRegions = () => {
+export const useRegions = (enabled: boolean = true) => {
   return useQuery<Region[]>({
     queryKey: ['regions'],
     queryFn: async () => {
@@ -25,6 +25,7 @@ export const useRegions = () => {
       // Filter out any empty or invalid region objects
       return data.filter(region => region && region.regionName)
     },
+    enabled,
   })
 }
 

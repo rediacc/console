@@ -49,6 +49,7 @@ interface MachineTableProps {
   className?: string;
   showCreateModal?: boolean;
   onCreateModalChange?: (show: boolean) => void;
+  enabled?: boolean;
 }
 
 export const MachineTable: React.FC<MachineTableProps> = ({
@@ -58,6 +59,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   className = '',
   showCreateModal: externalShowCreateModal,
   onCreateModalChange,
+  enabled = true,
 }) => {
   const { t } = useTranslation(['machines', 'common']);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
@@ -86,7 +88,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
 
   // Queries and mutations
-  const { data: machines = [], isLoading } = useMachines(teamFilter);
+  const { data: machines = [], isLoading } = useMachines(teamFilter, enabled);
   const { data: dropdownData } = useDropdownData();
   const deleteMachine = useDeleteMachine();
   const createMachineMutation = useCreateMachine();

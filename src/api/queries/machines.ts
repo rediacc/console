@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 import type { Machine } from '@/types'
 
 // Get machines for a team, multiple teams, or all machines
-export const useMachines = (teamFilter?: string | string[]) => {
+export const useMachines = (teamFilter?: string | string[], enabled: boolean = true) => {
   return useQuery<Machine[]>({
     queryKey: ['machines', teamFilter],
     queryFn: async () => {
@@ -25,6 +25,7 @@ export const useMachines = (teamFilter?: string | string[]) => {
       if (!Array.isArray(machines)) return []
       return machines.filter(machine => machine && machine.machineName)
     },
+    enabled,
   })
 }
 
