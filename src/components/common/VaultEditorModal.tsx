@@ -30,7 +30,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
   const { t } = useTranslation('common')
   const [vaultData, setVaultData] = useState<Record<string, any>>({})
   const [vaultVersion, setVaultVersion] = useState(initialVersion)
-  const [isValid, setIsValid] = useState(true)
+  const [isValid, setIsValid] = useState(true) // Start with true to avoid blocking
   const [hasChanges, setHasChanges] = useState(false)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   const importExportHandlers = useRef<{ handleImport: (file: any) => boolean; handleExport: () => void } | null>(null)
@@ -44,6 +44,8 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
     }
     setVaultVersion(initialVersion)
     setHasChanges(false)
+    // Don't reset isValid to avoid blocking
+    setValidationErrors([])
   }, [initialVault, initialVersion])
 
   const handleVaultChange = (data: Record<string, any>, changed: boolean) => {

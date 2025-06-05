@@ -134,6 +134,18 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       
       // Initialize raw JSON
       updateRawJson({ ...formData, ...extraFields })
+      
+      // Validate initial data
+      setTimeout(() => {
+        form.validateFields()
+          .then(() => onValidate?.(true))
+          .catch((errorInfo) => {
+            const errors = errorInfo.errorFields?.map((field: any) => 
+              `${field.name.join('.')}: ${field.errors.join(', ')}`
+            )
+            onValidate?.(false, errors)
+          })
+      }, 0)
     }
   }, [form, entityDef, importedData])
 
@@ -178,9 +190,10 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     // Check if there are any changes
     const hasChanges = JSON.stringify(completeData) !== JSON.stringify(initialData)
     
+    // Always call onChange first to update hasChanges state
     onChange?.(completeData, hasChanges)
 
-    // Validate
+    // Then validate
     form
       .validateFields()
       .then(() => {
@@ -222,7 +235,14 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       onChange?.(parsed, hasChanges)
       
       // Validate
-      form.validateFields().catch(() => {})
+      form.validateFields()
+        .then(() => onValidate?.(true))
+        .catch((errorInfo) => {
+          const errors = errorInfo.errorFields?.map((field: any) => 
+            `${field.name.join('.')}: ${field.errors.join(', ')}`
+          )
+          onValidate?.(false, errors)
+        })
     } catch (error) {
       setRawJsonError(t('vaultEditor.invalidJsonFormat'))
     }
