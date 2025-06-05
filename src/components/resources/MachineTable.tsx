@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Table,
   Input,
@@ -29,7 +28,6 @@ import {
   AppstoreOutlined,
   TableOutlined,
   FilterOutlined,
-  ExternalLinkOutlined,
 } from '@ant-design/icons';
 import { useMachines, useDeleteMachine, useCreateMachine, useUpdateMachineName, useUpdateMachineBridge, useUpdateMachineVault } from '@/api/queries/machines';
 import { useDropdownData } from '@/api/queries/useDropdownData';
@@ -45,29 +43,23 @@ import { createMachineSchema, CreateMachineForm, editMachineSchema, EditMachineF
 const { Option } = Select;
 
 interface MachineTableProps {
-  mode: 'full' | 'embedded' | 'readonly';
   teamFilter?: string | string[];
   showFilters?: boolean;
   showActions?: boolean;
-  onNavigateToFull?: () => void;
   className?: string;
   showCreateModal?: boolean;
   onCreateModalChange?: (show: boolean) => void;
 }
 
 export const MachineTable: React.FC<MachineTableProps> = ({
-  mode = 'full',
   teamFilter,
   showFilters = true,
   showActions = true,
-  onNavigateToFull,
   className = '',
   showCreateModal: externalShowCreateModal,
   onCreateModalChange,
 }) => {
   const { t } = useTranslation(['machines', 'common']);
-  const navigate = useNavigate();
-  const location = useLocation();
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
   const isExpertMode = uiMode === 'expert';
 
@@ -92,24 +84,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     }
   };
 
-  // Handle navigation state in full mode
-  useEffect(() => {
-    if (mode === 'full' && location.state) {
-      const { openCreateModal, preselectedTeam } = location.state as { 
-        openCreateModal?: boolean; 
-        preselectedTeam?: string;
-      };
-      
-      if (openCreateModal) {
-        if (preselectedTeam) {
-          setSelectedTeam(preselectedTeam);
-        }
-        setShowCreateModal(true);
-        // Clear the state to prevent reopening on page refresh
-        window.history.replaceState({}, document.title);
-      }
-    }
-  }, [location.state, mode]);
 
   // Queries and mutations
   const { data: machines = [], isLoading } = useMachines(teamFilter);
@@ -267,17 +241,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     });
   }, [deleteMachine, t]);
 
-  const handleNavigateToFull = useCallback(() => {
-    if (onNavigateToFull) {
-      onNavigateToFull();
-    } else {
-      navigate('/machines', { 
-        state: { 
-          preselectedTeam: teamFilter,
-        } 
-      });
-    }
-  }, [navigate, teamFilter, onNavigateToFull]);
 
   // Handle create machine
   const handleCreateMachine = async (data: CreateMachineForm) => {
@@ -393,52 +356,25 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
     // Add team/bridge/region columns in expert mode
     if (isExpertMode) {
-      if (mode === 'full') {
-        // Show all columns in full mode
-        baseColumns.push(
-          {
-            title: t('machines:team'),
-            dataIndex: 'teamName',
-            key: 'teamName',
-            render: (teamName: string) => <Tag color="blue">{teamName}</Tag>,
-            sorter: (a: Machine, b: Machine) => a.teamName.localeCompare(b.teamName),
-          },
-          {
-            title: t('machines:region'),
-            dataIndex: 'regionName',
-            key: 'regionName',
-            render: (regionName: string) => regionName ? <Tag color="purple">{regionName}</Tag> : '-',
-            sorter: (a: Machine, b: Machine) => (a.regionName || '').localeCompare(b.regionName || ''),
-          },
-          {
-            title: t('machines:bridge'),
-            dataIndex: 'bridgeName',
-            key: 'bridgeName',
-            render: (bridgeName: string) => <Tag color="green">{bridgeName}</Tag>,
-            sorter: (a: Machine, b: Machine) => a.bridgeName.localeCompare(b.bridgeName),
-          }
-        );
-      } else if (mode === 'embedded') {
-        // Show region and bridge in embedded mode (team is already filtered)
-        baseColumns.push(
-          {
-            title: t('machines:region'),
-            dataIndex: 'regionName',
-            key: 'regionName',
-            render: (regionName: string) => regionName ? <Tag color="purple">{regionName}</Tag> : '-',
-            sorter: (a: Machine, b: Machine) => (a.regionName || '').localeCompare(b.regionName || ''),
-          },
-          {
-            title: t('machines:bridge'),
-            dataIndex: 'bridgeName',
-            key: 'bridgeName',
-            render: (bridgeName: string) => <Tag color="green">{bridgeName}</Tag>,
-            sorter: (a: Machine, b: Machine) => a.bridgeName.localeCompare(b.bridgeName),
-          }
-        );
-      }
-    } else if (mode === 'embedded' && uiMode !== 'simple') {
-      // Show only bridge in embedded mode for non-expert UI
+      // Show region and bridge columns (team is already filtered in embedded mode)
+      baseColumns.push(
+        {
+          title: t('machines:region'),
+          dataIndex: 'regionName',
+          key: 'regionName',
+          render: (regionName: string) => regionName ? <Tag color="purple">{regionName}</Tag> : '-',
+          sorter: (a: Machine, b: Machine) => (a.regionName || '').localeCompare(b.regionName || ''),
+        },
+        {
+          title: t('machines:bridge'),
+          dataIndex: 'bridgeName',
+          key: 'bridgeName',
+          render: (bridgeName: string) => <Tag color="green">{bridgeName}</Tag>,
+          sorter: (a: Machine, b: Machine) => a.bridgeName.localeCompare(b.bridgeName),
+        }
+      );
+    } else if (uiMode !== 'simple') {
+      // Show only bridge in non-expert UI
       baseColumns.push({
         title: t('bridges.bridge'),
         dataIndex: 'bridgeName',
@@ -472,7 +408,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     }
 
     // Actions column
-    if (showActions && mode !== 'readonly') {
+    if (showActions) {
       baseColumns.push({
         title: t('common:table.actions'),
         key: 'actions',
@@ -527,11 +463,11 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     }
 
     return baseColumns;
-  }, [mode, isExpertMode, uiMode, showActions, t, handleDelete]);
+  }, [isExpertMode, uiMode, showActions, t, handleDelete]);
 
   // Render filters section
   const renderFilters = () => {
-    if (!showFilters || mode === 'readonly') return null;
+    if (!showFilters) return null;
 
     return (
       <div style={{ marginBottom: 16 }}>
@@ -544,7 +480,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             prefix={<SearchOutlined />}
           />
           
-          {(mode === 'full' || (mode === 'embedded' && isExpertMode)) && (
+          {isExpertMode && (
             <>
               <Select
                 style={{ width: 200 }}
@@ -575,23 +511,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                   </Option>
                 ))}
               </Select>
-
-              {mode === 'full' && (
-                <Select
-                  style={{ width: 200 }}
-                  placeholder={t('machines:filterByTeam')}
-                  allowClear
-                  value={selectedTeam}
-                  onChange={setSelectedTeam}
-                  suffixIcon={<FilterOutlined />}
-                >
-                  {teams.map((team) => (
-                    <Option key={team.value} value={team.value}>
-                      {team.label}
-                    </Option>
-                  ))}
-                </Select>
-              )}
             </>
           )}
 
@@ -603,7 +522,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   // Render view mode toggle
   const renderViewToggle = () => {
     if (!isExpertMode) return null;
-    if (mode === 'readonly') return null;
 
     return (
       <div style={{ marginBottom: 16 }}>

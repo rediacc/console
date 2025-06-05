@@ -1182,7 +1182,6 @@ const OrganizationPage: React.FC = () => {
       ),
       children: (
         <MachineTable 
-          mode="embedded"
           teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
           showFilters={true}
           showActions={true}
