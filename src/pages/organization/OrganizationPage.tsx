@@ -642,24 +642,48 @@ const OrganizationPage: React.FC = () => {
       dataIndex: 'machineCount',
       key: 'machineCount',
       width: 100,
+      render: (count: number) => (
+        <Space>
+          <DesktopOutlined />
+          {count}
+        </Space>
+      ),
     },
     {
       title: t('teams.repositories'),
       dataIndex: 'repoCount',
       key: 'repoCount',
       width: 120,
+      render: (count: number) => (
+        <Space>
+          <InboxOutlined />
+          {count}
+        </Space>
+      ),
     },
     {
       title: t('teams.storage'),
       dataIndex: 'storageCount',
       key: 'storageCount',
       width: 100,
+      render: (count: number) => (
+        <Space>
+          <CloudOutlined />
+          {count}
+        </Space>
+      ),
     },
     {
       title: t('teams.schedules'),
       dataIndex: 'scheduleCount',
       key: 'scheduleCount',
       width: 100,
+      render: (count: number) => (
+        <Space>
+          <ScheduleOutlined />
+          {count}
+        </Space>
+      ),
     },
     ...(uiMode === 'expert' ? [{
       title: t('general.vaultVersion'),

@@ -17,6 +17,7 @@
   "groupByRegion": "Region",
   "clearFilters": "Clear Filters",
   "searchMachineName": "Search machine name",
+  "searchPlaceholder": "Search machines...",
   "viewMode": "View Mode",
   "tableView": "Table",
   "gridView": "Grid",

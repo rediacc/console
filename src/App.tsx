@@ -6,6 +6,7 @@ import { selectIsAuthenticated } from '@/store/auth/authSelectors'
 import { loginSuccess } from '@/store/auth/authSlice'
 import { getAuthData, migrateFromLocalStorage } from '@/utils/auth'
 import { ThemeProvider, useTheme } from '@/context/ThemeContext'
+import { ThemedToaster } from '@/components/common/ThemedToaster'
 import AuthLayout from '@/components/layouts/AuthLayout'
 import MainLayout from '@/components/layouts/MainLayout'
 import LoginPage from '@/pages/LoginPage'
@@ -84,6 +85,7 @@ const AppContent: React.FC = () => {
             </Route>
           </Routes>
         </BrowserRouter>
+        <ThemedToaster />
       </ConfigProvider>
   )
 }

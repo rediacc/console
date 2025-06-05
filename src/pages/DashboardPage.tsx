@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Col, Row, Progress, Alert, Badge, Tag, Space, Typography, Statistic, Spin, Empty, Divider, Tooltip } from 'antd';
+import { Card, Col, Row, Progress, Alert, Badge, Tag, Space, Typography, Statistic, Spin, Empty, Divider, Tooltip, theme } from 'antd';
 import { 
   AlertOutlined, 
   CheckCircleOutlined, 
@@ -22,6 +22,7 @@ import {
 import { useDashboard } from '../api/queries/dashboard';
 import { fetchPricingConfig, getPlanPrice, PricingConfig } from '../api/pricingService';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '@/context/ThemeContext';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -41,6 +42,8 @@ const DashboardPage = () => {
   const [pricing, setPricing] = useState<PricingConfig | null>(null);
   const [pricingLoading, setPricingLoading] = useState(true);
   const { t } = useTranslation('common');
+  const { theme: currentTheme } = useTheme();
+  const { token } = theme.useToken();
 
   // Fetch pricing configuration
   useEffect(() => {
@@ -160,20 +163,20 @@ const DashboardPage = () => {
                 <Space direction="vertical" size="small" style={{ width: '100%' }}>
                   <Space>
                     {dashboard.accountHealth.ResourcesAtLimit > 0 ? (
-                      <ExclamationCircleOutlined style={{ color: '#666666' }} />
+                      <ExclamationCircleOutlined style={{ color: token.colorWarning }} />
                     ) : (
-                      <CheckCircleOutlined style={{ color: '#333333' }} />
+                      <CheckCircleOutlined style={{ color: token.colorSuccess }} />
                     )}
                     <Text>{dashboard.accountHealth.ResourcesAtLimit} resources at limit</Text>
                   </Space>
                   
                   <Space>
-                    <ClockCircleOutlined style={{ color: '#999999' }} />
+                    <ClockCircleOutlined style={{ color: token.colorTextSecondary }} />
                     <Text>{dashboard.accountHealth.ResourcesNearLimit} resources near limit</Text>
                   </Space>
                 </Space>
 
-                <div style={{ paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
+                <div style={{ paddingTop: 12, borderTop: `1px solid ${token.colorBorder}` }}>
                   <Text strong>{dashboard.accountHealth.UpgradeRecommendation}</Text>
                 </div>
               </Space>
@@ -234,7 +237,7 @@ const DashboardPage = () => {
                   <Progress 
                     percent={resource.ResourceLimit === 0 ? 0 : resource.UsagePercentage} 
                     status={getProgressStatus(resource.UsagePercentage)}
-                    strokeColor={resource.IsLimitReached === 1 ? '#666666' : '#333333'}
+                    strokeColor={resource.IsLimitReached === 1 ? token.colorError : token.colorPrimary}
                   />
                   {resource.IsLimitReached === 1 && (
                     <Text type="danger" style={{ fontSize: 12 }}>Limit reached</Text>
@@ -274,14 +277,14 @@ const DashboardPage = () => {
                         <Statistic
                           title="Active Licenses"
                           value={dashboard.activeSubscription.TotalActivePurchases}
-                          valueStyle={{ color: '#333333' }}
+                          valueStyle={{ color: token.colorText }}
                         />
                       </Col>
                       <Col span={12}>
                         <Statistic
                           title="Days Remaining"
                           value={dashboard.activeSubscription.DaysRemaining}
-                          valueStyle={{ color: dashboard.activeSubscription.DaysRemaining <= 30 ? '#ff4d4f' : '#333333' }}
+                          valueStyle={{ color: dashboard.activeSubscription.DaysRemaining <= 30 ? token.colorError : token.colorText }}
                         />
                       </Col>
                     </Row>
@@ -291,9 +294,9 @@ const DashboardPage = () => {
                   {!pricingLoading && pricing && (
                     <div style={{ 
                       padding: '16px', 
-                      backgroundColor: '#fafafa', 
+                      backgroundColor: currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout, 
                       borderRadius: 8,
-                      border: '1px solid #f0f0f0'
+                      border: `1px solid ${token.colorBorder}`
                     }}>
                       <Space direction="vertical" size="small" style={{ width: '100%' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -323,7 +326,7 @@ const DashboardPage = () => {
                           {dashboard.allActiveSubscriptions && dashboard.allActiveSubscriptions.length > 1
                             ? `Total from ${dashboard.allActiveSubscriptions.length} active subscriptions`
                             : dashboard.billingInfo 
-                              ? `Billed ${dashboard.billingInfo.BillingInterval}ly in ${dashboard.billingInfo.Currency.toUpperCase()}`
+                              ? `Billed ${dashboard.billingInfo.BillingInterval}ly • ${dashboard.billingInfo.Currency.toUpperCase()}`
                               : 'Monthly subscription cost'
                           }
                         </Text>
@@ -352,9 +355,9 @@ const DashboardPage = () => {
                       {dashboard.allActiveSubscriptions.map((sub, index) => (
                         <div key={index} style={{ 
                           padding: '12px', 
-                          backgroundColor: '#fafafa', 
+                          backgroundColor: currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout, 
                           borderRadius: 6,
-                          border: '1px solid #f0f0f0'
+                          border: `1px solid ${token.colorBorder}`
                         }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                             <Space>
@@ -363,7 +366,7 @@ const DashboardPage = () => {
                               {sub.isTrial === 1 && <Tag color="blue">Trial</Tag>}
                             </Space>
                             <Text type={sub.daysRemaining <= 30 ? 'danger' : 'secondary'} style={{ fontSize: 12 }}>
-                              {sub.daysRemaining} days left
+                              {sub.daysRemaining} {sub.daysRemaining === 1 ? 'day' : 'days'} remaining
                             </Text>
                           </div>
                           <Tooltip title={`From ${new Date(sub.startDate).toLocaleDateString()} to ${new Date(sub.endDate).toLocaleDateString()}`}>
@@ -391,7 +394,7 @@ const DashboardPage = () => {
                               })()}
                               showInfo={false}
                               size="small"
-                              strokeColor={sub.daysRemaining <= 30 ? '#ff4d4f' : '#333333'}
+                              strokeColor={sub.daysRemaining <= 30 ? token.colorError : token.colorPrimary}
                             />
                           </Tooltip>
                         </div>
@@ -432,9 +435,13 @@ const DashboardPage = () => {
                           key={plan.PlanCode} 
                           style={{ 
                             padding: '12px 16px',
-                            backgroundColor: plan.IsCurrentPlan === 1 ? '#f5f5f5' : '#fafafa',
+                            backgroundColor: plan.IsCurrentPlan === 1 
+                              ? (currentTheme === 'dark' ? token.colorBgElevated : token.colorBgContainer)
+                              : (currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout),
                             borderRadius: 6,
-                            border: plan.IsCurrentPlan === 1 ? '2px solid #333333' : '1px solid #f0f0f0'
+                            border: plan.IsCurrentPlan === 1 
+                              ? `2px solid ${token.colorPrimary}` 
+                              : `1px solid ${token.colorBorder}`
                           }}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

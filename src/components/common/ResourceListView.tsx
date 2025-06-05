@@ -44,6 +44,7 @@ function ResourceListView<T = any>({
               {title}
               {onSearch && (
                 <Search
+                  key={searchPlaceholder}
                   placeholder={searchPlaceholder}
                   onSearch={onSearch}
                   style={{ width: 300 }}

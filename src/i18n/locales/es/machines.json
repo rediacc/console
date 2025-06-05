@@ -17,6 +17,7 @@
   "groupByRegion": "Región",
   "clearFilters": "Limpiar Filtros",
   "searchMachineName": "Buscar nombre de máquina",
+  "searchPlaceholder": "Buscar máquinas...",
   "viewMode": "Modo de Vista",
   "tableView": "Tabla",
   "gridView": "Cuadrícula",

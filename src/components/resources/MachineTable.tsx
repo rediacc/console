@@ -482,6 +482,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       <div style={{ marginBottom: 16 }}>
         <Space wrap size="middle">
           <Input
+            key={t('machines:searchPlaceholder')}
             placeholder={t('machines:searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
