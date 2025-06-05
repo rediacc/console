@@ -31,6 +31,7 @@ export const useTeams = () => {
       // Filter out any empty or invalid team objects
       return teams.filter(team => team && team.teamName)
     },
+    staleTime: 30 * 1000, // 30 seconds
   })
 }
 

@@ -26,6 +26,7 @@ export const useRegions = (enabled: boolean = true) => {
       return data.filter(region => region && region.regionName)
     },
     enabled,
+    staleTime: 30 * 1000, // 30 seconds
   })
 }
 

@@ -22,6 +22,7 @@ export const useBridges = (regionName?: string) => {
       return data.filter(bridge => bridge && bridge.bridgeName)
     },
     enabled: !!regionName,
+    staleTime: 30 * 1000, // 30 seconds
   })
 }
 

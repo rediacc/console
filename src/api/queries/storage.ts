@@ -32,6 +32,7 @@ export const useStorage = (teamFilter?: string | string[]) => {
       return data.filter((storage: any) => storage && storage.storageName)
     },
     enabled: !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0),
+    staleTime: 30 * 1000, // 30 seconds
   })
 }
 

@@ -38,6 +38,7 @@ export const useRepositories = (teamFilter?: string | string[]) => {
         }))
     },
     enabled: !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0),
+    staleTime: 30 * 1000, // 30 seconds
   })
 }
 

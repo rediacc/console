@@ -26,6 +26,7 @@ export const useMachines = (teamFilter?: string | string[], enabled: boolean = t
       return machines.filter(machine => machine && machine.machineName)
     },
     enabled,
+    staleTime: 30 * 1000, // 30 seconds
   })
 }
 

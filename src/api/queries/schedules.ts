@@ -46,6 +46,7 @@ export const useSchedules = (teamFilter?: string | string[]) => {
       return data.filter((schedule: any) => schedule && schedule.scheduleName)
     },
     enabled: !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0),
+    staleTime: 30 * 1000, // 30 seconds
   })
 }
 
