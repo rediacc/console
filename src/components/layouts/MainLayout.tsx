@@ -331,9 +331,13 @@ const MainLayout: React.FC = () => {
                 onClick={handleLogout}
                 style={{
                   width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
                   justifyContent: collapsed ? 'center' : 'flex-start',
+                  gap: collapsed ? 0 : 8,
                   color: '#666',
                   transition: 'all 0.3s ease',
+                  padding: collapsed ? '4px 0' : '4px 12px',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.color = '#556b2f';
@@ -344,7 +348,9 @@ const MainLayout: React.FC = () => {
                   e.currentTarget.style.backgroundColor = 'transparent';
                 }}
               >
-                {!collapsed && t('navigation.logout')}
+                {!collapsed && (
+                  <span style={{ flex: 0 }}>{t('navigation.logout')}</span>
+                )}
               </Button>
             </div>
           </div>
@@ -377,6 +383,20 @@ const MainLayout: React.FC = () => {
               <Text strong style={{ marginLeft: 16 }}>
                 {company}
               </Text>
+            )}
+            {dashboardData?.activeSubscription && (
+              <Badge 
+                count={dashboardData.activeSubscription.PlanName} 
+                style={{ 
+                  backgroundColor: '#556b2f',
+                  fontSize: '12px',
+                  padding: '0 8px',
+                  height: '22px',
+                  lineHeight: '22px',
+                  borderRadius: '11px',
+                  marginLeft: 8
+                }}
+              />
             )}
           </Space>
           <Space size={16} align="center">

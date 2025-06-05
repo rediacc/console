@@ -98,6 +98,13 @@
     "expert": "Expert",
     "switching": "Switching to {{mode}} mode..."
   },
+  "dashboard": {
+    "availablePlans": "Available Plans",
+    "upgradeOptions": "Upgrade Options",
+    "currentPlan": "Current Plan",
+    "comparePlansDescription": "Compare features and pricing across different subscription tiers",
+    "elitePlanDescription": "You're on our highest tier plan with all features unlocked"
+  },
   "vaultEditor": {
     "vaultVersion": "Vault Version:",
     "versionAutoIncrement": "Version will auto-increment on save",

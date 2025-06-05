@@ -21,6 +21,7 @@ import {
 } from '@ant-design/icons';
 import { useDashboard } from '../api/queries/dashboard';
 import { fetchPricingConfig, getPlanPrice, PricingConfig } from '../api/pricingService';
+import { useTranslation } from 'react-i18next';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -39,6 +40,7 @@ const DashboardPage = () => {
   const { data: dashboard, isLoading, error } = useDashboard();
   const [pricing, setPricing] = useState<PricingConfig | null>(null);
   const [pricingLoading, setPricingLoading] = useState(true);
+  const { t } = useTranslation('common');
 
   // Fetch pricing configuration
   useEffect(() => {
@@ -301,55 +303,78 @@ const DashboardPage = () => {
         {/* Available Plans */}
         {dashboard.availablePlans.length > 0 && (
           <Card 
-            title="Available Plans"
-            extra={<Text type="secondary">Compare features and pricing across different subscription tiers</Text>}
+            title={(() => {
+              const currentPlan = dashboard.availablePlans.find(plan => plan.IsCurrentPlan === 1);
+              return currentPlan && currentPlan.PlanCode !== 'ELITE' ? t('dashboard.upgradeOptions') : t('dashboard.currentPlan');
+            })()}
+            extra={(() => {
+              const currentPlan = dashboard.availablePlans.find(plan => plan.IsCurrentPlan === 1);
+              if (currentPlan && currentPlan.PlanCode === 'ELITE') {
+                return <Text type="secondary">{t('dashboard.elitePlanDescription')}</Text>;
+              }
+              return <Text type="secondary">{t('dashboard.comparePlansDescription')}</Text>;
+            })()}
           >
             <Row gutter={[16, 16]}>
-              {dashboard.availablePlans.map((plan) => (
-                <Col key={plan.PlanCode} xs={24} sm={12} md={6}>
-                  <Card
-                    bordered
-                    style={{ 
-                      borderColor: plan.IsCurrentPlan === 1 ? '#333333' : undefined,
-                      backgroundColor: plan.IsCurrentPlan === 1 ? '#f5f5f5' : undefined
-                    }}
-                  >
-                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Title level={4} style={{ margin: 0 }}>{plan.PlanName}</Title>
-                        {plan.IsCurrentPlan === 1 && (
-                          <Badge status="success" text="Current" />
-                        )}
-                      </div>
-                      <Paragraph type="secondary" style={{ marginBottom: 8 }}>
-                        {plan.Description}
-                      </Paragraph>
-                      <div>
-                        {!pricingLoading && pricing ? (
-                          (() => {
-                            const planPrice = getPlanPrice(pricing, plan.PlanCode);
-                            return planPrice !== null ? (
-                              <Statistic
-                                className="price-statistic"
-                                value={planPrice}
-                                precision={0}
-                                prefix={planPrice > 0 ? "$" : ""}
-                                suffix={planPrice > 0 ? "/month" : ""}
-                                formatter={(value) => planPrice === 0 ? "Free" : value}
-                              />
-                            ) : (
-                              <div style={{ height: 32 }} />
-                            );
-                          })()
-                        ) : (
-                          <div style={{ height: 32 }} />
-                        )}
-                        <Text type="secondary">Up to {plan.MaxUsers} users</Text>
-                      </div>
-                    </Space>
-                  </Card>
-                </Col>
-              ))}
+              {(() => {
+                // Define plan hierarchy order
+                const planHierarchy = ['COMMUNITY', 'ADVANCED', 'PREMIUM', 'ELITE'];
+                
+                // Find current plan index
+                const currentPlan = dashboard.availablePlans.find(plan => plan.IsCurrentPlan === 1);
+                const currentPlanIndex = currentPlan ? planHierarchy.indexOf(currentPlan.PlanCode) : -1;
+                
+                // Filter to show only upgrade options (plans higher than current) and current plan
+                const filteredPlans = dashboard.availablePlans.filter(plan => {
+                  const planIndex = planHierarchy.indexOf(plan.PlanCode);
+                  return planIndex >= currentPlanIndex;
+                });
+                
+                return filteredPlans.map((plan) => (
+                  <Col key={plan.PlanCode} xs={24} sm={12} md={6}>
+                    <Card
+                      style={{ 
+                        border: plan.IsCurrentPlan === 1 ? '1px solid #333333' : '1px solid #f0f0f0',
+                        backgroundColor: plan.IsCurrentPlan === 1 ? '#f5f5f5' : undefined
+                      }}
+                    >
+                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Title level={4} style={{ margin: 0 }}>{plan.PlanName}</Title>
+                          {plan.IsCurrentPlan === 1 && (
+                            <Badge status="success" text="Current" />
+                          )}
+                        </div>
+                        <Paragraph type="secondary" style={{ marginBottom: 8 }}>
+                          {plan.Description}
+                        </Paragraph>
+                        <div>
+                          {!pricingLoading && pricing ? (
+                            (() => {
+                              const planPrice = getPlanPrice(pricing, plan.PlanCode);
+                              return planPrice !== null ? (
+                                <Statistic
+                                  className="price-statistic"
+                                  value={planPrice}
+                                  precision={0}
+                                  prefix={planPrice > 0 ? "$" : ""}
+                                  suffix={planPrice > 0 ? "/month" : ""}
+                                  formatter={(value) => planPrice === 0 ? "Free" : value}
+                                />
+                              ) : (
+                                <div style={{ height: 32 }} />
+                              );
+                            })()
+                          ) : (
+                            <div style={{ height: 32 }} />
+                          )}
+                          <Text type="secondary">Up to {plan.MaxUsers} users</Text>
+                        </div>
+                      </Space>
+                    </Card>
+                  </Col>
+                ));
+              })()}
             </Row>
           </Card>
         )}
