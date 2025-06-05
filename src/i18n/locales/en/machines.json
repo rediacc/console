@@ -42,5 +42,19 @@
   },
   "readOnlyNote": "View Only",
   "readOnlyDescription": "This is a read-only view. To edit machines or perform actions, please visit the",
-  "goToMachinesPage": "Machines page"
+  "goToMachinesPage": "Machines page",
+  "systemFunctions": "System Functions",
+  "addSystemFunction": "Add System Function to Queue",
+  "availableFunctions": "Available Functions",
+  "searchFunctions": "Search functions...",
+  "configure": "Configure",
+  "machine": "Machine",
+  "priority": "Priority",
+  "priorityLow": "Low",
+  "priorityNormal": "Normal",
+  "priorityHigh": "High",
+  "description": "Description (optional)",
+  "descriptionPlaceholder": "Add a custom description for this queue item",
+  "selectFunctionToConfigure": "Select a function to configure",
+  "addToQueue": "Add to Queue"
 }

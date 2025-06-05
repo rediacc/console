@@ -42,5 +42,19 @@
   },
   "readOnlyNote": "Solo Vista",
   "readOnlyDescription": "Esta es una vista de solo lectura. Para editar máquinas o realizar acciones, visite la",
-  "goToMachinesPage": "página de Máquinas"
+  "goToMachinesPage": "página de Máquinas",
+  "systemFunctions": "Funciones del Sistema",
+  "addSystemFunction": "Agregar Función del Sistema a la Cola",
+  "availableFunctions": "Funciones Disponibles",
+  "searchFunctions": "Buscar funciones...",
+  "configure": "Configurar",
+  "machine": "Máquina",
+  "priority": "Prioridad",
+  "priorityLow": "Baja",
+  "priorityNormal": "Normal",
+  "priorityHigh": "Alta",
+  "description": "Descripción (opcional)",
+  "descriptionPlaceholder": "Agregar una descripción personalizada para este elemento de cola",
+  "selectFunctionToConfigure": "Seleccione una función para configurar",
+  "addToQueue": "Agregar a la Cola"
 }

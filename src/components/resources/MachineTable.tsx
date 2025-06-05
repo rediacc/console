@@ -16,6 +16,10 @@ import {
   Row,
   Col,
   Segmented,
+  Form,
+  Typography,
+  Slider,
+  Empty,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table/interface';
 import {
@@ -39,8 +43,15 @@ import { RootState } from '@/store/store';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createMachineSchema, CreateMachineForm, editMachineSchema, EditMachineForm } from '@/utils/validation';
+import { QUEUE_FUNCTIONS, type QueueFunction } from '@/api/queries/queue';
+import { useCreateQueueItem } from '@/api/queries/queue';
+import { 
+  FunctionOutlined 
+} from '@ant-design/icons';
 
 const { Option } = Select;
+const { Search } = Input;
+const { Title, Text, Paragraph } = Typography;
 
 interface MachineTableProps {
   teamFilter?: string | string[];
@@ -75,6 +86,12 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const [internalShowCreateModal, setInternalShowCreateModal] = useState(false);
   const [editingMachine, setEditingMachine] = useState<Machine | null>(null);
   const [vaultMachine, setVaultMachine] = useState<Machine | null>(null);
+  const [functionModalMachine, setFunctionModalMachine] = useState<Machine | null>(null);
+  const [selectedFunction, setSelectedFunction] = useState<QueueFunction | null>(null);
+  const [functionParams, setFunctionParams] = useState<Record<string, any>>({});
+  const [functionPriority, setFunctionPriority] = useState(5);
+  const [functionDescription, setFunctionDescription] = useState('');
+  const [functionSearchTerm, setFunctionSearchTerm] = useState('');
   
   // Use external control if provided, otherwise use internal state
   const showCreateModal = externalShowCreateModal !== undefined ? externalShowCreateModal : internalShowCreateModal;
@@ -95,6 +112,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const updateMachineNameMutation = useUpdateMachineName();
   const updateMachineBridgeMutation = useUpdateMachineBridge();
   const updateMachineVaultMutation = useUpdateMachineVault();
+  const createQueueItemMutation = useCreateQueueItem();
 
   // Machine form setup
   const machineForm = useForm<CreateMachineForm>({
@@ -311,6 +329,55 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     }
   };
 
+  // Handle add function to queue
+  const handleAddFunctionToQueue = async () => {
+    if (!functionModalMachine || !selectedFunction) return;
+
+    // Build the queue vault
+    const queueVault = {
+      function: selectedFunction.name,
+      params: functionParams,
+      priority: functionPriority,
+      description: functionDescription || selectedFunction.description,
+      addedVia: 'machine-table'
+    };
+
+    try {
+      await createQueueItemMutation.mutateAsync({
+        teamName: functionModalMachine.teamName,
+        machineName: functionModalMachine.machineName,
+        bridgeName: functionModalMachine.bridgeName,
+        queueVault: JSON.stringify(queueVault)
+      });
+      
+      // Reset the modal
+      setFunctionModalMachine(null);
+      setSelectedFunction(null);
+      setFunctionParams({});
+      setFunctionPriority(5);
+      setFunctionDescription('');
+      setFunctionSearchTerm('');
+    } catch (error) {
+      // Error is handled by the mutation
+    }
+  };
+
+  // Filter system functions based on search
+  const filteredSystemFunctions = useMemo(() => {
+    const systemFunctions = Object.values(QUEUE_FUNCTIONS).filter(
+      func => func.category === 'System Functions'
+    );
+    
+    if (!functionSearchTerm) return systemFunctions;
+    
+    const searchLower = functionSearchTerm.toLowerCase();
+    return systemFunctions.filter(
+      func =>
+        func.name.toLowerCase().includes(searchLower) ||
+        func.description.toLowerCase().includes(searchLower)
+    );
+  }, [functionSearchTerm]);
+
   // Machine columns
   const columns: ColumnsType<Machine> = React.useMemo(() => {
     const baseColumns: ColumnsType<Machine> = [];
@@ -348,6 +415,22 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                       regionName: region?.regionName || '',
                       bridgeName: record.bridgeName,
                     });
+                  },
+                },
+                {
+                  type: 'divider',
+                },
+                {
+                  key: 'systemFunctions',
+                  label: t('machines:systemFunctions'),
+                  icon: <FunctionOutlined />,
+                  onClick: () => {
+                    setFunctionModalMachine(record);
+                    setSelectedFunction(null);
+                    setFunctionParams({});
+                    setFunctionPriority(5);
+                    setFunctionDescription('');
+                    setFunctionSearchTerm('');
                   },
                 },
                 {
@@ -833,6 +916,156 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           initialVersion={vaultMachine.vaultVersion}
           loading={updateMachineVaultMutation.isPending}
         />
+      )}
+
+      {/* System Functions Modal */}
+      {functionModalMachine && (
+        <Modal
+          title={t('machines:addSystemFunction')}
+          open={!!functionModalMachine}
+          onCancel={() => {
+            setFunctionModalMachine(null);
+            setSelectedFunction(null);
+            setFunctionParams({});
+            setFunctionPriority(5);
+            setFunctionDescription('');
+            setFunctionSearchTerm('');
+          }}
+          width={900}
+          footer={[
+            <Button key="cancel" onClick={() => {
+              setFunctionModalMachine(null);
+              setSelectedFunction(null);
+              setFunctionParams({});
+              setFunctionPriority(5);
+              setFunctionDescription('');
+              setFunctionSearchTerm('');
+            }}>
+              {t('common:actions.cancel')}
+            </Button>,
+            <Button
+              key="submit"
+              type="primary"
+              onClick={handleAddFunctionToQueue}
+              disabled={!selectedFunction}
+              loading={createQueueItemMutation.isPending}
+              style={{ background: '#556b2f', borderColor: '#556b2f' }}
+            >
+              {t('machines:addToQueue')}
+            </Button>
+          ]}
+        >
+          <Row gutter={24}>
+            <Col span={10}>
+              <Card title={t('machines:availableFunctions')} size="small">
+                <Search
+                  placeholder={t('machines:searchFunctions')}
+                  value={functionSearchTerm}
+                  onChange={(e) => setFunctionSearchTerm(e.target.value)}
+                  style={{ marginBottom: 16 }}
+                />
+                <div style={{ maxHeight: 400, overflow: 'auto' }}>
+                  {filteredSystemFunctions.map(func => (
+                    <div
+                      key={func.name}
+                      onClick={() => setSelectedFunction(func)}
+                      style={{
+                        padding: '8px 12px',
+                        marginBottom: 4,
+                        cursor: 'pointer',
+                        borderRadius: 4,
+                        backgroundColor: selectedFunction?.name === func.name ? '#f0f5ff' : 'transparent',
+                        border: selectedFunction?.name === func.name ? '1px solid #1890ff' : '1px solid transparent'
+                      }}
+                    >
+                      <Text strong>{func.name}</Text>
+                      <br />
+                      <Text type="secondary" style={{ fontSize: 12 }}>{func.description}</Text>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </Col>
+            
+            <Col span={14}>
+              {selectedFunction ? (
+                <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                  <Card title={`${t('machines:configure')}: ${selectedFunction.name}`} size="small">
+                    <Paragraph>{selectedFunction.description}</Paragraph>
+                    
+                    <Form layout="vertical">
+                      {/* Function Parameters */}
+                      {Object.entries(selectedFunction.params).map(([paramName, paramInfo]) => (
+                        <Form.Item
+                          key={paramName}
+                          label={paramName}
+                          required={paramInfo.required}
+                          help={paramInfo.help}
+                        >
+                          <Input
+                            value={functionParams[paramName] || ''}
+                            onChange={(e) => setFunctionParams({
+                              ...functionParams,
+                              [paramName]: e.target.value
+                            })}
+                            placeholder={paramInfo.help}
+                          />
+                        </Form.Item>
+                      ))}
+                      
+                      {/* Team Selection - Disabled */}
+                      <Form.Item label={t('machines:team')} required>
+                        <Input
+                          value={functionModalMachine.teamName}
+                          disabled
+                          style={{ backgroundColor: '#f5f5f5' }}
+                        />
+                      </Form.Item>
+                      
+                      {/* Machine Selection - Disabled */}
+                      <Form.Item label={t('machines:machine')} required>
+                        <Input
+                          value={functionModalMachine.machineName}
+                          disabled
+                          style={{ backgroundColor: '#f5f5f5' }}
+                        />
+                      </Form.Item>
+                      
+                      {/* Priority */}
+                      <Form.Item label={t('machines:priority')}>
+                        <Slider
+                          min={1}
+                          max={10}
+                          value={functionPriority}
+                          onChange={setFunctionPriority}
+                          marks={{
+                            1: t('machines:priorityLow'),
+                            5: t('machines:priorityNormal'),
+                            10: t('machines:priorityHigh')
+                          }}
+                        />
+                      </Form.Item>
+                      
+                      {/* Description */}
+                      <Form.Item label={t('machines:description')}>
+                        <Input.TextArea
+                          value={functionDescription}
+                          onChange={(e) => setFunctionDescription(e.target.value)}
+                          placeholder={t('machines:descriptionPlaceholder')}
+                          rows={2}
+                        />
+                      </Form.Item>
+                    </Form>
+                  </Card>
+                </Space>
+              ) : (
+                <Card>
+                  <Empty description={t('machines:selectFunctionToConfigure')} />
+                </Card>
+              )}
+            </Col>
+          </Row>
+        </Modal>
       )}
     </div>
   );
