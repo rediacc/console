@@ -29,14 +29,6 @@ export interface DropdownData {
     name: string
     value: string
   }>
-  queueFunctions: Array<{
-    category: string
-    functions: Array<{
-      value: string
-      label: string
-      description: string
-    }>
-  }>
   subscriptionPlans: Array<{
     value: string
     label: string
@@ -90,16 +82,6 @@ export const useDropdownData = (context?: string) => {
             }));
           }
           
-          // Special handling for queueFunctions which has nested JSON
-          if (dropdownData.queueFunctions && Array.isArray(dropdownData.queueFunctions)) {
-            dropdownData.queueFunctions = dropdownData.queueFunctions.map((category: any) => ({
-              ...category,
-              functions: typeof category.functions === 'string' 
-                ? JSON.parse(category.functions) 
-                : category.functions
-            }));
-          }
-          
           return dropdownData as DropdownData;
         } catch (e) {
           console.error('Failed to parse dropdown data:', e);
@@ -113,7 +95,6 @@ export const useDropdownData = (context?: string) => {
             users: [],
             permissionGroups: [],
             permissions: [],
-            queueFunctions: [],
             subscriptionPlans: []
           } as DropdownData;
         }
@@ -132,7 +113,6 @@ export const useDropdownData = (context?: string) => {
         users: [],
         permissionGroups: [],
         permissions: [],
-        queueFunctions: [],
         subscriptionPlans: [],
         ...fallbackData
       } as DropdownData;
