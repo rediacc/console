@@ -166,8 +166,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   React.useEffect(() => {
     if (showCreateModal && uiMode === 'simple') {
       machineForm.setValue('teamName', 'Private Team');
-      machineForm.setValue('regionName', 'Private Region');
-      machineForm.setValue('bridgeName', 'Private Bridge');
+      machineForm.setValue('regionName', 'Default Region');
+      machineForm.setValue('bridgeName', 'Shared Bridge');
     }
   }, [showCreateModal, uiMode, machineForm]);
 

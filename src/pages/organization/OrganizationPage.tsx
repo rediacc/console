@@ -461,7 +461,7 @@ const OrganizationPage: React.FC = () => {
 
   React.useEffect(() => {
     if (isCreateBridgeModalOpen && uiMode === 'simple') {
-      bridgeForm.setValue('regionName', 'Private Region');
+      bridgeForm.setValue('regionName', 'Default Region');
     }
   }, [isCreateBridgeModalOpen, uiMode, bridgeForm]);
 
