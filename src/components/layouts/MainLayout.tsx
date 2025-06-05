@@ -9,7 +9,6 @@ import {
   ApiOutlined,
   CloudServerOutlined,
   FolderOutlined,
-  DesktopOutlined,
   ScheduleOutlined,
   ThunderboltOutlined,
   UserOutlined,
@@ -85,12 +84,6 @@ const MainLayout: React.FC = () => {
       key: '/organization',
       icon: <TeamOutlined />,
       label: t('navigation.organization'),
-      showInSimple: true,
-    },
-    {
-      key: '/machines',
-      icon: <DesktopOutlined />,
-      label: t('navigation.machines'),
       showInSimple: true,
     },
     {

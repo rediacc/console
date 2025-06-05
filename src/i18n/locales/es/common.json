@@ -6,7 +6,6 @@
   "navigation": {
     "dashboard": "Panel de Control",
     "organization": "Organización",
-    "machines": "Máquinas",
     "users": "Usuarios",
     "system": "Sistema",
     "queue": "Cola",
@@ -97,6 +96,9 @@
     "simple": "Simple",
     "expert": "Experto",
     "switching": "Cambiando a modo {{mode}}..."
+  },
+  "general": {
+    "versionFormat": "v{{version}}"
   },
   "dashboard": {
     "availablePlans": "Planes Disponibles",

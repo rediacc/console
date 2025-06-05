@@ -11,7 +11,6 @@ import MainLayout from '@/components/layouts/MainLayout'
 import LoginPage from '@/pages/LoginPage'
 import DashboardPage from '@/pages/DashboardPage'
 import OrganizationPage from '@/pages/organization/OrganizationPage'
-import MachinePage from '@/pages/machines/MachinePage'
 import QueuePage from '@/pages/queue/QueuePage'
 import SystemPage from '@/pages/system/SystemPage'
 import ArchitecturePage from '@/pages/architecture/ArchitecturePage'
@@ -73,9 +72,6 @@ const AppContent: React.FC = () => {
               
               {/* Organization */}
               <Route path="/organization" element={<OrganizationPage />} />
-              
-              {/* Machines */}
-              <Route path="/machines" element={<MachinePage />} />
               
               {/* Queue */}
               <Route path="/queue" element={<QueuePage />} />

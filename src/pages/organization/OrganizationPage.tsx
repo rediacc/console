@@ -104,7 +104,7 @@ import {
 const { Title, Text } = Typography
 
 const OrganizationPage: React.FC = () => {
-  const { t } = useTranslation(['organization', 'machines'])
+  const { t } = useTranslation(['organization', 'machines', 'common'])
   const navigate = useNavigate()
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const [activeTab, setActiveTab] = useState('teams')
@@ -145,6 +145,9 @@ const OrganizationPage: React.FC = () => {
   }>({ open: false })
 
   // Machine state - removed modal states since we navigate to machines page instead
+
+  // Machine state
+  const [isCreateMachineModalOpen, setIsCreateMachineModalOpen] = useState(false)
 
   // Repository state
   const [isCreateRepositoryModalOpen, setIsCreateRepositoryModalOpen] = useState(false)
@@ -655,7 +658,7 @@ const OrganizationPage: React.FC = () => {
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
       width: 120,
-      render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
+      render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
     }] : []),
     {
       title: t('general.actions'),
@@ -732,7 +735,7 @@ const OrganizationPage: React.FC = () => {
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
       width: 120,
-      render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
+      render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
     }] : []),
     {
       title: t('general.actions'),
@@ -809,7 +812,7 @@ const OrganizationPage: React.FC = () => {
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
       width: 120,
-      render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
+      render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
     }] : []),
     {
       title: t('general.actions'),
@@ -875,7 +878,7 @@ const OrganizationPage: React.FC = () => {
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
       width: 120,
-      render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
+      render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
     }] : []),
     {
       title: t('general.actions'),
@@ -940,7 +943,7 @@ const OrganizationPage: React.FC = () => {
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
       width: 120,
-      render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
+      render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
     }] : []),
     {
       title: t('general.actions'),
@@ -1005,7 +1008,7 @@ const OrganizationPage: React.FC = () => {
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
       width: 120,
-      render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
+      render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
     }] : []),
     {
       title: t('general.actions'),
@@ -1183,6 +1186,8 @@ const OrganizationPage: React.FC = () => {
           teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
           showFilters={true}
           showActions={true}
+          showCreateModal={isCreateMachineModalOpen}
+          onCreateModalChange={setIsCreateMachineModalOpen}
         />
       ),
     },
@@ -1352,13 +1357,7 @@ const OrganizationPage: React.FC = () => {
                       onClick={() => {
                         switch(teamResourcesTab) {
                           case 'machines':
-                            // Navigate to machines page with state to open create modal
-                            navigate('/machines', { 
-                              state: { 
-                                openCreateModal: true, 
-                                preselectedTeam: selectedTeams.length === 1 ? selectedTeams[0] : undefined 
-                              } 
-                            })
+                            setIsCreateMachineModalOpen(true)
                             break
                           case 'repositories':
                             if (selectedTeams.length === 1) {

@@ -6,7 +6,6 @@
   "navigation": {
     "dashboard": "Dashboard",
     "organization": "Organization",
-    "machines": "Machines",
     "users": "Users",
     "system": "System",
     "queue": "Queue",
@@ -97,6 +96,9 @@
     "simple": "Simple",
     "expert": "Expert",
     "switching": "Switching to {{mode}} mode..."
+  },
+  "general": {
+    "versionFormat": "v{{version}}"
   },
   "dashboard": {
     "availablePlans": "Available Plans",

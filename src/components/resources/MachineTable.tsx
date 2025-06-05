@@ -51,6 +51,8 @@ interface MachineTableProps {
   showActions?: boolean;
   onNavigateToFull?: () => void;
   className?: string;
+  showCreateModal?: boolean;
+  onCreateModalChange?: (show: boolean) => void;
 }
 
 export const MachineTable: React.FC<MachineTableProps> = ({
@@ -60,6 +62,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   showActions = true,
   onNavigateToFull,
   className = '',
+  showCreateModal: externalShowCreateModal,
+  onCreateModalChange,
 }) => {
   const { t } = useTranslation(['machines', 'common']);
   const navigate = useNavigate();
@@ -74,9 +78,19 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const [selectedRegion, setSelectedRegion] = useState<string | undefined>(undefined);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [groupBy, setGroupBy] = useState<'bridge' | 'team' | 'region'>('bridge');
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [internalShowCreateModal, setInternalShowCreateModal] = useState(false);
   const [editingMachine, setEditingMachine] = useState<Machine | null>(null);
   const [vaultMachine, setVaultMachine] = useState<Machine | null>(null);
+  
+  // Use external control if provided, otherwise use internal state
+  const showCreateModal = externalShowCreateModal !== undefined ? externalShowCreateModal : internalShowCreateModal;
+  const setShowCreateModal = (show: boolean) => {
+    if (onCreateModalChange) {
+      onCreateModalChange(show);
+    } else {
+      setInternalShowCreateModal(show);
+    }
+  };
 
   // Handle navigation state in full mode
   useEffect(() => {
@@ -453,7 +467,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         key: 'vaultVersion',
         align: 'center' as const,
         sorter: (a: Machine, b: Machine) => a.vaultVersion - b.vaultVersion,
-        render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
+        render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
       });
     }
 
@@ -581,16 +595,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             </>
           )}
 
-          {showActions && mode !== 'readonly' && (
-            <Button 
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => setShowCreateModal(true)}
-              style={{ background: '#556b2f', borderColor: '#556b2f' }}
-            >
-              {t('machines:createMachine')}
-            </Button>
-          )}
         </Space>
       </div>
     );
@@ -793,8 +797,23 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
   // Set preset team when modal opens
   React.useEffect(() => {
-    if (showCreateModal && (selectedTeam || teamFilter)) {
-      machineForm.setValue('teamName', selectedTeam || teamFilter || '');
+    if (showCreateModal) {
+      let teamToSet = '';
+      if (selectedTeam) {
+        teamToSet = selectedTeam;
+      } else if (teamFilter) {
+        // If teamFilter is an array, only set if there's exactly one team
+        if (Array.isArray(teamFilter)) {
+          if (teamFilter.length === 1) {
+            teamToSet = teamFilter[0];
+          }
+        } else {
+          teamToSet = teamFilter;
+        }
+      }
+      if (teamToSet) {
+        machineForm.setValue('teamName', teamToSet);
+      }
     }
   }, [showCreateModal, selectedTeam, teamFilter, machineForm]);
 
