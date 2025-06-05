@@ -352,6 +352,13 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         onFilter: (value: string | number | boolean, record: Machine) => 
           record.machineName.toLowerCase().includes(value.toString().toLowerCase()),
       },
+      {
+        title: t('machines:team'),
+        dataIndex: 'teamName',
+        key: 'teamName',
+        render: (teamName: string) => <Tag color="blue">{teamName}</Tag>,
+        sorter: (a: Machine, b: Machine) => a.teamName.localeCompare(b.teamName),
+      },
     ];
 
     // Add team/bridge/region columns in expert mode
@@ -746,6 +753,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           dataSource={filteredMachines}
           rowKey="machineName"
           loading={isLoading}
+          scroll={{ x: 'max-content' }}
           pagination={{
             showSizeChanger: true,
             showTotal: (total) => t('common:table.total') + ': ' + total,

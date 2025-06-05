@@ -873,17 +873,21 @@ const OrganizationPage: React.FC = () => {
         </Space>
       ),
     },
+    {
+      title: t('general.team'),
+      dataIndex: 'teamName',
+      key: 'teamName',
+      render: (teamName: string) => <Tag color="blue">{teamName}</Tag>,
+    },
     ...(uiMode === 'expert' ? [{
       title: t('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
-      width: 120,
       render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
     }] : []),
     {
       title: t('general.actions'),
       key: 'actions',
-      width: 200,
       render: (_: any, record: Repository) => (
         <Space>
           <Button
@@ -938,17 +942,21 @@ const OrganizationPage: React.FC = () => {
         </Space>
       ),
     },
+    {
+      title: t('general.team'),
+      dataIndex: 'teamName',
+      key: 'teamName',
+      render: (teamName: string) => <Tag color="blue">{teamName}</Tag>,
+    },
     ...(uiMode === 'expert' ? [{
       title: t('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
-      width: 120,
       render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
     }] : []),
     {
       title: t('general.actions'),
       key: 'actions',
-      width: 200,
       render: (_: any, record: Storage) => (
         <Space>
           <Button
@@ -1003,17 +1011,21 @@ const OrganizationPage: React.FC = () => {
         </Space>
       ),
     },
+    {
+      title: t('general.team'),
+      dataIndex: 'teamName',
+      key: 'teamName',
+      render: (teamName: string) => <Tag color="blue">{teamName}</Tag>,
+    },
     ...(uiMode === 'expert' ? [{
       title: t('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
-      width: 120,
       render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
     }] : []),
     {
       title: t('general.actions'),
       key: 'actions',
-      width: 200,
       render: (_: any, record: Schedule) => (
         <Space>
           <Button
@@ -1204,6 +1216,7 @@ const OrganizationPage: React.FC = () => {
           dataSource={repositories}
           rowKey="repositoryName"
           loading={repositoriesLoading}
+          scroll={{ x: 'max-content' }}
           pagination={{
             total: repositories?.length || 0,
             pageSize: 10,
@@ -1230,6 +1243,7 @@ const OrganizationPage: React.FC = () => {
           dataSource={storages}
           rowKey="storageName"
           loading={storagesLoading}
+          scroll={{ x: 'max-content' }}
           pagination={{
             total: storages?.length || 0,
             pageSize: 10,
@@ -1256,6 +1270,7 @@ const OrganizationPage: React.FC = () => {
           dataSource={schedules}
           rowKey="scheduleName"
           loading={schedulesLoading}
+          scroll={{ x: 'max-content' }}
           pagination={{
             total: schedules?.length || 0,
             pageSize: 10,
