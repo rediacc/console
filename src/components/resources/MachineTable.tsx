@@ -313,110 +313,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
   // Machine columns
   const columns: ColumnsType<Machine> = React.useMemo(() => {
-    const baseColumns: ColumnsType<Machine> = [
-      {
-        title: t('machines:machineName'),
-        dataIndex: 'machineName',
-        key: 'machineName',
-        sorter: (a: Machine, b: Machine) => a.machineName.localeCompare(b.machineName),
-        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
-          <div style={{ padding: 8 }}>
-            <Input
-              placeholder={t('machines:searchMachineName')}
-              value={selectedKeys[0]}
-              onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
-              onPressEnter={() => confirm()}
-              style={{ marginBottom: 8, display: 'block' }}
-            />
-            <Space>
-              <Button
-                type="primary"
-                onClick={() => confirm()}
-                icon={<SearchOutlined />}
-                size="small"
-                style={{ width: 90 }}
-              >
-                {t('common:actions.search')}
-              </Button>
-              <Button
-                onClick={() => clearFilters && clearFilters()}
-                size="small"
-                style={{ width: 90 }}
-              >
-                {t('common:actions.reset')}
-              </Button>
-            </Space>
-          </div>
-        ),
-        filterIcon: (filtered: boolean) => (
-          <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
-        ),
-        onFilter: (value: string | number | boolean, record: Machine) => 
-          record.machineName.toLowerCase().includes(value.toString().toLowerCase()),
-      },
-      {
-        title: t('machines:team'),
-        dataIndex: 'teamName',
-        key: 'teamName',
-        render: (teamName: string) => <Tag color="blue">{teamName}</Tag>,
-        sorter: (a: Machine, b: Machine) => a.teamName.localeCompare(b.teamName),
-      },
-    ];
+    const baseColumns: ColumnsType<Machine> = [];
 
-    // Add team/bridge/region columns in expert mode
-    if (isExpertMode) {
-      // Show region and bridge columns (team is already filtered in embedded mode)
-      baseColumns.push(
-        {
-          title: t('machines:region'),
-          dataIndex: 'regionName',
-          key: 'regionName',
-          render: (regionName: string) => regionName ? <Tag color="purple">{regionName}</Tag> : '-',
-          sorter: (a: Machine, b: Machine) => (a.regionName || '').localeCompare(b.regionName || ''),
-        },
-        {
-          title: t('machines:bridge'),
-          dataIndex: 'bridgeName',
-          key: 'bridgeName',
-          render: (bridgeName: string) => <Tag color="green">{bridgeName}</Tag>,
-          sorter: (a: Machine, b: Machine) => a.bridgeName.localeCompare(b.bridgeName),
-        }
-      );
-    } else if (uiMode !== 'simple') {
-      // Show only bridge in non-expert UI
-      baseColumns.push({
-        title: t('bridges.bridge'),
-        dataIndex: 'bridgeName',
-        key: 'bridgeName',
-        render: (bridge: string) => <Tag color="blue">{bridge}</Tag>,
-      });
-    }
-
-    // Queue items column
-    baseColumns.push({
-      title: t('machines:queueItems'),
-      dataIndex: 'queueCount',
-      key: 'queueCount',
-      align: 'center' as const,
-      sorter: (a: Machine, b: Machine) => a.queueCount - b.queueCount,
-      render: (count: number) => (
-        <Badge count={count} showZero style={{ backgroundColor: count > 0 ? '#52c41a' : '#d9d9d9' }} />
-      ),
-    });
-
-    // Vault version in expert mode
-    if (isExpertMode) {
-      baseColumns.push({
-        title: t('machines:vaultVersion'),
-        dataIndex: 'vaultVersion',
-        key: 'vaultVersion',
-        align: 'center' as const,
-        sorter: (a: Machine, b: Machine) => a.vaultVersion - b.vaultVersion,
-        render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
-      });
-    }
-
-    // Actions column
+    // Actions column first if showActions is true
     if (showActions) {
       baseColumns.push({
         title: t('common:table.actions'),
@@ -471,8 +370,112 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       });
     }
 
+    // Then add the other columns
+    baseColumns.push(
+      {
+        title: t('machines:machineName'),
+        dataIndex: 'machineName',
+        key: 'machineName',
+        sorter: (a: Machine, b: Machine) => a.machineName.localeCompare(b.machineName),
+        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+          <div style={{ padding: 8 }}>
+            <Input
+              placeholder={t('machines:searchMachineName')}
+              value={selectedKeys[0]}
+              onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+              onPressEnter={() => confirm()}
+              style={{ marginBottom: 8, display: 'block' }}
+            />
+            <Space>
+              <Button
+                type="primary"
+                onClick={() => confirm()}
+                icon={<SearchOutlined />}
+                size="small"
+                style={{ width: 90 }}
+              >
+                {t('common:actions.search')}
+              </Button>
+              <Button
+                onClick={() => clearFilters && clearFilters()}
+                size="small"
+                style={{ width: 90 }}
+              >
+                {t('common:actions.reset')}
+              </Button>
+            </Space>
+          </div>
+        ),
+        filterIcon: (filtered: boolean) => (
+          <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
+        ),
+        onFilter: (value: string | number | boolean, record: Machine) => 
+          record.machineName.toLowerCase().includes(value.toString().toLowerCase()),
+      },
+      {
+        title: t('machines:team'),
+        dataIndex: 'teamName',
+        key: 'teamName',
+        render: (teamName: string) => <Tag color="blue">{teamName}</Tag>,
+        sorter: (a: Machine, b: Machine) => a.teamName.localeCompare(b.teamName),
+      },
+    );
+
+    // Add team/bridge/region columns in expert mode
+    if (isExpertMode) {
+      // Show region and bridge columns (team is already filtered in embedded mode)
+      baseColumns.push(
+        {
+          title: t('machines:region'),
+          dataIndex: 'regionName',
+          key: 'regionName',
+          render: (regionName: string) => regionName ? <Tag color="purple">{regionName}</Tag> : '-',
+          sorter: (a: Machine, b: Machine) => (a.regionName || '').localeCompare(b.regionName || ''),
+        },
+        {
+          title: t('machines:bridge'),
+          dataIndex: 'bridgeName',
+          key: 'bridgeName',
+          render: (bridgeName: string) => <Tag color="green">{bridgeName}</Tag>,
+          sorter: (a: Machine, b: Machine) => a.bridgeName.localeCompare(b.bridgeName),
+        }
+      );
+    } else if (uiMode !== 'simple') {
+      // Show only bridge in non-expert UI
+      baseColumns.push({
+        title: t('bridges.bridge'),
+        dataIndex: 'bridgeName',
+        key: 'bridgeName',
+        render: (bridge: string) => <Tag color="blue">{bridge}</Tag>,
+      });
+    }
+
+    // Queue items column
+    baseColumns.push({
+      title: t('machines:queueItems'),
+      dataIndex: 'queueCount',
+      key: 'queueCount',
+      align: 'center' as const,
+      sorter: (a: Machine, b: Machine) => a.queueCount - b.queueCount,
+      render: (count: number) => (
+        <Badge count={count} showZero style={{ backgroundColor: count > 0 ? '#52c41a' : '#d9d9d9' }} />
+      ),
+    });
+
+    // Vault version in expert mode
+    if (isExpertMode) {
+      baseColumns.push({
+        title: t('machines:vaultVersion'),
+        dataIndex: 'vaultVersion',
+        key: 'vaultVersion',
+        align: 'center' as const,
+        sorter: (a: Machine, b: Machine) => a.vaultVersion - b.vaultVersion,
+        render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
+      });
+    }
+
     return baseColumns;
-  }, [isExpertMode, uiMode, showActions, t, handleDelete]);
+  }, [isExpertMode, uiMode, showActions, t, handleDelete, dropdownData, editMachineForm]);
 
   // Render filters section
   const renderFilters = () => {
