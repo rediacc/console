@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Col, Row, Progress, Alert, Badge, Tag, Space, Typography, Statistic, Spin, Empty, Divider } from 'antd';
+import { Card, Col, Row, Progress, Alert, Badge, Tag, Space, Typography, Statistic, Spin, Empty, Divider, Tooltip } from 'antd';
 import { 
   AlertOutlined, 
   CheckCircleOutlined, 
@@ -90,6 +90,7 @@ const DashboardPage = () => {
     );
   }
 
+
   const getStatusType = (status: string): 'success' | 'warning' | 'error' => {
     switch (status) {
       case 'Critical': return 'error';
@@ -137,62 +138,6 @@ const DashboardPage = () => {
 
         {/* Main Grid */}
         <Row gutter={[16, 16]}>
-          {/* Subscription Card */}
-          <Col xs={24} sm={24} md={12} lg={8}>
-            <Card 
-              title={
-                <Space>
-                  <ShoppingOutlined />
-                  <span>Current Plan</span>
-                </Space>
-              }
-              style={{ height: '100%' }}
-            >
-              {dashboard.activeSubscription ? (
-                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                  <div>
-                    <Space align="baseline" style={{ justifyContent: 'space-between', width: '100%' }}>
-                      <Title level={3} style={{ margin: 0 }}>{dashboard.activeSubscription.PlanName}</Title>
-                      {dashboard.activeSubscription.IsTrial === 1 && (
-                        <Tag color="blue">Trial</Tag>
-                      )}
-                    </Space>
-                    <Paragraph type="secondary" style={{ marginBottom: 0 }}>
-                      {dashboard.activeSubscription.PlanDescription}
-                    </Paragraph>
-                  </div>
-                  
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <Text>Expires in</Text>
-                      <Text strong>{dashboard.activeSubscription.DaysRemaining} days</Text>
-                    </div>
-                    <Progress 
-                      percent={Math.max(0, Math.min(100, (30 - dashboard.activeSubscription.DaysRemaining) / 30 * 100))}
-                      status={getProgressStatus((30 - dashboard.activeSubscription.DaysRemaining) / 30 * 100)}
-                      strokeColor="#333333"
-                    />
-                  </div>
-
-                  {dashboard.billingInfo && !pricingLoading && pricing && (
-                    <div style={{ paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
-                      <Statistic
-                        className="price-statistic"
-                        title="Billing"
-                        value={dashboard.billingInfo.Price}
-                        precision={0}
-                        prefix="$"
-                        suffix={`${dashboard.billingInfo.Currency.toUpperCase()} / ${dashboard.billingInfo.BillingInterval}`}
-                      />
-                    </div>
-                  )}
-                </Space>
-              ) : (
-                <Text type="secondary">No active subscription</Text>
-              )}
-            </Card>
-          </Col>
-
           {/* Account Health Card */}
           <Col xs={24} sm={24} md={12} lg={8}>
             <Card 
@@ -300,84 +245,207 @@ const DashboardPage = () => {
           </Row>
         </Card>
 
-        {/* Available Plans */}
-        {dashboard.availablePlans.length > 0 && (
-          <Card 
-            title={(() => {
-              const currentPlan = dashboard.availablePlans.find(plan => plan.IsCurrentPlan === 1);
-              return currentPlan && currentPlan.PlanCode !== 'ELITE' ? t('dashboard.upgradeOptions') : t('dashboard.currentPlan');
-            })()}
-            extra={(() => {
-              const currentPlan = dashboard.availablePlans.find(plan => plan.IsCurrentPlan === 1);
-              if (currentPlan && currentPlan.PlanCode === 'ELITE') {
-                return <Text type="secondary">{t('dashboard.elitePlanDescription')}</Text>;
-              }
-              return <Text type="secondary">{t('dashboard.comparePlansDescription')}</Text>;
-            })()}
-          >
-            <Row gutter={[16, 16]}>
-              {(() => {
-                // Define plan hierarchy order
-                const planHierarchy = ['COMMUNITY', 'ADVANCED', 'PREMIUM', 'ELITE'];
-                
-                // Find current plan index
-                const currentPlan = dashboard.availablePlans.find(plan => plan.IsCurrentPlan === 1);
-                const currentPlanIndex = currentPlan ? planHierarchy.indexOf(currentPlan.PlanCode) : -1;
-                
-                // Filter to show only upgrade options (plans higher than current) and current plan
-                const filteredPlans = dashboard.availablePlans.filter(plan => {
-                  const planIndex = planHierarchy.indexOf(plan.PlanCode);
-                  return planIndex >= currentPlanIndex;
-                });
-                
-                return filteredPlans.map((plan) => (
-                  <Col key={plan.PlanCode} xs={24} sm={12} md={6}>
-                    <Card
-                      style={{ 
-                        border: plan.IsCurrentPlan === 1 ? '1px solid #333333' : '1px solid #f0f0f0',
-                        backgroundColor: plan.IsCurrentPlan === 1 ? '#f5f5f5' : undefined
-                      }}
-                    >
+        {/* Subscription & Plans Card - Full Width */}
+        <Card 
+          title={
+            <Space>
+              <CrownOutlined />
+              <span>Subscription & Plans</span>
+              {dashboard.allActiveSubscriptions && dashboard.allActiveSubscriptions.length > 0 && (
+                <Badge count={dashboard.allActiveSubscriptions.length} style={{ backgroundColor: '#333333' }} />
+              )}
+            </Space>
+          }
+        >
+          <Row gutter={[24, 24]}>
+            {/* Current Subscription Section */}
+            <Col xs={24} md={8}>
+              {dashboard.activeSubscription ? (
+                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 12 }}>CURRENT SUBSCRIPTION</Text>
+                    <Title level={4} style={{ margin: '8px 0' }}>{dashboard.activeSubscription.PlanName}</Title>
+                    <Paragraph type="secondary" style={{ marginBottom: 16 }}>
+                      {dashboard.activeSubscription.PlanDescription}
+                    </Paragraph>
+                    
+                    <Row gutter={[16, 16]}>
+                      <Col span={12}>
+                        <Statistic
+                          title="Active Licenses"
+                          value={dashboard.activeSubscription.TotalActivePurchases}
+                          valueStyle={{ color: '#333333' }}
+                        />
+                      </Col>
+                      <Col span={12}>
+                        <Statistic
+                          title="Days Remaining"
+                          value={dashboard.activeSubscription.DaysRemaining}
+                          valueStyle={{ color: dashboard.activeSubscription.DaysRemaining <= 30 ? '#ff4d4f' : '#333333' }}
+                        />
+                      </Col>
+                    </Row>
+                  </div>
+
+                  {/* Billing Info */}
+                  {dashboard.billingInfo && !pricingLoading && pricing && (
+                    <div style={{ 
+                      padding: '16px', 
+                      backgroundColor: '#fafafa', 
+                      borderRadius: 8,
+                      border: '1px solid #f0f0f0'
+                    }}>
                       <Space direction="vertical" size="small" style={{ width: '100%' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Title level={4} style={{ margin: 0 }}>{plan.PlanName}</Title>
-                          {plan.IsCurrentPlan === 1 && (
-                            <Badge status="success" text="Current" />
-                          )}
+                          <Text strong>Monthly Cost</Text>
+                          <Title level={3} style={{ margin: 0 }}>
+                            ${dashboard.billingInfo.Price * (dashboard.activeSubscription.Quantity || 1)}
+                          </Title>
                         </div>
-                        <Paragraph type="secondary" style={{ marginBottom: 8 }}>
-                          {plan.Description}
-                        </Paragraph>
-                        <div>
-                          {!pricingLoading && pricing ? (
-                            (() => {
-                              const planPrice = getPlanPrice(pricing, plan.PlanCode);
-                              return planPrice !== null ? (
-                                <Statistic
-                                  className="price-statistic"
-                                  value={planPrice}
-                                  precision={0}
-                                  prefix={planPrice > 0 ? "$" : ""}
-                                  suffix={planPrice > 0 ? "/month" : ""}
-                                  formatter={(value) => planPrice === 0 ? "Free" : value}
-                                />
-                              ) : (
-                                <div style={{ height: 32 }} />
-                              );
-                            })()
-                          ) : (
-                            <div style={{ height: 32 }} />
-                          )}
-                          <Text type="secondary">Up to {plan.MaxUsers} users</Text>
-                        </div>
+                        <Text type="secondary">
+                          Billed {dashboard.billingInfo.BillingInterval}ly in {dashboard.billingInfo.Currency.toUpperCase()}
+                        </Text>
+                        {dashboard.activeSubscription.IsTrial === 1 && (
+                          <Tag color="blue">Trial Period</Tag>
+                        )}
                       </Space>
-                    </Card>
-                  </Col>
-                ));
-              })()}
-            </Row>
-          </Card>
-        )}
+                    </div>
+                  )}
+                </Space>
+              ) : (
+                <Empty description="No active subscription" />
+              )}
+            </Col>
+
+            {/* Active Licenses Section */}
+            {dashboard.allActiveSubscriptions && dashboard.allActiveSubscriptions.length > 0 && (
+              <Col xs={24} md={8}>
+                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 12 }}>ALL ACTIVE LICENSES</Text>
+                    <Title level={4} style={{ margin: '8px 0' }}>{dashboard.allActiveSubscriptions.length} Total</Title>
+                  </div>
+                  <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      {dashboard.allActiveSubscriptions.map((sub, index) => (
+                        <div key={index} style={{ 
+                          padding: '12px', 
+                          backgroundColor: '#fafafa', 
+                          borderRadius: 6,
+                          border: '1px solid #f0f0f0'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                            <Space>
+                              <Text strong>{sub.planName}</Text>
+                              <Badge count={`×${sub.quantity}`} style={{ backgroundColor: '#52c41a' }} />
+                              {sub.isTrial === 1 && <Tag color="blue">Trial</Tag>}
+                            </Space>
+                            <Text type={sub.daysRemaining <= 30 ? 'danger' : 'secondary'} style={{ fontSize: 12 }}>
+                              {sub.daysRemaining} days left
+                            </Text>
+                          </div>
+                          <Tooltip title={`From ${new Date(sub.startDate).toLocaleDateString()} to ${new Date(sub.endDate).toLocaleDateString()}`}>
+                            <Progress 
+                              percent={(() => {
+                                // Calculate total subscription duration in days
+                                const startDate = new Date(sub.startDate);
+                                const endDate = new Date(sub.endDate);
+                                const now = new Date();
+                                
+                                // If we haven't started yet, show 0%
+                                if (now < startDate) return 0;
+                                
+                                // If we're past the end date, show 100%
+                                if (now > endDate) return 100;
+                                
+                                // Calculate total duration and elapsed time
+                                const totalDuration = endDate.getTime() - startDate.getTime();
+                                const elapsedDuration = now.getTime() - startDate.getTime();
+                                
+                                // Calculate percentage
+                                const percentConsumed = Math.max(0, Math.min(100, (elapsedDuration / totalDuration) * 100));
+                                
+                                return Math.round(percentConsumed);
+                              })()}
+                              showInfo={false}
+                              size="small"
+                              strokeColor={sub.daysRemaining <= 30 ? '#ff4d4f' : '#333333'}
+                            />
+                          </Tooltip>
+                        </div>
+                      ))}
+                    </Space>
+                  </div>
+                </Space>
+              </Col>
+            )}
+
+            {/* Available Plans Section */}
+            {dashboard.availablePlans.length > 0 && (
+              <Col xs={24} md={dashboard.allActiveSubscriptions && dashboard.allActiveSubscriptions.length > 0 ? 8 : 16}>
+                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      {(() => {
+                        const currentPlan = dashboard.availablePlans.find(plan => plan.IsCurrentPlan === 1);
+                        return currentPlan && currentPlan.PlanCode !== 'ELITE' ? 'UPGRADE OPTIONS' : 'AVAILABLE PLANS';
+                      })()}
+                    </Text>
+                    <Title level={4} style={{ margin: '8px 0' }}>Choose Your Plan</Title>
+                  </div>
+                  <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                    {(() => {
+                      const planHierarchy = ['COMMUNITY', 'ADVANCED', 'PREMIUM', 'ELITE'];
+                      const currentPlan = dashboard.availablePlans.find(plan => plan.IsCurrentPlan === 1);
+                      const currentPlanIndex = currentPlan ? planHierarchy.indexOf(currentPlan.PlanCode) : -1;
+                      
+                      const filteredPlans = dashboard.availablePlans
+                        .filter(plan => {
+                          const planIndex = planHierarchy.indexOf(plan.PlanCode);
+                          return planIndex >= currentPlanIndex;
+                        });
+                      
+                      return filteredPlans.map((plan) => (
+                        <div 
+                          key={plan.PlanCode} 
+                          style={{ 
+                            padding: '12px 16px',
+                            backgroundColor: plan.IsCurrentPlan === 1 ? '#f5f5f5' : '#fafafa',
+                            borderRadius: 6,
+                            border: plan.IsCurrentPlan === 1 ? '2px solid #333333' : '1px solid #f0f0f0'
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ flex: 1 }}>
+                              <Space>
+                                <Text strong>{plan.PlanName}</Text>
+                                {plan.IsCurrentPlan === 1 && <Tag color="success">Current</Tag>}
+                              </Space>
+                              <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+                                Up to {plan.MaxUsers} users • {plan.Description}
+                              </Text>
+                            </div>
+                            {!pricingLoading && pricing && (
+                              (() => {
+                                const planPrice = getPlanPrice(pricing, plan.PlanCode);
+                                return planPrice !== null && (
+                                  <Text strong style={{ fontSize: 16, minWidth: 80, textAlign: 'right' }}>
+                                    {planPrice === 0 ? 'Free' : `$${planPrice}/mo`}
+                                  </Text>
+                                );
+                              })()
+                            )}
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </Space>
+                </Space>
+              </Col>
+            )}
+          </Row>
+        </Card>
+
       </Space>
     </div>
   );

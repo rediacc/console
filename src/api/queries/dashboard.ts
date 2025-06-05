@@ -11,6 +11,7 @@ interface ActiveSubscription {
   PlanName: string;
   PlanDescription: string;
   Quantity: number;
+  TotalActivePurchases: number;
   StartDate: string;
   EndDate: string;
   DaysRemaining: number;
@@ -67,6 +68,18 @@ interface FeatureAccess {
   HasCustomBranding: number;
 }
 
+interface SubscriptionDetail {
+  planCode: string;
+  planName: string;
+  quantity: number;
+  startDate: string;
+  endDate: string;
+  daysRemaining: number;
+  status: string;
+  stripeSubscriptionId: string | null;
+  isTrial: number;
+}
+
 interface DashboardData {
   companyInfo: CompanyInfo;
   activeSubscription: ActiveSubscription | null;
@@ -75,6 +88,7 @@ interface DashboardData {
   resourceLimits: ResourceLimit[];
   accountHealth: AccountHealth;
   featureAccess: FeatureAccess;
+  allActiveSubscriptions?: SubscriptionDetail[];
 }
 
 export const useDashboard = () => {
@@ -112,6 +126,11 @@ export const useDashboard = () => {
       }
       if (typeof parsedData.featureAccess === 'string') {
         parsedData.featureAccess = JSON.parse(parsedData.featureAccess);
+      }
+      
+      // Check if there's a second result set with all active subscriptions
+      if (response.tables?.[2]?.data) {
+        parsedData.allActiveSubscriptions = response.tables[2].data;
       }
       
       return parsedData as DashboardData;
