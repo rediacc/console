@@ -1,35 +1,14 @@
-import { createHash } from 'crypto'
+// Authentication and password utilities for browser environment
 import { secureStorage } from './secureMemoryStorage'
 
-export function hashPassword(password: string): string {
-  // For browser compatibility, we'll use Web Crypto API
-  return '0x' + Array.from(
-    new Uint8Array(
-      crypto.subtle.digestSync('SHA-256', new TextEncoder().encode(password))
-    )
-  ).map(b => b.toString(16).padStart(2, '0')).join('')
-}
-
-// Alternative using async Web Crypto API
-export async function hashPasswordAsync(password: string): Promise<string> {
+// Password hashing using Web Crypto API
+export async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder()
   const data = encoder.encode(password)
   const hashBuffer = await crypto.subtle.digest('SHA-256', data)
   const hashArray = Array.from(new Uint8Array(hashBuffer))
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
   return '0x' + hashHex
-}
-
-export function base64HashPassword(password: string): string {
-  // Synchronous version for immediate use
-  const hashHex = Array.from(
-    new Uint8Array(
-      crypto.subtle.digestSync?.('SHA-256', new TextEncoder().encode(password)) || []
-    )
-  ).map(b => b.toString(16).padStart(2, '0')).join('')
-  
-  const bytes = new Uint8Array(hashHex.match(/.{1,2}/g)?.map(byte => parseInt(byte, 16)) || [])
-  return btoa(String.fromCharCode(...bytes))
 }
 
 // Session storage helpers using secure memory storage

@@ -6,7 +6,7 @@ import { UserOutlined, LockOutlined, GlobalOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { loginSuccess } from '@/store/auth/authSlice'
 import { saveAuthData } from '@/utils/auth'
-import { base64HashPassword } from '@/utils/password'
+import { hashPassword } from '@/utils/auth'
 import apiClient from '@/api/client'
 import { showMessage } from '@/utils/messages'
 import { useTheme } from '@/context/ThemeContext'
@@ -36,7 +36,7 @@ const LoginPage: React.FC = () => {
 
     try {
       // Hash password
-      const passwordHash = await base64HashPassword(values.password)
+      const passwordHash = await hashPassword(values.password)
 
       // Attempt login
       const loginResponse = await apiClient.login(values.email, passwordHash)

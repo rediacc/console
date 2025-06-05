@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
 import toast from 'react-hot-toast'
-import { hashPassword } from '@/utils/password'
+import { hashPassword } from '@/utils/auth'
 
 export interface User {
   userEmail: string
