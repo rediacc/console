@@ -20,7 +20,7 @@ export const useMachines = (teamFilter?: string | string[], enabled: boolean = t
       }
       // If no teamFilter, params remains empty (get all machines)
       
-      const response = await apiClient.get<Machine[]>('/GetTeamMachines', params)
+      const response = await apiClient.get('/GetTeamMachines', params)
       const machines = response.tables?.[1]?.data || response.tables?.[0]?.data || []
       if (!Array.isArray(machines)) return []
       return machines.filter(machine => machine && machine.machineName)

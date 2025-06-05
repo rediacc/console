@@ -124,7 +124,7 @@ export const usePermissionGroups = () => {
   return useQuery({
     queryKey: ['permission-groups'],
     queryFn: async () => {
-      const response = await apiClient.get<PermissionGroup[]>('/GetCompanyPermissionGroups')
+      const response = await apiClient.get('/GetCompanyPermissionGroups')
       return response.tables[1]?.data || []
     },
   })

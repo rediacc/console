@@ -6,6 +6,7 @@ export interface Region {
   regionName: string
   bridgeCount: number
   vaultVersion: number
+  vaultContent?: string
 }
 
 export interface Bridge {
@@ -19,7 +20,7 @@ export const useRegions = (enabled: boolean = true) => {
   return useQuery<Region[]>({
     queryKey: ['regions'],
     queryFn: async () => {
-      const response = await apiClient.get<Region[]>('/GetCompanyRegions')
+      const response = await apiClient.get('/GetCompanyRegions')
       const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
       if (!Array.isArray(data)) return []
       // Filter out any empty or invalid region objects
@@ -35,7 +36,7 @@ export const useRegionBridges = (regionName: string) => {
   return useQuery({
     queryKey: ['region-bridges', regionName],
     queryFn: async () => {
-      const response = await apiClient.get<Bridge[]>('/GetRegionBridges', { regionName })
+      const response = await apiClient.get('/GetRegionBridges', { regionName })
       const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
       return Array.isArray(data) ? data : []
     },

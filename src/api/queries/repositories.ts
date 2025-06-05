@@ -6,6 +6,7 @@ export interface Repository {
   repositoryName: string
   teamName: string
   vaultVersion: number
+  vaultContent?: string
 }
 
 // Get repositories for a team or multiple teams
@@ -26,7 +27,7 @@ export const useRepositories = (teamFilter?: string | string[]) => {
         params = { teamName: teamFilter }
       }
       
-      const response = await apiClient.get<any>('/GetTeamRepositories', params)
+      const response = await apiClient.get('/GetTeamRepositories', params)
       const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
       const repositories = Array.isArray(data) ? data : []
       return repositories

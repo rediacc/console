@@ -5,7 +5,7 @@ import toast from 'react-hot-toast'
 export interface Schedule {
   scheduleName: string
   teamName: string
-  scheduleVault: string
+  vaultContent?: string
   vaultVersion: number
 }
 
@@ -40,7 +40,7 @@ export const useSchedules = (teamFilter?: string | string[]) => {
         params = { teamName: teamFilter }
       }
       
-      const response = await apiClient.get<any>('/GetTeamSchedules', params)
+      const response = await apiClient.get('/GetTeamSchedules', params)
       const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
       if (!Array.isArray(data)) return []
       return data.filter((schedule: any) => schedule && schedule.scheduleName)

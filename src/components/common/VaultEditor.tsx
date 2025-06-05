@@ -98,6 +98,11 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     return field
   }
 
+  // Update importedData when initialData prop changes
+  useEffect(() => {
+    setImportedData(initialData)
+  }, [initialData])
+
   // Calculate extra fields not in schema
   useEffect(() => {
     if (!entityDef) return

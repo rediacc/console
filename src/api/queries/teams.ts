@@ -9,7 +9,7 @@ export interface Team {
   repoCount: number
   storageCount: number
   scheduleCount: number
-  vault?: string
+  vaultContent?: string
   vaultVersion: number
 }
 
@@ -24,7 +24,7 @@ export const useTeams = () => {
   return useQuery<Team[]>({
     queryKey: ['teams'],
     queryFn: async () => {
-      const response = await apiClient.get<Team[]>('/GetCompanyTeams')
+      const response = await apiClient.get('/GetCompanyTeams')
       // Ensure we always return an array
       const teams = response.tables?.[1]?.data || response.tables?.[0]?.data || []
       if (!Array.isArray(teams)) return []
@@ -40,7 +40,7 @@ export const useTeamMembers = (teamName: string) => {
   return useQuery({
     queryKey: ['team-members', teamName],
     queryFn: async () => {
-      const response = await apiClient.get<TeamMember[]>('/GetTeamMembers', { teamName })
+      const response = await apiClient.get('/GetTeamMembers', { teamName })
       return response.tables[1]?.data || []
     },
     enabled: !!teamName,

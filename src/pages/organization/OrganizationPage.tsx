@@ -1683,7 +1683,7 @@ const OrganizationPage: React.FC = () => {
         onSave={handleUpdateTeamVault}
         entityType="TEAM"
         title={t('general.configureVault', { name: teamVaultModalConfig.team?.teamName || '' })}
-        initialVault={teamVaultModalConfig.team?.vault || "{}"}
+        initialVault={teamVaultModalConfig.team?.vaultContent || "{}"}
         initialVersion={teamVaultModalConfig.team?.vaultVersion || 1}
         loading={updateTeamVaultMutation.isPending}
       />
@@ -1718,7 +1718,7 @@ const OrganizationPage: React.FC = () => {
         onSave={handleUpdateRegionVault}
         entityType="REGION"
         title={t('general.configureVault', { name: regionVaultModalConfig.region?.regionName || '' })}
-        initialVault="{}"
+        initialVault={regionVaultModalConfig.region?.vaultContent || "{}"}
         initialVersion={regionVaultModalConfig.region?.vaultVersion || 1}
         loading={updateRegionVaultMutation.isPending}
       />
@@ -1782,7 +1782,7 @@ const OrganizationPage: React.FC = () => {
         onSave={handleUpdateBridgeVault}
         entityType="BRIDGE"
         title={t('general.configureVault', { name: bridgeVaultModalConfig.bridge?.bridgeName || '' })}
-        initialVault="{}"
+        initialVault={bridgeVaultModalConfig.bridge?.vaultContent || "{}"}
         initialVersion={bridgeVaultModalConfig.bridge?.vaultVersion || 1}
         loading={updateBridgeVaultMutation.isPending}
       />
@@ -1868,7 +1868,7 @@ const OrganizationPage: React.FC = () => {
         onSave={handleUpdateRepositoryVault}
         entityType="REPOSITORY"
         title={t('general.configureVault', { name: repositoryVaultModalConfig.repository?.repositoryName || '' })}
-        initialVault="{}"
+        initialVault={repositoryVaultModalConfig.repository?.vaultContent || "{}"}
         initialVersion={repositoryVaultModalConfig.repository?.vaultVersion || 1}
         loading={updateRepositoryVaultMutation.isPending}
       />
@@ -1953,7 +1953,7 @@ const OrganizationPage: React.FC = () => {
         onSave={handleUpdateStorageVault}
         entityType="STORAGE"
         title={t('general.configureVault', { name: storageVaultModalConfig.storage?.storageName || '' })}
-        initialVault="{}"
+        initialVault={storageVaultModalConfig.storage?.vaultContent || "{}"}
         initialVersion={storageVaultModalConfig.storage?.vaultVersion || 1}
         loading={updateStorageVaultMutation.isPending}
       />
@@ -2038,7 +2038,7 @@ const OrganizationPage: React.FC = () => {
         onSave={handleUpdateScheduleVault}
         entityType="SCHEDULE"
         title={t('general.configureVault', { name: scheduleVaultModalConfig.schedule?.scheduleName || '' })}
-        initialVault="{}"
+        initialVault={scheduleVaultModalConfig.schedule?.vaultContent || "{}"}
         initialVersion={scheduleVaultModalConfig.schedule?.vaultVersion || 1}
         loading={updateScheduleVaultMutation.isPending}
       />

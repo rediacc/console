@@ -5,4 +5,5 @@ export interface Machine {
   regionName?: string
   queueCount: number
   vaultVersion: number
+  vaultContent?: string
 }

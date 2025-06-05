@@ -7,6 +7,7 @@ export interface Bridge {
   regionName: string
   machineCount: number
   vaultVersion: number
+  vaultContent?: string
 }
 
 // Get bridges for a region
@@ -15,7 +16,7 @@ export const useBridges = (regionName?: string) => {
     queryKey: ['bridges', regionName],
     queryFn: async () => {
       if (!regionName) return []
-      const response = await apiClient.get<Bridge[]>('/GetRegionBridges', { regionName })
+      const response = await apiClient.get('/GetRegionBridges', { regionName })
       const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
       if (!Array.isArray(data)) return []
       // Filter out any empty or invalid bridge objects

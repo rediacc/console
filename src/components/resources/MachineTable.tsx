@@ -939,20 +939,19 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       )}
 
       {/* Vault Configuration Modal */}
-      {vaultMachine && (
-        <VaultEditorModal
-          open={!!vaultMachine}
-          onCancel={() => {
-            setVaultMachine(null);
-          }}
-          onSave={handleUpdateVault}
-          entityType="MACHINE"
-          title={t('machines:form.title.vault')}
-          initialVault={vaultMachine.vault || "{}"}
-          initialVersion={vaultMachine.vaultVersion}
-          loading={updateMachineVaultMutation.isPending}
-        />
-      )}
+      <VaultEditorModal
+        key={vaultMachine?.machineName || 'vault-modal'}
+        open={!!vaultMachine}
+        onCancel={() => {
+          setVaultMachine(null);
+        }}
+        onSave={handleUpdateVault}
+        entityType="MACHINE"
+        title={t('machines:form.title.vault')}
+        initialVault={vaultMachine?.vaultContent || "{}"}
+        initialVersion={vaultMachine?.vaultVersion || 1}
+        loading={updateMachineVaultMutation.isPending}
+      />
 
       {/* System Functions Modal */}
       {functionModalMachine && (
