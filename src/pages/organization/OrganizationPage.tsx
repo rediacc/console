@@ -1827,18 +1827,39 @@ const OrganizationPage: React.FC = () => {
         }}
         footer={null}
       >
-        <ResourceForm
-          form={repositoryForm}
-          fields={repositoryFormFields}
-          onSubmit={handleCreateRepository}
-          submitText={t('general.create')}
-          cancelText={t('general.cancel')}
-          onCancel={() => {
-            setIsCreateRepositoryModalOpen(false)
-            repositoryForm.reset()
-          }}
-          loading={createRepositoryMutation.isPending}
-        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <ResourceForm
+            form={repositoryForm}
+            fields={repositoryFormFields}
+            onSubmit={handleCreateRepository}
+            submitText={t('general.create')}
+            cancelText={t('general.cancel')}
+            onCancel={() => {
+              setIsCreateRepositoryModalOpen(false)
+              repositoryForm.reset()
+            }}
+            loading={createRepositoryMutation.isPending}
+          />
+          
+          {uiMode === 'simple' && (
+            <div style={{ 
+              borderTop: '1px solid #f0f0f0', 
+              paddingTop: 16,
+              marginTop: 8
+            }}>
+              <Alert
+                message={t('general.defaultsApplied')}
+                description={
+                  <Space direction="vertical" size={0}>
+                    <Text>{t('general.team')}: Private Team</Text>
+                  </Space>
+                }
+                type="info"
+                showIcon
+              />
+            </div>
+          )}
+        </div>
       </Modal>
 
       <VaultEditorModal
@@ -1891,18 +1912,39 @@ const OrganizationPage: React.FC = () => {
         }}
         footer={null}
       >
-        <ResourceForm
-          form={storageForm}
-          fields={storageFormFields}
-          onSubmit={handleCreateStorage}
-          submitText={t('general.create')}
-          cancelText={t('general.cancel')}
-          onCancel={() => {
-            setIsCreateStorageModalOpen(false)
-            storageForm.reset()
-          }}
-          loading={createStorageMutation.isPending}
-        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <ResourceForm
+            form={storageForm}
+            fields={storageFormFields}
+            onSubmit={handleCreateStorage}
+            submitText={t('general.create')}
+            cancelText={t('general.cancel')}
+            onCancel={() => {
+              setIsCreateStorageModalOpen(false)
+              storageForm.reset()
+            }}
+            loading={createStorageMutation.isPending}
+          />
+          
+          {uiMode === 'simple' && (
+            <div style={{ 
+              borderTop: '1px solid #f0f0f0', 
+              paddingTop: 16,
+              marginTop: 8
+            }}>
+              <Alert
+                message={t('general.defaultsApplied')}
+                description={
+                  <Space direction="vertical" size={0}>
+                    <Text>{t('general.team')}: Private Team</Text>
+                  </Space>
+                }
+                type="info"
+                showIcon
+              />
+            </div>
+          )}
+        </div>
       </Modal>
 
       <VaultEditorModal
@@ -1955,18 +1997,39 @@ const OrganizationPage: React.FC = () => {
         }}
         footer={null}
       >
-        <ResourceForm
-          form={scheduleForm}
-          fields={scheduleFormFields}
-          onSubmit={handleCreateSchedule}
-          submitText={t('general.create')}
-          cancelText={t('general.cancel')}
-          onCancel={() => {
-            setIsCreateScheduleModalOpen(false)
-            scheduleForm.reset()
-          }}
-          loading={createScheduleMutation.isPending}
-        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <ResourceForm
+            form={scheduleForm}
+            fields={scheduleFormFields}
+            onSubmit={handleCreateSchedule}
+            submitText={t('general.create')}
+            cancelText={t('general.cancel')}
+            onCancel={() => {
+              setIsCreateScheduleModalOpen(false)
+              scheduleForm.reset()
+            }}
+            loading={createScheduleMutation.isPending}
+          />
+          
+          {uiMode === 'simple' && (
+            <div style={{ 
+              borderTop: '1px solid #f0f0f0', 
+              paddingTop: 16,
+              marginTop: 8
+            }}>
+              <Alert
+                message={t('general.defaultsApplied')}
+                description={
+                  <Space direction="vertical" size={0}>
+                    <Text>{t('general.team')}: Private Team</Text>
+                  </Space>
+                }
+                type="info"
+                showIcon
+              />
+            </div>
+          )}
+        </div>
       </Modal>
 
       <VaultEditorModal

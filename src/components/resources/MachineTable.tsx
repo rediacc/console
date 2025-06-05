@@ -42,6 +42,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { createMachineSchema, CreateMachineForm, editMachineSchema, EditMachineForm } from '@/utils/validation';
 import { QUEUE_FUNCTIONS, type QueueFunction } from '@/api/queries/queue';
 import { useCreateQueueItem } from '@/api/queries/queue';
@@ -114,14 +115,26 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const updateMachineVaultMutation = useUpdateMachineVault();
   const createQueueItemMutation = useCreateQueueItem();
 
-  // Machine form setup
+  // Create a simple mode schema that only requires machineName
+  const simpleMachineSchema = React.useMemo(() => 
+    z.object({
+      machineName: z.string().min(1, 'Machine name is required').max(100, 'Machine name must be less than 100 characters'),
+      teamName: z.string().optional(),
+      regionName: z.string().optional(),
+      bridgeName: z.string().optional(),
+      machineVault: z.string().optional().default('{}'),
+    }),
+    []
+  );
+
+  // Machine form setup - recreate when uiMode changes
   const machineForm = useForm<CreateMachineForm>({
-    resolver: zodResolver(createMachineSchema) as any,
+    resolver: zodResolver(uiMode === 'simple' ? simpleMachineSchema : createMachineSchema) as any,
     defaultValues: {
-      teamName: '',
+      teamName: uiMode === 'simple' ? 'Private Team' : '',
       machineName: '',
-      regionName: '',
-      bridgeName: '',
+      regionName: uiMode === 'simple' ? 'Default Region' : '',
+      bridgeName: uiMode === 'simple' ? 'Shared Bridge' : '',
       machineVault: '{}',
     },
   });
@@ -180,14 +193,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     }
   }, [selectedRegionForEdit, filteredBridgesForEdit, editMachineForm]);
 
-  // Set default values for Simple mode when modal opens
-  React.useEffect(() => {
-    if (showCreateModal && uiMode === 'simple') {
-      machineForm.setValue('teamName', 'Private Team');
-      machineForm.setValue('regionName', 'Default Region');
-      machineForm.setValue('bridgeName', 'Shared Bridge');
-    }
-  }, [showCreateModal, uiMode, machineForm]);
 
   // Get unique values for filters
   const teams = dropdownData?.teams || [];
@@ -265,12 +270,20 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   // Handle create machine
   const handleCreateMachine = async (data: CreateMachineForm) => {
     try {
-      const { teamName, bridgeName, machineName, machineVault } = data;
+      // In simple mode, ensure default values are used
+      const formData = {
+        teamName: uiMode === 'simple' ? 'Private Team' : data.teamName,
+        regionName: uiMode === 'simple' ? 'Default Region' : data.regionName,
+        bridgeName: uiMode === 'simple' ? 'Shared Bridge' : data.bridgeName,
+        machineName: data.machineName,
+        machineVault: data.machineVault || '{}'
+      };
+      
       await createMachineMutation.mutateAsync({
-        teamName,
-        bridgeName,
-        machineName,
-        machineVault
+        teamName: formData.teamName,
+        bridgeName: formData.bridgeName,
+        machineName: formData.machineName,
+        machineVault: formData.machineVault
       });
       setShowCreateModal(false);
       machineForm.reset();
@@ -862,18 +875,41 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         }}
         footer={null}
       >
-        <ResourceForm
-          form={machineForm}
-          fields={machineFormFields}
-          onSubmit={handleCreateMachine}
-          submitText={t('common:actions.create')}
-          cancelText={t('common:actions.cancel')}
-          onCancel={() => {
-            setShowCreateModal(false);
-            machineForm.reset();
-          }}
-          loading={createMachineMutation.isPending}
-        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <ResourceForm
+            form={machineForm}
+            fields={machineFormFields}
+            onSubmit={handleCreateMachine}
+            submitText={t('common:actions.create')}
+            cancelText={t('common:actions.cancel')}
+            onCancel={() => {
+              setShowCreateModal(false);
+              machineForm.reset();
+            }}
+            loading={createMachineMutation.isPending}
+          />
+          
+          {uiMode === 'simple' && (
+            <div style={{ 
+              borderTop: '1px solid #f0f0f0', 
+              paddingTop: 16,
+              marginTop: 8
+            }}>
+              <Alert
+                message={t('machines:defaultsApplied')}
+                description={
+                  <Space direction="vertical" size={0}>
+                    <Text>{t('machines:team')}: Private Team</Text>
+                    <Text>{t('machines:region')}: Default Region</Text>
+                    <Text>{t('machines:bridge')}: Shared Bridge</Text>
+                  </Space>
+                }
+                type="info"
+                showIcon
+              />
+            </div>
+          )}
+        </div>
       </Modal>
 
       {/* Edit Machine Modal */}

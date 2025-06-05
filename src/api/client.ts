@@ -4,8 +4,9 @@ import { updateToken, logout } from '@/store/auth/authSlice'
 import { showMessage } from '@/utils/messages'
 
 // Use relative path in production (served via nginx proxy) and absolute in development
+const MIDDLEWARE_PORT = import.meta.env.VITE_MIDDLEWARE_PORT || '8080'
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (import.meta.env.PROD ? '/api' : 'http://localhost:8080/api')
+  (import.meta.env.PROD ? '/api' : `http://localhost:${MIDDLEWARE_PORT}/api`)
 const API_PREFIX = '/StoredProcedure'
 
 export interface ApiResponse<T = any> {

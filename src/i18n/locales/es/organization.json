@@ -144,7 +144,8 @@
     "no": "No",
     "region": "Región",
     "team": "Equipo",
-    "configureVault": "Configurar Bóveda - {{name}}"
+    "configureVault": "Configurar Bóveda - {{name}}",
+    "defaultsApplied": "Valores predeterminados aplicados automáticamente"
   },
   "schedules": {
     "title": "Horarios",

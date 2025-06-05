@@ -56,5 +56,6 @@
   "description": "Descripción (opcional)",
   "descriptionPlaceholder": "Agregar una descripción personalizada para este elemento de cola",
   "selectFunctionToConfigure": "Seleccione una función para configurar",
-  "addToQueue": "Agregar a la Cola"
+  "addToQueue": "Agregar a la Cola",
+  "defaultsApplied": "Valores predeterminados aplicados automáticamente"
 }

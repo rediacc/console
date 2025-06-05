@@ -56,5 +56,6 @@
   "description": "Description (optional)",
   "descriptionPlaceholder": "Add a custom description for this queue item",
   "selectFunctionToConfigure": "Select a function to configure",
-  "addToQueue": "Add to Queue"
+  "addToQueue": "Add to Queue",
+  "defaultsApplied": "Default values applied automatically"
 }

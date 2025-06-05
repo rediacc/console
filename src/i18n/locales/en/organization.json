@@ -144,7 +144,8 @@
     "no": "No",
     "region": "Region",
     "team": "Team",
-    "configureVault": "Configure Vault - {{name}}"
+    "configureVault": "Configure Vault - {{name}}",
+    "defaultsApplied": "Default values applied automatically"
   },
   "schedules": {
     "title": "Schedules",
