@@ -222,7 +222,7 @@ const DashboardPage = () => {
           extra={<Text type="secondary">Monitor your resource consumption against plan limits</Text>}
         >
           <Row gutter={[16, 24]}>
-            {dashboard.resourceLimits.map((resource) => (
+            {dashboard.resources.map((resource) => (
               <Col key={resource.ResourceType} xs={24} sm={12} md={8}>
                 <Space direction="vertical" size="small" style={{ width: '100%' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

@@ -85,7 +85,7 @@ interface DashboardData {
   activeSubscription: ActiveSubscription | null;
   billingInfo: BillingInfo | null;
   availablePlans: AvailablePlan[];
-  resourceLimits: ResourceLimit[];
+  resources: ResourceLimit[];
   accountHealth: AccountHealth;
   featureAccess: FeatureAccess;
   allActiveSubscriptions?: SubscriptionDetail[];
