@@ -3,22 +3,37 @@ import apiClient from '@/api/client'
 import toast from 'react-hot-toast'
 import type { Machine } from '@/types'
 
-// Get machines for a team or all machines
-export const useMachines = (teamName?: string) => {
+// Get machines for a team, multiple teams, or all machines
+export const useMachines = (teamFilter?: string | string[]) => {
   return useQuery<Machine[]>({
-    queryKey: ['machines', teamName],
+    queryKey: ['machines', teamFilter],
     queryFn: async () => {
-      // GetTeamMachines now supports optional teamName parameter
-      // If teamName is provided, it returns machines for that team
-      // If teamName is not provided, it returns all machines
-      const params = teamName ? { teamName } : {}
-      const response = await apiClient.get<Machine[]>('/GetTeamMachines', params)
-      // Check which table has the data (could be different based on whether teamName was provided)
-      const machines = response.tables?.[1]?.data || response.tables?.[0]?.data || []
-      // Ensure we always return an array and filter out empty objects
-      if (!Array.isArray(machines)) return []
-      // Filter out any empty or invalid machine objects
-      return machines.filter(machine => machine && machine.machineName)
+      // If teamFilter is an array of teams, fetch machines from all selected teams
+      if (Array.isArray(teamFilter) && teamFilter.length > 0) {
+        // Make sequential API calls for each team (required for token chaining)
+        const allMachines: Machine[] = []
+        
+        for (const teamName of teamFilter) {
+          const response = await apiClient.get<Machine[]>('/GetTeamMachines', { teamName })
+          const machines = response.tables?.[1]?.data || response.tables?.[0]?.data || []
+          if (Array.isArray(machines)) {
+            allMachines.push(...machines.filter(machine => machine && machine.machineName))
+          }
+        }
+        
+        // Remove duplicates based on machineName
+        const uniqueMachines = Array.from(
+          new Map(allMachines.map(m => [m.machineName, m])).values()
+        )
+        return uniqueMachines
+      } else {
+        // Single team or all machines
+        const params = teamFilter && !Array.isArray(teamFilter) ? { teamName: teamFilter } : {}
+        const response = await apiClient.get<Machine[]>('/GetTeamMachines', params)
+        const machines = response.tables?.[1]?.data || response.tables?.[0]?.data || []
+        if (!Array.isArray(machines)) return []
+        return machines.filter(machine => machine && machine.machineName)
+      }
     },
   })
 }

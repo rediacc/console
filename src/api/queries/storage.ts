@@ -8,20 +8,40 @@ export interface Storage {
   vaultVersion: number
 }
 
-// Get storage for a team
-export const useStorage = (teamName?: string) => {
+// Get storage for a team or multiple teams
+export const useStorage = (teamFilter?: string | string[]) => {
   return useQuery<Storage[]>({
-    queryKey: ['storage', teamName],
+    queryKey: ['storage', teamFilter],
     queryFn: async () => {
-      if (!teamName) return []
-      const response = await apiClient.get<any>('/GetTeamStorages', { teamName })
-      // Get data from tables with proper fallback
-      const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
-      // Ensure we have an array and filter out empty objects
-      if (!Array.isArray(data)) return []
-      return data.filter((storage: any) => storage && storage.storageName)
+      if (!teamFilter || (Array.isArray(teamFilter) && teamFilter.length === 0)) return []
+      
+      // If teamFilter is an array of teams, fetch storage from all selected teams
+      if (Array.isArray(teamFilter)) {
+        // Make sequential API calls for each team (required for token chaining)
+        const allStorage: Storage[] = []
+        
+        for (const teamName of teamFilter) {
+          const response = await apiClient.get<any>('/GetTeamStorages', { teamName })
+          const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
+          if (Array.isArray(data)) {
+            allStorage.push(...data.filter((storage: any) => storage && storage.storageName))
+          }
+        }
+        
+        // Remove duplicates based on storageName
+        const uniqueStorage = Array.from(
+          new Map(allStorage.map(s => [s.storageName, s])).values()
+        )
+        return uniqueStorage
+      } else {
+        // Single team
+        const response = await apiClient.get<any>('/GetTeamStorages', { teamName: teamFilter })
+        const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
+        if (!Array.isArray(data)) return []
+        return data.filter((storage: any) => storage && storage.storageName)
+      }
     },
-    enabled: !!teamName,
+    enabled: !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0),
   })
 }
 

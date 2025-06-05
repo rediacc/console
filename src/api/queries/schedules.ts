@@ -22,20 +22,40 @@ export interface UpdateScheduleVaultRequest {
   vaultVersion: number
 }
 
-// Get schedules for a team
-export const useSchedules = (teamName?: string) => {
+// Get schedules for a team or multiple teams
+export const useSchedules = (teamFilter?: string | string[]) => {
   return useQuery<Schedule[]>({
-    queryKey: ['schedules', teamName],
+    queryKey: ['schedules', teamFilter],
     queryFn: async () => {
-      if (!teamName) return []
-      const response = await apiClient.get<any>('/GetTeamSchedules', { teamName })
-      // Get data from tables with proper fallback
-      const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
-      // Ensure we have an array and filter out empty objects
-      if (!Array.isArray(data)) return []
-      return data.filter((schedule: any) => schedule && schedule.scheduleName)
+      if (!teamFilter || (Array.isArray(teamFilter) && teamFilter.length === 0)) return []
+      
+      // If teamFilter is an array of teams, fetch schedules from all selected teams
+      if (Array.isArray(teamFilter)) {
+        // Make sequential API calls for each team (required for token chaining)
+        const allSchedules: Schedule[] = []
+        
+        for (const teamName of teamFilter) {
+          const response = await apiClient.get<any>('/GetTeamSchedules', { teamName })
+          const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
+          if (Array.isArray(data)) {
+            allSchedules.push(...data.filter((schedule: any) => schedule && schedule.scheduleName))
+          }
+        }
+        
+        // Remove duplicates based on scheduleName
+        const uniqueSchedules = Array.from(
+          new Map(allSchedules.map(s => [s.scheduleName, s])).values()
+        )
+        return uniqueSchedules
+      } else {
+        // Single team
+        const response = await apiClient.get<any>('/GetTeamSchedules', { teamName: teamFilter })
+        const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
+        if (!Array.isArray(data)) return []
+        return data.filter((schedule: any) => schedule && schedule.scheduleName)
+      }
     },
-    enabled: !!teamName,
+    enabled: !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0),
   })
 }
 

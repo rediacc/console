@@ -48,9 +48,7 @@ import {
 } from '@/api/queries/bridges'
 
 // Machine queries
-import { 
-  useMachines
-} from '@/api/queries/machines'
+import { MachineTable } from '@/components/resources/MachineTable'
 
 // Repository queries
 import { 
@@ -110,7 +108,7 @@ const OrganizationPage: React.FC = () => {
   const navigate = useNavigate()
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const [activeTab, setActiveTab] = useState('teams')
-  const [selectedTeam, setSelectedTeam] = useState<string | null>(null)
+  const [selectedTeams, setSelectedTeams] = useState<string[]>([])
   const [teamResourcesTab, setTeamResourcesTab] = useState('machines')
   
   // Ensure we're on the teams tab in simple mode
@@ -199,26 +197,23 @@ const OrganizationPage: React.FC = () => {
   const deleteBridgeMutation = useDeleteBridge()
   const updateBridgeVaultMutation = useUpdateBridgeVault()
 
-  // Machine hooks
-  const { data: machines, isLoading: machinesLoading } = useMachines(selectedTeam || undefined)
-  const machinesList = machines || []
 
   // Repository hooks
-  const { data: repositories = [], isLoading: repositoriesLoading } = useRepositories(selectedTeam || undefined)
+  const { data: repositories = [], isLoading: repositoriesLoading } = useRepositories(selectedTeams.length > 0 ? selectedTeams : undefined)
   const createRepositoryMutation = useCreateRepository()
   const updateRepositoryNameMutation = useUpdateRepositoryName()
   const deleteRepositoryMutation = useDeleteRepository()
   const updateRepositoryVaultMutation = useUpdateRepositoryVault()
 
   // Storage hooks
-  const { data: storages = [], isLoading: storagesLoading } = useStorage(selectedTeam || undefined)
+  const { data: storages = [], isLoading: storagesLoading } = useStorage(selectedTeams.length > 0 ? selectedTeams : undefined)
   const createStorageMutation = useCreateStorage()
   const updateStorageNameMutation = useUpdateStorageName()
   const deleteStorageMutation = useDeleteStorage()
   const updateStorageVaultMutation = useUpdateStorageVault()
 
   // Schedule hooks
-  const { data: schedules = [], isLoading: schedulesLoading } = useSchedules(selectedTeam || undefined)
+  const { data: schedules = [], isLoading: schedulesLoading } = useSchedules(selectedTeams.length > 0 ? selectedTeams : undefined)
   const createScheduleMutation = useCreateSchedule()
   const updateScheduleNameMutation = useUpdateScheduleName()
   const deleteScheduleMutation = useDeleteSchedule()
@@ -226,14 +221,14 @@ const OrganizationPage: React.FC = () => {
 
   // Set default selected team in Simple mode
   React.useEffect(() => {
-    if (uiMode === 'simple' && !selectedTeam && teamsList && teamsList.length > 0) {
+    if (uiMode === 'simple' && selectedTeams.length === 0 && teamsList && teamsList.length > 0) {
       // Check if "Private Team" exists
       const privateTeam = teamsList.find((team: Team) => team.teamName === 'Private Team')
       if (privateTeam) {
-        setSelectedTeam('Private Team')
+        setSelectedTeams(['Private Team'])
       }
     }
-  }, [uiMode, selectedTeam, teamsList])
+  }, [uiMode, selectedTeams, teamsList])
 
   // Forms
   const regionForm = useForm<CreateRegionForm>({
@@ -317,8 +312,8 @@ const OrganizationPage: React.FC = () => {
   const handleDeleteTeam = async (teamName: string) => {
     try {
       await deleteTeamMutation.mutateAsync(teamName)
-      if (selectedTeam === teamName) {
-        setSelectedTeam(null)
+      if (selectedTeams.includes(teamName)) {
+        setSelectedTeams(selectedTeams.filter(t => t !== teamName))
       }
     } catch (error) {
       // Error handled by mutation
@@ -861,42 +856,6 @@ const OrganizationPage: React.FC = () => {
     },
   ]
 
-  // Machine columns - simplified since actions are handled in MachinePage
-  const machineColumns = [
-    {
-      title: t('machines.machineName'),
-      dataIndex: 'machineName',
-      key: 'machineName',
-      render: (text: string) => (
-        <Space>
-          <DesktopOutlined style={{ color: '#556b2f' }} />
-          <strong>{text}</strong>
-        </Space>
-      ),
-    },
-    ...(uiMode !== 'simple' ? [{
-      title: t('bridges.bridge'),
-      dataIndex: 'bridgeName',
-      key: 'bridgeName',
-      render: (bridge: string) => <Tag color="blue">{bridge}</Tag>,
-    }] : []),
-    {
-      title: t('machines.queueItems'),
-      dataIndex: 'queueCount',
-      key: 'queueCount',
-      width: 120,
-      render: (count: number) => (
-        <Badge count={count} showZero style={{ backgroundColor: count > 0 ? '#52c41a' : '#d9d9d9' }} />
-      ),
-    },
-    ...(uiMode === 'expert' ? [{
-      title: t('general.vaultVersion'),
-      dataIndex: 'vaultVersion',
-      key: 'vaultVersion',
-      width: 120,
-      render: (version: number) => <Tag>{t('general.versionFormat', { version })}</Tag>,
-    }] : []),
-  ]
 
   // Repository columns
   const repositoryColumns = [
@@ -1219,37 +1178,12 @@ const OrganizationPage: React.FC = () => {
         </span>
       ),
       children: (
-        <>
-          <Alert
-            message={t('machines:readOnlyNote')}
-            description={
-              <span>
-                {t('machines:readOnlyDescription')}{' '}
-                <a onClick={() => navigate('/machines', { state: { preselectedTeam: selectedTeam } })}>
-                  {t('machines:goToMachinesPage')}
-                </a>
-              </span>
-            }
-            type="info"
-            showIcon
-            style={{ marginBottom: 16 }}
-          />
-          <Table
-            columns={machineColumns}
-            dataSource={machinesList}
-            rowKey="machineName"
-            loading={machinesLoading}
-            pagination={{
-              total: machinesList.length || 0,
-              pageSize: 10,
-              showSizeChanger: true,
-              showTotal: (total) => t('machines.totalMachines', { total }),
-            }}
-            locale={{
-              emptyText: t('machines.noMachines'),
-            }}
-          />
-        </>
+        <MachineTable 
+          mode="embedded"
+          teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
+          showFilters={true}
+          showActions={true}
+        />
       ),
     },
     {
@@ -1368,15 +1302,26 @@ const OrganizationPage: React.FC = () => {
                   </Button>
                 }
                 rowSelection={{
-                  type: 'radio',
-                  selectedRowKeys: selectedTeam ? [selectedTeam] : [],
+                  type: 'checkbox',
+                  selectedRowKeys: selectedTeams,
                   onChange: (selectedRowKeys: React.Key[]) => {
-                    setSelectedTeam(selectedRowKeys[0] as string || null)
+                    setSelectedTeams(selectedRowKeys as string[])
                   },
                 }}
                 onRow={(record) => ({
-                  onClick: () => setSelectedTeam(record.teamName),
-                  className: selectedTeam === record.teamName ? 'selected-row' : '',
+                  onClick: (e: React.MouseEvent) => {
+                    // Check if the click is on the checkbox or its parent elements
+                    const target = e.target as HTMLElement
+                    const isCheckboxClick = target.closest('.ant-checkbox-wrapper') || 
+                                          target.closest('.ant-checkbox') ||
+                                          target.closest('td[class*="ant-table-selection-column"]')
+                    
+                    if (!isCheckboxClick) {
+                      // Row click selects only one team (not on checkbox)
+                      setSelectedTeams([record.teamName])
+                    }
+                  },
+                  className: selectedTeams.includes(record.teamName) ? 'selected-row' : '',
                   style: { cursor: 'pointer' },
                 })}
               />
@@ -1390,16 +1335,16 @@ const OrganizationPage: React.FC = () => {
                   <Title level={4} style={{ margin: 0 }}>
                     {uiMode === 'simple' 
                       ? t('teams.teamResources')
-                      : (selectedTeam ? t('teams.resourcesInTeam', { team: selectedTeam }) : t('teams.teamResources'))
+                      : (selectedTeams.length > 0 ? t('teams.resourcesInTeam', { team: selectedTeams.join(', ') }) : t('teams.teamResources'))
                     }
                   </Title>
-                  {!selectedTeam && uiMode !== 'simple' && (
+                  {selectedTeams.length === 0 && uiMode !== 'simple' && (
                     <Text type="secondary" style={{ fontSize: 14 }}>
                       {t('teams.selectTeamToView')}
                     </Text>
                   )}
                 </div>
-                {selectedTeam && (
+                {selectedTeams.length > 0 && (
                   <Space>
                     <Button 
                       type="primary" 
@@ -1411,20 +1356,26 @@ const OrganizationPage: React.FC = () => {
                             navigate('/machines', { 
                               state: { 
                                 openCreateModal: true, 
-                                preselectedTeam: selectedTeam 
+                                preselectedTeam: selectedTeams.length === 1 ? selectedTeams[0] : undefined 
                               } 
                             })
                             break
                           case 'repositories':
-                            repositoryForm.setValue('teamName', selectedTeam)
+                            if (selectedTeams.length === 1) {
+                              repositoryForm.setValue('teamName', selectedTeams[0])
+                            }
                             setIsCreateRepositoryModalOpen(true)
                             break
                           case 'storage':
-                            storageForm.setValue('teamName', selectedTeam)
+                            if (selectedTeams.length === 1) {
+                              storageForm.setValue('teamName', selectedTeams[0])
+                            }
                             setIsCreateStorageModalOpen(true)
                             break
                           case 'schedules':
-                            scheduleForm.setValue('teamName', selectedTeam)
+                            if (selectedTeams.length === 1) {
+                              scheduleForm.setValue('teamName', selectedTeams[0])
+                            }
                             setIsCreateScheduleModalOpen(true)
                             break
                         }
@@ -1440,13 +1391,13 @@ const OrganizationPage: React.FC = () => {
                 )}
               </div>
               
-              {!selectedTeam && uiMode !== 'simple' ? (
+              {selectedTeams.length === 0 && uiMode !== 'simple' ? (
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description={t('teams.selectTeamPrompt')}
                   style={{ padding: '40px 0' }}
                 />
-              ) : selectedTeam ? (
+              ) : selectedTeams.length > 0 ? (
                 <Tabs
                   activeKey={teamResourcesTab}
                   onChange={setTeamResourcesTab}
