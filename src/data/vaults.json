@@ -36,8 +36,8 @@
     },
     "REPOSITORY": {
       "descriptionKey": "vaultEditor.fields.REPOSITORY.description",
-      "required": ["name", "size", "encryption", "credential"],
-      "optional": ["retention", "schedule"],
+      "required": ["name", "size", "credential"],
+      "optional": [],
       "fields": {
         "name": {
           "type": "string",
@@ -52,110 +52,29 @@
         "credential": {
           "type": "string",
           "pattern": "^[A-Za-z0-9!@#$%^&*()_+{}|:<>,.?/]{32}$",
-          "minLength": 32,
+          "minLength": 16,
           "maxLength": 32,
           "example": "Kj8#mP2$vL9@nQ4&xR7!wE3*tY6^aS1+"
-        },
-        "encryption": {
-          "type": "boolean",
-          "default": true
-        },
-        "retention": {
-          "type": "object",
-          "properties": {
-            "daily": {
-              "type": "number",
-              "example": 7
-            },
-            "weekly": {
-              "type": "number",
-              "example": 4
-            },
-            "monthly": {
-              "type": "number",
-              "example": 12
-            }
-          }
-        },
-        "schedule": {
-          "type": "string",
-          "example": "0 2 * * *"
         }
       }
     },
     "BRIDGE": {
       "descriptionKey": "vaultEditor.fields.BRIDGE.description",
-      "required": ["name", "type", "endpoints"],
-      "optional": ["security", "loadBalancing", "ip", "user", "datastore", "port", "host_entry", "ssh_password"],
+      "required": ["SSH_PRIVATE_KEY", "SSH_PUBLIC_KEY", "ip", "user"],
+      "optional": ["ssh_password", "port", "host_entry"],
       "fields": {
-        "name": {
-          "type": "string",
-          "example": "region1-bridge"
-        },
-        "type": {
-          "type": "string",
-          "enum": ["standard", "high-availability", "geo-distributed"],
-          "default": "standard"
-        },
-        "endpoints": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "host": {
-                "type": "string"
-              },
-              "port": {
-                "type": "number"
-              },
-              "protocol": {
-                "type": "string",
-                "enum": ["tcp", "udp", "http", "https"],
-                "default": "tcp"
-              }
-            }
-          }
-        },
-        "security": {
-          "type": "object",
-          "properties": {
-            "tls": {
-              "type": "boolean",
-              "default": true
-            },
-            "authentication": {
-              "type": "string",
-              "enum": ["none", "token", "certificate"],
-              "default": "token"
-            }
-          }
-        },
-        "loadBalancing": {
-          "type": "object",
-          "properties": {
-            "enabled": {
-              "type": "boolean",
-              "default": false
-            },
-            "algorithm": {
-              "type": "string",
-              "enum": ["round-robin", "least-connections", "ip-hash"],
-              "default": "round-robin"
-            }
-          }
-        },
         "ip": {
           "type": "string",
           "format": "ipv4",
-          "example": "192.168.1.50"
+          "example": "192.168.1.100"
         },
         "user": {
           "type": "string",
-          "example": "bridge-user"
+          "example": "ubuntu"
         },
         "datastore": {
           "type": "string",
-          "example": "/mnt/bridge-datastore"
+          "example": "/mnt/datastore"
         },
         "port": {
           "type": "number",
@@ -164,12 +83,23 @@
         },
         "host_entry": {
           "type": "string",
-          "example": "192.168.1.50 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC..."
+          "example": "192.168.1.100 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC..."
         },
         "ssh_password": {
           "type": "string",
           "sensitive": true,
-          "example": "BridgeSecurePass123!"
+          "example": "SecurePassword123!"
+        },
+        "SSH_PRIVATE_KEY": {
+          "type": "string",
+          "sensitive": true,
+          "format": "base64",
+          "example": "LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0K..."
+        },
+        "SSH_PUBLIC_KEY": {
+          "type": "string",
+          "pattern": "^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/=]+ .+$",
+          "example": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... bridge"
         }
       }
     },
@@ -292,8 +222,8 @@
     },
     "REGION": {
       "descriptionKey": "vaultEditor.fields.REGION.description",
-      "required": ["name", "code", "location"],
-      "optional": [],
+      "required": [],
+      "optional": ["name", "code", "location"],
       "fields": {
         "name": {
           "type": "string",
@@ -327,52 +257,9 @@
     },
     "TEAM": {
       "descriptionKey": "vaultEditor.fields.TEAM.description",
-      "required": ["name", "permissions"],
-      "optional": ["quota", "policies", "SSH_PRIVATE_KEY", "SSH_PUBLIC_KEY"],
+      "required": ["SSH_PRIVATE_KEY", "SSH_PUBLIC_KEY"],
+      "optional": [],
       "fields": {
-        "name": {
-          "type": "string",
-          "example": "DevOps"
-        },
-        "permissions": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "example": ["backup_admin", "restore_user"]
-        },
-        "quota": {
-          "type": "object",
-          "properties": {
-            "machines": {
-              "type": "number"
-            },
-            "storage": {
-              "type": "string",
-              "example": "10T"
-            },
-            "repositories": {
-              "type": "number"
-            }
-          }
-        },
-        "policies": {
-          "type": "object",
-          "properties": {
-            "backupRetention": {
-              "type": "number",
-              "default": 30
-            },
-            "encryptionRequired": {
-              "type": "boolean",
-              "default": true
-            },
-            "approvalRequired": {
-              "type": "boolean",
-              "default": false
-            }
-          }
-        },
         "SSH_PRIVATE_KEY": {
           "type": "string",
           "sensitive": true,
