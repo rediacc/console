@@ -29,7 +29,7 @@ import {
 import Editor from '@monaco-editor/react'
 import type { UploadFile } from 'antd/es/upload/interface'
 import { useTranslation } from 'react-i18next'
-import vaultDefinitions from '../../data/vaultDefinitions.json'
+import vaultDefinitions from '../../data/vaults.json'
 import { useAppSelector } from '@/store/store'
 
 interface VaultEditorProps {

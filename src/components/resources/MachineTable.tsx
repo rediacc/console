@@ -50,6 +50,7 @@ import {
   FunctionOutlined 
 } from '@ant-design/icons';
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
+import functionsData from '@/data/functions.json';
 
 const { Option } = Select;
 const { Search } = Input;
@@ -388,7 +389,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
   // Filter system functions based on search
   const filteredSystemFunctions = useMemo(() => {
-    const systemFunctions = Object.values(QUEUE_FUNCTIONS).filter(
+    // Filter only System Functions from the merged data
+    const systemFunctions = Object.values(functionsData.functions).filter(
       func => func.category === 'System Functions'
     );
     
