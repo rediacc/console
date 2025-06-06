@@ -125,7 +125,7 @@
     "extraFields": "Extra Fields (Not in Schema)",
     "extraFieldsTooltip": "These fields were imported but are not defined in the schema",
     "extraFieldsWarning": "Warning",
-    "extraFieldsWarningDescription": "These fields are not defined in the schema and may be ignored by the system.",
+    "extraFieldsWarningDescription": "These fields are not defined in the schema and will be stored under 'extraFields' in the JSON structure.",
     "rawJsonEditor": "Raw JSON Editor (Expert Mode)",
     "rawJsonTooltip": "Direct JSON editing - Use with caution!",
     "expertModeOnly": "Expert Mode Only",
@@ -169,12 +169,12 @@
           "label": "SSH Port",
           "description": "SSH port number"
         },
-        "hostEntry": {
+        "host_entry": {
           "label": "Host Entry",
           "description": "SSH known host entry for security verification"
         },
-        "password": {
-          "label": "Password",
+        "ssh_password": {
+          "label": "SSH Password",
           "description": "SSH password for authentication (optional, SSH keys preferred)"
         }
       },
@@ -248,6 +248,46 @@
         "protocol": {
           "label": "Protocol",
           "description": "Communication protocol (HTTP/HTTPS)"
+        },
+        "name": {
+          "label": "Bridge Name",
+          "description": "Name identifier for the bridge"
+        },
+        "type": {
+          "label": "Bridge Type",
+          "description": "Type of bridge deployment"
+        },
+        "endpoints": {
+          "label": "Endpoints",
+          "description": "Bridge endpoint configurations"
+        },
+        "security": {
+          "label": "Security Settings",
+          "description": "Security configuration for the bridge"
+        },
+        "loadBalancing": {
+          "label": "Load Balancing",
+          "description": "Load balancing configuration"
+        },
+        "ip": {
+          "label": "IP Address",
+          "description": "IP address of the bridge machine"
+        },
+        "user": {
+          "label": "SSH User",
+          "description": "SSH username for bridge access"
+        },
+        "datastore": {
+          "label": "Datastore Path",
+          "description": "Path to the datastore directory"
+        },
+        "host_entry": {
+          "label": "Host Entry",
+          "description": "SSH known host entry for security verification"
+        },
+        "ssh_password": {
+          "label": "SSH Password",
+          "description": "SSH password for authentication (optional, SSH keys preferred)"
         }
       },
       "REGION": {

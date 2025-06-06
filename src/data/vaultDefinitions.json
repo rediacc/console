@@ -3,7 +3,7 @@
     "MACHINE": {
       "descriptionKey": "vaultEditor.fields.MACHINE.description",
       "required": ["ip", "user", "datastore"],
-      "optional": ["port", "hostEntry", "password"],
+      "optional": ["port", "host_entry", "ssh_password"],
       "fields": {
         "ip": {
           "type": "string",
@@ -23,11 +23,11 @@
           "default": 22,
           "example": 22
         },
-        "hostEntry": {
+        "host_entry": {
           "type": "string",
           "example": "192.168.1.100 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC..."
         },
-        "password": {
+        "ssh_password": {
           "type": "string",
           "sensitive": true,
           "example": "SecurePassword123!"
@@ -86,7 +86,7 @@
     "BRIDGE": {
       "descriptionKey": "vaultEditor.fields.BRIDGE.description",
       "required": ["name", "type", "endpoints"],
-      "optional": ["security", "loadBalancing", "ip", "user", "datastore", "port", "hostEntry", "password"],
+      "optional": ["security", "loadBalancing", "ip", "user", "datastore", "port", "host_entry", "ssh_password"],
       "fields": {
         "name": {
           "type": "string",
@@ -162,11 +162,11 @@
           "default": 22,
           "example": 22
         },
-        "hostEntry": {
+        "host_entry": {
           "type": "string",
           "example": "192.168.1.50 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC..."
         },
-        "password": {
+        "ssh_password": {
           "type": "string",
           "sensitive": true,
           "example": "BridgeSecurePass123!"

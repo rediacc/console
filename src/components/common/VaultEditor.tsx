@@ -110,8 +110,14 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     const schemaFields = Object.keys(entityDef.fields || {})
     const extras: Record<string, any> = {}
 
+    // Check if importedData has extraFields structure
+    if (importedData.extraFields && typeof importedData.extraFields === 'object') {
+      Object.assign(extras, importedData.extraFields)
+    }
+
+    // Also check for non-schema fields at root level
     Object.entries(importedData).forEach(([key, value]) => {
-      if (!schemaFields.includes(key)) {
+      if (key !== 'extraFields' && !schemaFields.includes(key)) {
         extras[key] = value
       }
     })
@@ -132,8 +138,14 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       })
       form.setFieldsValue(formData)
       
-      // Initialize raw JSON
-      updateRawJson({ ...formData, ...extraFields })
+      // Build complete data structure for raw JSON
+      const completeData = { ...formData }
+      if (Object.keys(extraFields).length > 0) {
+        completeData.extraFields = extraFields
+      }
+      
+      // Initialize raw JSON with proper structure
+      updateRawJson(completeData)
       
       // Validate initial data
       setTimeout(() => {
@@ -147,7 +159,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           })
       }, 0)
     }
-  }, [form, entityDef, importedData])
+  }, [form, entityDef, importedData, extraFields])
 
   // Pass import/export handlers to parent
   useEffect(() => {
@@ -182,7 +194,12 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 
   const handleFormChange = () => {
     const formData = form.getFieldsValue()
-    const completeData = { ...formData, ...extraFields }
+    
+    // Build complete data with extraFields structure
+    const completeData = { ...formData }
+    if (Object.keys(extraFields).length > 0) {
+      completeData.extraFields = extraFields
+    }
     
     // Update raw JSON view
     updateRawJson(completeData)
@@ -210,6 +227,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   const handleRawJsonChange = (value: string | undefined) => {
     if (!value) return
     
+    // Update the raw JSON value immediately to preserve user input
+    setRawJsonValue(value)
+    
     try {
       const parsed = JSON.parse(value)
       setRawJsonError(null)
@@ -218,21 +238,37 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       const formData: Record<string, any> = {}
       const extras: Record<string, any> = {}
       
+      // First, check if there's an extraFields property
+      if (parsed.extraFields && typeof parsed.extraFields === 'object') {
+        Object.assign(extras, parsed.extraFields)
+      }
+      
+      // Process all fields
       Object.entries(parsed).forEach(([key, val]) => {
-        if (entityDef.fields && key in entityDef.fields) {
+        if (key === 'extraFields') {
+          // Skip, already processed
+        } else if (entityDef.fields && key in entityDef.fields) {
           formData[key] = val
         } else {
+          // Non-schema fields at root level also go to extras
           extras[key] = val
         }
       })
       
       form.setFieldsValue(formData)
       setExtraFields(extras)
-      setImportedData(parsed)
+      
+      // Build complete data structure for onChange
+      const completeData = { ...formData }
+      if (Object.keys(extras).length > 0) {
+        completeData.extraFields = extras
+      }
+      
+      setImportedData(completeData)
       
       // Trigger change event
-      const hasChanges = JSON.stringify(parsed) !== JSON.stringify(initialData)
-      onChange?.(parsed, hasChanges)
+      const hasChanges = JSON.stringify(completeData) !== JSON.stringify(initialData)
+      onChange?.(completeData, hasChanges)
       
       // Validate
       form.validateFields()
@@ -253,6 +289,24 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     reader.onload = (e) => {
       try {
         const data = JSON.parse(e.target?.result as string)
+        
+        // Extract extra fields from imported data
+        const extras: Record<string, any> = {}
+        const schemaFields = Object.keys(entityDef.fields || {})
+        
+        // Check for extraFields structure
+        if (data.extraFields && typeof data.extraFields === 'object') {
+          Object.assign(extras, data.extraFields)
+        }
+        
+        // Check for non-schema fields at root
+        Object.entries(data).forEach(([key, value]) => {
+          if (key !== 'extraFields' && !schemaFields.includes(key)) {
+            extras[key] = value
+          }
+        })
+        
+        setExtraFields(extras)
         setImportedData(data)
         
         // Set form values for known fields
@@ -278,7 +332,12 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 
   const handleExport = () => {
     const formData = form.getFieldsValue()
-    const exportData = { ...formData, ...extraFields }
+    
+    // Build export data with extraFields structure
+    const exportData = { ...formData }
+    if (Object.keys(extraFields).length > 0) {
+      exportData.extraFields = extraFields
+    }
     
     // Remove undefined values
     Object.keys(exportData).forEach(key => {

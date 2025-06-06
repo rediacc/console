@@ -125,7 +125,7 @@
     "extraFields": "Campos Extra (No en el Esquema)",
     "extraFieldsTooltip": "Estos campos fueron importados pero no están definidos en el esquema",
     "extraFieldsWarning": "Advertencia",
-    "extraFieldsWarningDescription": "Estos campos no están definidos en el esquema y pueden ser ignorados por el sistema.",
+    "extraFieldsWarningDescription": "Estos campos no están definidos en el esquema y se almacenarán bajo 'extraFields' en la estructura JSON.",
     "rawJsonEditor": "Editor JSON Directo (Modo Experto)",
     "rawJsonTooltip": "Edición directa de JSON - ¡Úselo con precaución!",
     "expertModeOnly": "Solo Modo Experto",
@@ -169,12 +169,12 @@
           "label": "Puerto SSH",
           "description": "Número de puerto SSH"
         },
-        "hostEntry": {
+        "host_entry": {
           "label": "Entrada del Host",
           "description": "Entrada de host conocido SSH para verificación de seguridad"
         },
-        "password": {
-          "label": "Contraseña",
+        "ssh_password": {
+          "label": "Contraseña SSH",
           "description": "Contraseña SSH para autenticación (opcional, se prefieren claves SSH)"
         }
       },
@@ -248,6 +248,46 @@
         "protocol": {
           "label": "Protocolo",
           "description": "Protocolo de comunicación (HTTP/HTTPS)"
+        },
+        "name": {
+          "label": "Nombre del Puente",
+          "description": "Identificador de nombre para el puente"
+        },
+        "type": {
+          "label": "Tipo de Puente",
+          "description": "Tipo de implementación del puente"
+        },
+        "endpoints": {
+          "label": "Puntos Finales",
+          "description": "Configuraciones de puntos finales del puente"
+        },
+        "security": {
+          "label": "Configuración de Seguridad",
+          "description": "Configuración de seguridad para el puente"
+        },
+        "loadBalancing": {
+          "label": "Balanceo de Carga",
+          "description": "Configuración de balanceo de carga"
+        },
+        "ip": {
+          "label": "Dirección IP",
+          "description": "Dirección IP de la máquina del puente"
+        },
+        "user": {
+          "label": "Usuario SSH",
+          "description": "Nombre de usuario SSH para acceso al puente"
+        },
+        "datastore": {
+          "label": "Ruta del Almacén",
+          "description": "Ruta al directorio del almacén de datos"
+        },
+        "host_entry": {
+          "label": "Entrada del Host",
+          "description": "Entrada de host conocido SSH para verificación de seguridad"
+        },
+        "ssh_password": {
+          "label": "Contraseña SSH",
+          "description": "Contraseña SSH para autenticación (opcional, se prefieren claves SSH)"
         }
       },
       "REGION": {
