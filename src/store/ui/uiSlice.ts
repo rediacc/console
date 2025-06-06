@@ -32,7 +32,7 @@ const getStoredUiMode = (): 'simple' | 'expert' => {
 
 const initialState: UIState = {
   sidebarCollapsed: false,
-  activeView: 'organization',
+  activeView: 'resources',
   selectedResource: null,
   filters: {},
   messages: [],

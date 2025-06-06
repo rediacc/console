@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Card, Tabs, Button, Space, Modal, Popconfirm, Tag, Typography, Form, Input, Table, Row, Col, Empty, Badge, Alert, Spin } from 'antd'
+import { Card, Tabs, Button, Space, Modal, Popconfirm, Tag, Typography, Form, Input, Table, Row, Col, Empty, Alert, Spin } from 'antd'
 import { 
   TeamOutlined, 
   PlusOutlined, 
@@ -15,7 +15,6 @@ import {
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 import ResourceListView from '@/components/common/ResourceListView'
@@ -75,9 +74,8 @@ import {
 
 const { Title, Text } = Typography
 
-const OrganizationPage: React.FC = () => {
-  const { t } = useTranslation(['organization', 'machines', 'common'])
-  const navigate = useNavigate()
+const ResourcesPage: React.FC = () => {
+  const { t } = useTranslation(['resources', 'machines', 'common'])
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const [selectedTeams, setSelectedTeams] = useState<string[]>([])
   const [teamResourcesTab, setTeamResourcesTab] = useState('machines')
@@ -1438,4 +1436,4 @@ const OrganizationPage: React.FC = () => {
   )
 }
 
-export default OrganizationPage
+export default ResourcesPage

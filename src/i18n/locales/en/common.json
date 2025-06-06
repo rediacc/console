@@ -5,7 +5,7 @@
   },
   "navigation": {
     "dashboard": "Dashboard",
-    "organization": "Organization",
+    "resources": "Resources",
     "users": "Users",
     "system": "System",
     "queue": "Queue",

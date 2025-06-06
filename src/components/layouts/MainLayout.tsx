@@ -22,6 +22,7 @@ import {
   SafetyCertificateOutlined,
   PartitionOutlined,
   EnvironmentOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { selectUser, selectCompany } from '@/store/auth/authSelectors'
@@ -81,9 +82,9 @@ const MainLayout: React.FC = () => {
       showInSimple: false,
     },
     {
-      key: '/organization',
-      icon: <TeamOutlined />,
-      label: t('navigation.organization'),
+      key: '/resources',
+      icon: <AppstoreOutlined />,
+      label: t('navigation.resources'),
       showInSimple: true,
     },
     {

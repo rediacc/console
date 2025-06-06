@@ -5,7 +5,7 @@
   },
   "navigation": {
     "dashboard": "Panel de Control",
-    "organization": "Organización",
+    "resources": "Recursos",
     "users": "Usuarios",
     "system": "Sistema",
     "queue": "Cola",
