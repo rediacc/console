@@ -1,18 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
 import toast from 'react-hot-toast'
+import type { Bridge } from './bridges'
 
 export interface Region {
   regionName: string
   bridgeCount: number
   vaultVersion: number
   vaultContent?: string
-}
-
-export interface Bridge {
-  bridgeName: string
-  machineCount: number
-  vaultVersion: number
 }
 
 // Get all regions

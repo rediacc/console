@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { Typography, Button, Space, Modal, Input, Select, Form, Slider, Card, Tag, Badge, Tabs, Row, Col, Statistic, Empty } from 'antd'
-import { PlusOutlined, ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, PauseCircleOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { Typography, Button, Space, Modal, Input, Select, Form, Slider, Card, Tag, Badge, Tabs, Row, Col, Statistic, Empty, Tooltip } from 'antd'
+import { PlusOutlined, ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, PauseCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
 import { useQueueItems, useCreateQueueItem, QUEUE_FUNCTIONS, QueueFunction } from '@/api/queries/queue'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import ResourceListView from '@/components/common/ResourceListView'
@@ -15,7 +15,7 @@ const QueuePage: React.FC = () => {
   const [selectedTeam, setSelectedTeam] = useState<string>('')
   const [selectedMachine, setSelectedMachine] = useState<string>('')
   const [functionParams, setFunctionParams] = useState<Record<string, any>>({})
-  const [priority, setPriority] = useState(5)
+  const [priority, setPriority] = useState(3)
   const [description, setDescription] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [viewTeam, setViewTeam] = useState<string>('') // Team for viewing queue items
@@ -76,7 +76,8 @@ const QueuePage: React.FC = () => {
         teamName: selectedTeam,
         machineName: selectedMachine,
         bridgeName: machineData.bridgeName,
-        queueVault: JSON.stringify(vaultData)
+        queueVault: JSON.stringify(vaultData),
+        priority: priority
       })
       
       setIsAddModalOpen(false)
@@ -91,7 +92,7 @@ const QueuePage: React.FC = () => {
     setSelectedTeam('')
     setSelectedMachine('')
     setFunctionParams({})
-    setPriority(5)
+    setPriority(3)
     setDescription('')
   }
 
@@ -122,6 +123,35 @@ const QueuePage: React.FC = () => {
           </Tag>
         )
       }
+    },
+    {
+      title: 'Priority',
+      dataIndex: 'priority',
+      key: 'priority',
+      width: 140,
+      render: (priority: number) => {
+        // Parse priority from vault data if needed
+        const priorityValue = typeof priority === 'number' ? priority : 3
+        
+        const priorityConfig = {
+          1: { color: 'red', label: 'High', icon: <ExclamationCircleOutlined /> },
+          2: { color: 'orange', label: 'Above Normal' },
+          3: { color: 'gold', label: 'Normal' },
+          4: { color: 'blue', label: 'Below Normal' },
+          5: { color: 'green', label: 'Low' }
+        }
+        
+        const config = priorityConfig[priorityValue as keyof typeof priorityConfig] || priorityConfig[3]
+        
+        return (
+          <Tooltip title={`Priority ${priorityValue} - ${config.label}`}>
+            <Tag color={config.color} icon={config.icon}>
+              {config.label} ({priorityValue})
+            </Tag>
+          </Tooltip>
+        )
+      },
+      sorter: (a: any, b: any) => (a.priority || 3) - (b.priority || 3),
     },
     {
       title: 'Team',
@@ -189,7 +219,7 @@ const QueuePage: React.FC = () => {
         <>
           {/* Queue Statistics */}
           <Row gutter={16}>
-            <Col span={6}>
+            <Col span={4}>
               <Card>
                 <Statistic
                   title="Total Queue Items"
@@ -198,7 +228,17 @@ const QueuePage: React.FC = () => {
                 />
               </Card>
             </Col>
-            <Col span={6}>
+            <Col span={4}>
+              <Card>
+                <Statistic
+                  title="High Priority"
+                  value={queueItems?.filter((item: any) => item.priority === 1).length || 0}
+                  valueStyle={{ color: '#cf1322' }}
+                  prefix={<ExclamationCircleOutlined />}
+                />
+              </Card>
+            </Col>
+            <Col span={4}>
               <Card>
                 <Statistic
                   title="Pending"
@@ -206,19 +246,30 @@ const QueuePage: React.FC = () => {
                 />
               </Card>
             </Col>
-            <Col span={6}>
+            <Col span={4}>
               <Card>
                 <Statistic
                   title="Processing"
                   value={queueItems?.filter((item: any) => item.status === 'processing').length || 0}
+                  valueStyle={{ color: '#1890ff' }}
                 />
               </Card>
             </Col>
-            <Col span={6}>
+            <Col span={4}>
               <Card>
                 <Statistic
                   title="Completed"
                   value={queueItems?.filter((item: any) => item.status === 'completed').length || 0}
+                  valueStyle={{ color: '#52c41a' }}
+                />
+              </Card>
+            </Col>
+            <Col span={4}>
+              <Card>
+                <Statistic
+                  title="Failed"
+                  value={queueItems?.filter((item: any) => item.status === 'failed').length || 0}
+                  valueStyle={{ color: '#ff4d4f' }}
                 />
               </Card>
             </Col>
@@ -379,18 +430,54 @@ const QueuePage: React.FC = () => {
                     </Form.Item>
                     
                     {/* Priority */}
-                    <Form.Item label="Priority">
-                      <Slider
-                        min={1}
-                        max={10}
-                        value={priority}
-                        onChange={setPriority}
-                        marks={{
-                          1: 'Low',
-                          5: 'Normal',
-                          10: 'High'
-                        }}
-                      />
+                    <Form.Item label="Priority" help="1 = Highest priority, 5 = Lowest priority">
+                      <div>
+                        <Slider
+                          min={1}
+                          max={5}
+                          value={priority}
+                          onChange={setPriority}
+                          marks={{
+                            1: 'High',
+                            2: 'Above Normal',
+                            3: 'Normal',
+                            4: 'Below Normal',
+                            5: 'Low'
+                          }}
+                          tooltip={{
+                            formatter: (value?: number) => {
+                              const labels = {
+                                1: 'High',
+                                2: 'Above Normal',
+                                3: 'Normal',
+                                4: 'Below Normal',
+                                5: 'Low'
+                              }
+                              return value ? `${labels[value as keyof typeof labels]} (${value})` : ''
+                            }
+                          }}
+                        />
+                        <div style={{ textAlign: 'center', marginTop: 8 }}>
+                          <Tag 
+                            color={
+                              priority === 1 ? 'red' :
+                              priority === 2 ? 'orange' :
+                              priority === 3 ? 'gold' :
+                              priority === 4 ? 'blue' :
+                              'green'
+                            }
+                            icon={priority === 1 ? <ExclamationCircleOutlined /> : undefined}
+                          >
+                            Current: {
+                              priority === 1 ? 'High' :
+                              priority === 2 ? 'Above Normal' :
+                              priority === 3 ? 'Normal' :
+                              priority === 4 ? 'Below Normal' :
+                              'Low'
+                            } ({priority})
+                          </Tag>
+                        </div>
+                      </div>
                     </Form.Item>
                     
                     {/* Description */}

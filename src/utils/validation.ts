@@ -109,6 +109,7 @@ export const queueItemSchema = z.object({
   machineName: machineNameSchema,
   bridgeName: bridgeNameSchema,
   queueVault: vaultSchema,
+  priority: z.number().min(1).max(5).optional().default(3),
 })
 
 // Edit schemas
