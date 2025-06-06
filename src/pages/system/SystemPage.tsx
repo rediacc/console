@@ -13,7 +13,11 @@ import {
   EnvironmentOutlined,
   ApiOutlined,
   EditOutlined,
-  DesktopOutlined
+  DesktopOutlined,
+  TeamOutlined,
+  DatabaseOutlined,
+  ScheduleOutlined,
+  CloudServerOutlined
 } from '@ant-design/icons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -69,9 +73,27 @@ import {
   Bridge 
 } from '@/api/queries/bridges'
 
+// Team queries
+import {
+  useTeams,
+  useTeamMembers,
+  useCreateTeam,
+  useUpdateTeamName,
+  useDeleteTeam,
+  useUpdateTeamVault,
+  useAddTeamMember,
+  useRemoveTeamMember,
+  Team,
+  TeamMember
+} from '@/api/queries/teams'
+
 import { 
   createUserSchema, 
   CreateUserForm,
+  createTeamSchema,
+  CreateTeamForm,
+  editTeamSchema,
+  EditTeamForm,
   createRegionSchema, 
   CreateRegionForm,
   createBridgeSchema, 
@@ -116,6 +138,17 @@ const SystemPage: React.FC = () => {
   const [selectedPermission, setSelectedPermission] = useState<string>('')
   const [selectedUser, setSelectedUser] = useState<string>('')
 
+  // Team state
+  const [isCreateTeamModalOpen, setIsCreateTeamModalOpen] = useState(false)
+  const [isManageTeamModalOpen, setIsManageTeamModalOpen] = useState(false)
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null)
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
+  const [selectedMemberEmail, setSelectedMemberEmail] = useState<string>('')
+  const [teamVaultModalConfig, setTeamVaultModalConfig] = useState<{
+    open: boolean
+    team?: Team
+  }>({ open: false })
+
   // Region state
   const [isCreateRegionModalOpen, setIsCreateRegionModalOpen] = useState(false)
   const [editingRegion, setEditingRegion] = useState<Region | null>(null)
@@ -155,6 +188,16 @@ const SystemPage: React.FC = () => {
   const removePermissionMutation = useRemovePermissionFromGroup()
   const assignUserMutation = useAssignUserToGroup()
 
+  // Team hooks
+  const { data: teams = [], isLoading: teamsLoading } = useTeams()
+  const { data: teamMembers = [] } = useTeamMembers(selectedTeam?.teamName || '')
+  const createTeamMutation = useCreateTeam()
+  const updateTeamNameMutation = useUpdateTeamName()
+  const deleteTeamMutation = useDeleteTeam()
+  const updateTeamVaultMutation = useUpdateTeamVault()
+  const addTeamMemberMutation = useAddTeamMember()
+  const removeTeamMemberMutation = useRemoveTeamMember()
+
   // Region hooks - always fetch regions since they're always visible at the bottom
   const { data: regions, isLoading: regionsLoading } = useRegions(true)
   const regionsList: Region[] = regions || []
@@ -177,6 +220,22 @@ const SystemPage: React.FC = () => {
     defaultValues: {
       newUserEmail: '',
       newUserPassword: '',
+    },
+  })
+
+  // Team forms
+  const teamForm = useForm<CreateTeamForm>({
+    resolver: zodResolver(createTeamSchema) as any,
+    defaultValues: {
+      teamName: '',
+      teamVault: '{}',
+    },
+  })
+
+  const editTeamForm = useForm<EditTeamForm>({
+    resolver: zodResolver(editTeamSchema) as any,
+    defaultValues: {
+      teamName: '',
     },
   })
 
@@ -319,6 +378,77 @@ const SystemPage: React.FC = () => {
       })
       setIsAssignModalOpen(false)
       setSelectedUser('')
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
+  // Team handlers
+  const handleCreateTeam = async (data: CreateTeamForm) => {
+    try {
+      await createTeamMutation.mutateAsync(data)
+      setIsCreateTeamModalOpen(false)
+      teamForm.reset()
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
+  const handleEditTeam = async (values: EditTeamForm) => {
+    if (!editingTeam) return
+    try {
+      await updateTeamNameMutation.mutateAsync({
+        currentTeamName: editingTeam.teamName,
+        newTeamName: values.teamName,
+      })
+      setEditingTeam(null)
+      editTeamForm.reset()
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
+  const handleDeleteTeam = async (teamName: string) => {
+    try {
+      await deleteTeamMutation.mutateAsync(teamName)
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
+  const handleUpdateTeamVault = async (vault: string, version: number) => {
+    if (!teamVaultModalConfig.team) return
+
+    await updateTeamVaultMutation.mutateAsync({
+      teamName: teamVaultModalConfig.team.teamName,
+      teamVault: vault,
+      vaultVersion: version,
+    })
+    setTeamVaultModalConfig({ open: false })
+  }
+
+  const handleAddTeamMember = async () => {
+    if (!selectedTeam || !selectedMemberEmail) return
+
+    try {
+      await addTeamMemberMutation.mutateAsync({
+        teamName: selectedTeam.teamName,
+        newUserEmail: selectedMemberEmail,
+      })
+      setSelectedMemberEmail('')
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
+  const handleRemoveTeamMember = async (userEmail: string) => {
+    if (!selectedTeam) return
+
+    try {
+      await removeTeamMemberMutation.mutateAsync({
+        teamName: selectedTeam.teamName,
+        removeUserEmail: userEmail,
+      })
     } catch (error) {
       // Error handled by mutation
     }
@@ -587,6 +717,140 @@ const SystemPage: React.FC = () => {
   // Get available permissions from dropdown data
   const availablePermissions = dropdownData?.permissions || []
 
+  // Team columns
+  const teamColumns = [
+    {
+      title: 'Team Name',
+      dataIndex: 'teamName',
+      key: 'teamName',
+      render: (text: string) => (
+        <Space>
+          <TeamOutlined style={{ color: '#556b2f' }} />
+          <strong>{text}</strong>
+        </Space>
+      ),
+    },
+    {
+      title: 'Members',
+      dataIndex: 'memberCount',
+      key: 'memberCount',
+      width: 100,
+      render: (count: number) => (
+        <Badge count={count} showZero>
+          <UserOutlined style={{ fontSize: 16 }} />
+        </Badge>
+      ),
+    },
+    {
+      title: 'Machines',
+      dataIndex: 'machineCount',
+      key: 'machineCount',
+      width: 100,
+      render: (count: number) => (
+        <Space>
+          <DesktopOutlined />
+          <span>{count}</span>
+        </Space>
+      ),
+    },
+    {
+      title: 'Repositories',
+      dataIndex: 'repoCount',
+      key: 'repoCount',
+      width: 120,
+      render: (count: number) => (
+        <Space>
+          <DatabaseOutlined />
+          <span>{count || 0}</span>
+        </Space>
+      ),
+    },
+    {
+      title: 'Storage',
+      dataIndex: 'storageCount',
+      key: 'storageCount',
+      width: 100,
+      render: (count: number) => (
+        <Space>
+          <CloudServerOutlined />
+          <span>{count || 0}</span>
+        </Space>
+      ),
+    },
+    {
+      title: 'Schedules',
+      dataIndex: 'scheduleCount',
+      key: 'scheduleCount',
+      width: 100,
+      render: (count: number) => (
+        <Space>
+          <ScheduleOutlined />
+          <span>{count || 0}</span>
+        </Space>
+      ),
+    },
+    ...(uiMode === 'expert' ? [{
+      title: 'Vault Version',
+      dataIndex: 'vaultVersion',
+      key: 'vaultVersion',
+      width: 120,
+      render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
+    }] : []),
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: 250,
+      render: (_: any, record: Team) => (
+        <Space>
+          <Button
+            type="link"
+            icon={<UserOutlined />}
+            onClick={() => {
+              setSelectedTeam(record)
+              setIsManageTeamModalOpen(true)
+            }}
+          >
+            Members
+          </Button>
+          <Button
+            type="link"
+            icon={<SettingOutlined />}
+            onClick={() => setTeamVaultModalConfig({ open: true, team: record })}
+          >
+            Vault
+          </Button>
+          <Button 
+            type="link" 
+            icon={<EditOutlined />}
+            onClick={() => {
+              setEditingTeam(record)
+              editTeamForm.setValue('teamName', record.teamName)
+            }}
+          >
+            Edit
+          </Button>
+          <Popconfirm
+            title="Delete Team"
+            description={`Are you sure you want to delete team "${record.teamName}"?`}
+            onConfirm={() => handleDeleteTeam(record.teamName)}
+            okText="Yes"
+            cancelText="No"
+            okButtonProps={{ danger: true }}
+          >
+            <Button 
+              type="link" 
+              danger 
+              icon={<DeleteOutlined />}
+              loading={deleteTeamMutation.isPending}
+            >
+              Delete
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ]
+
   // Region columns
   const regionColumns = [
     {
@@ -758,6 +1022,15 @@ const SystemPage: React.FC = () => {
     },
   ]
 
+  const teamFormFields = [
+    {
+      name: 'teamName',
+      label: 'Team Name',
+      placeholder: 'Enter team name',
+      required: true,
+    },
+  ]
+
   // Form fields
   const regionFormFields = [
     {
@@ -863,10 +1136,44 @@ const SystemPage: React.FC = () => {
     ),
   }
 
+  const teamsTab = {
+    key: 'teams',
+    label: (
+      <span>
+        <TeamOutlined />
+        Teams
+      </span>
+    ),
+    children: (
+      <ResourceListView
+        title={
+          <Space>
+            <span style={{ fontSize: 16, fontWeight: 500 }}>Teams</span>
+            <span style={{ fontSize: 14, color: '#666' }}>Manage teams and their members</span>
+          </Space>
+        }
+        loading={teamsLoading}
+        data={teams}
+        columns={teamColumns}
+        rowKey="teamName"
+        searchPlaceholder="Search teams..."
+        actions={
+          <Button 
+            type="primary" 
+            icon={<PlusOutlined />}
+            onClick={() => setIsCreateTeamModalOpen(true)}
+          >
+            Create Team
+          </Button>
+        }
+      />
+    ),
+  }
+
   // Compose tabs based on UI mode
   const tabItems = uiMode === 'simple' 
-    ? [usersTab]
-    : [usersTab, permissionsTab]
+    ? [usersTab, teamsTab]
+    : [usersTab, teamsTab, permissionsTab]
 
   return (
     <>
@@ -930,7 +1237,7 @@ const SystemPage: React.FC = () => {
       </Space>
 
       {/* New Title Between Settings and Users */}
-      <Title level={3} style={{ marginBottom: 24 }}>{tUsers('title')}</Title>
+      <Title level={3} style={{ marginBottom: 24 }}>Users, Teams & Permissions</Title>
 
       <Card>
         <Tabs
@@ -1149,6 +1456,158 @@ const SystemPage: React.FC = () => {
         initialVersion={1}
         loading={false}
       />
+
+      {/* Team Modals */}
+      <Modal
+        title="Create Team"
+        open={isCreateTeamModalOpen}
+        onCancel={() => {
+          setIsCreateTeamModalOpen(false)
+          teamForm.reset()
+        }}
+        footer={null}
+      >
+        <ResourceForm
+          form={teamForm}
+          fields={teamFormFields}
+          onSubmit={handleCreateTeam}
+          submitText="Create"
+          cancelText="Cancel"
+          onCancel={() => {
+            setIsCreateTeamModalOpen(false)
+            teamForm.reset()
+          }}
+          loading={createTeamMutation.isPending}
+        />
+      </Modal>
+
+      <Modal
+        title={`Manage Team Members - ${selectedTeam?.teamName}`}
+        open={isManageTeamModalOpen}
+        onCancel={() => {
+          setIsManageTeamModalOpen(false)
+          setSelectedTeam(null)
+          setSelectedMemberEmail('')
+        }}
+        footer={null}
+        width={800}
+      >
+        <Tabs
+          items={[
+            {
+              key: 'current',
+              label: 'Current Members',
+              children: (
+                <Card>
+                  <List
+                    dataSource={teamMembers}
+                    renderItem={(member: TeamMember) => (
+                      <List.Item
+                        actions={member.isMember ? [
+                          <Button
+                            type="link"
+                            danger
+                            size="small"
+                            onClick={() => handleRemoveTeamMember(member.userEmail)}
+                            loading={removeTeamMemberMutation.isPending}
+                          >
+                            Remove
+                          </Button>
+                        ] : []}
+                      >
+                        <List.Item.Meta
+                          avatar={<UserOutlined />}
+                          title={member.userEmail}
+                          description={
+                            <Space size="small">
+                              {member.isMember && <Tag color="green">Member</Tag>}
+                              {member.hasAccess && <Tag color="blue">Has Access</Tag>}
+                            </Space>
+                          }
+                        />
+                      </List.Item>
+                    )}
+                    locale={{ emptyText: 'No members in this team' }}
+                  />
+                </Card>
+              ),
+            },
+            {
+              key: 'add',
+              label: 'Add Members',
+              children: (
+                <Space direction="vertical" style={{ width: '100%' }} size={16}>
+                  <Space style={{ width: '100%' }}>
+                    <Select
+                      placeholder="Select user to add"
+                      style={{ width: 400 }}
+                      value={selectedMemberEmail}
+                      onChange={setSelectedMemberEmail}
+                      showSearch
+                      filterOption={(input, option) =>
+                        (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                      }
+                      options={dropdownData?.users?.filter(u => u.status === 'active')?.map(u => ({ 
+                        value: u.value, 
+                        label: u.label,
+                        disabled: teamMembers.some((m: TeamMember) => m.userEmail === u.value && m.isMember)
+                      })) || []}
+                    />
+                    <Button
+                      type="primary"
+                      onClick={handleAddTeamMember}
+                      loading={addTeamMemberMutation.isPending}
+                      disabled={!selectedMemberEmail}
+                    >
+                      Add Member
+                    </Button>
+                  </Space>
+                </Space>
+              ),
+            },
+          ]}
+        />
+      </Modal>
+
+      <VaultEditorModal
+        open={teamVaultModalConfig.open}
+        onCancel={() => setTeamVaultModalConfig({ open: false })}
+        onSave={handleUpdateTeamVault}
+        entityType="TEAM"
+        title={`Configure Vault - ${teamVaultModalConfig.team?.teamName || ''}`}
+        initialVault={teamVaultModalConfig.team?.vaultContent || "{}"}
+        initialVersion={teamVaultModalConfig.team?.vaultVersion || 1}
+        loading={updateTeamVaultMutation.isPending}
+      />
+
+      {/* Edit Team Modal */}
+      <Modal
+        title="Edit Team"
+        open={!!editingTeam}
+        onCancel={() => {
+          setEditingTeam(null)
+          editTeamForm.reset()
+        }}
+        footer={null}
+      >
+        <ResourceForm
+          form={editTeamForm}
+          fields={[{
+            name: 'teamName',
+            label: 'Team Name',
+            placeholder: 'Enter team name',
+            required: true,
+          }]}
+          onSubmit={handleEditTeam}
+          submitText="Save"
+          cancelText="Cancel"
+          onCancel={() => {
+            setEditingTeam(null)
+            editTeamForm.reset()
+          }}
+          loading={updateTeamNameMutation.isPending}
+        />
+      </Modal>
 
       {/* Regions & Infrastructure Section */}
       {uiMode === 'expert' && (
