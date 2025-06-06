@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Table,
@@ -49,6 +49,7 @@ import { useCreateQueueItem } from '@/api/queries/queue';
 import { 
   FunctionOutlined 
 } from '@ant-design/icons';
+import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
 
 const { Option } = Select;
 const { Search } = Input;
@@ -76,6 +77,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const { t } = useTranslation(['machines', 'common']);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
   const isExpertMode = uiMode === 'expert';
+  
+  // Ref for table container
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   // State management
   const [search, setSearch] = useState('');
@@ -114,6 +118,13 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const updateMachineBridgeMutation = useUpdateMachineBridge();
   const updateMachineVaultMutation = useUpdateMachineVault();
   const createQueueItemMutation = useCreateQueueItem();
+  
+  // Dynamic page size
+  const dynamicPageSize = useDynamicPageSize(tableContainerRef, {
+    containerOffset: 150, // Account for filters, tabs, and other UI elements
+    minRows: 5,
+    maxRows: 50
+  });
 
   // Create a simple mode schema that only requires machineName
   const simpleMachineSchema = React.useMemo(() => 
@@ -863,7 +874,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       {renderViewToggle()}
       
       {viewMode === 'table' ? (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div ref={tableContainerRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <Table
             columns={columns}
             dataSource={filteredMachines}
@@ -871,8 +882,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             loading={isLoading}
             scroll={{ x: 'max-content', y: 'calc(100vh - 400px)' }}
             pagination={{
-              showSizeChanger: true,
-              showTotal: (total) => t('common:table.total') + ': ' + total,
+              pageSize: dynamicPageSize,
+              showSizeChanger: false,
+              showTotal: (total, range) => t('common:table.showingRecords', { start: range[0], end: range[1], total }),
             }}
             sticky
           />

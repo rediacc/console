@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useRef } from 'react'
 import { Card, Table, Input, Spin, Empty, TableProps } from 'antd'
 import { SearchOutlined } from '@ant-design/icons'
+import { useDynamicPageSize } from '@/hooks/useDynamicPageSize'
 
 const { Search } = Input
 
@@ -20,6 +21,7 @@ interface ResourceListViewProps<T = any> {
   rowSelection?: TableProps<T>['rowSelection']
   tableStyle?: React.CSSProperties
   containerStyle?: React.CSSProperties
+  enableDynamicPageSize?: boolean
 }
 
 function ResourceListView<T = any>({
@@ -38,7 +40,16 @@ function ResourceListView<T = any>({
   rowSelection,
   tableStyle,
   containerStyle,
+  enableDynamicPageSize = false,
 }: ResourceListViewProps<T>) {
+  const tableContainerRef = useRef<HTMLDivElement>(null)
+  
+  // Use dynamic page size if enabled
+  const dynamicPageSize = useDynamicPageSize(tableContainerRef, {
+    containerOffset: 100, // Account for card header and search bar
+    minRows: 5,
+    maxRows: 50
+  })
   const cardBodyStyle: React.CSSProperties | undefined = containerStyle?.height ? {
     padding: '16px',
     height: '100%',
@@ -78,7 +89,10 @@ function ResourceListView<T = any>({
         </div>
       )}
 
-      <div style={containerStyle?.height ? { flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' } : {}}>
+      <div 
+        ref={tableContainerRef}
+        style={containerStyle?.height ? { flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' } : {}}
+      >
         {loading ? (
           <div style={{ textAlign: 'center', padding: '50px 0' }}>
             <Spin size="large" />
@@ -93,10 +107,11 @@ function ResourceListView<T = any>({
             pagination={
               pagination !== false
                 ? {
-                    showSizeChanger: true,
-                    showTotal: (total) => `Total ${total} items`,
-                    pageSizeOptions: ['10', '20', '50', '100'],
-                    defaultPageSize: 20,
+                    showSizeChanger: !enableDynamicPageSize,
+                    showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
+                    pageSizeOptions: enableDynamicPageSize ? undefined : ['10', '20', '50', '100'],
+                    pageSize: enableDynamicPageSize ? dynamicPageSize : undefined,
+                    defaultPageSize: enableDynamicPageSize ? undefined : 20,
                     ...pagination,
                   }
                 : false

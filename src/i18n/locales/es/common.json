@@ -81,7 +81,8 @@
     "of": "de",
     "items": "elementos",
     "showing": "Mostrando",
-    "to": "a"
+    "to": "a",
+    "showingRecords": "Mostrando registros {{start}}-{{end}} de {{total}}"
   },
   "language": {
     "select": "Seleccionar Idioma",
@@ -98,7 +99,8 @@
     "switching": "Cambiando a modo {{mode}}..."
   },
   "general": {
-    "versionFormat": "v{{version}}"
+    "versionFormat": "v{{version}}",
+    "showingRecords": "Mostrando registros {{start}}-{{end}} de {{total}}"
   },
   "dashboard": {
     "availablePlans": "Planes Disponibles",

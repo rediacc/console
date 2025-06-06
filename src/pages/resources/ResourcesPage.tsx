@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { Card, Tabs, Button, Space, Modal, Popconfirm, Tag, Typography, Form, Input, Table, Row, Col, Empty, Alert, Spin } from 'antd'
 import { 
   TeamOutlined, 
@@ -71,6 +71,7 @@ import {
   EditStorageForm,
   EditScheduleForm
 } from '@/utils/validation'
+import { useDynamicPageSize } from '@/hooks/useDynamicPageSize'
 
 const { Title, Text } = Typography
 
@@ -79,6 +80,11 @@ const ResourcesPage: React.FC = () => {
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const [selectedTeams, setSelectedTeams] = useState<string[]>([])
   const [teamResourcesTab, setTeamResourcesTab] = useState('machines')
+  
+  // Refs for table containers
+  const repositoryTableRef = useRef<HTMLDivElement>(null)
+  const storageTableRef = useRef<HTMLDivElement>(null)
+  const scheduleTableRef = useRef<HTMLDivElement>(null)
   
   // Team state
   const [isCreateTeamModalOpen, setIsCreateTeamModalOpen] = useState(false)
@@ -158,6 +164,25 @@ const ResourcesPage: React.FC = () => {
   const updateScheduleNameMutation = useUpdateScheduleName()
   const deleteScheduleMutation = useDeleteSchedule()
   const updateScheduleVaultMutation = useUpdateScheduleVault()
+  
+  // Dynamic page sizes for tables
+  const repositoryPageSize = useDynamicPageSize(repositoryTableRef, {
+    containerOffset: 120, // Account for tab headers and extra padding
+    minRows: 5,
+    maxRows: 50
+  })
+  
+  const storagePageSize = useDynamicPageSize(storageTableRef, {
+    containerOffset: 120,
+    minRows: 5,
+    maxRows: 50
+  })
+  
+  const schedulePageSize = useDynamicPageSize(scheduleTableRef, {
+    containerOffset: 120,
+    minRows: 5,
+    maxRows: 50
+  })
 
   // Set default selected team in Simple mode
   React.useEffect(() => {
@@ -775,7 +800,7 @@ const ResourcesPage: React.FC = () => {
           <Spin size="large" tip={t('common:general.loading')} />
         </div>
       ) : (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div ref={repositoryTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <Table
             columns={repositoryColumns}
             dataSource={repositories}
@@ -783,9 +808,9 @@ const ResourcesPage: React.FC = () => {
             scroll={{ x: 'max-content', y: 'calc(100vh - 400px)' }}
             pagination={{
               total: repositories?.length || 0,
-              pageSize: 10,
-              showSizeChanger: true,
-              showTotal: (total) => t('repositories.totalRepositories', { total }),
+              pageSize: repositoryPageSize,
+              showSizeChanger: false,
+              showTotal: (total, range) => `${t('common:general.showingRecords', { start: range[0], end: range[1], total })}`,
               position: ['bottomRight'],
             }}
             locale={{
@@ -809,7 +834,7 @@ const ResourcesPage: React.FC = () => {
           <Spin size="large" tip={t('common:general.loading')} />
         </div>
       ) : (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div ref={storageTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <Table
             columns={storageColumns}
             dataSource={storages}
@@ -817,9 +842,9 @@ const ResourcesPage: React.FC = () => {
             scroll={{ x: 'max-content', y: 'calc(100vh - 400px)' }}
             pagination={{
               total: storages?.length || 0,
-              pageSize: 10,
-              showSizeChanger: true,
-              showTotal: (total) => t('storage.totalStorage', { total }),
+              pageSize: storagePageSize,
+              showSizeChanger: false,
+              showTotal: (total, range) => `${t('common:general.showingRecords', { start: range[0], end: range[1], total })}`,
               position: ['bottomRight'],
             }}
             locale={{
@@ -843,7 +868,7 @@ const ResourcesPage: React.FC = () => {
           <Spin size="large" tip={t('common:general.loading')} />
         </div>
       ) : (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div ref={scheduleTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <Table
             columns={scheduleColumns}
             dataSource={schedules}
@@ -851,9 +876,9 @@ const ResourcesPage: React.FC = () => {
             scroll={{ x: 'max-content', y: 'calc(100vh - 400px)' }}
             pagination={{
               total: schedules?.length || 0,
-              pageSize: 10,
-              showSizeChanger: true,
-              showTotal: (total) => t('schedules.totalSchedules', { total }),
+              pageSize: schedulePageSize,
+              showSizeChanger: false,
+              showTotal: (total, range) => `${t('common:general.showingRecords', { start: range[0], end: range[1], total })}`,
               position: ['bottomRight'],
             }}
             locale={{
@@ -943,10 +968,8 @@ const ResourcesPage: React.FC = () => {
               tableStyle={{ 
                 height: 'calc(100vh - 300px)'
               }}
+              enableDynamicPageSize={true}
               pagination={{
-                pageSize: 50,
-                showSizeChanger: true,
-                pageSizeOptions: ['20', '50', '100', '200'],
                 position: ['bottomRight'],
               }}
             />
