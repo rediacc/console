@@ -400,7 +400,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       baseColumns.push({
         title: t('common:table.actions'),
         key: 'actions',
+        width: 50,
         align: 'center' as const,
+        fixed: 'left' as const,
         render: (_: unknown, record: Machine) => (
           <Dropdown
             menu={{
@@ -472,6 +474,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         title: t('machines:machineName'),
         dataIndex: 'machineName',
         key: 'machineName',
+        ellipsis: true,
         sorter: (a: Machine, b: Machine) => a.machineName.localeCompare(b.machineName),
         filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
           <div style={{ padding: 8 }}>
@@ -512,6 +515,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         title: t('machines:team'),
         dataIndex: 'teamName',
         key: 'teamName',
+        width: 150,
+        ellipsis: true,
         render: (teamName: string) => <Tag color="blue">{teamName}</Tag>,
         sorter: (a: Machine, b: Machine) => a.teamName.localeCompare(b.teamName),
       },
@@ -525,6 +530,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           title: t('machines:region'),
           dataIndex: 'regionName',
           key: 'regionName',
+          width: 150,
+          ellipsis: true,
           render: (regionName: string) => regionName ? <Tag color="purple">{regionName}</Tag> : '-',
           sorter: (a: Machine, b: Machine) => (a.regionName || '').localeCompare(b.regionName || ''),
         },
@@ -532,6 +539,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           title: t('machines:bridge'),
           dataIndex: 'bridgeName',
           key: 'bridgeName',
+          width: 150,
+          ellipsis: true,
           render: (bridgeName: string) => <Tag color="green">{bridgeName}</Tag>,
           sorter: (a: Machine, b: Machine) => a.bridgeName.localeCompare(b.bridgeName),
         }
@@ -542,6 +551,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         title: t('bridges.bridge'),
         dataIndex: 'bridgeName',
         key: 'bridgeName',
+        width: 150,
+        ellipsis: true,
         render: (bridge: string) => <Tag color="blue">{bridge}</Tag>,
       });
     }
@@ -551,6 +562,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       title: t('machines:queueItems'),
       dataIndex: 'queueCount',
       key: 'queueCount',
+      width: 100,
       align: 'center' as const,
       sorter: (a: Machine, b: Machine) => a.queueCount - b.queueCount,
       render: (count: number) => (
@@ -564,6 +576,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         title: t('machines:vaultVersion'),
         dataIndex: 'vaultVersion',
         key: 'vaultVersion',
+        width: 100,
         align: 'center' as const,
         sorter: (a: Machine, b: Machine) => a.vaultVersion - b.vaultVersion,
         render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
@@ -751,37 +764,37 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   };
 
   // Machine form fields
-  const { t: tOrg } = useTranslation('organization');
+  const { t: tRes } = useTranslation('resources');
   const machineFormFields = uiMode === 'simple' 
     ? [
         {
           name: 'machineName',
-          label: tOrg('machines.machineName'),
-          placeholder: tOrg('machines.placeholders.enterMachineName'),
+          label: tRes('machines.machineName'),
+          placeholder: tRes('machines.placeholders.enterMachineName'),
           required: true,
         },
       ]
     : [
         {
           name: 'teamName',
-          label: tOrg('general.team'),
-          placeholder: tOrg('teams.placeholders.selectTeam'),
+          label: tRes('general.team'),
+          placeholder: tRes('teams.placeholders.selectTeam'),
           required: true,
           type: 'select' as const,
           options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
         },
         {
           name: 'regionName',
-          label: tOrg('general.region'),
-          placeholder: tOrg('regions.placeholders.selectRegion'),
+          label: tRes('general.region'),
+          placeholder: tRes('regions.placeholders.selectRegion'),
           required: true,
           type: 'select' as const,
           options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
         },
         {
           name: 'bridgeName',
-          label: tOrg('bridges.bridge'),
-          placeholder: selectedRegionForMachine ? tOrg('bridges.placeholders.selectBridge') : tOrg('bridges.placeholders.selectRegionFirst'),
+          label: tRes('bridges.bridge'),
+          placeholder: selectedRegionForMachine ? tRes('bridges.placeholders.selectBridge') : tRes('bridges.placeholders.selectRegionFirst'),
           required: true,
           type: 'select' as const,
           options: filteredBridgesForMachine,
@@ -789,8 +802,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         },
         {
           name: 'machineName',
-          label: tOrg('machines.machineName'),
-          placeholder: tOrg('machines.placeholders.enterMachineName'),
+          label: tRes('machines.machineName'),
+          placeholder: tRes('machines.placeholders.enterMachineName'),
           required: true,
         },
       ];
@@ -799,22 +812,22 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const editMachineFormFields = [
     {
       name: 'machineName',
-      label: tOrg('machines.machineName'),
-      placeholder: tOrg('machines.placeholders.enterMachineName'),
+      label: tRes('machines.machineName'),
+      placeholder: tRes('machines.placeholders.enterMachineName'),
       required: true,
     },
     {
       name: 'regionName',
-      label: tOrg('general.region'),
-      placeholder: tOrg('regions.placeholders.selectRegion'),
+      label: tRes('general.region'),
+      placeholder: tRes('regions.placeholders.selectRegion'),
       required: true,
       type: 'select' as const,
       options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
     },
     {
       name: 'bridgeName',
-      label: tOrg('bridges.bridge'),
-      placeholder: selectedRegionForEdit ? tOrg('bridges.placeholders.selectBridge') : tOrg('bridges.placeholders.selectRegionFirst'),
+      label: tRes('bridges.bridge'),
+      placeholder: selectedRegionForEdit ? tRes('bridges.placeholders.selectBridge') : tRes('bridges.placeholders.selectRegionFirst'),
       required: true,
       type: 'select' as const,
       options: filteredBridgesForEdit,
@@ -850,17 +863,20 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       {renderViewToggle()}
       
       {viewMode === 'table' ? (
-        <Table
-          columns={columns}
-          dataSource={filteredMachines}
-          rowKey="machineName"
-          loading={isLoading}
-          scroll={{ x: 'max-content' }}
-          pagination={{
-            showSizeChanger: true,
-            showTotal: (total) => t('common:table.total') + ': ' + total,
-          }}
-        />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <Table
+            columns={columns}
+            dataSource={filteredMachines}
+            rowKey="machineName"
+            loading={isLoading}
+            scroll={{ x: 'max-content', y: 'calc(100vh - 400px)' }}
+            pagination={{
+              showSizeChanger: true,
+              showTotal: (total) => t('common:table.total') + ': ' + total,
+            }}
+            sticky
+          />
+        </div>
       ) : (
         renderGridView()
       )}

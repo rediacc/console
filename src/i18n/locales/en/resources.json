@@ -24,6 +24,7 @@
     "selectTeamPrompt": "Select a team to view its resources",
     "teamResources": "Team Resources",
     "resourcesInTeam": "Resources in {{team}}",
+    "resourcesInTeams": "Resources in {{count}} Teams",
     "selectTeamToView": "Select a team above to view and manage its resources",
     "confirmDelete": "Are you sure you want to delete team \"{{teamName}}\"? This will remove all resources in the team.",
     "placeholders": {

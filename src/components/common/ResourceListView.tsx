@@ -1,5 +1,5 @@
 import React from 'react'
-import { Card, Table, Input, Select, Space, Spin, Empty, TableProps } from 'antd'
+import { Card, Table, Input, Spin, Empty, TableProps } from 'antd'
 import { SearchOutlined } from '@ant-design/icons'
 
 const { Search } = Input
@@ -18,6 +18,8 @@ interface ResourceListViewProps<T = any> {
   pagination?: TableProps<T>['pagination']
   onRow?: TableProps<T>['onRow']
   rowSelection?: TableProps<T>['rowSelection']
+  tableStyle?: React.CSSProperties
+  containerStyle?: React.CSSProperties
 }
 
 function ResourceListView<T = any>({
@@ -34,11 +36,24 @@ function ResourceListView<T = any>({
   pagination,
   onRow,
   rowSelection,
+  tableStyle,
+  containerStyle,
 }: ResourceListViewProps<T>) {
+  const cardBodyStyle: React.CSSProperties | undefined = containerStyle?.height ? {
+    padding: '16px',
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden'
+  } : undefined
+
   return (
-    <Card>
+    <Card 
+      style={containerStyle} 
+      styles={{ body: cardBodyStyle || {} }}
+    >
       {(title || onSearch || filters || actions) && (
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 16, flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
               {title}
@@ -63,33 +78,37 @@ function ResourceListView<T = any>({
         </div>
       )}
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '50px 0' }}>
-          <Spin size="large" />
-        </div>
-      ) : data.length === 0 ? (
-        <Empty description={emptyText} />
-      ) : (
-        <Table<T>
-          columns={columns}
-          dataSource={data}
-          rowKey={rowKey}
-          pagination={
-            pagination !== false
-              ? {
-                  showSizeChanger: true,
-                  showTotal: (total) => `Total ${total} items`,
-                  pageSizeOptions: ['10', '20', '50', '100'],
-                  defaultPageSize: 20,
-                  ...pagination,
-                }
-              : false
-          }
-          onRow={onRow}
-          rowSelection={rowSelection}
-          scroll={{ x: 'max-content' }}
-        />
-      )}
+      <div style={containerStyle?.height ? { flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' } : {}}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '50px 0' }}>
+            <Spin size="large" />
+          </div>
+        ) : data.length === 0 ? (
+          <Empty description={emptyText} />
+        ) : (
+          <Table<T>
+            columns={columns}
+            dataSource={data}
+            rowKey={rowKey}
+            pagination={
+              pagination !== false
+                ? {
+                    showSizeChanger: true,
+                    showTotal: (total) => `Total ${total} items`,
+                    pageSizeOptions: ['10', '20', '50', '100'],
+                    defaultPageSize: 20,
+                    ...pagination,
+                  }
+                : false
+            }
+            onRow={onRow}
+            rowSelection={rowSelection}
+            scroll={{ x: 'max-content', y: tableStyle?.height || 400 }}
+            style={{ height: '100%' }}
+            sticky
+          />
+        )}
+      </div>
     </Card>
   )
 }

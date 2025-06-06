@@ -421,120 +421,11 @@ const ResourcesPage: React.FC = () => {
       title: t('teams.teamName'),
       dataIndex: 'teamName',
       key: 'teamName',
+      ellipsis: true,
       render: (text: string) => (
         <Space>
           <TeamOutlined style={{ color: '#556b2f' }} />
           <strong>{text}</strong>
-        </Space>
-      ),
-    },
-    {
-      title: t('teams.members'),
-      dataIndex: 'memberCount',
-      key: 'memberCount',
-      width: 100,
-      render: (count: number) => (
-        <Space>
-          <UserOutlined />
-          {count}
-        </Space>
-      ),
-    },
-    {
-      title: t('teams.machines'),
-      dataIndex: 'machineCount',
-      key: 'machineCount',
-      width: 100,
-      render: (count: number) => (
-        <Space>
-          <DesktopOutlined />
-          {count}
-        </Space>
-      ),
-    },
-    {
-      title: t('teams.repositories'),
-      dataIndex: 'repoCount',
-      key: 'repoCount',
-      width: 120,
-      render: (count: number) => (
-        <Space>
-          <InboxOutlined />
-          {count}
-        </Space>
-      ),
-    },
-    {
-      title: t('teams.storage'),
-      dataIndex: 'storageCount',
-      key: 'storageCount',
-      width: 100,
-      render: (count: number) => (
-        <Space>
-          <CloudOutlined />
-          {count}
-        </Space>
-      ),
-    },
-    {
-      title: t('teams.schedules'),
-      dataIndex: 'scheduleCount',
-      key: 'scheduleCount',
-      width: 100,
-      render: (count: number) => (
-        <Space>
-          <ScheduleOutlined />
-          {count}
-        </Space>
-      ),
-    },
-    ...(uiMode === 'expert' ? [{
-      title: t('general.vaultVersion'),
-      dataIndex: 'vaultVersion',
-      key: 'vaultVersion',
-      width: 120,
-      render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
-    }] : []),
-    {
-      title: t('general.actions'),
-      key: 'actions',
-      width: 200,
-      render: (_: any, record: Team) => (
-        <Space>
-          <Button
-            type="link"
-            icon={<SettingOutlined />}
-            onClick={() => setTeamVaultModalConfig({ open: true, team: record })}
-          >
-            {t('general.vault')}
-          </Button>
-          <Button 
-            type="link" 
-            icon={<EditOutlined />}
-            onClick={() => {
-              setEditingTeam(record)
-              teamForm.setFieldsValue({ teamName: record.teamName })
-            }}
-          >
-            {t('general.edit')}
-          </Button>
-          <Popconfirm
-            title={t('teams.deleteTeam')}
-            description={t('teams.confirmDelete', { teamName: record.teamName })}
-            onConfirm={() => handleDeleteTeam(record.teamName)}
-            okText={t('general.yes')}
-            cancelText={t('general.no')}
-            okButtonProps={{ danger: true }}
-          >
-            <Button 
-              type="link" 
-              danger 
-              icon={<DeleteOutlined />}
-              loading={deleteTeamMutation.isPending}
-            >
-              {t('general.delete')}
-            </Button>
-          </Popconfirm>
         </Space>
       ),
     },
@@ -548,6 +439,7 @@ const ResourcesPage: React.FC = () => {
       title: t('repositories.repositoryName'),
       dataIndex: 'repositoryName',
       key: 'repositoryName',
+      ellipsis: true,
       render: (text: string) => (
         <Space>
           <InboxOutlined style={{ color: '#556b2f' }} />
@@ -559,17 +451,23 @@ const ResourcesPage: React.FC = () => {
       title: t('general.team'),
       dataIndex: 'teamName',
       key: 'teamName',
+      width: 150,
+      ellipsis: true,
       render: (teamName: string) => <Tag color="blue">{teamName}</Tag>,
     },
     ...(uiMode === 'expert' ? [{
       title: t('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
+      width: 100,
+      align: 'center' as const,
       render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
     }] : []),
     {
       title: t('general.actions'),
       key: 'actions',
+      width: 250,
+      align: 'center' as const,
       render: (_: any, record: Repository) => (
         <Space>
           <Button
@@ -617,6 +515,7 @@ const ResourcesPage: React.FC = () => {
       title: t('storage.storageName'),
       dataIndex: 'storageName',
       key: 'storageName',
+      ellipsis: true,
       render: (text: string) => (
         <Space>
           <CloudOutlined style={{ color: '#556b2f' }} />
@@ -628,17 +527,23 @@ const ResourcesPage: React.FC = () => {
       title: t('general.team'),
       dataIndex: 'teamName',
       key: 'teamName',
+      width: 150,
+      ellipsis: true,
       render: (teamName: string) => <Tag color="blue">{teamName}</Tag>,
     },
     ...(uiMode === 'expert' ? [{
       title: t('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
+      width: 100,
+      align: 'center' as const,
       render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
     }] : []),
     {
       title: t('general.actions'),
       key: 'actions',
+      width: 250,
+      align: 'center' as const,
       render: (_: any, record: Storage) => (
         <Space>
           <Button
@@ -686,6 +591,7 @@ const ResourcesPage: React.FC = () => {
       title: t('schedules.scheduleName'),
       dataIndex: 'scheduleName',
       key: 'scheduleName',
+      ellipsis: true,
       render: (text: string) => (
         <Space>
           <ScheduleOutlined style={{ color: '#556b2f' }} />
@@ -697,17 +603,23 @@ const ResourcesPage: React.FC = () => {
       title: t('general.team'),
       dataIndex: 'teamName',
       key: 'teamName',
+      width: 150,
+      ellipsis: true,
       render: (teamName: string) => <Tag color="blue">{teamName}</Tag>,
     },
     ...(uiMode === 'expert' ? [{
       title: t('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
+      width: 100,
+      align: 'center' as const,
       render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
     }] : []),
     {
       title: t('general.actions'),
       key: 'actions',
+      width: 250,
+      align: 'center' as const,
       render: (_: any, record: Schedule) => (
         <Space>
           <Button
@@ -846,6 +758,7 @@ const ResourcesPage: React.FC = () => {
           showCreateModal={isCreateMachineModalOpen}
           onCreateModalChange={setIsCreateMachineModalOpen}
           enabled={teamResourcesTab === 'machines'}
+          className="full-height-machine-table"
         />
       ),
     },
@@ -862,21 +775,25 @@ const ResourcesPage: React.FC = () => {
           <Spin size="large" tip={t('common:general.loading')} />
         </div>
       ) : (
-        <Table
-          columns={repositoryColumns}
-          dataSource={repositories}
-          rowKey="repositoryName"
-          scroll={{ x: 'max-content' }}
-          pagination={{
-            total: repositories?.length || 0,
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => t('repositories.totalRepositories', { total }),
-          }}
-          locale={{
-            emptyText: t('repositories.noRepositories'),
-          }}
-        />
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Table
+            columns={repositoryColumns}
+            dataSource={repositories}
+            rowKey="repositoryName"
+            scroll={{ x: 'max-content', y: 'calc(100vh - 400px)' }}
+            pagination={{
+              total: repositories?.length || 0,
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total) => t('repositories.totalRepositories', { total }),
+              position: ['bottomRight'],
+            }}
+            locale={{
+              emptyText: t('repositories.noRepositories'),
+            }}
+            sticky
+          />
+        </div>
       ),
     },
     {
@@ -892,21 +809,25 @@ const ResourcesPage: React.FC = () => {
           <Spin size="large" tip={t('common:general.loading')} />
         </div>
       ) : (
-        <Table
-          columns={storageColumns}
-          dataSource={storages}
-          rowKey="storageName"
-          scroll={{ x: 'max-content' }}
-          pagination={{
-            total: storages?.length || 0,
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => t('storage.totalStorage', { total }),
-          }}
-          locale={{
-            emptyText: t('storage.noStorage'),
-          }}
-        />
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Table
+            columns={storageColumns}
+            dataSource={storages}
+            rowKey="storageName"
+            scroll={{ x: 'max-content', y: 'calc(100vh - 400px)' }}
+            pagination={{
+              total: storages?.length || 0,
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total) => t('storage.totalStorage', { total }),
+              position: ['bottomRight'],
+            }}
+            locale={{
+              emptyText: t('storage.noStorage'),
+            }}
+            sticky
+          />
+        </div>
       ),
     },
     {
@@ -922,91 +843,123 @@ const ResourcesPage: React.FC = () => {
           <Spin size="large" tip={t('common:general.loading')} />
         </div>
       ) : (
-        <Table
-          columns={scheduleColumns}
-          dataSource={schedules}
-          rowKey="scheduleName"
-          scroll={{ x: 'max-content' }}
-          pagination={{
-            total: schedules?.length || 0,
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => t('schedules.totalSchedules', { total }),
-          }}
-          locale={{
-            emptyText: t('schedules.noSchedules'),
-          }}
-        />
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Table
+            columns={scheduleColumns}
+            dataSource={schedules}
+            rowKey="scheduleName"
+            scroll={{ x: 'max-content', y: 'calc(100vh - 400px)' }}
+            pagination={{
+              total: schedules?.length || 0,
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total) => t('schedules.totalSchedules', { total }),
+              position: ['bottomRight'],
+            }}
+            locale={{
+              emptyText: t('schedules.noSchedules'),
+            }}
+            sticky
+          />
+        </div>
       ),
     },
   ]
 
+  // Calculate available height for full-height layout
+  const containerStyle: React.CSSProperties = {
+    height: 'calc(100vh - 64px - 48px - 32px)', // viewport - header - breadcrumb - margins
+    overflow: 'hidden'
+  }
+
+  const cardStyle: React.CSSProperties = {
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column'
+  }
+
+  const cardBodyStyle: React.CSSProperties = {
+    flex: 1,
+    overflow: 'hidden',
+    padding: '16px',
+    display: 'flex',
+    flexDirection: 'column'
+  }
+
   return (
     <>
-      <Card>
-        <Row gutter={[24, 24]}>
-          {uiMode !== 'simple' && (
-            <Col span={24}>
-              <ResourceListView
-                title={
-                  <Space>
-                    <span style={{ fontSize: 16, fontWeight: 500 }}>{t('teams.title')}</span>
-                    <span style={{ fontSize: 14, color: '#666' }}>{t('teams.selectTeamPrompt')}</span>
-                  </Space>
-                }
-                loading={teamsLoading}
-                data={teamsList}
-                columns={teamColumns}
-                rowKey="teamName"
-                searchPlaceholder={t('teams.searchTeams')}
-                actions={
-                  <Button 
-                    type="primary" 
-                    icon={<PlusOutlined />}
-                    onClick={() => setIsCreateTeamModalOpen(true)}
-                    style={{ background: '#556b2f', borderColor: '#556b2f' }}
-                  >
-                    {t('teams.createTeam')}
-                  </Button>
-                }
-                rowSelection={{
-                  type: 'checkbox',
-                  selectedRowKeys: selectedTeams,
-                  onChange: (selectedRowKeys: React.Key[]) => {
-                    setSelectedTeams(selectedRowKeys as string[])
-                  },
-                }}
-                onRow={(record) => ({
-                  onClick: (e: React.MouseEvent) => {
-                    // Check if the click is on the checkbox or its parent elements
-                    const target = e.target as HTMLElement
-                    const isCheckboxClick = target.closest('.ant-checkbox-wrapper') || 
-                                          target.closest('.ant-checkbox') ||
-                                          target.closest('td[class*="ant-table-selection-column"]')
-                    
-                    if (!isCheckboxClick) {
-                      // Row click selects only one team (not on checkbox)
-                      setSelectedTeams([record.teamName])
-                    }
-                  },
-                  className: selectedTeams.includes(record.teamName) ? 'selected-row' : '',
-                  style: { cursor: 'pointer' },
-                })}
-              />
-            </Col>
-          )}
+      {uiMode !== 'simple' ? (
+        <Row gutter={24} style={containerStyle}>
+          <Col span={8} style={{ height: '100%' }}>
+            <ResourceListView
+              title={
+                <Space>
+                  <span style={{ fontSize: 16, fontWeight: 500 }}>{t('teams.title')}</span>
+                </Space>
+              }
+              loading={teamsLoading}
+              data={teamsList}
+              columns={teamColumns}
+              rowKey="teamName"
+              searchPlaceholder={t('teams.searchTeams')}
+              actions={
+                <Button 
+                  type="primary" 
+                  icon={<PlusOutlined />}
+                  onClick={() => setIsCreateTeamModalOpen(true)}
+                  style={{ background: '#556b2f', borderColor: '#556b2f' }}
+                >
+                  {t('teams.createTeam')}
+                </Button>
+              }
+              rowSelection={{
+                type: 'checkbox',
+                selectedRowKeys: selectedTeams,
+                onChange: (selectedRowKeys: React.Key[]) => {
+                  setSelectedTeams(selectedRowKeys as string[])
+                },
+              }}
+              onRow={(record) => ({
+                onClick: (e: React.MouseEvent) => {
+                  // Check if the click is on the checkbox or its parent elements
+                  const target = e.target as HTMLElement
+                  const isCheckboxClick = target.closest('.ant-checkbox-wrapper') || 
+                                        target.closest('.ant-checkbox') ||
+                                        target.closest('td[class*="ant-table-selection-column"]')
+                  
+                  if (!isCheckboxClick) {
+                    // Row click selects only one team (not on checkbox)
+                    setSelectedTeams([record.teamName])
+                  }
+                },
+                className: selectedTeams.includes(record.teamName) ? 'selected-row' : '',
+                style: { cursor: 'pointer' },
+              })}
+              containerStyle={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+              tableStyle={{ 
+                height: 'calc(100vh - 300px)'
+              }}
+              pagination={{
+                pageSize: 50,
+                showSizeChanger: true,
+                pageSizeOptions: ['20', '50', '100', '200'],
+                position: ['bottomRight'],
+              }}
+            />
+          </Col>
           
-          <Col span={24}>
-            <Card>
+          <Col span={16} style={{ height: '100%' }}>
+            <Card style={cardStyle} bodyStyle={cardBodyStyle}>
               <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <Title level={4} style={{ margin: 0 }}>
-                    {uiMode === 'simple' 
-                      ? t('teams.teamResources')
-                      : (selectedTeams.length > 0 ? t('teams.resourcesInTeam', { team: selectedTeams.join(', ') }) : t('teams.teamResources'))
-                    }
+                    {selectedTeams.length > 0 ? t('teams.resourcesInTeams', { count: selectedTeams.length }) : t('teams.teamResources')}
                   </Title>
-                  {selectedTeams.length === 0 && uiMode !== 'simple' && (
+                  {selectedTeams.length === 0 && (
                     <Text type="secondary" style={{ fontSize: 14 }}>
                       {t('teams.selectTeamToView')}
                     </Text>
@@ -1053,23 +1006,69 @@ const ResourcesPage: React.FC = () => {
                 )}
               </div>
               
-              {selectedTeams.length === 0 && uiMode !== 'simple' ? (
+              {selectedTeams.length === 0 ? (
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description={t('teams.selectTeamPrompt')}
                   style={{ padding: '40px 0' }}
                 />
-              ) : selectedTeams.length > 0 ? (
+              ) : (
                 <Tabs
                   activeKey={teamResourcesTab}
                   onChange={setTeamResourcesTab}
-                  items={uiMode === 'simple' ? teamResourcesTabs.filter(tab => tab.key !== 'schedules') : teamResourcesTabs}
+                  items={teamResourcesTabs}
+                  style={{ height: 'calc(100% - 60px)', display: 'flex', flexDirection: 'column' }}
+                  className="full-height-tabs"
+                  destroyInactiveTabPane
                 />
-              ) : null}
+              )}
             </Card>
           </Col>
         </Row>
-      </Card>
+      ) : (
+        <Card>
+          <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <Title level={4} style={{ margin: 0 }}>
+                {t('teams.teamResources')}
+              </Title>
+            </div>
+            <Space>
+              <Button 
+                type="primary" 
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  switch(teamResourcesTab) {
+                    case 'machines':
+                      setIsCreateMachineModalOpen(true)
+                      break
+                    case 'repositories':
+                      repositoryForm.setValue('teamName', 'Private Team')
+                      setIsCreateRepositoryModalOpen(true)
+                      break
+                    case 'storage':
+                      storageForm.setValue('teamName', 'Private Team')
+                      setIsCreateStorageModalOpen(true)
+                      break
+                  }
+                }}
+                style={{ background: '#556b2f', borderColor: '#556b2f' }}
+              >
+                {teamResourcesTab === 'machines' && t('machines.createMachine')}
+                {teamResourcesTab === 'repositories' && t('repositories.createRepository')}
+                {teamResourcesTab === 'storage' && t('storage.createStorage')}
+              </Button>
+            </Space>
+          </div>
+          
+          <Tabs
+            activeKey={teamResourcesTab}
+            onChange={setTeamResourcesTab}
+            items={teamResourcesTabs.filter(tab => tab.key !== 'schedules')}
+            destroyInactiveTabPane
+          />
+        </Card>
+      )}
 
       {/* Team Modals */}
       <Modal

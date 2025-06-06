@@ -87,21 +87,61 @@ body {
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-bg-secondary);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-text-muted);
-  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  transition: background 0.2s;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-tertiary);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Dark theme scrollbar */
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Modern table scrollbar */
+.ant-table-body::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.ant-table-body::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 5px;
+}
+
+.ant-table-body::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+  transition: all 0.3s;
+}
+
+.ant-table-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* Dark theme modern table scrollbar */
+[data-theme="dark"] .ant-table-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="dark"] .ant-table-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* Loading spinner */
@@ -229,4 +269,259 @@ body {
 /* Transition state animation */
 .mode-transition {
   animation: fadeInOut 0.6s ease-in-out;
+}
+
+/* Full height tabs for Resources page */
+.full-height-tabs {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-tabs > .ant-tabs-nav {
+  flex-shrink: 0;
+  margin-bottom: 16px;
+}
+
+.full-height-tabs .ant-tabs-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-tabs .ant-tabs-content-holder {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-tabs .ant-tabs-tabpane {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.full-height-tabs .ant-tabs-tabpane-hidden {
+  display: none !important;
+}
+
+/* Ensure table container takes full height */
+.full-height-tabs .ant-table-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.full-height-tabs .ant-spin-nested-loading {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-tabs .ant-spin-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.full-height-tabs .ant-table {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.full-height-tabs .ant-table-container {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-tabs .ant-table-body {
+  flex: 1;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+}
+
+/* Full height table container */
+.ant-table-wrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.ant-table {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.ant-table-container {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Sticky table header */
+.ant-table-sticky-holder {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  overflow: hidden;
+}
+
+.ant-table-sticky-scroll {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+}
+
+/* Table body scroll only */
+.ant-table-body {
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+}
+
+/* Ensure header stays fixed */
+.ant-table-thead > tr > th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--color-bg-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-theme="dark"] .ant-table-thead > tr > th {
+  background: var(--color-bg-primary);
+}
+
+/* Prevent header text wrapping */
+.ant-table-thead > tr > th > div {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Resources page specific styles */
+.resources-full-height-card .ant-card-body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Fix for table scroll in full height containers */
+.ant-spin-nested-loading {
+  height: 100%;
+}
+
+.ant-spin-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.ant-table-wrapper .ant-table {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Modern scroll behavior */
+.ant-table-body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+  scroll-behavior: smooth;
+}
+
+[data-theme="dark"] .ant-table-body {
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+/* Smooth scroll animation */
+.ant-table-body,
+.ant-table-body-inner {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbar until hover on container */
+.ant-table-wrapper:not(:hover) .ant-table-body::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+/* Show scrollbar on table hover */
+.ant-table-wrapper:hover .ant-table-body::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .ant-table-wrapper:hover .ant-table-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Fade in/out animation for scrollbar */
+.ant-table-body::-webkit-scrollbar-thumb {
+  transition: background 0.3s ease;
+}
+
+/* Full height machine table */
+.full-height-machine-table {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-machine-table > div:first-child {
+  flex-shrink: 0;
+}
+
+.full-height-machine-table .ant-table-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.full-height-machine-table .ant-table {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.full-height-machine-table .ant-table-container {
+  flex: 1;
+  overflow: hidden;
+}
+
+.full-height-machine-table .ant-table-body {
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+}
+
+/* Force table scroll for tab content */
+.full-height-tabs .ant-tabs-tabpane-active .ant-table-wrapper {
+  height: 100%;
+}
+
+.full-height-tabs .ant-tabs-tabpane-active .ant-table-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-tabs .ant-tabs-tabpane-active .ant-table-header {
+  flex-shrink: 0;
+}
+
+.full-height-tabs .ant-tabs-tabpane-active .ant-table-body {
+  flex: 1;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  min-height: 0;
 }
