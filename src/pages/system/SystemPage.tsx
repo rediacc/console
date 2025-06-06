@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Card, Tabs, Modal, Form, Input, Button, Space, Popconfirm, Tag, Select, Badge, List, Typography, Row, Col } from 'antd'
+import { Card, Tabs, Modal, Form, Input, Button, Space, Popconfirm, Tag, Select, Badge, List, Typography, Row, Col, Table, Empty, Spin } from 'antd'
 import { 
   UserOutlined, 
   SafetyOutlined, 
@@ -9,7 +9,11 @@ import {
   CheckCircleOutlined,
   StopOutlined,
   SettingOutlined,
-  BankOutlined
+  BankOutlined,
+  EnvironmentOutlined,
+  ApiOutlined,
+  EditOutlined,
+  DesktopOutlined
 } from '@ant-design/icons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -45,13 +49,44 @@ import {
 } from '@/api/queries/permissions'
 import { usePermissionGroups } from '@/api/queries/users'
 
-import { createUserSchema, CreateUserForm } from '@/utils/validation'
+// Region queries
+import { 
+  useRegions, 
+  useCreateRegion, 
+  useUpdateRegionName,
+  useDeleteRegion, 
+  useUpdateRegionVault, 
+  Region 
+} from '@/api/queries/regions'
+
+// Bridge queries
+import { 
+  useBridges, 
+  useCreateBridge, 
+  useUpdateBridgeName,
+  useDeleteBridge, 
+  useUpdateBridgeVault, 
+  Bridge 
+} from '@/api/queries/bridges'
+
+import { 
+  createUserSchema, 
+  CreateUserForm,
+  createRegionSchema, 
+  CreateRegionForm,
+  createBridgeSchema, 
+  CreateBridgeForm,
+  EditRegionForm,
+  editBridgeSchema,
+  EditBridgeForm
+} from '@/utils/validation'
 
 const { Title, Text } = Typography
 
 const SystemPage: React.FC = () => {
   const { t } = useTranslation('settings')
   const { t: tUsers } = useTranslation('system')
+  const { t: tOrg } = useTranslation('organization')
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const [activeTab, setActiveTab] = useState('users')
   
@@ -81,6 +116,23 @@ const SystemPage: React.FC = () => {
   const [selectedPermission, setSelectedPermission] = useState<string>('')
   const [selectedUser, setSelectedUser] = useState<string>('')
 
+  // Region state
+  const [isCreateRegionModalOpen, setIsCreateRegionModalOpen] = useState(false)
+  const [editingRegion, setEditingRegion] = useState<Region | null>(null)
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
+  const [regionVaultModalConfig, setRegionVaultModalConfig] = useState<{
+    open: boolean
+    region?: Region
+  }>({ open: false })
+
+  // Bridge state
+  const [isCreateBridgeModalOpen, setIsCreateBridgeModalOpen] = useState(false)
+  const [editingBridge, setEditingBridge] = useState<Bridge | null>(null)
+  const [bridgeVaultModalConfig, setBridgeVaultModalConfig] = useState<{
+    open: boolean
+    bridge?: Bridge
+  }>({ open: false })
+
   // Common hooks
   const { data: dropdownData } = useDropdownData()
   
@@ -103,12 +155,54 @@ const SystemPage: React.FC = () => {
   const removePermissionMutation = useRemovePermissionFromGroup()
   const assignUserMutation = useAssignUserToGroup()
 
+  // Region hooks - always fetch regions since they're always visible at the bottom
+  const { data: regions, isLoading: regionsLoading } = useRegions(true)
+  const regionsList: Region[] = regions || []
+  const createRegionMutation = useCreateRegion()
+  const updateRegionNameMutation = useUpdateRegionName()
+  const deleteRegionMutation = useDeleteRegion()
+  const updateRegionVaultMutation = useUpdateRegionVault()
+
+  // Bridge hooks - fetch when a region is selected
+  const { data: bridges, isLoading: bridgesLoading } = useBridges(selectedRegion || undefined)
+  const bridgesList: Bridge[] = bridges || []
+  const createBridgeMutation = useCreateBridge()
+  const updateBridgeNameMutation = useUpdateBridgeName()
+  const deleteBridgeMutation = useDeleteBridge()
+  const updateBridgeVaultMutation = useUpdateBridgeVault()
+
   // User form
   const userForm = useForm<CreateUserForm>({
     resolver: zodResolver(createUserSchema),
     defaultValues: {
       newUserEmail: '',
       newUserPassword: '',
+    },
+  })
+
+  // Region form
+  const regionForm = useForm<CreateRegionForm>({
+    resolver: zodResolver(createRegionSchema) as any,
+    defaultValues: {
+      regionName: '',
+      regionVault: '{}',
+    },
+  })
+
+  // Bridge forms
+  const bridgeForm = useForm<CreateBridgeForm>({
+    resolver: zodResolver(createBridgeSchema) as any,
+    defaultValues: {
+      regionName: '',
+      bridgeName: '',
+      bridgeVault: '{}',
+    },
+  })
+
+  const editBridgeForm = useForm<EditBridgeForm>({
+    resolver: zodResolver(editBridgeSchema) as any,
+    defaultValues: {
+      bridgeName: '',
     },
   })
 
@@ -228,6 +322,102 @@ const SystemPage: React.FC = () => {
     } catch (error) {
       // Error handled by mutation
     }
+  }
+
+  // Region handlers
+  const handleCreateRegion = async (data: CreateRegionForm) => {
+    try {
+      await createRegionMutation.mutateAsync(data)
+      setIsCreateRegionModalOpen(false)
+      regionForm.reset()
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
+  const handleEditRegion = async (values: EditRegionForm) => {
+    if (!editingRegion) return
+    try {
+      await updateRegionNameMutation.mutateAsync({
+        currentRegionName: editingRegion.regionName,
+        newRegionName: values.regionName,
+      })
+      setEditingRegion(null)
+      regionForm.reset()
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
+  const handleDeleteRegion = async (regionName: string) => {
+    try {
+      await deleteRegionMutation.mutateAsync(regionName)
+      if (selectedRegion === regionName) {
+        setSelectedRegion(null)
+      }
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
+  const handleUpdateRegionVault = async (vault: string, version: number) => {
+    if (!regionVaultModalConfig.region) return
+
+    await updateRegionVaultMutation.mutateAsync({
+      regionName: regionVaultModalConfig.region.regionName,
+      regionVault: vault,
+      vaultVersion: version,
+    })
+    setRegionVaultModalConfig({ open: false })
+  }
+
+  // Bridge handlers
+  const handleCreateBridge = async (data: CreateBridgeForm) => {
+    try {
+      await createBridgeMutation.mutateAsync(data)
+      setIsCreateBridgeModalOpen(false)
+      bridgeForm.reset()
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
+  const handleEditBridge = async (values: EditBridgeForm) => {
+    if (!editingBridge) return
+    try {
+      await updateBridgeNameMutation.mutateAsync({
+        regionName: editingBridge.regionName,
+        currentBridgeName: editingBridge.bridgeName,
+        newBridgeName: values.bridgeName,
+      })
+      setEditingBridge(null)
+      editBridgeForm.reset()
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
+  const handleDeleteBridge = async (bridge: Bridge) => {
+    try {
+      await deleteBridgeMutation.mutateAsync({
+        regionName: bridge.regionName,
+        bridgeName: bridge.bridgeName,
+      })
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
+  const handleUpdateBridgeVault = async (vault: string, version: number) => {
+    if (!bridgeVaultModalConfig.bridge) return
+
+    await updateBridgeVaultMutation.mutateAsync({
+      regionName: bridgeVaultModalConfig.bridge.regionName,
+      bridgeName: bridgeVaultModalConfig.bridge.bridgeName,
+      bridgeVault: vault,
+      vaultVersion: version,
+    })
+    setBridgeVaultModalConfig({ open: false })
   }
 
   // Permission columns
@@ -397,6 +587,160 @@ const SystemPage: React.FC = () => {
   // Get available permissions from dropdown data
   const availablePermissions = dropdownData?.permissions || []
 
+  // Region columns
+  const regionColumns = [
+    {
+      title: tOrg('regions.regionName'),
+      dataIndex: 'regionName',
+      key: 'regionName',
+      render: (text: string) => (
+        <Space>
+          <EnvironmentOutlined style={{ color: '#556b2f' }} />
+          <strong>{text}</strong>
+        </Space>
+      ),
+    },
+    {
+      title: tOrg('regions.bridges'),
+      dataIndex: 'bridgeCount',
+      key: 'bridgeCount',
+      width: 120,
+      render: (count: number) => (
+        <Space>
+          <ApiOutlined />
+          <span>{count}</span>
+        </Space>
+      ),
+    },
+    ...(uiMode === 'expert' ? [{
+      title: tOrg('general.vaultVersion'),
+      dataIndex: 'vaultVersion',
+      key: 'vaultVersion',
+      width: 120,
+      render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
+    }] : []),
+    {
+      title: tOrg('general.actions'),
+      key: 'actions',
+      width: 200,
+      render: (_: any, record: Region) => (
+        <Space>
+          <Button
+            type="link"
+            icon={<SettingOutlined />}
+            onClick={() => setRegionVaultModalConfig({ open: true, region: record })}
+          >
+            {tOrg('general.vault')}
+          </Button>
+          <Button 
+            type="link" 
+            icon={<EditOutlined />}
+            onClick={() => {
+              setEditingRegion(record)
+              regionForm.setValue('regionName', record.regionName)
+            }}
+          >
+            {tOrg('general.edit')}
+          </Button>
+          <Popconfirm
+            title={tOrg('regions.deleteRegion')}
+            description={tOrg('regions.confirmDelete', { regionName: record.regionName })}
+            onConfirm={() => handleDeleteRegion(record.regionName)}
+            okText={tOrg('general.yes')}
+            cancelText={tOrg('general.no')}
+            okButtonProps={{ danger: true }}
+          >
+            <Button 
+              type="link" 
+              danger 
+              icon={<DeleteOutlined />}
+              loading={deleteRegionMutation.isPending}
+            >
+              {tOrg('general.delete')}
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ]
+
+  // Bridge columns
+  const bridgeColumns = [
+    {
+      title: tOrg('bridges.bridgeName'),
+      dataIndex: 'bridgeName',
+      key: 'bridgeName',
+      render: (text: string) => (
+        <Space>
+          <ApiOutlined style={{ color: '#556b2f' }} />
+          <strong>{text}</strong>
+        </Space>
+      ),
+    },
+    {
+      title: tOrg('teams.machines'),
+      dataIndex: 'machineCount',
+      key: 'machineCount',
+      width: 120,
+      render: (count: number) => (
+        <Space>
+          <DesktopOutlined />
+          <span>{count}</span>
+        </Space>
+      ),
+    },
+    ...(uiMode === 'expert' ? [{
+      title: tOrg('general.vaultVersion'),
+      dataIndex: 'vaultVersion',
+      key: 'vaultVersion',
+      width: 120,
+      render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
+    }] : []),
+    {
+      title: tOrg('general.actions'),
+      key: 'actions',
+      width: 200,
+      render: (_: any, record: Bridge) => (
+        <Space>
+          <Button
+            type="link"
+            icon={<SettingOutlined />}
+            onClick={() => setBridgeVaultModalConfig({ open: true, bridge: record })}
+          >
+            {tOrg('general.vault')}
+          </Button>
+          <Button 
+            type="link" 
+            icon={<EditOutlined />}
+            onClick={() => {
+              setEditingBridge(record)
+              editBridgeForm.setValue('bridgeName', record.bridgeName)
+            }}
+          >
+            {tOrg('general.edit')}
+          </Button>
+          <Popconfirm
+            title={tOrg('bridges.deleteBridge')}
+            description={tOrg('bridges.confirmDelete', { bridgeName: record.bridgeName })}
+            onConfirm={() => handleDeleteBridge(record)}
+            okText={tOrg('general.yes')}
+            cancelText={tOrg('general.no')}
+            okButtonProps={{ danger: true }}
+          >
+            <Button 
+              type="link" 
+              danger 
+              icon={<DeleteOutlined />}
+              loading={deleteBridgeMutation.isPending}
+            >
+              {tOrg('general.delete')}
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ]
+
   const userFormFields = [
     {
       name: 'newUserEmail',
@@ -413,6 +757,42 @@ const SystemPage: React.FC = () => {
       required: true,
     },
   ]
+
+  // Form fields
+  const regionFormFields = [
+    {
+      name: 'regionName',
+      label: tOrg('regions.regionName'),
+      placeholder: tOrg('regions.placeholders.enterRegionName'),
+      required: true,
+    },
+  ]
+
+  const bridgeFormFields = uiMode === 'simple'
+    ? [
+        {
+          name: 'bridgeName',
+          label: tOrg('bridges.bridgeName'),
+          placeholder: tOrg('bridges.placeholders.enterBridgeName'),
+          required: true,
+        },
+      ]
+    : [
+        {
+          name: 'regionName',
+          label: tOrg('general.region'),
+          placeholder: tOrg('regions.placeholders.selectRegion'),
+          required: true,
+          type: 'select' as const,
+          options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
+        },
+        {
+          name: 'bridgeName',
+          label: tOrg('bridges.bridgeName'),
+          placeholder: tOrg('bridges.placeholders.enterBridgeName'),
+          required: true,
+        },
+      ]
 
   // Define tab configurations
   const usersTab = {
@@ -769,6 +1149,236 @@ const SystemPage: React.FC = () => {
         initialVersion={1}
         loading={false}
       />
+
+      {/* Regions & Infrastructure Section */}
+      <Title level={3} style={{ marginTop: 48, marginBottom: 24 }}>{tUsers('regionsInfrastructure.title')}</Title>
+      
+      <Card>
+        <Row gutter={[24, 24]}>
+          <Col span={24}>
+            <ResourceListView
+              title={
+                <Space>
+                  <span style={{ fontSize: 16, fontWeight: 500 }}>{tOrg('regions.title')}</span>
+                  <span style={{ fontSize: 14, color: '#666' }}>{tOrg('regions.selectRegionPrompt')}</span>
+                </Space>
+              }
+              loading={regionsLoading}
+              data={regionsList}
+              columns={regionColumns}
+              rowKey="regionName"
+              searchPlaceholder={tOrg('regions.searchRegions')}
+              actions={
+                <Button 
+                  type="primary" 
+                  icon={<PlusOutlined />}
+                  onClick={() => setIsCreateRegionModalOpen(true)}
+                  style={{ background: '#556b2f', borderColor: '#556b2f' }}
+                >
+                  {tOrg('regions.createRegion')}
+                </Button>
+              }
+              rowSelection={{
+                type: 'radio',
+                selectedRowKeys: selectedRegion ? [selectedRegion] : [],
+                onChange: (selectedRowKeys: React.Key[]) => {
+                  setSelectedRegion(selectedRowKeys[0] as string || null)
+                },
+              }}
+              onRow={(record) => ({
+                onClick: () => setSelectedRegion(record.regionName),
+                className: selectedRegion === record.regionName ? 'selected-row' : '',
+                style: { cursor: 'pointer' },
+              })}
+            />
+          </Col>
+          
+          <Col span={24}>
+            <Card>
+              <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <Title level={4} style={{ margin: 0 }}>
+                    {selectedRegion ? tOrg('regions.bridgesInRegion', { region: selectedRegion }) : tOrg('bridges.title')}
+                  </Title>
+                  {!selectedRegion && (
+                    <Text type="secondary" style={{ fontSize: 14 }}>
+                      {tOrg('regions.selectRegionToView')}
+                    </Text>
+                  )}
+                </div>
+                {selectedRegion && (
+                  <Button 
+                    type="primary" 
+                    icon={<PlusOutlined />}
+                    onClick={() => {
+                      bridgeForm.setValue('regionName', selectedRegion)
+                      setIsCreateBridgeModalOpen(true)
+                    }}
+                    style={{ background: '#556b2f', borderColor: '#556b2f' }}
+                  >
+                    {tOrg('bridges.createBridge')}
+                  </Button>
+                )}
+              </div>
+              
+              {!selectedRegion ? (
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description={tOrg('regions.selectRegionPrompt')}
+                  style={{ padding: '40px 0' }}
+                />
+              ) : bridgesLoading ? (
+                <div style={{ textAlign: 'center', padding: '100px 0' }}>
+                  <Spin size="large" tip={t('common:general.loading')} />
+                </div>
+              ) : (
+                <Table
+                  columns={bridgeColumns}
+                  dataSource={bridgesList}
+                  rowKey="bridgeName"
+                  pagination={{
+                    total: bridgesList.length || 0,
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    showTotal: (total) => tOrg('bridges.totalBridges', { total }),
+                  }}
+                  locale={{
+                    emptyText: tOrg('bridges.noBridges'),
+                  }}
+                />
+              )}
+            </Card>
+          </Col>
+        </Row>
+      </Card>
+
+      {/* Region Modals */}
+      <Modal
+        title={tOrg('regions.createRegion')}
+        open={isCreateRegionModalOpen}
+        onCancel={() => {
+          setIsCreateRegionModalOpen(false)
+          regionForm.reset()
+        }}
+        footer={null}
+      >
+        <ResourceForm
+          form={regionForm}
+          fields={regionFormFields}
+          onSubmit={handleCreateRegion}
+          submitText={tOrg('general.create')}
+          cancelText={tOrg('general.cancel')}
+          onCancel={() => {
+            setIsCreateRegionModalOpen(false)
+            regionForm.reset()
+          }}
+          loading={createRegionMutation.isPending}
+        />
+      </Modal>
+
+      <VaultEditorModal
+        open={regionVaultModalConfig.open}
+        onCancel={() => setRegionVaultModalConfig({ open: false })}
+        onSave={handleUpdateRegionVault}
+        entityType="REGION"
+        title={tOrg('general.configureVault', { name: regionVaultModalConfig.region?.regionName || '' })}
+        initialVault={regionVaultModalConfig.region?.vaultContent || "{}"}
+        initialVersion={regionVaultModalConfig.region?.vaultVersion || 1}
+        loading={updateRegionVaultMutation.isPending}
+      />
+
+      {/* Edit Region Modal */}
+      <Modal
+        title={tOrg('regions.editRegion')}
+        open={!!editingRegion}
+        onCancel={() => {
+          setEditingRegion(null)
+          regionForm.reset()
+        }}
+        footer={null}
+      >
+        <ResourceForm
+          form={regionForm}
+          fields={[{
+            name: 'regionName',
+            label: tOrg('regions.regionName'),
+            placeholder: tOrg('regions.placeholders.enterRegionName'),
+            required: true,
+          }]}
+          onSubmit={handleEditRegion}
+          submitText={tOrg('general.save')}
+          cancelText={tOrg('general.cancel')}
+          onCancel={() => {
+            setEditingRegion(null)
+            regionForm.reset()
+          }}
+          loading={updateRegionNameMutation.isPending}
+        />
+      </Modal>
+
+      {/* Bridge Modals */}
+      <Modal
+        title={tOrg('bridges.createBridge')}
+        open={isCreateBridgeModalOpen}
+        onCancel={() => {
+          setIsCreateBridgeModalOpen(false)
+          bridgeForm.reset()
+        }}
+        footer={null}
+      >
+        <ResourceForm
+          form={bridgeForm}
+          fields={bridgeFormFields}
+          onSubmit={handleCreateBridge}
+          submitText={tOrg('general.create')}
+          cancelText={tOrg('general.cancel')}
+          onCancel={() => {
+            setIsCreateBridgeModalOpen(false)
+            bridgeForm.reset()
+          }}
+          loading={createBridgeMutation.isPending}
+        />
+      </Modal>
+
+      <VaultEditorModal
+        open={bridgeVaultModalConfig.open}
+        onCancel={() => setBridgeVaultModalConfig({ open: false })}
+        onSave={handleUpdateBridgeVault}
+        entityType="BRIDGE"
+        title={tOrg('general.configureVault', { name: bridgeVaultModalConfig.bridge?.bridgeName || '' })}
+        initialVault={bridgeVaultModalConfig.bridge?.vaultContent || "{}"}
+        initialVersion={bridgeVaultModalConfig.bridge?.vaultVersion || 1}
+        loading={updateBridgeVaultMutation.isPending}
+      />
+
+      {/* Edit Bridge Modal */}
+      <Modal
+        title={tOrg('bridges.editBridge')}
+        open={!!editingBridge}
+        onCancel={() => {
+          setEditingBridge(null)
+          editBridgeForm.reset()
+        }}
+        footer={null}
+      >
+        <ResourceForm
+          form={editBridgeForm}
+          fields={[{
+            name: 'bridgeName',
+            label: tOrg('bridges.bridgeName'),
+            placeholder: tOrg('bridges.placeholders.enterBridgeName'),
+            required: true,
+          }]}
+          onSubmit={handleEditBridge}
+          submitText={tOrg('general.save')}
+          cancelText={tOrg('general.cancel')}
+          onCancel={() => {
+            setEditingBridge(null)
+            editBridgeForm.reset()
+          }}
+          loading={updateBridgeNameMutation.isPending}
+        />
+      </Modal>
     </>
   )
 }

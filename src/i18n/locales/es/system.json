@@ -1,5 +1,8 @@
 {
   "title": "Usuarios y Permisos",
+  "regionsInfrastructure": {
+    "title": "Regiones e Infraestructura"
+  },
   "users": {
     "title": "Usuarios",
     "description": "Gestionar cuentas de usuario y acceso",

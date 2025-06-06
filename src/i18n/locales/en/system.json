@@ -1,5 +1,8 @@
 {
   "title": "Users & Permissions",
+  "regionsInfrastructure": {
+    "title": "Regions & Infrastructure"
+  },
   "users": {
     "title": "Users",
     "description": "Manage user accounts and access",
