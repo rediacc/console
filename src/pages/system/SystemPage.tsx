@@ -86,7 +86,7 @@ const { Title, Text } = Typography
 const SystemPage: React.FC = () => {
   const { t } = useTranslation('settings')
   const { t: tUsers } = useTranslation('system')
-  const { t: tOrg } = useTranslation('organization')
+  const { t: tOrg } = useTranslation('resources')
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const [activeTab, setActiveTab] = useState('users')
   
@@ -866,7 +866,7 @@ const SystemPage: React.FC = () => {
   // Compose tabs based on UI mode
   const tabItems = uiMode === 'simple' 
     ? [usersTab]
-    : [permissionsTab, usersTab]
+    : [usersTab, permissionsTab]
 
   return (
     <>
@@ -1151,9 +1151,11 @@ const SystemPage: React.FC = () => {
       />
 
       {/* Regions & Infrastructure Section */}
-      <Title level={3} style={{ marginTop: 48, marginBottom: 24 }}>{tUsers('regionsInfrastructure.title')}</Title>
-      
-      <Card>
+      {uiMode === 'expert' && (
+        <>
+          <Title level={3} style={{ marginTop: 48, marginBottom: 24 }}>{tUsers('regionsInfrastructure.title')}</Title>
+          
+          <Card>
         <Row gutter={[24, 24]}>
           <Col span={24}>
             <ResourceListView
@@ -1251,6 +1253,8 @@ const SystemPage: React.FC = () => {
           </Col>
         </Row>
       </Card>
+        </>
+      )}
 
       {/* Region Modals */}
       <Modal
