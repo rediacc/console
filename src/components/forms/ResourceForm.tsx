@@ -63,6 +63,7 @@ function ResourceForm<T = any>({
                 filterOption={(input, option) =>
                   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                 }
+                style={{ width: '100%' }}
               />
             )}
           />
@@ -101,8 +102,20 @@ function ResourceForm<T = any>({
     }
   }
 
+  // Force horizontal layout for popup forms to save space
+  const formLayout = layout === 'vertical' ? 'horizontal' : layout
+  const labelCol = { span: 8 }
+  const wrapperCol = { span: 16 }
+
   return (
-    <Form layout={layout} onFinish={handleSubmit(onSubmit)}>
+    <Form 
+      layout={formLayout} 
+      onFinish={handleSubmit(onSubmit)}
+      labelCol={labelCol}
+      wrapperCol={wrapperCol}
+      labelAlign="left"
+      colon={true}
+    >
       {fields.map((field) => {
         if (field.hidden) return null
 
@@ -121,7 +134,10 @@ function ResourceForm<T = any>({
         )
       })}
 
-      <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
+      <Form.Item 
+        style={{ marginBottom: 0, marginTop: 24 }}
+        wrapperCol={{ offset: labelCol.span, span: wrapperCol.span }}
+      >
         <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
           {onCancel && (
             <Button onClick={onCancel} disabled={loading}>

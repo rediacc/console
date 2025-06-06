@@ -14,8 +14,6 @@ import {
   Collapse,
   Tag,
   Tooltip,
-  Row,
-  Col,
   message,
 } from 'antd'
 import {
@@ -484,7 +482,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               {fieldLabel}
               {fieldDescription && (
                 <Tooltip title={fieldDescription}>
-                  <InfoCircleOutlined />
+                  <InfoCircleOutlined style={{ fontSize: 12 }} />
                 </Tooltip>
               )}
             </Space>
@@ -506,7 +504,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               {fieldLabel}
               {fieldDescription && (
                 <Tooltip title={fieldDescription}>
-                  <InfoCircleOutlined />
+                  <InfoCircleOutlined style={{ fontSize: 12 }} />
                 </Tooltip>
               )}
             </Space>
@@ -534,7 +532,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               {fieldLabel}
               {fieldDescription && (
                 <Tooltip title={fieldDescription}>
-                  <InfoCircleOutlined />
+                  <InfoCircleOutlined style={{ fontSize: 12 }} />
                 </Tooltip>
               )}
             </Space>
@@ -561,7 +559,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               {fieldLabel}
               {fieldDescription && (
                 <Tooltip title={fieldDescription}>
-                  <InfoCircleOutlined />
+                  <InfoCircleOutlined style={{ fontSize: 12 }} />
                 </Tooltip>
               )}
             </Space>
@@ -613,7 +611,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               {fieldLabel}
               {fieldDescription && (
                 <Tooltip title={fieldDescription}>
-                  <InfoCircleOutlined />
+                  <InfoCircleOutlined style={{ fontSize: 12 }} />
                 </Tooltip>
               )}
             </Space>
@@ -666,7 +664,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               {fieldLabel}
               {fieldDescription && (
                 <Tooltip title={fieldDescription}>
-                  <InfoCircleOutlined />
+                  <InfoCircleOutlined style={{ fontSize: 12 }} />
                 </Tooltip>
               )}
             </Space>
@@ -724,7 +722,11 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 
       <Form
         form={form}
-        layout="vertical"
+        layout="horizontal"
+        labelCol={{ span: 8 }}
+        wrapperCol={{ span: 16 }}
+        labelAlign="left"
+        colon={true}
         onValuesChange={handleFormChange}
         autoComplete="off"
       >
@@ -734,49 +736,41 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
             optionalFields.length > 0 ? 'optional' : '',
           ].filter(Boolean)}
         >
-          <Collapse.Panel
-            header={
-              <Space>
-                <strong>{t('vaultEditor.requiredFields')}</strong>
-                <Tag color="red">{requiredFields.length}</Tag>
-              </Space>
-            }
-            key="required"
-          >
-            <Row gutter={[16, 0]}>
+          {requiredFields.length > 0 && (
+            <Collapse.Panel
+              header={
+                <Space>
+                  <strong>{t('vaultEditor.requiredFields')}</strong>
+                  <Tag color="red">{requiredFields.length}</Tag>
+                </Space>
+              }
+              key="required"
+            >
               {requiredFields.map((fieldName) => {
                 const field = fields[fieldName as keyof typeof fields]
                 if (!field) return null
-                return (
-                  <Col span={24} key={fieldName}>
-                    {renderField(fieldName, field as FieldDefinition, true)}
-                  </Col>
-                )
+                return renderField(fieldName, field as FieldDefinition, true)
               })}
-            </Row>
-          </Collapse.Panel>
+            </Collapse.Panel>
+          )}
 
-          <Collapse.Panel
-            header={
-              <Space>
-                <strong>{t('vaultEditor.optionalFields')}</strong>
-                <Tag>{optionalFields.length}</Tag>
-              </Space>
-            }
-            key="optional"
-          >
-            <Row gutter={[16, 0]}>
+          {optionalFields.length > 0 && (
+            <Collapse.Panel
+              header={
+                <Space>
+                  <strong>{t('vaultEditor.optionalFields')}</strong>
+                  <Tag>{optionalFields.length}</Tag>
+                </Space>
+              }
+              key="optional"
+            >
               {optionalFields.map((fieldName) => {
                 const field = fields[fieldName as keyof typeof fields]
                 if (!field) return null
-                return (
-                  <Col span={24} key={fieldName}>
-                    {renderField(fieldName, field as FieldDefinition, false)}
-                  </Col>
-                )
+                return renderField(fieldName, field as FieldDefinition, false)
               })}
-            </Row>
-          </Collapse.Panel>
+            </Collapse.Panel>
+          )}
 
           {Object.keys(extraFields).length > 0 && (
             <Collapse.Panel

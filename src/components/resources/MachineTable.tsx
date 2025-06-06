@@ -36,6 +36,7 @@ import {
 import { useMachines, useDeleteMachine, useCreateMachine, useUpdateMachineName, useUpdateMachineBridge, useUpdateMachineVault } from '@/api/queries/machines';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import ResourceForm from '@/components/forms/ResourceForm';
+import ResourceFormWithVault from '@/components/forms/ResourceFormWithVault';
 import VaultEditorModal from '@/components/common/VaultEditorModal';
 import type { Machine } from '@/types';
 import { useSelector } from 'react-redux';
@@ -98,6 +99,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const [functionPriority, setFunctionPriority] = useState(5);
   const [functionDescription, setFunctionDescription] = useState('');
   const [functionSearchTerm, setFunctionSearchTerm] = useState('');
+  
+  // Refs for form components
+  const createFormRef = useRef<any>(null);
   
   // Use external control if provided, otherwise use internal state
   const showCreateModal = externalShowCreateModal !== undefined ? externalShowCreateModal : internalShowCreateModal;
@@ -903,43 +907,45 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           setShowCreateModal(false);
           machineForm.reset();
         }}
-        footer={null}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <ResourceForm
-            form={machineForm}
-            fields={machineFormFields}
-            onSubmit={handleCreateMachine}
-            submitText={t('common:actions.create')}
-            cancelText={t('common:actions.cancel')}
-            onCancel={() => {
+        footer={[
+          <Button 
+            key="cancel" 
+            onClick={() => {
               setShowCreateModal(false);
               machineForm.reset();
             }}
+          >
+            {t('common:actions.cancel')}
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
             loading={createMachineMutation.isPending}
-          />
-          
-          {uiMode === 'simple' && (
-            <div style={{ 
-              borderTop: '1px solid #f0f0f0', 
-              paddingTop: 16,
-              marginTop: 8
-            }}>
-              <Alert
-                message={t('machines:defaultsApplied')}
-                description={
-                  <Space direction="vertical" size={0}>
-                    <Text>{t('machines:team')}: Private Team</Text>
-                    <Text>{t('machines:region')}: Default Region</Text>
-                    <Text>{t('machines:bridge')}: Shared Bridge</Text>
-                  </Space>
-                }
-                type="info"
-                showIcon
-              />
-            </div>
-          )}
-        </div>
+            onClick={() => createFormRef.current?.submit()}
+            style={{ background: '#556b2f', borderColor: '#556b2f' }}
+          >
+            {t('common:actions.create')}
+          </Button>
+        ]}
+        width={800}
+        style={{ top: 20 }}
+      >
+        <ResourceFormWithVault
+          ref={createFormRef}
+          form={machineForm}
+          fields={machineFormFields}
+          onSubmit={handleCreateMachine}
+          entityType="MACHINE"
+          vaultFieldName="machineVault"
+          showDefaultsAlert={uiMode === 'simple'}
+          defaultsContent={
+            <Space direction="vertical" size={0}>
+              <Text>{t('machines:team')}: Private Team</Text>
+              <Text>{t('machines:region')}: Default Region</Text>
+              <Text>{t('machines:bridge')}: Shared Bridge</Text>
+            </Space>
+          }
+        />
       </Modal>
 
       {/* Edit Machine Modal */}

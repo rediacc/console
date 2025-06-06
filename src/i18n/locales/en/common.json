@@ -110,6 +110,7 @@
     "elitePlanDescription": "You're on our highest tier plan with all features unlocked"
   },
   "vaultEditor": {
+    "vaultConfiguration": "Vault Configuration",
     "vaultVersion": "Vault Version:",
     "versionAutoIncrement": "Version will auto-increment on save",
     "importJson": "Import JSON",

@@ -26,6 +26,7 @@ import { RootState } from '@/store/store'
 import { useTranslation } from 'react-i18next'
 import ResourceListView from '@/components/common/ResourceListView'
 import ResourceForm from '@/components/forms/ResourceForm'
+import ResourceFormWithVault, { ResourceFormWithVaultRef } from '@/components/forms/ResourceFormWithVault'
 import VaultEditorModal from '@/components/common/VaultEditorModal'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import { useUpdateCompanyVault, useCompanyVault } from '@/api/queries/company'
@@ -111,6 +112,12 @@ const SystemPage: React.FC = () => {
   const { t: tOrg } = useTranslation('resources')
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const [activeTab, setActiveTab] = useState('users')
+  
+  // Form refs
+  const userFormRef = React.useRef<ResourceFormWithVaultRef>(null)
+  const teamFormRef = React.useRef<ResourceFormWithVaultRef>(null)
+  const regionFormRef = React.useRef<ResourceFormWithVaultRef>(null)
+  const bridgeFormRef = React.useRef<ResourceFormWithVaultRef>(null)
   
   // Set initial tab based on UI mode
   React.useEffect(() => {
@@ -1465,19 +1472,36 @@ const SystemPage: React.FC = () => {
           setIsCreateTeamModalOpen(false)
           teamForm.reset()
         }}
-        footer={null}
+        footer={[
+          <Button 
+            key="cancel" 
+            onClick={() => {
+              setIsCreateTeamModalOpen(false)
+              teamForm.reset()
+            }}
+          >
+            Cancel
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            loading={createTeamMutation.isPending}
+            onClick={() => teamFormRef.current?.submit()}
+            style={{ background: '#556b2f', borderColor: '#556b2f' }}
+          >
+            Create
+          </Button>
+        ]}
+        width={800}
+        style={{ top: 20 }}
       >
-        <ResourceForm
+        <ResourceFormWithVault
+          ref={teamFormRef}
           form={teamForm}
           fields={teamFormFields}
           onSubmit={handleCreateTeam}
-          submitText="Create"
-          cancelText="Cancel"
-          onCancel={() => {
-            setIsCreateTeamModalOpen(false)
-            teamForm.reset()
-          }}
-          loading={createTeamMutation.isPending}
+          entityType="TEAM"
+          vaultFieldName="teamVault"
         />
       </Modal>
 
@@ -1723,19 +1747,36 @@ const SystemPage: React.FC = () => {
           setIsCreateRegionModalOpen(false)
           regionForm.reset()
         }}
-        footer={null}
+        footer={[
+          <Button 
+            key="cancel" 
+            onClick={() => {
+              setIsCreateRegionModalOpen(false)
+              regionForm.reset()
+            }}
+          >
+            {tOrg('general.cancel')}
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            loading={createRegionMutation.isPending}
+            onClick={() => regionFormRef.current?.submit()}
+            style={{ background: '#556b2f', borderColor: '#556b2f' }}
+          >
+            {tOrg('general.create')}
+          </Button>
+        ]}
+        width={800}
+        style={{ top: 20 }}
       >
-        <ResourceForm
+        <ResourceFormWithVault
+          ref={regionFormRef}
           form={regionForm}
           fields={regionFormFields}
           onSubmit={handleCreateRegion}
-          submitText={tOrg('general.create')}
-          cancelText={tOrg('general.cancel')}
-          onCancel={() => {
-            setIsCreateRegionModalOpen(false)
-            regionForm.reset()
-          }}
-          loading={createRegionMutation.isPending}
+          entityType="REGION"
+          vaultFieldName="regionVault"
         />
       </Modal>
 
@@ -1787,19 +1828,36 @@ const SystemPage: React.FC = () => {
           setIsCreateBridgeModalOpen(false)
           bridgeForm.reset()
         }}
-        footer={null}
+        footer={[
+          <Button 
+            key="cancel" 
+            onClick={() => {
+              setIsCreateBridgeModalOpen(false)
+              bridgeForm.reset()
+            }}
+          >
+            {tOrg('general.cancel')}
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            loading={createBridgeMutation.isPending}
+            onClick={() => bridgeFormRef.current?.submit()}
+            style={{ background: '#556b2f', borderColor: '#556b2f' }}
+          >
+            {tOrg('general.create')}
+          </Button>
+        ]}
+        width={800}
+        style={{ top: 20 }}
       >
-        <ResourceForm
+        <ResourceFormWithVault
+          ref={bridgeFormRef}
           form={bridgeForm}
           fields={bridgeFormFields}
           onSubmit={handleCreateBridge}
-          submitText={tOrg('general.create')}
-          cancelText={tOrg('general.cancel')}
-          onCancel={() => {
-            setIsCreateBridgeModalOpen(false)
-            bridgeForm.reset()
-          }}
-          loading={createBridgeMutation.isPending}
+          entityType="BRIDGE"
+          vaultFieldName="bridgeVault"
         />
       </Modal>
 

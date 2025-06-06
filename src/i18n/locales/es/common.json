@@ -110,6 +110,7 @@
     "elitePlanDescription": "Está en nuestro plan de nivel más alto con todas las funciones desbloqueadas"
   },
   "vaultEditor": {
+    "vaultConfiguration": "Configuración del Vault",
     "vaultVersion": "Versión del Vault:",
     "versionAutoIncrement": "La versión se incrementará automáticamente al guardar",
     "importJson": "Importar JSON",

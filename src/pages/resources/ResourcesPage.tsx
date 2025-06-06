@@ -19,6 +19,7 @@ import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 import ResourceListView from '@/components/common/ResourceListView'
 import ResourceForm from '@/components/forms/ResourceForm'
+import ResourceFormWithVault from '@/components/forms/ResourceFormWithVault'
 import VaultEditorModal from '@/components/common/VaultEditorModal'
 
 // Team queries
@@ -85,6 +86,11 @@ const ResourcesPage: React.FC = () => {
   const repositoryTableRef = useRef<HTMLDivElement>(null)
   const storageTableRef = useRef<HTMLDivElement>(null)
   const scheduleTableRef = useRef<HTMLDivElement>(null)
+  
+  // Refs for form components
+  const repositoryFormRef = useRef<any>(null)
+  const storageFormRef = useRef<any>(null)
+  const scheduleFormRef = useRef<any>(null)
   
   // Team state
   const [isCreateTeamModalOpen, setIsCreateTeamModalOpen] = useState(false)
@@ -927,16 +933,7 @@ const ResourcesPage: React.FC = () => {
               columns={teamColumns}
               rowKey="teamName"
               searchPlaceholder={t('teams.searchTeams')}
-              actions={
-                <Button 
-                  type="primary" 
-                  icon={<PlusOutlined />}
-                  onClick={() => setIsCreateTeamModalOpen(true)}
-                  style={{ background: '#556b2f', borderColor: '#556b2f' }}
-                >
-                  {t('teams.createTeam')}
-                </Button>
-              }
+              actions={null}
               rowSelection={{
                 type: 'checkbox',
                 selectedRowKeys: selectedTeams,
@@ -1105,7 +1102,11 @@ const ResourcesPage: React.FC = () => {
       >
         <Form
           form={teamForm}
-          layout="vertical"
+          layout="horizontal"
+          labelCol={{ span: 8 }}
+          wrapperCol={{ span: 16 }}
+          labelAlign="left"
+          colon={true}
           onFinish={handleCreateTeam}
         >
           <Form.Item
@@ -1119,8 +1120,11 @@ const ResourcesPage: React.FC = () => {
             <Input placeholder={t('teams.placeholders.enterTeamName')} />
           </Form.Item>
 
-          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
-            <Space>
+          <Form.Item 
+            style={{ marginBottom: 0 }}
+            wrapperCol={{ offset: 8, span: 16 }}
+          >
+            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
               <Button onClick={() => {
                 setIsCreateTeamModalOpen(false)
                 teamForm.resetFields()
@@ -1152,7 +1156,11 @@ const ResourcesPage: React.FC = () => {
       >
         <Form
           form={teamForm}
-          layout="vertical"
+          layout="horizontal"
+          labelCol={{ span: 8 }}
+          wrapperCol={{ span: 16 }}
+          labelAlign="left"
+          colon={true}
           onFinish={handleEditTeam}
         >
           <Form.Item
@@ -1166,8 +1174,11 @@ const ResourcesPage: React.FC = () => {
             <Input placeholder={t('teams.placeholders.enterTeamName')} />
           </Form.Item>
 
-          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
-            <Space>
+          <Form.Item 
+            style={{ marginBottom: 0 }}
+            wrapperCol={{ offset: 8, span: 16 }}
+          >
+            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
               <Button onClick={() => {
                 setEditingTeam(null)
                 teamForm.resetFields()
@@ -1208,41 +1219,43 @@ const ResourcesPage: React.FC = () => {
           setIsCreateRepositoryModalOpen(false)
           repositoryForm.reset()
         }}
-        footer={null}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <ResourceForm
-            form={repositoryForm}
-            fields={repositoryFormFields}
-            onSubmit={handleCreateRepository}
-            submitText={t('general.create')}
-            cancelText={t('general.cancel')}
-            onCancel={() => {
+        footer={[
+          <Button 
+            key="cancel" 
+            onClick={() => {
               setIsCreateRepositoryModalOpen(false)
               repositoryForm.reset()
             }}
+          >
+            {t('general.cancel')}
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
             loading={createRepositoryMutation.isPending}
-          />
-          
-          {uiMode === 'simple' && (
-            <div style={{ 
-              borderTop: '1px solid #f0f0f0', 
-              paddingTop: 16,
-              marginTop: 8
-            }}>
-              <Alert
-                message={t('general.defaultsApplied')}
-                description={
-                  <Space direction="vertical" size={0}>
-                    <Text>{t('general.team')}: Private Team</Text>
-                  </Space>
-                }
-                type="info"
-                showIcon
-              />
-            </div>
-          )}
-        </div>
+            onClick={() => repositoryFormRef.current?.submit()}
+            style={{ background: '#556b2f', borderColor: '#556b2f' }}
+          >
+            {t('general.create')}
+          </Button>
+        ]}
+        width={800}
+        style={{ top: 20 }}
+      >
+        <ResourceFormWithVault
+          ref={repositoryFormRef}
+          form={repositoryForm}
+          fields={repositoryFormFields}
+          onSubmit={handleCreateRepository}
+          entityType="REPOSITORY"
+          vaultFieldName="repositoryVault"
+          showDefaultsAlert={uiMode === 'simple'}
+          defaultsContent={
+            <Space direction="vertical" size={0}>
+              <Text>{t('general.team')}: Private Team</Text>
+            </Space>
+          }
+        />
       </Modal>
 
       <VaultEditorModal
@@ -1293,41 +1306,43 @@ const ResourcesPage: React.FC = () => {
           setIsCreateStorageModalOpen(false)
           storageForm.reset()
         }}
-        footer={null}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <ResourceForm
-            form={storageForm}
-            fields={storageFormFields}
-            onSubmit={handleCreateStorage}
-            submitText={t('general.create')}
-            cancelText={t('general.cancel')}
-            onCancel={() => {
+        footer={[
+          <Button 
+            key="cancel" 
+            onClick={() => {
               setIsCreateStorageModalOpen(false)
               storageForm.reset()
             }}
+          >
+            {t('general.cancel')}
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
             loading={createStorageMutation.isPending}
-          />
-          
-          {uiMode === 'simple' && (
-            <div style={{ 
-              borderTop: '1px solid #f0f0f0', 
-              paddingTop: 16,
-              marginTop: 8
-            }}>
-              <Alert
-                message={t('general.defaultsApplied')}
-                description={
-                  <Space direction="vertical" size={0}>
-                    <Text>{t('general.team')}: Private Team</Text>
-                  </Space>
-                }
-                type="info"
-                showIcon
-              />
-            </div>
-          )}
-        </div>
+            onClick={() => storageFormRef.current?.submit()}
+            style={{ background: '#556b2f', borderColor: '#556b2f' }}
+          >
+            {t('general.create')}
+          </Button>
+        ]}
+        width={800}
+        style={{ top: 20 }}
+      >
+        <ResourceFormWithVault
+          ref={storageFormRef}
+          form={storageForm}
+          fields={storageFormFields}
+          onSubmit={handleCreateStorage}
+          entityType="STORAGE"
+          vaultFieldName="storageVault"
+          showDefaultsAlert={uiMode === 'simple'}
+          defaultsContent={
+            <Space direction="vertical" size={0}>
+              <Text>{t('general.team')}: Private Team</Text>
+            </Space>
+          }
+        />
       </Modal>
 
       <VaultEditorModal
@@ -1378,41 +1393,43 @@ const ResourcesPage: React.FC = () => {
           setIsCreateScheduleModalOpen(false)
           scheduleForm.reset()
         }}
-        footer={null}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <ResourceForm
-            form={scheduleForm}
-            fields={scheduleFormFields}
-            onSubmit={handleCreateSchedule}
-            submitText={t('general.create')}
-            cancelText={t('general.cancel')}
-            onCancel={() => {
+        footer={[
+          <Button 
+            key="cancel" 
+            onClick={() => {
               setIsCreateScheduleModalOpen(false)
               scheduleForm.reset()
             }}
+          >
+            {t('general.cancel')}
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
             loading={createScheduleMutation.isPending}
-          />
-          
-          {uiMode === 'simple' && (
-            <div style={{ 
-              borderTop: '1px solid #f0f0f0', 
-              paddingTop: 16,
-              marginTop: 8
-            }}>
-              <Alert
-                message={t('general.defaultsApplied')}
-                description={
-                  <Space direction="vertical" size={0}>
-                    <Text>{t('general.team')}: Private Team</Text>
-                  </Space>
-                }
-                type="info"
-                showIcon
-              />
-            </div>
-          )}
-        </div>
+            onClick={() => scheduleFormRef.current?.submit()}
+            style={{ background: '#556b2f', borderColor: '#556b2f' }}
+          >
+            {t('general.create')}
+          </Button>
+        ]}
+        width={800}
+        style={{ top: 20 }}
+      >
+        <ResourceFormWithVault
+          ref={scheduleFormRef}
+          form={scheduleForm}
+          fields={scheduleFormFields}
+          onSubmit={handleCreateSchedule}
+          entityType="SCHEDULE"
+          vaultFieldName="scheduleVault"
+          showDefaultsAlert={uiMode === 'simple'}
+          defaultsContent={
+            <Space direction="vertical" size={0}>
+              <Text>{t('general.team')}: Private Team</Text>
+            </Space>
+          }
+        />
       </Modal>
 
       <VaultEditorModal

@@ -82,21 +82,21 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
       footer={null}
       style={{ top: 20 }}
     >
-      <Space direction="vertical" style={{ width: '100%' }} size={16}>
+      <Space direction="vertical" style={{ width: '100%' }} size={12}>
         <div 
           className="bg-tertiary"
           style={{ 
-            padding: '12px 16px', 
+            padding: '8px 16px', 
             borderRadius: 8,
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center'
           }}>
-          <Space>
+          <Space size="small">
             <Text strong>{t('vaultEditor.vaultVersion')}</Text>
-            <Tag color="processing" style={{ margin: 0 }}>{vaultVersion}</Tag>
+            <Tag color="processing" style={{ margin: 0, fontSize: 12 }}>{vaultVersion}</Tag>
           </Space>
-          <Text type="secondary" style={{ fontSize: 12 }}>
+          <Text type="secondary" style={{ fontSize: 11 }}>
             {t('vaultEditor.versionAutoIncrement')}
           </Text>
         </div>
@@ -115,9 +115,9 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
           }}
         /></Space>
 
-      <div style={{ marginTop: 24 }}>
+      <div style={{ marginTop: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Space>
+          <Space size="small">
             <Upload
               accept=".json"
               showUploadList={false}
@@ -128,9 +128,10 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
                 return false
               }}
             >
-              <Button icon={<UploadOutlined />}>{t('vaultEditor.importJson')}</Button>
+              <Button size="small" icon={<UploadOutlined />}>{t('vaultEditor.importJson')}</Button>
             </Upload>
             <Button 
+              size="small"
               icon={<DownloadOutlined />} 
               onClick={() => {
                 if (importExportHandlers.current) {
@@ -142,13 +143,13 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
             </Button>
           </Space>
           
-          <Space>
+          <Space size="small">
             {hasChanges && (
-              <Space>
-                <span style={{ color: '#faad14' }}>
-                  <InfoCircleOutlined /> {t('vaultEditor.unsavedChanges')}
+              <Space size="small">
+                <span style={{ color: '#faad14', fontSize: 12 }}>
+                  <InfoCircleOutlined style={{ fontSize: 12 }} /> {t('vaultEditor.unsavedChanges')}
                 </span>
-                <Text type="secondary" style={{ fontSize: 12 }}>
+                <Text type="secondary" style={{ fontSize: 11 }}>
                   • {t('vaultEditor.versionWillIncrement', { version: vaultVersion + 1 })}
                 </Text>
               </Space>
