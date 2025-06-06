@@ -3,7 +3,7 @@
     "MACHINE": {
       "descriptionKey": "vaultEditor.fields.MACHINE.description",
       "required": ["ip", "user", "datastore"],
-      "optional": ["port", "host_entry", "ssh_password"],
+      "optional": ["ssh_password", "port", "host_entry"],
       "fields": {
         "ip": {
           "type": "string",
