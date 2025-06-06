@@ -79,16 +79,8 @@ const OrganizationPage: React.FC = () => {
   const { t } = useTranslation(['organization', 'machines', 'common'])
   const navigate = useNavigate()
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
-  const [activeTab, setActiveTab] = useState('teams')
   const [selectedTeams, setSelectedTeams] = useState<string[]>([])
   const [teamResourcesTab, setTeamResourcesTab] = useState('machines')
-  
-  // Ensure we're on the teams tab in simple mode
-  React.useEffect(() => {
-    if (uiMode === 'simple' && activeTab !== 'teams') {
-      setActiveTab('teams')
-    }
-  }, [uiMode, activeTab])
   
   // Team state
   const [isCreateTeamModalOpen, setIsCreateTeamModalOpen] = useState(false)
@@ -951,16 +943,9 @@ const OrganizationPage: React.FC = () => {
     },
   ]
 
-  const tabItems = [
-    {
-      key: 'teams',
-      label: (
-        <span>
-          <TeamOutlined />
-          {t('tabs.teamsResources')}
-        </span>
-      ),
-      children: (
+  return (
+    <>
+      <Card>
         <Row gutter={[24, 24]}>
           {uiMode !== 'simple' && (
             <Col span={24}>
@@ -1086,18 +1071,6 @@ const OrganizationPage: React.FC = () => {
             </Card>
           </Col>
         </Row>
-      ),
-    },
-  ]
-
-  return (
-    <>
-      <Card>
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          items={tabItems}
-        />
       </Card>
 
       {/* Team Modals */}
