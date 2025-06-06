@@ -16,6 +16,7 @@ import {
   Tooltip,
   Row,
   Col,
+  message,
 } from 'antd'
 import {
   UploadOutlined,
@@ -37,6 +38,7 @@ interface VaultEditorProps {
   onChange?: (data: Record<string, any>, hasChanges: boolean) => void
   onValidate?: (isValid: boolean, errors?: string[]) => void
   onImportExport?: (handlers: { handleImport: (file: any) => boolean; handleExport: () => void }) => void
+  onFieldMovement?: (movedToExtra: string[], movedFromExtra: string[]) => void
 }
 
 interface FieldDefinition {
@@ -62,6 +64,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   onChange,
   onValidate,
   onImportExport,
+  onFieldMovement,
 }) => {
   const { t } = useTranslation('common')
   const [form] = Form.useForm()
@@ -109,6 +112,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 
     const schemaFields = Object.keys(entityDef.fields || {})
     const extras: Record<string, any> = {}
+    const movedToExtra: string[] = []
+    const movedFromExtra: string[] = []
 
     // Check if importedData has extraFields structure
     if (importedData.extraFields && typeof importedData.extraFields === 'object') {
@@ -119,10 +124,40 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     Object.entries(importedData).forEach(([key, value]) => {
       if (key !== 'extraFields' && !schemaFields.includes(key)) {
         extras[key] = value
+        // Track fields that are being moved to extraFields
+        if (!extraFields[key] && value !== undefined) {
+          movedToExtra.push(key)
+        }
+      }
+    })
+
+    // Check if any fields were moved from extraFields back to regular fields
+    Object.keys(extraFields).forEach(key => {
+      if (!extras[key] && schemaFields.includes(key) && importedData[key] !== undefined) {
+        movedFromExtra.push(key)
       }
     })
 
     setExtraFields(extras)
+
+    // Notify about field movements
+    if ((movedToExtra.length > 0 || movedFromExtra.length > 0) && onFieldMovement) {
+      onFieldMovement(movedToExtra, movedFromExtra)
+    }
+
+    // Show toast messages for field movements
+    if (movedToExtra.length > 0) {
+      message.info(t('vaultEditor.fieldsMovedToExtra', { 
+        count: movedToExtra.length,
+        fields: movedToExtra.join(', ')
+      }))
+    }
+    if (movedFromExtra.length > 0) {
+      message.success(t('vaultEditor.fieldsMovedFromExtra', { 
+        count: movedFromExtra.length,
+        fields: movedFromExtra.join(', ')
+      }))
+    }
   }, [importedData, entityDef])
 
   // Initialize form with data
@@ -237,6 +272,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       // Update form with known fields
       const formData: Record<string, any> = {}
       const extras: Record<string, any> = {}
+      const movedToExtra: string[] = []
+      const movedFromExtra: string[] = []
       
       // First, check if there's an extraFields property
       if (parsed.extraFields && typeof parsed.extraFields === 'object') {
@@ -249,14 +286,43 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           // Skip, already processed
         } else if (entityDef.fields && key in entityDef.fields) {
           formData[key] = val
+          // Check if this field was previously in extraFields
+          if (extraFields[key] !== undefined) {
+            movedFromExtra.push(key)
+          }
         } else {
           // Non-schema fields at root level also go to extras
           extras[key] = val
+          // Check if this is a new field being moved to extraFields
+          if (!extraFields[key] && val !== undefined) {
+            movedToExtra.push(key)
+          }
+        }
+      })
+      
+      // Check for fields that were in extraFields but are now removed
+      Object.keys(extraFields).forEach(key => {
+        if (!extras[key] && !formData[key]) {
+          // Field was removed entirely, not moved
         }
       })
       
       form.setFieldsValue(formData)
       setExtraFields(extras)
+      
+      // Show toast messages for field movements
+      if (movedToExtra.length > 0) {
+        message.info(t('vaultEditor.fieldsMovedToExtra', { 
+          count: movedToExtra.length,
+          fields: movedToExtra.join(', ')
+        }))
+      }
+      if (movedFromExtra.length > 0) {
+        message.success(t('vaultEditor.fieldsMovedFromExtra', { 
+          count: movedFromExtra.length,
+          fields: movedFromExtra.join(', ')
+        }))
+      }
       
       // Build complete data structure for onChange
       const completeData = { ...formData }
@@ -679,11 +745,11 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           >
             <Row gutter={[16, 0]}>
               {requiredFields.map((fieldName) => {
-                const field = fields[fieldName]
+                const field = fields[fieldName as keyof typeof fields]
                 if (!field) return null
                 return (
                   <Col span={24} key={fieldName}>
-                    {renderField(fieldName, field, true)}
+                    {renderField(fieldName, field as FieldDefinition, true)}
                   </Col>
                 )
               })}
@@ -701,11 +767,11 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           >
             <Row gutter={[16, 0]}>
               {optionalFields.map((fieldName) => {
-                const field = fields[fieldName]
+                const field = fields[fieldName as keyof typeof fields]
                 if (!field) return null
                 return (
                   <Col span={24} key={fieldName}>
-                    {renderField(fieldName, field, false)}
+                    {renderField(fieldName, field as FieldDefinition, false)}
                   </Col>
                 )
               })}

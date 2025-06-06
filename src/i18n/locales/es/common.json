@@ -150,6 +150,8 @@
     "failedToSerialize": "Error al serializar datos a JSON",
     "invalidJsonFormat": "Formato JSON inválido",
     "failedToParseJson": "Error al analizar JSON:",
+    "fieldsMovedToExtra": "{{count}} campo(s) movido(s) a extraFields: {{fields}}",
+    "fieldsMovedFromExtra": "{{count}} campo(s) restaurado(s) desde extraFields: {{fields}}",
     "fields": {
       "MACHINE": {
         "description": "Configuración de máquina para acceso SSH y almacenamiento",

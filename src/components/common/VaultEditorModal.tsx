@@ -64,11 +64,6 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
       return
     }
 
-    if (!hasChanges) {
-      message.info(t('vaultEditor.noChangesToSave'))
-      return
-    }
-
     try {
       const vaultJson = JSON.stringify(vaultData, null, 2)
       await onSave(vaultJson, vaultVersion)
@@ -113,6 +108,10 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
           onValidate={handleValidate}
           onImportExport={(handlers) => {
             importExportHandlers.current = handlers
+          }}
+          onFieldMovement={(movedToExtra, movedFromExtra) => {
+            // Field movement notifications are already shown by VaultEditor
+            // This callback is optional for parent components that need to track movements
           }}
         /></Space>
 
@@ -159,7 +158,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
               type="primary"
               onClick={handleSave}
               loading={loading}
-              disabled={!isValid || !hasChanges}
+              disabled={!isValid}
               style={{ background: '#556b2f', borderColor: '#556b2f' }}
             >
               {t('vaultEditor.saveVaultConfiguration')}
