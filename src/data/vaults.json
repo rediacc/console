@@ -58,60 +58,21 @@
           "type": "string",
           "pattern": "^[A-Za-z0-9!@#$%^&*()_+{}|:<>,.?/]{32}$",
           "minLength": 16,
-          "maxLength": 32,
+          "maxLength": 256,
           "example": "Kj8#mP2$vL9@nQ4&xR7!wE3*tY6^aS1+"
         }
       }
     },
     "BRIDGE": {
       "descriptionKey": "vaultEditor.fields.BRIDGE.description",
-      "required": ["SSH_PRIVATE_KEY", "SSH_PUBLIC_KEY", "ip", "user", "ssh_key_configured", "ssh_password"],
-      "optional": ["port", "host_entry"],
+      "required": ["ip"],
+      "optional": [],
       "fields": {
         "ip": {
           "type": "string",
           "format": "ipv4",
           "example": "192.168.1.100"
-        },
-        "user": {
-          "type": "string",
-          "example": "ubuntu"
-        },
-        "datastore": {
-          "type": "string",
-          "example": "/mnt/datastore"
-        },
-        "port": {
-          "type": "number",
-          "default": 22,
-          "example": 22
-        },
-        "host_entry": {
-          "type": "string",
-          "example": "192.168.1.100 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC..."
-        },
-        "ssh_key_configured": {
-          "type": "boolean",
-          "default": false,
-          "example": false
-        },
-        "ssh_password": {
-          "type": "string",
-          "sensitive": true,
-          "example": "SecurePassword123!"
-        },
-        "SSH_PRIVATE_KEY": {
-          "type": "string",
-          "sensitive": true,
-          "format": "base64",
-          "example": "LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0K..."
-        },
-        "SSH_PUBLIC_KEY": {
-          "type": "string",
-          "pattern": "^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/=]+ .+$",
-          "example": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... bridge"
         }
-      }
     },
     "STORAGE": {
       "descriptionKey": "vaultEditor.fields.STORAGE.description",
