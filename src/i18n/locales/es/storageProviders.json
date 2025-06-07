@@ -1,0 +1,1603 @@
+{
+  "storageProviders": {
+    "s3": {
+      "name": "Amazon S3 Compatible",
+      "description": "Almacenamiento de objetos compatible con S3 (AWS, Linode, DigitalOcean, Vultr, etc.)",
+      "helpText": "Amazon S3 y servicios de almacenamiento de objetos compatibles. Soporta AWS S3, Linode Object Storage, DigitalOcean Spaces, Vultr Object Storage, MinIO y muchos otros.",
+      "fields": {
+        "provider": {
+          "label": "Proveedor",
+          "placeholder": "Seleccione proveedor S3",
+          "helpText": "Elija su proveedor de almacenamiento compatible con S3"
+        },
+        "access_key_id": {
+          "label": "ID de Clave de Acceso",
+          "placeholder": "AKIAIOSFODNN7EXAMPLE",
+          "helpText": "Su ID de clave de acceso para autenticación. Obténgalo desde la consola de su proveedor"
+        },
+        "secret_access_key": {
+          "label": "Clave de Acceso Secreta",
+          "placeholder": "Ingrese su clave de acceso secreta",
+          "helpText": "Su clave de acceso secreta. Manténgala segura y nunca la comparta"
+        },
+        "endpoint": {
+          "label": "Punto de Acceso",
+          "placeholder": "s3.amazonaws.com",
+          "helpText": "URL del punto de acceso de la API S3. Deje vacío para AWS S3. Requerido para otros proveedores"
+        },
+        "region": {
+          "label": "Región",
+          "placeholder": "us-east-1",
+          "helpText": "Región de AWS donde se encuentra su bucket"
+        },
+        "bucket": {
+          "label": "Bucket",
+          "placeholder": "mi-bucket-respaldo",
+          "helpText": "Nombre del bucket S3. Debe ser único globalmente y seguir las reglas de nomenclatura"
+        },
+        "folder": {
+          "label": "Carpeta",
+          "placeholder": "rediacc",
+          "helpText": "Ruta de carpeta opcional dentro del bucket"
+        },
+        "env_auth": {
+          "label": "Usar Autenticación de Entorno",
+          "helpText": "Usar variables de entorno de AWS o rol IAM para autenticación"
+        },
+        "location_constraint": {
+          "label": "Restricción de Ubicación",
+          "placeholder": "EU",
+          "helpText": "Restricción de ubicación al crear nuevos buckets"
+        },
+        "acl": {
+          "label": "Lista de Control de Acceso",
+          "helpText": "ACL predeterminado para objetos cargados. Se recomienda privado"
+        }
+      },
+      "tips": [
+        "Para AWS S3, cree un usuario IAM con acceso programático",
+        "Use políticas de bucket para controlar permisos de acceso",
+        "Habilite el versionado para protección de datos importantes",
+        "Considere usar reglas de ciclo de vida para gestionar costos de almacenamiento"
+      ]
+    },
+    "b2": {
+      "name": "Backblaze B2",
+      "description": "Almacenamiento en la nube Backblaze B2",
+      "helpText": "Backblaze B2 es un servicio de respaldo en la nube asequible. Usa claves de aplicación para autenticación.",
+      "fields": {
+        "account": {
+          "label": "ID de Cuenta o ID de Clave de Aplicación",
+          "placeholder": "000000000000000000000000",
+          "helpText": "Su ID de cuenta B2 o ID de clave de aplicación"
+        },
+        "key": {
+          "label": "Clave de Aplicación",
+          "placeholder": "Ingrese su clave de aplicación",
+          "helpText": "Clave de aplicación desde la consola B2. Use claves de aplicación en lugar de la clave maestra"
+        },
+        "hard_delete": {
+          "label": "Eliminación Permanente",
+          "helpText": "Eliminar archivos permanentemente en lugar de ocultarlos. Use con precaución"
+        },
+        "endpoint": {
+          "label": "Punto de Acceso Personalizado",
+          "placeholder": "s3.us-west-000.backblazeb2.com",
+          "helpText": "Punto de acceso compatible con S3 personalizado para B2"
+        }
+      },
+      "tips": [
+        "Cree claves de aplicación con permisos limitados para mayor seguridad",
+        "B2 ofrece 10GB de almacenamiento gratuito y 1GB de descarga diaria",
+        "Los archivos ocultos todavía cuentan para la cuota de almacenamiento",
+        "Considere reglas de ciclo de vida para eliminar automáticamente versiones antiguas"
+      ]
+    },
+    "drive": {
+      "name": "Google Drive",
+      "description": "Almacenamiento en la nube Google Drive",
+      "helpText": "Almacenamiento personal en la nube de Google Drive. Requiere autenticación OAuth o cuenta de servicio.",
+      "fields": {
+        "client_id": {
+          "label": "ID de Cliente OAuth",
+          "placeholder": "123456789012-abcdef.apps.googleusercontent.com",
+          "helpText": "ID de cliente OAuth 2.0 desde Google Cloud Console"
+        },
+        "client_secret": {
+          "label": "Secreto de Cliente OAuth",
+          "placeholder": "Ingrese su secreto de cliente",
+          "helpText": "Secreto de cliente OAuth 2.0. Manténgalo seguro"
+        },
+        "token": {
+          "label": "Token OAuth",
+          "helpText": "Token OAuth2 obtenido a través del flujo de autenticación"
+        },
+        "scope": {
+          "label": "Alcance de Acceso",
+          "helpText": "Alcance de permisos para acceso a Google Drive. 'drive' otorga acceso completo"
+        },
+        "root_folder_id": {
+          "label": "ID de Carpeta Raíz",
+          "placeholder": "0AOa0a0a0a0a0Uk9PVA",
+          "helpText": "ID de la carpeta raíz a usar. Deje vacío para usar la raíz del drive"
+        },
+        "service_account_file": {
+          "label": "Archivo de Cuenta de Servicio",
+          "placeholder": "Archivo JSON codificado en Base64",
+          "helpText": "Contenido del archivo JSON de cuenta de servicio (codificado en base64) para autenticación del servidor"
+        },
+        "team_drive": {
+          "label": "ID de Drive de Equipo",
+          "placeholder": "Ingrese ID del drive de equipo",
+          "helpText": "ID del Drive de Equipo (Drive Compartido) a usar"
+        },
+        "impersonate": {
+          "label": "Suplantar Usuario",
+          "placeholder": "usuario@dominio.com",
+          "helpText": "Email del usuario a suplantar al usar cuenta de servicio"
+        }
+      },
+      "tips": [
+        "Use cuentas de servicio para aplicaciones del lado del servidor",
+        "Los Drives de Equipo tienen permisos diferentes a los drives personales",
+        "Google tiene cuotas diarias de carga/descarga",
+        "Los archivos grandes pueden tardar en aparecer después de cargarlos"
+      ]
+    },
+    "onedrive": {
+      "name": "Microsoft OneDrive",
+      "description": "Almacenamiento en la nube Microsoft OneDrive",
+      "helpText": "Almacenamiento en la nube personal y empresarial de Microsoft OneDrive. Usa autenticación OAuth.",
+      "fields": {
+        "token": {
+          "label": "Token OAuth",
+          "helpText": "Token OAuth2 obtenido a través de autenticación de Microsoft"
+        },
+        "drive_id": {
+          "label": "ID de Drive",
+          "placeholder": "b!Ei1XXXXXXXXXX",
+          "helpText": "ID de drive específico a usar. Deje vacío para el predeterminado"
+        },
+        "drive_type": {
+          "label": "Tipo de Drive",
+          "helpText": "Tipo de cuenta OneDrive - personal, empresarial o biblioteca de documentos"
+        },
+        "folder": {
+          "label": "Ruta de Carpeta",
+          "placeholder": "respaldos",
+          "helpText": "Ruta de carpeta dentro de OneDrive para usar como raíz"
+        }
+      },
+      "tips": [
+        "Los tokens expiran cada 90 días y necesitan renovarse",
+        "Las cuentas empresariales pueden tener límites de API diferentes",
+        "Las cargas de archivos grandes se dividen automáticamente",
+        "Algunos caracteres especiales en nombres de archivo pueden causar problemas"
+      ]
+    },
+    "mega": {
+      "name": "Mega",
+      "description": "Almacenamiento en la nube Mega",
+      "helpText": "MEGA proporciona almacenamiento en la nube cifrado del lado del cliente. Tiene límites estrictos de inicio de sesión.",
+      "fields": {
+        "user": {
+          "label": "Correo Electrónico",
+          "placeholder": "usuario@ejemplo.com",
+          "helpText": "Su dirección de correo electrónico de cuenta MEGA"
+        },
+        "pass": {
+          "label": "Contraseña",
+          "placeholder": "Ingrese su contraseña",
+          "helpText": "Su contraseña de cuenta MEGA (será cifrada)"
+        },
+        "hard_delete": {
+          "label": "Eliminación Permanente",
+          "helpText": "Eliminar archivos permanentemente en lugar de moverlos a la papelera"
+        },
+        "use_https": {
+          "label": "Usar HTTPS",
+          "helpText": "Usar HTTPS para transferencias (recomendado)"
+        }
+      },
+      "tips": [
+        "MEGA tiene límites de velocidad estrictos - evite inicios de sesión frecuentes",
+        "Todos los archivos están cifrados del lado del cliente",
+        "Las cuentas gratuitas tienen 20GB de almacenamiento",
+        "Considere usar contraseñas de aplicación para mayor seguridad"
+      ]
+    },
+    "box": {
+      "name": "Box",
+      "description": "Almacenamiento en la nube Box",
+      "helpText": "Plataforma empresarial de almacenamiento y colaboración en la nube Box. Usa autenticación OAuth 2.0.",
+      "fields": {
+        "client_id": {
+          "label": "ID de Cliente OAuth",
+          "placeholder": "Ingrese su ID de cliente",
+          "helpText": "ID de cliente OAuth 2.0 desde la configuración de la aplicación Box"
+        },
+        "client_secret": {
+          "label": "Secreto de Cliente OAuth",
+          "placeholder": "Ingrese su secreto de cliente",
+          "helpText": "Secreto de cliente OAuth 2.0. Manténgalo seguro"
+        },
+        "token": {
+          "label": "Token OAuth",
+          "helpText": "Token OAuth2 obtenido a través de autenticación Box"
+        },
+        "root_folder_id": {
+          "label": "ID de Carpeta Raíz",
+          "placeholder": "0",
+          "helpText": "ID de carpeta raíz. '0' significa la raíz de su Box"
+        }
+      },
+      "tips": [
+        "Box tiene un límite de tamaño de archivo de 15GB para cargas",
+        "Las cuentas empresariales pueden tener características adicionales",
+        "Use tokens de aplicación para aplicaciones del lado del servidor",
+        "Box tiene límites de velocidad de API estrictos"
+      ]
+    },
+    "dropbox": {
+      "name": "Dropbox",
+      "description": "Almacenamiento en la nube Dropbox",
+      "helpText": "Almacenamiento personal y empresarial en la nube Dropbox. Los archivos no distinguen mayúsculas/minúsculas.",
+      "fields": {
+        "client_id": {
+          "label": "ID de Cliente OAuth",
+          "placeholder": "Ingrese su clave de aplicación",
+          "helpText": "Clave de aplicación desde Dropbox App Console"
+        },
+        "client_secret": {
+          "label": "Secreto de Cliente OAuth",
+          "placeholder": "Ingrese su secreto de aplicación",
+          "helpText": "Secreto de aplicación desde Dropbox App Console"
+        },
+        "token": {
+          "label": "Token OAuth",
+          "helpText": "Token OAuth2 obtenido a través de autenticación Dropbox"
+        }
+      },
+      "tips": [
+        "Dropbox no distingue mayúsculas/minúsculas - evite nombres de archivo similares",
+        "Tiene un tamaño máximo de archivo de 150GB para cargas",
+        "Las operaciones por lotes son más eficientes",
+        "Considere usar Dropbox Business para características de equipo"
+      ]
+    },
+    "azureblob": {
+      "name": "Azure Blob Storage",
+      "description": "Microsoft Azure Blob Storage",
+      "helpText": "Azure Blob Storage para datos no estructurados. Soporta múltiples métodos de autenticación.",
+      "fields": {
+        "account": {
+          "label": "Nombre de Cuenta de Almacenamiento",
+          "placeholder": "micuenta",
+          "helpText": "Nombre de su cuenta de almacenamiento Azure"
+        },
+        "key": {
+          "label": "Clave de Cuenta de Almacenamiento",
+          "placeholder": "Ingrese su clave de cuenta",
+          "helpText": "Clave primaria o secundaria desde el portal Azure"
+        },
+        "sas_url": {
+          "label": "URL SAS",
+          "placeholder": "Ingrese URL SAS si la usa",
+          "helpText": "URL de Firma de Acceso Compartido para acceso limitado"
+        },
+        "endpoint": {
+          "label": "Punto de Acceso",
+          "placeholder": "https://micuenta.blob.core.windows.net",
+          "helpText": "Punto de acceso personalizado para almacenamiento Azure"
+        }
+      },
+      "tips": [
+        "Use tokens SAS para acceso temporal",
+        "Elija el nivel de almacenamiento apropiado para optimización de costos",
+        "Habilite eliminación suave para protección de datos",
+        "Considere usar identidades administradas para recursos Azure"
+      ]
+    },
+    "gcs": {
+      "name": "Google Cloud Storage",
+      "description": "Google Cloud Storage",
+      "helpText": "Google Cloud Storage para objetos y blobs. Diferente de Google Drive.",
+      "fields": {
+        "service_account_file": {
+          "label": "Archivo de Cuenta de Servicio",
+          "placeholder": "Archivo JSON codificado en Base64",
+          "helpText": "Archivo de clave JSON de cuenta de servicio (codificado en base64)"
+        },
+        "project_number": {
+          "label": "Número de Proyecto",
+          "placeholder": "123456789012",
+          "helpText": "Número de proyecto GCP (no ID de proyecto)"
+        },
+        "bucket_policy_only": {
+          "label": "Solo Política de Bucket",
+          "helpText": "Usar control de acceso uniforme a nivel de bucket"
+        },
+        "location": {
+          "label": "Ubicación Predeterminada",
+          "placeholder": "US",
+          "helpText": "Ubicación predeterminada para nuevos buckets"
+        },
+        "storage_class": {
+          "label": "Clase de Almacenamiento",
+          "helpText": "Clase de almacenamiento predeterminada para objetos"
+        }
+      },
+      "tips": [
+        "Use cuentas de servicio para autenticación",
+        "Elija clase de almacenamiento basada en frecuencia de acceso",
+        "Habilite versionado para datos importantes",
+        "Configure políticas de ciclo de vida para gestionar costos"
+      ]
+    },
+    "swift": {
+      "name": "OpenStack Swift",
+      "description": "Almacenamiento de objetos OpenStack Swift",
+      "helpText": "Almacenamiento de objetos OpenStack Swift usado por Rackspace, OVH y otros.",
+      "fields": {
+        "user": {
+          "label": "Nombre de Usuario",
+          "placeholder": "Ingrese su nombre de usuario",
+          "helpText": "Nombre de usuario OpenStack"
+        },
+        "key": {
+          "label": "Clave API/Contraseña",
+          "placeholder": "Ingrese su clave API",
+          "helpText": "Clave API o contraseña para autenticación"
+        },
+        "auth": {
+          "label": "URL de Autenticación",
+          "placeholder": "https://auth.cloud.com/v3",
+          "helpText": "URL del punto de acceso de autenticación"
+        },
+        "tenant": {
+          "label": "Nombre de Inquilino",
+          "placeholder": "Ingrese nombre de inquilino",
+          "helpText": "Nombre de inquilino/proyecto"
+        },
+        "tenant_id": {
+          "label": "ID de Inquilino",
+          "placeholder": "Ingrese ID de inquilino",
+          "helpText": "ID de inquilino/proyecto"
+        },
+        "domain": {
+          "label": "Dominio",
+          "placeholder": "Default",
+          "helpText": "Nombre de dominio de usuario"
+        },
+        "region": {
+          "label": "Región",
+          "placeholder": "Ingrese región",
+          "helpText": "Nombre de región"
+        },
+        "storage_url": {
+          "label": "URL de Almacenamiento",
+          "placeholder": "Ingrese URL de almacenamiento",
+          "helpText": "URL de almacenamiento (opcional)"
+        },
+        "auth_version": {
+          "label": "Versión de Autenticación",
+          "helpText": "Versión del protocolo de autenticación"
+        }
+      },
+      "tips": [
+        "Consulte con su proveedor la URL de autenticación correcta",
+        "Se recomienda auth v3 para nuevas implementaciones",
+        "Algunos proveedores requieren configuraciones específicas de inquilino",
+        "El soporte para objetos grandes puede variar según el proveedor"
+      ]
+    },
+    "sftp": {
+      "name": "SFTP",
+      "description": "Protocolo de Transferencia de Archivos SSH",
+      "helpText": "Transferencia segura de archivos sobre SSH. Soporta autenticación por contraseña y clave.",
+      "fields": {
+        "host": {
+          "label": "Host",
+          "placeholder": "ejemplo.com",
+          "helpText": "Nombre de host o dirección IP del servidor SFTP"
+        },
+        "user": {
+          "label": "Nombre de Usuario",
+          "placeholder": "usuario",
+          "helpText": "Nombre de usuario SSH/SFTP"
+        },
+        "port": {
+          "label": "Puerto",
+          "placeholder": "22",
+          "helpText": "Puerto SFTP (predeterminado es 22)"
+        },
+        "pass": {
+          "label": "Contraseña",
+          "placeholder": "Ingrese contraseña",
+          "helpText": "Contraseña para autenticación por contraseña"
+        },
+        "key_file": {
+          "label": "Archivo de Clave Privada",
+          "placeholder": "/ruta/a/clave",
+          "helpText": "Ruta al archivo de clave privada SSH"
+        },
+        "key_file_pass": {
+          "label": "Frase de Paso de Clave",
+          "placeholder": "Ingrese frase de paso",
+          "helpText": "Frase de paso para clave privada cifrada"
+        },
+        "pubkey_file": {
+          "label": "Archivo de Clave Pública",
+          "placeholder": "/ruta/a/clave.pub",
+          "helpText": "Ruta al archivo de clave pública SSH"
+        },
+        "known_hosts_file": {
+          "label": "Archivo de Hosts Conocidos",
+          "placeholder": "~/.ssh/known_hosts",
+          "helpText": "Ruta al archivo de hosts conocidos para verificación del servidor"
+        }
+      },
+      "tips": [
+        "Use autenticación basada en clave para mayor seguridad",
+        "Verifique la huella digital del servidor en la primera conexión",
+        "Mantenga sus claves privadas seguras y cifradas",
+        "Considere usar agente SSH para gestión de claves"
+      ]
+    },
+    "ftp": {
+      "name": "FTP",
+      "description": "Protocolo de Transferencia de Archivos",
+      "helpText": "Protocolo tradicional de transferencia de archivos. Considere usar FTPS para seguridad.",
+      "fields": {
+        "host": {
+          "label": "Host",
+          "placeholder": "ftp.ejemplo.com",
+          "helpText": "Nombre de host o dirección IP del servidor FTP"
+        },
+        "user": {
+          "label": "Nombre de Usuario",
+          "placeholder": "usuario",
+          "helpText": "Nombre de usuario FTP"
+        },
+        "pass": {
+          "label": "Contraseña",
+          "placeholder": "Ingrese contraseña",
+          "helpText": "Contraseña FTP"
+        },
+        "port": {
+          "label": "Puerto",
+          "placeholder": "21",
+          "helpText": "Puerto FTP (predeterminado es 21)"
+        },
+        "tls": {
+          "label": "Usar FTPS",
+          "helpText": "Usar FTP sobre TLS/SSL para cifrado"
+        },
+        "explicit_tls": {
+          "label": "TLS Explícito",
+          "helpText": "Usar FTPS explícito (recomendado sobre implícito)"
+        }
+      },
+      "tips": [
+        "FTP es inseguro - use FTPS o SFTP cuando sea posible",
+        "Algunos firewalls pueden bloquear el modo pasivo FTP",
+        "Verifique si su servidor soporta FTPS",
+        "Considere SFTP como una alternativa más segura"
+      ]
+    },
+    "webdav": {
+      "name": "WebDAV",
+      "description": "Protocolo WebDAV",
+      "helpText": "Autoría y Versionado Distribuido basado en Web. Usado por Nextcloud, ownCloud y otros.",
+      "fields": {
+        "url": {
+          "label": "URL WebDAV",
+          "placeholder": "https://webdav.ejemplo.com",
+          "helpText": "URL completa del punto de acceso WebDAV"
+        },
+        "user": {
+          "label": "Nombre de Usuario",
+          "placeholder": "Ingrese nombre de usuario",
+          "helpText": "Nombre de usuario WebDAV"
+        },
+        "pass": {
+          "label": "Contraseña",
+          "placeholder": "Ingrese contraseña",
+          "helpText": "Contraseña WebDAV"
+        },
+        "vendor": {
+          "label": "Proveedor",
+          "helpText": "Proveedor WebDAV para compatibilidad específica"
+        }
+      },
+      "tips": [
+        "Diferentes proveedores pueden tener peculiaridades específicas",
+        "Nextcloud/ownCloud tienen soporte dedicado de proveedor",
+        "Use HTTPS para conexiones seguras",
+        "Algunos servidores tienen limitaciones de tamaño de archivo"
+      ]
+    },
+    "local": {
+      "name": "Sistema de Archivos Local",
+      "description": "Almacenamiento del sistema de archivos local",
+      "helpText": "Acceso directo a sistemas de archivos locales o montados.",
+      "fields": {
+        "path": {
+          "label": "Ruta",
+          "placeholder": "/mnt/respaldo",
+          "helpText": "Ruta absoluta al directorio local"
+        },
+        "nounc": {
+          "label": "Deshabilitar UNC",
+          "helpText": "Deshabilitar rutas UNC (\\\\servidor\\compartido) en Windows"
+        }
+      },
+      "tips": [
+        "Asegúrese de que la ruta existe y tiene los permisos adecuados",
+        "Use rutas absolutas, no rutas relativas",
+        "Los recursos compartidos de red deben montarse primero",
+        "Considere las limitaciones del sistema de archivos para archivos grandes"
+      ]
+    },
+    "pcloud": {
+      "name": "pCloud",
+      "description": "Servicio de almacenamiento en la nube con autenticación OAuth",
+      "helpText": "pCloud ofrece almacenamiento seguro en la nube con opción de cifrado del lado del cliente. Tiene regiones EU y US.",
+      "fields": {
+        "client_id": {
+          "label": "ID de Cliente OAuth",
+          "placeholder": "Ingrese ID de cliente",
+          "helpText": "ID de cliente OAuth 2.0 para pCloud"
+        },
+        "client_secret": {
+          "label": "Secreto de Cliente OAuth",
+          "placeholder": "Ingrese secreto de cliente",
+          "helpText": "Secreto de cliente OAuth 2.0"
+        },
+        "token": {
+          "label": "Token OAuth",
+          "helpText": "Token OAuth2 obtenido a través de autenticación"
+        },
+        "hostname": {
+          "label": "Nombre de Host",
+          "placeholder": "api.pcloud.com",
+          "helpText": "Nombre de host de la API (eapi.pcloud.com para EU)"
+        },
+        "root_folder_id": {
+          "label": "ID de Carpeta Raíz",
+          "placeholder": "Ingrese ID de carpeta",
+          "helpText": "ID de carpeta inicial (opcional)"
+        }
+      },
+      "tips": [
+        "Elija región EU o US basándose en su ubicación",
+        "La carpeta Crypto proporciona cifrado del lado del cliente",
+        "Tiene planes de por vida disponibles",
+        "Clientes de sincronización móvil y de escritorio disponibles"
+      ]
+    },
+    "yandex": {
+      "name": "Yandex Disk",
+      "description": "Servicio de almacenamiento en la nube Yandex",
+      "helpText": "Yandex Disk es un servicio de almacenamiento en la nube popular en Rusia y Europa del Este. Usa autenticación OAuth.",
+      "fields": {
+        "client_id": {
+          "label": "ID de Cliente OAuth",
+          "placeholder": "Ingrese ID de cliente",
+          "helpText": "ID de cliente OAuth 2.0 de Yandex"
+        },
+        "client_secret": {
+          "label": "Secreto de Cliente OAuth",
+          "placeholder": "Ingrese secreto de cliente",
+          "helpText": "Secreto de cliente OAuth 2.0"
+        },
+        "token": {
+          "label": "Token OAuth",
+          "helpText": "Token OAuth2 obtenido a través de autenticación Yandex"
+        }
+      },
+      "tips": [
+        "El nivel gratuito incluye 10GB de almacenamiento",
+        "Soporta carga automática de fotos desde dispositivos móviles",
+        "Tiene clientes de sincronización de escritorio para todas las plataformas principales",
+        "Colaboración de documentos de oficina disponible"
+      ]
+    },
+    "googlephotos": {
+      "name": "Google Photos",
+      "description": "Servicio de almacenamiento Google Photos",
+      "helpText": "Servicio de respaldo y sincronización de Google Photos. Nota: Limitado solo a operaciones de fotos y videos.",
+      "fields": {
+        "client_id": {
+          "label": "ID de Cliente OAuth",
+          "placeholder": "123456789012-abcdef.apps.googleusercontent.com",
+          "helpText": "ID de cliente OAuth 2.0 desde Google Cloud Console"
+        },
+        "client_secret": {
+          "label": "Secreto de Cliente OAuth",
+          "placeholder": "Ingrese su secreto de cliente",
+          "helpText": "Secreto de cliente OAuth 2.0"
+        },
+        "token": {
+          "label": "Token OAuth",
+          "helpText": "Token OAuth2 con alcance photos.readonly"
+        },
+        "read_only": {
+          "label": "Solo Lectura",
+          "helpText": "La API de Google Photos es de solo lectura para la mayoría de operaciones"
+        }
+      },
+      "tips": [
+        "La API de Google Photos tiene capacidades de escritura limitadas",
+        "Mejor usado para respaldar fotos desde Google Photos",
+        "La calidad original cuenta contra el almacenamiento de Google Drive",
+        "Los álbumes y metadatos pueden preservarse"
+      ]
+    },
+    "proton": {
+      "name": "Proton Drive",
+      "description": "Almacenamiento en la nube cifrado centrado en la privacidad",
+      "helpText": "Proton Drive ofrece almacenamiento en la nube cifrado de extremo a extremo de los creadores de ProtonMail.",
+      "fields": {
+        "username": {
+          "label": "Nombre de Usuario",
+          "placeholder": "usuario@proton.me",
+          "helpText": "Su correo electrónico de cuenta Proton"
+        },
+        "password": {
+          "label": "Contraseña",
+          "placeholder": "Ingrese su contraseña",
+          "helpText": "Su contraseña de cuenta Proton"
+        },
+        "2fa": {
+          "label": "Código de Dos Factores",
+          "placeholder": "Ingrese código 2FA si está habilitado",
+          "helpText": "Código de autenticación de dos factores (si está habilitado)"
+        }
+      },
+      "tips": [
+        "Todos los archivos están cifrados de extremo a extremo",
+        "Parte del ecosistema de privacidad Proton",
+        "El nivel gratuito incluye 1GB de almacenamiento",
+        "Soporta compartir archivos con cifrado"
+      ]
+    },
+    "storj": {
+      "name": "Storj",
+      "description": "Almacenamiento en la nube descentralizado",
+      "helpText": "Storj es una red de almacenamiento en la nube descentralizada que cifra y distribuye archivos a través de una red global.",
+      "fields": {
+        "access_grant": {
+          "label": "Concesión de Acceso",
+          "placeholder": "Ingrese su concesión de acceso",
+          "helpText": "Concesión de acceso serializada de Storj"
+        },
+        "satellite_address": {
+          "label": "Dirección del Satélite",
+          "placeholder": "us1.storj.io:7777",
+          "helpText": "Dirección del satélite (opcional, por defecto us1.storj.io:7777)"
+        },
+        "api_key": {
+          "label": "Clave API",
+          "placeholder": "Ingrese clave API",
+          "helpText": "Clave API desde la interfaz web del satélite"
+        },
+        "passphrase": {
+          "label": "Frase de Paso de Cifrado",
+          "placeholder": "Ingrese frase de paso de cifrado",
+          "helpText": "Frase de paso de cifrado para sus datos"
+        }
+      },
+      "tips": [
+        "El almacenamiento descentralizado proporciona alta durabilidad",
+        "Todos los datos se cifran del lado del cliente",
+        "Pague solo por lo que usa",
+        "Bueno para casos de uso de archivo y respaldo"
+      ]
+    },
+    "smb": {
+      "name": "SMB / CIFS",
+      "description": "Recursos compartidos de red Windows",
+      "helpText": "Protocolo Server Message Block (SMB) para acceder a recursos compartidos de Windows y dispositivos NAS.",
+      "fields": {
+        "host": {
+          "label": "Host",
+          "placeholder": "servidor.local o 192.168.1.100",
+          "helpText": "Nombre de host o dirección IP del servidor SMB"
+        },
+        "user": {
+          "label": "Nombre de Usuario",
+          "placeholder": "DOMINIO\\usuario o usuario",
+          "helpText": "Nombre de usuario (puede incluir dominio)"
+        },
+        "pass": {
+          "label": "Contraseña",
+          "placeholder": "Ingrese contraseña",
+          "helpText": "Contraseña para autenticación SMB"
+        },
+        "domain": {
+          "label": "Dominio",
+          "placeholder": "WORKGROUP",
+          "helpText": "Dominio SMB (por defecto WORKGROUP)"
+        },
+        "port": {
+          "label": "Puerto",
+          "placeholder": "445",
+          "helpText": "Puerto SMB (generalmente 445)"
+        }
+      },
+      "tips": [
+        "SMB3 es recomendado para seguridad",
+        "Asegúrese de que el descubrimiento de red esté habilitado",
+        "Puede requerir configuración de firewall",
+        "Pruebe con dirección IP si el nombre de host falla"
+      ]
+    },
+    "oracle": {
+      "name": "Oracle Object Storage",
+      "description": "Almacenamiento de objetos Oracle Cloud Infrastructure",
+      "helpText": "Oracle Cloud Infrastructure (OCI) Object Storage es un servicio regional para almacenar grandes cantidades de datos no estructurados.",
+      "fields": {
+        "namespace": {
+          "label": "Espacio de Nombres de Almacenamiento de Objetos",
+          "placeholder": "Ingrese espacio de nombres",
+          "helpText": "Espacio de nombres de almacenamiento de objetos (encontrado en OCI Console)"
+        },
+        "compartment": {
+          "label": "OCID del Compartimento",
+          "placeholder": "ocid1.compartment.oc1...",
+          "helpText": "OCID del compartimento donde existe el bucket"
+        },
+        "region": {
+          "label": "Región",
+          "placeholder": "us-ashburn-1",
+          "helpText": "Identificador de región OCI"
+        },
+        "user": {
+          "label": "OCID del Usuario",
+          "placeholder": "ocid1.user.oc1...",
+          "helpText": "OCID del usuario para autenticación"
+        },
+        "key_file": {
+          "label": "Archivo de Clave API",
+          "placeholder": "Archivo PEM codificado en Base64",
+          "helpText": "Clave privada RSA en formato PEM (codificada en base64)"
+        },
+        "fingerprint": {
+          "label": "Huella Digital de la Clave",
+          "placeholder": "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99",
+          "helpText": "Huella digital de la clave de firma API"
+        },
+        "tenancy": {
+          "label": "OCID del Arrendamiento",
+          "placeholder": "ocid1.tenancy.oc1...",
+          "helpText": "OCID del arrendamiento"
+        }
+      },
+      "tips": [
+        "Genere claves API en la configuración de usuario de OCI Console",
+        "Use compartimentos para organizar recursos",
+        "Clases de almacenamiento disponibles para optimización de costos",
+        "Soporta API de compatibilidad S3 como alternativa"
+      ]
+    },
+    "sharefile": {
+      "name": "Citrix ShareFile",
+      "description": "Compartir archivos y almacenamiento empresarial",
+      "helpText": "Citrix ShareFile es una plataforma de colaboración de contenido empresarial con compartición segura de archivos.",
+      "fields": {
+        "upload_endpoint": {
+          "label": "Punto de Acceso de Carga",
+          "placeholder": "https://empresa.sf-api.com",
+          "helpText": "URL del punto de acceso de carga ShareFile"
+        },
+        "root_folder_id": {
+          "label": "ID de Carpeta Raíz",
+          "placeholder": "Ingrese ID de carpeta raíz",
+          "helpText": "ID de la carpeta raíz"
+        },
+        "token": {
+          "label": "Token OAuth",
+          "helpText": "Token OAuth2 para acceso ShareFile"
+        }
+      },
+      "tips": [
+        "Diseñado para uso empresarial",
+        "Soporta transferencias de archivos grandes",
+        "Tiene pistas de auditoría y características de cumplimiento",
+        "Aplicaciones móviles disponibles para todas las plataformas"
+      ]
+    },
+    "jottacloud": {
+      "name": "Jottacloud",
+      "description": "Servicio de almacenamiento en la nube noruego",
+      "helpText": "Jottacloud es un servicio de almacenamiento en la nube popular en países nórdicos con enfoque en privacidad.",
+      "fields": {
+        "user": {
+          "label": "Nombre de Usuario",
+          "placeholder": "usuario",
+          "helpText": "Nombre de usuario de Jottacloud"
+        },
+        "pass": {
+          "label": "Contraseña",
+          "placeholder": "Ingrese contraseña",
+          "helpText": "Contraseña de Jottacloud"
+        },
+        "device": {
+          "label": "Nombre del Dispositivo",
+          "placeholder": "Jotta",
+          "helpText": "Nombre del dispositivo (generalmente Jotta)"
+        },
+        "mountpoint": {
+          "label": "Punto de Montaje",
+          "placeholder": "Archive",
+          "helpText": "Punto de montaje a usar (Archive, Sync o Backup)"
+        }
+      },
+      "tips": [
+        "Almacenamiento ilimitado en planes personales",
+        "Datos almacenados en Noruega (leyes de privacidad de la UE)",
+        "Soporta versionado de archivos",
+        "Bueno para respaldo de fotos y videos"
+      ]
+    },
+    "koofr": {
+      "name": "Koofr",
+      "description": "Servicio de almacenamiento en la nube europeo",
+      "helpText": "Koofr es un servicio de almacenamiento en la nube europeo que también puede conectarse a otras cuentas de almacenamiento en la nube.",
+      "fields": {
+        "user": {
+          "label": "Correo Electrónico",
+          "placeholder": "usuario@ejemplo.com",
+          "helpText": "Su correo electrónico de cuenta Koofr"
+        },
+        "pass": {
+          "label": "Contraseña",
+          "placeholder": "Ingrese contraseña",
+          "helpText": "Su contraseña de Koofr"
+        },
+        "provider": {
+          "label": "Proveedor",
+          "helpText": "Proveedor Koofr (koofr, digistorage u otro)"
+        }
+      },
+      "tips": [
+        "Puede conectar múltiples cuentas en la nube",
+        "Datos almacenados en la UE (compatible con GDPR)",
+        "Soporta acceso WebDAV",
+        "Tiene aplicaciones de escritorio y móviles"
+      ]
+    },
+    "mailru": {
+      "name": "Mail.ru Cloud",
+      "description": "Servicio de almacenamiento en la nube Mail.ru",
+      "helpText": "Mail.ru Cloud (ahora parte de VK Cloud) es un servicio de almacenamiento en la nube popular en Rusia.",
+      "fields": {
+        "user": {
+          "label": "Nombre de Usuario",
+          "placeholder": "usuario@mail.ru",
+          "helpText": "Su dirección de correo electrónico Mail.ru"
+        },
+        "pass": {
+          "label": "Contraseña",
+          "placeholder": "Ingrese contraseña",
+          "helpText": "Su contraseña de Mail.ru"
+        },
+        "speedup_enable": {
+          "label": "Habilitar Aceleración",
+          "helpText": "Habilitar función de aceleración (carga paralela)"
+        }
+      },
+      "tips": [
+        "El nivel gratuito incluye 8GB de almacenamiento",
+        "Popular en países de habla rusa",
+        "Soporta cargas de archivos grandes",
+        "Tiene aplicaciones de sincronización móvil y de escritorio"
+      ]
+    },
+    "hidrive": {
+      "name": "HiDrive",
+      "description": "Almacenamiento en la nube STRATO HiDrive",
+      "helpText": "HiDrive es un servicio de almacenamiento en la nube de STRATO, popular en Alemania.",
+      "fields": {
+        "user": {
+          "label": "Nombre de Usuario",
+          "placeholder": "usuario",
+          "helpText": "Nombre de usuario HiDrive"
+        },
+        "pass": {
+          "label": "Contraseña",
+          "placeholder": "Ingrese contraseña",
+          "helpText": "Contraseña HiDrive"
+        },
+        "protocol": {
+          "label": "Protocolo",
+          "helpText": "Protocolo a usar (webdav o smb)"
+        },
+        "root": {
+          "label": "Ruta Raíz",
+          "placeholder": "/",
+          "helpText": "Ruta raíz a usar"
+        }
+      },
+      "tips": [
+        "Popular en Alemania y Europa",
+        "Soporta protocolos WebDAV y SMB",
+        "Almacenamiento de datos compatible con GDPR",
+        "Incluye características de colaboración"
+      ]
+    },
+    "pikpak": {
+      "name": "PikPak",
+      "description": "Almacenamiento en la nube con descarga offline",
+      "helpText": "PikPak es un servicio de almacenamiento en la nube que soporta descarga offline y streaming de medios.",
+      "fields": {
+        "user": {
+          "label": "Nombre de Usuario",
+          "placeholder": "usuario@ejemplo.com",
+          "helpText": "Correo electrónico de cuenta PikPak"
+        },
+        "pass": {
+          "label": "Contraseña",
+          "placeholder": "Ingrese contraseña",
+          "helpText": "Contraseña de cuenta PikPak"
+        }
+      },
+      "tips": [
+        "Soporta descarga offline",
+        "Reproductor de medios incorporado",
+        "Bueno para torrenting a la nube",
+        "Tiene aplicaciones móviles con streaming"
+      ]
+    },
+    "premiumizeme": {
+      "name": "Premiumize.me",
+      "description": "Almacenamiento en la nube y servicio de descarga",
+      "helpText": "Premiumize.me es un servicio multi-host que proporciona almacenamiento en la nube y capacidades de descarga.",
+      "fields": {
+        "api_key": {
+          "label": "Clave API",
+          "placeholder": "Ingrese su clave API",
+          "helpText": "Clave API desde la configuración de cuenta Premiumize.me"
+        }
+      },
+      "tips": [
+        "Combina almacenamiento en la nube con servicio de descarga",
+        "Soporta muchos sitios de alojamiento de archivos",
+        "Incluye servicio VPN",
+        "Bueno para streaming de medios"
+      ]
+    },
+    "putio": {
+      "name": "Put.io",
+      "description": "Almacenamiento en la nube con soporte para torrents",
+      "helpText": "Put.io es un servicio de almacenamiento en la nube que puede obtener y transmitir torrents.",
+      "fields": {
+        "token": {
+          "label": "Token OAuth",
+          "placeholder": "Ingrese token OAuth",
+          "helpText": "Token OAuth desde la configuración de cuenta Put.io"
+        }
+      },
+      "tips": [
+        "Especializado en manejo de torrents",
+        "Conversión automática de video",
+        "Reproductor de medios incorporado",
+        "Buena API para automatización"
+      ]
+    },
+    "internetarchive": {
+      "name": "Internet Archive",
+      "description": "Almacenamiento Internet Archive",
+      "helpText": "Internet Archive es una biblioteca digital sin fines de lucro que ofrece acceso gratuito a colecciones de materiales digitalizados.",
+      "fields": {
+        "access_key_id": {
+          "label": "Clave de Acceso",
+          "placeholder": "Ingrese clave de acceso",
+          "helpText": "Clave de acceso tipo S3 de Internet Archive"
+        },
+        "secret_access_key": {
+          "label": "Clave Secreta",
+          "placeholder": "Ingrese clave secreta",
+          "helpText": "Clave secreta tipo S3"
+        },
+        "endpoint": {
+          "label": "Punto de Acceso",
+          "placeholder": "https://s3.us.archive.org",
+          "helpText": "Punto de acceso S3 de Internet Archive"
+        },
+        "front_endpoint": {
+          "label": "Punto de Acceso Frontend",
+          "placeholder": "https://archive.org",
+          "helpText": "URL frontend para acceso público"
+        }
+      },
+      "tips": [
+        "Almacenamiento gratuito para contenido de dominio público",
+        "Requiere acceso especial para elementos privados",
+        "Mejor para archivo y preservación",
+        "Soporta metadatos y colecciones"
+      ]
+    },
+    "qingstor": {
+      "name": "QingStor",
+      "description": "Almacenamiento de objetos QingStor",
+      "helpText": "QingStor es un servicio de almacenamiento de objetos de QingCloud, popular en China.",
+      "fields": {
+        "access_key_id": {
+          "label": "ID de Clave de Acceso",
+          "placeholder": "Ingrese ID de clave de acceso",
+          "helpText": "ID de clave de acceso desde la consola QingCloud"
+        },
+        "secret_access_key": {
+          "label": "Clave de Acceso Secreta",
+          "placeholder": "Ingrese clave de acceso secreta",
+          "helpText": "Clave de acceso secreta"
+        },
+        "endpoint": {
+          "label": "Punto de Acceso",
+          "placeholder": "https://qingstor.com",
+          "helpText": "URL del punto de acceso QingStor"
+        },
+        "zone": {
+          "label": "Zona",
+          "placeholder": "pek3a",
+          "helpText": "Zona QingStor (ej. pek3a, sh1a)"
+        }
+      },
+      "tips": [
+        "Popular en el mercado chino",
+        "API compatible con S3",
+        "Múltiples zonas de disponibilidad",
+        "Buen rendimiento en Asia"
+      ]
+    },
+    "quatrix": {
+      "name": "Quatrix",
+      "description": "Transferencia segura de archivos Quatrix",
+      "helpText": "Quatrix es una plataforma de transferencia y almacenamiento seguro de archivos diseñada para uso empresarial.",
+      "fields": {
+        "api_key": {
+          "label": "Clave API",
+          "placeholder": "Ingrese clave API",
+          "helpText": "Clave API desde cuenta Quatrix"
+        },
+        "host": {
+          "label": "Host",
+          "placeholder": "https://su-dominio.quatrix.com",
+          "helpText": "URL de su host Quatrix"
+        }
+      },
+      "tips": [
+        "Seguridad enfocada en empresas",
+        "Soporta transferencias de archivos grandes",
+        "Cifrado incorporado",
+        "Características de pista de auditoría"
+      ]
+    },
+    "seafile": {
+      "name": "Seafile",
+      "description": "Almacenamiento en la nube de código abierto",
+      "helpText": "Seafile es una plataforma de sincronización y compartición de archivos de código abierto con cifrado de archivos y características de colaboración grupal.",
+      "fields": {
+        "url": {
+          "label": "URL del Servidor",
+          "placeholder": "https://seafile.ejemplo.com",
+          "helpText": "URL del servidor Seafile"
+        },
+        "user": {
+          "label": "Nombre de Usuario",
+          "placeholder": "usuario@ejemplo.com",
+          "helpText": "Nombre de usuario o correo Seafile"
+        },
+        "pass": {
+          "label": "Contraseña",
+          "placeholder": "Ingrese contraseña",
+          "helpText": "Contraseña Seafile"
+        },
+        "library": {
+          "label": "ID de Biblioteca",
+          "placeholder": "Ingrese ID de biblioteca",
+          "helpText": "ID de biblioteca Seafile"
+        },
+        "auth_token": {
+          "label": "Token de Autenticación",
+          "placeholder": "Ingrese token de autenticación",
+          "helpText": "Token de autenticación (opcional)"
+        }
+      },
+      "tips": [
+        "Opción de auto-hospedaje disponible",
+        "Versionado de archivos e instantáneas",
+        "Soporte de cifrado de extremo a extremo",
+        "Bueno para colaboración de equipo"
+      ]
+    },
+    "sugarsync": {
+      "name": "SugarSync",
+      "description": "Almacenamiento en la nube SugarSync",
+      "helpText": "SugarSync es un servicio de almacenamiento en la nube que permite sincronizar estructuras de carpetas existentes.",
+      "fields": {
+        "app_id": {
+          "label": "ID de Aplicación",
+          "placeholder": "Ingrese ID de aplicación",
+          "helpText": "ID de aplicación de SugarSync"
+        },
+        "access_key_id": {
+          "label": "Clave de Acceso",
+          "placeholder": "Ingrese clave de acceso",
+          "helpText": "Clave de acceso para autenticación"
+        },
+        "private_access_key": {
+          "label": "Clave de Acceso Privada",
+          "placeholder": "Ingrese clave privada",
+          "helpText": "Clave de acceso privada"
+        },
+        "refresh_token": {
+          "label": "Token de Actualización",
+          "placeholder": "Ingrese token de actualización",
+          "helpText": "Token de actualización OAuth"
+        }
+      },
+      "tips": [
+        "Sincroniza cualquier carpeta en su computadora",
+        "No necesita mover archivos a carpeta especial",
+        "Soporta sincronización selectiva",
+        "Bueno para respaldar estructuras existentes"
+      ]
+    },
+    "ulozto": {
+      "name": "Uloz.to",
+      "description": "Alojamiento de archivos Uloz.to",
+      "helpText": "Uloz.to es un servicio de alojamiento de archivos popular en República Checa y Eslovaquia.",
+      "fields": {
+        "app_token": {
+          "label": "Token de Aplicación",
+          "placeholder": "Ingrese token de aplicación",
+          "helpText": "Token de aplicación de Uloz.to"
+        },
+        "username": {
+          "label": "Nombre de Usuario",
+          "placeholder": "Ingrese nombre de usuario",
+          "helpText": "Nombre de usuario Uloz.to"
+        },
+        "password": {
+          "label": "Contraseña",
+          "placeholder": "Ingrese contraseña",
+          "helpText": "Contraseña Uloz.to"
+        }
+      },
+      "tips": [
+        "Popular en mercados checo y eslovaco",
+        "Soporta cargas de archivos grandes",
+        "Niveles gratuito y premium",
+        "Capacidades de compartir archivos"
+      ]
+    },
+    "uptobox": {
+      "name": "Uptobox",
+      "description": "Alojamiento de archivos Uptobox",
+      "helpText": "Uptobox es un servicio de alojamiento de archivos con soporte para torrents y capacidades de streaming.",
+      "fields": {
+        "api_key": {
+          "label": "Clave API",
+          "placeholder": "Ingrese clave API",
+          "helpText": "Clave API desde cuenta Uptobox"
+        }
+      },
+      "tips": [
+        "Las cuentas premium tienen mejores velocidades",
+        "Soporta carga remota desde URLs",
+        "Reproductor de video incorporado",
+        "Bueno para almacenamiento de medios"
+      ]
+    },
+    "zoho": {
+      "name": "Zoho WorkDrive",
+      "description": "Almacenamiento Zoho WorkDrive",
+      "helpText": "Zoho WorkDrive es una plataforma de colaboración de contenido para equipos con controles de administración avanzados.",
+      "fields": {
+        "client_id": {
+          "label": "ID de Cliente OAuth",
+          "placeholder": "Ingrese ID de cliente",
+          "helpText": "ID de cliente OAuth de Zoho"
+        },
+        "client_secret": {
+          "label": "Secreto de Cliente OAuth",
+          "placeholder": "Ingrese secreto de cliente",
+          "helpText": "Secreto de cliente OAuth"
+        },
+        "token": {
+          "label": "Token OAuth",
+          "helpText": "Token OAuth2 desde autenticación Zoho"
+        },
+        "region": {
+          "label": "Región",
+          "placeholder": "com",
+          "helpText": "Región Zoho (com, eu, in, jp, com.cn, com.au)"
+        }
+      },
+      "tips": [
+        "Parte de la suite de productividad Zoho",
+        "Carpetas de equipo y espacios de trabajo",
+        "Controles de permisos avanzados",
+        "Integración con aplicaciones Zoho"
+      ]
+    },
+    "opendrive": {
+      "name": "OpenDrive",
+      "description": "Almacenamiento en la nube OpenDrive",
+      "helpText": "OpenDrive proporciona almacenamiento en la nube, respaldo en línea y servicios de reemplazo FTP.",
+      "fields": {
+        "username": {
+          "label": "Nombre de Usuario",
+          "placeholder": "Ingrese nombre de usuario",
+          "helpText": "Nombre de usuario OpenDrive"
+        },
+        "password": {
+          "label": "Contraseña",
+          "placeholder": "Ingrese contraseña",
+          "helpText": "Contraseña OpenDrive"
+        }
+      },
+      "tips": [
+        "Planes de almacenamiento ilimitado disponibles",
+        "Visor de documentos incorporado",
+        "Características de gestión de tareas",
+        "Capacidades de toma de notas"
+      ]
+    },
+    "fichier": {
+      "name": "1Fichier",
+      "description": "Alojamiento de archivos 1Fichier",
+      "helpText": "1Fichier es un servicio francés de alojamiento de archivos que ofrece almacenamiento gratuito y premium.",
+      "fields": {
+        "api_key": {
+          "label": "Clave API",
+          "placeholder": "Ingrese clave API",
+          "helpText": "Clave API desde cuenta 1Fichier"
+        },
+        "shared_folder": {
+          "label": "ID de Carpeta Compartida",
+          "placeholder": "Ingrese ID de carpeta",
+          "helpText": "ID de carpeta compartida (opcional)"
+        }
+      },
+      "tips": [
+        "Sin límites de tamaño de archivo para premium",
+        "Acceso FTP disponible",
+        "Soporte CDN para descargas rápidas",
+        "Opciones de carpeta privada"
+      ]
+    },
+    "gofile": {
+      "name": "GoFile",
+      "description": "Compartir archivos anónimo GoFile",
+      "helpText": "GoFile es una plataforma gratuita de compartición y almacenamiento de archivos con soporte de carga anónima.",
+      "fields": {
+        "account_id": {
+          "label": "ID de Cuenta",
+          "placeholder": "Ingrese ID de cuenta",
+          "helpText": "ID de cuenta GoFile (opcional)"
+        },
+        "root_folder_id": {
+          "label": "ID de Carpeta Raíz",
+          "placeholder": "Ingrese ID de carpeta raíz",
+          "helpText": "ID de carpeta raíz para cargas"
+        }
+      },
+      "tips": [
+        "No requiere registro para uso básico",
+        "Ancho de banda ilimitado",
+        "Archivos almacenados por tiempo limitado para usuarios gratuitos",
+        "Las cuentas premium obtienen almacenamiento permanente"
+      ]
+    },
+    "linkbox": {
+      "name": "Linkbox",
+      "description": "Almacenamiento en la nube Linkbox",
+      "helpText": "Linkbox proporciona almacenamiento en la nube con enfoque en facilidad de uso y capacidades de compartir.",
+      "fields": {
+        "token": {
+          "label": "Token API",
+          "placeholder": "Ingrese token API",
+          "helpText": "Token API desde configuración Linkbox"
+        }
+      },
+      "tips": [
+        "Opciones simples de compartir",
+        "Enlaces de descarga directa",
+        "Aplicaciones móviles disponibles",
+        "Niveles de precios asequibles"
+      ]
+    },
+    "pixeldrain": {
+      "name": "Pixeldrain",
+      "description": "Compartir archivos Pixeldrain",
+      "helpText": "Pixeldrain es una plataforma de compartir archivos con enfoque en simplicidad y facilidad de uso.",
+      "fields": {
+        "api_key": {
+          "label": "Clave API",
+          "placeholder": "Ingrese clave API",
+          "helpText": "Clave API desde cuenta Pixeldrain"
+        },
+        "root_folder_id": {
+          "label": "ID de Carpeta Raíz",
+          "placeholder": "Ingrese ID de carpeta",
+          "helpText": "ID de carpeta raíz (opcional)"
+        }
+      },
+      "tips": [
+        "No requiere registro para cargas",
+        "Archivos visibles en navegador",
+        "API para desarrolladores",
+        "Adecuado para compartir archivos temporales"
+      ]
+    },
+    "sia": {
+      "name": "Sia",
+      "description": "Almacenamiento descentralizado Sia",
+      "helpText": "Sia es una plataforma de almacenamiento en la nube descentralizada que cifra y distribuye archivos a través de una red descentralizada.",
+      "fields": {
+        "api_url": {
+          "label": "URL API",
+          "placeholder": "http://127.0.0.1:9980",
+          "helpText": "URL API del demonio Sia"
+        },
+        "api_password": {
+          "label": "Contraseña API",
+          "placeholder": "Ingrese contraseña API",
+          "helpText": "Contraseña API del demonio Sia"
+        }
+      },
+      "tips": [
+        "Almacenamiento totalmente descentralizado",
+        "Menor costo que la nube tradicional",
+        "Requiere ejecutar el demonio Sia",
+        "Pago en criptomoneda Siacoin"
+      ]
+    },
+    "filefabric": {
+      "name": "FileFabric",
+      "description": "Enterprise File Fabric",
+      "helpText": "FileFabric proporciona una plataforma de gestión de datos multi-nube para empresas.",
+      "fields": {
+        "url": {
+          "label": "URL",
+          "placeholder": "https://suempresa.filefabric.com",
+          "helpText": "URL de instancia FileFabric"
+        },
+        "permanent_token": {
+          "label": "Token Permanente",
+          "placeholder": "Ingrese token permanente",
+          "helpText": "Token de autenticación permanente"
+        },
+        "root_folder_id": {
+          "label": "ID de Carpeta Raíz",
+          "placeholder": "Ingrese ID de carpeta",
+          "helpText": "ID de carpeta raíz (opcional)"
+        }
+      },
+      "tips": [
+        "Solución de puerta de enlace multi-nube",
+        "Implementación local disponible",
+        "Características de seguridad empresarial",
+        "Herramientas de cumplimiento y gobernanza"
+      ]
+    },
+    "filescom": {
+      "name": "Files.com",
+      "description": "FTP en la nube Files.com",
+      "helpText": "Files.com es un servicio FTP/SFTP en la nube con características avanzadas de automatización y seguridad.",
+      "fields": {
+        "site": {
+          "label": "Subdominio del Sitio",
+          "placeholder": "miempresa",
+          "helpText": "Su subdominio Files.com"
+        },
+        "username": {
+          "label": "Nombre de Usuario",
+          "placeholder": "Ingrese nombre de usuario",
+          "helpText": "Nombre de usuario Files.com"
+        },
+        "password": {
+          "label": "Contraseña",
+          "placeholder": "Ingrese contraseña",
+          "helpText": "Contraseña Files.com"
+        },
+        "api_key": {
+          "label": "Clave API",
+          "placeholder": "Ingrese clave API",
+          "helpText": "Clave API (alternativa a contraseña)"
+        }
+      },
+      "tips": [
+        "Seguridad de grado empresarial",
+        "Flujos de trabajo de automatización",
+        "Registros de auditoría detallados",
+        "Compatible con HIPAA y SOC2"
+      ]
+    },
+    "hdfs": {
+      "name": "HDFS",
+      "description": "Sistema de Archivos Distribuido Hadoop",
+      "helpText": "HDFS es un sistema de archivos distribuido diseñado para ejecutarse en hardware básico, parte de Apache Hadoop.",
+      "fields": {
+        "namenode": {
+          "label": "URL del Namenode",
+          "placeholder": "http://namenode:9870",
+          "helpText": "URL del namenode HDFS"
+        },
+        "username": {
+          "label": "Nombre de Usuario",
+          "placeholder": "hadoop",
+          "helpText": "Nombre de usuario HDFS"
+        },
+        "service_principal_name": {
+          "label": "Principal de Servicio",
+          "placeholder": "hdfs/namenode.ejemplo.com@EJEMPLO.COM",
+          "helpText": "Nombre principal de servicio Kerberos"
+        },
+        "data_transfer_protection": {
+          "label": "Protección de Transferencia de Datos",
+          "helpText": "Nivel de protección de transferencia de datos"
+        }
+      },
+      "tips": [
+        "Diseñado para cargas de trabajo de big data",
+        "Acceso de alto rendimiento",
+        "Tolerante a fallos con replicación",
+        "Mejor para archivos grandes"
+      ]
+    },
+    "http": {
+      "name": "HTTP",
+      "description": "Remoto HTTP/HTTPS",
+      "helpText": "Acceder archivos sobre protocolo HTTP/HTTPS. Acceso de solo lectura a servidores web.",
+      "fields": {
+        "url": {
+          "label": "URL",
+          "placeholder": "https://ejemplo.com/ruta/",
+          "helpText": "URL base del servidor HTTP"
+        },
+        "headers": {
+          "label": "Encabezados HTTP",
+          "placeholder": "Encabezado: valor",
+          "helpText": "Encabezados HTTP adicionales (uno por línea)"
+        },
+        "no_slash": {
+          "label": "Sin Barra",
+          "helpText": "No añadir barra final a la URL"
+        },
+        "no_head": {
+          "label": "Sin HEAD",
+          "helpText": "No usar solicitudes HEAD"
+        }
+      },
+      "tips": [
+        "Acceso de solo lectura",
+        "Bueno para acceder archivos públicos",
+        "Puede analizar listados de directorios",
+        "Soporta autenticación básica"
+      ]
+    },
+    "netstorage": {
+      "name": "Akamai NetStorage",
+      "description": "CDN Akamai NetStorage",
+      "helpText": "Akamai NetStorage es una solución de almacenamiento en la nube distribuida globalmente optimizada para entrega de medios.",
+      "fields": {
+        "host": {
+          "label": "Host",
+          "placeholder": "xxxxx.akamaihd.net",
+          "helpText": "Host NetStorage"
+        },
+        "account": {
+          "label": "Cuenta",
+          "placeholder": "Ingrese cuenta",
+          "helpText": "Nombre de cuenta NetStorage"
+        },
+        "secret": {
+          "label": "Secreto",
+          "placeholder": "Ingrese secreto",
+          "helpText": "Secreto/clave NetStorage"
+        }
+      },
+      "tips": [
+        "Optimizado para entrega CDN",
+        "Ubicaciones edge globales",
+        "Soporte de streaming de medios",
+        "Rendimiento de grado empresarial"
+      ]
+    },
+    "cloudflare-r2": {
+      "name": "Cloudflare R2",
+      "description": "Almacenamiento de objetos Cloudflare R2",
+      "helpText": "Cloudflare R2 es almacenamiento de objetos compatible con S3 sin tarifas de salida.",
+      "fields": {
+        "account_id": {
+          "label": "ID de Cuenta",
+          "placeholder": "Ingrese ID de cuenta",
+          "helpText": "ID de cuenta Cloudflare"
+        },
+        "access_key_id": {
+          "label": "ID de Clave de Acceso",
+          "placeholder": "Ingrese clave de acceso",
+          "helpText": "ID de clave de acceso R2"
+        },
+        "secret_access_key": {
+          "label": "Clave de Acceso Secreta",
+          "placeholder": "Ingrese clave secreta",
+          "helpText": "Clave de acceso secreta R2"
+        },
+        "endpoint": {
+          "label": "Punto de Acceso",
+          "placeholder": "https://ID_CUENTA.r2.cloudflarestorage.com",
+          "helpText": "URL del punto de acceso R2"
+        }
+      },
+      "tips": [
+        "Sin tarifas de salida",
+        "API compatible con S3",
+        "Replicación automática",
+        "Integrado con CDN Cloudflare"
+      ]
+    },
+    "wasabi": {
+      "name": "Wasabi",
+      "description": "Almacenamiento en la nube caliente Wasabi",
+      "helpText": "Wasabi proporciona almacenamiento rápido de objetos en la nube sin tarifas de salida y precios predecibles.",
+      "fields": {
+        "access_key_id": {
+          "label": "ID de Clave de Acceso",
+          "placeholder": "Ingrese clave de acceso",
+          "helpText": "ID de clave de acceso Wasabi"
+        },
+        "secret_access_key": {
+          "label": "Clave de Acceso Secreta",
+          "placeholder": "Ingrese clave secreta",
+          "helpText": "Clave de acceso secreta Wasabi"
+        },
+        "region": {
+          "label": "Región",
+          "placeholder": "us-east-1",
+          "helpText": "Región Wasabi"
+        },
+        "endpoint": {
+          "label": "Punto de Acceso",
+          "placeholder": "s3.wasabisys.com",
+          "helpText": "URL del punto de acceso Wasabi"
+        }
+      },
+      "tips": [
+        "Sin tarifas de salida",
+        "80% menos que AWS S3",
+        "Sin cargos por solicitudes API",
+        "11 nueves de durabilidad"
+      ]
+    }
+  },
+  "common": {
+    "additionalProviders": "Proveedores adicionales disponibles: iCloud Drive, Amazon Cloud Drive (obsoleto), Citrix Files y más proveedores especializados.",
+    "noVersioning": {
+      "label": "Deshabilitar Versionado",
+      "helpText": "Deshabilitar el versionado de archivos para este almacenamiento para ahorrar espacio"
+    },
+    "parameters": {
+      "label": "Parámetros Adicionales",
+      "placeholder": "--transfers 4 --checkers 8",
+      "helpText": "Parámetros adicionales de rclone para configuración avanzada"
+    },
+    "authentication": {
+      "oauth": "Este proveedor usa autenticación OAuth. Necesitará autorizar el acceso.",
+      "apiKey": "Este proveedor usa autenticación por clave API. Genere una clave desde la consola del proveedor.",
+      "password": "Este proveedor usa autenticación por contraseña. Considere usar contraseñas específicas de aplicación.",
+      "serviceAccount": "Este proveedor soporta autenticación de cuenta de servicio para aplicaciones de servidor."
+    },
+    "errors": {
+      "invalidCredentials": "Credenciales inválidas. Por favor verifique sus detalles de autenticación.",
+      "connectionFailed": "Fallo al conectar. Por favor verifique su red y configuración del proveedor.",
+      "permissionDenied": "Permiso denegado. Verifique sus derechos de acceso y autenticación.",
+      "quotaExceeded": "Cuota de almacenamiento excedida. Por favor libere espacio o actualice su plan."
+    }
+  }
+}

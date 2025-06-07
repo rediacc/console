@@ -9,6 +9,7 @@ import enMachines from './locales/en/machines.json';
 import enSystem from './locales/en/system.json';
 import enQueue from './locales/en/queue.json';
 import enSettings from './locales/en/settings.json';
+import enStorageProviders from './locales/en/storageProviders.json';
 
 import esAuth from './locales/es/auth.json';
 import esCommon from './locales/es/common.json';
@@ -17,6 +18,7 @@ import esMachines from './locales/es/machines.json';
 import esSystem from './locales/es/system.json';
 import esQueue from './locales/es/queue.json';
 import esSettings from './locales/es/settings.json';
+import esStorageProviders from './locales/es/storageProviders.json';
 
 export const defaultNS = 'common';
 export const resources = {
@@ -28,6 +30,7 @@ export const resources = {
     system: enSystem,
     queue: enQueue,
     settings: enSettings,
+    storageProviders: enStorageProviders,
   },
   es: {
     common: esCommon,
@@ -37,6 +40,7 @@ export const resources = {
     system: esSystem,
     queue: esQueue,
     settings: esSettings,
+    storageProviders: esStorageProviders,
   },
 } as const;
 
@@ -48,7 +52,7 @@ i18n
     fallbackLng: 'en',
     lng: 'en',
     debug: false,
-    ns: ['common', 'auth', 'resources', 'machines', 'system', 'queue', 'settings'],
+    ns: ['common', 'auth', 'resources', 'machines', 'system', 'queue', 'settings', 'storageProviders'],
     defaultNS,
     resources,
     interpolation: {

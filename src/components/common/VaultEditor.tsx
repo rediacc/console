@@ -12,12 +12,16 @@ import {
   Tag,
   Tooltip,
   message,
+  Divider,
+  Typography,
 } from 'antd'
 import {
   InfoCircleOutlined,
   WarningOutlined,
   CodeOutlined,
   ExclamationCircleOutlined,
+  QuestionCircleOutlined,
+  BulbOutlined,
 } from '@ant-design/icons'
 import Editor from '@monaco-editor/react'
 import type { UploadFile } from 'antd/es/upload/interface'
@@ -26,6 +30,8 @@ import vaultDefinitions from '../../data/vaults.json'
 import storageProviders from '../../data/storageProviders.json'
 import { useAppSelector } from '@/store/store'
 import FieldGenerator from './FieldGenerator'
+
+const { Text } = Typography
 
 interface VaultEditorProps {
   entityType: string
@@ -61,7 +67,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   onImportExport,
   onFieldMovement,
 }) => {
-  const { t } = useTranslation('common')
+  const { t } = useTranslation(['common', 'storageProviders'])
   const [form] = Form.useForm()
   const [extraFields, setExtraFields] = useState<Record<string, any>>({})
   const [importedData, setImportedData] = useState<Record<string, any>>(initialData)
@@ -471,7 +477,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     URL.revokeObjectURL(url)
   }
 
-  const renderField = (fieldName: string, fieldDef: FieldDefinition, required: boolean) => {
+  const renderField = (fieldName: string, fieldDef: FieldDefinition, required: boolean, isProviderField: boolean = false) => {
     // Special handling for ssh_password field - hide if SSH key is configured
     if ((entityType === 'MACHINE' || entityType === 'BRIDGE') && fieldName === 'ssh_password' && sshKeyConfigured) {
       return null
@@ -481,8 +487,23 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     const field = getFieldDefinition(fieldDef)
     
     // Get translated field label and description
-    const fieldLabel = t(`vaultEditor.fields.${entityType}.${fieldName}.label`, { defaultValue: fieldName })
-    const fieldDescription = t(`vaultEditor.fields.${entityType}.${fieldName}.description`)
+    let fieldLabel: string
+    let fieldDescription: string | undefined
+    let fieldPlaceholder: string | undefined
+    let fieldHelpText: string | undefined
+    
+    if (entityType === 'STORAGE' && isProviderField && selectedProvider) {
+      // Use storage provider translations
+      fieldLabel = t(`storageProviders:storageProviders.${selectedProvider}.fields.${fieldName}.label`, { defaultValue: fieldName })
+      fieldPlaceholder = t(`storageProviders:storageProviders.${selectedProvider}.fields.${fieldName}.placeholder`, { defaultValue: field.example })
+      fieldHelpText = t(`storageProviders:storageProviders.${selectedProvider}.fields.${fieldName}.helpText`, { defaultValue: field.description })
+      fieldDescription = fieldHelpText
+    } else {
+      // Use regular vault editor translations
+      fieldLabel = t(`vaultEditor.fields.${entityType}.${fieldName}.label`, { defaultValue: fieldName })
+      fieldDescription = t(`vaultEditor.fields.${entityType}.${fieldName}.description`)
+      fieldPlaceholder = field.example
+    }
     
     const rules: any[] = []
     
@@ -530,7 +551,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     }
 
     const commonProps = {
-      placeholder: field.example,
+      placeholder: fieldPlaceholder,
       style: { width: '100%' },
     }
 
@@ -889,19 +910,25 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               }
               key="provider"
             >
+              {/* Provider help text */}
+              <Alert
+                message={providerFields.name}
+                description={t(`storageProviders:storageProviders.${selectedProvider}.helpText`, { 
+                  defaultValue: providerFields.description 
+                })}
+                type="info"
+                showIcon
+                icon={<QuestionCircleOutlined />}
+                style={{ marginBottom: 16 }}
+              />
+              
               {/* Required provider fields */}
               {providerFields.required && providerFields.required.length > 0 && (
                 <>
-                  <Alert
-                    message={t('vaultEditor.providerRequiredFields', { provider: providerFields.name })}
-                    type="info"
-                    showIcon
-                    style={{ marginBottom: 16 }}
-                  />
                   {providerFields.required.map((fieldName: string) => {
                     const field = providerFields.fields?.[fieldName]
                     if (!field) return null
-                    return renderField(fieldName, field as FieldDefinition, true)
+                    return renderField(fieldName, field as FieldDefinition, true, true)
                   })}
                 </>
               )}
@@ -913,10 +940,36 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                   {providerFields.optional.map((fieldName: string) => {
                     const field = providerFields.fields?.[fieldName]
                     if (!field) return null
-                    return renderField(fieldName, field as FieldDefinition, false)
+                    return renderField(fieldName, field as FieldDefinition, false, true)
                   })}
                 </>
               )}
+              
+              {/* Provider-specific tips */}
+              <Divider orientation="left">
+                <Space>
+                  <BulbOutlined style={{ color: '#faad14' }} />
+                  <Text strong>{t('storageProviders:common.tips', { defaultValue: 'Tips' })}</Text>
+                </Space>
+              </Divider>
+              <Alert
+                message={
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    {[1, 2, 3, 4].map((index) => {
+                      const tip = t(`storageProviders:storageProviders.${selectedProvider}.tips.${index - 1}`, { defaultValue: '' })
+                      return tip ? (
+                        <div key={index}>
+                          <Text>• {tip}</Text>
+                        </div>
+                      ) : null
+                    }).filter(Boolean)}
+                  </Space>
+                }
+                type="info"
+                showIcon
+                icon={<InfoCircleOutlined />}
+                style={{ marginTop: 16 }}
+              />
             </Collapse.Panel>
           )}
 
