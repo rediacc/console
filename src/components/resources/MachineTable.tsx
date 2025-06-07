@@ -782,8 +782,41 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
   // Machine form fields
   const { t: tRes } = useTranslation('resources');
+  
+  // Determine if team is already selected/known
+  const isTeamPreselected = uiMode === 'simple' || 
+    selectedTeam || 
+    (teamFilter && !Array.isArray(teamFilter)) || 
+    (teamFilter && Array.isArray(teamFilter) && teamFilter.length === 1);
+  
   const machineFormFields = uiMode === 'simple' 
     ? [
+        {
+          name: 'machineName',
+          label: tRes('machines.machineName'),
+          placeholder: tRes('machines.placeholders.enterMachineName'),
+          required: true,
+        },
+      ]
+    : isTeamPreselected
+    ? [
+        {
+          name: 'regionName',
+          label: tRes('general.region'),
+          placeholder: tRes('regions.placeholders.selectRegion'),
+          required: true,
+          type: 'select' as const,
+          options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
+        },
+        {
+          name: 'bridgeName',
+          label: tRes('bridges.bridge'),
+          placeholder: selectedRegionForMachine ? tRes('bridges.placeholders.selectBridge') : tRes('bridges.placeholders.selectRegionFirst'),
+          required: true,
+          type: 'select' as const,
+          options: filteredBridgesForMachine,
+          disabled: !selectedRegionForMachine,
+        },
         {
           name: 'machineName',
           label: tRes('machines.machineName'),
@@ -871,8 +904,24 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       if (teamToSet) {
         machineForm.setValue('teamName', teamToSet);
       }
+      
+      // Automatically select first region if available
+      if (dropdownData?.regions && dropdownData.regions.length > 0) {
+        const firstRegion = dropdownData.regions[0].value;
+        machineForm.setValue('regionName', firstRegion);
+        
+        // Find and select first bridge for this region
+        const regionBridges = dropdownData.bridgesByRegion?.find(
+          (region: any) => region.regionName === firstRegion
+        );
+        
+        if (regionBridges?.bridges && regionBridges.bridges.length > 0) {
+          const firstBridge = regionBridges.bridges[0].value;
+          machineForm.setValue('bridgeName', firstBridge);
+        }
+      }
     }
-  }, [showCreateModal, selectedTeam, teamFilter, machineForm]);
+  }, [showCreateModal, selectedTeam, teamFilter, machineForm, dropdownData]);
 
   return (
     <div className={className}>
@@ -901,7 +950,19 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
       {/* Modals */}
       <Modal
-        title={t('machines:createMachine')}
+        title={(() => {
+          // Determine which team(s) we're creating for
+          if (uiMode === 'simple') {
+            return t('machines:createMachine') + ' ' + tRes('teams.resourcesInTeam', { team: 'Private Team' });
+          } else if (selectedTeam) {
+            return t('machines:createMachine') + ' ' + tRes('teams.resourcesInTeam', { team: selectedTeam });
+          } else if (teamFilter && !Array.isArray(teamFilter)) {
+            return t('machines:createMachine') + ' ' + tRes('teams.resourcesInTeam', { team: teamFilter });
+          } else if (teamFilter && Array.isArray(teamFilter) && teamFilter.length === 1) {
+            return t('machines:createMachine') + ' ' + tRes('teams.resourcesInTeam', { team: teamFilter[0] });
+          }
+          return t('machines:createMachine');
+        })()}
         open={showCreateModal}
         onCancel={() => {
           setShowCreateModal(false);
@@ -937,12 +998,22 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           onSubmit={handleCreateMachine}
           entityType="MACHINE"
           vaultFieldName="machineVault"
-          showDefaultsAlert={uiMode === 'simple'}
+          showDefaultsAlert={uiMode === 'simple' || isTeamPreselected}
           defaultsContent={
             <Space direction="vertical" size={0}>
-              <Text>{t('machines:team')}: Private Team</Text>
-              <Text>{t('machines:region')}: Default Region</Text>
-              <Text>{t('machines:bridge')}: Shared Bridge</Text>
+              {(uiMode === 'simple' || isTeamPreselected) && (
+                <Text>{t('machines:team')}: {
+                  uiMode === 'simple' ? 'Private Team' : 
+                  selectedTeam || 
+                  (!Array.isArray(teamFilter) ? teamFilter : teamFilter[0])
+                }</Text>
+              )}
+              {uiMode === 'simple' && (
+                <>
+                  <Text>{t('machines:region')}: Default Region</Text>
+                  <Text>{t('machines:bridge')}: Shared Bridge</Text>
+                </>
+              )}
             </Space>
           }
         />

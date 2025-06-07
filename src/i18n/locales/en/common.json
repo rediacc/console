@@ -100,7 +100,8 @@
   },
   "general": {
     "versionFormat": "v{{version}}",
-    "showingRecords": "Showing records {{start}}-{{end}} of {{total}}"
+    "showingRecords": "Showing records {{start}}-{{end}} of {{total}}",
+    "defaultsApplied": "Default values applied"
   },
   "dashboard": {
     "availablePlans": "Available Plans",

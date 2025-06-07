@@ -717,7 +717,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         message={t(entityDef.descriptionKey)}
         type="info"
         showIcon
-        style={{ marginBottom: 16 }}
+        style={{ marginBottom: 12 }}
       />
 
       <Form

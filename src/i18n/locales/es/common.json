@@ -100,7 +100,8 @@
   },
   "general": {
     "versionFormat": "v{{version}}",
-    "showingRecords": "Mostrando registros {{start}}-{{end}} de {{total}}"
+    "showingRecords": "Mostrando registros {{start}}-{{end}} de {{total}}",
+    "defaultsApplied": "Valores predeterminados aplicados"
   },
   "dashboard": {
     "availablePlans": "Planes Disponibles",

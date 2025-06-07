@@ -160,7 +160,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     const wrapperCol = { span: 16 }
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {/* Form Section */}
         <Form 
           layout={formLayout}
@@ -189,7 +189,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
         </Form>
 
         {/* Divider */}
-        <Divider style={{ margin: '16px 0' }}>{t('vaultEditor.vaultConfiguration')}</Divider>
+        <Divider style={{ margin: '8px 0' }}>{t('vaultEditor.vaultConfiguration')}</Divider>
 
         {/* Vault Editor Section */}
         <div style={{ maxHeight: '400px', overflowY: 'auto' }}>

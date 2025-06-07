@@ -113,7 +113,8 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
             // Field movement notifications are already shown by VaultEditor
             // This callback is optional for parent components that need to track movements
           }}
-        /></Space>
+        />
+      </Space>
 
       <div style={{ marginTop: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

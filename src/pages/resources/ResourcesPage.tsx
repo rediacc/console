@@ -694,7 +694,7 @@ const ResourcesPage: React.FC = () => {
 
   // Form fields
 
-  const repositoryFormFields = uiMode === 'simple'
+  const repositoryFormFields = uiMode === 'simple' || selectedTeams.length === 1
     ? [
         {
           name: 'repositoryName',
@@ -720,7 +720,7 @@ const ResourcesPage: React.FC = () => {
         },
       ]
 
-  const storageFormFields = uiMode === 'simple'
+  const storageFormFields = uiMode === 'simple' || selectedTeams.length === 1
     ? [
         {
           name: 'storageName',
@@ -746,7 +746,7 @@ const ResourcesPage: React.FC = () => {
         },
       ]
 
-  const scheduleFormFields = uiMode === 'simple'
+  const scheduleFormFields = uiMode === 'simple' || selectedTeams.length === 1
     ? [
         {
           name: 'scheduleName',
@@ -1213,7 +1213,13 @@ const ResourcesPage: React.FC = () => {
 
       {/* Repository Modals */}
       <Modal
-        title={t('repositories.createRepository')}
+        title={
+          selectedTeams.length === 1 && uiMode === 'expert'
+            ? t('repositories.createRepository') + ' ' + t('teams.resourcesInTeam', { team: selectedTeams[0] })
+            : uiMode === 'simple'
+            ? t('repositories.createRepository') + ' ' + t('teams.resourcesInTeam', { team: 'Private Team' })
+            : t('repositories.createRepository')
+        }
         open={isCreateRepositoryModalOpen}
         onCancel={() => {
           setIsCreateRepositoryModalOpen(false)
@@ -1249,10 +1255,10 @@ const ResourcesPage: React.FC = () => {
           onSubmit={handleCreateRepository}
           entityType="REPOSITORY"
           vaultFieldName="repositoryVault"
-          showDefaultsAlert={uiMode === 'simple'}
+          showDefaultsAlert={uiMode === 'simple' || selectedTeams.length === 1}
           defaultsContent={
             <Space direction="vertical" size={0}>
-              <Text>{t('general.team')}: Private Team</Text>
+              <Text>{t('general.team')}: {uiMode === 'simple' ? 'Private Team' : selectedTeams[0]}</Text>
             </Space>
           }
         />
@@ -1300,7 +1306,13 @@ const ResourcesPage: React.FC = () => {
 
       {/* Storage Modals */}
       <Modal
-        title={t('storage.createStorage')}
+        title={
+          selectedTeams.length === 1 && uiMode === 'expert'
+            ? t('storage.createStorage') + ' ' + t('teams.resourcesInTeam', { team: selectedTeams[0] })
+            : uiMode === 'simple'
+            ? t('storage.createStorage') + ' ' + t('teams.resourcesInTeam', { team: 'Private Team' })
+            : t('storage.createStorage')
+        }
         open={isCreateStorageModalOpen}
         onCancel={() => {
           setIsCreateStorageModalOpen(false)
@@ -1336,10 +1348,10 @@ const ResourcesPage: React.FC = () => {
           onSubmit={handleCreateStorage}
           entityType="STORAGE"
           vaultFieldName="storageVault"
-          showDefaultsAlert={uiMode === 'simple'}
+          showDefaultsAlert={uiMode === 'simple' || selectedTeams.length === 1}
           defaultsContent={
             <Space direction="vertical" size={0}>
-              <Text>{t('general.team')}: Private Team</Text>
+              <Text>{t('general.team')}: {uiMode === 'simple' ? 'Private Team' : selectedTeams[0]}</Text>
             </Space>
           }
         />
@@ -1387,7 +1399,13 @@ const ResourcesPage: React.FC = () => {
 
       {/* Schedule Modals */}
       <Modal
-        title={t('schedules.createSchedule')}
+        title={
+          selectedTeams.length === 1 && uiMode === 'expert'
+            ? t('schedules.createSchedule') + ' ' + t('teams.resourcesInTeam', { team: selectedTeams[0] })
+            : uiMode === 'simple'
+            ? t('schedules.createSchedule') + ' ' + t('teams.resourcesInTeam', { team: 'Private Team' })
+            : t('schedules.createSchedule')
+        }
         open={isCreateScheduleModalOpen}
         onCancel={() => {
           setIsCreateScheduleModalOpen(false)
@@ -1423,10 +1441,10 @@ const ResourcesPage: React.FC = () => {
           onSubmit={handleCreateSchedule}
           entityType="SCHEDULE"
           vaultFieldName="scheduleVault"
-          showDefaultsAlert={uiMode === 'simple'}
+          showDefaultsAlert={uiMode === 'simple' || selectedTeams.length === 1}
           defaultsContent={
             <Space direction="vertical" size={0}>
-              <Text>{t('general.team')}: Private Team</Text>
+              <Text>{t('general.team')}: {uiMode === 'simple' ? 'Private Team' : selectedTeams[0]}</Text>
             </Space>
           }
         />
