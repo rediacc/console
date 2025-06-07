@@ -2,8 +2,8 @@
   "entities": {
     "MACHINE": {
       "descriptionKey": "vaultEditor.fields.MACHINE.description",
-      "required": ["ip", "user", "datastore"],
-      "optional": ["ssh_password", "port", "host_entry"],
+      "required": ["ip", "user", "datastore", "ssh_key_configured", "ssh_password"],
+      "optional": ["port", "host_entry"],
       "fields": {
         "ip": {
           "type": "string",
@@ -26,6 +26,11 @@
         "host_entry": {
           "type": "string",
           "example": "192.168.1.100 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC..."
+        },
+        "ssh_key_configured": {
+          "type": "boolean",
+          "default": false,
+          "example": false
         },
         "ssh_password": {
           "type": "string",
@@ -60,8 +65,8 @@
     },
     "BRIDGE": {
       "descriptionKey": "vaultEditor.fields.BRIDGE.description",
-      "required": ["SSH_PRIVATE_KEY", "SSH_PUBLIC_KEY", "ip", "user"],
-      "optional": ["ssh_password", "port", "host_entry"],
+      "required": ["SSH_PRIVATE_KEY", "SSH_PUBLIC_KEY", "ip", "user", "ssh_key_configured", "ssh_password"],
+      "optional": ["port", "host_entry"],
       "fields": {
         "ip": {
           "type": "string",
@@ -84,6 +89,11 @@
         "host_entry": {
           "type": "string",
           "example": "192.168.1.100 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC..."
+        },
+        "ssh_key_configured": {
+          "type": "boolean",
+          "default": false,
+          "example": false
         },
         "ssh_password": {
           "type": "string",

@@ -66,6 +66,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   const [importedData, setImportedData] = useState<Record<string, any>>(initialData)
   const [rawJsonValue, setRawJsonValue] = useState<string>('')
   const [rawJsonError, setRawJsonError] = useState<string | null>(null)
+  const [sshKeyConfigured, setSshKeyConfigured] = useState(false)
   
   const uiMode = useAppSelector((state) => state.ui.uiMode)
 
@@ -167,6 +168,11 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       })
       form.setFieldsValue(formData)
       
+      // Initialize ssh_key_configured state for MACHINE and BRIDGE entities
+      if ((entityType === 'MACHINE' || entityType === 'BRIDGE') && formData.ssh_key_configured !== undefined) {
+        setSshKeyConfigured(formData.ssh_key_configured)
+      }
+      
       // Build complete data structure for raw JSON
       const completeData = { ...formData }
       if (Object.keys(extraFields).length > 0) {
@@ -221,8 +227,19 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     }
   }
 
-  const handleFormChange = () => {
+  const handleFormChange = (changedValues?: any) => {
     const formData = form.getFieldsValue()
+    
+    // Handle ssh_key_configured changes
+    if ((entityType === 'MACHINE' || entityType === 'BRIDGE') && changedValues?.ssh_key_configured !== undefined) {
+      setSshKeyConfigured(changedValues.ssh_key_configured)
+      
+      // If SSH key is configured, clear the password field
+      if (changedValues.ssh_key_configured) {
+        form.setFieldValue('ssh_password', undefined)
+        formData.ssh_password = undefined
+      }
+    }
     
     // Build complete data with extraFields structure
     const completeData = { ...formData }
@@ -419,6 +436,11 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   }
 
   const renderField = (fieldName: string, fieldDef: FieldDefinition, required: boolean) => {
+    // Special handling for ssh_password field - hide if SSH key is configured
+    if ((entityType === 'MACHINE' || entityType === 'BRIDGE') && fieldName === 'ssh_password' && sshKeyConfigured) {
+      return null
+    }
+    
     // Merge with common types if applicable
     const field = getFieldDefinition(fieldDef)
     
@@ -428,7 +450,15 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     
     const rules: any[] = []
     
-    if (required) {
+    // Special validation for ssh_password - required only if SSH key not configured
+    if ((entityType === 'MACHINE' || entityType === 'BRIDGE') && fieldName === 'ssh_password') {
+      if (!sshKeyConfigured && required) {
+        rules.push({ 
+          required: true, 
+          message: t('vaultEditor.sshPasswordRequiredWhenNoKey', { defaultValue: 'SSH password is required when SSH key is not configured' }) 
+        })
+      }
+    } else if (required) {
       rules.push({ required: true, message: t('vaultEditor.isRequired', { field: fieldLabel }) })
     }
     
@@ -486,7 +516,14 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           valuePropName="checked"
           initialValue={field.default}
         >
-          <Switch />
+          <Switch 
+            onChange={(checked) => {
+              // Special handling for ssh_key_configured
+              if (fieldName === 'ssh_key_configured') {
+                handleFormChange({ ssh_key_configured: checked })
+              }
+            }}
+          />
         </Form.Item>
       )
     }
@@ -757,7 +794,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         wrapperCol={{ span: 16 }}
         labelAlign="left"
         colon={true}
-        onValuesChange={handleFormChange}
+        onValuesChange={(changedValues) => handleFormChange(changedValues)}
         autoComplete="off"
       >
         <Collapse 

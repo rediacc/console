@@ -156,6 +156,7 @@
     "failedToParseJson": "Error al analizar JSON:",
     "fieldsMovedToExtra": "{{count}} campo(s) movido(s) a extraFields: {{fields}}",
     "fieldsMovedFromExtra": "{{count}} campo(s) restaurado(s) desde extraFields: {{fields}}",
+    "sshPasswordRequiredWhenNoKey": "Se requiere contraseña SSH para la configuración inicial de la clave",
     "fields": {
       "MACHINE": {
         "description": "Configuración de máquina para acceso SSH y almacenamiento",
@@ -179,9 +180,13 @@
           "label": "Entrada del Host",
           "description": "Entrada de host conocido SSH para verificación de seguridad"
         },
+        "ssh_key_configured": {
+          "label": "Clave SSH ya configurada",
+          "description": "Marque esto si la clave pública SSH ya está instalada en la máquina de destino"
+        },
         "ssh_password": {
-          "label": "Contraseña SSH",
-          "description": "Contraseña SSH para autenticación (opcional, se prefieren claves SSH)"
+          "label": "Contraseña SSH (Temporal)",
+          "description": "Contraseña temporal solo para la configuración inicial de la clave SSH. Deje vacío si la clave SSH ya está configurada. Esta contraseña se usa una vez para copiar la clave pública y debe eliminarse después por seguridad."
         }
       },
       "REPOSITORY": {
@@ -291,9 +296,13 @@
           "label": "Entrada del Host",
           "description": "Entrada de host conocido SSH para verificación de seguridad"
         },
+        "ssh_key_configured": {
+          "label": "Clave SSH ya configurada",
+          "description": "Marque esto si la clave pública SSH ya está instalada en la máquina puente"
+        },
         "ssh_password": {
-          "label": "Contraseña SSH",
-          "description": "Contraseña SSH para autenticación (opcional, se prefieren claves SSH)"
+          "label": "Contraseña SSH (Temporal)",
+          "description": "Contraseña temporal solo para la configuración inicial de la clave SSH. Deje vacío si la clave SSH ya está configurada. Esta contraseña se usa una vez para copiar la clave pública y debe eliminarse después por seguridad."
         }
       },
       "REGION": {
