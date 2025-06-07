@@ -1,0 +1,213 @@
+{
+  "categories": {
+    "System Functions": {
+      "name": "System Functions",
+      "description": "Core system setup and maintenance functions"
+    },
+    "Repository Functions": {
+      "name": "Repository Functions",
+      "description": "Repository management and operations"
+    },
+    "Backup Functions": {
+      "name": "Backup Functions",
+      "description": "Backup and restore operations"
+    },
+    "Network Functions": {
+      "name": "Network Functions",
+      "description": "Network and socket mapping operations"
+    }
+  },
+  "functions": {
+    "os_setup": {
+      "name": "os_setup",
+      "description": "Setup operating system with required tools and configurations",
+      "params": {
+        "datastore_size": {
+          "help": "Datastore size (e.g., 95%, 100G)"
+        },
+        "source": {
+          "help": "Package source"
+        }
+      }
+    },
+    "hello": {
+      "name": "hello",
+      "description": "Simple test function that prints hello from hostname"
+    },
+    "uninstall": {
+      "name": "uninstall",
+      "description": "Cleanup and uninstall system components"
+    },
+    "repo_new": {
+      "name": "repo_new",
+      "description": "Create a new repository",
+      "params": {
+        "repo": {
+          "help": "Repository name (no numbers)"
+        },
+        "size": {
+          "help": "Repository size (e.g., 10G)"
+        }
+      }
+    },
+    "repo_mount": {
+      "name": "repo_mount",
+      "description": "Mount repository filesystems",
+      "params": {
+        "repo": {
+          "help": "Repository name(s), comma-separated"
+        },
+        "from": {
+          "help": "Remote machine to mount from"
+        }
+      }
+    },
+    "repo_unmount": {
+      "name": "repo_unmount",
+      "description": "Unmount repository filesystems",
+      "params": {
+        "repo": {
+          "help": "Repository name(s), comma-separated"
+        },
+        "from": {
+          "help": "Remote machine to unmount from"
+        }
+      }
+    },
+    "repo_up": {
+      "name": "repo_up",
+      "description": "Start repository services using Rediaccfile",
+      "params": {
+        "repo": {
+          "help": "Repository name(s), comma-separated"
+        },
+        "option": {
+          "help": "Options (e.g., prep-only)"
+        }
+      }
+    },
+    "repo_down": {
+      "name": "repo_down",
+      "description": "Stop repository services",
+      "params": {
+        "repo": {
+          "help": "Repository name(s), comma-separated"
+        }
+      }
+    },
+    "repo_resize": {
+      "name": "repo_resize",
+      "description": "Resize repository storage",
+      "params": {
+        "repo": {
+          "help": "Repository name"
+        },
+        "size": {
+          "help": "New size (e.g., 20G)"
+        }
+      }
+    },
+    "repo_rm": {
+      "name": "repo_rm",
+      "description": "Delete repository",
+      "params": {
+        "repo": {
+          "help": "Repository name"
+        }
+      }
+    },
+    "repo_plugin": {
+      "name": "repo_plugin",
+      "description": "Activate repository plugins",
+      "params": {
+        "repo": {
+          "help": "Repository name(s), comma-separated"
+        },
+        "plugin": {
+          "help": "Plugin name(s), comma-separated"
+        }
+      }
+    },
+    "repo_plugout": {
+      "name": "repo_plugout",
+      "description": "Deactivate repository plugins",
+      "params": {
+        "repo": {
+          "help": "Repository name(s), comma-separated"
+        },
+        "plugin": {
+          "help": "Plugin name(s), comma-separated"
+        }
+      }
+    },
+    "repo_ownership": {
+      "name": "repo_ownership",
+      "description": "Change repository ownership",
+      "params": {
+        "repo": {
+          "help": "Repository name"
+        },
+        "from": {
+          "help": "Current owner"
+        },
+        "to": {
+          "help": "New owner (default: universal user)"
+        }
+      }
+    },
+    "repo_list": {
+      "name": "repo_list",
+      "description": "List repositories",
+      "params": {
+        "kind": {
+          "help": "Type to list"
+        },
+        "format": {
+          "help": "Output format (json)"
+        }
+      }
+    },
+    "repo_push": {
+      "name": "repo_push",
+      "description": "Push repository to remote storage",
+      "params": {
+        "repo": {
+          "help": "Repository name(s), comma-separated"
+        },
+        "to": {
+          "help": "Destination machine/storage"
+        },
+        "option": {
+          "help": "Options (e.g., no-suffix, override)"
+        }
+      }
+    },
+    "repo_pull": {
+      "name": "repo_pull",
+      "description": "Pull repository from remote storage",
+      "params": {
+        "from": {
+          "help": "Source machine/storage"
+        },
+        "repo": {
+          "help": "Repository name(s), comma-separated"
+        }
+      }
+    },
+    "map_socket": {
+      "name": "map_socket",
+      "description": "Map socket from remote machine",
+      "params": {
+        "machine": {
+          "help": "Machine name"
+        },
+        "repo": {
+          "help": "Repository name"
+        },
+        "plugin": {
+          "help": "Plugin name"
+        }
+      }
+    }
+  }
+}

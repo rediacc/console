@@ -5,11 +5,13 @@ import { useQueueItems, useCreateQueueItem, QUEUE_FUNCTIONS, QueueFunction } fro
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import ResourceListView from '@/components/common/ResourceListView'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 
 const { Title, Text, Paragraph } = Typography
 const { Search } = Input
 
 const QueuePage: React.FC = () => {
+  const { t } = useTranslation('functions')
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [selectedFunction, setSelectedFunction] = useState<QueueFunction | null>(null)
   const [selectedTeam, setSelectedTeam] = useState<string>('')
@@ -357,7 +359,7 @@ const QueuePage: React.FC = () => {
               <div style={{ maxHeight: 400, overflow: 'auto' }}>
                 {Object.entries(filteredFunctions).map(([category, funcs]) => (
                   <div key={category} style={{ marginBottom: 16 }}>
-                    <Title level={5} style={{ marginBottom: 8 }}>{category}</Title>
+                    <Title level={5} style={{ marginBottom: 8 }}>{t(`categories.${category}.name`)}</Title>
                     {funcs.map(func => (
                       <div
                         key={func.name}
@@ -373,7 +375,7 @@ const QueuePage: React.FC = () => {
                       >
                         <Text strong>{func.name}</Text>
                         <br />
-                        <Text type="secondary" style={{ fontSize: 12 }}>{func.description}</Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>{t(`functions.${func.name}.description`)}</Text>
                       </div>
                     ))}
                   </div>
@@ -386,7 +388,7 @@ const QueuePage: React.FC = () => {
             {selectedFunction ? (
               <Space direction="vertical" size={16} style={{ width: '100%' }}>
                 <Card title={`Configure: ${selectedFunction.name}`} size="small">
-                  <Paragraph>{selectedFunction.description}</Paragraph>
+                  <Paragraph>{t(`functions.${selectedFunction.name}.description`)}</Paragraph>
                   
                   <Form layout="vertical">
                     {/* Function Parameters */}
@@ -395,7 +397,7 @@ const QueuePage: React.FC = () => {
                         key={paramName}
                         label={paramName}
                         required={paramInfo.required}
-                        help={paramInfo.help}
+                        help={t(`functions.${selectedFunction.name}.params.${paramName}.help`)}
                       >
                         <Input
                           value={functionParams[paramName] || ''}
@@ -403,7 +405,7 @@ const QueuePage: React.FC = () => {
                             ...functionParams,
                             [paramName]: e.target.value
                           })}
-                          placeholder={paramInfo.help}
+                          placeholder={t(`functions.${selectedFunction.name}.params.${paramName}.help`)}
                         />
                       </Form.Item>
                     ))}

@@ -76,7 +76,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   onCreateModalChange,
   enabled = true,
 }) => {
-  const { t } = useTranslation(['machines', 'common']);
+  const { t } = useTranslation(['machines', 'common', 'functions']);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
   const isExpertMode = uiMode === 'expert';
   
@@ -1122,7 +1122,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                     >
                       <Text strong>{func.name}</Text>
                       <br />
-                      <Text type="secondary" style={{ fontSize: 12 }}>{func.description}</Text>
+                      <Text type="secondary" style={{ fontSize: 12 }}>{t(`functions:functions.${func.name}.description`)}</Text>
                     </div>
                   ))}
                 </div>
@@ -1133,7 +1133,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               {selectedFunction ? (
                 <Space direction="vertical" size={16} style={{ width: '100%' }}>
                   <Card title={`${t('machines:configure')}: ${selectedFunction.name}`} size="small">
-                    <Paragraph>{selectedFunction.description}</Paragraph>
+                    <Paragraph>{t(`functions:functions.${selectedFunction.name}.description`)}</Paragraph>
                     
                     <Form layout="vertical">
                       {/* Function Parameters */}

@@ -1,0 +1,213 @@
+{
+  "categories": {
+    "System Functions": {
+      "name": "Funciones del Sistema",
+      "description": "Funciones principales de configuración y mantenimiento del sistema"
+    },
+    "Repository Functions": {
+      "name": "Funciones de Repositorio",
+      "description": "Gestión y operaciones de repositorios"
+    },
+    "Backup Functions": {
+      "name": "Funciones de Respaldo",
+      "description": "Operaciones de respaldo y restauración"
+    },
+    "Network Functions": {
+      "name": "Funciones de Red",
+      "description": "Operaciones de red y mapeo de sockets"
+    }
+  },
+  "functions": { 
+    "os_setup": {
+      "name": "os_setup",
+      "description": "Configurar el sistema operativo con las herramientas y configuraciones requeridas",
+      "params": {
+        "datastore_size": {
+          "help": "Tamaño del almacén de datos (ej., 95%, 100G)"
+        },
+        "source": {
+          "help": "Origen del paquete"
+        }
+      }
+    },
+    "hello": {
+      "name": "hello",
+      "description": "Función de prueba simple que imprime hola desde el nombre del host"
+    },
+    "uninstall": {
+      "name": "uninstall",
+      "description": "Limpiar y desinstalar componentes del sistema"
+    },
+    "repo_new": {
+      "name": "repo_new",
+      "description": "Crear un nuevo repositorio",
+      "params": {
+        "repo": {
+          "help": "Nombre del repositorio (sin números)"
+        },
+        "size": {
+          "help": "Tamaño del repositorio (ej., 10G)"
+        }
+      }
+    },
+    "repo_mount": {
+      "name": "repo_mount",
+      "description": "Montar sistemas de archivos del repositorio",
+      "params": {
+        "repo": {
+          "help": "Nombre(s) del repositorio, separados por comas"
+        },
+        "from": {
+          "help": "Máquina remota desde donde montar"
+        }
+      }
+    },
+    "repo_unmount": {
+      "name": "repo_unmount",
+      "description": "Desmontar sistemas de archivos del repositorio",
+      "params": {
+        "repo": {
+          "help": "Nombre(s) del repositorio, separados por comas"
+        },
+        "from": {
+          "help": "Máquina remota desde donde desmontar"
+        }
+      }
+    },
+    "repo_up": {
+      "name": "repo_up",
+      "description": "Iniciar servicios del repositorio usando Rediaccfile",
+      "params": {
+        "repo": {
+          "help": "Nombre(s) del repositorio, separados por comas"
+        },
+        "option": {
+          "help": "Opciones (ej., prep-only)"
+        }
+      }
+    },
+    "repo_down": {
+      "name": "repo_down",
+      "description": "Detener servicios del repositorio",
+      "params": {
+        "repo": {
+          "help": "Nombre(s) del repositorio, separados por comas"
+        }
+      }
+    },
+    "repo_resize": {
+      "name": "repo_resize",
+      "description": "Redimensionar almacenamiento del repositorio",
+      "params": {
+        "repo": {
+          "help": "Nombre del repositorio"
+        },
+        "size": {
+          "help": "Nuevo tamaño (ej., 20G)"
+        }
+      }
+    },
+    "repo_rm": {
+      "name": "repo_rm",
+      "description": "Eliminar repositorio",
+      "params": {
+        "repo": {
+          "help": "Nombre del repositorio"
+        }
+      }
+    },
+    "repo_plugin": {
+      "name": "repo_plugin",
+      "description": "Activar plugins del repositorio",
+      "params": {
+        "repo": {
+          "help": "Nombre(s) del repositorio, separados por comas"
+        },
+        "plugin": {
+          "help": "Nombre(s) del plugin, separados por comas"
+        }
+      }
+    },
+    "repo_plugout": {
+      "name": "repo_plugout",
+      "description": "Desactivar plugins del repositorio",
+      "params": {
+        "repo": {
+          "help": "Nombre(s) del repositorio, separados por comas"
+        },
+        "plugin": {
+          "help": "Nombre(s) del plugin, separados por comas"
+        }
+      }
+    },
+    "repo_ownership": {
+      "name": "repo_ownership",
+      "description": "Cambiar propiedad del repositorio",
+      "params": {
+        "repo": {
+          "help": "Nombre del repositorio"
+        },
+        "from": {
+          "help": "Propietario actual"
+        },
+        "to": {
+          "help": "Nuevo propietario (por defecto: usuario universal)"
+        }
+      }
+    },
+    "repo_list": {
+      "name": "repo_list",
+      "description": "Listar repositorios",
+      "params": {
+        "kind": {
+          "help": "Tipo a listar"
+        },
+        "format": {
+          "help": "Formato de salida (json)"
+        }
+      }
+    },
+    "repo_push": {
+      "name": "repo_push",
+      "description": "Enviar repositorio a almacenamiento remoto",
+      "params": {
+        "repo": {
+          "help": "Nombre(s) del repositorio, separados por comas"
+        },
+        "to": {
+          "help": "Máquina/almacenamiento de destino"
+        },
+        "option": {
+          "help": "Opciones (ej., no-suffix, override)"
+        }
+      }
+    },
+    "repo_pull": {
+      "name": "repo_pull",
+      "description": "Obtener repositorio desde almacenamiento remoto",
+      "params": {
+        "from": {
+          "help": "Máquina/almacenamiento de origen"
+        },
+        "repo": {
+          "help": "Nombre(s) del repositorio, separados por comas"
+        }
+      }
+    },
+    "map_socket": {
+      "name": "map_socket",
+      "description": "Mapear socket desde máquina remota",
+      "params": {
+        "machine": {
+          "help": "Nombre de la máquina"
+        },
+        "repo": {
+          "help": "Nombre del repositorio"
+        },
+        "plugin": {
+          "help": "Nombre del plugin"
+        }
+      }
+    }
+  }
+}
