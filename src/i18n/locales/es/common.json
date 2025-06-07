@@ -1,87 +1,34 @@
 {
-  "app": {
-    "name": "Consola Rediacc",
-    "tagline": "Respaldo y Recuperación Empresarial"
-  },
   "navigation": {
     "dashboard": "Panel de Control",
-    "resources": "Recursos",
-    "users": "Usuarios",
-    "system": "Sistema",
-    "queue": "Cola",
-    "settings": "Configuración",
     "architecture": "Arquitectura",
+    "resources": "Recursos",
+    "queue": "Cola",
+    "system": "Sistema",
     "logout": "Cerrar Sesión"
   },
   "actions": {
-    "create": "Crear",
     "edit": "Editar",
     "delete": "Eliminar",
-    "save": "Guardar",
-    "cancel": "Cancelar",
-    "submit": "Enviar",
     "search": "Buscar",
-    "filter": "Filtrar",
-    "refresh": "Actualizar",
-    "export": "Exportar",
-    "import": "Importar",
-    "view": "Ver",
-    "close": "Cerrar",
-    "back": "Atrás",
-    "next": "Siguiente",
-    "configure": "Configurar",
-    "activate": "Activar",
-    "deactivate": "Desactivar",
-    "assign": "Asignar",
     "reset": "Restablecer",
+    "cancel": "Cancelar",
+    "create": "Crear",
+    "save": "Guardar",
     "retry": "Reintentar",
+    "refresh": "Actualizar",
     "fullscreen": "Pantalla Completa",
     "exitFullscreen": "Salir de Pantalla Completa"
   },
-  "status": {
-    "active": "Activo",
-    "inactive": "Inactivo",
-    "pending": "Pendiente",
-    "running": "En Ejecución",
-    "completed": "Completado",
-    "failed": "Fallido",
-    "cancelled": "Cancelado",
-    "online": "En Línea",
-    "offline": "Fuera de Línea",
-    "healthy": "Saludable",
-    "warning": "Advertencia",
-    "error": "Error"
-  },
   "messages": {
-    "loading": "Cargando...",
-    "saving": "Guardando...",
     "success": "Éxito",
-    "error": "Error",
-    "warning": "Advertencia",
-    "info": "Información",
-    "confirmDelete": "¿Está seguro de que desea eliminar este elemento?",
-    "deleteSuccess": "Elemento eliminado exitosamente",
-    "createSuccess": "Elemento creado exitosamente",
-    "updateSuccess": "Elemento actualizado exitosamente",
-    "noData": "No hay datos disponibles",
     "required": "Este campo es obligatorio",
     "invalidEmail": "Dirección de correo electrónico inválida",
-    "passwordMismatch": "Las contraseñas no coinciden"
+    "loading": "Cargando...",
+    "error": "Error"
   },
   "table": {
-    "id": "ID",
-    "name": "Nombre",
-    "description": "Descripción",
-    "status": "Estado",
-    "createdAt": "Creado En",
-    "updatedAt": "Actualizado En",
     "actions": "Acciones",
-    "total": "Total",
-    "page": "Página",
-    "of": "de",
-    "items": "elementos",
-    "showing": "Mostrando",
-    "to": "a",
     "showingRecords": "Mostrando registros {{start}}-{{end}} de {{total}}"
   },
   "language": {
@@ -100,6 +47,7 @@
   },
   "general": {
     "versionFormat": "v{{version}}",
+    "loading": "Cargando...",
     "showingRecords": "Mostrando registros {{start}}-{{end}} de {{total}}",
     "defaultsApplied": "Valores predeterminados aplicados"
   },
@@ -283,6 +231,14 @@
         "teamDescription": {
           "label": "Descripción del Equipo",
           "description": "Descripción del propósito y responsabilidades del equipo"
+        },
+        "SSH_PRIVATE_KEY": {
+          "label": "Clave Privada SSH",
+          "description": "Clave privada SSH codificada en Base64 para operaciones del equipo"
+        },
+        "SSH_PUBLIC_KEY": {
+          "label": "Clave Pública SSH",
+          "description": "Clave pública SSH para operaciones del equipo"
         }
       },
       "USER": {
@@ -324,5 +280,26 @@
         }
       }
     }
+  },
+  "fieldGenerator": {
+    "title": {
+      "ssh_keys": "Generar Par de Claves SSH",
+      "repository_credential": "Generar Credencial de Repositorio"
+    },
+    "tooltip": "Generar valor",
+    "generate": "Generar",
+    "regenerate": "Regenerar",
+    "apply": "Aplicar",
+    "cancel": "Cancelar",
+    "copy": "Copiar",
+    "copied": "¡Copiado!",
+    "keyType": "Tipo de Clave",
+    "keySize": "Tamaño de Clave",
+    "moreSecure": "más seguro",
+    "comingSoon": "próximamente",
+    "generationSuccess": "Generado exitosamente",
+    "generationError": "Error al generar. Por favor intente de nuevo.",
+    "applied": "Valores aplicados exitosamente",
+    "copyError": "Error al copiar al portapapeles"
   }
 }

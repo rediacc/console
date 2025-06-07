@@ -1,60 +1,39 @@
 {
-  "title": "Organization",
-  "tabs": {
-    "teamsResources": "Teams & Resources",
-    "regionsInfrastructure": "Regions & Infrastructure"
-  },
   "teams": {
     "title": "Teams",
-    "description": "Manage teams and their members",
+    "searchTeams": "Search teams...",
+    "teamName": "Team Name",
     "createTeam": "Create Team",
     "editTeam": "Edit Team",
     "deleteTeam": "Delete Team",
-    "teamName": "Team Name",
-    "teamDescription": "Description",
-    "members": "Members",
-    "machines": "Machines",
-    "repositories": "Repositories",
-    "storage": "Storage",
-    "schedules": "Schedules",
-    "addMember": "Add Member",
-    "removeMember": "Remove Member",
-    "noTeams": "No teams found",
-    "searchTeams": "Search teams...",
-    "selectTeamPrompt": "Select a team to view its resources",
-    "teamResources": "Team Resources",
-    "resourcesInTeam": "Resources in {{team}}",
-    "resourcesInTeams": "Resources in {{count}} Teams",
-    "selectTeamToView": "Select a team above to view and manage its resources",
     "confirmDelete": "Are you sure you want to delete team \"{{teamName}}\"? This will remove all resources in the team.",
+    "validation": {
+      "teamNameRequired": "Please enter team name",
+      "teamNamePattern": "Team name can only contain letters, numbers, hyphens, and underscores"
+    },
     "placeholders": {
       "enterTeamName": "Enter team name",
       "selectTeam": "Select team"
     },
-    "validation": {
-      "teamNameRequired": "Please enter team name",
-      "teamNamePattern": "Team name can only contain letters, numbers, hyphens, and underscores"
-    }
+    "resourcesInTeams": "Resources in {{count}} Teams",
+    "resourcesInTeam": "Resources in {{team}}",
+    "teamResources": "Team Resources",
+    "selectTeamToView": "Select a team above to view and manage its resources",
+    "selectTeamPrompt": "Select a team to view its resources",
+    "machines": "Machines"
   },
   "regions": {
     "title": "Regions",
-    "description": "Manage regions and bridges",
+    "selectRegionPrompt": "Select a region to view its bridges",
+    "searchRegions": "Search regions...",
     "createRegion": "Create Region",
     "editRegion": "Edit Region",
     "deleteRegion": "Delete Region",
+    "confirmDelete": "Are you sure you want to delete region \"{{regionName}}\"? This will remove all bridges in the region.",
     "regionName": "Region Name",
-    "regionCode": "Region Code",
-    "status": "Status",
-    "active": "Active",
-    "inactive": "Inactive",
     "bridges": "Bridges",
-    "manageBridges": "Manage Bridges",
-    "noRegions": "No regions found",
-    "searchRegions": "Search regions...",
-    "selectRegionPrompt": "Select a region to view its bridges",
     "bridgesInRegion": "Bridges in {{region}}",
     "selectRegionToView": "Select a region above to view and manage its bridges",
-    "confirmDelete": "Are you sure you want to delete region \"{{regionName}}\"? This will remove all bridges in the region.",
     "placeholders": {
       "enterRegionName": "Enter region name",
       "selectRegion": "Select region"
@@ -65,101 +44,71 @@
     "createBridge": "Create Bridge",
     "editBridge": "Edit Bridge",
     "deleteBridge": "Delete Bridge",
-    "bridgeName": "Bridge Name",
-    "bridge": "Bridge",
-    "bridgeUrl": "Bridge URL",
-    "bridgePort": "Port",
-    "bridgeStatus": "Status",
-    "connected": "Connected",
-    "disconnected": "Disconnected",
-    "testConnection": "Test Connection",
-    "noBridges": "No bridges found in this region",
-    "totalBridges": "Total {{total}} bridges",
     "confirmDelete": "Are you sure you want to delete bridge \"{{bridgeName}}\"? This will affect all machines using this bridge.",
+    "bridgeName": "Bridge Name",
+    "totalBridges": "Total {{total}} bridges",
+    "noBridges": "No bridges found in this region",
     "placeholders": {
       "enterBridgeName": "Enter bridge name",
       "selectBridge": "Select bridge",
       "selectRegionFirst": "Select a region first"
-    }
+    },
+    "bridge": "Bridge"
   },
   "machines": {
-    "title": "Machines",
-    "createMachine": "Create Machine",
-    "editMachine": "Edit Machine",
-    "deleteMachine": "Delete Machine",
     "machineName": "Machine Name",
-    "machineType": "Type",
-    "ipAddress": "IP Address",
-    "osType": "OS Type",
-    "lastSeen": "Last Seen",
-    "queueItems": "Queue Items",
-    "noMachines": "No machines found in this team",
-    "totalMachines": "Total {{total}} machines",
-    "confirmDelete": "Are you sure you want to delete machine \"{{machineName}}\"?",
+    "createMachine": "Create Machine",
     "placeholders": {
       "enterMachineName": "Enter machine name"
     }
   },
   "repositories": {
-    "title": "Repositories",
+    "repositoryName": "Repository Name",
     "createRepository": "Create Repository",
     "editRepository": "Edit Repository",
     "deleteRepository": "Delete Repository",
-    "repositoryName": "Repository Name",
-    "noRepositories": "No repositories found in this team",
-    "totalRepositories": "Total {{total}} repositories",
     "confirmDelete": "Are you sure you want to delete repository \"{{repositoryName}}\"?",
+    "noRepositories": "No repositories found in this team",
     "placeholders": {
       "enterRepositoryName": "Enter repository name"
     }
   },
   "storage": {
-    "title": "Storage",
+    "storageName": "Storage Name",
     "createStorage": "Create Storage",
     "editStorage": "Edit Storage",
     "deleteStorage": "Delete Storage",
-    "storageName": "Storage Name",
-    "noStorage": "No storage found in this team",
-    "totalStorage": "Total {{total}} storage units",
     "confirmDelete": "Are you sure you want to delete storage \"{{storageName}}\"?",
+    "noStorage": "No storage found in this team",
     "placeholders": {
       "enterStorageName": "Enter storage name"
     }
   },
-  "general": {
-    "actions": "Actions",
-    "search": "Search...",
-    "filter": "Filter",
-    "export": "Export",
-    "import": "Import",
-    "refresh": "Refresh",
-    "edit": "Edit",
-    "delete": "Delete",
-    "vault": "Vault",
-    "vaultVersion": "Vault Version",
-    "versionFormat": "v{{version}}",
-    "create": "Create",
-    "cancel": "Cancel",
-    "save": "Save",
-    "yes": "Yes",
-    "no": "No",
-    "region": "Region",
-    "team": "Team",
-    "configureVault": "Configure Vault - {{name}}",
-    "defaultsApplied": "Default values applied automatically"
-  },
   "schedules": {
-    "title": "Schedules",
+    "scheduleName": "Schedule Name",
     "createSchedule": "Create Schedule",
     "editSchedule": "Edit Schedule",
     "deleteSchedule": "Delete Schedule",
-    "scheduleName": "Schedule Name",
-    "noSchedules": "No schedules found in this team",
-    "totalSchedules": "Total {{total}} schedules",
     "confirmDelete": "Are you sure you want to delete schedule \"{{scheduleName}}\"?",
+    "noSchedules": "No schedules found in this team",
     "placeholders": {
       "enterScheduleName": "Enter schedule name"
     }
+  },
+  "general": {
+    "team": "Team",
+    "region": "Region",
+    "actions": "Actions",
+    "vault": "Vault",
+    "edit": "Edit",
+    "delete": "Delete",
+    "yes": "Yes",
+    "no": "No",
+    "cancel": "Cancel",
+    "create": "Create",
+    "save": "Save",
+    "configureVault": "Configure Vault - {{name}}",
+    "vaultVersion": "Vault Version"
   },
   "resourceTabs": {
     "machines": "Machines",
