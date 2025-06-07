@@ -1,0 +1,1796 @@
+{
+  "providers": {
+    "s3": {
+      "name": "Amazon S3 Compatible",
+      "description": "S3-compatible object storage (AWS, Linode, DigitalOcean, Vultr, etc.)",
+      "required": ["provider", "access_key_id", "secret_access_key"],
+      "optional": ["endpoint", "region", "bucket", "folder", "env_auth", "location_constraint", "acl"],
+      "fields": {
+        "provider": {
+          "type": "string",
+          "enum": ["AWS", "Linode", "DigitalOcean", "Vultr", "Ceph", "Minio", "Other"],
+          "example": "AWS",
+          "description": "S3 storage provider"
+        },
+        "access_key_id": {
+          "type": "string",
+          "sensitive": true,
+          "example": "AKIAIOSFODNN7EXAMPLE",
+          "description": "Access Key ID for S3 API"
+        },
+        "secret_access_key": {
+          "type": "string",
+          "sensitive": true,
+          "example": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+          "description": "Secret Access Key for S3 API"
+        },
+        "endpoint": {
+          "type": "string",
+          "example": "s3.amazonaws.com",
+          "description": "S3 API endpoint URL"
+        },
+        "region": {
+          "type": "string",
+          "example": "us-east-1",
+          "description": "AWS region"
+        },
+        "bucket": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+          "example": "my-backup-bucket",
+          "description": "S3 bucket name"
+        },
+        "folder": {
+          "type": "string",
+          "example": "rediacc",
+          "description": "Folder within bucket"
+        },
+        "env_auth": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use AWS environment variables for auth"
+        },
+        "location_constraint": {
+          "type": "string",
+          "example": "EU",
+          "description": "Location constraint for bucket creation"
+        },
+        "acl": {
+          "type": "string",
+          "enum": ["private", "public-read", "public-read-write", "authenticated-read", "bucket-owner-read", "bucket-owner-full-control"],
+          "default": "private",
+          "description": "Access Control List for objects"
+        }
+      }
+    },
+    "b2": {
+      "name": "Backblaze B2",
+      "description": "Backblaze B2 Cloud Storage",
+      "required": ["account", "key"],
+      "optional": ["hard_delete", "endpoint"],
+      "fields": {
+        "account": {
+          "type": "string",
+          "sensitive": true,
+          "example": "000000000000000000000000",
+          "description": "Account ID or Application Key ID"
+        },
+        "key": {
+          "type": "string",
+          "sensitive": true,
+          "example": "K000000000000000000000000000000000000000000",
+          "description": "Application Key"
+        },
+        "hard_delete": {
+          "type": "boolean",
+          "default": false,
+          "description": "Permanently delete files instead of hiding"
+        },
+        "endpoint": {
+          "type": "string",
+          "example": "s3.us-west-000.backblazeb2.com",
+          "description": "Custom endpoint for B2 API"
+        }
+      }
+    },
+    "drive": {
+      "name": "Google Drive",
+      "description": "Google Drive cloud storage",
+      "required": ["token"],
+      "optional": ["client_id", "client_secret", "scope", "root_folder_id", "service_account_file", "team_drive", "impersonate"],
+      "fields": {
+        "client_id": {
+          "type": "string",
+          "example": "123456789012-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com",
+          "description": "OAuth Client ID"
+        },
+        "client_secret": {
+          "type": "string",
+          "sensitive": true,
+          "example": "GOCSPX-000000000000000000000",
+          "description": "OAuth Client Secret"
+        },
+        "token": {
+          "type": "object",
+          "sensitive": true,
+          "description": "OAuth2 Token",
+          "properties": {
+            "access_token": {
+              "type": "string",
+              "description": "OAuth2 access token"
+            },
+            "token_type": {
+              "type": "string",
+              "example": "Bearer"
+            },
+            "refresh_token": {
+              "type": "string",
+              "description": "OAuth2 refresh token"
+            },
+            "expiry": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Token expiry time"
+            }
+          }
+        },
+        "scope": {
+          "type": "string",
+          "enum": ["drive", "drive.file", "drive.readonly", "drive.metadata.readonly", "drive.appdata"],
+          "default": "drive",
+          "description": "Access scope for Google Drive"
+        },
+        "root_folder_id": {
+          "type": "string",
+          "example": "0AOa0a0a0a0a0Uk9PVA",
+          "description": "ID of root folder"
+        },
+        "service_account_file": {
+          "type": "string",
+          "format": "base64",
+          "sensitive": true,
+          "description": "Service account JSON file (base64 encoded)"
+        },
+        "team_drive": {
+          "type": "string",
+          "description": "Team Drive ID"
+        },
+        "impersonate": {
+          "type": "string",
+          "example": "user@domain.com",
+          "description": "Impersonate this user when using service account"
+        }
+      }
+    },
+    "onedrive": {
+      "name": "Microsoft OneDrive",
+      "description": "Microsoft OneDrive cloud storage",
+      "required": ["token"],
+      "optional": ["drive_id", "drive_type", "folder"],
+      "fields": {
+        "token": {
+          "type": "object",
+          "sensitive": true,
+          "description": "OAuth2 Token",
+          "properties": {
+            "access_token": {
+              "type": "string",
+              "description": "OAuth2 access token"
+            },
+            "token_type": {
+              "type": "string",
+              "example": "Bearer"
+            },
+            "refresh_token": {
+              "type": "string",
+              "description": "OAuth2 refresh token"
+            },
+            "expiry": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Token expiry time"
+            }
+          }
+        },
+        "drive_id": {
+          "type": "string",
+          "example": "b!Ei1XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+          "description": "Drive ID"
+        },
+        "drive_type": {
+          "type": "string",
+          "enum": ["personal", "business", "documentLibrary"],
+          "default": "personal",
+          "description": "Type of OneDrive"
+        },
+        "folder": {
+          "type": "string",
+          "example": "backups",
+          "description": "Folder path within OneDrive"
+        }
+      }
+    },
+    "mega": {
+      "name": "Mega",
+      "description": "Mega cloud storage",
+      "required": ["user", "pass"],
+      "optional": ["hard_delete", "use_https"],
+      "fields": {
+        "user": {
+          "type": "string",
+          "example": "user@example.com",
+          "description": "Mega account email"
+        },
+        "pass": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Mega account password (encrypted)"
+        },
+        "hard_delete": {
+          "type": "boolean",
+          "default": false,
+          "description": "Delete files permanently"
+        },
+        "use_https": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use HTTPS for transfers"
+        }
+      }
+    },
+    "box": {
+      "name": "Box",
+      "description": "Box cloud storage",
+      "required": ["token"],
+      "optional": ["client_id", "client_secret", "root_folder_id"],
+      "fields": {
+        "client_id": {
+          "type": "string",
+          "description": "OAuth Client ID"
+        },
+        "client_secret": {
+          "type": "string",
+          "sensitive": true,
+          "description": "OAuth Client Secret"
+        },
+        "token": {
+          "type": "object",
+          "sensitive": true,
+          "description": "OAuth2 Token",
+          "properties": {
+            "access_token": {
+              "type": "string",
+              "description": "OAuth2 access token"
+            },
+            "token_type": {
+              "type": "string",
+              "example": "Bearer"
+            },
+            "refresh_token": {
+              "type": "string",
+              "description": "OAuth2 refresh token"
+            },
+            "expiry": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Token expiry time"
+            }
+          }
+        },
+        "root_folder_id": {
+          "type": "string",
+          "default": "0",
+          "description": "Root folder ID"
+        }
+      }
+    },
+    "dropbox": {
+      "name": "Dropbox",
+      "description": "Dropbox cloud storage",
+      "required": ["token"],
+      "optional": ["client_id", "client_secret"],
+      "fields": {
+        "client_id": {
+          "type": "string",
+          "description": "OAuth Client ID"
+        },
+        "client_secret": {
+          "type": "string",
+          "sensitive": true,
+          "description": "OAuth Client Secret"
+        },
+        "token": {
+          "type": "object",
+          "sensitive": true,
+          "description": "OAuth2 Token",
+          "properties": {
+            "access_token": {
+              "type": "string",
+              "description": "OAuth2 access token"
+            },
+            "token_type": {
+              "type": "string",
+              "example": "Bearer"
+            },
+            "refresh_token": {
+              "type": "string",
+              "description": "OAuth2 refresh token"
+            },
+            "expiry": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Token expiry time"
+            }
+          }
+        }
+      }
+    },
+    "azureblob": {
+      "name": "Azure Blob Storage",
+      "description": "Microsoft Azure Blob Storage",
+      "required": ["account", "key"],
+      "optional": ["sas_url", "endpoint"],
+      "fields": {
+        "account": {
+          "type": "string",
+          "example": "myaccount",
+          "description": "Storage Account Name"
+        },
+        "key": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Storage Account Key"
+        },
+        "sas_url": {
+          "type": "string",
+          "sensitive": true,
+          "description": "SAS URL for container"
+        },
+        "endpoint": {
+          "type": "string",
+          "example": "https://myaccount.blob.core.windows.net",
+          "description": "Endpoint for Azure storage"
+        }
+      }
+    },
+    "gcs": {
+      "name": "Google Cloud Storage",
+      "description": "Google Cloud Storage",
+      "required": ["service_account_file"],
+      "optional": ["project_number", "bucket_policy_only", "location", "storage_class"],
+      "fields": {
+        "service_account_file": {
+          "type": "string",
+          "format": "base64",
+          "sensitive": true,
+          "description": "Service account JSON file (base64 encoded)"
+        },
+        "project_number": {
+          "type": "string",
+          "example": "123456789012",
+          "description": "GCS project number"
+        },
+        "bucket_policy_only": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use bucket policy only for access control"
+        },
+        "location": {
+          "type": "string",
+          "example": "US",
+          "description": "Default location for buckets"
+        },
+        "storage_class": {
+          "type": "string",
+          "enum": ["STANDARD", "NEARLINE", "COLDLINE", "ARCHIVE"],
+          "default": "STANDARD",
+          "description": "Default storage class"
+        }
+      }
+    },
+    "swift": {
+      "name": "OpenStack Swift",
+      "description": "OpenStack Swift Object Storage",
+      "required": ["user", "key", "auth"],
+      "optional": ["tenant", "tenant_id", "domain", "region", "storage_url", "auth_version"],
+      "fields": {
+        "user": {
+          "type": "string",
+          "description": "Username"
+        },
+        "key": {
+          "type": "string",
+          "sensitive": true,
+          "description": "API key or password"
+        },
+        "auth": {
+          "type": "string",
+          "example": "https://auth.cloud.com/v3",
+          "description": "Authentication URL"
+        },
+        "tenant": {
+          "type": "string",
+          "description": "Tenant name"
+        },
+        "tenant_id": {
+          "type": "string",
+          "description": "Tenant ID"
+        },
+        "domain": {
+          "type": "string",
+          "default": "Default",
+          "description": "User domain"
+        },
+        "region": {
+          "type": "string",
+          "description": "Region"
+        },
+        "storage_url": {
+          "type": "string",
+          "description": "Storage URL"
+        },
+        "auth_version": {
+          "type": "number",
+          "enum": [0, 1, 2, 3],
+          "default": 0,
+          "description": "Authentication version"
+        }
+      }
+    },
+    "sftp": {
+      "name": "SFTP",
+      "description": "SSH File Transfer Protocol",
+      "required": ["host", "user"],
+      "optional": ["port", "pass", "key_file", "key_file_pass", "pubkey_file", "known_hosts_file"],
+      "fields": {
+        "host": {
+          "type": "string",
+          "example": "example.com",
+          "description": "SFTP host"
+        },
+        "user": {
+          "type": "string",
+          "example": "username",
+          "description": "SFTP username"
+        },
+        "port": {
+          "type": "number",
+          "default": 22,
+          "description": "SFTP port"
+        },
+        "pass": {
+          "type": "string",
+          "sensitive": true,
+          "description": "SFTP password"
+        },
+        "key_file": {
+          "type": "string",
+          "description": "Path to private key file"
+        },
+        "key_file_pass": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Passphrase for private key"
+        },
+        "pubkey_file": {
+          "type": "string",
+          "description": "Path to public key file"
+        },
+        "known_hosts_file": {
+          "type": "string",
+          "description": "Path to known hosts file"
+        }
+      }
+    },
+    "ftp": {
+      "name": "FTP",
+      "description": "File Transfer Protocol",
+      "required": ["host", "user", "pass"],
+      "optional": ["port", "tls", "explicit_tls"],
+      "fields": {
+        "host": {
+          "type": "string",
+          "example": "ftp.example.com",
+          "description": "FTP host"
+        },
+        "user": {
+          "type": "string",
+          "example": "username",
+          "description": "FTP username"
+        },
+        "pass": {
+          "type": "string",
+          "sensitive": true,
+          "description": "FTP password"
+        },
+        "port": {
+          "type": "number",
+          "default": 21,
+          "description": "FTP port"
+        },
+        "tls": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use FTPS"
+        },
+        "explicit_tls": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use explicit FTPS"
+        }
+      }
+    },
+    "webdav": {
+      "name": "WebDAV",
+      "description": "WebDAV protocol",
+      "required": ["url", "user", "pass"],
+      "optional": ["vendor"],
+      "fields": {
+        "url": {
+          "type": "string",
+          "example": "https://webdav.example.com",
+          "description": "WebDAV URL"
+        },
+        "user": {
+          "type": "string",
+          "description": "WebDAV username"
+        },
+        "pass": {
+          "type": "string",
+          "sensitive": true,
+          "description": "WebDAV password"
+        },
+        "vendor": {
+          "type": "string",
+          "enum": ["nextcloud", "owncloud", "sharepoint", "other"],
+          "default": "other",
+          "description": "WebDAV vendor"
+        }
+      }
+    },
+    "local": {
+      "name": "Local Filesystem",
+      "description": "Local file system storage",
+      "required": ["path"],
+      "optional": ["nounc"],
+      "fields": {
+        "path": {
+          "type": "string",
+          "example": "/mnt/backup",
+          "description": "Local filesystem path"
+        },
+        "nounc": {
+          "type": "boolean",
+          "default": false,
+          "description": "Disable UNC path support on Windows"
+        }
+      }
+    },
+    "pcloud": {
+      "name": "pCloud",
+      "description": "Cloud storage service with OAuth authentication",
+      "required": ["token"],
+      "optional": ["client_id", "client_secret", "hostname", "root_folder_id"],
+      "fields": {
+        "client_id": {
+          "type": "string",
+          "description": "OAuth Client ID"
+        },
+        "client_secret": {
+          "type": "string",
+          "sensitive": true,
+          "description": "OAuth Client Secret"
+        },
+        "token": {
+          "type": "object",
+          "sensitive": true,
+          "description": "OAuth2 Token",
+          "properties": {
+            "access_token": {
+              "type": "string",
+              "description": "OAuth2 access token"
+            },
+            "token_type": {
+              "type": "string",
+              "example": "Bearer"
+            },
+            "refresh_token": {
+              "type": "string",
+              "description": "OAuth2 refresh token"
+            },
+            "expiry": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Token expiry time"
+            }
+          }
+        },
+        "hostname": {
+          "type": "string",
+          "default": "api.pcloud.com",
+          "description": "Connection hostname"
+        },
+        "root_folder_id": {
+          "type": "string",
+          "description": "Starting folder ID"
+        }
+      }
+    },
+    "pikpak": {
+      "name": "PikPak",
+      "description": "A private cloud drive",
+      "required": ["user", "pass"],
+      "optional": ["device_id", "user_agent", "root_folder_id", "use_trash"],
+      "fields": {
+        "user": {
+          "type": "string",
+          "description": "Username"
+        },
+        "pass": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Password"
+        },
+        "device_id": {
+          "type": "string",
+          "description": "Device ID"
+        },
+        "user_agent": {
+          "type": "string",
+          "description": "User Agent"
+        },
+        "root_folder_id": {
+          "type": "string",
+          "description": "Root Folder ID"
+        },
+        "use_trash": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use Trash"
+        }
+      }
+    },
+    "premiumizeme": {
+      "name": "Premiumize.me",
+      "description": "Cloud storage with OAuth authentication",
+      "required": ["api_key"],
+      "optional": ["client_id", "client_secret"],
+      "fields": {
+        "api_key": {
+          "type": "string",
+          "sensitive": true,
+          "description": "API Key"
+        },
+        "client_id": {
+          "type": "string",
+          "description": "OAuth Client ID"
+        },
+        "client_secret": {
+          "type": "string",
+          "sensitive": true,
+          "description": "OAuth Client Secret"
+        }
+      }
+    },
+    "putio": {
+      "name": "Put.io",
+      "description": "Cloud storage with deep path support",
+      "required": ["token"],
+      "optional": ["client_id", "client_secret"],
+      "fields": {
+        "client_id": {
+          "type": "string",
+          "description": "OAuth Client ID"
+        },
+        "client_secret": {
+          "type": "string",
+          "sensitive": true,
+          "description": "OAuth Client Secret"
+        },
+        "token": {
+          "type": "object",
+          "sensitive": true,
+          "description": "OAuth2 Token",
+          "properties": {
+            "access_token": {
+              "type": "string",
+              "description": "OAuth2 access token"
+            },
+            "token_type": {
+              "type": "string",
+              "example": "Bearer"
+            },
+            "refresh_token": {
+              "type": "string",
+              "description": "OAuth2 refresh token"
+            },
+            "expiry": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Token expiry time"
+            }
+          }
+        }
+      }
+    },
+    "protondrive": {
+      "name": "Proton Drive",
+      "description": "End-to-end encrypted Swiss vault for files",
+      "required": ["username", "password"],
+      "optional": ["2fa", "mailbox_password"],
+      "fields": {
+        "username": {
+          "type": "string",
+          "description": "Proton account username"
+        },
+        "password": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Proton account password"
+        },
+        "2fa": {
+          "type": "string",
+          "description": "Two-factor authentication code"
+        },
+        "mailbox_password": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Mailbox password for two-password accounts"
+        }
+      }
+    },
+    "qingstor": {
+      "name": "QingStor",
+      "description": "QingCloud Object Storage",
+      "required": ["access_key_id", "secret_access_key"],
+      "optional": ["zone", "endpoint", "connection_retries"],
+      "fields": {
+        "access_key_id": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Access Key ID"
+        },
+        "secret_access_key": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Secret Access Key"
+        },
+        "zone": {
+          "type": "string",
+          "default": "pek3a",
+          "description": "Zone"
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "Endpoint URL"
+        },
+        "connection_retries": {
+          "type": "number",
+          "default": 3,
+          "description": "Connection Retries"
+        }
+      }
+    },
+    "quatrix": {
+      "name": "Quatrix",
+      "description": "Secure Compliant File Sharing by Maytech",
+      "required": ["api_key", "host"],
+      "optional": ["hard_delete", "skip_project_folders"],
+      "fields": {
+        "api_key": {
+          "type": "string",
+          "sensitive": true,
+          "description": "API Key"
+        },
+        "host": {
+          "type": "string",
+          "example": "myaccount.quatrix.it",
+          "description": "Host Name"
+        },
+        "hard_delete": {
+          "type": "boolean",
+          "default": false,
+          "description": "Permanently delete files"
+        },
+        "skip_project_folders": {
+          "type": "boolean",
+          "default": false,
+          "description": "Skip Project Folders"
+        }
+      }
+    },
+    "seafile": {
+      "name": "Seafile",
+      "description": "Backend for Seafile storage service",
+      "required": ["url", "user", "pass"],
+      "optional": ["2fa", "library", "library_key", "auth_token"],
+      "fields": {
+        "url": {
+          "type": "string",
+          "example": "https://seafile.example.com",
+          "description": "URL of Seafile host"
+        },
+        "user": {
+          "type": "string",
+          "description": "Username (usually email)"
+        },
+        "pass": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Password"
+        },
+        "2fa": {
+          "type": "boolean",
+          "default": false,
+          "description": "Two-factor authentication flag"
+        },
+        "library": {
+          "type": "string",
+          "description": "Library name"
+        },
+        "library_key": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Library password (for encrypted libraries)"
+        },
+        "auth_token": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Authentication token"
+        }
+      }
+    },
+    "smb": {
+      "name": "SMB/CIFS",
+      "description": "Communication protocol to share files over network",
+      "required": ["host", "user"],
+      "optional": ["port", "pass", "domain", "spn"],
+      "fields": {
+        "host": {
+          "type": "string",
+          "example": "server.local",
+          "description": "SMB server hostname or IP"
+        },
+        "user": {
+          "type": "string",
+          "description": "Username"
+        },
+        "port": {
+          "type": "number",
+          "default": 445,
+          "description": "SMB port"
+        },
+        "pass": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Password"
+        },
+        "domain": {
+          "type": "string",
+          "default": "WORKGROUP",
+          "description": "Domain"
+        },
+        "spn": {
+          "type": "string",
+          "description": "Service Principal Name"
+        }
+      }
+    },
+    "storj": {
+      "name": "Storj",
+      "description": "Encrypted, secure, decentralized object storage",
+      "required": ["access_grant"],
+      "optional": ["satellite_address", "api_key", "passphrase"],
+      "fields": {
+        "access_grant": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Existing Access Grant"
+        },
+        "satellite_address": {
+          "type": "string",
+          "example": "us1.storj.io:7777",
+          "description": "Satellite Address"
+        },
+        "api_key": {
+          "type": "string",
+          "sensitive": true,
+          "description": "API Key"
+        },
+        "passphrase": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Encryption Passphrase"
+        }
+      }
+    },
+    "sugarsync": {
+      "name": "SugarSync",
+      "description": "Cloud service for file synchronization and sharing",
+      "required": ["app_id", "access_key_id", "private_access_key"],
+      "optional": ["username", "password", "hard_delete"],
+      "fields": {
+        "app_id": {
+          "type": "string",
+          "description": "App ID"
+        },
+        "access_key_id": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Access Key ID"
+        },
+        "private_access_key": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Private Access Key"
+        },
+        "username": {
+          "type": "string",
+          "description": "Email address"
+        },
+        "password": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Password (only for initial setup)"
+        },
+        "hard_delete": {
+          "type": "boolean",
+          "default": false,
+          "description": "Permanently delete files"
+        }
+      }
+    },
+    "ulozto": {
+      "name": "Uloz.to",
+      "description": "Cloud storage with API access",
+      "required": ["username", "password"],
+      "optional": ["app_token", "root_folder_slug"],
+      "fields": {
+        "username": {
+          "type": "string",
+          "description": "Username"
+        },
+        "password": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Password"
+        },
+        "app_token": {
+          "type": "string",
+          "sensitive": true,
+          "description": "App Token"
+        },
+        "root_folder_slug": {
+          "type": "string",
+          "description": "Root Folder Slug"
+        }
+      }
+    },
+    "uptobox": {
+      "name": "Uptobox",
+      "description": "One-click hoster (not for long-term storage)",
+      "required": ["api_key"],
+      "optional": ["private"],
+      "fields": {
+        "api_key": {
+          "type": "string",
+          "sensitive": true,
+          "description": "API Key"
+        },
+        "private": {
+          "type": "boolean",
+          "default": false,
+          "description": "Make uploaded files private"
+        }
+      }
+    },
+    "yandex": {
+      "name": "Yandex Disk",
+      "description": "Cloud storage solution by Yandex",
+      "required": ["token"],
+      "optional": ["client_id", "client_secret", "hard_delete"],
+      "fields": {
+        "client_id": {
+          "type": "string",
+          "description": "OAuth Client ID"
+        },
+        "client_secret": {
+          "type": "string",
+          "sensitive": true,
+          "description": "OAuth Client Secret"
+        },
+        "token": {
+          "type": "object",
+          "sensitive": true,
+          "description": "OAuth2 Token",
+          "properties": {
+            "access_token": {
+              "type": "string",
+              "description": "OAuth2 access token"
+            },
+            "token_type": {
+              "type": "string",
+              "example": "Bearer"
+            },
+            "refresh_token": {
+              "type": "string",
+              "description": "OAuth2 refresh token"
+            },
+            "expiry": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Token expiry time"
+            }
+          }
+        },
+        "hard_delete": {
+          "type": "boolean",
+          "default": false,
+          "description": "Permanently delete files"
+        }
+      }
+    },
+    "zoho": {
+      "name": "Zoho WorkDrive",
+      "description": "Cloud storage solution by Zoho",
+      "required": ["token"],
+      "optional": ["client_id", "client_secret", "region"],
+      "fields": {
+        "client_id": {
+          "type": "string",
+          "description": "OAuth Client ID"
+        },
+        "client_secret": {
+          "type": "string",
+          "sensitive": true,
+          "description": "OAuth Client Secret"
+        },
+        "token": {
+          "type": "object",
+          "sensitive": true,
+          "description": "OAuth2 Token",
+          "properties": {
+            "access_token": {
+              "type": "string",
+              "description": "OAuth2 access token"
+            },
+            "token_type": {
+              "type": "string",
+              "example": "Bearer"
+            },
+            "refresh_token": {
+              "type": "string",
+              "description": "OAuth2 refresh token"
+            },
+            "expiry": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Token expiry time"
+            }
+          }
+        },
+        "region": {
+          "type": "string",
+          "enum": ["com", "eu", "in", "com.cn", "com.au"],
+          "default": "com",
+          "description": "Zoho region"
+        }
+      }
+    },
+    "hidrive": {
+      "name": "HiDrive",
+      "description": "Cloud storage by STRATO",
+      "required": ["token"],
+      "optional": ["client_id", "client_secret", "scope_access", "root_prefix"],
+      "fields": {
+        "client_id": {
+          "type": "string",
+          "description": "OAuth Client ID"
+        },
+        "client_secret": {
+          "type": "string",
+          "sensitive": true,
+          "description": "OAuth Client Secret"
+        },
+        "token": {
+          "type": "object",
+          "sensitive": true,
+          "description": "OAuth2 Token",
+          "properties": {
+            "access_token": {
+              "type": "string",
+              "description": "OAuth2 access token"
+            },
+            "token_type": {
+              "type": "string",
+              "example": "Bearer"
+            },
+            "refresh_token": {
+              "type": "string",
+              "description": "OAuth2 refresh token"
+            },
+            "expiry": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Token expiry time"
+            }
+          }
+        },
+        "scope_access": {
+          "type": "string",
+          "enum": ["r", "rw"],
+          "default": "rw",
+          "description": "Access permissions"
+        },
+        "root_prefix": {
+          "type": "string",
+          "default": "/",
+          "description": "Root folder path"
+        }
+      }
+    },
+    "mailru": {
+      "name": "Mail.ru Cloud",
+      "description": "Cloud storage by Mail.Ru Group",
+      "required": ["user", "pass"],
+      "optional": ["speedup_enable", "check_hash"],
+      "fields": {
+        "user": {
+          "type": "string",
+          "example": "user@mail.ru",
+          "description": "Email address"
+        },
+        "pass": {
+          "type": "string",
+          "sensitive": true,
+          "description": "App password (not login password)"
+        },
+        "speedup_enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable speedup"
+        },
+        "check_hash": {
+          "type": "boolean",
+          "default": true,
+          "description": "Check file hash"
+        }
+      }
+    },
+    "sia": {
+      "name": "Sia",
+      "description": "Decentralized blockchain-based cloud storage",
+      "required": [],
+      "optional": ["api_url", "api_password"],
+      "fields": {
+        "api_url": {
+          "type": "string",
+          "default": "http://127.0.0.1:9980",
+          "description": "Sia daemon API URL"
+        },
+        "api_password": {
+          "type": "string",
+          "sensitive": true,
+          "description": "API Password"
+        }
+      }
+    },
+    "fichier": {
+      "name": "1Fichier",
+      "description": "Cloud storage requiring Premium subscription",
+      "required": ["api_key"],
+      "optional": ["shared_folder", "file_password", "folder_password", "cdn"],
+      "fields": {
+        "api_key": {
+          "type": "string",
+          "sensitive": true,
+          "description": "API Key"
+        },
+        "shared_folder": {
+          "type": "string",
+          "description": "Shared Folder ID"
+        },
+        "file_password": {
+          "type": "string",
+          "sensitive": true,
+          "description": "File Password"
+        },
+        "folder_password": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Folder Password"
+        },
+        "cdn": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use CDN download links"
+        }
+      }
+    },
+    "netstorage": {
+      "name": "Akamai NetStorage",
+      "description": "Akamai's cloud storage platform",
+      "required": ["host", "account", "secret"],
+      "optional": ["protocol"],
+      "fields": {
+        "host": {
+          "type": "string",
+          "example": "nsu.akamaihd.net/123456",
+          "description": "Domain and path of NetStorage host"
+        },
+        "account": {
+          "type": "string",
+          "description": "NetStorage account name"
+        },
+        "secret": {
+          "type": "string",
+          "sensitive": true,
+          "description": "NetStorage account secret/G2O key"
+        },
+        "protocol": {
+          "type": "string",
+          "enum": ["http", "https"],
+          "default": "https",
+          "description": "Protocol to use"
+        }
+      }
+    },
+    "sharefile": {
+      "name": "Citrix ShareFile",
+      "description": "Secure file sharing and transfer service for businesses",
+      "required": ["token"],
+      "optional": ["client_id", "client_secret", "root_folder_id", "endpoint"],
+      "fields": {
+        "client_id": {
+          "type": "string",
+          "description": "OAuth Client ID"
+        },
+        "client_secret": {
+          "type": "string",
+          "sensitive": true,
+          "description": "OAuth Client Secret"
+        },
+        "token": {
+          "type": "object",
+          "sensitive": true,
+          "description": "OAuth2 Token",
+          "properties": {
+            "access_token": {
+              "type": "string",
+              "description": "OAuth2 access token"
+            },
+            "token_type": {
+              "type": "string",
+              "example": "Bearer"
+            },
+            "refresh_token": {
+              "type": "string",
+              "description": "OAuth2 refresh token"
+            },
+            "expiry": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Token expiry time"
+            }
+          }
+        },
+        "root_folder_id": {
+          "type": "string",
+          "description": "Root folder ID"
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "Endpoint for API calls"
+        }
+      }
+    },
+    "cloudinary": {
+      "name": "Cloudinary",
+      "description": "Image and video API platform for visual experiences",
+      "required": ["cloud_name", "api_key", "api_secret"],
+      "optional": ["upload_prefix", "upload_preset"],
+      "fields": {
+        "cloud_name": {
+          "type": "string",
+          "description": "Cloud name"
+        },
+        "api_key": {
+          "type": "string",
+          "sensitive": true,
+          "description": "API Key"
+        },
+        "api_secret": {
+          "type": "string",
+          "sensitive": true,
+          "description": "API Secret"
+        },
+        "upload_prefix": {
+          "type": "string",
+          "description": "Upload path prefix"
+        },
+        "upload_preset": {
+          "type": "string",
+          "description": "Upload preset"
+        }
+      }
+    },
+    "filefabric": {
+      "name": "Enterprise File Fabric",
+      "description": "Unifies File and Object Storage through a global file system",
+      "required": ["url", "permanent_token"],
+      "optional": ["root_folder_id"],
+      "fields": {
+        "url": {
+          "type": "string",
+          "example": "https://storagemadeeasy.com",
+          "description": "URL of Enterprise File Fabric"
+        },
+        "permanent_token": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Permanent Authentication Token"
+        },
+        "root_folder_id": {
+          "type": "string",
+          "description": "Root Folder ID"
+        }
+      }
+    },
+    "filescom": {
+      "name": "Files.com",
+      "description": "Cloud storage service with secure file storage and sharing",
+      "required": ["site", "user", "pass"],
+      "optional": ["api_key"],
+      "fields": {
+        "site": {
+          "type": "string",
+          "example": "mysite",
+          "description": "Site subdomain"
+        },
+        "user": {
+          "type": "string",
+          "description": "Username"
+        },
+        "pass": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Password"
+        },
+        "api_key": {
+          "type": "string",
+          "sensitive": true,
+          "description": "API Key"
+        }
+      }
+    },
+    "gofile": {
+      "name": "Gofile",
+      "description": "Content storage and distribution platform",
+      "required": ["access_token"],
+      "optional": ["root_folder_id", "account_id"],
+      "fields": {
+        "access_token": {
+          "type": "string",
+          "sensitive": true,
+          "description": "API Access token (premium account required)"
+        },
+        "root_folder_id": {
+          "type": "string",
+          "description": "Root folder ID"
+        },
+        "account_id": {
+          "type": "string",
+          "description": "Account ID"
+        }
+      }
+    },
+    "googlephotos": {
+      "name": "Google Photos",
+      "description": "Specialized backend for photo/video transfers",
+      "required": ["token"],
+      "optional": ["client_id", "client_secret", "read_only", "start_year"],
+      "fields": {
+        "client_id": {
+          "type": "string",
+          "description": "OAuth Client ID"
+        },
+        "client_secret": {
+          "type": "string",
+          "sensitive": true,
+          "description": "OAuth Client Secret"
+        },
+        "token": {
+          "type": "object",
+          "sensitive": true,
+          "description": "OAuth2 Token",
+          "properties": {
+            "access_token": {
+              "type": "string",
+              "description": "OAuth2 access token"
+            },
+            "token_type": {
+              "type": "string",
+              "example": "Bearer"
+            },
+            "refresh_token": {
+              "type": "string",
+              "description": "OAuth2 refresh token"
+            },
+            "expiry": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Token expiry time"
+            }
+          }
+        },
+        "read_only": {
+          "type": "boolean",
+          "default": false,
+          "description": "Set to make the Google Photos backend read only"
+        },
+        "start_year": {
+          "type": "number",
+          "example": 2000,
+          "description": "Year limits the photos to be downloaded"
+        }
+      }
+    },
+    "hdfs": {
+      "name": "HDFS",
+      "description": "Hadoop Distributed File System",
+      "required": ["namenode", "username"],
+      "optional": ["service_principal_name", "data_transfer_protection"],
+      "fields": {
+        "namenode": {
+          "type": "string",
+          "example": "namenode:9000",
+          "description": "Namenode hostname:port"
+        },
+        "username": {
+          "type": "string",
+          "description": "Username"
+        },
+        "service_principal_name": {
+          "type": "string",
+          "description": "Kerberos service principal name"
+        },
+        "data_transfer_protection": {
+          "type": "string",
+          "enum": ["authentication", "integrity", "privacy"],
+          "description": "Data transfer protection level"
+        }
+      }
+    },
+    "http": {
+      "name": "HTTP",
+      "description": "Read-only remote for accessing web server files",
+      "required": ["url"],
+      "optional": ["headers", "no_slash", "no_head"],
+      "fields": {
+        "url": {
+          "type": "string",
+          "example": "https://example.com/path/",
+          "description": "URL of HTTP host"
+        },
+        "headers": {
+          "type": "object",
+          "description": "Set HTTP headers for all requests"
+        },
+        "no_slash": {
+          "type": "boolean",
+          "default": false,
+          "description": "Set to not use trailing slashes"
+        },
+        "no_head": {
+          "type": "boolean",
+          "default": false,
+          "description": "Don't use HEAD requests"
+        }
+      }
+    },
+    "iclouddrive": {
+      "name": "iCloud Drive",
+      "description": "Apple's cloud storage for syncing files",
+      "required": ["apple_id", "password"],
+      "optional": ["trust_token", "cookies", "client_id"],
+      "fields": {
+        "apple_id": {
+          "type": "string",
+          "description": "Apple ID"
+        },
+        "password": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Password"
+        },
+        "trust_token": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Trust token"
+        },
+        "cookies": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Cookies (if 2FA already completed)"
+        },
+        "client_id": {
+          "type": "string",
+          "description": "Client ID"
+        }
+      }
+    },
+    "imagekit": {
+      "name": "ImageKit.io",
+      "description": "Cloud storage with real-time image/video optimizations",
+      "required": ["endpoint", "public_key", "private_key"],
+      "optional": ["only_signed", "versions", "upload_tags"],
+      "fields": {
+        "endpoint": {
+          "type": "string",
+          "example": "https://ik.imagekit.io/your_imagekit_id",
+          "description": "ImageKit.io endpoint URL"
+        },
+        "public_key": {
+          "type": "string",
+          "description": "Public Key"
+        },
+        "private_key": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Private Key"
+        },
+        "only_signed": {
+          "type": "boolean",
+          "default": false,
+          "description": "Only show files with valid signatures"
+        },
+        "versions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include old versions in directory listings"
+        },
+        "upload_tags": {
+          "type": "string",
+          "description": "Tags to add to uploaded files"
+        }
+      }
+    },
+    "internetarchive": {
+      "name": "Internet Archive",
+      "description": "Archive.org storage backend",
+      "required": [],
+      "optional": ["access_key_id", "secret_access_key", "endpoint", "wait_archive"],
+      "fields": {
+        "access_key_id": {
+          "type": "string",
+          "description": "Access Key ID"
+        },
+        "secret_access_key": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Secret Access Key"
+        },
+        "endpoint": {
+          "type": "string",
+          "default": "https://s3.us.archive.org",
+          "description": "IAS3 Endpoint"
+        },
+        "wait_archive": {
+          "type": "number",
+          "default": 0,
+          "description": "Wait time for archive to be available (seconds)"
+        }
+      }
+    },
+    "jottacloud": {
+      "name": "Jottacloud",
+      "description": "Norwegian cloud storage with datacenters in Norway",
+      "required": ["token"],
+      "optional": ["device", "mountpoint", "hard_delete", "no_versions"],
+      "fields": {
+        "token": {
+          "type": "object",
+          "sensitive": true,
+          "description": "OAuth2 Token",
+          "properties": {
+            "access_token": {
+              "type": "string",
+              "description": "OAuth2 access token"
+            },
+            "token_type": {
+              "type": "string",
+              "example": "Bearer"
+            },
+            "refresh_token": {
+              "type": "string",
+              "description": "OAuth2 refresh token"
+            },
+            "expiry": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Token expiry time"
+            }
+          }
+        },
+        "device": {
+          "type": "string",
+          "example": "Jotta",
+          "description": "Device"
+        },
+        "mountpoint": {
+          "type": "string",
+          "example": "Archive",
+          "description": "Mountpoint"
+        },
+        "hard_delete": {
+          "type": "boolean",
+          "default": false,
+          "description": "Delete files permanently"
+        },
+        "no_versions": {
+          "type": "boolean",
+          "default": false,
+          "description": "Avoid storing versions"
+        }
+      }
+    },
+    "koofr": {
+      "name": "Koofr",
+      "description": "Cloud storage supporting Koofr, Digi Storage and others",
+      "required": ["provider", "user", "password"],
+      "optional": ["endpoint", "mountid"],
+      "fields": {
+        "provider": {
+          "type": "string",
+          "enum": ["koofr", "digistorage", "other"],
+          "description": "Provider"
+        },
+        "user": {
+          "type": "string",
+          "description": "Username"
+        },
+        "password": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Password"
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "API endpoint"
+        },
+        "mountid": {
+          "type": "string",
+          "description": "Mount ID"
+        }
+      }
+    },
+    "linkbox": {
+      "name": "Linkbox",
+      "description": "Private cloud drive service",
+      "required": ["token"],
+      "optional": [],
+      "fields": {
+        "token": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Authentication token"
+        }
+      }
+    },
+    "opendrive": {
+      "name": "OpenDrive",
+      "description": "Cloud storage for file synchronization",
+      "required": ["username", "password"],
+      "optional": ["chunk_size"],
+      "fields": {
+        "username": {
+          "type": "string",
+          "description": "Username"
+        },
+        "password": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Password"
+        },
+        "chunk_size": {
+          "type": "string",
+          "default": "10Mi",
+          "description": "Chunk size for uploads"
+        }
+      }
+    },
+    "oracleobjectstorage": {
+      "name": "Oracle Object Storage",
+      "description": "Oracle Cloud Infrastructure object storage",
+      "required": ["namespace", "region"],
+      "optional": ["compartment", "storage_tier", "upload_cutoff", "chunk_size"],
+      "fields": {
+        "namespace": {
+          "type": "string",
+          "description": "Object storage namespace"
+        },
+        "region": {
+          "type": "string",
+          "example": "us-ashburn-1",
+          "description": "Object storage region"
+        },
+        "compartment": {
+          "type": "string",
+          "description": "Object storage compartment OCID"
+        },
+        "storage_tier": {
+          "type": "string",
+          "enum": ["Standard", "InfrequentAccess", "Archive"],
+          "default": "Standard",
+          "description": "Storage tier"
+        },
+        "upload_cutoff": {
+          "type": "string",
+          "default": "200Mi",
+          "description": "Cutoff for multipart uploads"
+        },
+        "chunk_size": {
+          "type": "string",
+          "default": "5Mi",
+          "description": "Chunk size for multipart uploads"
+        }
+      }
+    },
+    "azurefiles": {
+      "name": "Azure Files",
+      "description": "Microsoft Azure Files Storage",
+      "required": ["account", "share_name"],
+      "optional": ["key", "sas_url", "connection_string", "tenant", "client_id", "client_secret"],
+      "fields": {
+        "account": {
+          "type": "string",
+          "description": "Storage Account Name"
+        },
+        "share_name": {
+          "type": "string",
+          "description": "Azure Files Share Name"
+        },
+        "key": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Storage Account Key"
+        },
+        "sas_url": {
+          "type": "string",
+          "sensitive": true,
+          "description": "SAS URL"
+        },
+        "connection_string": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Connection string"
+        },
+        "tenant": {
+          "type": "string",
+          "description": "Tenant ID for service principal"
+        },
+        "client_id": {
+          "type": "string",
+          "description": "Client ID for service principal"
+        },
+        "client_secret": {
+          "type": "string",
+          "sensitive": true,
+          "description": "Client secret for service principal"
+        }
+      }
+    }
+  },
+  "commonFields": {
+    "noVersioning": {
+      "type": "boolean",
+      "default": false,
+      "description": "Disable versioning for this storage"
+    },
+    "parameters": {
+      "type": "string",
+      "description": "Additional rclone parameters",
+      "example": "--transfers 4 --checkers 8"
+    }
+  }
+}

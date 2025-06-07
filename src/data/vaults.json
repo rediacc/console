@@ -1,7 +1,7 @@
 {
   "entities": {
     "MACHINE": {
-      "descriptionKey": "vaultEditor.fields.MACHINE.description",
+      "descriptionKey": "fields.MACHINE.description",
       "required": ["ip", "user", "datastore", "ssh_key_configured", "ssh_password"],
       "optional": ["port", "host_entry"],
       "fields": {
@@ -40,7 +40,7 @@
       }
     },
     "REPOSITORY": {
-      "descriptionKey": "vaultEditor.fields.REPOSITORY.description",
+      "descriptionKey": "fields.REPOSITORY.description",
       "required": ["name", "size", "credential"],
       "optional": [],
       "fields": {
@@ -64,7 +64,7 @@
       }
     },
     "BRIDGE": {
-      "descriptionKey": "vaultEditor.fields.BRIDGE.description",
+      "descriptionKey": "fields.BRIDGE.description",
       "required": ["ip"],
       "optional": [],
       "fields": {
@@ -73,58 +73,98 @@
           "format": "ipv4",
           "example": "192.168.1.100"
         }
+      }
     },
     "STORAGE": {
-      "descriptionKey": "vaultEditor.fields.STORAGE.description",
-      "required": ["type", "path", "capacity"],
-      "optional": ["redundancy", "performance"],
+      "descriptionKey": "fields.STORAGE.description",
+      "required": ["name", "provider"],
+      "optional": ["description", "noVersioning", "parameters"],
+      "dynamicFields": true,
+      "providerSchema": "storageProviders.json",
       "fields": {
-        "type": {
+        "name": {
           "type": "string",
-          "enum": ["local", "network", "cloud"],
-          "example": "local"
+          "pattern": "^[a-zA-Z0-9-_]+$",
+          "example": "company-backup-s3",
+          "description": "Unique storage configuration name"
         },
-        "path": {
+        "provider": {
           "type": "string",
-          "example": "/mnt/storage/backup"
+          "enum": [
+            "s3",
+            "azureblob",
+            "azurefiles",
+            "b2",
+            "box",
+            "cloudinary",
+            "drive",
+            "dropbox",
+            "fichier",
+            "filefabric",
+            "filescom",
+            "ftp",
+            "gcs",
+            "gofile",
+            "googlephotos",
+            "hdfs",
+            "hidrive",
+            "http",
+            "iclouddrive",
+            "imagekit",
+            "internetarchive",
+            "jottacloud",
+            "koofr",
+            "linkbox",
+            "local",
+            "mailru",
+            "mega",
+            "netstorage",
+            "onedrive",
+            "opendrive",
+            "oracleobjectstorage",
+            "pcloud",
+            "pikpak",
+            "premiumizeme",
+            "protondrive",
+            "putio",
+            "qingstor",
+            "quatrix",
+            "seafile",
+            "sftp",
+            "sharefile",
+            "sia",
+            "smb",
+            "storj",
+            "sugarsync",
+            "swift",
+            "ulozto",
+            "uptobox",
+            "webdav",
+            "yandex",
+            "zoho"
+          ],
+          "example": "s3",
+          "description": "Storage provider type"
         },
-        "capacity": {
+        "description": {
           "type": "string",
-          "pattern": "^[0-9]+[KMGT]$",
-          "example": "1T"
+          "example": "Primary backup storage for production data",
+          "description": "Optional description of this storage configuration"
         },
-        "redundancy": {
-          "type": "object",
-          "properties": {
-            "enabled": {
-              "type": "boolean",
-              "default": false
-            },
-            "level": {
-              "type": "string",
-              "enum": ["mirror", "raid5", "raid6"],
-              "default": "mirror"
-            }
-          }
+        "noVersioning": {
+          "type": "boolean",
+          "default": false,
+          "description": "Disable versioning for this storage"
         },
-        "performance": {
-          "type": "object",
-          "properties": {
-            "tier": {
-              "type": "string",
-              "enum": ["standard", "performance", "archive"],
-              "default": "standard"
-            },
-            "cache": {
-              "type": "boolean",
-              "default": false
-            }
-          }
+        "parameters": {
+          "type": "string",
+          "example": "--transfers 4 --checkers 8",
+          "description": "Additional rclone parameters"
         }
       }
     },
     "SCHEDULE": {
-      "descriptionKey": "vaultEditor.fields.SCHEDULE.description",
+      "descriptionKey": "fields.SCHEDULE.description",
       "required": ["name", "cron", "task"],
       "optional": ["timezone", "notifications", "retry"],
       "fields": {
@@ -192,7 +232,7 @@
       }
     },
     "REGION": {
-      "descriptionKey": "vaultEditor.fields.REGION.description",
+      "descriptionKey": "fields.REGION.description",
       "required": [],
       "optional": ["name", "code", "location"],
       "fields": {
@@ -227,7 +267,7 @@
       }
     },
     "TEAM": {
-      "descriptionKey": "vaultEditor.fields.TEAM.description",
+      "descriptionKey": "fields.TEAM.description",
       "required": ["SSH_PRIVATE_KEY", "SSH_PUBLIC_KEY"],
       "optional": [],
       "fields": {
@@ -245,7 +285,7 @@
       }
     },
     "USER": {
-      "descriptionKey": "vaultEditor.fields.USER.description",
+      "descriptionKey": "fields.USER.description",
       "required": [],
       "optional": ["SSH_PRIVATE_KEY", "SSH_PUBLIC_KEY"],
       "fields": {
@@ -263,7 +303,7 @@
       }
     },
     "COMPANY": {
-      "descriptionKey": "vaultEditor.fields.COMPANY.description",
+      "descriptionKey": "fields.COMPANY.description",
       "required": ["UNIVERSAL_USER_ID", "UNIVERSAL_USER_NAME"],
       "optional": ["DOCKER_JSON_CONF", "SSH_PRIVATE_KEY", "SSH_PUBLIC_KEY", "LOG_FILE"],
       "fields": {

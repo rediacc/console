@@ -157,6 +157,8 @@
     "fieldsMovedToExtra": "{{count}} campo(s) movido(s) a extraFields: {{fields}}",
     "fieldsMovedFromExtra": "{{count}} campo(s) restaurado(s) desde extraFields: {{fields}}",
     "sshPasswordRequiredWhenNoKey": "Se requiere contraseña SSH para la configuración inicial de la clave",
+    "providerFields": "Configuración de {{provider}}",
+    "providerRequiredFields": "Campos requeridos para {{provider}}",
     "fields": {
       "MACHINE": {
         "description": "Configuración de máquina para acceso SSH y almacenamiento",
@@ -218,17 +220,25 @@
       },
       "STORAGE": {
         "description": "Configuración de almacenamiento para destinos de respaldo",
-        "type": {
-          "label": "Tipo de Almacenamiento",
-          "description": "Tipo de backend de almacenamiento"
+        "name": {
+          "label": "Nombre del Almacenamiento",
+          "description": "Nombre único para esta configuración de almacenamiento"
         },
-        "path": {
-          "label": "Ruta de Almacenamiento",
-          "description": "Ruta o nombre del bucket para almacenamiento"
+        "provider": {
+          "label": "Proveedor de Almacenamiento",
+          "description": "Seleccione el tipo de proveedor de almacenamiento"
         },
-        "credentials": {
-          "label": "Credenciales de Acceso",
-          "description": "Credenciales de autenticación para acceso al almacenamiento"
+        "description": {
+          "label": "Descripción",
+          "description": "Descripción opcional de esta configuración de almacenamiento"
+        },
+        "noVersioning": {
+          "label": "Deshabilitar Versionado",
+          "description": "Deshabilitar control de versiones para este almacenamiento"
+        },
+        "parameters": {
+          "label": "Parámetros Adicionales",
+          "description": "Parámetros adicionales de rclone para configuración avanzada"
         }
       },
       "SCHEDULE": {
@@ -248,61 +258,9 @@
       },
       "BRIDGE": {
         "description": "Configuración del puente para conectividad de red",
-        "host": {
-          "label": "Host del Puente",
-          "description": "Nombre de host o dirección IP del puente"
-        },
-        "port": {
-          "label": "Puerto del Puente",
-          "description": "Número de puerto para la conexión del puente"
-        },
-        "protocol": {
-          "label": "Protocolo",
-          "description": "Protocolo de comunicación (HTTP/HTTPS)"
-        },
-        "name": {
-          "label": "Nombre del Puente",
-          "description": "Identificador de nombre para el puente"
-        },
-        "type": {
-          "label": "Tipo de Puente",
-          "description": "Tipo de implementación del puente"
-        },
-        "endpoints": {
-          "label": "Puntos Finales",
-          "description": "Configuraciones de puntos finales del puente"
-        },
-        "security": {
-          "label": "Configuración de Seguridad",
-          "description": "Configuración de seguridad para el puente"
-        },
-        "loadBalancing": {
-          "label": "Balanceo de Carga",
-          "description": "Configuración de balanceo de carga"
-        },
         "ip": {
           "label": "Dirección IP",
-          "description": "Dirección IP de la máquina del puente"
-        },
-        "user": {
-          "label": "Usuario SSH",
-          "description": "Nombre de usuario SSH para acceso al puente"
-        },
-        "datastore": {
-          "label": "Ruta del Almacén",
-          "description": "Ruta al directorio del almacén de datos"
-        },
-        "host_entry": {
-          "label": "Entrada del Host",
-          "description": "Entrada de host conocido SSH para verificación de seguridad"
-        },
-        "ssh_key_configured": {
-          "label": "Clave SSH ya configurada",
-          "description": "Marque esto si la clave pública SSH ya está instalada en la máquina puente"
-        },
-        "ssh_password": {
-          "label": "Contraseña SSH (Temporal)",
-          "description": "Contraseña temporal solo para la configuración inicial de la clave SSH. Deje vacío si la clave SSH ya está configurada. Esta contraseña se usa una vez para copiar la clave pública y debe eliminarse después por seguridad."
+          "description": "Dirección IP del servidor puente"
         }
       },
       "REGION": {

@@ -23,6 +23,7 @@ import Editor from '@monaco-editor/react'
 import type { UploadFile } from 'antd/es/upload/interface'
 import { useTranslation } from 'react-i18next'
 import vaultDefinitions from '../../data/vaults.json'
+import storageProviders from '../../data/storageProviders.json'
 import { useAppSelector } from '@/store/store'
 import FieldGenerator from './FieldGenerator'
 
@@ -67,6 +68,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   const [rawJsonValue, setRawJsonValue] = useState<string>('')
   const [rawJsonError, setRawJsonError] = useState<string | null>(null)
   const [sshKeyConfigured, setSshKeyConfigured] = useState(false)
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(null)
   
   const uiMode = useAppSelector((state) => state.ui.uiMode)
 
@@ -74,6 +76,14 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   const entityDef = useMemo(() => {
     return vaultDefinitions.entities[entityType as keyof typeof vaultDefinitions.entities]
   }, [entityType])
+
+  // Get provider-specific fields for STORAGE entity
+  const providerFields = useMemo(() => {
+    if (entityType === 'STORAGE' && selectedProvider && storageProviders.providers[selectedProvider]) {
+      return storageProviders.providers[selectedProvider]
+    }
+    return null
+  }, [entityType, selectedProvider])
 
   // Helper to merge common types with field definitions
   const getFieldDefinition = (field: FieldDefinition): FieldDefinition => {
@@ -173,6 +183,11 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         setSshKeyConfigured(formData.ssh_key_configured)
       }
       
+      // Initialize provider for STORAGE entity
+      if (entityType === 'STORAGE' && formData.provider) {
+        setSelectedProvider(formData.provider)
+      }
+      
       // Build complete data structure for raw JSON
       const completeData = { ...formData }
       if (Object.keys(extraFields).length > 0) {
@@ -238,6 +253,27 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       if (changedValues.ssh_key_configured) {
         form.setFieldValue('ssh_password', undefined)
         formData.ssh_password = undefined
+      }
+    }
+    
+    // Handle provider changes for STORAGE entity
+    if (entityType === 'STORAGE' && changedValues?.provider !== undefined) {
+      setSelectedProvider(changedValues.provider)
+      
+      // Clear provider-specific fields when provider changes
+      if (providerFields) {
+        const fieldsToKeep = ['name', 'provider', 'description', 'noVersioning', 'parameters']
+        const currentValues = form.getFieldsValue()
+        const newValues: Record<string, any> = {}
+        
+        // Keep only base fields
+        fieldsToKeep.forEach(field => {
+          if (currentValues[field] !== undefined) {
+            newValues[field] = currentValues[field]
+          }
+        })
+        
+        form.setFieldsValue(newValues)
       }
     }
     
@@ -781,7 +817,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   return (
     <div>
       <Alert
-        message={t(entityDef.descriptionKey)}
+        message={t(`vaultEditor.${entityDef.descriptionKey}`)}
         type="info"
         showIcon
         style={{ marginBottom: 12 }}
@@ -801,6 +837,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           defaultActiveKey={[
             requiredFields.length > 0 ? 'required' : '',
             optionalFields.length > 0 ? 'optional' : '',
+            (entityType === 'STORAGE' && selectedProvider && providerFields) ? 'provider' : '',
           ].filter(Boolean)}
         >
           {requiredFields.length > 0 && (
@@ -836,6 +873,50 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 if (!field) return null
                 return renderField(fieldName, field as FieldDefinition, false)
               })}
+            </Collapse.Panel>
+          )}
+
+          {/* Provider-specific fields for STORAGE entity */}
+          {entityType === 'STORAGE' && selectedProvider && providerFields && (
+            <Collapse.Panel
+              header={
+                <Space>
+                  <strong>{t('vaultEditor.providerFields', { provider: providerFields.name })}</strong>
+                  <Tag color="blue">
+                    {(providerFields.required?.length || 0) + (providerFields.optional?.length || 0)}
+                  </Tag>
+                </Space>
+              }
+              key="provider"
+            >
+              {/* Required provider fields */}
+              {providerFields.required && providerFields.required.length > 0 && (
+                <>
+                  <Alert
+                    message={t('vaultEditor.providerRequiredFields', { provider: providerFields.name })}
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                  />
+                  {providerFields.required.map((fieldName: string) => {
+                    const field = providerFields.fields?.[fieldName]
+                    if (!field) return null
+                    return renderField(fieldName, field as FieldDefinition, true)
+                  })}
+                </>
+              )}
+              
+              {/* Optional provider fields */}
+              {providerFields.optional && providerFields.optional.length > 0 && (
+                <>
+                  {providerFields.required && providerFields.required.length > 0 && <div style={{ marginTop: 24 }} />}
+                  {providerFields.optional.map((fieldName: string) => {
+                    const field = providerFields.fields?.[fieldName]
+                    if (!field) return null
+                    return renderField(fieldName, field as FieldDefinition, false)
+                  })}
+                </>
+              )}
             </Collapse.Panel>
           )}
 

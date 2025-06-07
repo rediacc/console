@@ -157,6 +157,8 @@
     "fieldsMovedToExtra": "{{count}} field(s) moved to extraFields: {{fields}}",
     "fieldsMovedFromExtra": "{{count}} field(s) restored from extraFields: {{fields}}",
     "sshPasswordRequiredWhenNoKey": "SSH password is required for initial key setup",
+    "providerFields": "{{provider}} Configuration",
+    "providerRequiredFields": "Required fields for {{provider}}",
     "fields": {
       "MACHINE": {
         "description": "Machine configuration for SSH access and storage",
@@ -218,17 +220,25 @@
       },
       "STORAGE": {
         "description": "Storage configuration for backup destinations",
-        "type": {
-          "label": "Storage Type",
-          "description": "Type of storage backend"
+        "name": {
+          "label": "Storage Name",
+          "description": "Unique name for this storage configuration"
         },
-        "path": {
-          "label": "Storage Path",
-          "description": "Path or bucket name for storage"
+        "provider": {
+          "label": "Storage Provider",
+          "description": "Select the storage provider type"
         },
-        "credentials": {
-          "label": "Access Credentials",
-          "description": "Authentication credentials for storage access"
+        "description": {
+          "label": "Description",
+          "description": "Optional description of this storage configuration"
+        },
+        "noVersioning": {
+          "label": "Disable Versioning",
+          "description": "Disable version control for this storage"
+        },
+        "parameters": {
+          "label": "Additional Parameters",
+          "description": "Additional rclone parameters for advanced configuration"
         }
       },
       "SCHEDULE": {
@@ -248,89 +258,9 @@
       },
       "BRIDGE": {
         "description": "Bridge configuration for network connectivity",
-        "host": {
-          "label": "Bridge Host",
-          "description": "Hostname or IP address of the bridge"
-        },
-        "port": {
-          "label": "Bridge Port",
-          "description": "Port number for bridge connection"
-        },
-        "protocol": {
-          "label": "Protocol",
-          "description": "Communication protocol (HTTP/HTTPS)"
-        },
-        "name": {
-          "label": "Bridge Name",
-          "description": "Name identifier for the bridge"
-        },
-        "type": {
-          "label": "Bridge Type",
-          "description": "Type of bridge deployment"
-        },
-        "endpoints": {
-          "label": "Endpoints",
-          "description": "Bridge endpoint configurations"
-        },
         "ip": {
           "label": "IP Address",
           "description": "IP address of the bridge server"
-        },
-        "user": {
-          "label": "Username",
-          "description": "SSH username for bridge access"
-        },
-        "datastore": {
-          "label": "Datastore Path",
-          "description": "Path to the datastore directory"
-        },
-        "ssh_key_configured": {
-          "label": "SSH key already configured",
-          "description": "Check this if the SSH public key is already installed on the bridge machine"
-        },
-        "ssh_password": {
-          "label": "SSH Password (Temporary)",
-          "description": "Temporary password for initial SSH key setup only. Leave empty if SSH key is already configured. This password is used once to copy the public key and should be removed afterwards for security."
-        },
-        "host_entry": {
-          "label": "Host Entry",
-          "description": "SSH known hosts entry"
-        },
-        "SSH_PRIVATE_KEY": {
-          "label": "SSH Private Key",
-          "description": "Base64-encoded SSH private key for bridge operations"
-        },
-        "SSH_PUBLIC_KEY": {
-          "label": "SSH Public Key",
-          "description": "SSH public key for bridge operations"
-        },
-        "security": {
-          "label": "Security Settings",
-          "description": "Security configuration for the bridge"
-        },
-        "loadBalancing": {
-          "label": "Load Balancing",
-          "description": "Load balancing configuration"
-        },
-        "ip": {
-          "label": "IP Address",
-          "description": "IP address of the bridge machine"
-        },
-        "user": {
-          "label": "SSH User",
-          "description": "SSH username for bridge access"
-        },
-        "datastore": {
-          "label": "Datastore Path",
-          "description": "Path to the datastore directory"
-        },
-        "host_entry": {
-          "label": "Host Entry",
-          "description": "SSH known host entry for security verification"
-        },
-        "ssh_password": {
-          "label": "SSH Password",
-          "description": "SSH password for authentication (optional, SSH keys preferred)"
         }
       },
       "REGION": {
