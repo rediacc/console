@@ -5,11 +5,8 @@ import {
   InputNumber,
   Select,
   Switch,
-  Button,
   Space,
-  Divider,
   Alert,
-  Upload,
   Card,
   Collapse,
   Tag,
@@ -17,8 +14,6 @@ import {
   message,
 } from 'antd'
 import {
-  UploadOutlined,
-  DownloadOutlined,
   InfoCircleOutlined,
   WarningOutlined,
   CodeOutlined,
@@ -29,6 +24,7 @@ import type { UploadFile } from 'antd/es/upload/interface'
 import { useTranslation } from 'react-i18next'
 import vaultDefinitions from '../../data/vaults.json'
 import { useAppSelector } from '@/store/store'
+import FieldGenerator from './FieldGenerator'
 
 interface VaultEditorProps {
   entityType: string
@@ -682,6 +678,30 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       )
     }
 
+    // Check if this field can be generated
+    const isGeneratable = 
+      (fieldName === 'SSH_PRIVATE_KEY' || fieldName === 'SSH_PUBLIC_KEY') ||
+      (fieldName === 'credential' && entityType === 'REPOSITORY')
+
+    const handleFieldGeneration = (values: Record<string, string>) => {
+      // For SSH keys, we need to update both private and public keys
+      if (fieldName === 'SSH_PRIVATE_KEY' || fieldName === 'SSH_PUBLIC_KEY') {
+        const currentValues = form.getFieldsValue()
+        form.setFieldsValue({
+          ...currentValues,
+          SSH_PRIVATE_KEY: values.SSH_PRIVATE_KEY,
+          SSH_PUBLIC_KEY: values.SSH_PUBLIC_KEY
+        })
+      } else {
+        // For single field generation
+        form.setFieldValue(fieldName, values[fieldName])
+      }
+      // Trigger validation and change event
+      handleFormChange()
+      // Force form to re-render
+      form.validateFields([fieldName])
+    }
+
     // Default to text input
     return (
       <Form.Item
@@ -702,6 +722,16 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         <Input
           {...commonProps}
           type={field.sensitive ? 'password' : 'text'}
+          addonAfter={isGeneratable ? (
+            <FieldGenerator
+              fieldName={fieldName}
+              fieldType={
+                fieldName === 'credential' ? 'repository_credential' : 'ssh_keys'
+              }
+              onGenerate={handleFieldGeneration}
+              entityType={entityType}
+            />
+          ) : undefined}
         />
       </Form.Item>
     )

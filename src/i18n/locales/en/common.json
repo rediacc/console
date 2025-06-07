@@ -267,6 +267,34 @@
           "label": "Endpoints",
           "description": "Bridge endpoint configurations"
         },
+        "ip": {
+          "label": "IP Address",
+          "description": "IP address of the bridge server"
+        },
+        "user": {
+          "label": "Username",
+          "description": "SSH username for bridge access"
+        },
+        "datastore": {
+          "label": "Datastore Path",
+          "description": "Path to the datastore directory"
+        },
+        "ssh_password": {
+          "label": "SSH Password",
+          "description": "SSH password for authentication (if not using key-based auth)"
+        },
+        "host_entry": {
+          "label": "Host Entry",
+          "description": "SSH known hosts entry"
+        },
+        "SSH_PRIVATE_KEY": {
+          "label": "SSH Private Key",
+          "description": "Base64-encoded SSH private key for bridge operations"
+        },
+        "SSH_PUBLIC_KEY": {
+          "label": "SSH Public Key",
+          "description": "SSH public key for bridge operations"
+        },
         "security": {
           "label": "Security Settings",
           "description": "Security configuration for the bridge"
@@ -316,6 +344,14 @@
         "teamDescription": {
           "label": "Team Description",
           "description": "Description of team purpose and responsibilities"
+        },
+        "SSH_PRIVATE_KEY": {
+          "label": "SSH Private Key",
+          "description": "Base64-encoded SSH private key for team operations"
+        },
+        "SSH_PUBLIC_KEY": {
+          "label": "SSH Public Key",
+          "description": "SSH public key for team operations"
         }
       },
       "USER": {
@@ -357,5 +393,26 @@
         }
       }
     }
+  },
+  "fieldGenerator": {
+    "title": {
+      "ssh_keys": "Generate SSH Key Pair",
+      "repository_credential": "Generate Repository Credential"
+    },
+    "tooltip": "Generate value",
+    "generate": "Generate",
+    "regenerate": "Regenerate",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "keyType": "Key Type",
+    "keySize": "Key Size",
+    "moreSecure": "more secure",
+    "comingSoon": "coming soon",
+    "generationSuccess": "Generated successfully",
+    "generationError": "Failed to generate. Please try again.",
+    "applied": "Values applied successfully",
+    "copyError": "Failed to copy to clipboard"
   }
 }
