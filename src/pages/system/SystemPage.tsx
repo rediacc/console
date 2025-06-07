@@ -119,9 +119,9 @@ const SystemPage: React.FC = () => {
   const regionFormRef = React.useRef<ResourceFormWithVaultRef>(null)
   const bridgeFormRef = React.useRef<ResourceFormWithVaultRef>(null)
   
-  // Set initial tab based on UI mode
+  // Set initial tab to users
   React.useEffect(() => {
-    setActiveTab(uiMode === 'simple' ? 'users' : 'permissions')
+    setActiveTab('users')
   }, [uiMode])
   
   // Settings state
