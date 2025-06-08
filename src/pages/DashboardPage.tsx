@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Col, Row, Progress, Alert, Badge, Tag, Space, Typography, Statistic, Spin, Empty, Divider, Tooltip, theme } from 'antd';
+import { Link } from 'react-router-dom';
+import { Card, Col, Row, Progress, Alert, Badge, Tag, Space, Typography, Statistic, Spin, Empty, Divider, Tooltip, theme, Timeline } from 'antd';
 import { 
   AlertOutlined, 
   CheckCircleOutlined, 
@@ -17,9 +18,17 @@ import {
   DesktopOutlined,
   ApiOutlined,
   EnvironmentOutlined,
-  InboxOutlined
+  InboxOutlined,
+  HistoryOutlined,
+  FileTextOutlined,
+  CloseCircleOutlined,
+  EditOutlined,
+  LoginOutlined,
+  SwapOutlined,
+  InfoCircleOutlined
 } from '@ant-design/icons';
 import { useDashboard } from '../api/queries/dashboard';
+import { useRecentAuditLogs } from '../api/queries/audit';
 import { fetchPricingConfig, getPlanPrice, PricingConfig } from '../api/pricingService';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
@@ -39,6 +48,7 @@ const resourceIcons: Record<string, React.ReactNode> = {
 
 const DashboardPage = () => {
   const { data: dashboard, isLoading, error } = useDashboard();
+  const { data: auditLogs, isLoading: auditLoading } = useRecentAuditLogs(10);
   const [pricing, setPricing] = useState<PricingConfig | null>(null);
   const [pricingLoading, setPricingLoading] = useState(true);
   const { t } = useTranslation('common');
@@ -109,6 +119,34 @@ const DashboardPage = () => {
     return 'success';
   };
 
+  const getActionIcon = (action: string) => {
+    const actionLower = action.toLowerCase();
+    if (actionLower.includes('create')) return <CheckCircleOutlined style={{ color: token.colorSuccess }} />;
+    if (actionLower.includes('delete')) return <CloseCircleOutlined style={{ color: token.colorError }} />;
+    if (actionLower.includes('update') || actionLower.includes('modify')) return <EditOutlined style={{ color: token.colorWarning }} />;
+    if (actionLower.includes('login') || actionLower.includes('auth')) return <LoginOutlined style={{ color: token.colorInfo }} />;
+    if (actionLower.includes('export') || actionLower.includes('import')) return <SwapOutlined style={{ color: token.colorPrimary }} />;
+    return <InfoCircleOutlined style={{ color: token.colorTextSecondary }} />;
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    
+    return date.toLocaleDateString();
+  };
+
   return (
     <div style={{ padding: 24 }}>
       {/* Header */}
@@ -142,7 +180,7 @@ const DashboardPage = () => {
         {/* Main Grid */}
         <Row gutter={[16, 16]}>
           {/* Account Health Card */}
-          <Col xs={24} sm={24} md={12} lg={8}>
+          <Col xs={24}>
             <Card 
               title={
                 <Space>
@@ -150,7 +188,6 @@ const DashboardPage = () => {
                   <span>Account Health</span>
                 </Space>
               }
-              style={{ height: '100%' }}
             >
               <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -179,38 +216,6 @@ const DashboardPage = () => {
                 <div style={{ paddingTop: 12, borderTop: `1px solid ${token.colorBorder}` }}>
                   <Text strong>{dashboard.accountHealth.UpgradeRecommendation}</Text>
                 </div>
-              </Space>
-            </Card>
-          </Col>
-
-          {/* Feature Access Card */}
-          <Col xs={24} sm={24} md={12} lg={8}>
-            <Card 
-              title={
-                <Space>
-                  <RiseOutlined />
-                  <span>Feature Access</span>
-                </Space>
-              }
-              style={{ height: '100%' }}
-            >
-              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                <FeatureItem 
-                  name="Advanced Analytics" 
-                  enabled={dashboard.featureAccess.HasAdvancedAnalytics === 1} 
-                />
-                <FeatureItem 
-                  name="Priority Support" 
-                  enabled={dashboard.featureAccess.HasPrioritySupport === 1} 
-                />
-                <FeatureItem 
-                  name="Dedicated Account Manager" 
-                  enabled={dashboard.featureAccess.HasDedicatedAccount === 1} 
-                />
-                <FeatureItem 
-                  name="Custom Branding" 
-                  enabled={dashboard.featureAccess.HasCustomBranding === 1} 
-                />
               </Space>
             </Card>
           </Col>
@@ -475,25 +480,58 @@ const DashboardPage = () => {
           </Row>
         </Card>
 
+        {/* Recent Activity - Audit Logs */}
+        <Card 
+          title={
+            <Space>
+              <HistoryOutlined />
+              <span>Recent Activity</span>
+            </Space>
+          }
+          extra={
+            <Link to="/audit" style={{ color: token.colorPrimary }}>View All</Link>
+          }
+        >
+          {auditLoading ? (
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <Spin />
+            </div>
+          ) : auditLogs && auditLogs.length > 0 ? (
+            <Timeline
+              items={auditLogs.map((log, index) => ({
+                key: index,
+                dot: getActionIcon(log.action),
+                children: (
+                  <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Space>
+                        <Text strong>{log.action.replace(/_/g, ' ')}</Text>
+                        <Tag>{log.entity}</Tag>
+                      </Space>
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        {formatTimestamp(log.timestamp)}
+                      </Text>
+                    </div>
+                    <Text type="secondary" style={{ fontSize: 13 }}>
+                      {log.entityName} • By {log.actionByUser}
+                    </Text>
+                    {log.details && (
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        {log.details.length > 100 ? `${log.details.substring(0, 100)}...` : log.details}
+                      </Text>
+                    )}
+                  </Space>
+                )
+              }))}
+            />
+          ) : (
+            <Empty description="No recent activity" />
+          )}
+        </Card>
+
       </Space>
     </div>
   );
 };
-
-const FeatureItem = ({ name, enabled }: { name: string; enabled: boolean }) => (
-  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-    <Text>{name}</Text>
-    {enabled ? (
-      <CheckCircleOutlined style={{ color: '#333333', fontSize: 16 }} />
-    ) : (
-      <div style={{ 
-        width: 16, 
-        height: 16, 
-        borderRadius: '50%', 
-        backgroundColor: '#f0f0f0' 
-      }} />
-    )}
-  </div>
-);
 
 export default DashboardPage;

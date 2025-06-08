@@ -5,6 +5,7 @@
     "resources": "Resources",
     "queue": "Queue",
     "system": "System",
+    "audit": "Audit",
     "logout": "Logout"
   },
   "actions": {

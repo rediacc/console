@@ -15,6 +15,7 @@ import ResourcesPage from '@/pages/resources/ResourcesPage'
 import QueuePage from '@/pages/queue/QueuePage'
 import SystemPage from '@/pages/system/SystemPage'
 import ArchitecturePage from '@/pages/architecture/ArchitecturePage'
+import AuditPage from '@/pages/audit/AuditPage'
 
 const AppContent: React.FC = () => {
   const { theme: currentTheme } = useTheme()
@@ -79,6 +80,9 @@ const AppContent: React.FC = () => {
               
               {/* System (Users & Permissions) */}
               <Route path="/system" element={<SystemPage />} />
+              
+              {/* Audit */}
+              <Route path="/audit" element={<AuditPage />} />
               
               {/* Architecture */}
               <Route path="/architecture" element={<ArchitecturePage />} />

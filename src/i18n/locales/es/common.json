@@ -5,6 +5,7 @@
     "resources": "Recursos",
     "queue": "Cola",
     "system": "Sistema",
+    "audit": "Auditoría",
     "logout": "Cerrar Sesión"
   },
   "actions": {

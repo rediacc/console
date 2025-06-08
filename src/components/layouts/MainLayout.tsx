@@ -23,6 +23,7 @@ import {
   PartitionOutlined,
   EnvironmentOutlined,
   AppstoreOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { selectUser, selectCompany } from '@/store/auth/authSelectors'
@@ -98,6 +99,12 @@ const MainLayout: React.FC = () => {
       icon: <SettingOutlined />,
       label: t('navigation.system'),
       showInSimple: true,
+    },
+    {
+      key: '/audit',
+      icon: <HistoryOutlined />,
+      label: t('navigation.audit'),
+      showInSimple: false,
     },
   ]
 
