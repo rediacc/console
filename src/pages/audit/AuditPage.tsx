@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Space, Typography, DatePicker, Select, Button, Table, Tag, Input, Row, Col, Empty } from 'antd';
+import { Card, Space, Typography, DatePicker, Select, Button, Table, Tag, Input, Row, Col, Empty, Dropdown, message } from 'antd';
 import { 
   HistoryOutlined, 
   FilterOutlined, 
@@ -10,7 +10,10 @@ import {
   EditOutlined,
   LoginOutlined,
   SwapOutlined,
-  InfoCircleOutlined
+  InfoCircleOutlined,
+  DownloadOutlined,
+  FileExcelOutlined,
+  FileTextOutlined
 } from '@ant-design/icons';
 import { useAuditLogs, AuditLog } from '../../api/queries/audit';
 import { useTranslation } from 'react-i18next';
@@ -140,6 +143,85 @@ const AuditPage = () => {
 
   const entityTypes = [...new Set(auditLogs?.map(log => log.entity) || [])];
 
+  const exportToCSV = () => {
+    if (!filteredLogs || filteredLogs.length === 0) {
+      return;
+    }
+
+    const headers = ['Timestamp', 'Action', 'Entity Type', 'Entity Name', 'User', 'Details'];
+    const rows = filteredLogs.map(log => [
+      dayjs(log.timestamp).format('YYYY-MM-DD HH:mm:ss'),
+      log.action.replace(/_/g, ' '),
+      log.entity,
+      log.entityName || '',
+      log.actionByUser,
+      log.details || ''
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `audit_logs_${dayjs().format('YYYY-MM-DD_HHmmss')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    message.success(`Exported ${filteredLogs.length} audit logs to CSV`);
+  };
+
+  const exportToJSON = () => {
+    if (!filteredLogs || filteredLogs.length === 0) {
+      return;
+    }
+
+    const exportData = {
+      exportDate: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+      dateRange: {
+        from: dateRange[0]?.format('YYYY-MM-DD HH:mm:ss'),
+        to: dateRange[1]?.format('YYYY-MM-DD HH:mm:ss')
+      },
+      filters: {
+        entityType: entityFilter || 'All',
+        searchText: searchText || 'None'
+      },
+      totalRecords: filteredLogs.length,
+      logs: filteredLogs
+    };
+
+    const jsonContent = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonContent], { type: 'application/json' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `audit_logs_${dayjs().format('YYYY-MM-DD_HHmmss')}.json`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    message.success(`Exported ${filteredLogs.length} audit logs to JSON`);
+  };
+
+  const exportMenuItems = [
+    {
+      key: 'csv',
+      label: 'Export as CSV',
+      icon: <FileExcelOutlined />,
+      onClick: exportToCSV
+    },
+    {
+      key: 'json',
+      label: 'Export as JSON',
+      icon: <FileTextOutlined />,
+      onClick: exportToJSON
+    }
+  ];
+
   return (
     <div style={{ padding: 24 }}>
       {/* Header */}
@@ -207,7 +289,7 @@ const AuditPage = () => {
                 />
               </Space>
             </Col>
-            <Col xs={24} sm={24} md={4}>
+            <Col xs={24} sm={12} md={2}>
               <Space direction="vertical" style={{ width: '100%' }}>
                 <Text type="secondary">&nbsp;</Text>
                 <Button
@@ -218,6 +300,22 @@ const AuditPage = () => {
                 >
                   Refresh
                 </Button>
+              </Space>
+            </Col>
+            <Col xs={24} sm={12} md={2}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Text type="secondary">&nbsp;</Text>
+                <Dropdown
+                  menu={{ items: exportMenuItems }}
+                  disabled={!filteredLogs || filteredLogs.length === 0}
+                >
+                  <Button 
+                    icon={<DownloadOutlined />} 
+                    style={{ width: '100%' }}
+                  >
+                    Export
+                  </Button>
+                </Dropdown>
               </Space>
             </Col>
           </Row>

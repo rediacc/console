@@ -156,6 +156,55 @@ const DashboardPage = () => {
       </div>
 
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        {/* Recent Activity - Audit Logs (moved to top) */}
+        <Card 
+          title={
+            <Space>
+              <HistoryOutlined />
+              <span>Recent Activity</span>
+            </Space>
+          }
+          extra={
+            <Link to="/audit" style={{ color: token.colorPrimary }}>View All</Link>
+          }
+        >
+          {auditLoading ? (
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <Spin />
+            </div>
+          ) : auditLogs && auditLogs.length > 0 ? (
+            <Timeline
+              items={auditLogs.map((log, index) => ({
+                key: index,
+                dot: getActionIcon(log.action),
+                children: (
+                  <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Space>
+                        <Text strong>{log.action.replace(/_/g, ' ')}</Text>
+                        <Tag>{log.entity}</Tag>
+                      </Space>
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        {formatTimestamp(log.timestamp)}
+                      </Text>
+                    </div>
+                    <Text type="secondary" style={{ fontSize: 13 }}>
+                      {log.entityName} • By {log.actionByUser}
+                    </Text>
+                    {log.details && (
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        {log.details.length > 100 ? `${log.details.substring(0, 100)}...` : log.details}
+                      </Text>
+                    )}
+                  </Space>
+                )
+              }))}
+            />
+          ) : (
+            <Empty description="No recent activity" />
+          )}
+        </Card>
+
         {/* Alerts */}
         {dashboard.activeSubscription?.IsExpiringSoon === 1 && (
           <Alert
@@ -478,55 +527,6 @@ const DashboardPage = () => {
               </Col>
             )}
           </Row>
-        </Card>
-
-        {/* Recent Activity - Audit Logs */}
-        <Card 
-          title={
-            <Space>
-              <HistoryOutlined />
-              <span>Recent Activity</span>
-            </Space>
-          }
-          extra={
-            <Link to="/audit" style={{ color: token.colorPrimary }}>View All</Link>
-          }
-        >
-          {auditLoading ? (
-            <div style={{ textAlign: 'center', padding: '20px' }}>
-              <Spin />
-            </div>
-          ) : auditLogs && auditLogs.length > 0 ? (
-            <Timeline
-              items={auditLogs.map((log, index) => ({
-                key: index,
-                dot: getActionIcon(log.action),
-                children: (
-                  <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Space>
-                        <Text strong>{log.action.replace(/_/g, ' ')}</Text>
-                        <Tag>{log.entity}</Tag>
-                      </Space>
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        {formatTimestamp(log.timestamp)}
-                      </Text>
-                    </div>
-                    <Text type="secondary" style={{ fontSize: 13 }}>
-                      {log.entityName} • By {log.actionByUser}
-                    </Text>
-                    {log.details && (
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        {log.details.length > 100 ? `${log.details.substring(0, 100)}...` : log.details}
-                      </Text>
-                    )}
-                  </Space>
-                )
-              }))}
-            />
-          ) : (
-            <Empty description="No recent activity" />
-          )}
         </Card>
 
       </Space>

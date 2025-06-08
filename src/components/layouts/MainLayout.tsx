@@ -95,16 +95,16 @@ const MainLayout: React.FC = () => {
       showInSimple: false,
     },
     {
-      key: '/system',
-      icon: <SettingOutlined />,
-      label: t('navigation.system'),
-      showInSimple: true,
-    },
-    {
       key: '/audit',
       icon: <HistoryOutlined />,
       label: t('navigation.audit'),
       showInSimple: false,
+    },
+    {
+      key: '/system',
+      icon: <SettingOutlined />,
+      label: t('navigation.system'),
+      showInSimple: true,
     },
   ]
 
