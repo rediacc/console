@@ -8,6 +8,10 @@ export interface Bridge {
   machineCount: number
   vaultVersion: number
   vaultContent?: string
+  bridgeCredentialsVersion?: number
+  bridgeCredentials?: string
+  bridgeUserEmail?: string
+  hasAccess?: number // 0 or 1 from SQL
 }
 
 // Get bridges for a region
@@ -105,6 +109,25 @@ export const useDeleteBridge = () => {
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to delete bridge')
+    },
+  })
+}
+
+// Reset bridge authorization
+export const useResetBridgeAuthorization = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (data: { bridgeName: string }) => {
+      const response = await apiClient.post('/ResetBridgeAuthorization', data)
+      return response
+    },
+    onSuccess: (_, data) => {
+      queryClient.invalidateQueries({ queryKey: ['bridges'] })
+      toast.success(`Bridge authorization reset for "${data.bridgeName}"`)
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to reset bridge authorization')
     },
   })
 }

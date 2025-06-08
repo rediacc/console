@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Card, Tabs, Modal, Form, Input, Button, Space, Popconfirm, Tag, Select, Badge, List, Typography, Row, Col, Table, Empty, Spin } from 'antd'
+import { Card, Tabs, Modal, Form, Input, Button, Space, Popconfirm, Tag, Select, Badge, List, Typography, Row, Col, Table, Empty, Spin, Alert, message } from 'antd'
 import { 
   UserOutlined, 
   SafetyOutlined, 
@@ -17,7 +17,9 @@ import {
   TeamOutlined,
   DatabaseOutlined,
   ScheduleOutlined,
-  CloudServerOutlined
+  CloudServerOutlined,
+  CopyOutlined,
+  SyncOutlined
 } from '@ant-design/icons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -70,7 +72,8 @@ import {
   useCreateBridge, 
   useUpdateBridgeName,
   useDeleteBridge, 
-  useUpdateBridgeVault, 
+  useUpdateBridgeVault,
+  useResetBridgeAuthorization,
   Bridge 
 } from '@/api/queries/bridges'
 
@@ -172,6 +175,10 @@ const SystemPage: React.FC = () => {
     open: boolean
     bridge?: Bridge
   }>({ open: false })
+  const [bridgeCredentialsModal, setBridgeCredentialsModal] = useState<{
+    open: boolean
+    bridge?: Bridge
+  }>({ open: false })
 
   // Common hooks
   const { data: dropdownData } = useDropdownData()
@@ -220,6 +227,7 @@ const SystemPage: React.FC = () => {
   const updateBridgeNameMutation = useUpdateBridgeName()
   const deleteBridgeMutation = useDeleteBridge()
   const updateBridgeVaultMutation = useUpdateBridgeVault()
+  const resetBridgeAuthMutation = useResetBridgeAuthorization()
 
   // User form
   const userForm = useForm<CreateUserForm>({
@@ -555,6 +563,14 @@ const SystemPage: React.FC = () => {
       vaultVersion: version,
     })
     setBridgeVaultModalConfig({ open: false })
+  }
+
+  const handleResetBridgeAuth = async (bridgeName: string) => {
+    try {
+      await resetBridgeAuthMutation.mutateAsync({ bridgeName })
+    } catch (error) {
+      // Error handled by mutation
+    }
   }
 
   // Permission columns
@@ -941,10 +957,15 @@ const SystemPage: React.FC = () => {
       title: tOrg('bridges.bridgeName'),
       dataIndex: 'bridgeName',
       key: 'bridgeName',
-      render: (text: string) => (
+      render: (text: string, record: Bridge) => (
         <Space>
           <ApiOutlined style={{ color: '#556b2f' }} />
           <strong>{text}</strong>
+          {(record.hasAccess as number) === 1 && (
+            <Tag color="green" icon={<CheckCircleOutlined />}>
+              Access
+            </Tag>
+          )}
         </Space>
       ),
     },
@@ -970,7 +991,7 @@ const SystemPage: React.FC = () => {
     {
       title: tOrg('general.actions'),
       key: 'actions',
-      width: 200,
+      width: 300,
       render: (_: any, record: Bridge) => (
         <Space>
           <Button
@@ -979,6 +1000,13 @@ const SystemPage: React.FC = () => {
             onClick={() => setBridgeVaultModalConfig({ open: true, bridge: record })}
           >
             {tOrg('general.vault')}
+          </Button>
+          <Button
+            type="link"
+            icon={<KeyOutlined />}
+            onClick={() => setBridgeCredentialsModal({ open: true, bridge: record })}
+          >
+            Token
           </Button>
           <Button 
             type="link" 
@@ -990,6 +1018,21 @@ const SystemPage: React.FC = () => {
           >
             {tOrg('general.edit')}
           </Button>
+          <Popconfirm
+            title="Reset Bridge Authorization"
+            description={`Are you sure you want to reset authorization for bridge "${record.bridgeName}"? This will generate new credentials.`}
+            onConfirm={() => handleResetBridgeAuth(record.bridgeName)}
+            okText={tOrg('general.yes')}
+            cancelText={tOrg('general.no')}
+          >
+            <Button 
+              type="link" 
+              icon={<SyncOutlined />}
+              loading={resetBridgeAuthMutation.isPending}
+            >
+              Reset Auth
+            </Button>
+          </Popconfirm>
           <Popconfirm
             title={tOrg('bridges.deleteBridge')}
             description={tOrg('bridges.confirmDelete', { bridgeName: record.bridgeName })}
@@ -1331,7 +1374,7 @@ const SystemPage: React.FC = () => {
                       onChange={setSelectedPermission}
                       showSearch
                       filterOption={(input, option) =>
-                        (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                        String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                       }
                     >
                       {availablePermissions.map(perm => (
@@ -1569,7 +1612,7 @@ const SystemPage: React.FC = () => {
                       onChange={setSelectedMemberEmail}
                       showSearch
                       filterOption={(input, option) =>
-                        (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                        String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                       }
                       options={dropdownData?.users?.filter(u => u.status === 'active')?.map(u => ({ 
                         value: u.value, 
@@ -1899,6 +1942,89 @@ const SystemPage: React.FC = () => {
           }}
           loading={updateBridgeNameMutation.isPending}
         />
+      </Modal>
+
+      {/* Bridge Credentials Modal */}
+      <Modal
+        title={`Bridge Token - ${bridgeCredentialsModal.bridge?.bridgeName || ''}`}
+        open={bridgeCredentialsModal.open}
+        onCancel={() => setBridgeCredentialsModal({ open: false })}
+        footer={[
+          <Button 
+            key="close" 
+            onClick={() => setBridgeCredentialsModal({ open: false })}
+          >
+            Close
+          </Button>
+        ]}
+        width={600}
+      >
+        {(() => {
+          const bridge = bridgeCredentialsModal.bridge
+          if (!bridge) return null
+          
+          // Bridge credentials is the token directly
+          const token = bridge.bridgeCredentials
+          
+          // Check if we have the necessary access
+          if (bridge.hasAccess === 0) {
+            return (
+              <Alert
+                message="Access Denied"
+                description="You don't have the necessary permissions to view bridge credentials. Please contact an administrator."
+                type="error"
+                showIcon
+              />
+            )
+          }
+          
+          if (!token) {
+            return (
+              <Alert
+                message="No Bridge Token Available"
+                description="Bridge credentials are not available. This could be because you don't have the necessary permissions, or the bridge credentials vault has not been created. Administrators can use 'Reset Auth' to generate new credentials."
+                type="info"
+                showIcon
+              />
+            )
+          }
+          
+          return (
+            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+              <Alert
+                message="Bridge Authentication Token"
+                description="This token is used by the bridge to authenticate its first connection to the system. After the first successful use, the bridge will receive a new token for subsequent requests. If this token has already been used, you'll need to use 'Reset Auth' to generate new credentials."
+                type="warning"
+                showIcon
+              />
+              
+              <div>
+                <Text strong>Token:</Text>
+                <Space.Compact style={{ marginTop: 8, width: '100%' }}>
+                  <Input
+                    value={token}
+                    readOnly
+                    style={{ width: '100%' }}
+                  />
+                  <Button
+                    icon={<CopyOutlined />}
+                    onClick={() => {
+                      navigator.clipboard.writeText(token)
+                      message.success('Token copied to clipboard')
+                    }}
+                  />
+                </Space.Compact>
+              </div>
+              
+              <Alert
+                message="Important"
+                description="Keep this token secure. It provides access to process queue items on behalf of your organization. If you suspect the token has been compromised, use 'Reset Auth' immediately."
+                type="info"
+                showIcon
+              />
+            </Space>
+          )
+        })()}
       </Modal>
     </>
   )
