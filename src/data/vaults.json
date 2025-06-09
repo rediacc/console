@@ -65,15 +65,9 @@
     },
     "BRIDGE": {
       "descriptionKey": "fields.BRIDGE.description",
-      "required": ["ip"],
+      "required": [],
       "optional": [],
-      "fields": {
-        "ip": {
-          "type": "string",
-          "format": "ipv4",
-          "example": "192.168.1.100"
-        }
-      }
+      "fields": { }
     },
     "STORAGE": {
       "descriptionKey": "fields.STORAGE.description",
