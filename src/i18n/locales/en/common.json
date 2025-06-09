@@ -19,8 +19,7 @@
     "retry": "Retry",
     "refresh": "Refresh",
     "fullscreen": "Fullscreen",
-    "exitFullscreen": "Exit Fullscreen",
-    "addToQueue": "Add to Queue"
+    "exitFullscreen": "Exit Fullscreen"
   },
   "export": "Export",
   "exportCSV": "Export as CSV",
@@ -179,7 +178,7 @@
         }
       },
       "STORAGE": {
-        "description": "Storage configuration for backup destinations",
+        "entityDescription": "Storage configuration for backup destinations",
         "name": {
           "label": "Storage Name",
           "description": "Unique name for this storage configuration"

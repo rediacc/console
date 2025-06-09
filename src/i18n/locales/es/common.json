@@ -19,8 +19,7 @@
     "retry": "Reintentar",
     "refresh": "Actualizar",
     "fullscreen": "Pantalla Completa",
-    "exitFullscreen": "Salir de Pantalla Completa",
-    "addToQueue": "Agregar a la Cola"
+    "exitFullscreen": "Salir de Pantalla Completa"
   },
   "export": "Exportar",
   "exportCSV": "Exportar como CSV",
@@ -179,7 +178,7 @@
         }
       },
       "STORAGE": {
-        "description": "Configuración de almacenamiento para destinos de respaldo",
+        "entityDescription": "Configuración de almacenamiento para destinos de respaldo",
         "name": {
           "label": "Nombre del Almacenamiento",
           "description": "Nombre único para esta configuración de almacenamiento"
