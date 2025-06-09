@@ -80,6 +80,48 @@ interface SubscriptionDetail {
   isTrial: number;
 }
 
+interface QueueTeamIssue {
+  TeamName: string;
+  TotalItems: number;
+  PendingItems: number;
+  ActiveItems: number;
+  StaleItems: number;
+}
+
+interface QueueMachineIssue {
+  MachineName: string;
+  TeamName: string;
+  BridgeName: string;
+  TotalItems: number;
+  PendingItems: number;
+  ActiveItems: number;
+  StaleItems: number;
+}
+
+interface QueueStats {
+  PendingCount: number;
+  AssignedCount: number;
+  ProcessingCount: number;
+  ActiveCount: number;
+  CompletedCount: number;
+  CancelledCount: number;
+  TotalCount: number;
+  StaleCount: number;
+  CompletedToday: number;
+  CancelledToday: number;
+  CreatedToday: number;
+  OldestPendingAgeMinutes: number;
+  AvgPendingAgeMinutes: number;
+  HighestPriorityPending: number | null;
+  HighPriorityPending: number | null;
+  NormalPriorityPending: number | null;
+  LowPriorityPending: number | null;
+  HasStaleItems: number;
+  HasOldPendingItems: number;
+  TeamIssues: QueueTeamIssue[] | string;
+  MachineIssues: QueueMachineIssue[] | string;
+}
+
 interface DashboardData {
   companyInfo: CompanyInfo;
   activeSubscription: ActiveSubscription | null;
@@ -88,6 +130,7 @@ interface DashboardData {
   resources: ResourceLimit[];
   accountHealth: AccountHealth;
   featureAccess: FeatureAccess;
+  queueStats?: QueueStats;
   allActiveSubscriptions?: SubscriptionDetail[];
 }
 
@@ -126,6 +169,19 @@ export const useDashboard = () => {
       }
       if (typeof parsedData.featureAccess === 'string') {
         parsedData.featureAccess = JSON.parse(parsedData.featureAccess);
+      }
+      if (typeof parsedData.queueStats === 'string') {
+        parsedData.queueStats = JSON.parse(parsedData.queueStats);
+        
+        // Parse nested JSON arrays in queueStats
+        if (parsedData.queueStats) {
+          if (typeof parsedData.queueStats.TeamIssues === 'string') {
+            parsedData.queueStats.TeamIssues = JSON.parse(parsedData.queueStats.TeamIssues);
+          }
+          if (typeof parsedData.queueStats.MachineIssues === 'string') {
+            parsedData.queueStats.MachineIssues = JSON.parse(parsedData.queueStats.MachineIssues);
+          }
+        }
       }
       
       // Check if there's a second result set with all active subscriptions

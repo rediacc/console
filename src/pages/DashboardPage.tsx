@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, Col, Row, Progress, Alert, Badge, Tag, Space, Typography, Statistic, Spin, Empty, Divider, Tooltip, theme, Timeline } from 'antd';
+import { Card, Col, Row, Progress, Alert, Badge, Tag, Space, Typography, Statistic, Spin, Empty, Divider, Tooltip, theme, Timeline, List, Table } from 'antd';
 import { 
   AlertOutlined, 
   CheckCircleOutlined, 
@@ -25,7 +25,15 @@ import {
   EditOutlined,
   LoginOutlined,
   SwapOutlined,
-  InfoCircleOutlined
+  InfoCircleOutlined,
+  SyncOutlined,
+  HourglassOutlined,
+  CheckOutlined,
+  StopOutlined,
+  ThunderboltOutlined,
+  WarningOutlined,
+  FieldTimeOutlined,
+  RobotOutlined
 } from '@ant-design/icons';
 import { useDashboard } from '../api/queries/dashboard';
 import { useRecentAuditLogs } from '../api/queries/audit';
@@ -204,6 +212,223 @@ const DashboardPage = () => {
             <Empty description="No recent activity" />
           )}
         </Card>
+
+        {/* Queue Statistics - NEW */}
+        {dashboard.queueStats && (
+          <Card 
+            title={
+              <Space>
+                <RobotOutlined />
+                <span>Queue Statistics</span>
+              </Space>
+            }
+            extra={
+              <Link to="/queue" style={{ color: token.colorPrimary }}>Manage Queue</Link>
+            }
+          >
+            <Row gutter={[16, 16]}>
+              {/* Queue Status Overview */}
+              <Col xs={24} lg={12}>
+                <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                  {/* Status Grid */}
+                  <Row gutter={[16, 16]}>
+                    <Col span={8}>
+                      <Statistic
+                        title="Pending"
+                        value={dashboard.queueStats.PendingCount}
+                        valueStyle={{ color: token.colorWarning }}
+                        prefix={<ClockCircleOutlined />}
+                      />
+                    </Col>
+                    <Col span={8}>
+                      <Statistic
+                        title="Processing"
+                        value={dashboard.queueStats.ActiveCount}
+                        valueStyle={{ color: token.colorInfo }}
+                        prefix={<SyncOutlined spin />}
+                      />
+                    </Col>
+                    <Col span={8}>
+                      <Statistic
+                        title="Completed"
+                        value={dashboard.queueStats.CompletedCount}
+                        valueStyle={{ color: token.colorSuccess }}
+                        prefix={<CheckCircleOutlined />}
+                      />
+                    </Col>
+                  </Row>
+
+                  {/* Today's Activity */}
+                  <div style={{ 
+                    padding: '16px', 
+                    backgroundColor: currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout, 
+                    borderRadius: 8,
+                    border: `1px solid ${token.colorBorder}`
+                  }}>
+                    <Text strong style={{ display: 'block', marginBottom: 12 }}>Today's Activity</Text>
+                    <Row gutter={[16, 8]}>
+                      <Col span={8}>
+                        <Space direction="vertical" size={0}>
+                          <Text type="secondary">Created</Text>
+                          <Text strong style={{ fontSize: 18 }}>{dashboard.queueStats.CreatedToday}</Text>
+                        </Space>
+                      </Col>
+                      <Col span={8}>
+                        <Space direction="vertical" size={0}>
+                          <Text type="secondary">Completed</Text>
+                          <Text strong style={{ fontSize: 18, color: token.colorSuccess }}>{dashboard.queueStats.CompletedToday}</Text>
+                        </Space>
+                      </Col>
+                      <Col span={8}>
+                        <Space direction="vertical" size={0}>
+                          <Text type="secondary">Cancelled</Text>
+                          <Text strong style={{ fontSize: 18, color: token.colorError }}>{dashboard.queueStats.CancelledToday}</Text>
+                        </Space>
+                      </Col>
+                    </Row>
+                  </div>
+
+                  {/* Alerts */}
+                  {(dashboard.queueStats.HasStaleItems === 1 || dashboard.queueStats.HasOldPendingItems === 1) && (
+                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      {dashboard.queueStats.HasStaleItems === 1 && (
+                        <Alert
+                          message={`${dashboard.queueStats.StaleCount} stale items detected`}
+                          description="Some items haven't reported progress recently"
+                          type="warning"
+                          showIcon
+                          icon={<WarningOutlined />}
+                        />
+                      )}
+                      {dashboard.queueStats.HasOldPendingItems === 1 && (
+                        <Alert
+                          message="Old pending items"
+                          description={`Oldest item waiting for ${Math.floor(dashboard.queueStats.OldestPendingAgeMinutes / 60)} hours`}
+                          type="info"
+                          showIcon
+                          icon={<FieldTimeOutlined />}
+                        />
+                      )}
+                    </Space>
+                  )}
+                </Space>
+              </Col>
+
+              {/* Team and Machine Issues */}
+              <Col xs={24} lg={12}>
+                <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                  {/* Team Issues */}
+                  {dashboard.queueStats.TeamIssues && Array.isArray(dashboard.queueStats.TeamIssues) && dashboard.queueStats.TeamIssues.length > 0 && (
+                    <div>
+                      <Text strong style={{ display: 'block', marginBottom: 12 }}>
+                        <TeamOutlined /> Team Queue Status
+                      </Text>
+                      <List
+                        size="small"
+                        dataSource={dashboard.queueStats.TeamIssues}
+                        renderItem={(team) => (
+                          <List.Item style={{ paddingLeft: 0, paddingRight: 0 }}>
+                            <div style={{ width: '100%' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                <Text strong>{team.TeamName}</Text>
+                                <Space size="small">
+                                  {team.StaleItems > 0 && (
+                                    <Tag color="warning">
+                                      <WarningOutlined /> {team.StaleItems} stale
+                                    </Tag>
+                                  )}
+                                  <Tag color="blue">{team.PendingItems} pending</Tag>
+                                  <Tag color="processing">{team.ActiveItems} active</Tag>
+                                </Space>
+                              </div>
+                            </div>
+                          </List.Item>
+                        )}
+                      />
+                    </div>
+                  )}
+
+                  {/* Machine Issues */}
+                  {dashboard.queueStats.MachineIssues && Array.isArray(dashboard.queueStats.MachineIssues) && dashboard.queueStats.MachineIssues.length > 0 && (
+                    <div>
+                      <Text strong style={{ display: 'block', marginBottom: 12 }}>
+                        <DesktopOutlined /> Machine Queue Status
+                      </Text>
+                      <div style={{ overflowX: 'auto' }}>
+                        <Table
+                          size="small"
+                          dataSource={dashboard.queueStats.MachineIssues}
+                          pagination={false}
+                          columns={[
+                            {
+                              title: 'Machine',
+                              dataIndex: 'MachineName',
+                              key: 'MachineName',
+                              ellipsis: true,
+                            },
+                            {
+                              title: 'Team',
+                              dataIndex: 'TeamName',
+                              key: 'TeamName',
+                              ellipsis: true,
+                            },
+                            {
+                              title: 'Status',
+                              key: 'status',
+                              width: 200,
+                              render: (_, record) => (
+                                <Space size="small">
+                                  {record.StaleItems > 0 && (
+                                    <Tag color="warning">{record.StaleItems} stale</Tag>
+                                  )}
+                                  <Tag color="blue">{record.PendingItems} pending</Tag>
+                                  <Tag color="processing">{record.ActiveItems} active</Tag>
+                                </Space>
+                              ),
+                            },
+                          ]}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Priority Breakdown (Premium/Elite only) */}
+                  {dashboard.featureAccess.HasAdvancedAnalytics === 1 && 
+                   dashboard.queueStats.HighestPriorityPending !== null && (
+                    <div style={{ 
+                      padding: '16px', 
+                      backgroundColor: currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout, 
+                      borderRadius: 8,
+                      border: `1px solid ${token.colorBorder}`
+                    }}>
+                      <Text strong style={{ display: 'block', marginBottom: 12 }}>
+                        <ThunderboltOutlined /> Priority Breakdown
+                      </Text>
+                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Text>Highest Priority</Text>
+                          <Badge count={dashboard.queueStats.HighestPriorityPending} style={{ backgroundColor: token.colorError }} />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Text>High Priority</Text>
+                          <Badge count={dashboard.queueStats.HighPriorityPending} style={{ backgroundColor: token.colorWarning }} />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Text>Normal Priority</Text>
+                          <Badge count={dashboard.queueStats.NormalPriorityPending} style={{ backgroundColor: token.colorInfo }} />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Text>Low Priority</Text>
+                          <Badge count={dashboard.queueStats.LowPriorityPending} style={{ backgroundColor: token.colorTextSecondary }} />
+                        </div>
+                      </Space>
+                    </div>
+                  )}
+                </Space>
+              </Col>
+            </Row>
+          </Card>
+        )}
 
         {/* Alerts */}
         {dashboard.activeSubscription?.IsExpiringSoon === 1 && (
