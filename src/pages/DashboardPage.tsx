@@ -164,7 +164,187 @@ const DashboardPage = () => {
       </div>
 
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        {/* Recent Activity - Audit Logs (moved to top) */}
+        {/* Alerts - Moved to top for immediate visibility */}
+        {dashboard.activeSubscription?.IsExpiringSoon === 1 && (
+          <Alert
+            message="Subscription Expiring Soon"
+            description={`Your ${dashboard.activeSubscription.PlanName} subscription expires in ${dashboard.activeSubscription.DaysRemaining} days.${!dashboard.activeSubscription.AutoRenew ? ' Enable auto-renewal to avoid service interruption.' : ''}`}
+            type="warning"
+            showIcon
+            icon={<ClockCircleOutlined />}
+          />
+        )}
+
+        {dashboard.accountHealth.ResourcesAtLimit > 0 && (
+          <Alert
+            message="Resource Limits Reached"
+            description={`${dashboard.accountHealth.ResourcesAtLimit} resource type(s) have reached their limits. Consider upgrading your plan to continue scaling.`}
+            type="error"
+            showIcon
+            icon={<ExclamationCircleOutlined />}
+          />
+        )}
+
+        {/* Account Health & Queue Statistics - Side by side */}
+        <Row gutter={[16, 16]}>
+          {/* Account Health Card */}
+          <Col xs={24} lg={12}>
+            <Card 
+              title={
+                <Space>
+                  <SafetyCertificateOutlined />
+                  <span>Account Health</span>
+                </Space>
+              }
+              style={{ height: '100%' }}
+            >
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Text>Overall Status</Text>
+                  <Tag color={getStatusType(dashboard.accountHealth.SubscriptionStatus)}>
+                    {dashboard.accountHealth.SubscriptionStatus}
+                  </Tag>
+                </div>
+                
+                <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                  <Space>
+                    {dashboard.accountHealth.ResourcesAtLimit > 0 ? (
+                      <ExclamationCircleOutlined style={{ color: token.colorWarning }} />
+                    ) : (
+                      <CheckCircleOutlined style={{ color: token.colorSuccess }} />
+                    )}
+                    <Text>{dashboard.accountHealth.ResourcesAtLimit} resources at limit</Text>
+                  </Space>
+                  
+                  <Space>
+                    <ClockCircleOutlined style={{ color: token.colorTextSecondary }} />
+                    <Text>{dashboard.accountHealth.ResourcesNearLimit} resources near limit</Text>
+                  </Space>
+                </Space>
+
+                <div style={{ paddingTop: 12, borderTop: `1px solid ${token.colorBorder}` }}>
+                  <Text strong>{dashboard.accountHealth.UpgradeRecommendation}</Text>
+                </div>
+              </Space>
+            </Card>
+          </Col>
+
+          {/* Queue Overview Card */}
+          <Col xs={24} lg={12}>
+            {dashboard.queueStats ? (
+              <Card 
+                title={
+                  <Space>
+                    <RobotOutlined />
+                    <span>Queue Overview</span>
+                  </Space>
+                }
+                extra={
+                  <Link to="/queue" style={{ color: token.colorPrimary }}>Manage</Link>
+                }
+                style={{ height: '100%' }}
+              >
+                <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                  {/* Status Grid */}
+                  <Row gutter={[16, 16]}>
+                    <Col span={8}>
+                      <Statistic
+                        title="Pending"
+                        value={dashboard.queueStats.PendingCount}
+                        valueStyle={{ color: token.colorWarning }}
+                        prefix={<ClockCircleOutlined />}
+                      />
+                    </Col>
+                    <Col span={8}>
+                      <Statistic
+                        title="Processing"
+                        value={dashboard.queueStats.ActiveCount}
+                        valueStyle={{ color: token.colorInfo }}
+                        prefix={<SyncOutlined spin />}
+                      />
+                    </Col>
+                    <Col span={8}>
+                      <Statistic
+                        title="Completed"
+                        value={dashboard.queueStats.CompletedCount}
+                        valueStyle={{ color: token.colorSuccess }}
+                        prefix={<CheckCircleOutlined />}
+                      />
+                    </Col>
+                  </Row>
+
+                  {/* Queue Alerts */}
+                  {(dashboard.queueStats.HasStaleItems === 1 || dashboard.queueStats.HasOldPendingItems === 1) && (
+                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      {dashboard.queueStats.HasStaleItems === 1 && (
+                        <Alert
+                          message={`${dashboard.queueStats.StaleCount} stale items`}
+                          type="warning"
+                          showIcon
+                          icon={<WarningOutlined />}
+                        />
+                      )}
+                      {dashboard.queueStats.HasOldPendingItems === 1 && (
+                        <Alert
+                          message={`Oldest: ${Math.floor(dashboard.queueStats.OldestPendingAgeMinutes / 60)}h`}
+                          type="info"
+                          showIcon
+                          icon={<FieldTimeOutlined />}
+                        />
+                      )}
+                    </Space>
+                  )}
+                </Space>
+              </Card>
+            ) : (
+              <Card
+                title={
+                  <Space>
+                    <RobotOutlined />
+                    <span>Queue Overview</span>
+                  </Space>
+                }
+                style={{ height: '100%' }}
+              >
+                <Empty description="No queue data available" />
+              </Card>
+            )}
+          </Col>
+        </Row>
+
+        {/* Resource Usage */}
+        <Card 
+          title="Resource Usage"
+          extra={<Text type="secondary">Monitor your resource consumption against plan limits</Text>}
+        >
+          <Row gutter={[16, 24]}>
+            {dashboard.resources.map((resource) => (
+              <Col key={resource.ResourceType} xs={24} sm={12} md={8}>
+                <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Space>
+                      {resourceIcons[resource.ResourceType]}
+                      <Text strong>{resource.ResourceType}s</Text>
+                    </Space>
+                    <Text type="secondary">
+                      {resource.CurrentUsage} / {resource.ResourceLimit === 0 ? '∞' : resource.ResourceLimit}
+                    </Text>
+                  </div>
+                  <Progress 
+                    percent={resource.ResourceLimit === 0 ? 0 : resource.UsagePercentage} 
+                    status={getProgressStatus(resource.UsagePercentage)}
+                    strokeColor={resource.IsLimitReached === 1 ? token.colorError : token.colorPrimary}
+                  />
+                  {resource.IsLimitReached === 1 && (
+                    <Text type="danger" style={{ fontSize: 12 }}>Limit reached</Text>
+                  )}
+                </Space>
+              </Col>
+            ))}
+          </Row>
+        </Card>
+
+        {/* Recent Activity - Audit Logs */}
         <Card 
           title={
             <Space>
@@ -213,109 +393,49 @@ const DashboardPage = () => {
           )}
         </Card>
 
-        {/* Queue Statistics - NEW */}
+        {/* Queue Details - Team and Machine breakdown */}
         {dashboard.queueStats && (
+          dashboard.queueStats.TeamIssues && Array.isArray(dashboard.queueStats.TeamIssues) && dashboard.queueStats.TeamIssues.length > 0 ||
+          dashboard.queueStats.MachineIssues && Array.isArray(dashboard.queueStats.MachineIssues) && dashboard.queueStats.MachineIssues.length > 0
+        ) && (
           <Card 
             title={
               <Space>
                 <RobotOutlined />
-                <span>Queue Statistics</span>
+                <span>Queue Details</span>
               </Space>
-            }
-            extra={
-              <Link to="/queue" style={{ color: token.colorPrimary }}>Manage Queue</Link>
             }
           >
             <Row gutter={[16, 16]}>
-              {/* Queue Status Overview */}
-              <Col xs={24} lg={12}>
-                <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                  {/* Status Grid */}
-                  <Row gutter={[16, 16]}>
-                    <Col span={8}>
-                      <Statistic
-                        title="Pending"
-                        value={dashboard.queueStats.PendingCount}
-                        valueStyle={{ color: token.colorWarning }}
-                        prefix={<ClockCircleOutlined />}
-                      />
-                    </Col>
-                    <Col span={8}>
-                      <Statistic
-                        title="Processing"
-                        value={dashboard.queueStats.ActiveCount}
-                        valueStyle={{ color: token.colorInfo }}
-                        prefix={<SyncOutlined spin />}
-                      />
-                    </Col>
-                    <Col span={8}>
-                      <Statistic
-                        title="Completed"
-                        value={dashboard.queueStats.CompletedCount}
-                        valueStyle={{ color: token.colorSuccess }}
-                        prefix={<CheckCircleOutlined />}
-                      />
-                    </Col>
-                  </Row>
-
-                  {/* Today's Activity */}
-                  <div style={{ 
-                    padding: '16px', 
-                    backgroundColor: currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout, 
-                    borderRadius: 8,
-                    border: `1px solid ${token.colorBorder}`
-                  }}>
-                    <Text strong style={{ display: 'block', marginBottom: 12 }}>Today's Activity</Text>
-                    <Row gutter={[16, 8]}>
-                      <Col span={8}>
-                        <Space direction="vertical" size={0}>
-                          <Text type="secondary">Created</Text>
-                          <Text strong style={{ fontSize: 18 }}>{dashboard.queueStats.CreatedToday}</Text>
-                        </Space>
-                      </Col>
-                      <Col span={8}>
-                        <Space direction="vertical" size={0}>
-                          <Text type="secondary">Completed</Text>
-                          <Text strong style={{ fontSize: 18, color: token.colorSuccess }}>{dashboard.queueStats.CompletedToday}</Text>
-                        </Space>
-                      </Col>
-                      <Col span={8}>
-                        <Space direction="vertical" size={0}>
-                          <Text type="secondary">Cancelled</Text>
-                          <Text strong style={{ fontSize: 18, color: token.colorError }}>{dashboard.queueStats.CancelledToday}</Text>
-                        </Space>
-                      </Col>
-                    </Row>
-                  </div>
-
-                  {/* Alerts */}
-                  {(dashboard.queueStats.HasStaleItems === 1 || dashboard.queueStats.HasOldPendingItems === 1) && (
-                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                      {dashboard.queueStats.HasStaleItems === 1 && (
-                        <Alert
-                          message={`${dashboard.queueStats.StaleCount} stale items detected`}
-                          description="Some items haven't reported progress recently"
-                          type="warning"
-                          showIcon
-                          icon={<WarningOutlined />}
-                        />
-                      )}
-                      {dashboard.queueStats.HasOldPendingItems === 1 && (
-                        <Alert
-                          message="Old pending items"
-                          description={`Oldest item waiting for ${Math.floor(dashboard.queueStats.OldestPendingAgeMinutes / 60)} hours`}
-                          type="info"
-                          showIcon
-                          icon={<FieldTimeOutlined />}
-                        />
-                      )}
-                    </Space>
-                  )}
-                </Space>
+              {/* Today's Activity */}
+              <Col xs={24} lg={8}>
+                <div style={{ 
+                  padding: '16px', 
+                  backgroundColor: currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout, 
+                  borderRadius: 8,
+                  border: `1px solid ${token.colorBorder}`,
+                  height: '100%'
+                }}>
+                  <Text strong style={{ display: 'block', marginBottom: 12 }}>Today's Activity</Text>
+                  <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Text type="secondary">Created</Text>
+                      <Text strong style={{ fontSize: 18 }}>{dashboard.queueStats.CreatedToday}</Text>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Text type="secondary">Completed</Text>
+                      <Text strong style={{ fontSize: 18, color: token.colorSuccess }}>{dashboard.queueStats.CompletedToday}</Text>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Text type="secondary">Cancelled</Text>
+                      <Text strong style={{ fontSize: 18, color: token.colorError }}>{dashboard.queueStats.CancelledToday}</Text>
+                    </div>
+                  </Space>
+                </div>
               </Col>
 
               {/* Team and Machine Issues */}
-              <Col xs={24} lg={12}>
+              <Col xs={24} lg={16}>
                 <Space direction="vertical" size="large" style={{ width: '100%' }}>
                   {/* Team Issues */}
                   {dashboard.queueStats.TeamIssues && Array.isArray(dashboard.queueStats.TeamIssues) && dashboard.queueStats.TeamIssues.length > 0 && (
@@ -429,103 +549,6 @@ const DashboardPage = () => {
             </Row>
           </Card>
         )}
-
-        {/* Alerts */}
-        {dashboard.activeSubscription?.IsExpiringSoon === 1 && (
-          <Alert
-            message="Subscription Expiring Soon"
-            description={`Your ${dashboard.activeSubscription.PlanName} subscription expires in ${dashboard.activeSubscription.DaysRemaining} days.${!dashboard.activeSubscription.AutoRenew ? ' Enable auto-renewal to avoid service interruption.' : ''}`}
-            type="warning"
-            showIcon
-            icon={<ClockCircleOutlined />}
-          />
-        )}
-
-        {dashboard.accountHealth.ResourcesAtLimit > 0 && (
-          <Alert
-            message="Resource Limits Reached"
-            description={`${dashboard.accountHealth.ResourcesAtLimit} resource type(s) have reached their limits. Consider upgrading your plan to continue scaling.`}
-            type="error"
-            showIcon
-            icon={<ExclamationCircleOutlined />}
-          />
-        )}
-
-        {/* Main Grid */}
-        <Row gutter={[16, 16]}>
-          {/* Account Health Card */}
-          <Col xs={24}>
-            <Card 
-              title={
-                <Space>
-                  <SafetyCertificateOutlined />
-                  <span>Account Health</span>
-                </Space>
-              }
-            >
-              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Text>Overall Status</Text>
-                  <Tag color={getStatusType(dashboard.accountHealth.SubscriptionStatus)}>
-                    {dashboard.accountHealth.SubscriptionStatus}
-                  </Tag>
-                </div>
-                
-                <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                  <Space>
-                    {dashboard.accountHealth.ResourcesAtLimit > 0 ? (
-                      <ExclamationCircleOutlined style={{ color: token.colorWarning }} />
-                    ) : (
-                      <CheckCircleOutlined style={{ color: token.colorSuccess }} />
-                    )}
-                    <Text>{dashboard.accountHealth.ResourcesAtLimit} resources at limit</Text>
-                  </Space>
-                  
-                  <Space>
-                    <ClockCircleOutlined style={{ color: token.colorTextSecondary }} />
-                    <Text>{dashboard.accountHealth.ResourcesNearLimit} resources near limit</Text>
-                  </Space>
-                </Space>
-
-                <div style={{ paddingTop: 12, borderTop: `1px solid ${token.colorBorder}` }}>
-                  <Text strong>{dashboard.accountHealth.UpgradeRecommendation}</Text>
-                </div>
-              </Space>
-            </Card>
-          </Col>
-        </Row>
-
-        {/* Resource Usage */}
-        <Card 
-          title="Resource Usage"
-          extra={<Text type="secondary">Monitor your resource consumption against plan limits</Text>}
-        >
-          <Row gutter={[16, 24]}>
-            {dashboard.resources.map((resource) => (
-              <Col key={resource.ResourceType} xs={24} sm={12} md={8}>
-                <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Space>
-                      {resourceIcons[resource.ResourceType]}
-                      <Text strong>{resource.ResourceType}s</Text>
-                    </Space>
-                    <Text type="secondary">
-                      {resource.CurrentUsage} / {resource.ResourceLimit === 0 ? '∞' : resource.ResourceLimit}
-                    </Text>
-                  </div>
-                  <Progress 
-                    percent={resource.ResourceLimit === 0 ? 0 : resource.UsagePercentage} 
-                    status={getProgressStatus(resource.UsagePercentage)}
-                    strokeColor={resource.IsLimitReached === 1 ? token.colorError : token.colorPrimary}
-                  />
-                  {resource.IsLimitReached === 1 && (
-                    <Text type="danger" style={{ fontSize: 12 }}>Limit reached</Text>
-                  )}
-                </Space>
-              </Col>
-            ))}
-          </Row>
-        </Card>
 
         {/* Subscription & Plans Card - Full Width */}
         <Card 
