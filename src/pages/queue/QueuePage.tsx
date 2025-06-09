@@ -129,14 +129,16 @@ const QueuePage: React.FC = () => {
     })
   }
 
-  // Group functions by category
-  const functionsByCategory = Object.values(QUEUE_FUNCTIONS).reduce((acc, func) => {
-    if (!acc[func.category]) {
-      acc[func.category] = []
-    }
-    acc[func.category].push(func)
-    return acc
-  }, {} as Record<string, QueueFunction[]>)
+  // Group functions by category (excluding Repository, Backup, and Network functions)
+  const functionsByCategory = Object.values(QUEUE_FUNCTIONS)
+    .filter(func => !['Repository Functions', 'Backup Functions', 'Network Functions'].includes(func.category))
+    .reduce((acc, func) => {
+      if (!acc[func.category]) {
+        acc[func.category] = []
+      }
+      acc[func.category].push(func)
+      return acc
+    }, {} as Record<string, QueueFunction[]>)
 
   // Filter functions by search
   const filteredFunctions = Object.entries(functionsByCategory).reduce((acc, [category, funcs]) => {
@@ -250,10 +252,10 @@ const QueuePage: React.FC = () => {
         
         const priorityConfig = {
           1: { color: 'red', icon: <ExclamationCircleOutlined /> },
-          2: { color: 'orange' },
-          3: { color: 'gold' },
-          4: { color: 'blue' },
-          5: { color: 'green' }
+          2: { color: 'orange', icon: undefined },
+          3: { color: 'gold', icon: undefined },
+          4: { color: 'blue', icon: undefined },
+          5: { color: 'green', icon: undefined }
         }
         
         const config = priorityConfig[record.priority as keyof typeof priorityConfig] || priorityConfig[3]
@@ -337,7 +339,7 @@ const QueuePage: React.FC = () => {
       title: 'Actions',
       key: 'actions',
       width: 100,
-      render: (_, record: any) => (
+      render: (_: any, record: any) => (
         <Space size="small">
           {record.canBeCancelled && record.healthStatus !== 'CANCELLED' && (
             <Button
@@ -516,7 +518,7 @@ const QueuePage: React.FC = () => {
               <Card>
                 <Statistic
                   title="Total"
-                  value={queueData?.statistics?.totalCount || 0}
+                  value={(queueData?.statistics as any)?.totalCount || 0}
                   prefix={<ThunderboltOutlined />}
                 />
               </Card>
@@ -525,7 +527,7 @@ const QueuePage: React.FC = () => {
               <Card>
                 <Statistic
                   title="Pending"
-                  value={queueData?.statistics?.pendingCount || 0}
+                  value={(queueData?.statistics as any)?.pendingCount || 0}
                   valueStyle={{ color: '#8c8c8c' }}
                   prefix={<ClockCircleOutlined />}
                 />
@@ -535,7 +537,7 @@ const QueuePage: React.FC = () => {
               <Card>
                 <Statistic
                   title="Assigned"
-                  value={queueData?.statistics?.assignedCount || 0}
+                  value={(queueData?.statistics as any)?.assignedCount || 0}
                   valueStyle={{ color: '#1890ff' }}
                 />
               </Card>
@@ -544,7 +546,7 @@ const QueuePage: React.FC = () => {
               <Card>
                 <Statistic
                   title="Processing"
-                  value={queueData?.statistics?.processingCount || 0}
+                  value={(queueData?.statistics as any)?.processingCount || 0}
                   valueStyle={{ color: '#1890ff' }}
                   prefix={<PlayCircleOutlined />}
                 />
@@ -554,7 +556,7 @@ const QueuePage: React.FC = () => {
               <Card>
                 <Statistic
                   title="Completed"
-                  value={queueData?.statistics?.completedCount || 0}
+                  value={(queueData?.statistics as any)?.completedCount || 0}
                   valueStyle={{ color: '#52c41a' }}
                   prefix={<CheckCircleOutlined />}
                 />
@@ -564,7 +566,7 @@ const QueuePage: React.FC = () => {
               <Card>
                 <Statistic
                   title="Cancelled"
-                  value={queueData?.statistics?.cancelledCount || 0}
+                  value={(queueData?.statistics as any)?.cancelledCount || 0}
                   valueStyle={{ color: '#ff4d4f' }}
                   prefix={<CloseCircleOutlined />}
                 />
@@ -574,7 +576,7 @@ const QueuePage: React.FC = () => {
               <Card>
                 <Statistic
                   title="Stale"
-                  value={queueData?.statistics?.staleCount || 0}
+                  value={(queueData?.statistics as any)?.staleCount || 0}
                   valueStyle={{ color: '#faad14' }}
                   prefix={<WarningOutlined />}
                 />
@@ -615,7 +617,7 @@ const QueuePage: React.FC = () => {
             <Tabs.TabPane 
               tab={
                 <Space>
-                  <Badge count={queueData?.statistics?.completedCount || 0} showZero color="#52c41a">
+                  <Badge count={(queueData?.statistics as any)?.completedCount || 0} showZero color="#52c41a">
                     <span>Completed</span>
                   </Badge>
                 </Space>
@@ -634,7 +636,7 @@ const QueuePage: React.FC = () => {
             <Tabs.TabPane 
               tab={
                 <Space>
-                  <Badge count={queueData?.statistics?.cancelledCount || 0} showZero color="#ff4d4f">
+                  <Badge count={(queueData?.statistics as any)?.cancelledCount || 0} showZero color="#ff4d4f">
                     <span>Cancelled</span>
                   </Badge>
                 </Space>
@@ -690,7 +692,7 @@ const QueuePage: React.FC = () => {
               <div style={{ maxHeight: 400, overflow: 'auto' }}>
                 {Object.entries(filteredFunctions).map(([category, funcs]) => (
                   <div key={category} style={{ marginBottom: 16 }}>
-                    <Title level={5} style={{ marginBottom: 8 }}>{t(`categories.${category}.name`)}</Title>
+                    <Title level={5} style={{ marginBottom: 8 }}>{category}</Title>
                     {funcs.map(func => (
                       <div
                         key={func.name}

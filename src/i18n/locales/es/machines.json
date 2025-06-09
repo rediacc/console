@@ -49,6 +49,7 @@
   "searchFunctions": "Buscar funciones...",
   "configure": "Configurar",
   "machine": "Máquina",
+  "selectMachine": "Seleccionar Máquina",
   "priority": "Prioridad",
   "priorityLow": "Baja",
   "priorityNormal": "Normal",

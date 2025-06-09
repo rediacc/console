@@ -64,11 +64,14 @@
   },
   "repositories": {
     "repositoryName": "Nombre del Repositorio",
+    "repository": "Repositorio",
     "createRepository": "Crear Repositorio",
     "editRepository": "Editar Repositorio",
     "deleteRepository": "Eliminar Repositorio",
     "confirmDelete": "¿Está seguro de que desea eliminar el repositorio \"{{repositoryName}}\"?",
     "noRepositories": "No se encontraron repositorios en este equipo",
+    "repositoryFunctions": "Funciones del Repositorio",
+    "functionsFor": "Funciones para {{name}}",
     "placeholders": {
       "enterRepositoryName": "Ingrese el nombre del repositorio"
     }

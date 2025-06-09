@@ -1,4 +1,19 @@
 {
+  "availableFunctions": "Available Functions",
+  "selectFunction": "Select Function",
+  "searchFunctions": "Search functions...",
+  "configure": "Configure",
+  "selectFunctionToConfigure": "Select a function to configure",
+  "priority": "Priority",
+  "priorityHelp": "1 = Highest priority, 5 = Lowest priority",
+  "priorityHigh": "High",
+  "priorityAboveNormal": "Above Normal",
+  "priorityNormal": "Normal",
+  "priorityBelowNormal": "Below Normal",
+  "priorityLow": "Low",
+  "currentPriority": "Current",
+  "description": "Description (optional)",
+  "descriptionPlaceholder": "Add a custom description for this queue item",
   "categories": {
     "System Functions": {
       "name": "System Functions",

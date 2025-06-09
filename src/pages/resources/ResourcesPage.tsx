@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { Card, Tabs, Button, Space, Modal, Popconfirm, Tag, Typography, Form, Input, Table, Row, Col, Empty, Alert, Spin } from 'antd'
+import { Card, Tabs, Button, Space, Modal, Popconfirm, Tag, Typography, Form, Input, Table, Row, Col, Empty, Alert, Spin, Dropdown } from 'antd'
 import { 
   TeamOutlined, 
   PlusOutlined, 
@@ -10,7 +10,10 @@ import {
   CloudOutlined,
   InboxOutlined,
   DesktopOutlined,
-  ScheduleOutlined
+  ScheduleOutlined,
+  MoreOutlined,
+  FunctionOutlined,
+  ExclamationCircleOutlined
 } from '@ant-design/icons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -21,6 +24,7 @@ import ResourceListView from '@/components/common/ResourceListView'
 import ResourceForm from '@/components/forms/ResourceForm'
 import ResourceFormWithVault from '@/components/forms/ResourceFormWithVault'
 import VaultEditorModal from '@/components/common/VaultEditorModal'
+import toast from 'react-hot-toast'
 
 // Team queries
 import { useTeams, useCreateTeam, useUpdateTeamName, useDeleteTeam, useUpdateTeamVault, Team } from '@/api/queries/teams'
@@ -73,6 +77,10 @@ import {
   EditScheduleForm
 } from '@/utils/validation'
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize'
+import { QUEUE_FUNCTIONS, type QueueFunction } from '@/api/queries/queue'
+import { useCreateQueueItem } from '@/api/queries/queue'
+import functionsData from '@/data/functions.json'
+import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 
 const { Title, Text } = Typography
 
@@ -131,6 +139,14 @@ const ResourcesPage: React.FC = () => {
     schedule?: Schedule
   }>({ open: false })
 
+  // Function modal state for repositories
+  const [functionModalRepository, setFunctionModalRepository] = useState<Repository | null>(null)
+  const [selectedFunction, setSelectedFunction] = useState<QueueFunction | null>(null)
+  const [functionParams, setFunctionParams] = useState<Record<string, any>>({})
+  const [functionPriority, setFunctionPriority] = useState(5)
+  const [functionDescription, setFunctionDescription] = useState('')
+  const [functionSearchTerm, setFunctionSearchTerm] = useState('')
+
   // Common hooks
   const { data: dropdownData } = useDropdownData()
 
@@ -170,6 +186,9 @@ const ResourcesPage: React.FC = () => {
   const updateScheduleNameMutation = useUpdateScheduleName()
   const deleteScheduleMutation = useDeleteSchedule()
   const updateScheduleVaultMutation = useUpdateScheduleVault()
+  
+  // Queue mutation
+  const createQueueItemMutation = useCreateQueueItem()
   
   // Dynamic page sizes for tables
   const repositoryPageSize = useDynamicPageSize(repositoryTableRef, {
@@ -446,6 +465,50 @@ const ResourcesPage: React.FC = () => {
     setScheduleVaultModalConfig({ open: false })
   }
 
+  // Handle function selection for repository
+  const handleRepositoryFunctionSelected = async (functionData: {
+    function: QueueFunction;
+    params: Record<string, any>;
+    priority: number;
+    description: string;
+    selectedMachine?: string;
+  }) => {
+    if (!functionModalRepository || !functionData.selectedMachine) return;
+
+    // Find the selected machine data
+    const teamData = dropdownData?.machinesByTeam?.find(t => t.teamName === functionModalRepository.teamName);
+    const machine = teamData?.machines?.find(m => m.value === functionData.selectedMachine);
+    
+    if (!machine) {
+      toast.error('Selected machine not found');
+      return;
+    }
+
+    // Build the queue vault
+    const queueVault = {
+      function: functionData.function.name,
+      params: functionData.params, // Params already include repo from defaultParams
+      priority: functionData.priority,
+      description: functionData.description,
+      addedVia: 'repository-table'
+    };
+
+    try {
+      await createQueueItemMutation.mutateAsync({
+        teamName: functionModalRepository.teamName,
+        machineName: machine.value,
+        bridgeName: machine.bridgeName,
+        queueVault: JSON.stringify(queueVault),
+        priority: functionData.priority
+      });
+      
+      // Reset the modal
+      setFunctionModalRepository(null);
+    } catch (error) {
+      // Error is handled by the mutation
+    }
+  };
+
   // Team columns
   const teamColumns = [
     {
@@ -466,6 +529,71 @@ const ResourcesPage: React.FC = () => {
 
   // Repository columns
   const repositoryColumns = [
+    {
+      title: t('general.actions'),
+      key: 'actions',
+      width: 80,
+      align: 'center' as const,
+      fixed: 'left' as const,
+      render: (_: any, record: Repository) => (
+        <Dropdown
+          menu={{
+            items: [
+              {
+                key: 'vault',
+                label: t('general.vault'),
+                icon: <SettingOutlined />,
+                onClick: () => {
+                  setRepositoryVaultModalConfig({ open: true, repository: record });
+                },
+              },
+              {
+                key: 'edit',
+                label: t('general.edit'),
+                icon: <EditOutlined />,
+                onClick: () => {
+                  setEditingRepository(record);
+                  repositoryForm.setValue('repositoryName', record.repositoryName);
+                },
+              },
+              {
+                type: 'divider',
+              },
+              {
+                key: 'functions',
+                label: t('repositories.repositoryFunctions'),
+                icon: <FunctionOutlined />,
+                onClick: () => {
+                  setFunctionModalRepository(record);
+                },
+              },
+              {
+                type: 'divider',
+              },
+              {
+                key: 'delete',
+                label: t('general.delete'),
+                icon: <DeleteOutlined />,
+                danger: true,
+                onClick: () => {
+                  Modal.confirm({
+                    title: t('repositories.deleteRepository'),
+                    content: t('repositories.confirmDelete', { repositoryName: record.repositoryName }),
+                    okText: t('general.yes'),
+                    okType: 'danger',
+                    cancelText: t('general.no'),
+                    onOk: () => handleDeleteRepository(record),
+                  });
+                },
+              },
+            ],
+          }}
+          trigger={['click']}
+        >
+          <Button type="text" icon={<MoreOutlined />} />
+        </Dropdown>
+      ),
+    },
     {
       title: t('repositories.repositoryName'),
       dataIndex: 'repositoryName',
@@ -494,50 +622,6 @@ const ResourcesPage: React.FC = () => {
       align: 'center' as const,
       render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
     }] : []),
-    {
-      title: t('general.actions'),
-      key: 'actions',
-      width: 250,
-      align: 'center' as const,
-      render: (_: any, record: Repository) => (
-        <Space>
-          <Button
-            type="link"
-            icon={<SettingOutlined />}
-            onClick={() => setRepositoryVaultModalConfig({ open: true, repository: record })}
-          >
-            {t('general.vault')}
-          </Button>
-          <Button 
-            type="link" 
-            icon={<EditOutlined />}
-            onClick={() => {
-              setEditingRepository(record)
-              repositoryForm.setValue('repositoryName', record.repositoryName)
-            }}
-          >
-            {t('general.edit')}
-          </Button>
-          <Popconfirm
-            title={t('repositories.deleteRepository')}
-            description={t('repositories.confirmDelete', { repositoryName: record.repositoryName })}
-            onConfirm={() => handleDeleteRepository(record)}
-            okText={t('general.yes')}
-            cancelText={t('general.no')}
-            okButtonProps={{ danger: true }}
-          >
-            <Button 
-              type="link" 
-              danger 
-              icon={<DeleteOutlined />}
-              loading={deleteRepositoryMutation.isPending}
-            >
-              {t('general.delete')}
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
   ]
 
   // Storage columns
@@ -1489,6 +1573,31 @@ const ResourcesPage: React.FC = () => {
           loading={updateScheduleNameMutation.isPending}
         />
       </Modal>
+
+      {/* Repository Functions Modal */}
+      <FunctionSelectionModal
+        open={!!functionModalRepository}
+        onCancel={() => setFunctionModalRepository(null)}
+        onSubmit={handleRepositoryFunctionSelected}
+        title={t('repositories.repositoryFunctions')}
+        subtitle={
+          functionModalRepository && (
+            <Space size="small">
+              <Text type="secondary">{t('machines:team')}:</Text>
+              <Text strong>{functionModalRepository.teamName}</Text>
+              <Text type="secondary" style={{ marginLeft: 16 }}>{t('repositories.repository')}:</Text>
+              <Text strong>{functionModalRepository.repositoryName}</Text>
+            </Space>
+          )
+        }
+        allowedCategories={['Repository Functions', 'Backup Functions', 'Network Functions']}
+        loading={createQueueItemMutation.isPending}
+        showMachineSelection={true}
+        teamName={functionModalRepository?.teamName}
+        machines={dropdownData?.machinesByTeam?.find(t => t.teamName === functionModalRepository?.teamName)?.machines || []}
+        hiddenParams={['repo']} // Hide the repo parameter since it's automatically set
+        defaultParams={{ repo: functionModalRepository?.repositoryName }} // Set repo value automatically
+      />
     </>
   )
 }

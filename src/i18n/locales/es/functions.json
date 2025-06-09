@@ -1,4 +1,19 @@
 {
+  "availableFunctions": "Funciones Disponibles",
+  "selectFunction": "Seleccionar Función",
+  "searchFunctions": "Buscar funciones...",
+  "configure": "Configurar",
+  "selectFunctionToConfigure": "Seleccione una función para configurar",
+  "priority": "Prioridad",
+  "priorityHelp": "1 = Prioridad más alta, 5 = Prioridad más baja",
+  "priorityHigh": "Alta",
+  "priorityAboveNormal": "Por encima de lo normal",
+  "priorityNormal": "Normal",
+  "priorityBelowNormal": "Por debajo de lo normal",
+  "priorityLow": "Baja",
+  "currentPriority": "Actual",
+  "description": "Descripción (opcional)",
+  "descriptionPlaceholder": "Agregar una descripción personalizada para este elemento de la cola",
   "categories": {
     "System Functions": {
       "name": "Funciones del Sistema",

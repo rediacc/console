@@ -64,11 +64,14 @@
   },
   "repositories": {
     "repositoryName": "Repository Name",
+    "repository": "Repository",
     "createRepository": "Create Repository",
     "editRepository": "Edit Repository",
     "deleteRepository": "Delete Repository",
     "confirmDelete": "Are you sure you want to delete repository \"{{repositoryName}}\"?",
     "noRepositories": "No repositories found in this team",
+    "repositoryFunctions": "Repository Functions",
+    "functionsFor": "Functions for {{name}}",
     "placeholders": {
       "enterRepositoryName": "Enter repository name"
     }
