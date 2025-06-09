@@ -1063,7 +1063,17 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       {/* System Functions Modal */}
       {functionModalMachine && (
         <Modal
-          title={t('machines:addSystemFunction')}
+          title={
+            <Space direction="vertical" size={4}>
+              <Title level={4} style={{ margin: 0 }}>{t('machines:addSystemFunction')}</Title>
+              <Space size="small">
+                <Text type="secondary">{t('machines:team')}:</Text>
+                <Text strong>{functionModalMachine.teamName}</Text>
+                <Text type="secondary" style={{ marginLeft: 16 }}>{t('machines:machine')}:</Text>
+                <Text strong>{functionModalMachine.machineName}</Text>
+              </Space>
+            </Space>
+          }
           open={!!functionModalMachine}
           onCancel={() => {
             setFunctionModalMachine(null);
@@ -1154,24 +1164,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                           />
                         </Form.Item>
                       ))}
-                      
-                      {/* Team Selection - Disabled */}
-                      <Form.Item label={t('machines:team')} required>
-                        <Input
-                          value={functionModalMachine.teamName}
-                          disabled
-                          style={{ backgroundColor: '#f5f5f5' }}
-                        />
-                      </Form.Item>
-                      
-                      {/* Machine Selection - Disabled */}
-                      <Form.Item label={t('machines:machine')} required>
-                        <Input
-                          value={functionModalMachine.machineName}
-                          disabled
-                          style={{ backgroundColor: '#f5f5f5' }}
-                        />
-                      </Form.Item>
                       
                       {/* Priority */}
                       <Form.Item label={t('machines:priority')}>
