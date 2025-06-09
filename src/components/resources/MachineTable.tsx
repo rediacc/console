@@ -56,6 +56,7 @@ import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
 import functionsData from '@/data/functions.json';
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 
 const { Option } = Select;
 const { Search } = Input;
@@ -104,6 +105,10 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     entityIdentifier: string | null
     entityName?: string
   }>({ open: false, entityType: null, entityIdentifier: null });
+  const [queueTraceModal, setQueueTraceModal] = useState<{
+    visible: boolean
+    taskId: string | null
+  }>({ visible: false, taskId: null });
   
   // Refs for form components
   const createFormRef = useRef<any>(null);
@@ -405,7 +410,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         addedVia: 'machine-table'
       };
 
-      await createQueueItemMutation.mutateAsync({
+      const response = await createQueueItemMutation.mutateAsync({
         teamName: functionModalMachine.teamName,
         machineName: functionModalMachine.machineName,
         bridgeName: functionModalMachine.bridgeName,
@@ -415,6 +420,12 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       
       // Reset the modal
       setFunctionModalMachine(null);
+      
+      // Automatically open the trace modal if queue item was created successfully
+      if (response?.taskId) {
+        message.success(t('machines:queueItemCreated'));
+        setQueueTraceModal({ visible: true, taskId: response.taskId });
+      }
     } catch (error) {
       // Error is handled by the mutation
     }
@@ -1111,6 +1122,13 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         entityType={auditTraceModal.entityType}
         entityIdentifier={auditTraceModal.entityIdentifier}
         entityName={auditTraceModal.entityName}
+      />
+
+      {/* Queue Item Trace Modal */}
+      <QueueItemTraceModal
+        taskId={queueTraceModal.taskId}
+        visible={queueTraceModal.visible}
+        onClose={() => setQueueTraceModal({ visible: false, taskId: null })}
       />
     </div>
   );

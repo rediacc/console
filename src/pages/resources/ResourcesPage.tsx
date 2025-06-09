@@ -26,6 +26,7 @@ import ResourceForm from '@/components/forms/ResourceForm'
 import ResourceFormWithVault from '@/components/forms/ResourceFormWithVault'
 import VaultEditorModal from '@/components/common/VaultEditorModal'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import toast from 'react-hot-toast'
 
 // Team queries
@@ -199,6 +200,12 @@ const ResourcesPage: React.FC = () => {
     entityIdentifier: string | null
     entityName?: string
   }>({ open: false, entityType: null, entityIdentifier: null })
+  
+  // Queue trace modal state
+  const [queueTraceModal, setQueueTraceModal] = useState<{
+    visible: boolean
+    taskId: string | null
+  }>({ visible: false, taskId: null })
   
   // Dynamic page sizes for tables
   const repositoryPageSize = useDynamicPageSize(repositoryTableRef, {
@@ -504,7 +511,7 @@ const ResourcesPage: React.FC = () => {
     };
 
     try {
-      await createQueueItemMutation.mutateAsync({
+      const response = await createQueueItemMutation.mutateAsync({
         teamName: functionModalRepository.teamName,
         machineName: machine.value,
         bridgeName: machine.bridgeName,
@@ -514,6 +521,12 @@ const ResourcesPage: React.FC = () => {
       
       // Reset the modal
       setFunctionModalRepository(null);
+      
+      // Automatically open the trace modal if queue item was created successfully
+      if (response?.taskId) {
+        toast.success(t('repositories.queueItemCreated'));
+        setQueueTraceModal({ visible: true, taskId: response.taskId });
+      }
     } catch (error) {
       // Error is handled by the mutation
     }
@@ -1746,6 +1759,13 @@ const ResourcesPage: React.FC = () => {
         entityType={auditTraceModal.entityType}
         entityIdentifier={auditTraceModal.entityIdentifier}
         entityName={auditTraceModal.entityName}
+      />
+
+      {/* Queue Item Trace Modal */}
+      <QueueItemTraceModal
+        taskId={queueTraceModal.taskId}
+        visible={queueTraceModal.visible}
+        onClose={() => setQueueTraceModal({ visible: false, taskId: null })}
       />
     </>
   )

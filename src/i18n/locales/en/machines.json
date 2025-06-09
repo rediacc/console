@@ -59,5 +59,7 @@
   "descriptionPlaceholder": "Add a custom description for this queue item",
   "selectFunctionToConfigure": "Select a function to configure",
   "addToQueue": "Add to Queue",
-  "defaultsApplied": "Default values applied automatically"
+  "defaultsApplied": "Default values applied automatically",
+  "queueItemCreated": "Queue Item Created",
+  "queueItemCreatedMessage": "The queue item has been created successfully."
 }

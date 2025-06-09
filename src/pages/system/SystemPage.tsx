@@ -621,9 +621,23 @@ const SystemPage: React.FC = () => {
     {
       title: 'Actions',
       key: 'actions',
-      width: 250,
+      width: 350,
       render: (_: any, record: PermissionGroup) => (
         <Space>
+          <Button
+            type="link"
+            icon={<HistoryOutlined />}
+            onClick={() => {
+              setAuditTraceModal({
+                open: true,
+                entityType: 'Permissions',
+                entityIdentifier: record.permissionGroupName,
+                entityName: record.permissionGroupName
+              })
+            }}
+          >
+            Trace
+          </Button>
           <Button
             type="link"
             icon={<KeyOutlined />}

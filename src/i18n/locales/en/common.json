@@ -20,7 +20,9 @@
     "refresh": "Refresh",
     "fullscreen": "Fullscreen",
     "exitFullscreen": "Exit Fullscreen",
-    "addToQueue": "Add to Queue"
+    "addToQueue": "Add to Queue",
+    "viewTrace": "View Trace",
+    "close": "Close"
   },
   "export": "Export",
   "exportCSV": "Export as CSV",

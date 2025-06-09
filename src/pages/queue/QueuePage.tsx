@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useRef } from 'react'
-import { Typography, Button, Space, Modal, Select, Card, Tag, Badge, Tabs, Row, Col, Statistic, Tooltip, DatePicker, Checkbox, Dropdown, Timeline, Descriptions, Empty, Spin } from 'antd'
+import { Typography, Button, Space, Modal, Select, Card, Tag, Badge, Tabs, Row, Col, Statistic, Tooltip, DatePicker, Checkbox, Dropdown } from 'antd'
 import { ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, WarningOutlined, GlobalOutlined, ClockCircleOutlined, ReloadOutlined, ExportOutlined, DownOutlined, HistoryOutlined } from '@ant-design/icons'
-import { useQueueItems, useCancelQueueItem, QueueFilters, useQueueItemTrace } from '@/api/queries/queue'
+import { useQueueItems, useCancelQueueItem, QueueFilters } from '@/api/queries/queue'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import ResourceListView from '@/components/common/ResourceListView'
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import toast from 'react-hot-toast'
 import dayjs from 'dayjs'
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize'
@@ -24,7 +25,6 @@ const QueuePage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string[]>([])
   const [traceModalVisible, setTraceModalVisible] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
-  const [lastTraceFetchTime, setLastTraceFetchTime] = useState<dayjs.Dayjs | null>(null)
   
   // Refs for table containers
   const activeTableRef = useRef<HTMLDivElement>(null)
@@ -43,16 +43,8 @@ const QueuePage: React.FC = () => {
   const { data: queueData, isLoading, refetch, isRefetching } = useQueueItems(queryFilters)
   const { data: dropdownData } = useDropdownData()
   const cancelQueueItemMutation = useCancelQueueItem()
-  const { data: traceData, isLoading: isTraceLoading, refetch: refetchTrace } = useQueueItemTrace(selectedTaskId, traceModalVisible)
   
   const isFetching = isLoading || isRefetching
-  
-  // Update last fetch time when trace data is loaded
-  React.useEffect(() => {
-    if (traceData && traceModalVisible) {
-      setLastTraceFetchTime(dayjs())
-    }
-  }, [traceData, traceModalVisible])
   
   // Dynamic page sizes for tables with minimum size for small screens
   const activePageSize = useDynamicPageSize(activeTableRef, {
@@ -141,12 +133,6 @@ const QueuePage: React.FC = () => {
   const handleViewTrace = (taskId: string) => {
     setSelectedTaskId(taskId)
     setTraceModalVisible(true)
-    setLastTraceFetchTime(null) // Reset on new trace view
-  }
-
-  // Handle refresh trace
-  const handleRefreshTrace = async () => {
-    await refetchTrace()
   }
 
 
@@ -666,196 +652,14 @@ const QueuePage: React.FC = () => {
           </Tabs>
 
           {/* Trace Modal */}
-          <Modal
-            title={
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                <Space>
-                  <HistoryOutlined />
-                  {`Queue Item Trace - ${selectedTaskId || ''}`}
-                </Space>
-                {lastTraceFetchTime && (
-                  <Text type="secondary" style={{ fontSize: '14px', marginRight: '20px' }}>
-                    Last fetched: {lastTraceFetchTime.format('HH:mm:ss')}
-                  </Text>
-                )}
-              </div>
-            }
-            open={traceModalVisible}
-            onCancel={() => {
+          <QueueItemTraceModal
+            taskId={selectedTaskId}
+            visible={traceModalVisible}
+            onClose={() => {
               setTraceModalVisible(false)
               setSelectedTaskId(null)
             }}
-            width={900}
-            footer={[
-              <Button 
-                key="refresh" 
-                icon={<ReloadOutlined />} 
-                onClick={handleRefreshTrace}
-                loading={isTraceLoading}
-              >
-                Refresh
-              </Button>,
-              <Button key="close" onClick={() => {
-                setTraceModalVisible(false)
-                setSelectedTaskId(null)
-              }}>
-                Close
-              </Button>
-            ]}
-          >
-            {isTraceLoading ? (
-              <div style={{ textAlign: 'center', padding: '50px 0' }}>
-                <Spin size="large" />
-              </div>
-            ) : traceData ? (
-              <div>
-                {/* Queue Details */}
-                {traceData.queueDetails && (
-                  <Card title="Queue Item Details" style={{ marginBottom: 16 }}>
-                    <Descriptions column={2} size="small">
-                      <Descriptions.Item label="Task ID">
-                        <Text code>{traceData.queueDetails.taskId || traceData.queueDetails.TaskId}</Text>
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Status">
-                        <Tag color={
-                          traceData.queueDetails.status === 'COMPLETED' ? 'success' :
-                          traceData.queueDetails.status === 'CANCELLED' ? 'error' :
-                          traceData.queueDetails.status === 'PROCESSING' ? 'processing' :
-                          traceData.queueDetails.status === 'ASSIGNED' ? 'blue' :
-                          'default'
-                        }>
-                          {traceData.queueDetails.status}
-                        </Tag>
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Priority">
-                        {traceData.queueDetails.priorityLabel || '-'}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Machine">
-                        {traceData.queueDetails.machineName}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Team">
-                        {traceData.queueDetails.teamName}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Bridge">
-                        {traceData.queueDetails.bridgeName}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Region">
-                        {traceData.queueDetails.regionName}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Created">
-                        {dayjs(traceData.queueDetails.createdTime).format('YYYY-MM-DD HH:mm:ss')}
-                      </Descriptions.Item>
-                      {traceData.queueDetails.assignedTime && (
-                        <Descriptions.Item label="Assigned">
-                          {dayjs(traceData.queueDetails.assignedTime).format('YYYY-MM-DD HH:mm:ss')}
-                        </Descriptions.Item>
-                      )}
-                      {traceData.queueDetails.lastHeartbeat && (
-                        <Descriptions.Item label="Last Heartbeat">
-                          {dayjs(traceData.queueDetails.lastHeartbeat).format('YYYY-MM-DD HH:mm:ss')}
-                        </Descriptions.Item>
-                      )}
-                      <Descriptions.Item label="Total Duration">
-                        {Math.floor(traceData.queueDetails.totalDurationSeconds / 60)} minutes
-                      </Descriptions.Item>
-                      {traceData.queueDetails.processingDurationSeconds && (
-                        <Descriptions.Item label="Processing Duration">
-                          {Math.floor(traceData.queueDetails.processingDurationSeconds / 60)} minutes
-                        </Descriptions.Item>
-                      )}
-                    </Descriptions>
-                  </Card>
-                )}
-
-                {/* Trace Logs */}
-                <Card title="Activity Timeline">
-                  {traceData.traceLogs && traceData.traceLogs.length > 0 ? (
-                    <Timeline mode="left">
-                      {traceData.traceLogs.map((log: any, index: number) => {
-                        const action = log.action || log.Action
-                        const timestamp = log.timestamp || log.Timestamp
-                        const details = log.details || log.Details || ''
-                        const actionByUser = log.actionByUser || log.ActionByUser || ''
-
-                        // Determine timeline item color based on action type
-                        let color = 'gray'
-                        if (action === 'QUEUE_ITEM_CREATED') color = 'green'
-                        else if (action === 'QUEUE_ITEM_ASSIGNED') color = 'blue'
-                        else if (action === 'QUEUE_ITEM_PROCESSING' || action === 'QUEUE_ITEM_RESPONSE_UPDATED') color = 'orange'
-                        else if (action === 'QUEUE_ITEM_COMPLETED') color = 'green'
-                        else if (action === 'QUEUE_ITEM_CANCELLED') color = 'red'
-                        else if (action.includes('ERROR') || action.includes('FAILED')) color = 'red'
-
-                        return (
-                          <Timeline.Item key={index} color={color}>
-                            <Space direction="vertical" size={0}>
-                              <Text strong>{action.replace('QUEUE_ITEM_', '').replace(/_/g, ' ')}</Text>
-                              <Text type="secondary">{dayjs(timestamp).format('YYYY-MM-DD HH:mm:ss')}</Text>
-                              {details && <Text>{details}</Text>}
-                              {actionByUser && <Text type="secondary">By: {actionByUser}</Text>}
-                            </Space>
-                          </Timeline.Item>
-                        )
-                      })}
-                    </Timeline>
-                  ) : (
-                    <Empty description="No trace logs available" />
-                  )}
-                </Card>
-
-                {/* Additional Information */}
-                {(traceData.queuePosition || traceData.machineStats || traceData.planInfo) && (
-                  <Row gutter={16} style={{ marginTop: 16 }}>
-                    {traceData.machineStats && (
-                      <Col span={8}>
-                        <Card title="Machine Statistics" size="small">
-                          <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                            <div>
-                              <Text type="secondary">Success Rate:</Text>{' '}
-                              <Text strong>{traceData.machineStats.machineSuccessRate}%</Text>
-                            </div>
-                            <div>
-                              <Text type="secondary">Queue Depth:</Text>{' '}
-                              <Text strong>{traceData.machineStats.currentQueueDepth}</Text>
-                            </div>
-                            <div>
-                              <Text type="secondary">Active Tasks:</Text>{' '}
-                              <Text strong>{traceData.machineStats.activeProcessingCount}</Text>
-                            </div>
-                          </Space>
-                        </Card>
-                      </Col>
-                    )}
-                    {traceData.planInfo && (
-                      <Col span={8}>
-                        <Card title="Plan Information" size="small">
-                          <div><Text strong>Plan:</Text> {traceData.planInfo.planName}</div>
-                          <div><Text strong>Status:</Text> <Tag color="success">{traceData.planInfo.subscriptionStatus}</Tag></div>
-                          <div><Text strong>Max Tasks:</Text> {traceData.planInfo.maxConcurrentTasks}</div>
-                        </Card>
-                      </Col>
-                    )}
-                    {traceData.queuePosition && traceData.queuePosition.length > 0 && (
-                      <Col span={8}>
-                        <Card title="Queue Position" size="small">
-                          <div style={{ maxHeight: 200, overflow: 'auto' }}>
-                            {traceData.queuePosition.filter((p: any) => p.relativePosition === 'Before').length > 0 && (
-                              <div><Text type="secondary">{traceData.queuePosition.filter((p: any) => p.relativePosition === 'Before').length} tasks ahead</Text></div>
-                            )}
-                            {traceData.queuePosition.filter((p: any) => p.relativePosition === 'After').length > 0 && (
-                              <div><Text type="secondary">{traceData.queuePosition.filter((p: any) => p.relativePosition === 'After').length} tasks behind</Text></div>
-                            )}
-                          </div>
-                        </Card>
-                      </Col>
-                    )}
-                  </Row>
-                )}
-              </div>
-            ) : (
-              <Empty description="No trace data available" />
-            )}
-          </Modal>
+          />
     </div>
   )
 }

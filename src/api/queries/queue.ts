@@ -142,13 +142,14 @@ export const useCreateQueueItem = () => {
       // Ensure priority is within valid range
       const priority = data.priority && data.priority >= 1 && data.priority <= 5 ? data.priority : 3
       const response = await apiClient.post('/CreateQueueItem', { ...data, priority })
-      return response
+      // Extract taskId from response and add it to the response object
+      const taskId = response.tables[1]?.data[0]?.taskId || response.tables[1]?.data[0]?.TaskId
+      return { ...response, taskId }
     },
     onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ['queue-items'] })
       queryClient.invalidateQueries({ queryKey: ['queue-items-bridge', variables.bridgeName] })
-      const taskId = response.tables[1]?.data[0]?.taskId || response.tables[1]?.data[0]?.TaskId
-      toast.success(`Queue item created${taskId ? ` with ID: ${taskId}` : ''}`)
+      toast.success(`Queue item created${response.taskId ? ` with ID: ${response.taskId}` : ''}`)
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to create queue item')
