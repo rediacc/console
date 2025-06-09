@@ -66,17 +66,11 @@
     },
     "STORAGE": {
       "descriptionKey": "fields.STORAGE.description",
-      "required": ["name", "provider"],
+      "required": ["provider"],
       "optional": ["description", "noVersioning", "parameters"],
       "dynamicFields": true,
       "providerSchema": "storageProviders.json",
       "fields": {
-        "name": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9-_]+$",
-          "example": "company-backup-s3",
-          "description": "Unique storage configuration name"
-        },
         "provider": {
           "type": "string",
           "enum": [

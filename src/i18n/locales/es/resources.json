@@ -118,5 +118,28 @@
     "repositories": "Repositorios",
     "storage": "Almacenamiento",
     "schedules": "Horarios"
+  },
+  "audit": {
+    "title": "Historial de Auditoría - {{name}}",
+    "action": "Acción",
+    "details": "Detalles",
+    "performedBy": "Realizado Por",
+    "timestamp": "Marca de Tiempo",
+    "by": "por",
+    "system": "Sistema",
+    "error": "Error al Cargar Historial de Auditoría",
+    "errorLoading": "Error al cargar el historial de auditoría",
+    "noRecords": "No se encontraron registros de auditoría",
+    "retentionInfo": "Mostrando {{days}} días de historial (nivel {{tier}})",
+    "totalRecords": "Registros Totales",
+    "visibleRecords": "Registros Visibles",
+    "lastActivity": "Última Actividad",
+    "olderRecordsNotVisible": "Algunos registros antiguos no están visibles debido a su nivel de suscripción",
+    "viewHistory": "Ver Historial",
+    "trace": "Rastrear",
+    "export": "Exportar",
+    "exportCSV": "Exportar como CSV",
+    "exportJSON": "Exportar como JSON",
+    "exportSuccess": "Historial de auditoría exportado como {{format}}"
   }
 }

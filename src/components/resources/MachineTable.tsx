@@ -48,11 +48,13 @@ import { createMachineSchema, CreateMachineForm, editMachineSchema, EditMachineF
 import { QUEUE_FUNCTIONS, type QueueFunction } from '@/api/queries/queue';
 import { useCreateQueueItem } from '@/api/queries/queue';
 import { 
-  FunctionOutlined 
+  FunctionOutlined,
+  HistoryOutlined 
 } from '@ant-design/icons';
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
 import functionsData from '@/data/functions.json';
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
+import AuditTraceModal from '@/components/common/AuditTraceModal';
 
 const { Option } = Select;
 const { Search } = Input;
@@ -95,6 +97,12 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const [editingMachine, setEditingMachine] = useState<Machine | null>(null);
   const [vaultMachine, setVaultMachine] = useState<Machine | null>(null);
   const [functionModalMachine, setFunctionModalMachine] = useState<Machine | null>(null);
+  const [auditTraceModal, setAuditTraceModal] = useState<{
+    open: boolean
+    entityType: string | null
+    entityIdentifier: string | null
+    entityName?: string
+  }>({ open: false, entityType: null, entityIdentifier: null });
   
   // Refs for form components
   const createFormRef = useRef<any>(null);
@@ -439,6 +447,22 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                   icon: <FunctionOutlined />,
                   onClick: () => {
                     setFunctionModalMachine(record);
+                  },
+                },
+                {
+                  type: 'divider',
+                },
+                {
+                  key: 'trace',
+                  label: t('machines:trace'),
+                  icon: <HistoryOutlined />,
+                  onClick: () => {
+                    setAuditTraceModal({
+                      open: true,
+                      entityType: 'Machine',
+                      entityIdentifier: record.machineName,
+                      entityName: record.machineName
+                    });
                   },
                 },
                 {
@@ -1055,6 +1079,15 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         }
         allowedCategories={['System Functions']}
         loading={createQueueItemMutation.isPending}
+      />
+
+      {/* Audit Trace Modal */}
+      <AuditTraceModal
+        open={auditTraceModal.open}
+        onCancel={() => setAuditTraceModal({ open: false, entityType: null, entityIdentifier: null })}
+        entityType={auditTraceModal.entityType}
+        entityIdentifier={auditTraceModal.entityIdentifier}
+        entityName={auditTraceModal.entityName}
       />
     </div>
   );

@@ -19,7 +19,8 @@ import {
   ScheduleOutlined,
   CloudServerOutlined,
   CopyOutlined,
-  SyncOutlined
+  SyncOutlined,
+  HistoryOutlined
 } from '@ant-design/icons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -30,6 +31,7 @@ import ResourceListView from '@/components/common/ResourceListView'
 import ResourceForm from '@/components/forms/ResourceForm'
 import ResourceFormWithVault, { ResourceFormWithVaultRef } from '@/components/forms/ResourceFormWithVault'
 import VaultEditorModal from '@/components/common/VaultEditorModal'
+import AuditTraceModal from '@/components/common/AuditTraceModal'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import { useUpdateCompanyVault, useCompanyVault } from '@/api/queries/company'
 import toast from 'react-hot-toast'
@@ -179,6 +181,14 @@ const SystemPage: React.FC = () => {
     open: boolean
     bridge?: Bridge
   }>({ open: false })
+
+  // Audit trace modal state
+  const [auditTraceModal, setAuditTraceModal] = useState<{
+    open: boolean
+    entityType: string | null
+    entityIdentifier: string | null
+    entityName?: string
+  }>({ open: false, entityType: null, entityIdentifier: null })
 
   // Common hooks
   const { data: dropdownData } = useDropdownData()
@@ -701,9 +711,23 @@ const SystemPage: React.FC = () => {
     {
       title: 'Actions',
       key: 'actions',
-      width: 250,
+      width: 300,
       render: (_: any, record: User) => (
         <Space>
+          <Button
+            type="link"
+            icon={<HistoryOutlined />}
+            onClick={() => {
+              setAuditTraceModal({
+                open: true,
+                entityType: 'User',
+                entityIdentifier: record.userEmail,
+                entityName: record.userEmail
+              })
+            }}
+          >
+            Trace
+          </Button>
           <Button
             type="link"
             icon={<SafetyOutlined />}
@@ -822,9 +846,23 @@ const SystemPage: React.FC = () => {
     {
       title: 'Actions',
       key: 'actions',
-      width: 250,
+      width: 350,
       render: (_: any, record: Team) => (
         <Space>
+          <Button
+            type="link"
+            icon={<HistoryOutlined />}
+            onClick={() => {
+              setAuditTraceModal({
+                open: true,
+                entityType: 'Team',
+                entityIdentifier: record.teamName,
+                entityName: record.teamName
+              })
+            }}
+          >
+            Trace
+          </Button>
           <Button
             type="link"
             icon={<UserOutlined />}
@@ -909,9 +947,23 @@ const SystemPage: React.FC = () => {
     {
       title: tOrg('general.actions'),
       key: 'actions',
-      width: 200,
+      width: 300,
       render: (_: any, record: Region) => (
         <Space>
+          <Button
+            type="link"
+            icon={<HistoryOutlined />}
+            onClick={() => {
+              setAuditTraceModal({
+                open: true,
+                entityType: 'Region',
+                entityIdentifier: record.regionName,
+                entityName: record.regionName
+              })
+            }}
+          >
+            Trace
+          </Button>
           <Button
             type="link"
             icon={<SettingOutlined />}
@@ -991,9 +1043,23 @@ const SystemPage: React.FC = () => {
     {
       title: tOrg('general.actions'),
       key: 'actions',
-      width: 300,
+      width: 400,
       render: (_: any, record: Bridge) => (
         <Space>
+          <Button
+            type="link"
+            icon={<HistoryOutlined />}
+            onClick={() => {
+              setAuditTraceModal({
+                open: true,
+                entityType: 'Bridge',
+                entityIdentifier: record.bridgeName,
+                entityName: record.bridgeName
+              })
+            }}
+          >
+            Trace
+          </Button>
           <Button
             type="link"
             icon={<SettingOutlined />}
@@ -2026,6 +2092,15 @@ const SystemPage: React.FC = () => {
           )
         })()}
       </Modal>
+
+      {/* Audit Trace Modal */}
+      <AuditTraceModal
+        open={auditTraceModal.open}
+        onCancel={() => setAuditTraceModal({ open: false, entityType: null, entityIdentifier: null })}
+        entityType={auditTraceModal.entityType}
+        entityIdentifier={auditTraceModal.entityIdentifier}
+        entityName={auditTraceModal.entityName}
+      />
     </>
   )
 }

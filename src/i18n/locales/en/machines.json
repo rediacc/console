@@ -48,6 +48,7 @@
   "availableFunctions": "Available Functions",
   "searchFunctions": "Search functions...",
   "configure": "Configure",
+  "trace": "Trace",
   "machine": "Machine",
   "selectMachine": "Select Machine",
   "priority": "Priority",

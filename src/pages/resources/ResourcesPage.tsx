@@ -13,7 +13,8 @@ import {
   ScheduleOutlined,
   MoreOutlined,
   FunctionOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
+  HistoryOutlined
 } from '@ant-design/icons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -24,6 +25,7 @@ import ResourceListView from '@/components/common/ResourceListView'
 import ResourceForm from '@/components/forms/ResourceForm'
 import ResourceFormWithVault from '@/components/forms/ResourceFormWithVault'
 import VaultEditorModal from '@/components/common/VaultEditorModal'
+import AuditTraceModal from '@/components/common/AuditTraceModal'
 import toast from 'react-hot-toast'
 
 // Team queries
@@ -189,6 +191,14 @@ const ResourcesPage: React.FC = () => {
   
   // Queue mutation
   const createQueueItemMutation = useCreateQueueItem()
+  
+  // Audit trace modal state
+  const [auditTraceModal, setAuditTraceModal] = useState<{
+    open: boolean
+    entityType: string | null
+    entityIdentifier: string | null
+    entityName?: string
+  }>({ open: false, entityType: null, entityIdentifier: null })
   
   // Dynamic page sizes for tables
   const repositoryPageSize = useDynamicPageSize(repositoryTableRef, {
@@ -523,6 +533,75 @@ const ResourcesPage: React.FC = () => {
         </Space>
       ),
     },
+    {
+      title: t('general.actions'),
+      key: 'actions',
+      width: 80,
+      align: 'center' as const,
+      render: (_: any, record: Team) => (
+        <Dropdown
+          menu={{
+            items: [
+              {
+                key: 'vault',
+                label: t('general.vault'),
+                icon: <SettingOutlined />,
+                onClick: () => {
+                  setTeamVaultModalConfig({ open: true, team: record });
+                },
+              },
+              {
+                key: 'edit',
+                label: t('general.edit'),
+                icon: <EditOutlined />,
+                onClick: () => {
+                  setEditingTeam(record);
+                  teamForm.setValue('teamName', record.teamName);
+                },
+              },
+              {
+                type: 'divider',
+              },
+              {
+                key: 'trace',
+                label: t('audit.trace'),
+                icon: <HistoryOutlined />,
+                onClick: () => {
+                  setAuditTraceModal({
+                    open: true,
+                    entityType: 'Team',
+                    entityIdentifier: record.teamName,
+                    entityName: record.teamName
+                  });
+                },
+              },
+              {
+                type: 'divider',
+              },
+              {
+                key: 'delete',
+                label: t('general.delete'),
+                icon: <DeleteOutlined />,
+                danger: true,
+                onClick: () => {
+                  Modal.confirm({
+                    title: t('teams.deleteTeam'),
+                    content: t('teams.confirmDelete', { teamName: record.teamName }),
+                    okText: t('general.yes'),
+                    okType: 'danger',
+                    cancelText: t('general.no'),
+                    onOk: () => handleDeleteTeam(record.teamName),
+                  });
+                },
+              },
+            ],
+          }}
+          trigger={['click']}
+        >
+          <Button type="text" icon={<MoreOutlined />} />
+        </Dropdown>
+      ),
+    },
   ]
 
 
@@ -565,6 +644,22 @@ const ResourcesPage: React.FC = () => {
                 icon: <FunctionOutlined />,
                 onClick: () => {
                   setFunctionModalRepository(record);
+                },
+              },
+              {
+                type: 'divider',
+              },
+              {
+                key: 'trace',
+                label: t('audit.trace'),
+                icon: <HistoryOutlined />,
+                onClick: () => {
+                  setAuditTraceModal({
+                    open: true,
+                    entityType: 'Repo',
+                    entityIdentifier: record.repositoryName,
+                    entityName: record.repositoryName
+                  });
                 },
               },
               {
@@ -627,6 +722,76 @@ const ResourcesPage: React.FC = () => {
   // Storage columns
   const storageColumns = [
     {
+      title: t('general.actions'),
+      key: 'actions',
+      width: 80,
+      align: 'center' as const,
+      fixed: 'left' as const,
+      render: (_: any, record: Storage) => (
+        <Dropdown
+          menu={{
+            items: [
+              {
+                key: 'vault',
+                label: t('general.vault'),
+                icon: <SettingOutlined />,
+                onClick: () => {
+                  setStorageVaultModalConfig({ open: true, storage: record });
+                },
+              },
+              {
+                key: 'edit',
+                label: t('general.edit'),
+                icon: <EditOutlined />,
+                onClick: () => {
+                  setEditingStorage(record);
+                  storageForm.setValue('storageName', record.storageName);
+                },
+              },
+              {
+                type: 'divider',
+              },
+              {
+                key: 'trace',
+                label: t('audit.trace'),
+                icon: <HistoryOutlined />,
+                onClick: () => {
+                  setAuditTraceModal({
+                    open: true,
+                    entityType: 'Storage',
+                    entityIdentifier: record.storageName,
+                    entityName: record.storageName
+                  });
+                },
+              },
+              {
+                type: 'divider',
+              },
+              {
+                key: 'delete',
+                label: t('general.delete'),
+                icon: <DeleteOutlined />,
+                danger: true,
+                onClick: () => {
+                  Modal.confirm({
+                    title: t('storage.deleteStorage'),
+                    content: t('storage.confirmDelete', { storageName: record.storageName }),
+                    okText: t('general.yes'),
+                    okType: 'danger',
+                    cancelText: t('general.no'),
+                    onOk: () => handleDeleteStorage(record),
+                  });
+                },
+              },
+            ],
+          }}
+          trigger={['click']}
+        >
+          <Button type="text" icon={<MoreOutlined />} />
+        </Dropdown>
+      ),
+    },
+    {
       title: t('storage.storageName'),
       dataIndex: 'storageName',
       key: 'storageName',
@@ -654,54 +819,80 @@ const ResourcesPage: React.FC = () => {
       align: 'center' as const,
       render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
     }] : []),
-    {
-      title: t('general.actions'),
-      key: 'actions',
-      width: 250,
-      align: 'center' as const,
-      render: (_: any, record: Storage) => (
-        <Space>
-          <Button
-            type="link"
-            icon={<SettingOutlined />}
-            onClick={() => setStorageVaultModalConfig({ open: true, storage: record })}
-          >
-            {t('general.vault')}
-          </Button>
-          <Button 
-            type="link" 
-            icon={<EditOutlined />}
-            onClick={() => {
-              setEditingStorage(record)
-              storageForm.setValue('storageName', record.storageName)
-            }}
-          >
-            {t('general.edit')}
-          </Button>
-          <Popconfirm
-            title={t('storage.deleteStorage')}
-            description={t('storage.confirmDelete', { storageName: record.storageName })}
-            onConfirm={() => handleDeleteStorage(record)}
-            okText={t('general.yes')}
-            cancelText={t('general.no')}
-            okButtonProps={{ danger: true }}
-          >
-            <Button 
-              type="link" 
-              danger 
-              icon={<DeleteOutlined />}
-              loading={deleteStorageMutation.isPending}
-            >
-              {t('general.delete')}
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
   ]
 
   // Schedule columns
   const scheduleColumns = [
+    {
+      title: t('general.actions'),
+      key: 'actions',
+      width: 80,
+      align: 'center' as const,
+      fixed: 'left' as const,
+      render: (_: any, record: Schedule) => (
+        <Dropdown
+          menu={{
+            items: [
+              {
+                key: 'vault',
+                label: t('general.vault'),
+                icon: <SettingOutlined />,
+                onClick: () => {
+                  setScheduleVaultModalConfig({ open: true, schedule: record });
+                },
+              },
+              {
+                key: 'edit',
+                label: t('general.edit'),
+                icon: <EditOutlined />,
+                onClick: () => {
+                  setEditingSchedule(record);
+                  scheduleForm.setValue('scheduleName', record.scheduleName);
+                },
+              },
+              {
+                type: 'divider',
+              },
+              {
+                key: 'trace',
+                label: t('audit.trace'),
+                icon: <HistoryOutlined />,
+                onClick: () => {
+                  setAuditTraceModal({
+                    open: true,
+                    entityType: 'Schedule',
+                    entityIdentifier: record.scheduleName,
+                    entityName: record.scheduleName
+                  });
+                },
+              },
+              {
+                type: 'divider',
+              },
+              {
+                key: 'delete',
+                label: t('general.delete'),
+                icon: <DeleteOutlined />,
+                danger: true,
+                onClick: () => {
+                  Modal.confirm({
+                    title: t('schedules.deleteSchedule'),
+                    content: t('schedules.confirmDelete', { scheduleName: record.scheduleName }),
+                    okText: t('general.yes'),
+                    okType: 'danger',
+                    cancelText: t('general.no'),
+                    onOk: () => handleDeleteSchedule(record),
+                  });
+                },
+              },
+            ],
+          }}
+          trigger={['click']}
+        >
+          <Button type="text" icon={<MoreOutlined />} />
+        </Dropdown>
+      ),
+    },
     {
       title: t('schedules.scheduleName'),
       dataIndex: 'scheduleName',
@@ -730,50 +921,6 @@ const ResourcesPage: React.FC = () => {
       align: 'center' as const,
       render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
     }] : []),
-    {
-      title: t('general.actions'),
-      key: 'actions',
-      width: 250,
-      align: 'center' as const,
-      render: (_: any, record: Schedule) => (
-        <Space>
-          <Button
-            type="link"
-            icon={<SettingOutlined />}
-            onClick={() => setScheduleVaultModalConfig({ open: true, schedule: record })}
-          >
-            {t('general.vault')}
-          </Button>
-          <Button 
-            type="link" 
-            icon={<EditOutlined />}
-            onClick={() => {
-              setEditingSchedule(record)
-              scheduleForm.setValue('scheduleName', record.scheduleName)
-            }}
-          >
-            {t('general.edit')}
-          </Button>
-          <Popconfirm
-            title={t('schedules.deleteSchedule')}
-            description={t('schedules.confirmDelete', { scheduleName: record.scheduleName })}
-            onConfirm={() => handleDeleteSchedule(record)}
-            okText={t('general.yes')}
-            cancelText={t('general.no')}
-            okButtonProps={{ danger: true }}
-          >
-            <Button 
-              type="link" 
-              danger 
-              icon={<DeleteOutlined />}
-              loading={deleteScheduleMutation.isPending}
-            >
-              {t('general.delete')}
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
   ]
 
   // Form fields
@@ -1597,6 +1744,15 @@ const ResourcesPage: React.FC = () => {
         machines={dropdownData?.machinesByTeam?.find(t => t.teamName === functionModalRepository?.teamName)?.machines || []}
         hiddenParams={['repo']} // Hide the repo parameter since it's automatically set
         defaultParams={{ repo: functionModalRepository?.repositoryName }} // Set repo value automatically
+      />
+
+      {/* Audit Trace Modal */}
+      <AuditTraceModal
+        open={auditTraceModal.open}
+        onCancel={() => setAuditTraceModal({ open: false, entityType: null, entityIdentifier: null })}
+        entityType={auditTraceModal.entityType}
+        entityIdentifier={auditTraceModal.entityIdentifier}
+        entityName={auditTraceModal.entityName}
       />
     </>
   )

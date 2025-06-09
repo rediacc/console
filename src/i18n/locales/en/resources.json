@@ -118,5 +118,28 @@
     "repositories": "Repositories",
     "storage": "Storage",
     "schedules": "Schedules"
+  },
+  "audit": {
+    "title": "Audit History - {{name}}",
+    "action": "Action",
+    "details": "Details",
+    "performedBy": "Performed By",
+    "timestamp": "Timestamp",
+    "by": "by",
+    "system": "System",
+    "error": "Error Loading Audit History",
+    "errorLoading": "Failed to load audit history",
+    "noRecords": "No audit records found",
+    "retentionInfo": "Showing {{days}} days of history ({{tier}} tier)",
+    "totalRecords": "Total Records",
+    "visibleRecords": "Visible Records",
+    "lastActivity": "Last Activity",
+    "olderRecordsNotVisible": "Some older records are not visible due to your subscription tier",
+    "viewHistory": "View History",
+    "trace": "Trace",
+    "export": "Export",
+    "exportCSV": "Export as CSV",
+    "exportJSON": "Export as JSON",
+    "exportSuccess": "Audit history exported as {{format}}"
   }
 }

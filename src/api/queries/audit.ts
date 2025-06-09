@@ -45,3 +45,78 @@ export const useRecentAuditLogs = (maxRecords: number = 10) => {
     }
   });
 };
+
+// Audit Trace Response Types
+export interface AuditTraceRecord {
+  action: string;
+  details: string;
+  performedBy: string;
+  timestamp: string;
+  actionType: string;
+  timeAgo: string;
+  iconHint: string;
+}
+
+export interface AuditTraceSummary {
+  entityType: string;
+  entityName: string;
+  entityId: number;
+  totalAuditRecords: number;
+  visibleAuditRecords: number;
+  oldestVisibleActivity: string | null;
+  lastActivity: string | null;
+  hasAccess: boolean;
+  isAdmin: boolean;
+  subscriptionTier: string;
+  auditRetentionDays: number;
+  hasOlderRecords: boolean;
+  relatedCount: number;
+}
+
+export interface AuditTraceResponse {
+  records: AuditTraceRecord[];
+  summary: AuditTraceSummary;
+}
+
+// Get entity audit trace
+export const getEntityAuditTrace = async (
+  entityType: string,
+  entityIdentifier: string
+): Promise<AuditTraceResponse> => {
+  const response = await apiClient.post('/GetEntityAuditTrace', {
+    entityType,
+    entityIdentifier
+  });
+
+  // The stored procedure returns three result sets:
+  // Table 0: Token rotation (nextRequestCredential)
+  // Table 1: Audit records
+  // Table 2: Summary information
+  const records = response.tables?.[1]?.data || [];
+  const summary = response.tables?.[2]?.data?.[0] || null;
+
+  return {
+    records,
+    summary
+  };
+};
+
+// React Query hook for entity audit trace
+export const useEntityAuditTrace = (
+  entityType: string | null,
+  entityIdentifier: string | null,
+  enabled = true
+) => {
+  return useQuery({
+    queryKey: ['entityAuditTrace', entityType, entityIdentifier],
+    queryFn: () => {
+      if (!entityType || !entityIdentifier) {
+        throw new Error('Entity type and identifier are required');
+      }
+      return getEntityAuditTrace(entityType, entityIdentifier);
+    },
+    enabled: enabled && !!entityType && !!entityIdentifier,
+    staleTime: 30000, // 30 seconds
+    gcTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
