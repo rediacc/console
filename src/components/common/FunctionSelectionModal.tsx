@@ -194,7 +194,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                   {t(`functions.${selectedFunction.name}.description`, selectedFunction.description)}
                 </Paragraph>
                 
-                <Form layout="vertical">
+                <Form layout="horizontal" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }}>
                   {/* Machine Selection */}
                   {showMachineSelection && (
                     <Form.Item
@@ -216,7 +216,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                     .map(([paramName, paramInfo]) => (
                     <Form.Item
                       key={paramName}
-                      label={paramName}
+                      label={t(`functions.${selectedFunction.name}.params.${paramName}.label`, { defaultValue: paramName })}
                       required={paramInfo.required}
                       help={t(`functions.${selectedFunction.name}.params.${paramName}.help`, { defaultValue: paramInfo.help || '' })}
                     >

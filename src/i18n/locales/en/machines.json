@@ -43,7 +43,7 @@
   "readOnlyNote": "View Only",
   "readOnlyDescription": "This is a read-only view. To edit machines or perform actions, please visit the",
   "goToMachinesPage": "Machines page",
-  "systemFunctions": "System Functions",
+  "systemFunctions": "Machine Functions",
   "addSystemFunction": "Add System Function to Queue",
   "availableFunctions": "Available Functions",
   "searchFunctions": "Search functions...",

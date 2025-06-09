@@ -15,8 +15,8 @@
   "description": "Description (optional)",
   "descriptionPlaceholder": "Add a custom description for this queue item",
   "categories": {
-    "System Functions": {
-      "name": "System Functions",
+    "Machine Functions": {
+      "name": "Machine Functions",
       "description": "Core system setup and maintenance functions"
     },
     "Repository Functions": {
@@ -38,9 +38,11 @@
       "description": "Setup operating system with required tools and configurations",
       "params": {
         "datastore_size": {
+          "label": "Datastore Size",
           "help": "Datastore size (e.g., 95%, 100G)"
         },
         "source": {
+          "label": "Source",
           "help": "Package source"
         }
       }
@@ -58,9 +60,11 @@
       "description": "Create a new repository",
       "params": {
         "repo": {
+          "label": "Repository",
           "help": "Repository name (no numbers)"
         },
         "size": {
+          "label": "Size",
           "help": "Repository size (e.g., 10G)"
         }
       }
@@ -70,9 +74,11 @@
       "description": "Mount repository filesystems",
       "params": {
         "repo": {
+          "label": "Repository",
           "help": "Repository name(s), comma-separated"
         },
         "from": {
+          "label": "From Machine",
           "help": "Remote machine to mount from"
         }
       }
@@ -82,9 +88,11 @@
       "description": "Unmount repository filesystems",
       "params": {
         "repo": {
+          "label": "Repository",
           "help": "Repository name(s), comma-separated"
         },
         "from": {
+          "label": "From Machine",
           "help": "Remote machine to unmount from"
         }
       }
@@ -94,9 +102,11 @@
       "description": "Start repository services using Rediaccfile",
       "params": {
         "repo": {
+          "label": "Repository",
           "help": "Repository name(s), comma-separated"
         },
         "option": {
+          "label": "Options",
           "help": "Options (e.g., prep-only)"
         }
       }
@@ -106,6 +116,7 @@
       "description": "Stop repository services",
       "params": {
         "repo": {
+          "label": "Repository",
           "help": "Repository name(s), comma-separated"
         }
       }
@@ -115,9 +126,11 @@
       "description": "Resize repository storage",
       "params": {
         "repo": {
+          "label": "Repository",
           "help": "Repository name"
         },
         "size": {
+          "label": "New Size",
           "help": "New size (e.g., 20G)"
         }
       }
@@ -127,6 +140,7 @@
       "description": "Delete repository",
       "params": {
         "repo": {
+          "label": "Repository",
           "help": "Repository name"
         }
       }
@@ -136,9 +150,11 @@
       "description": "Activate repository plugins",
       "params": {
         "repo": {
+          "label": "Repository",
           "help": "Repository name(s), comma-separated"
         },
         "plugin": {
+          "label": "Plugin",
           "help": "Plugin name(s), comma-separated"
         }
       }
@@ -148,9 +164,11 @@
       "description": "Deactivate repository plugins",
       "params": {
         "repo": {
+          "label": "Repository",
           "help": "Repository name(s), comma-separated"
         },
         "plugin": {
+          "label": "Plugin",
           "help": "Plugin name(s), comma-separated"
         }
       }
@@ -160,12 +178,15 @@
       "description": "Change repository ownership",
       "params": {
         "repo": {
+          "label": "Repository",
           "help": "Repository name"
         },
         "from": {
+          "label": "Current Owner",
           "help": "Current owner"
         },
         "to": {
+          "label": "New Owner",
           "help": "New owner (default: universal user)"
         }
       }
@@ -175,9 +196,11 @@
       "description": "List repositories",
       "params": {
         "kind": {
+          "label": "Type",
           "help": "Type to list"
         },
         "format": {
+          "label": "Format",
           "help": "Output format (json)"
         }
       }
@@ -187,12 +210,15 @@
       "description": "Push repository to remote storage",
       "params": {
         "repo": {
+          "label": "Repository",
           "help": "Repository name(s), comma-separated"
         },
         "to": {
+          "label": "Destination",
           "help": "Destination machine/storage"
         },
         "option": {
+          "label": "Options",
           "help": "Options (e.g., no-suffix, override)"
         }
       }
@@ -202,9 +228,11 @@
       "description": "Pull repository from remote storage",
       "params": {
         "from": {
+          "label": "Source",
           "help": "Source machine/storage"
         },
         "repo": {
+          "label": "Repository",
           "help": "Repository name(s), comma-separated"
         }
       }
@@ -214,12 +242,15 @@
       "description": "Map socket from remote machine",
       "params": {
         "machine": {
+          "label": "Machine",
           "help": "Machine name"
         },
         "repo": {
+          "label": "Repository",
           "help": "Repository name"
         },
         "plugin": {
+          "label": "Plugin",
           "help": "Plugin name"
         }
       }

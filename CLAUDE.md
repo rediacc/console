@@ -110,7 +110,7 @@ All validation schemas are in `src/utils/validation.ts` using Zod
 
 ## Queue Functions
 Comprehensive list of queue functions with categories:
-- System Functions (os_setup, os_update, etc.)
+- Machine Functions (os_setup, os_update, etc.)
 - Database Functions (db_backup, db_restore, etc.)
 - Migration Functions (v2p_*, p2v_*, etc.)
 - Repository Functions (repo_snapshot, repo_restore, etc.)

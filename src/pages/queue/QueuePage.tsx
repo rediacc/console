@@ -24,6 +24,7 @@ const QueuePage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string[]>([])
   const [traceModalVisible, setTraceModalVisible] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [lastTraceFetchTime, setLastTraceFetchTime] = useState<dayjs.Dayjs | null>(null)
   
   // Refs for table containers
   const activeTableRef = useRef<HTMLDivElement>(null)
@@ -42,9 +43,16 @@ const QueuePage: React.FC = () => {
   const { data: queueData, isLoading, refetch, isRefetching } = useQueueItems(queryFilters)
   const { data: dropdownData } = useDropdownData()
   const cancelQueueItemMutation = useCancelQueueItem()
-  const { data: traceData, isLoading: isTraceLoading } = useQueueItemTrace(selectedTaskId, traceModalVisible)
+  const { data: traceData, isLoading: isTraceLoading, refetch: refetchTrace } = useQueueItemTrace(selectedTaskId, traceModalVisible)
   
   const isFetching = isLoading || isRefetching
+  
+  // Update last fetch time when trace data is loaded
+  React.useEffect(() => {
+    if (traceData && traceModalVisible) {
+      setLastTraceFetchTime(dayjs())
+    }
+  }, [traceData, traceModalVisible])
   
   // Dynamic page sizes for tables with minimum size for small screens
   const activePageSize = useDynamicPageSize(activeTableRef, {
@@ -133,6 +141,12 @@ const QueuePage: React.FC = () => {
   const handleViewTrace = (taskId: string) => {
     setSelectedTaskId(taskId)
     setTraceModalVisible(true)
+    setLastTraceFetchTime(null) // Reset on new trace view
+  }
+
+  // Handle refresh trace
+  const handleRefreshTrace = async () => {
+    await refetchTrace()
   }
 
 
@@ -654,10 +668,17 @@ const QueuePage: React.FC = () => {
           {/* Trace Modal */}
           <Modal
             title={
-              <Space>
-                <HistoryOutlined />
-                {`Queue Item Trace - ${selectedTaskId || ''}`}
-              </Space>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <Space>
+                  <HistoryOutlined />
+                  {`Queue Item Trace - ${selectedTaskId || ''}`}
+                </Space>
+                {lastTraceFetchTime && (
+                  <Text type="secondary" style={{ fontSize: '14px', marginRight: '20px' }}>
+                    Last fetched: {lastTraceFetchTime.format('HH:mm:ss')}
+                  </Text>
+                )}
+              </div>
             }
             open={traceModalVisible}
             onCancel={() => {
@@ -666,6 +687,14 @@ const QueuePage: React.FC = () => {
             }}
             width={900}
             footer={[
+              <Button 
+                key="refresh" 
+                icon={<ReloadOutlined />} 
+                onClick={handleRefreshTrace}
+                loading={isTraceLoading}
+              >
+                Refresh
+              </Button>,
               <Button key="close" onClick={() => {
                 setTraceModalVisible(false)
                 setSelectedTaskId(null)

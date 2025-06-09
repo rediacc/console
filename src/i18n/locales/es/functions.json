@@ -15,7 +15,7 @@
   "description": "Descripción (opcional)",
   "descriptionPlaceholder": "Agregar una descripción personalizada para este elemento de la cola",
   "categories": {
-    "System Functions": {
+    "Machine Functions": {
       "name": "Funciones del Sistema",
       "description": "Funciones principales de configuración y mantenimiento del sistema"
     },
@@ -38,9 +38,11 @@
       "description": "Configurar el sistema operativo con las herramientas y configuraciones requeridas",
       "params": {
         "datastore_size": {
+          "label": "Tamaño del Almacén",
           "help": "Tamaño del almacén de datos (ej., 95%, 100G)"
         },
         "source": {
+          "label": "Origen",
           "help": "Origen del paquete"
         }
       }

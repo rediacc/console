@@ -35,6 +35,7 @@ import {
 } from '@ant-design/icons';
 import { useMachines, useDeleteMachine, useCreateMachine, useUpdateMachineName, useUpdateMachineBridge, useUpdateMachineVault } from '@/api/queries/machines';
 import { useDropdownData } from '@/api/queries/useDropdownData';
+import { useCreateRepository } from '@/api/queries/repositories';
 import ResourceForm from '@/components/forms/ResourceForm';
 import ResourceFormWithVault from '@/components/forms/ResourceFormWithVault';
 import VaultEditorModal from '@/components/common/VaultEditorModal';
@@ -127,6 +128,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const updateMachineBridgeMutation = useUpdateMachineBridge();
   const updateMachineVaultMutation = useUpdateMachineVault();
   const createQueueItemMutation = useCreateQueueItem();
+  const createRepositoryMutation = useCreateRepository();
   
   // Dynamic page size
   const dynamicPageSize = useDynamicPageSize(tableContainerRef, {
@@ -372,16 +374,37 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   }) => {
     if (!functionModalMachine) return;
 
-    // Build the queue vault
-    const queueVault = {
-      function: functionData.function.name,
-      params: functionData.params,
-      priority: functionData.priority,
-      description: functionData.description,
-      addedVia: 'machine-table'
-    };
-
     try {
+      // Check if this is repo_new function - if so, create repository first
+      if (functionData.function.name === 'repo_new') {
+        const repoName = functionData.params.repo;
+        if (!repoName) {
+          message.error('Repository name is required for repo_new function');
+          return;
+        }
+
+        // Create repository in the system first
+        try {
+          await createRepositoryMutation.mutateAsync({
+            teamName: functionModalMachine.teamName,
+            repositoryName: repoName,
+            repositoryVault: '{}'
+          });
+        } catch (error: any) {
+          // If repository creation fails, don't proceed with queue item
+          return;
+        }
+      }
+
+      // Build the queue vault
+      const queueVault = {
+        function: functionData.function.name,
+        params: functionData.params,
+        priority: functionData.priority,
+        description: functionData.description,
+        addedVia: 'machine-table'
+      };
+
       await createQueueItemMutation.mutateAsync({
         teamName: functionModalMachine.teamName,
         machineName: functionModalMachine.machineName,
@@ -1060,8 +1083,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         loading={updateMachineVaultMutation.isPending}
       />
 
-      {/* System Functions Modal */}
-      {/* System Functions Modal */}
+      {/* Machine Functions Modal */}
+      {/* Machine Functions Modal */}
       <FunctionSelectionModal
         open={!!functionModalMachine}
         onCancel={() => setFunctionModalMachine(null)}
@@ -1077,7 +1100,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             </Space>
           )
         }
-        allowedCategories={['System Functions']}
+        allowedCategories={['Machine Functions']}
         loading={createQueueItemMutation.isPending}
       />
 

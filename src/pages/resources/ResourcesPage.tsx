@@ -1216,7 +1216,7 @@ const ResourcesPage: React.FC = () => {
                     </Text>
                   )}
                 </div>
-                {selectedTeams.length > 0 && (
+                {selectedTeams.length > 0 && teamResourcesTab !== 'repositories' && (
                   <Space>
                     <Button 
                       type="primary" 
@@ -1225,12 +1225,6 @@ const ResourcesPage: React.FC = () => {
                         switch(teamResourcesTab) {
                           case 'machines':
                             setIsCreateMachineModalOpen(true)
-                            break
-                          case 'repositories':
-                            if (selectedTeams.length === 1) {
-                              repositoryForm.setValue('teamName', selectedTeams[0])
-                            }
-                            setIsCreateRepositoryModalOpen(true)
                             break
                           case 'storage':
                             if (selectedTeams.length === 1) {
@@ -1249,7 +1243,6 @@ const ResourcesPage: React.FC = () => {
                       style={{ background: '#556b2f', borderColor: '#556b2f' }}
                     >
                       {teamResourcesTab === 'machines' && t('machines.createMachine')}
-                      {teamResourcesTab === 'repositories' && t('repositories.createRepository')}
                       {teamResourcesTab === 'storage' && t('storage.createStorage')}
                       {teamResourcesTab === 'schedules' && t('schedules.createSchedule')}
                     </Button>

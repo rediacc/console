@@ -1,7 +1,7 @@
 {
   "categories": {
-    "System Functions": {
-      "name": "System Functions",
+    "Machine Functions": {
+      "name": "Machine Functions",
       "description": "Core system setup and maintenance functions"
     },
     "Repository Functions": {
@@ -20,7 +20,7 @@
   "functions": {
     "os_setup": {
       "name": "os_setup",
-      "category": "System Functions",
+      "category": "Machine Functions",
       "description": "Setup operating system with required tools and configurations",
       "params": {
         "datastore_size": {
@@ -37,19 +37,19 @@
     },
     "hello": {
       "name": "hello",
-      "category": "System Functions",
+      "category": "Machine Functions",
       "description": "Simple test function that prints hello from hostname",
       "params": {}
     },
     "uninstall": {
       "name": "uninstall",
-      "category": "System Functions",
+      "category": "Machine Functions",
       "description": "Cleanup and uninstall system components",
       "params": {}
     },
     "repo_new": {
       "name": "repo_new",
-      "category": "Repository Functions",
+      "category": "Machine Functions",
       "description": "Create a new repository",
       "params": {
         "repo": {
