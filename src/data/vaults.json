@@ -41,14 +41,9 @@
     },
     "REPOSITORY": {
       "descriptionKey": "fields.REPOSITORY.description",
-      "required": ["name", "size", "credential"],
+      "required": ["size", "credential"],
       "optional": [],
       "fields": {
-        "name": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9-_]+$",
-          "example": "prod-db-backup"
-        },
         "size": {
           "type": "string",
           "pattern": "^[0-9]+[KMGT]$",
@@ -159,13 +154,9 @@
     },
     "SCHEDULE": {
       "descriptionKey": "fields.SCHEDULE.description",
-      "required": ["name", "cron", "task"],
+      "required": ["cron", "task"],
       "optional": ["timezone", "notifications", "retry"],
       "fields": {
-        "name": {
-          "type": "string",
-          "example": "daily-backup"
-        },
         "cron": {
           "type": "string",
           "example": "0 2 * * *"
@@ -228,12 +219,8 @@
     "REGION": {
       "descriptionKey": "fields.REGION.description",
       "required": [],
-      "optional": ["name", "code", "location"],
+      "optional": ["code", "location"],
       "fields": {
-        "name": {
-          "type": "string",
-          "example": "US East"
-        },
         "code": {
           "type": "string",
           "pattern": "^[a-z]{2}-[a-z]+-[0-9]$",
