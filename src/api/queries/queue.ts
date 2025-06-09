@@ -7,12 +7,32 @@ export interface QueueItem {
   teamName: string
   machineName: string
   bridgeName: string
-  queueVault: string
-  status: 'pending' | 'processing' | 'completed' | 'failed'
-  priority: number // 1-5, where 1 is highest priority
-  protection?: boolean // Whether the item is protected from deletion
-  createdAt: string
-  updatedAt?: string
+  regionName: string
+  vaultContent: string
+  vaultVersion: number
+  vaultContentResponse?: string
+  vaultVersionResponse?: number
+  status: 'PENDING' | 'ASSIGNED' | 'PROCESSING' | 'COMPLETED' | 'CANCELLED'
+  priority?: number // Only for Premium/Elite plans, 1-5 where 1 is highest
+  priorityLabel?: string // 'Highest', 'High', 'Normal', 'Low', 'Lowest'
+  createdTime: string
+  ageInMinutes: number
+  assignedTime?: string
+  lastHeartbeat?: string
+  minutesSinceHeartbeat?: number
+  healthStatus: 'PENDING' | 'ACTIVE' | 'STALE' | 'COMPLETED' | 'CANCELLED' | 'UNKNOWN'
+  canBeCancelled: boolean
+  hasResponse: boolean
+}
+
+export interface QueueStatistics {
+  totalCount: number
+  pendingCount: number
+  assignedCount: number
+  processingCount: number
+  completedCount: number
+  cancelledCount: number
+  staleCount: number
 }
 
 export interface QueueFunction {
@@ -33,20 +53,61 @@ import functionsData from '@/data/functions.json'
 // Queue functions definition (from JSON file)
 export const QUEUE_FUNCTIONS: Record<string, QueueFunction> = functionsData.functions
 
-// Get queue items
-export const useQueueItems = (teamName?: string) => {
+// Parameters for GetTeamQueueItems
+export interface QueueFilters {
+  teamName?: string // Comma-separated team names
+  machineName?: string
+  bridgeName?: string
+  status?: string // Comma-separated status values
+  priority?: number
+  minPriority?: number
+  maxPriority?: number
+  dateFrom?: string
+  dateTo?: string
+  taskId?: string
+  includeCompleted?: boolean
+  includeCancelled?: boolean
+  onlyStale?: boolean
+  staleThresholdMinutes?: number
+  maxRecords?: number
+}
+
+// Get queue items with advanced filtering
+export const useQueueItems = (filters: QueueFilters = {}) => {
   return useQuery({
-    queryKey: ['queue-items', teamName],
+    queryKey: ['queue-items', filters],
     queryFn: async () => {
       // Queue items are always retrieved per team
-      if (!teamName) {
-        return [] // Return empty array if no team is selected
+      if (!filters.teamName) {
+        return { items: [], statistics: null }
       }
-      const response = await apiClient.get<QueueItem[]>('/GetTeamQueueItems', { teamName })
-      return response.tables[1]?.data || []
+      
+      const response = await apiClient.get<{ items: QueueItem[], statistics: QueueStatistics }>('/GetTeamQueueItems', filters)
+      
+      // Find the actual data tables (skip the nextRequestCredential table)
+      // The queue items table has multiple fields, statistics table has count fields
+      let items: QueueItem[] = []
+      let statistics: QueueStatistics | null = null
+      
+      response.tables?.forEach((table) => {
+        if (table.data && table.data.length > 0) {
+          const firstItem = table.data[0]
+          // Check if this is the statistics table
+          if ('totalCount' in firstItem || 'pendingCount' in firstItem) {
+            statistics = firstItem as QueueStatistics
+          }
+          // Check if this is the queue items table (has taskId)
+          else if ('taskId' in firstItem || 'TaskId' in firstItem) {
+            items = table.data as QueueItem[]
+          }
+          // Skip tables that only have nextRequestCredential
+        }
+      })
+      
+      return { items, statistics }
     },
     refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
-    enabled: !!teamName, // Only run query if teamName is provided
+    enabled: !!filters.teamName, // Only run query if teamName is provided
   })
 }
 
@@ -62,36 +123,13 @@ export const useNextQueueItems = (machineName: string, itemCount: number = 5) =>
   })
 }
 
-// Get queue items by bridge
-export const useQueueItemsByBridge = (bridgeName: string) => {
-  return useQuery({
-    queryKey: ['queue-items-bridge', bridgeName],
-    queryFn: async () => {
-      const response = await apiClient.get<QueueItem[]>('/GetBridgeQueueItems', { bridgeName })
-      return response.tables[1]?.data || []
-    },
-    refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
-    enabled: !!bridgeName,
-  })
-}
-
-// Get queue items with advanced filtering
-export const useFilteredQueueItems = (filters: {
-  teamName?: string
-  bridgeName?: string
-  machineName?: string
-  priority?: number
-  status?: QueueItem['status']
-  protected?: boolean
-}) => {
-  return useQuery({
-    queryKey: ['queue-items-filtered', filters],
-    queryFn: async () => {
-      const response = await apiClient.get<QueueItem[]>('/GetFilteredQueueItems', filters)
-      return response.tables[1]?.data || []
-    },
-    refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
-    enabled: !!(filters.teamName || filters.bridgeName || filters.machineName),
+// Get queue items by bridge (using GetTeamQueueItems with bridge filter)
+export const useQueueItemsByBridge = (bridgeName: string, teamName?: string) => {
+  return useQueueItems({
+    teamName: teamName || '',
+    bridgeName,
+    includeCompleted: true,
+    includeCancelled: true
   })
 }
 

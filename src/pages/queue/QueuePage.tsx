@@ -1,14 +1,16 @@
-import React, { useState } from 'react'
-import { Typography, Button, Space, Modal, Input, Select, Form, Slider, Card, Tag, Badge, Tabs, Row, Col, Statistic, Empty, Tooltip } from 'antd'
-import { PlusOutlined, ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, PauseCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
-import { useQueueItems, useCreateQueueItem, QUEUE_FUNCTIONS, QueueFunction } from '@/api/queries/queue'
+import React, { useState, useMemo } from 'react'
+import { Typography, Button, Space, Modal, Input, Select, Form, Slider, Card, Tag, Badge, Tabs, Row, Col, Statistic, Empty, Tooltip, DatePicker, Checkbox } from 'antd'
+import { PlusOutlined, ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, PauseCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, WarningOutlined, GlobalOutlined, ClockCircleOutlined, FilterOutlined, ReloadOutlined, HeartOutlined } from '@ant-design/icons'
+import { useQueueItems, useCreateQueueItem, QUEUE_FUNCTIONS, QueueFunction, QueueFilters } from '@/api/queries/queue'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import ResourceListView from '@/components/common/ResourceListView'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
+import dayjs from 'dayjs'
 
 const { Title, Text, Paragraph } = Typography
 const { Search } = Input
+const { RangePicker } = DatePicker
 
 const QueuePage: React.FC = () => {
   const { t } = useTranslation('functions')
@@ -21,8 +23,25 @@ const QueuePage: React.FC = () => {
   const [description, setDescription] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [viewTeam, setViewTeam] = useState<string>('') // Team for viewing queue items
+  const [filters, setFilters] = useState<QueueFilters>({
+    teamName: '',
+    includeCompleted: true,
+    includeCancelled: true,
+    staleThresholdMinutes: 10,
+    maxRecords: 1000
+  })
+  const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null] | null>(null)
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   
-  const { data: queueItems, isLoading } = useQueueItems(viewTeam)
+  // Combine team selection with filters
+  const queryFilters = useMemo(() => ({
+    ...filters,
+    teamName: viewTeam,
+    dateFrom: dateRange?.[0]?.startOf('day').format('YYYY-MM-DD HH:mm:ss'),
+    dateTo: dateRange?.[1]?.endOf('day').format('YYYY-MM-DD HH:mm:ss')
+  }), [filters, viewTeam, dateRange])
+  
+  const { data: queueData, isLoading, refetch } = useQueueItems(queryFilters)
   const { data: dropdownData } = useDropdownData()
   const createQueueItemMutation = useCreateQueueItem()
 
@@ -104,56 +123,76 @@ const QueuePage: React.FC = () => {
       dataIndex: 'taskId',
       key: 'taskId',
       width: 200,
-      render: (id: string) => <Text code>{id}</Text>
+      render: (id: string) => <Text code copyable>{id}</Text>
     },
     {
       title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
+      dataIndex: 'healthStatus',
+      key: 'healthStatus',
       width: 120,
-      render: (status: string) => {
+      render: (healthStatus: string, record: any) => {
         const statusConfig = {
-          pending: { color: 'default', icon: <PauseCircleOutlined /> },
-          processing: { color: 'processing', icon: <PlayCircleOutlined /> },
-          completed: { color: 'success', icon: <CheckCircleOutlined /> },
-          failed: { color: 'error', icon: <CloseCircleOutlined /> }
+          'PENDING': { color: 'default', icon: <ClockCircleOutlined /> },
+          'ACTIVE': { color: 'processing', icon: <PlayCircleOutlined /> },
+          'STALE': { color: 'warning', icon: <WarningOutlined /> },
+          'COMPLETED': { color: 'success', icon: <CheckCircleOutlined /> },
+          'CANCELLED': { color: 'error', icon: <CloseCircleOutlined /> },
+          'UNKNOWN': { color: 'default', icon: <ExclamationCircleOutlined /> }
         }
-        const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending
+        const config = statusConfig[healthStatus as keyof typeof statusConfig] || statusConfig.UNKNOWN
+        
+        // Show actual status alongside health status for active items
+        const statusText = healthStatus === 'ACTIVE' && record.status ? 
+          `${record.status} (${healthStatus})` : healthStatus
+        
         return (
-          <Tag color={config.color} icon={config.icon}>
-            {status.toUpperCase()}
-          </Tag>
+          <Tooltip title={record.minutesSinceHeartbeat ? `${record.minutesSinceHeartbeat} minutes since last heartbeat` : undefined}>
+            <Tag color={config.color} icon={config.icon}>
+              {statusText}
+            </Tag>
+          </Tooltip>
         )
       }
     },
     {
       title: 'Priority',
-      dataIndex: 'priority',
+      dataIndex: 'priorityLabel',
       key: 'priority',
       width: 140,
-      render: (priority: number) => {
-        // Parse priority from vault data if needed
-        const priorityValue = typeof priority === 'number' ? priority : 3
-        
-        const priorityConfig = {
-          1: { color: 'red', label: 'High', icon: <ExclamationCircleOutlined /> },
-          2: { color: 'orange', label: 'Above Normal' },
-          3: { color: 'gold', label: 'Normal' },
-          4: { color: 'blue', label: 'Below Normal' },
-          5: { color: 'green', label: 'Low' }
+      render: (priorityLabel: string | undefined, record: any) => {
+        if (!priorityLabel || !record.priority) {
+          return <Text type="secondary">-</Text>
         }
         
-        const config = priorityConfig[priorityValue as keyof typeof priorityConfig] || priorityConfig[3]
+        const priorityConfig = {
+          1: { color: 'red', icon: <ExclamationCircleOutlined /> },
+          2: { color: 'orange' },
+          3: { color: 'gold' },
+          4: { color: 'blue' },
+          5: { color: 'green' }
+        }
+        
+        const config = priorityConfig[record.priority as keyof typeof priorityConfig] || priorityConfig[3]
         
         return (
-          <Tooltip title={`Priority ${priorityValue} - ${config.label}`}>
-            <Tag color={config.color} icon={config.icon}>
-              {config.label} ({priorityValue})
-            </Tag>
-          </Tooltip>
+          <Tag color={config.color} icon={config.icon}>
+            {priorityLabel}
+          </Tag>
         )
       },
       sorter: (a: any, b: any) => (a.priority || 3) - (b.priority || 3),
+    },
+    {
+      title: 'Age',
+      dataIndex: 'ageInMinutes',
+      key: 'ageInMinutes',
+      width: 100,
+      render: (minutes: number) => {
+        if (minutes < 60) return `${minutes}m`
+        if (minutes < 1440) return `${Math.floor(minutes / 60)}h ${minutes % 60}m`
+        return `${Math.floor(minutes / 1440)}d ${Math.floor((minutes % 1440) / 60)}h`
+      },
+      sorter: (a: any, b: any) => a.ageInMinutes - b.ageInMinutes,
     },
     {
       title: 'Team',
@@ -172,6 +211,17 @@ const QueuePage: React.FC = () => {
       )
     },
     {
+      title: 'Region',
+      dataIndex: 'regionName',
+      key: 'regionName',
+      render: (name: string) => (
+        <Space>
+          <GlobalOutlined />
+          {name}
+        </Space>
+      )
+    },
+    {
       title: 'Bridge',
       dataIndex: 'bridgeName',
       key: 'bridgeName',
@@ -183,10 +233,21 @@ const QueuePage: React.FC = () => {
       )
     },
     {
+      title: 'Response',
+      dataIndex: 'hasResponse',
+      key: 'hasResponse',
+      width: 80,
+      render: (hasResponse: boolean) => hasResponse ? 
+        <Tag color="success">Yes</Tag> : 
+        <Tag>No</Tag>
+    },
+    {
       title: 'Created',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: (date: string) => new Date(date).toLocaleString()
+      dataIndex: 'createdTime',
+      key: 'createdTime',
+      width: 180,
+      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+      sorter: (a: any, b: any) => new Date(a.createdTime).getTime() - new Date(b.createdTime).getTime(),
     }
   ]
 
@@ -219,60 +280,183 @@ const QueuePage: React.FC = () => {
         </Card>
       ) : (
         <>
+          {/* Advanced Filters */}
+          {showAdvancedFilters && (
+            <Card style={{ marginBottom: 16 }}>
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} sm={24} md={8}>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <Text type="secondary">Date Range</Text>
+                      <RangePicker
+                        value={dateRange}
+                        onChange={(dates) => setDateRange(dates)}
+                        style={{ width: '100%' }}
+                        showTime={{
+                          format: 'HH:mm:ss',
+                          defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('23:59:59', 'HH:mm:ss')]
+                        }}
+                        format="YYYY-MM-DD HH:mm:ss"
+                        presets={[
+                          { label: 'Today', value: [dayjs().startOf('day'), dayjs().endOf('day')] },
+                          { label: 'Yesterday', value: [dayjs().subtract(1, 'day').startOf('day'), dayjs().subtract(1, 'day').endOf('day')] },
+                          { label: 'Last 7 Days', value: [dayjs().subtract(7, 'day').startOf('day'), dayjs().endOf('day')] },
+                          { label: 'Last 30 Days', value: [dayjs().subtract(30, 'day').startOf('day'), dayjs().endOf('day')] },
+                        ]}
+                      />
+                    </Space>
+                  </Col>
+                  <Col xs={24} sm={12} md={6}>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <Text type="secondary">Machine</Text>
+                      <Select
+                        placeholder="All machines"
+                        allowClear
+                        value={filters.machineName}
+                        onChange={(value) => setFilters({ ...filters, machineName: value })}
+                        style={{ width: '100%' }}
+                        options={dropdownData?.machinesByTeam?.find(t => t.teamName === viewTeam)?.machines || []}
+                      />
+                    </Space>
+                  </Col>
+                  <Col xs={24} sm={12} md={6}>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <Text type="secondary">Status</Text>
+                      <Select
+                        mode="multiple"
+                        placeholder="All statuses"
+                        value={filters.status?.split(',').filter(Boolean)}
+                        onChange={(values) => setFilters({ ...filters, status: values.join(',') })}
+                        style={{ width: '100%' }}
+                        options={[
+                          { label: 'Pending', value: 'PENDING' },
+                          { label: 'Assigned', value: 'ASSIGNED' },
+                          { label: 'Processing', value: 'PROCESSING' },
+                          { label: 'Completed', value: 'COMPLETED' },
+                          { label: 'Cancelled', value: 'CANCELLED' }
+                        ]}
+                      />
+                    </Space>
+                  </Col>
+                  <Col xs={24} sm={12} md={4}>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <Text type="secondary">Options</Text>
+                      <Space direction="vertical">
+                        <Checkbox
+                          checked={filters.includeCompleted}
+                          onChange={(e) => setFilters({ ...filters, includeCompleted: e.target.checked })}
+                        >
+                          Include Completed
+                        </Checkbox>
+                        <Checkbox
+                          checked={filters.includeCancelled}
+                          onChange={(e) => setFilters({ ...filters, includeCancelled: e.target.checked })}
+                        >
+                          Include Cancelled
+                        </Checkbox>
+                        <Checkbox
+                          checked={filters.onlyStale}
+                          onChange={(e) => setFilters({ ...filters, onlyStale: e.target.checked })}
+                        >
+                          Only Stale Items
+                        </Checkbox>
+                      </Space>
+                    </Space>
+                  </Col>
+                </Row>
+              </Space>
+            </Card>
+          )}
+
           {/* Queue Statistics */}
           <Row gutter={16}>
-            <Col span={4}>
+            <Col span={3}>
               <Card>
                 <Statistic
-                  title="Total Queue Items"
-                  value={queueItems?.length || 0}
+                  title="Total"
+                  value={queueData?.statistics?.totalCount || 0}
                   prefix={<ThunderboltOutlined />}
                 />
               </Card>
             </Col>
-            <Col span={4}>
-              <Card>
-                <Statistic
-                  title="High Priority"
-                  value={queueItems?.filter((item: any) => item.priority === 1).length || 0}
-                  valueStyle={{ color: '#cf1322' }}
-                  prefix={<ExclamationCircleOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col span={4}>
+            <Col span={3}>
               <Card>
                 <Statistic
                   title="Pending"
-                  value={queueItems?.filter((item: any) => item.status === 'pending').length || 0}
+                  value={queueData?.statistics?.pendingCount || 0}
+                  valueStyle={{ color: '#8c8c8c' }}
+                  prefix={<ClockCircleOutlined />}
                 />
               </Card>
             </Col>
-            <Col span={4}>
+            <Col span={3}>
               <Card>
                 <Statistic
-                  title="Processing"
-                  value={queueItems?.filter((item: any) => item.status === 'processing').length || 0}
+                  title="Assigned"
+                  value={queueData?.statistics?.assignedCount || 0}
                   valueStyle={{ color: '#1890ff' }}
                 />
               </Card>
             </Col>
-            <Col span={4}>
+            <Col span={3}>
               <Card>
                 <Statistic
-                  title="Completed"
-                  value={queueItems?.filter((item: any) => item.status === 'completed').length || 0}
-                  valueStyle={{ color: '#52c41a' }}
+                  title="Processing"
+                  value={queueData?.statistics?.processingCount || 0}
+                  valueStyle={{ color: '#1890ff' }}
+                  prefix={<PlayCircleOutlined />}
                 />
               </Card>
             </Col>
-            <Col span={4}>
+            <Col span={3}>
               <Card>
                 <Statistic
-                  title="Failed"
-                  value={queueItems?.filter((item: any) => item.status === 'failed').length || 0}
-                  valueStyle={{ color: '#ff4d4f' }}
+                  title="Completed"
+                  value={queueData?.statistics?.completedCount || 0}
+                  valueStyle={{ color: '#52c41a' }}
+                  prefix={<CheckCircleOutlined />}
                 />
+              </Card>
+            </Col>
+            <Col span={3}>
+              <Card>
+                <Statistic
+                  title="Cancelled"
+                  value={queueData?.statistics?.cancelledCount || 0}
+                  valueStyle={{ color: '#ff4d4f' }}
+                  prefix={<CloseCircleOutlined />}
+                />
+              </Card>
+            </Col>
+            <Col span={3}>
+              <Card>
+                <Statistic
+                  title="Stale"
+                  value={queueData?.statistics?.staleCount || 0}
+                  valueStyle={{ color: '#faad14' }}
+                  prefix={<WarningOutlined />}
+                />
+              </Card>
+            </Col>
+            <Col span={3}>
+              <Card>
+                <Space>
+                  <Button
+                    icon={<FilterOutlined />}
+                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                    type={showAdvancedFilters ? 'primary' : 'default'}
+                    style={showAdvancedFilters ? { background: '#556b2f', borderColor: '#556b2f' } : {}}
+                  >
+                    Filters
+                  </Button>
+                  <Button
+                    icon={<ReloadOutlined />}
+                    onClick={() => refetch()}
+                    loading={isLoading}
+                  >
+                    Refresh
+                  </Button>
+                </Space>
               </Card>
             </Col>
           </Row>
@@ -281,7 +465,7 @@ const QueuePage: React.FC = () => {
             <Tabs.TabPane 
               tab={
                 <Space>
-                  <Badge count={queueItems?.filter((item: any) => item.status !== 'completed').length || 0}>
+                  <Badge count={queueData?.items?.filter((item: any) => !['COMPLETED', 'CANCELLED'].includes(item.healthStatus)).length || 0}>
                     <span>Active Queue</span>
                   </Badge>
                 </Space>
@@ -290,7 +474,7 @@ const QueuePage: React.FC = () => {
             >
               <ResourceListView
                 loading={isLoading}
-                data={queueItems?.filter((item: any) => item.status !== 'completed') || []}
+                data={queueData?.items?.filter((item: any) => !['COMPLETED', 'CANCELLED'].includes(item.healthStatus)) || []}
                 columns={queueColumns}
                 rowKey="taskId"
                 searchPlaceholder="Search queue items..."
@@ -307,10 +491,19 @@ const QueuePage: React.FC = () => {
               />
             </Tabs.TabPane>
             
-            <Tabs.TabPane tab="Completed" key="completed">
+            <Tabs.TabPane 
+              tab={
+                <Space>
+                  <Badge count={queueData?.statistics?.completedCount || 0} showZero color="#52c41a">
+                    <span>Completed</span>
+                  </Badge>
+                </Space>
+              } 
+              key="completed"
+            >
               <ResourceListView
                 loading={isLoading}
-                data={queueItems?.filter((item: any) => item.status === 'completed') || []}
+                data={queueData?.items?.filter((item: any) => item.healthStatus === 'COMPLETED') || []}
                 columns={queueColumns}
                 rowKey="taskId"
                 searchPlaceholder="Search completed items..."
