@@ -19,7 +19,8 @@
     "retry": "Retry",
     "refresh": "Refresh",
     "fullscreen": "Fullscreen",
-    "exitFullscreen": "Exit Fullscreen"
+    "exitFullscreen": "Exit Fullscreen",
+    "addToQueue": "Add to Queue"
   },
   "export": "Export",
   "exportCSV": "Export as CSV",

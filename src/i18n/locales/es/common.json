@@ -19,7 +19,8 @@
     "retry": "Reintentar",
     "refresh": "Actualizar",
     "fullscreen": "Pantalla Completa",
-    "exitFullscreen": "Salir de Pantalla Completa"
+    "exitFullscreen": "Salir de Pantalla Completa",
+    "addToQueue": "Agregar a la Cola"
   },
   "export": "Exportar",
   "exportCSV": "Exportar como CSV",
