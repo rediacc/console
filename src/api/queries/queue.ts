@@ -275,3 +275,68 @@ export const useDeleteQueueItem = () => {
     },
   })
 }
+
+// Get queue item trace
+export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true) => {
+  return useQuery({
+    queryKey: ['queue-item-trace', taskId],
+    queryFn: async () => {
+      if (!taskId) return null
+      const response = await apiClient.get('/GetQueueItemTrace', { taskId })
+      
+      let queueDetails: any = null
+      let traceLogs: any[] = []
+      let vaultContent: any = null
+      let queuePosition: any[] = []
+      let machineStats: any = null
+      let planInfo: any = null
+      
+      // Parse the response tables by index
+      response.tables?.forEach((table) => {
+        if (table.data && table.data.length > 0) {
+          const resultSetIndex = table.resultSetIndex
+          
+          switch (resultSetIndex) {
+            case 1: // Queue details
+              queueDetails = table.data[0]
+              break
+            case 2: // Vault content
+              vaultContent = table.data[0]
+              break
+            case 4: // Audit/trace logs
+              traceLogs = table.data
+              break
+            case 5: // Queue position
+              queuePosition = table.data
+              break
+            case 6: // Machine statistics
+              machineStats = table.data[0]
+              break
+            case 7: // Plan information
+              planInfo = table.data[0]
+              break
+          }
+        }
+      })
+      
+      return { 
+        queueDetails, 
+        traceLogs, 
+        vaultContent, 
+        queuePosition, 
+        machineStats, 
+        planInfo 
+      }
+    },
+    enabled: enabled && !!taskId,
+    refetchInterval: (data) => {
+      // Stop refreshing if the task is completed or cancelled
+      const status = data?.queueDetails?.status || data?.queueDetails?.Status
+      if (status === 'COMPLETED' || status === 'CANCELLED') {
+        return false
+      }
+      // Otherwise refresh every 3 seconds when enabled
+      return enabled && taskId ? 3000 : false
+    },
+  })
+}

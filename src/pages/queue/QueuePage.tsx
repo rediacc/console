@@ -1,11 +1,12 @@
-import React, { useState, useMemo } from 'react'
-import { Typography, Button, Space, Modal, Select, Card, Tag, Badge, Tabs, Row, Col, Statistic, Tooltip, DatePicker, Checkbox, Dropdown } from 'antd'
-import { ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, WarningOutlined, GlobalOutlined, ClockCircleOutlined, ReloadOutlined, ExportOutlined, DownOutlined } from '@ant-design/icons'
-import { useQueueItems, useCancelQueueItem, QueueFilters } from '@/api/queries/queue'
+import React, { useState, useMemo, useRef } from 'react'
+import { Typography, Button, Space, Modal, Select, Card, Tag, Badge, Tabs, Row, Col, Statistic, Tooltip, DatePicker, Checkbox, Dropdown, Timeline, Descriptions, Empty, Spin } from 'antd'
+import { ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, WarningOutlined, GlobalOutlined, ClockCircleOutlined, ReloadOutlined, ExportOutlined, DownOutlined, HistoryOutlined } from '@ant-design/icons'
+import { useQueueItems, useCancelQueueItem, QueueFilters, useQueueItemTrace } from '@/api/queries/queue'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import ResourceListView from '@/components/common/ResourceListView'
 import toast from 'react-hot-toast'
 import dayjs from 'dayjs'
+import { useDynamicPageSize } from '@/hooks/useDynamicPageSize'
 
 const { Title, Text } = Typography
 const { RangePicker } = DatePicker
@@ -21,6 +22,13 @@ const QueuePage: React.FC = () => {
   })
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null] | null>(null)
   const [statusFilter, setStatusFilter] = useState<string[]>([])
+  const [traceModalVisible, setTraceModalVisible] = useState(false)
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  
+  // Refs for table containers
+  const activeTableRef = useRef<HTMLDivElement>(null)
+  const completedTableRef = useRef<HTMLDivElement>(null)
+  const cancelledTableRef = useRef<HTMLDivElement>(null)
   
   // Combine team selection with filters
   const queryFilters = useMemo(() => ({
@@ -34,9 +42,28 @@ const QueuePage: React.FC = () => {
   const { data: queueData, isLoading, refetch, isRefetching } = useQueueItems(queryFilters)
   const { data: dropdownData } = useDropdownData()
   const cancelQueueItemMutation = useCancelQueueItem()
+  const { data: traceData, isLoading: isTraceLoading } = useQueueItemTrace(selectedTaskId, traceModalVisible)
   
   const isFetching = isLoading || isRefetching
   
+  // Dynamic page sizes for tables with minimum size for small screens
+  const activePageSize = useDynamicPageSize(activeTableRef, {
+    containerOffset: 280, // Account for filters, stats cards, tabs
+    minRows: 8, // Minimum for small screens
+    maxRows: 50
+  })
+  
+  const completedPageSize = useDynamicPageSize(completedTableRef, {
+    containerOffset: 280,
+    minRows: 8,
+    maxRows: 50
+  })
+  
+  const cancelledPageSize = useDynamicPageSize(cancelledTableRef, {
+    containerOffset: 280,
+    minRows: 8,
+    maxRows: 50
+  })
   
   // Handle export functionality
   const handleExport = (format: 'csv' | 'json') => {
@@ -100,6 +127,12 @@ const QueuePage: React.FC = () => {
         }
       }
     })
+  }
+
+  // Handle trace view
+  const handleViewTrace = (taskId: string) => {
+    setSelectedTaskId(taskId)
+    setTraceModalVisible(true)
   }
 
 
@@ -238,9 +271,16 @@ const QueuePage: React.FC = () => {
     {
       title: 'Actions',
       key: 'actions',
-      width: 100,
+      width: 180,
       render: (_: any, record: any) => (
         <Space size="small">
+          <Button
+            size="small"
+            icon={<HistoryOutlined />}
+            onClick={() => handleViewTrace(record.taskId)}
+          >
+            Trace
+          </Button>
           {record.canBeCancelled && record.healthStatus !== 'CANCELLED' && (
             <Button
               size="small"
@@ -258,9 +298,17 @@ const QueuePage: React.FC = () => {
   ]
 
 
+  // Calculate container style for full height layout
+  const containerStyle: React.CSSProperties = {
+    height: 'calc(100vh - 64px - 48px - 32px)', // viewport - header - breadcrumb - margins
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden'
+  }
+
   return (
-    <Space direction="vertical" size={24} style={{ width: '100%' }}>
-      <Row gutter={[16, 16]} align="middle">
+    <div style={containerStyle}>
+      <Row gutter={[16, 16]} align="middle" style={{ marginBottom: 16 }}>
         <Col>
           <Title level={2}>Queue Management</Title>
         </Col>
@@ -409,7 +457,7 @@ const QueuePage: React.FC = () => {
       </Card>
 
       {/* Queue Statistics */}
-      <Row gutter={16}>
+      <Row gutter={16} style={{ marginBottom: 16 }}>
             <Col xs={24} sm={12} md={8} lg={4} xl={3}>
               <Card>
                 <Statistic
@@ -480,7 +528,17 @@ const QueuePage: React.FC = () => {
             </Col>
           </Row>
 
-          <Tabs defaultActiveKey="active">
+          <Tabs 
+            defaultActiveKey="active"
+            style={{ 
+              flex: 1, 
+              display: 'flex', 
+              flexDirection: 'column',
+              minHeight: 0,
+              overflow: 'hidden'
+            }}
+            className="full-height-tabs"
+          >
             <Tabs.TabPane 
               tab={
                 <Space>
@@ -491,13 +549,31 @@ const QueuePage: React.FC = () => {
               } 
               key="active"
             >
-              <ResourceListView
-                loading={isLoading || isRefetching}
-                data={queueData?.items?.filter((item: any) => !['COMPLETED', 'CANCELLED'].includes(item.healthStatus)) || []}
-                columns={queueColumns}
-                rowKey="taskId"
-                searchPlaceholder="Search queue items..."
-              />
+              <div ref={activeTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <ResourceListView
+                  loading={isLoading || isRefetching}
+                  data={queueData?.items?.filter((item: any) => !['COMPLETED', 'CANCELLED'].includes(item.healthStatus)) || []}
+                  columns={queueColumns}
+                  rowKey="taskId"
+                  searchPlaceholder="Search queue items..."
+                  enableDynamicPageSize={true}
+                  containerStyle={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                  tableStyle={{ 
+                    height: 'calc(100vh - 450px)', // Adjust based on header/filter/stats height
+                    minHeight: '400px' // Minimum height for small screens
+                  }}
+                  pagination={{
+                    pageSize: activePageSize,
+                    showSizeChanger: false,
+                    showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
+                    position: ['bottomRight'],
+                  }}
+                />
+              </div>
             </Tabs.TabPane>
             
             <Tabs.TabPane 
@@ -510,13 +586,31 @@ const QueuePage: React.FC = () => {
               } 
               key="completed"
             >
-              <ResourceListView
-                loading={isLoading || isRefetching}
-                data={queueData?.items?.filter((item: any) => item.healthStatus === 'COMPLETED') || []}
-                columns={queueColumns}
-                rowKey="taskId"
-                searchPlaceholder="Search completed items..."
-              />
+              <div ref={completedTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <ResourceListView
+                  loading={isLoading || isRefetching}
+                  data={queueData?.items?.filter((item: any) => item.healthStatus === 'COMPLETED') || []}
+                  columns={queueColumns}
+                  rowKey="taskId"
+                  searchPlaceholder="Search completed items..."
+                  enableDynamicPageSize={true}
+                  containerStyle={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                  tableStyle={{ 
+                    height: 'calc(100vh - 450px)',
+                    minHeight: '400px'
+                  }}
+                  pagination={{
+                    pageSize: completedPageSize,
+                    showSizeChanger: false,
+                    showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
+                    position: ['bottomRight'],
+                  }}
+                />
+              </div>
             </Tabs.TabPane>
             
             <Tabs.TabPane 
@@ -529,16 +623,211 @@ const QueuePage: React.FC = () => {
               } 
               key="cancelled"
             >
-              <ResourceListView
-                loading={isLoading || isRefetching}
-                data={queueData?.items?.filter((item: any) => item.healthStatus === 'CANCELLED') || []}
-                columns={queueColumns}
-                rowKey="taskId"
-                searchPlaceholder="Search cancelled items..."
-              />
+              <div ref={cancelledTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <ResourceListView
+                  loading={isLoading || isRefetching}
+                  data={queueData?.items?.filter((item: any) => item.healthStatus === 'CANCELLED') || []}
+                  columns={queueColumns}
+                  rowKey="taskId"
+                  searchPlaceholder="Search cancelled items..."
+                  enableDynamicPageSize={true}
+                  containerStyle={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                  tableStyle={{ 
+                    height: 'calc(100vh - 450px)',
+                    minHeight: '400px'
+                  }}
+                  pagination={{
+                    pageSize: cancelledPageSize,
+                    showSizeChanger: false,
+                    showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
+                    position: ['bottomRight'],
+                  }}
+                />
+              </div>
             </Tabs.TabPane>
           </Tabs>
-    </Space>
+
+          {/* Trace Modal */}
+          <Modal
+            title={
+              <Space>
+                <HistoryOutlined />
+                {`Queue Item Trace - ${selectedTaskId || ''}`}
+              </Space>
+            }
+            open={traceModalVisible}
+            onCancel={() => {
+              setTraceModalVisible(false)
+              setSelectedTaskId(null)
+            }}
+            width={900}
+            footer={[
+              <Button key="close" onClick={() => {
+                setTraceModalVisible(false)
+                setSelectedTaskId(null)
+              }}>
+                Close
+              </Button>
+            ]}
+          >
+            {isTraceLoading ? (
+              <div style={{ textAlign: 'center', padding: '50px 0' }}>
+                <Spin size="large" />
+              </div>
+            ) : traceData ? (
+              <div>
+                {/* Queue Details */}
+                {traceData.queueDetails && (
+                  <Card title="Queue Item Details" style={{ marginBottom: 16 }}>
+                    <Descriptions column={2} size="small">
+                      <Descriptions.Item label="Task ID">
+                        <Text code>{traceData.queueDetails.taskId || traceData.queueDetails.TaskId}</Text>
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Status">
+                        <Tag color={
+                          traceData.queueDetails.status === 'COMPLETED' ? 'success' :
+                          traceData.queueDetails.status === 'CANCELLED' ? 'error' :
+                          traceData.queueDetails.status === 'PROCESSING' ? 'processing' :
+                          traceData.queueDetails.status === 'ASSIGNED' ? 'blue' :
+                          'default'
+                        }>
+                          {traceData.queueDetails.status}
+                        </Tag>
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Priority">
+                        {traceData.queueDetails.priorityLabel || '-'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Machine">
+                        {traceData.queueDetails.machineName}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Team">
+                        {traceData.queueDetails.teamName}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Bridge">
+                        {traceData.queueDetails.bridgeName}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Region">
+                        {traceData.queueDetails.regionName}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Created">
+                        {dayjs(traceData.queueDetails.createdTime).format('YYYY-MM-DD HH:mm:ss')}
+                      </Descriptions.Item>
+                      {traceData.queueDetails.assignedTime && (
+                        <Descriptions.Item label="Assigned">
+                          {dayjs(traceData.queueDetails.assignedTime).format('YYYY-MM-DD HH:mm:ss')}
+                        </Descriptions.Item>
+                      )}
+                      {traceData.queueDetails.lastHeartbeat && (
+                        <Descriptions.Item label="Last Heartbeat">
+                          {dayjs(traceData.queueDetails.lastHeartbeat).format('YYYY-MM-DD HH:mm:ss')}
+                        </Descriptions.Item>
+                      )}
+                      <Descriptions.Item label="Total Duration">
+                        {Math.floor(traceData.queueDetails.totalDurationSeconds / 60)} minutes
+                      </Descriptions.Item>
+                      {traceData.queueDetails.processingDurationSeconds && (
+                        <Descriptions.Item label="Processing Duration">
+                          {Math.floor(traceData.queueDetails.processingDurationSeconds / 60)} minutes
+                        </Descriptions.Item>
+                      )}
+                    </Descriptions>
+                  </Card>
+                )}
+
+                {/* Trace Logs */}
+                <Card title="Activity Timeline">
+                  {traceData.traceLogs && traceData.traceLogs.length > 0 ? (
+                    <Timeline mode="left">
+                      {traceData.traceLogs.map((log: any, index: number) => {
+                        const action = log.action || log.Action
+                        const timestamp = log.timestamp || log.Timestamp
+                        const details = log.details || log.Details || ''
+                        const actionByUser = log.actionByUser || log.ActionByUser || ''
+
+                        // Determine timeline item color based on action type
+                        let color = 'gray'
+                        if (action === 'QUEUE_ITEM_CREATED') color = 'green'
+                        else if (action === 'QUEUE_ITEM_ASSIGNED') color = 'blue'
+                        else if (action === 'QUEUE_ITEM_PROCESSING' || action === 'QUEUE_ITEM_RESPONSE_UPDATED') color = 'orange'
+                        else if (action === 'QUEUE_ITEM_COMPLETED') color = 'green'
+                        else if (action === 'QUEUE_ITEM_CANCELLED') color = 'red'
+                        else if (action.includes('ERROR') || action.includes('FAILED')) color = 'red'
+
+                        return (
+                          <Timeline.Item key={index} color={color}>
+                            <Space direction="vertical" size={0}>
+                              <Text strong>{action.replace('QUEUE_ITEM_', '').replace(/_/g, ' ')}</Text>
+                              <Text type="secondary">{dayjs(timestamp).format('YYYY-MM-DD HH:mm:ss')}</Text>
+                              {details && <Text>{details}</Text>}
+                              {actionByUser && <Text type="secondary">By: {actionByUser}</Text>}
+                            </Space>
+                          </Timeline.Item>
+                        )
+                      })}
+                    </Timeline>
+                  ) : (
+                    <Empty description="No trace logs available" />
+                  )}
+                </Card>
+
+                {/* Additional Information */}
+                {(traceData.queuePosition || traceData.machineStats || traceData.planInfo) && (
+                  <Row gutter={16} style={{ marginTop: 16 }}>
+                    {traceData.machineStats && (
+                      <Col span={8}>
+                        <Card title="Machine Statistics" size="small">
+                          <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                            <div>
+                              <Text type="secondary">Success Rate:</Text>{' '}
+                              <Text strong>{traceData.machineStats.machineSuccessRate}%</Text>
+                            </div>
+                            <div>
+                              <Text type="secondary">Queue Depth:</Text>{' '}
+                              <Text strong>{traceData.machineStats.currentQueueDepth}</Text>
+                            </div>
+                            <div>
+                              <Text type="secondary">Active Tasks:</Text>{' '}
+                              <Text strong>{traceData.machineStats.activeProcessingCount}</Text>
+                            </div>
+                          </Space>
+                        </Card>
+                      </Col>
+                    )}
+                    {traceData.planInfo && (
+                      <Col span={8}>
+                        <Card title="Plan Information" size="small">
+                          <div><Text strong>Plan:</Text> {traceData.planInfo.planName}</div>
+                          <div><Text strong>Status:</Text> <Tag color="success">{traceData.planInfo.subscriptionStatus}</Tag></div>
+                          <div><Text strong>Max Tasks:</Text> {traceData.planInfo.maxConcurrentTasks}</div>
+                        </Card>
+                      </Col>
+                    )}
+                    {traceData.queuePosition && traceData.queuePosition.length > 0 && (
+                      <Col span={8}>
+                        <Card title="Queue Position" size="small">
+                          <div style={{ maxHeight: 200, overflow: 'auto' }}>
+                            {traceData.queuePosition.filter((p: any) => p.relativePosition === 'Before').length > 0 && (
+                              <div><Text type="secondary">{traceData.queuePosition.filter((p: any) => p.relativePosition === 'Before').length} tasks ahead</Text></div>
+                            )}
+                            {traceData.queuePosition.filter((p: any) => p.relativePosition === 'After').length > 0 && (
+                              <div><Text type="secondary">{traceData.queuePosition.filter((p: any) => p.relativePosition === 'After').length} tasks behind</Text></div>
+                            )}
+                          </div>
+                        </Card>
+                      </Col>
+                    )}
+                  </Row>
+                )}
+              </div>
+            ) : (
+              <Empty description="No trace data available" />
+            )}
+          </Modal>
+    </div>
   )
 }
 
