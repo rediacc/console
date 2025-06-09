@@ -77,11 +77,6 @@ export const useQueueItems = (filters: QueueFilters = {}) => {
   return useQuery({
     queryKey: ['queue-items', filters],
     queryFn: async () => {
-      // Queue items are always retrieved per team
-      if (!filters.teamName) {
-        return { items: [], statistics: null }
-      }
-      
       const response = await apiClient.get<{ items: QueueItem[], statistics: QueueStatistics }>('/GetTeamQueueItems', filters)
       
       // Find the actual data tables (skip the nextRequestCredential table)
@@ -106,8 +101,7 @@ export const useQueueItems = (filters: QueueFilters = {}) => {
       
       return { items, statistics }
     },
-    refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
-    enabled: !!filters.teamName, // Only run query if teamName is provided
+    // refetchInterval: 5000, // Disabled auto-refresh
   })
 }
 
@@ -238,6 +232,26 @@ export const useUpdateQueueItemProtection = () => {
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to update queue item protection')
+    },
+  })
+}
+
+// Cancel queue item
+export const useCancelQueueItem = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (taskId: string) => {
+      const response = await apiClient.post('/CancelQueueItem', { taskId })
+      return response
+    },
+    onSuccess: (_, taskId) => {
+      queryClient.invalidateQueries({ queryKey: ['queue-items'] })
+      queryClient.invalidateQueries({ queryKey: ['queue-items-bridge'] })
+      toast.success(`Queue item ${taskId} cancelled`)
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to cancel queue item')
     },
   })
 }

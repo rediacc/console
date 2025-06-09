@@ -21,6 +21,16 @@
     "fullscreen": "Fullscreen",
     "exitFullscreen": "Exit Fullscreen"
   },
+  "export": "Export",
+  "exportCSV": "Export as CSV",
+  "exportJSON": "Export as JSON",
+  "refresh": "Refresh",
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "last7Days": "Last 7 Days",
+  "last30Days": "Last 30 Days",
+  "thisMonth": "This Month",
+  "lastMonth": "Last Month",
   "messages": {
     "success": "Success",
     "required": "This field is required",

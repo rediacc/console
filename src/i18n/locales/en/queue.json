@@ -1,3 +1,20 @@
 {
-  "title": "Queue Management"
+  "title": "Queue Management",
+  "filters": "Filters",
+  "team": "Team",
+  "selectTeam": "Select a team to view queue items",
+  "machine": "Machine",
+  "selectMachine": "All machines",
+  "status": "Status",
+  "selectStatus": "All statuses",
+  "dateRange": "Date Range",
+  "options": "Options",
+  "includeCompleted": "Include Completed",
+  "includeCancelled": "Include Cancelled",
+  "onlyStale": "Only Stale Items",
+  "statusPending": "Pending",
+  "statusRunning": "Running",
+  "statusCompleted": "Completed",
+  "statusFailed": "Failed",
+  "statusCancelled": "Cancelled"
 }

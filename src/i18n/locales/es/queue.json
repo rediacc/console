@@ -1,3 +1,20 @@
 {
-  "title": "Gestión de Cola"
+  "title": "Gestión de Cola",
+  "filters": "Filtros",
+  "team": "Equipo",
+  "selectTeam": "Selecciona un equipo para ver los elementos de la cola",
+  "machine": "Máquina",
+  "selectMachine": "Todas las máquinas",
+  "status": "Estado",
+  "selectStatus": "Todos los estados",
+  "dateRange": "Rango de Fechas",
+  "options": "Opciones",
+  "includeCompleted": "Incluir Completados",
+  "includeCancelled": "Incluir Cancelados",
+  "onlyStale": "Solo Elementos Obsoletos",
+  "statusPending": "Pendiente",
+  "statusRunning": "En Ejecución",
+  "statusCompleted": "Completado",
+  "statusFailed": "Fallido",
+  "statusCancelled": "Cancelado"
 }

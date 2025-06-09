@@ -21,6 +21,16 @@
     "fullscreen": "Pantalla Completa",
     "exitFullscreen": "Salir de Pantalla Completa"
   },
+  "export": "Exportar",
+  "exportCSV": "Exportar como CSV",
+  "exportJSON": "Exportar como JSON",
+  "refresh": "Actualizar",
+  "today": "Hoy",
+  "yesterday": "Ayer",
+  "last7Days": "Últimos 7 Días",
+  "last30Days": "Últimos 30 Días",
+  "thisMonth": "Este Mes",
+  "lastMonth": "Mes Pasado",
   "messages": {
     "success": "Éxito",
     "required": "Este campo es obligatorio",
