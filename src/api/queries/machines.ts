@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
 import toast from 'react-hot-toast'
+import { minifyJSON } from '@/utils/json'
 import type { Machine } from '@/types'
 
 // Get machines for a team, multiple teams, or all machines
@@ -103,7 +104,12 @@ export const useUpdateMachineVault = () => {
   
   return useMutation({
     mutationFn: async (data: { teamName: string; machineName: string; machineVault: string; vaultVersion: number }) => {
-      const response = await apiClient.put('/UpdateMachineVault', data)
+      // Minify the vault JSON before sending
+      const minifiedData = {
+        ...data,
+        machineVault: minifyJSON(data.machineVault)
+      }
+      const response = await apiClient.put('/UpdateMachineVault', minifiedData)
       return response
     },
     onSuccess: (_, variables) => {

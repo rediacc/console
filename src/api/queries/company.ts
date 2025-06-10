@@ -3,6 +3,7 @@ import apiClient from '@/api/client'
 import toast from 'react-hot-toast'
 import { useAppSelector } from '@/store/store'
 import { selectCompany } from '@/store/auth/authSelectors'
+import { minifyJSON } from '@/utils/json'
 
 // Get company vault configuration
 export const useCompanyVault = () => {
@@ -33,7 +34,12 @@ export const useUpdateCompanyVault = () => {
   
   return useMutation({
     mutationFn: async (data: { companyVault: string; vaultVersion: number }) => {
-      const response = await apiClient.post('/UpdateCompanyVault', data)
+      // Minify the vault JSON before sending
+      const minifiedData = {
+        ...data,
+        companyVault: minifyJSON(data.companyVault)
+      }
+      const response = await apiClient.post('/UpdateCompanyVault', minifiedData)
       return response.tables[0]?.data[0]
     },
     onSuccess: () => {

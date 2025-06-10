@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '../client'
 import toast from 'react-hot-toast'
+import { minifyJSON } from '@/utils/json'
 
 export interface Schedule {
   scheduleName: string
@@ -119,7 +120,12 @@ export const useUpdateScheduleVault = () => {
 
   return useMutation({
     mutationFn: async (data: UpdateScheduleVaultRequest) => {
-      const response = await apiClient.put('/UpdateScheduleVault', data)
+      // Minify the vault JSON before sending
+      const minifiedData = {
+        ...data,
+        scheduleVault: minifyJSON(data.scheduleVault)
+      }
+      const response = await apiClient.put('/UpdateScheduleVault', minifiedData)
       return response
     },
     onSuccess: (_, variables) => {

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
 import toast from 'react-hot-toast'
+import { minifyJSON } from '@/utils/json'
 
 export interface Repository {
   repositoryName: string
@@ -96,10 +97,11 @@ export const useUpdateRepositoryVault = () => {
   
   return useMutation({
     mutationFn: async (data: { teamName: string; repositoryName: string; repositoryVault: string; vaultVersion: number }) => {
+      // Minify the vault JSON before sending
       const response = await apiClient.put('/UpdateRepositoryVault', {
         teamName: data.teamName,
         repoName: data.repositoryName, // Map repositoryName to repoName for API
-        repoVault: data.repositoryVault, // Map repositoryVault to repoVault for API
+        repoVault: minifyJSON(data.repositoryVault), // Map repositoryVault to repoVault for API and minify
         vaultVersion: data.vaultVersion,
       })
       return response

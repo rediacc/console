@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
 import toast from 'react-hot-toast'
+import { minifyJSON } from '@/utils/json'
 
 export interface Region {
   regionName: string
@@ -87,7 +88,12 @@ export const useUpdateRegionVault = () => {
   
   return useMutation({
     mutationFn: async (data: { regionName: string; regionVault: string; vaultVersion: number }) => {
-      const response = await apiClient.put('/UpdateRegionVault', data)
+      // Minify the vault JSON before sending
+      const minifiedData = {
+        ...data,
+        regionVault: minifyJSON(data.regionVault)
+      }
+      const response = await apiClient.put('/UpdateRegionVault', minifiedData)
       return response
     },
     onSuccess: (_, variables) => {

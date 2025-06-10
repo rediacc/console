@@ -225,10 +225,15 @@ Dashboard pricing behavior:
 - Hides price displays if pricing cannot be fetched
 - Maps plan codes (COMMUNITY, ADVANCED, etc.) to pricing keys
 
+## JSON Handling
+- **Vault JSON Minification**: All vault JSON data is automatically minified before sending to the API
+- **Utility**: `src/utils/json.ts` provides `minifyJSON()` and `objectToMinifiedJSON()` functions
+- **Applied to**: Queue creation, vault updates for all entities (teams, machines, repositories, etc.)
+
 ## Notes
 - Created: 2025-06-02
 - Updated: 2025-06-04 - Added centralized pricing
-- Updated: 2025-06-10 - Added centralized function definitions
+- Updated: 2025-06-10 - Added centralized function definitions, JSON minification
 - NO additional packages beyond what's in PLAN.md
 - Use Ant Design components exclusively
 - Follow existing patterns for new features

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
 import { showMessage } from '@/utils/messages'
+import { minifyJSON } from '@/utils/json'
 
 export interface Team {
   teamName: string
@@ -96,7 +97,12 @@ export const useUpdateTeamVault = () => {
   
   return useMutation({
     mutationFn: async (data: { teamName: string; teamVault: string; vaultVersion: number }) => {
-      const response = await apiClient.put('/UpdateTeamVault', data)
+      // Minify the vault JSON before sending
+      const minifiedData = {
+        ...data,
+        teamVault: minifyJSON(data.teamVault)
+      }
+      const response = await apiClient.put('/UpdateTeamVault', minifiedData)
       return response
     },
     onSuccess: (_, variables) => {
