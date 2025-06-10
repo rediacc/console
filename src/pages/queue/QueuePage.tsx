@@ -542,9 +542,8 @@ const QueuePage: React.FC = () => {
             <Tabs.TabPane 
               tab={
                 <Space>
-                  <Badge count={queueData?.items?.filter((item: any) => !['COMPLETED', 'CANCELLED'].includes(item.healthStatus)).length || 0}>
-                    <span>Active Queue</span>
-                  </Badge>
+                  <span style={{ marginRight: 8 }}>Active Queue</span>
+                  <Badge count={queueData?.items?.filter((item: any) => !['COMPLETED', 'CANCELLED'].includes(item.healthStatus)).length || 0} color="gold" />
                 </Space>
               } 
               key="active"
@@ -579,9 +578,8 @@ const QueuePage: React.FC = () => {
             <Tabs.TabPane 
               tab={
                 <Space>
-                  <Badge count={(queueData?.statistics as any)?.completedCount || 0} showZero color="#52c41a">
-                    <span>Completed</span>
-                  </Badge>
+                  <span style={{ marginRight: 8 }}>Completed</span>
+                  <Badge count={(queueData?.statistics as any)?.completedCount || 0} showZero color="#52c41a" />
                 </Space>
               } 
               key="completed"
@@ -616,9 +614,8 @@ const QueuePage: React.FC = () => {
             <Tabs.TabPane 
               tab={
                 <Space>
-                  <Badge count={(queueData?.statistics as any)?.cancelledCount || 0} showZero color="#ff4d4f">
-                    <span>Cancelled</span>
-                  </Badge>
+                  <span style={{ marginRight: 8 }}>Cancelled</span>
+                  <Badge count={(queueData?.statistics as any)?.cancelledCount || 0} showZero color="#ff4d4f" />
                 </Space>
               } 
               key="cancelled"
