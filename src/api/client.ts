@@ -81,7 +81,8 @@ class ApiClient {
           }
           
           const errorMessage = data.errors?.join('; ') || data.message || 'Request failed'
-          showMessage('error', errorMessage)
+          // Don't show message here - let the mutation handler show it
+          // This prevents duplicate messages and allows mutation handlers to customize error display
           return Promise.reject(new Error(errorMessage))
         }
 
