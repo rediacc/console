@@ -161,7 +161,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       teamName: uiMode === 'simple' ? 'Private Team' : '',
       machineName: '',
       regionName: uiMode === 'simple' ? 'Default Region' : '',
-      bridgeName: uiMode === 'simple' ? 'Cloud Bridge' : '',
+      bridgeName: uiMode === 'simple' ? 'Global Bridges' : '',
       machineVault: '{}',
     },
   });
@@ -301,7 +301,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       const formData = {
         teamName: uiMode === 'simple' ? 'Private Team' : data.teamName,
         regionName: uiMode === 'simple' ? 'Default Region' : data.regionName,
-        bridgeName: uiMode === 'simple' ? 'Cloud Bridge' : data.bridgeName,
+        bridgeName: uiMode === 'simple' ? 'Global Bridges' : data.bridgeName,
         machineName: data.machineName,
         machineVault: data.machineVault || '{}'
       };
@@ -1045,7 +1045,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               {uiMode === 'simple' && (
                 <>
                   <Text>{t('machines:region')}: Default Region</Text>
-                  <Text>{t('machines:bridge')}: Cloud Bridge</Text>
+                  <Text>{t('machines:bridge')}: Global Bridges</Text>
                 </>
               )}
             </Space>
