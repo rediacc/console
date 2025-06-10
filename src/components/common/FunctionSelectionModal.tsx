@@ -3,7 +3,7 @@ import { Modal, Row, Col, Card, Input, Space, Form, Slider, Empty, Typography, T
 import { ExclamationCircleOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import type { QueueFunction } from '@/api/queries/queue'
-import functionsData from '@/data/functions.json'
+import { useLocalizedFunctions } from '@/services/functionsService'
 
 const { Search } = Input
 const { Text, Paragraph } = Typography
@@ -44,6 +44,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   defaultParams = {}
 }) => {
   const { t } = useTranslation(['functions', 'common', 'machines'])
+  const { functions: localizedFunctions, categories } = useLocalizedFunctions()
   
   const [selectedFunction, setSelectedFunction] = useState<QueueFunction | null>(null)
   const [functionParams, setFunctionParams] = useState<Record<string, any>>({})
@@ -82,7 +83,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
 
   // Filter functions based on allowed categories and search term
   const filteredFunctions = useMemo(() => {
-    let functions = Object.values(functionsData.functions) as QueueFunction[]
+    let functions = Object.values(localizedFunctions) as QueueFunction[]
     
     // Filter by allowed categories if specified
     if (allowedCategories && allowedCategories.length > 0) {
@@ -100,7 +101,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
     }
     
     return functions
-  }, [allowedCategories, functionSearchTerm])
+  }, [localizedFunctions, allowedCategories, functionSearchTerm])
 
   // Group functions by category
   const functionsByCategory = useMemo(() => {
@@ -195,7 +196,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
             <div style={{ maxHeight: 400, overflow: 'auto' }}>
               {Object.entries(functionsByCategory).map(([category, funcs]) => (
                 <div key={category} style={{ marginBottom: 16 }}>
-                  <Text strong style={{ display: 'block', marginBottom: 8 }}>{category}</Text>
+                  <Text strong style={{ display: 'block', marginBottom: 8 }}>{categories[category]?.name || category}</Text>
                   {funcs.map(func => (
                     <div
                       key={func.name}
@@ -212,7 +213,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                       <Text strong>{func.name}</Text>
                       <br />
                       <Text type="secondary" style={{ fontSize: 12 }}>
-                        {t(`functions.${func.name}.description`, func.description)}
+                        {func.description}
                       </Text>
                     </div>
                   ))}
@@ -227,7 +228,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
             <Space direction="vertical" size={16} style={{ width: '100%' }}>
               <Card title={`${t('functions:configure')}: ${selectedFunction.name}`} size="small">
                 <Paragraph>
-                  {t(`functions.${selectedFunction.name}.description`, selectedFunction.description)}
+                  {selectedFunction.description}
                 </Paragraph>
                 
                 <Form layout="horizontal" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }}>
@@ -259,12 +260,12 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                           label={
                             <Tooltip title={`Background parameter: ${paramName}`}>
                               <span style={{ cursor: 'help' }}>
-                                {t(`functions.${selectedFunction.name}.params.${paramName}.label`, { defaultValue: paramName })}
+                                {paramInfo.label || paramName}
                               </span>
                             </Tooltip>
                           }
                           required={paramInfo.required}
-                          help={t(`functions.${selectedFunction.name}.params.${paramName}.help`, { defaultValue: paramInfo.help || '' })}
+                          help={paramInfo.help || ''}
                         >
                           {isSizeParam ? (
                             <Space.Compact style={{ width: '100%' }}>
@@ -305,7 +306,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                 ...functionParams,
                                 [paramName]: e.target.value
                               })}
-                              placeholder={t(`functions.${selectedFunction.name}.params.${paramName}.help`, { defaultValue: paramInfo.help || '' })}
+                              placeholder={paramInfo.help || ''}
                             />
                           )}
                         </Form.Item>

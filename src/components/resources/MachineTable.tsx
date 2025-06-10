@@ -46,14 +46,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createMachineSchema, CreateMachineForm, editMachineSchema, EditMachineForm } from '@/utils/validation';
-import { QUEUE_FUNCTIONS, type QueueFunction } from '@/api/queries/queue';
-import { useCreateQueueItem } from '@/api/queries/queue';
+import { type QueueFunction, useCreateQueueItem } from '@/api/queries/queue';
+import { useLocalizedFunctions } from '@/services/functionsService';
 import { 
   FunctionOutlined,
   HistoryOutlined 
 } from '@ant-design/icons';
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
-import functionsData from '@/data/functions.json';
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
@@ -1111,7 +1110,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             </Space>
           )
         }
-        allowedCategories={['Machine Functions']}
+        allowedCategories={['machine']}
         loading={createQueueItemMutation.isPending}
       />
 

@@ -109,11 +109,26 @@ Frontend (React) → HTTP REST API → Middleware (.NET) → SQL Server
 All validation schemas are in `src/utils/validation.ts` using Zod
 
 ## Queue Functions
-Comprehensive list of queue functions with categories:
-- Machine Functions (os_setup, os_update, etc.)
-- Database Functions (db_backup, db_restore, etc.)
-- Migration Functions (v2p_*, p2v_*, etc.)
-- Repository Functions (repo_snapshot, repo_restore, etc.)
+
+### Function Definition Structure
+Queue functions are centralized to avoid duplication:
+- **Definitions**: `src/data/functions.json` - Contains all function definitions without translations
+- **Service**: `src/services/functionsService.ts` - Provides localized function data
+- **Hook**: `useLocalizedFunctions()` - Returns functions with translations applied
+- **Translation**: Function names and descriptions are stored in i18n files (`locales/*/functions.json`)
+
+### Function Categories
+- machine (os_setup, hello, uninstall, repo_new)
+- repository (repo_mount, repo_unmount, repo_up, etc.)
+- backup (repo_push, repo_pull)
+- network (map_socket)
+
+### Usage
+```typescript
+import { useLocalizedFunctions } from '@/services/functionsService';
+
+const { functions, categories, getFunction, getFunctionsByCategory } = useLocalizedFunctions();
+```
 
 ## Build & Deployment
 
@@ -213,6 +228,7 @@ Dashboard pricing behavior:
 ## Notes
 - Created: 2025-06-02
 - Updated: 2025-06-04 - Added centralized pricing
+- Updated: 2025-06-10 - Added centralized function definitions
 - NO additional packages beyond what's in PLAN.md
 - Use Ant Design components exclusively
 - Follow existing patterns for new features

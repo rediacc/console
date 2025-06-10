@@ -80,9 +80,9 @@ import {
   EditScheduleForm
 } from '@/utils/validation'
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize'
-import { QUEUE_FUNCTIONS, type QueueFunction } from '@/api/queries/queue'
+import { type QueueFunction } from '@/api/queries/queue'
+import { useLocalizedFunctions } from '@/services/functionsService'
 import { useCreateQueueItem } from '@/api/queries/queue'
-import functionsData from '@/data/functions.json'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 
 const { Title, Text } = Typography
@@ -1743,7 +1743,7 @@ const ResourcesPage: React.FC = () => {
             </Space>
           )
         }
-        allowedCategories={['Repository Functions', 'Backup Functions', 'Network Functions']}
+        allowedCategories={['repository', 'backup', 'network']}
         loading={createQueueItemMutation.isPending}
         showMachineSelection={true}
         teamName={functionModalRepository?.teamName}

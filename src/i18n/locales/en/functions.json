@@ -15,19 +15,19 @@
   "description": "Description (optional)",
   "descriptionPlaceholder": "Add a custom description for this queue item",
   "categories": {
-    "Machine Functions": {
+    "machine": {
       "name": "Machine Functions",
       "description": "Core system setup and maintenance functions"
     },
-    "Repository Functions": {
+    "repository": {
       "name": "Repository Functions",
       "description": "Repository management and operations"
     },
-    "Backup Functions": {
+    "backup": {
       "name": "Backup Functions",
       "description": "Backup and restore operations"
     },
-    "Network Functions": {
+    "network": {
       "name": "Network Functions",
       "description": "Network and socket mapping operations"
     }

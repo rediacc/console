@@ -15,19 +15,19 @@
   "description": "Descripción (opcional)",
   "descriptionPlaceholder": "Agregar una descripción personalizada para este elemento de la cola",
   "categories": {
-    "Machine Functions": {
+    "machine": {
       "name": "Funciones del Sistema",
       "description": "Funciones principales de configuración y mantenimiento del sistema"
     },
-    "Repository Functions": {
+    "repository": {
       "name": "Funciones de Repositorio",
       "description": "Gestión y operaciones de repositorios"
     },
-    "Backup Functions": {
+    "backup": {
       "name": "Funciones de Respaldo",
       "description": "Operaciones de respaldo y restauración"
     },
-    "Network Functions": {
+    "network": {
       "name": "Funciones de Red",
       "description": "Operaciones de red y mapeo de sockets"
     }

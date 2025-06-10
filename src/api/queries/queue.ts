@@ -47,11 +47,7 @@ export interface QueueFunction {
   }>
 }
 
-// Import queue functions from JSON
-import functionsData from '@/data/functions.json'
-
-// Queue functions definition (from JSON file)
-export const QUEUE_FUNCTIONS: Record<string, QueueFunction> = functionsData.functions
+// Queue functions will be loaded via the functionsService instead
 
 // Parameters for GetTeamQueueItems
 export interface QueueFilters {
