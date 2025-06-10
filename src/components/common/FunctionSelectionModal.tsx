@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react'
-import { Modal, Row, Col, Card, Input, Space, Form, Slider, Empty, Typography, Tag, Button, Select } from 'antd'
+import React, { useState, useMemo, useEffect } from 'react'
+import { Modal, Row, Col, Card, Input, Space, Form, Slider, Empty, Typography, Tag, Button, Select, Tooltip, InputNumber } from 'antd'
 import { ExclamationCircleOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import type { QueueFunction } from '@/api/queries/queue'
@@ -52,6 +52,34 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   const [functionSearchTerm, setFunctionSearchTerm] = useState('')
   const [selectedMachine, setSelectedMachine] = useState<string>('')
 
+  // Initialize size parameters when function is selected
+  useEffect(() => {
+    if (selectedFunction) {
+      const initialParams: Record<string, any> = {}
+      
+      Object.entries(selectedFunction.params).forEach(([paramName, paramInfo]) => {
+        if (paramInfo.format === 'size' && paramInfo.units) {
+          // Initialize with default values for size parameters
+          if (paramInfo.default) {
+            const match = paramInfo.default.match(/^(\d+)([%GT]?)$/)
+            if (match) {
+              const [, value, unit] = match
+              initialParams[`${paramName}_value`] = parseInt(value)
+              initialParams[`${paramName}_unit`] = unit || (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0])
+              initialParams[paramName] = paramInfo.default
+            }
+          } else {
+            // Set default unit
+            const defaultUnit = paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0]
+            initialParams[`${paramName}_unit`] = defaultUnit
+          }
+        }
+      })
+      
+      setFunctionParams(initialParams)
+    }
+  }, [selectedFunction])
+
   // Filter functions based on allowed categories and search term
   const filteredFunctions = useMemo(() => {
     let functions = Object.values(functionsData.functions) as QueueFunction[]
@@ -89,8 +117,16 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
     if (!selectedFunction) return
     if (showMachineSelection && !selectedMachine) return
     
+    // Clean up the params - remove the helper _value and _unit fields
+    const cleanedParams = Object.entries(functionParams).reduce((acc, [key, value]) => {
+      if (!key.endsWith('_value') && !key.endsWith('_unit')) {
+        acc[key] = value
+      }
+      return acc
+    }, {} as Record<string, any>)
+    
     // Merge visible params with default params
-    const allParams = { ...defaultParams, ...functionParams }
+    const allParams = { ...defaultParams, ...cleanedParams }
     
     onSubmit({
       function: selectedFunction,
@@ -213,23 +249,68 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                   {/* Function Parameters */}
                   {Object.entries(selectedFunction.params)
                     .filter(([paramName]) => !hiddenParams.includes(paramName))
-                    .map(([paramName, paramInfo]) => (
-                    <Form.Item
-                      key={paramName}
-                      label={t(`functions.${selectedFunction.name}.params.${paramName}.label`, { defaultValue: paramName })}
-                      required={paramInfo.required}
-                      help={t(`functions.${selectedFunction.name}.params.${paramName}.help`, { defaultValue: paramInfo.help || '' })}
-                    >
-                      <Input
-                        value={functionParams[paramName] || ''}
-                        onChange={(e) => setFunctionParams({
-                          ...functionParams,
-                          [paramName]: e.target.value
-                        })}
-                        placeholder={t(`functions.${selectedFunction.name}.params.${paramName}.help`, { defaultValue: paramInfo.help || '' })}
-                      />
-                    </Form.Item>
-                  ))}
+                    .map(([paramName, paramInfo]) => {
+                      // Check if this is a size parameter with units
+                      const isSizeParam = paramInfo.format === 'size' && paramInfo.units
+                      
+                      return (
+                        <Form.Item
+                          key={paramName}
+                          label={
+                            <Tooltip title={`Background parameter: ${paramName}`}>
+                              <span style={{ cursor: 'help' }}>
+                                {t(`functions.${selectedFunction.name}.params.${paramName}.label`, { defaultValue: paramName })}
+                              </span>
+                            </Tooltip>
+                          }
+                          required={paramInfo.required}
+                          help={t(`functions.${selectedFunction.name}.params.${paramName}.help`, { defaultValue: paramInfo.help || '' })}
+                        >
+                          {isSizeParam ? (
+                            <Space.Compact style={{ width: '100%' }}>
+                              <InputNumber
+                                style={{ width: '65%' }}
+                                value={functionParams[`${paramName}_value`] || ''}
+                                onChange={(value) => {
+                                  setFunctionParams({
+                                    ...functionParams,
+                                    [`${paramName}_value`]: value,
+                                    [paramName]: `${value || ''}${functionParams[`${paramName}_unit`] || paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0]}`
+                                  })
+                                }}
+                                placeholder={paramInfo.units.includes('percentage') ? '95' : '100'}
+                                min={1}
+                                max={paramInfo.units.includes('percentage') ? 100 : undefined}
+                              />
+                              <Select
+                                style={{ width: '35%' }}
+                                value={functionParams[`${paramName}_unit`] || (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0])}
+                                onChange={(unit) => {
+                                  setFunctionParams({
+                                    ...functionParams,
+                                    [`${paramName}_unit`]: unit,
+                                    [paramName]: `${functionParams[`${paramName}_value`] || ''}${unit}`
+                                  })
+                                }}
+                                options={paramInfo.units.map(unit => ({
+                                  value: unit === 'percentage' ? '%' : unit,
+                                  label: unit === 'percentage' ? '%' : unit === 'G' ? 'GB' : 'TB'
+                                }))}
+                              />
+                            </Space.Compact>
+                          ) : (
+                            <Input
+                              value={functionParams[paramName] || ''}
+                              onChange={(e) => setFunctionParams({
+                                ...functionParams,
+                                [paramName]: e.target.value
+                              })}
+                              placeholder={t(`functions.${selectedFunction.name}.params.${paramName}.help`, { defaultValue: paramInfo.help || '' })}
+                            />
+                          )}
+                        </Form.Item>
+                      )
+                    })}
                   
                   {/* Priority */}
                   <Form.Item label={t('functions:priority')} help={t('functions:priorityHelp')}>

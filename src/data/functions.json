@@ -26,7 +26,9 @@
         "datastore_size": {
           "type": "string",
           "default": "95%",
-          "help": "Datastore size (e.g., 95%, 100G)"
+          "help": "Datastore size (e.g., 95%, 100G)",
+          "format": "size",
+          "units": ["percentage", "G", "T"]
         },
         "source": {
           "type": "string",
@@ -60,7 +62,9 @@
         "size": {
           "type": "string",
           "required": true,
-          "help": "Repository size (e.g., 10G)"
+          "help": "Repository size (e.g., 10G)",
+          "format": "size",
+          "units": ["G", "T"]
         }
       }
     },
@@ -137,7 +141,9 @@
         "size": {
           "type": "string",
           "required": true,
-          "help": "New size (e.g., 20G)"
+          "help": "New size (e.g., 20G)",
+          "format": "size",
+          "units": ["G", "T"]
         }
       }
     },

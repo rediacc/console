@@ -60,6 +60,26 @@ class ApiClient {
 
         // Check for API-level failure
         if (data.failure !== 0) {
+          // Check if failure code is 401 (unauthorized)
+          if (data.failure === 401) {
+            // Handle as unauthorized - same as HTTP 401
+            showMessage('error', 'Session expired. Please login again.')
+            store.dispatch(logout())
+            
+            // Only redirect if not already on login page
+            const currentPath = window.location.pathname
+            const basePath = import.meta.env.BASE_URL || '/'
+            const loginPath = `${basePath}login`.replace('//', '/')
+            
+            if (!currentPath.includes('/login')) {
+              // Delay redirect so user can see the message
+              setTimeout(() => {
+                window.location.href = loginPath
+              }, 1500) // 1.5 second delay
+            }
+            return Promise.reject(new Error('Unauthorized'))
+          }
+          
           const errorMessage = data.errors?.join('; ') || data.message || 'Request failed'
           showMessage('error', errorMessage)
           return Promise.reject(new Error(errorMessage))
@@ -89,7 +109,18 @@ class ApiClient {
             showMessage('error', 'Session expired. Please login again.')
           }
           store.dispatch(logout())
-          window.location.href = `${import.meta.env.BASE_URL}login`
+          
+          // Only redirect if not already on login page
+          const currentPath = window.location.pathname
+          const basePath = import.meta.env.BASE_URL || '/'
+          const loginPath = `${basePath}login`.replace('//', '/')
+          
+          if (!currentPath.includes('/login')) {
+            // Delay redirect so user can see the message
+            setTimeout(() => {
+              window.location.href = loginPath
+            }, 1500) // 1.5 second delay
+          }
         } else if (error.response?.status >= 500) {
           showMessage('error', 'Server error. Please try again later.')
         } else if (error.request) {
