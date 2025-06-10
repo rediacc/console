@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Spin, Row, Col } from 'antd'
-import { ReloadOutlined, HistoryOutlined } from '@ant-design/icons'
+import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Spin, Row, Col, Tabs } from 'antd'
+import { ReloadOutlined, HistoryOutlined, FileTextOutlined } from '@ant-design/icons'
 import { useQueueItemTrace } from '@/api/queries/queue'
 import dayjs from 'dayjs'
+import MonacoEditor from '@monaco-editor/react'
 
 const { Text } = Typography
 
@@ -165,6 +166,66 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
               <Empty description="No trace logs available" />
             )}
           </Card>
+
+          {/* Vault Content Section */}
+          {(traceData.vaultContent || traceData.responseVaultContent) && (
+            <Card title="Vault Content" style={{ marginTop: 16 }}>
+              <Tabs
+                items={[
+                  {
+                    key: 'request',
+                    label: (
+                      <Space>
+                        <FileTextOutlined />
+                        Request Vault
+                      </Space>
+                    ),
+                    children: traceData.vaultContent ? (
+                      <MonacoEditor
+                        height="300px"
+                        language="json"
+                        theme="vs-dark"
+                        value={JSON.stringify(JSON.parse(traceData.vaultContent.vaultContent || '{}'), null, 2)}
+                        options={{
+                          readOnly: true,
+                          minimap: { enabled: false },
+                          scrollBeyondLastLine: false,
+                          wordWrap: 'on',
+                          fontSize: 12,
+                        }}
+                      />
+                    ) : (
+                      <Empty description="No request vault content" />
+                    ),
+                  },
+                  ...(traceData.responseVaultContent ? [{
+                    key: 'response',
+                    label: (
+                      <Space>
+                        <FileTextOutlined />
+                        Response Vault
+                      </Space>
+                    ),
+                    children: (
+                      <MonacoEditor
+                        height="300px"
+                        language="json"
+                        theme="vs-dark"
+                        value={JSON.stringify(JSON.parse(traceData.responseVaultContent.vaultContentResponse || '{}'), null, 2)}
+                        options={{
+                          readOnly: true,
+                          minimap: { enabled: false },
+                          scrollBeyondLastLine: false,
+                          wordWrap: 'on',
+                          fontSize: 12,
+                        }}
+                      />
+                    ),
+                  }] : []),
+                ]}
+              />
+            </Card>
+          )}
 
           {/* Additional Information */}
           {(traceData.queuePosition || traceData.machineStats || traceData.planInfo) && (

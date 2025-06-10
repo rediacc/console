@@ -301,6 +301,7 @@ export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true
       let queueDetails: any = null
       let traceLogs: any[] = []
       let vaultContent: any = null
+      let responseVaultContent: any = null
       let queuePosition: any[] = []
       let machineStats: any = null
       let planInfo: any = null
@@ -316,6 +317,9 @@ export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true
               break
             case 2: // Vault content
               vaultContent = table.data[0]
+              break
+            case 3: // Response vault content
+              responseVaultContent = table.data[0]
               break
             case 4: // Audit/trace logs
               traceLogs = table.data
@@ -337,6 +341,7 @@ export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true
         queueDetails, 
         traceLogs, 
         vaultContent, 
+        responseVaultContent,
         queuePosition, 
         machineStats, 
         planInfo 
