@@ -1420,6 +1420,7 @@ const SystemPage: React.FC = () => {
                       <List.Item
                         actions={[
                           <Button
+                            key="remove"
                             type="link"
                             danger
                             size="small"
@@ -1650,17 +1651,26 @@ const SystemPage: React.FC = () => {
                     dataSource={teamMembers}
                     renderItem={(member: TeamMember) => (
                       <List.Item
-                        actions={member.isMember ? [
-                          <Button
-                            type="link"
-                            danger
-                            size="small"
-                            onClick={() => handleRemoveTeamMember(member.userEmail)}
-                            loading={removeTeamMemberMutation.isPending}
+                        actions={[
+                          <Popconfirm
+                            key="remove"
+                            title="Remove Team Member"
+                            description={`Are you sure you want to remove "${member.userEmail}" from this team?`}
+                            onConfirm={() => handleRemoveTeamMember(member.userEmail)}
+                            okText="Yes"
+                            cancelText="No"
+                            okButtonProps={{ danger: true }}
                           >
-                            Remove
-                          </Button>
-                        ] : []}
+                            <Button
+                              type="link"
+                              danger
+                              size="small"
+                              loading={removeTeamMemberMutation.isPending}
+                            >
+                              Remove
+                            </Button>
+                          </Popconfirm>
+                        ]}
                       >
                         <List.Item.Meta
                           avatar={<UserOutlined />}
