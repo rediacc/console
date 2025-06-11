@@ -1,13 +1,13 @@
 import { encryptString, decryptString } from './encryption'
 
 /**
- * Vault Protocol using VaultCompany as a sentinel value
+ * Vault Protocol using VaultCompany as an encryption indicator
  * 
  * The protocol works as follows:
- * 1. VaultCompany is a special field in the company settings
+ * 1. VaultCompany is the Company's vault content returned during login
  * 2. If VaultCompany is encrypted (base64 pattern), all users must provide the master password
- * 3. The master password is validated by attempting to decrypt VaultCompany
- * 4. If decryption succeeds and equals the company name, the password is correct
+ * 3. The master password is stored in Redux and used to encrypt/decrypt vault fields
+ * 4. The encrypted VaultCompany serves as an indicator that encryption is enabled
  * 5. All users in a company must use the same master password
  */
 
@@ -32,44 +32,38 @@ export function isEncrypted(value: string | null | undefined): boolean {
   
   // Check if it matches base64 pattern and has reasonable length
   // Encrypted values are typically much longer than originals due to IV + encrypted data
-  return ENCRYPTED_PATTERN.test(value) && value.length > 40
+  return ENCRYPTED_PATTERN.test(value) && value.length >= 40
 }
 
 /**
  * Validate master password by attempting to decrypt VaultCompany
  * @param encryptedVaultCompany The encrypted VaultCompany value
  * @param masterPassword The master password to validate
- * @param expectedCompanyName The expected decrypted value (company name)
  * @returns true if password is valid, false otherwise
  */
 export async function validateMasterPassword(
   encryptedVaultCompany: string,
-  masterPassword: string,
-  expectedCompanyName: string
+  masterPassword: string
 ): Promise<boolean> {
   try {
+    // Try to decrypt the vault content
     const decrypted = await decryptString(encryptedVaultCompany, masterPassword)
     
-    // The decrypted value should match the company name
-    return decrypted === expectedCompanyName
+    // If decryption succeeds, the password is valid
+    // The decrypted content should be valid JSON (even if it's just {})
+    try {
+      JSON.parse(decrypted)
+      return true
+    } catch {
+      // If it's not valid JSON after decryption, the password is wrong
+      return false
+    }
   } catch (error) {
     // Decryption failed - wrong password
     return false
   }
 }
 
-/**
- * Encrypt the company name to create VaultCompany sentinel
- * @param companyName The company name to encrypt
- * @param masterPassword The master password
- * @returns Encrypted VaultCompany value
- */
-export async function createVaultCompanySentinel(
-  companyName: string,
-  masterPassword: string
-): Promise<string> {
-  return await encryptString(companyName, masterPassword)
-}
 
 /**
  * Protocol states for UI feedback
@@ -107,7 +101,7 @@ export function analyzeVaultProtocolState(
     return VaultProtocolState.PASSWORD_REQUIRED
   }
   
-  if (passwordValid === false) {
+  if (passwordValid === false || passwordValid === undefined) {
     return VaultProtocolState.INVALID_PASSWORD
   }
   

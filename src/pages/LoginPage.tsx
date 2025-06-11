@@ -73,11 +73,10 @@ const LoginPage: React.FC = () => {
       
       // Validate master password if company has encryption and user provided password
       let passwordValid: boolean | undefined = undefined
-      if (companyHasEncryption && userProvidedPassword && companyName) {
+      if (companyHasEncryption && userProvidedPassword) {
         passwordValid = await validateMasterPassword(
           vaultCompany,
-          values.masterPassword!,
-          companyName
+          values.masterPassword!
         )
       }
       

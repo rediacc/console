@@ -100,7 +100,10 @@
         "step2": "Comparta la nueva contraseña maestra de forma segura solo con administradores autorizados",
         "step3": "Sus propios puentes deben ser reconfigurados manualmente con la nueva contraseña maestra",
         "step4": "Actualice su sistema de gestión de contraseñas con la nueva contraseña maestra",
-        "systemReady": "El sistema ahora está desbloqueado y listo para usar."
+        "systemReady": "El sistema ahora está desbloqueado y listo para usar.",
+        "redirecting": "Redirigiendo a la página de inicio de sesión en",
+        "seconds": "segundos",
+        "loginNow": "Ir a Iniciar Sesión Ahora"
       },
       "error": {
         "fetchVaults": "Error al obtener las bóvedas actuales",

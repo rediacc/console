@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Card, Tabs, Modal, Form, Input, Button, Space, Popconfirm, Tag, Select, Badge, List, Typography, Row, Col, Table, Empty, Spin, Alert, message, Checkbox } from 'antd'
+import React, { useState, useEffect, useRef } from 'react'
+import { Card, Tabs, Modal, Form, Input, Button, Space, Popconfirm, Tag, Select, Badge, List, Typography, Row, Col, Table, Empty, Spin, Alert, message, Checkbox, Result } from 'antd'
 import { 
   UserOutlined, 
   SafetyOutlined, 
@@ -31,6 +31,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
+import { selectMasterPassword } from '@/store/auth/authSelectors'
+import { setMasterPassword, logout } from '@/store/auth/authSlice'
+import { encryptString, decryptString } from '@/utils/encryption'
+import { useDispatch } from 'react-redux'
 import ResourceListView from '@/components/common/ResourceListView'
 import ResourceForm from '@/components/forms/ResourceForm'
 import ResourceFormWithVault, { ResourceFormWithVaultRef } from '@/components/forms/ResourceFormWithVault'
@@ -127,6 +132,9 @@ const SystemPage: React.FC = () => {
   const { t: tOrg } = useTranslation('resources')
   const { t: tCommon } = useTranslation('common')
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
+  const currentMasterPassword = useSelector(selectMasterPassword)
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('users')
   
   // Form refs
@@ -209,6 +217,9 @@ const SystemPage: React.FC = () => {
   // Danger zone state
   const [masterPasswordModalOpen, setMasterPasswordModalOpen] = useState(false)
   const [masterPasswordForm] = Form.useForm()
+  const [successModalOpen, setSuccessModalOpen] = useState(false)
+  const [countdown, setCountdown] = useState(60)
+  const countdownInterval = useRef<NodeJS.Timeout | null>(null)
 
   // Common hooks
   const { data: dropdownData } = useDropdownData()
@@ -270,6 +281,25 @@ const SystemPage: React.FC = () => {
       setSelectedRegion(regionsList[0].regionName)
     }
   }, [regionsList, selectedRegion])
+
+  // Countdown effect
+  useEffect(() => {
+    if (successModalOpen && countdown > 0) {
+      countdownInterval.current = setInterval(() => {
+        setCountdown((prev) => prev - 1)
+      }, 1000)
+    } else if (countdown === 0) {
+      // Logout and redirect
+      dispatch(logout())
+      navigate('/login')
+    }
+
+    return () => {
+      if (countdownInterval.current) {
+        clearInterval(countdownInterval.current)
+      }
+    }
+  }, [successModalOpen, countdown, dispatch, navigate])
 
   // User form
   const userForm = useForm<CreateUserForm>({
@@ -436,17 +466,38 @@ const SystemPage: React.FC = () => {
       const newPassword = values.password
 
       // Process all vaults from the allVaults array
-      vaultsResult.data.allVaults.forEach((vault: any) => {
-        if (vault.encryptedVault && vault.entityType && vault.entityName) {
-          vaultUpdates.push({
-            EntityType: vault.entityType,
-            EntityName: vault.entityName,
-            VaultContent: vault.encryptedVault,
-            VaultVersion: vault.version || 1,
-            NewPassword: newPassword
-          })
+      for (const vault of vaultsResult.data.allVaults) {
+        if (vault.decryptedVault && vault.credential && vault.vaultName) {
+          try {
+            let vaultContent = vault.decryptedVault
+            
+            // Try to decrypt if it's client-encrypted (has current master password)
+            if (currentMasterPassword) {
+              try {
+                // Check if it looks like base64 encrypted data
+                if (vaultContent.match(/^[A-Za-z0-9+/]+=*$/)) {
+                  vaultContent = await decryptString(vaultContent, currentMasterPassword)
+                }
+              } catch (decryptError) {
+                // If decryption fails, assume it's not encrypted
+              }
+            }
+            
+            // Now encrypt with the new password
+            const encryptedContent = await encryptString(vaultContent, newPassword)
+            
+            vaultUpdates.push({
+              credential: vault.credential,
+              name: vault.vaultName,
+              content: encryptedContent,
+              version: vault.version || 1
+            })
+          } catch (error) {
+            console.error(`Failed to process vault ${vault.vaultName}:`, error)
+            toast.error(`Failed to process vault ${vault.vaultName}`)
+          }
         }
-      })
+      }
 
       if (vaultUpdates.length === 0) {
         toast.error(tSystem('dangerZone.updateMasterPassword.error.noVaults'))
@@ -455,7 +506,9 @@ const SystemPage: React.FC = () => {
 
       // Show confirmation with vault count
       const vaultTypeCounts = vaultUpdates.reduce((acc: Record<string, number>, vault) => {
-        acc[vault.EntityType] = (acc[vault.EntityType] || 0) + 1
+        // Extract entity type from vault name if available
+        const entityType = vault.name?.split('_')[0] || 'Vault'
+        acc[entityType] = (acc[entityType] || 0) + 1
         return acc
       }, {})
 
@@ -463,13 +516,21 @@ const SystemPage: React.FC = () => {
         .map(([type, count]) => `${count} ${type}${count > 1 ? 's' : ''}`)
         .join(', ')}`
 
-      console.log(summaryMessage)
-
       // Update all vaults
       await updateVaultsMutation.mutateAsync(vaultUpdates)
       
+      // Unblock user requests after successful vault update
+      await blockUserRequestsMutation.mutateAsync(false)
+      
+      // Update the master password in Redux store
+      dispatch(setMasterPassword(newPassword))
+      
       setMasterPasswordModalOpen(false)
-      masterPasswordForm.reset()
+      masterPasswordForm.resetFields()
+      
+      // Show success modal with countdown
+      setCountdown(60)
+      setSuccessModalOpen(true)
     } catch (error) {
       console.error('Failed to update master password:', error)
       // Don't show error toast here as the mutation already handles it
@@ -2561,6 +2622,58 @@ const SystemPage: React.FC = () => {
             </Form.Item>
           </Form>
         </Space>
+      </Modal>
+
+      {/* Master Password Update Success Modal */}
+      <Modal
+        open={successModalOpen}
+        closable={false}
+        footer={null}
+        width={500}
+      >
+        <Result
+          status="success"
+          title={tSystem('dangerZone.updateMasterPassword.success.title')}
+          subTitle={
+            <Space direction="vertical" size={24} style={{ width: '100%' }}>
+              <div>
+                <Typography.Paragraph>
+                  {tSystem('dangerZone.updateMasterPassword.success.nextSteps')}
+                </Typography.Paragraph>
+                <ol style={{ textAlign: 'left', paddingLeft: 20 }}>
+                  <li>{tSystem('dangerZone.updateMasterPassword.success.step1')}</li>
+                  <li>{tSystem('dangerZone.updateMasterPassword.success.step2')}</li>
+                  <li>{tSystem('dangerZone.updateMasterPassword.success.step3')}</li>
+                  <li>{tSystem('dangerZone.updateMasterPassword.success.step4')}</li>
+                </ol>
+              </div>
+              
+              <div style={{ textAlign: 'center' }}>
+                <Typography.Title level={4}>
+                  {tSystem('dangerZone.updateMasterPassword.success.redirecting')}
+                </Typography.Title>
+                <Typography.Title level={1} type="danger">
+                  {countdown}
+                </Typography.Title>
+                <Typography.Text type="secondary">
+                  {tSystem('dangerZone.updateMasterPassword.success.seconds')}
+                </Typography.Text>
+              </div>
+              
+              <Button 
+                type="primary" 
+                size="large" 
+                block
+                onClick={() => {
+                  dispatch(logout())
+                  navigate('/login')
+                }}
+              >
+                {tSystem('dangerZone.updateMasterPassword.success.loginNow')}
+              </Button>
+            </Space>
+          }
+        />
       </Modal>
     </>
   )

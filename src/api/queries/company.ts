@@ -148,23 +148,8 @@ export const useUpdateCompanyVaults = () => {
           failed: failedCount
         })
         toast.error(message)
-      } else {
-        // Show detailed success message
-        const t = (key: string) => i18n.t(`system:dangerZone.updateMasterPassword.success.${key}`)
-        const message = `${t('title')}
-
-${t('nextSteps')}
-1. ${t('step1')}
-2. ${t('step2')}
-3. ${t('step3')}
-4. ${t('step4')}
-
-${t('systemReady')}`
-        
-        toast.success(message, {
-          duration: 10000, // Show for 10 seconds
-        })
       }
+      // Success toast removed - handled by modal in SystemPage
       
       // Invalidate all queries to refresh data
       queryClient.invalidateQueries()
