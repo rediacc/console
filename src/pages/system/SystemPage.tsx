@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Card, Tabs, Modal, Form, Input, Button, Space, Popconfirm, Tag, Select, Badge, List, Typography, Row, Col, Table, Empty, Spin, Alert, message } from 'antd'
+import React, { useState, useEffect } from 'react'
+import { Card, Tabs, Modal, Form, Input, Button, Space, Popconfirm, Tag, Select, Badge, List, Typography, Row, Col, Table, Empty, Spin, Alert, message, Checkbox } from 'antd'
 import { 
   UserOutlined, 
   SafetyOutlined, 
@@ -20,7 +20,11 @@ import {
   CloudServerOutlined,
   CopyOutlined,
   SyncOutlined,
-  HistoryOutlined
+  HistoryOutlined,
+  WarningOutlined,
+  DownloadOutlined,
+  LockOutlined,
+  UnlockOutlined
 } from '@ant-design/icons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -33,7 +37,13 @@ import ResourceFormWithVault, { ResourceFormWithVaultRef } from '@/components/fo
 import VaultEditorModal from '@/components/common/VaultEditorModal'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
 import { useDropdownData } from '@/api/queries/useDropdownData'
-import { useUpdateCompanyVault, useCompanyVault } from '@/api/queries/company'
+import { 
+  useUpdateCompanyVault, 
+  useCompanyVault,
+  useUpdateCompanyBlockUserRequests,
+  useGetCompanyVaults,
+  useUpdateCompanyVaults
+} from '@/api/queries/company'
 import toast from 'react-hot-toast'
 
 // User queries
@@ -113,8 +123,9 @@ const { Title, Text } = Typography
 
 const SystemPage: React.FC = () => {
   const { t } = useTranslation('settings')
-  const { t: tUsers } = useTranslation('system')
+  const { t: tSystem } = useTranslation('system')
   const { t: tOrg } = useTranslation('resources')
+  const { t: tCommon } = useTranslation('common')
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const [activeTab, setActiveTab] = useState('users')
   
@@ -181,6 +192,11 @@ const SystemPage: React.FC = () => {
     open: boolean
     bridge?: Bridge
   }>({ open: false })
+  const [resetAuthModal, setResetAuthModal] = useState<{
+    open: boolean
+    bridgeName: string
+    isCloudManaged: boolean
+  }>({ open: false, bridgeName: '', isCloudManaged: false })
 
   // Audit trace modal state
   const [auditTraceModal, setAuditTraceModal] = useState<{
@@ -190,12 +206,21 @@ const SystemPage: React.FC = () => {
     entityName?: string
   }>({ open: false, entityType: null, entityIdentifier: null })
 
+  // Danger zone state
+  const [masterPasswordModalOpen, setMasterPasswordModalOpen] = useState(false)
+  const [masterPasswordForm] = Form.useForm()
+
   // Common hooks
   const { data: dropdownData } = useDropdownData()
   
   // Settings hooks
   const { data: companyVault } = useCompanyVault()
   const updateVaultMutation = useUpdateCompanyVault()
+  
+  // Danger zone hooks
+  const blockUserRequestsMutation = useUpdateCompanyBlockUserRequests()
+  const exportVaultsQuery = useGetCompanyVaults()
+  const updateVaultsMutation = useUpdateCompanyVaults()
   
   // User hooks
   const { data: users = [], isLoading: usersLoading } = useUsers()
@@ -238,6 +263,13 @@ const SystemPage: React.FC = () => {
   const deleteBridgeMutation = useDeleteBridge()
   const updateBridgeVaultMutation = useUpdateBridgeVault()
   const resetBridgeAuthMutation = useResetBridgeAuthorization()
+
+  // Auto-select first region when regions are loaded
+  useEffect(() => {
+    if (regionsList.length > 0 && !selectedRegion) {
+      setSelectedRegion(regionsList[0].regionName)
+    }
+  }, [regionsList, selectedRegion])
 
   // User form
   const userForm = useForm<CreateUserForm>({
@@ -339,6 +371,108 @@ const SystemPage: React.FC = () => {
       setSelectedUserGroup('')
     } catch (error) {
       // Error handled by mutation
+    }
+  }
+
+  // Danger zone handlers
+  const handleExportVaults = async () => {
+    try {
+      const result = await exportVaultsQuery.refetch()
+      if (result.data) {
+        // Create a timestamp for the filename
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0]
+        
+        // Dynamically build export data, excluding special fields
+        const { allVaults, bridgesWithRequestCredential, ...vaultsByType } = result.data
+        
+        const exportData = {
+          exportDate: new Date().toISOString(),
+          vaults: vaultsByType,
+          bridgesWithRequestCredential: bridgesWithRequestCredential,
+          metadata: {
+            totalVaults: allVaults.length,
+            vaultTypes: Object.keys(vaultsByType).map(type => ({
+              type,
+              count: vaultsByType[type].length
+            }))
+          }
+        }
+        
+        // Create and download the file
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `company-vaults-export-${timestamp}.json`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+        
+        toast.success(tSystem('dangerZone.exportVaults.success'))
+      }
+    } catch (error) {
+      console.error('Failed to export vaults:', error)
+      toast.error(tSystem('dangerZone.exportVaults.error'))
+    }
+  }
+
+  const handleUpdateMasterPassword = async (values: { password: string; confirmPassword: string }) => {
+    // Prevent duplicate submissions
+    if (updateVaultsMutation.isPending) {
+      return
+    }
+
+    try {
+      // First, fetch all current vaults
+      const vaultsResult = await exportVaultsQuery.refetch()
+      if (!vaultsResult.data || !vaultsResult.data.allVaults) {
+        toast.error(tSystem('dangerZone.updateMasterPassword.error.fetchVaults'))
+        return
+      }
+
+      // Prepare vault updates using the allVaults array directly
+      const vaultUpdates: any[] = []
+      const newPassword = values.password
+
+      // Process all vaults from the allVaults array
+      vaultsResult.data.allVaults.forEach((vault: any) => {
+        if (vault.encryptedVault && vault.entityType && vault.entityName) {
+          vaultUpdates.push({
+            EntityType: vault.entityType,
+            EntityName: vault.entityName,
+            VaultContent: vault.encryptedVault,
+            VaultVersion: vault.version || 1,
+            NewPassword: newPassword
+          })
+        }
+      })
+
+      if (vaultUpdates.length === 0) {
+        toast.error(tSystem('dangerZone.updateMasterPassword.error.noVaults'))
+        return
+      }
+
+      // Show confirmation with vault count
+      const vaultTypeCounts = vaultUpdates.reduce((acc: Record<string, number>, vault) => {
+        acc[vault.EntityType] = (acc[vault.EntityType] || 0) + 1
+        return acc
+      }, {})
+
+      const summaryMessage = `Updating ${vaultUpdates.length} vaults: ${Object.entries(vaultTypeCounts)
+        .map(([type, count]) => `${count} ${type}${count > 1 ? 's' : ''}`)
+        .join(', ')}`
+
+      console.log(summaryMessage)
+
+      // Update all vaults
+      await updateVaultsMutation.mutateAsync(vaultUpdates)
+      
+      setMasterPasswordModalOpen(false)
+      masterPasswordForm.reset()
+    } catch (error) {
+      console.error('Failed to update master password:', error)
+      // Don't show error toast here as the mutation already handles it
     }
   }
 
@@ -575,9 +709,13 @@ const SystemPage: React.FC = () => {
     setBridgeVaultModalConfig({ open: false })
   }
 
-  const handleResetBridgeAuth = async (bridgeName: string) => {
+  const handleResetBridgeAuth = async () => {
     try {
-      await resetBridgeAuthMutation.mutateAsync({ bridgeName })
+      await resetBridgeAuthMutation.mutateAsync({ 
+        bridgeName: resetAuthModal.bridgeName,
+        isCloudManaged: resetAuthModal.isCloudManaged 
+      })
+      setResetAuthModal({ open: false, bridgeName: '', isCloudManaged: false })
     } catch (error) {
       // Error handled by mutation
     }
@@ -1047,6 +1185,31 @@ const SystemPage: React.FC = () => {
         </Space>
       ),
     },
+    {
+      title: 'Type',
+      dataIndex: 'isGlobalBridge',
+      key: 'isGlobalBridge',
+      width: 100,
+      render: (isGlobal: boolean) => (
+        isGlobal ? (
+          <Tag color="purple" icon={<CloudServerOutlined />}>Global</Tag>
+        ) : (
+          <Tag color="blue" icon={<ApiOutlined />}>Regular</Tag>
+        )
+      ),
+    },
+    {
+      title: 'Management',
+      dataIndex: 'managementMode',
+      key: 'managementMode',
+      width: 120,
+      render: (mode: string) => {
+        if (!mode) return <Tag>Local</Tag>
+        const color = mode === 'Cloud' ? 'green' : 'default'
+        const icon = mode === 'Cloud' ? <CloudServerOutlined /> : <DesktopOutlined />
+        return <Tag color={color} icon={icon}>{mode}</Tag>
+      },
+    },
     ...(uiMode === 'expert' ? [{
       title: tOrg('general.vaultVersion'),
       dataIndex: 'vaultVersion',
@@ -1098,21 +1261,17 @@ const SystemPage: React.FC = () => {
           >
             {tOrg('general.edit')}
           </Button>
-          <Popconfirm
-            title="Reset Bridge Authorization"
-            description={`Are you sure you want to reset authorization for bridge "${record.bridgeName}"? This will generate new credentials.`}
-            onConfirm={() => handleResetBridgeAuth(record.bridgeName)}
-            okText={tOrg('general.yes')}
-            cancelText={tOrg('general.no')}
+          <Button 
+            type="link" 
+            icon={<SyncOutlined />}
+            onClick={() => setResetAuthModal({ 
+              open: true, 
+              bridgeName: record.bridgeName, 
+              isCloudManaged: false 
+            })}
           >
-            <Button 
-              type="link" 
-              icon={<SyncOutlined />}
-              loading={resetBridgeAuthMutation.isPending}
-            >
-              Reset Auth
-            </Button>
-          </Popconfirm>
+            Reset Auth
+          </Button>
           <Popconfirm
             title={tOrg('bridges.deleteBridge')}
             description={tOrg('bridges.confirmDelete', { bridgeName: record.bridgeName })}
@@ -1769,7 +1928,7 @@ const SystemPage: React.FC = () => {
       {/* Regions & Infrastructure Section */}
       {uiMode === 'expert' && (
         <>
-          <Title level={3} style={{ marginTop: 48, marginBottom: 24 }}>{tUsers('regionsInfrastructure.title')}</Title>
+          <Title level={3} style={{ marginTop: 48, marginBottom: 24 }}>{tSystem('regionsInfrastructure.title')}</Title>
           
           <Card>
         <Row gutter={[24, 24]}>
@@ -2125,6 +2284,284 @@ const SystemPage: React.FC = () => {
         entityIdentifier={auditTraceModal.entityIdentifier}
         entityName={auditTraceModal.entityName}
       />
+
+      {/* Danger Zone Section */}
+      <Title level={3} style={{ marginTop: 48, marginBottom: 24, color: '#ff4d4f' }}>
+        <WarningOutlined /> {tSystem('dangerZone.title')}
+      </Title>
+      
+      <Card style={{ borderColor: '#ff4d4f' }}>
+        <Space direction="vertical" size={24} style={{ width: '100%' }}>
+          
+          {/* Block/Unblock User Requests */}
+          <Row gutter={[16, 16]} align="middle">
+            <Col xs={24} lg={16}>
+              <Space direction="vertical" size={8}>
+                <Title level={5} style={{ margin: 0 }}>{tSystem('dangerZone.blockUserRequests.title')}</Title>
+                <Text type="secondary">
+                  {tSystem('dangerZone.blockUserRequests.description')}
+                </Text>
+              </Space>
+            </Col>
+            <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
+              <Space>
+                <Popconfirm
+                  title={tSystem('dangerZone.blockUserRequests.confirmBlock.title')}
+                  description={
+                    <Space direction="vertical">
+                      <Text>{tSystem('dangerZone.blockUserRequests.confirmBlock.description')}</Text>
+                      <ul style={{ margin: '8px 0', paddingLeft: 20 }}>
+                        <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect1')}</li>
+                        <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect2')}</li>
+                        <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect3')}</li>
+                      </ul>
+                      <Text strong>{tSystem('dangerZone.blockUserRequests.confirmBlock.confirm')}</Text>
+                    </Space>
+                  }
+                  onConfirm={() => blockUserRequestsMutation.mutate(true)}
+                  okText={tSystem('dangerZone.blockUserRequests.confirmBlock.okText')}
+                  cancelText={tCommon('general.cancel')}
+                  okButtonProps={{ danger: true }}
+                >
+                  <Button 
+                    danger
+                    icon={<LockOutlined />}
+                    loading={blockUserRequestsMutation.isPending}
+                  >
+                    {tSystem('dangerZone.blockUserRequests.blockButton')}
+                  </Button>
+                </Popconfirm>
+                <Popconfirm
+                  title={tSystem('dangerZone.blockUserRequests.confirmUnblock.title')}
+                  description={tSystem('dangerZone.blockUserRequests.confirmUnblock.description')}
+                  onConfirm={() => blockUserRequestsMutation.mutate(false)}
+                  okText={tSystem('dangerZone.blockUserRequests.confirmUnblock.okText')}
+                  cancelText={tCommon('general.cancel')}
+                >
+                  <Button 
+                    icon={<UnlockOutlined />}
+                    loading={blockUserRequestsMutation.isPending}
+                  >
+                    {tSystem('dangerZone.blockUserRequests.unblockButton')}
+                  </Button>
+                </Popconfirm>
+              </Space>
+            </Col>
+          </Row>
+
+          <hr style={{ margin: 0, borderColor: '#f0f0f0' }} />
+
+          {/* Export Company Vaults */}
+          <Row gutter={[16, 16]} align="middle">
+            <Col xs={24} lg={16}>
+              <Space direction="vertical" size={8}>
+                <Title level={5} style={{ margin: 0 }}>{tSystem('dangerZone.exportVaults.title')}</Title>
+                <Text type="secondary">
+                  {tSystem('dangerZone.exportVaults.description')}
+                </Text>
+              </Space>
+            </Col>
+            <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
+              <Button 
+                icon={<DownloadOutlined />}
+                onClick={handleExportVaults}
+                loading={exportVaultsQuery.isFetching}
+              >
+                {tSystem('dangerZone.exportVaults.button')}
+              </Button>
+            </Col>
+          </Row>
+
+          <hr style={{ margin: 0, borderColor: '#f0f0f0' }} />
+
+          {/* Update Master Password */}
+          <Row gutter={[16, 16]} align="middle">
+            <Col xs={24} lg={16}>
+              <Space direction="vertical" size={8}>
+                <Title level={5} style={{ margin: 0 }}>{tSystem('dangerZone.updateMasterPassword.title')}</Title>
+                <Text type="secondary">
+                  {tSystem('dangerZone.updateMasterPassword.description')}
+                </Text>
+                <ul style={{ margin: '8px 0 0 20px', fontSize: 14, color: 'rgba(0, 0, 0, 0.45)' }}>
+                  <li>{tSystem('dangerZone.updateMasterPassword.effect1')}</li>
+                  <li>{tSystem('dangerZone.updateMasterPassword.effect2')}</li>
+                  <li>{tSystem('dangerZone.updateMasterPassword.effect3')}</li>
+                </ul>
+                <Text type="secondary" strong style={{ display: 'block', marginTop: 8 }}>
+                  {tSystem('dangerZone.updateMasterPassword.warning')}
+                </Text>
+              </Space>
+            </Col>
+            <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
+              <Button 
+                type="primary"
+                danger
+                icon={<KeyOutlined />}
+                onClick={() => setMasterPasswordModalOpen(true)}
+              >
+                {tSystem('dangerZone.updateMasterPassword.button')}
+              </Button>
+            </Col>
+          </Row>
+
+        </Space>
+      </Card>
+
+      {/* Master Password Update Modal */}
+      <Modal
+        title={tSystem('dangerZone.updateMasterPassword.modal.title')}
+        open={masterPasswordModalOpen}
+        onCancel={() => {
+          setMasterPasswordModalOpen(false)
+          masterPasswordForm.reset()
+        }}
+        footer={null}
+        width={600}
+      >
+        <Alert
+          message={<>{'\u26A0\uFE0F'} {tSystem('dangerZone.updateMasterPassword.modal.warningTitle').replace('⚠️ ', '')}</>}
+          description={
+            <Space direction="vertical" size={8}>
+              <Text>{tSystem('dangerZone.updateMasterPassword.modal.warningDescription')}</Text>
+              <ul style={{ margin: '4px 0', paddingLeft: 20 }}>
+                <li>{tSystem('dangerZone.updateMasterPassword.modal.warningEffect1')}</li>
+                <li>{tSystem('dangerZone.updateMasterPassword.modal.warningEffect2')}</li>
+                <li>{tSystem('dangerZone.updateMasterPassword.modal.warningEffect3')}</li>
+                <li>{tSystem('dangerZone.updateMasterPassword.modal.warningEffect4')}</li>
+              </ul>
+              <Text strong>{tSystem('dangerZone.updateMasterPassword.modal.warningPermanent')}</Text>
+              <Text strong style={{ color: '#ff4d4f' }}>{tSystem('dangerZone.updateMasterPassword.modal.warningSecure')}</Text>
+            </Space>
+          }
+          type="warning"
+          showIcon
+          style={{ marginBottom: 24 }}
+        />
+        
+        <Form
+          layout="vertical"
+          form={masterPasswordForm}
+          onFinish={handleUpdateMasterPassword}
+        >
+          <Form.Item
+            label={tSystem('dangerZone.updateMasterPassword.modal.newPasswordLabel')}
+            name="password"
+            rules={[
+              { required: true, message: tSystem('dangerZone.updateMasterPassword.modal.newPasswordRequired') },
+              { min: 12, message: tSystem('dangerZone.updateMasterPassword.modal.newPasswordMinLength') },
+              { 
+                pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+                message: tSystem('dangerZone.updateMasterPassword.modal.newPasswordPattern')
+              }
+            ]}
+          >
+            <Input.Password 
+              placeholder={tSystem('dangerZone.updateMasterPassword.modal.newPasswordPlaceholder')}
+              size="large"
+            />
+          </Form.Item>
+          
+          <Form.Item
+            label={tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordLabel')}
+            name="confirmPassword"
+            dependencies={['password']}
+            rules={[
+              { required: true, message: tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordRequired') },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue('password') === value) {
+                    return Promise.resolve()
+                  }
+                  return Promise.reject(new Error(tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordMatch')))
+                },
+              }),
+            ]}
+          >
+            <Input.Password 
+              placeholder={tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordPlaceholder')}
+              size="large"
+            />
+          </Form.Item>
+
+          <Alert
+            message={tCommon('general.important')}
+            description={tSystem('dangerZone.updateMasterPassword.modal.importantNote')}
+            type="info"
+            showIcon
+            style={{ marginBottom: 24 }}
+          />
+
+          <Form.Item style={{ marginBottom: 0 }}>
+            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+              <Button onClick={() => {
+                setMasterPasswordModalOpen(false)
+                masterPasswordForm.reset()
+              }}>
+                {tSystem('dangerZone.updateMasterPassword.modal.cancel')}
+              </Button>
+              <Button 
+                type="primary" 
+                danger
+                htmlType="submit"
+                loading={updateVaultsMutation.isPending}
+                disabled={updateVaultsMutation.isPending}
+              >
+                {tSystem('dangerZone.updateMasterPassword.modal.submit')}
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Reset Bridge Authorization Modal */}
+      <Modal
+        title="Reset Bridge Authorization"
+        open={resetAuthModal.open}
+        onCancel={() => setResetAuthModal({ open: false, bridgeName: '', isCloudManaged: false })}
+        footer={[
+          <Button 
+            key="cancel" 
+            onClick={() => setResetAuthModal({ open: false, bridgeName: '', isCloudManaged: false })}
+          >
+            Cancel
+          </Button>,
+          <Button 
+            key="reset" 
+            type="primary" 
+            danger
+            loading={resetBridgeAuthMutation.isPending}
+            onClick={handleResetBridgeAuth}
+          >
+            Reset Authorization
+          </Button>
+        ]}
+      >
+        <Space direction="vertical" style={{ width: '100%' }} size={16}>
+          <Alert
+            message="Warning"
+            description={`Are you sure you want to reset authorization for bridge "${resetAuthModal.bridgeName}"? This will generate new credentials.`}
+            type="warning"
+            showIcon
+          />
+          
+          <Form layout="vertical">
+            <Form.Item 
+              label="Cloud Management"
+              help="Check this box if this bridge should be managed by cloud services. Only Global Bridges can be cloud managed."
+            >
+              <Checkbox
+                checked={resetAuthModal.isCloudManaged}
+                onChange={(e) => setResetAuthModal(prev => ({ 
+                  ...prev, 
+                  isCloudManaged: e.target.checked 
+                }))}
+              >
+                Enable Cloud Management
+              </Checkbox>
+            </Form.Item>
+          </Form>
+        </Space>
+      </Modal>
     </>
   )
 }

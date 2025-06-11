@@ -61,7 +61,9 @@
     "versionFormat": "v{{version}}",
     "loading": "Cargando...",
     "showingRecords": "Mostrando registros {{start}}-{{end}} de {{total}}",
-    "defaultsApplied": "Valores predeterminados aplicados"
+    "defaultsApplied": "Valores predeterminados aplicados",
+    "important": "Importante",
+    "cancel": "Cancelar"
   },
   "dashboard": {
     "availablePlans": "Planes Disponibles",

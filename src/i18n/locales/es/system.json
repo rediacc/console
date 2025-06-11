@@ -32,5 +32,82 @@
     "selectAll": "Seleccionar Todo",
     "clearAll": "Limpiar Todo",
     "noEntitiesSelected": "No hay entidades seleccionadas. Por favor seleccione al menos un tipo de entidad para mostrar."
+  },
+  "dangerZone": {
+    "title": "Zona de Peligro",
+    "blockUserRequests": {
+      "title": "Bloquear Solicitudes de Usuarios",
+      "description": "Bloquear a todos los usuarios no administradores de realizar solicitudes al sistema. Esto terminará inmediatamente todas las sesiones de usuarios activas excepto administradores. Los usuarios necesitarán ser desbloqueados manualmente para recuperar el acceso.",
+      "blockButton": "Bloquear Solicitudes de Usuarios",
+      "unblockButton": "Desbloquear Solicitudes de Usuarios",
+      "confirmBlock": {
+        "title": "Bloquear Solicitudes de Usuarios",
+        "description": "Esta acción:",
+        "effect1": "Bloqueará a todos los usuarios no administradores del sistema",
+        "effect2": "Terminará todas las sesiones de usuarios activas (excepto administradores)",
+        "effect3": "Requerirá desbloqueo manual para que los usuarios recuperen el acceso",
+        "confirm": "¿Está seguro de que desea continuar?",
+        "okText": "Sí, Bloquear Usuarios"
+      },
+      "confirmUnblock": {
+        "title": "Desbloquear Solicitudes de Usuarios",
+        "description": "Esto permitirá a todos los usuarios realizar solicitudes al sistema nuevamente. ¿Está seguro?",
+        "okText": "Sí, Desbloquear"
+      }
+    },
+    "exportVaults": {
+      "title": "Exportar Todas las Bóvedas",
+      "description": "Descargar todas las configuraciones de bóvedas de la empresa incluyendo equipos, regiones, puentes, máquinas, repositorios, almacenamiento y horarios. Esta exportación contiene información confidencial de credenciales y debe manejarse de forma segura.",
+      "button": "Exportar Todas las Bóvedas",
+      "success": "Bóvedas exportadas exitosamente",
+      "error": "Error al exportar las bóvedas"
+    },
+    "updateMasterPassword": {
+      "title": "Actualizar Contraseña Maestra",
+      "description": "Cambiar la contraseña de cifrado que protege todas las bóvedas de datos en su empresa. Esta operación de seguridad crítica:",
+      "effect1": "Re-cifrará todas las bóvedas con la nueva contraseña",
+      "effect2": "Cerrará sesión de todos los usuarios (excepto usted)",
+      "effect3": "Requerirá que todos los usuarios inicien sesión nuevamente después de completarse",
+      "warning": "Guarde la nueva contraseña en un lugar seguro - no se puede recuperar si se pierde.",
+      "button": "Actualizar Contraseña Maestra",
+      "modal": {
+        "title": "Actualizar Contraseña Maestra",
+        "warningTitle": "⚠️ Operación de Seguridad Crítica",
+        "warningDescription": "Está a punto de cambiar la contraseña maestra para toda su empresa. Esto:",
+        "warningEffect1": "Bloqueará el sistema temporalmente durante la actualización",
+        "warningEffect2": "Cerrará sesión de todos los usuarios activos excepto usted",
+        "warningEffect3": "Re-cifrará todos los datos de bóvedas con la nueva contraseña",
+        "warningEffect4": "Requerirá reconfiguración manual de cualquier puente administrado en la nube",
+        "warningPermanent": "Esta acción es permanente y no se puede deshacer.",
+        "warningSecure": "¿Tiene su nueva contraseña guardada de forma segura?",
+        "newPasswordLabel": "Nueva Contraseña Maestra",
+        "newPasswordPlaceholder": "Ingrese la nueva contraseña maestra",
+        "newPasswordRequired": "Por favor ingrese la nueva contraseña maestra",
+        "newPasswordMinLength": "La contraseña debe tener al menos 12 caracteres",
+        "newPasswordPattern": "La contraseña debe contener mayúsculas, minúsculas, números y caracteres especiales",
+        "confirmPasswordLabel": "Confirmar Contraseña Maestra",
+        "confirmPasswordPlaceholder": "Confirme la nueva contraseña maestra",
+        "confirmPasswordRequired": "Por favor confirme la contraseña maestra",
+        "confirmPasswordMatch": "Las contraseñas no coinciden",
+        "importantNote": "Después de actualizar la contraseña maestra, todos los usuarios necesitarán usar la nueva contraseña para acceder a las configuraciones de bóvedas. Los Puentes Globales con RequestCredential necesitarán ser desbloqueados manualmente.",
+        "cancel": "Cancelar",
+        "submit": "Actualizar Contraseña Maestra"
+      },
+      "success": {
+        "title": "Contraseña Maestra Actualizada Exitosamente",
+        "nextSteps": "Próximos pasos:",
+        "step1": "Todos los usuarios deben iniciar sesión nuevamente usando sus credenciales existentes",
+        "step2": "Comparta la nueva contraseña maestra de forma segura solo con administradores autorizados",
+        "step3": "Sus propios puentes deben ser reconfigurados manualmente con la nueva contraseña maestra",
+        "step4": "Actualice su sistema de gestión de contraseñas con la nueva contraseña maestra",
+        "systemReady": "El sistema ahora está desbloqueado y listo para usar."
+      },
+      "error": {
+        "fetchVaults": "Error al obtener las bóvedas actuales",
+        "noVaults": "No se encontraron bóvedas para actualizar",
+        "updateFailed": "Error al actualizar las bóvedas con la nueva contraseña maestra",
+        "partialSuccess": "Se actualizaron {{updated}} bóvedas exitosamente, pero {{failed}} fallaron. Revise los registros para más detalles."
+      }
+    }
   }
 }

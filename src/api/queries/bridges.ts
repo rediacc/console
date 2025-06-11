@@ -13,6 +13,8 @@ export interface Bridge {
   bridgeCredentials?: string
   bridgeUserEmail?: string
   hasAccess?: number // 0 or 1 from SQL
+  managementMode?: string
+  isGlobalBridge?: boolean
 }
 
 // Get bridges for a region
@@ -124,7 +126,7 @@ export const useResetBridgeAuthorization = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async (data: { bridgeName: string }) => {
+    mutationFn: async (data: { bridgeName: string; isCloudManaged?: boolean }) => {
       const response = await apiClient.post('/ResetBridgeAuthorization', data)
       return response
     },

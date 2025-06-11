@@ -230,10 +230,52 @@ Dashboard pricing behavior:
 - **Utility**: `src/utils/json.ts` provides `minifyJSON()` and `objectToMinifiedJSON()` functions
 - **Applied to**: Queue creation, vault updates for all entities (teams, machines, repositories, etc.)
 
+## Danger Zone Features
+
+The System page includes a "Danger Zone" section at the bottom with critical administrative functions:
+
+### 1. Block/Unblock User Requests
+- **API**: `UpdateCompanyBlockUserRequests`
+- **Purpose**: Block all non-admin users from making requests
+- **Effects**: 
+  - Terminates all active user sessions (except admins)
+  - Prevents new user logins
+  - Requires manual unblocking
+- **UI**: Two buttons with confirmation dialogs explaining consequences
+
+### 2. Export All Vaults (Dynamic)
+- **API**: `GetCompanyVaults`
+- **Purpose**: Export all company vault configurations
+- **Dynamic Structure**: Automatically handles any new entity types without code changes
+- **Export includes**:
+  - All vault data organized dynamically by entity type
+  - Special `bridgesWithRequestCredential` array
+  - Metadata with vault counts by type
+- **Format**: JSON file with timestamp
+- **Security**: Contains sensitive credential information
+
+### 3. Update Master Password (Dynamic)
+- **API**: `UpdateCompanyVaults`
+- **Purpose**: Change the master password for all vaults
+- **Dynamic Process**:
+  1. Fetches all vaults using `allVaults` array
+  2. Validates new password (12+ chars, uppercase, lowercase, number, special char)
+  3. Re-encrypts all vaults regardless of entity type
+  4. Shows summary of vault types being updated
+- **Warning**: Global Bridges with RequestCredential need manual unblocking
+
+### Dynamic Implementation Details
+The vault export and update features are implemented dynamically:
+- **No hardcoded entity types**: Uses the API response structure directly
+- **Automatic entity type detection**: Groups vaults by `entityType` field
+- **Future-proof**: New entity types are automatically included without code changes
+- **Key mapping**: Converts entity types to lowercase plural (e.g., "User" → "users", "Company" → "company")
+
 ## Notes
 - Created: 2025-06-02
 - Updated: 2025-06-04 - Added centralized pricing
 - Updated: 2025-06-10 - Added centralized function definitions, JSON minification
+- Updated: 2025-06-11 - Added Danger Zone features (block users, export vaults, master password)
 - NO additional packages beyond what's in PLAN.md
 - Use Ant Design components exclusively
 - Follow existing patterns for new features

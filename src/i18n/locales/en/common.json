@@ -63,7 +63,9 @@
     "versionFormat": "v{{version}}",
     "loading": "Loading...",
     "showingRecords": "Showing records {{start}}-{{end}} of {{total}}",
-    "defaultsApplied": "Default values applied"
+    "defaultsApplied": "Default values applied",
+    "important": "Important",
+    "cancel": "Cancel"
   },
   "dashboard": {
     "availablePlans": "Available Plans",

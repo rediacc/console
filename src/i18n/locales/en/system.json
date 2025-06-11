@@ -32,5 +32,82 @@
     "selectAll": "Select All",
     "clearAll": "Clear All",
     "noEntitiesSelected": "No entities selected. Please select at least one entity type to display."
+  },
+  "dangerZone": {
+    "title": "Danger Zone",
+    "blockUserRequests": {
+      "title": "Block User Requests",
+      "description": "Block all non-admin users from making requests to the system. This will immediately terminate all active user sessions except administrators. Users will need to be manually unblocked to regain access.",
+      "blockButton": "Block User Requests",
+      "unblockButton": "Unblock User Requests",
+      "confirmBlock": {
+        "title": "Block User Requests",
+        "description": "This action will:",
+        "effect1": "Block all non-admin users from the system",
+        "effect2": "Terminate all active user sessions (except admins)",
+        "effect3": "Require manual unblocking for users to regain access",
+        "confirm": "Are you sure you want to proceed?",
+        "okText": "Yes, Block Users"
+      },
+      "confirmUnblock": {
+        "title": "Unblock User Requests",
+        "description": "This will allow all users to make requests to the system again. Are you sure?",
+        "okText": "Yes, Unblock"
+      }
+    },
+    "exportVaults": {
+      "title": "Export All Vaults",
+      "description": "Download all company vault configurations including teams, regions, bridges, machines, repositories, storage, and schedules. This export contains sensitive credential information and should be handled securely.",
+      "button": "Export All Vaults",
+      "success": "Vaults exported successfully",
+      "error": "Failed to export vaults"
+    },
+    "updateMasterPassword": {
+      "title": "Update Master Password",
+      "description": "Change the encryption password that protects all data vaults in your company. This critical security operation will:",
+      "effect1": "Re-encrypt all vaults with the new password",
+      "effect2": "Sign out all users (except you)",
+      "effect3": "Require all users to sign in again after completion",
+      "warning": "Store the new password in a secure location - it cannot be recovered if lost.",
+      "button": "Update Master Password",
+      "modal": {
+        "title": "Update Master Password",
+        "warningTitle": "⚠️ Critical Security Operation",
+        "warningDescription": "You are about to change the master password for your entire company. This will:",
+        "warningEffect1": "Lock the system temporarily during the update",
+        "warningEffect2": "Sign out all active users except you",
+        "warningEffect3": "Re-encrypt all vault data with the new password",
+        "warningEffect4": "Require manual reconfiguration of any cloud-managed bridges",
+        "warningPermanent": "This action is permanent and cannot be undone.",
+        "warningSecure": "Do you have your new password stored securely?",
+        "newPasswordLabel": "New Master Password",
+        "newPasswordPlaceholder": "Enter new master password",
+        "newPasswordRequired": "Please enter the new master password",
+        "newPasswordMinLength": "Password must be at least 12 characters long",
+        "newPasswordPattern": "Password must contain uppercase, lowercase, number and special character",
+        "confirmPasswordLabel": "Confirm Master Password",
+        "confirmPasswordPlaceholder": "Confirm new master password",
+        "confirmPasswordRequired": "Please confirm the master password",
+        "confirmPasswordMatch": "Passwords do not match",
+        "importantNote": "After updating the master password, all users will need to use the new password to access vault configurations. Global Bridges with RequestCredential will need to be manually unblocked.",
+        "cancel": "Cancel",
+        "submit": "Update Master Password"
+      },
+      "success": {
+        "title": "Master Password Successfully Updated",
+        "nextSteps": "Next steps:",
+        "step1": "All users must sign in again using their existing credentials",
+        "step2": "Share the new master password securely with authorized administrators only",
+        "step3": "Your own bridges must be manually reconfigured with the new master password",
+        "step4": "Update your password management system with the new master password",
+        "systemReady": "The system is now unlocked and ready for use."
+      },
+      "error": {
+        "fetchVaults": "Failed to fetch current vaults",
+        "noVaults": "No vaults found to update",
+        "updateFailed": "Failed to update vaults with new master password",
+        "partialSuccess": "Updated {{updated}} vaults successfully, but {{failed}} failed. Check logs for details."
+      }
+    }
   }
 }
