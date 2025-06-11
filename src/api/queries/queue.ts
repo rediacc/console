@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
-import toast from 'react-hot-toast'
+import { showMessage } from '@/utils/messages'
 import { minifyJSON } from '@/utils/json'
 
 export interface QueueItem {
@@ -152,10 +152,10 @@ export const useCreateQueueItem = () => {
     onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ['queue-items'] })
       queryClient.invalidateQueries({ queryKey: ['queue-items-bridge', variables.bridgeName] })
-      toast.success(`Queue item created${response.taskId ? ` with ID: ${response.taskId}` : ''}`)
+      showMessage('success', `Queue item created${response.taskId ? ` with ID: ${response.taskId}` : ''}`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to create queue item')
+      showMessage('error', error.message || 'Failed to create queue item')
     },
   })
 }
@@ -176,10 +176,10 @@ export const useUpdateQueueItemResponse = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['queue-items'] })
-      toast.success(`Queue item ${variables.taskId} response updated`)
+      showMessage('success', `Queue item ${variables.taskId} response updated`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update queue item')
+      showMessage('error', error.message || 'Failed to update queue item')
     },
   })
 }
@@ -200,10 +200,10 @@ export const useCompleteQueueItem = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['queue-items'] })
-      toast.success(`Queue item ${variables.taskId} completed`)
+      showMessage('success', `Queue item ${variables.taskId} completed`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to complete queue item')
+      showMessage('error', error.message || 'Failed to complete queue item')
     },
   })
 }
@@ -222,10 +222,10 @@ export const useUpdateQueueItemPriority = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['queue-items'] })
       queryClient.invalidateQueries({ queryKey: ['queue-items-bridge'] })
-      toast.success(`Queue item ${variables.taskId} priority updated to ${variables.priority}`)
+      showMessage('success', `Queue item ${variables.taskId} priority updated to ${variables.priority}`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update queue item priority')
+      showMessage('error', error.message || 'Failed to update queue item priority')
     },
   })
 }
@@ -242,10 +242,10 @@ export const useUpdateQueueItemProtection = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['queue-items'] })
       queryClient.invalidateQueries({ queryKey: ['queue-items-bridge'] })
-      toast.success(`Queue item ${variables.taskId} protection ${variables.protection ? 'enabled' : 'disabled'}`)
+      showMessage('success', `Queue item ${variables.taskId} protection ${variables.protection ? 'enabled' : 'disabled'}`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update queue item protection')
+      showMessage('error', error.message || 'Failed to update queue item protection')
     },
   })
 }
@@ -262,10 +262,10 @@ export const useCancelQueueItem = () => {
     onSuccess: (_, taskId) => {
       queryClient.invalidateQueries({ queryKey: ['queue-items'] })
       queryClient.invalidateQueries({ queryKey: ['queue-items-bridge'] })
-      toast.success(`Queue item ${taskId} cancelled`)
+      showMessage('success', `Queue item ${taskId} cancelled`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to cancel queue item')
+      showMessage('error', error.message || 'Failed to cancel queue item')
     },
   })
 }
@@ -282,10 +282,10 @@ export const useDeleteQueueItem = () => {
     onSuccess: (_, taskId) => {
       queryClient.invalidateQueries({ queryKey: ['queue-items'] })
       queryClient.invalidateQueries({ queryKey: ['queue-items-bridge'] })
-      toast.success(`Queue item ${taskId} deleted`)
+      showMessage('success', `Queue item ${taskId} deleted`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete queue item')
+      showMessage('error', error.message || 'Failed to delete queue item')
     },
   })
 }

@@ -1,12 +1,27 @@
 import toast from 'react-hot-toast'
 import { store } from '@/store/store'
-import { addMessage } from '@/store/ui/uiSlice'
+import { addNotification } from '@/store/notifications/notificationSlice'
 
 export type MessageType = 'success' | 'error' | 'warning' | 'info'
 
 // Track recent error messages to prevent duplicates
 const recentErrors = new Map<string, number>()
 const ERROR_DEDUP_WINDOW = 1000 // 1 second window for deduplication
+
+const getNotificationTitle = (type: MessageType): string => {
+  switch (type) {
+    case 'success':
+      return 'Success'
+    case 'error':
+      return 'Error'
+    case 'warning':
+      return 'Warning'
+    case 'info':
+      return 'Information'
+    default:
+      return 'Notification'
+  }
+}
 
 export const showMessage = (type: MessageType, content: string) => {
   // For error messages, check if we've shown this recently
@@ -64,6 +79,10 @@ export const showMessage = (type: MessageType, content: string) => {
       toast(content)
   }
   
-  // Add to message history
-  store.dispatch(addMessage({ type, content }))
+  // Add to notification center
+  store.dispatch(addNotification({
+    type,
+    title: getNotificationTitle(type),
+    message: content
+  }))
 }

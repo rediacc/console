@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
-import toast from 'react-hot-toast'
+import { showMessage } from '@/utils/messages'
 import { hashPassword } from '@/utils/auth'
 
 export interface User {
@@ -54,10 +54,10 @@ export const useCreateUser = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
       queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      toast.success(`User "${variables.email}" created successfully`)
+      showMessage('success', `User "${variables.email}" created successfully`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to create user')
+      showMessage('error', error.message || 'Failed to create user')
     },
   })
 }
@@ -73,10 +73,10 @@ export const useActivateUser = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
-      toast.success(`User "${variables.userEmail}" activated`)
+      showMessage('success', `User "${variables.userEmail}" activated`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to activate user')
+      showMessage('error', error.message || 'Failed to activate user')
     },
   })
 }
@@ -92,10 +92,10 @@ export const useDeactivateUser = () => {
     },
     onSuccess: (_, userEmail) => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
-      toast.success(`User "${userEmail}" deactivated`)
+      showMessage('success', `User "${userEmail}" deactivated`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to deactivate user')
+      showMessage('error', error.message || 'Failed to deactivate user')
     },
   })
 }
@@ -111,10 +111,10 @@ export const useUpdateUserEmail = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
-      toast.success(`Email updated to "${variables.newUserEmail}"`)
+      showMessage('success', `Email updated to "${variables.newUserEmail}"`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update email')
+      showMessage('error', error.message || 'Failed to update email')
     },
   })
 }
@@ -141,10 +141,10 @@ export const useCreatePermissionGroup = () => {
     },
     onSuccess: (_, groupName) => {
       queryClient.invalidateQueries({ queryKey: ['permission-groups'] })
-      toast.success(`Permission group "${groupName}" created`)
+      showMessage('success', `Permission group "${groupName}" created`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to create permission group')
+      showMessage('error', error.message || 'Failed to create permission group')
     },
   })
 }
@@ -160,10 +160,10 @@ export const useAssignUserPermissions = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
-      toast.success(`User "${variables.userEmail}" assigned to group "${variables.permissionGroupName}"`)
+      showMessage('success', `User "${variables.userEmail}" assigned to group "${variables.permissionGroupName}"`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to assign permissions')
+      showMessage('error', error.message || 'Failed to assign permissions')
     },
   })
 }

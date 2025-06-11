@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
-import toast from 'react-hot-toast'
+import { showMessage } from '@/utils/messages'
 import { minifyJSON } from '@/utils/json'
 
 export interface Storage {
@@ -54,10 +54,10 @@ export const useCreateStorage = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['storage'] })
       queryClient.invalidateQueries({ queryKey: ['teams'] })
-      toast.success(`Storage "${variables.storageName}" created successfully`)
+      showMessage('success', `Storage "${variables.storageName}" created successfully`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to create storage')
+      showMessage('error', error.message || 'Failed to create storage')
     },
   })
 }
@@ -73,10 +73,10 @@ export const useUpdateStorageName = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['storage'] })
-      toast.success(`Storage renamed to "${variables.newStorageName}"`)
+      showMessage('success', `Storage renamed to "${variables.newStorageName}"`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update storage name')
+      showMessage('error', error.message || 'Failed to update storage name')
     },
   })
 }
@@ -97,10 +97,10 @@ export const useUpdateStorageVault = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['storage'] })
-      toast.success(`Storage vault updated for "${variables.storageName}"`)
+      showMessage('success', `Storage vault updated for "${variables.storageName}"`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update storage vault')
+      showMessage('error', error.message || 'Failed to update storage vault')
     },
   })
 }
@@ -117,10 +117,10 @@ export const useDeleteStorage = () => {
     onSuccess: (_, data) => {
       queryClient.invalidateQueries({ queryKey: ['storage'] })
       queryClient.invalidateQueries({ queryKey: ['teams'] })
-      toast.success(`Storage "${data.storageName}" deleted successfully`)
+      showMessage('success', `Storage "${data.storageName}" deleted successfully`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete storage')
+      showMessage('error', error.message || 'Failed to delete storage')
     },
   })
 }

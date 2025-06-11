@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
-import toast from 'react-hot-toast'
+import { showMessage } from '@/utils/messages'
 
 export interface PermissionGroup {
   permissionGroupName: string
@@ -65,10 +65,10 @@ export const useCreatePermissionGroup = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['permissionGroups'] })
       queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      toast.success(`Permission group "${variables.permissionGroupName}" created successfully`)
+      showMessage('success', `Permission group "${variables.permissionGroupName}" created successfully`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to create permission group')
+      showMessage('error', error.message || 'Failed to create permission group')
     },
   })
 }
@@ -85,10 +85,10 @@ export const useDeletePermissionGroup = () => {
     onSuccess: (_, permissionGroupName) => {
       queryClient.invalidateQueries({ queryKey: ['permissionGroups'] })
       queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      toast.success(`Permission group "${permissionGroupName}" deleted successfully`)
+      showMessage('success', `Permission group "${permissionGroupName}" deleted successfully`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete permission group')
+      showMessage('error', error.message || 'Failed to delete permission group')
     },
   })
 }
@@ -105,10 +105,10 @@ export const useAddPermissionToGroup = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['permissionGroup', variables.permissionGroupName] })
       queryClient.invalidateQueries({ queryKey: ['permissionGroups'] }) // Update permission counts
-      toast.success(`Permission "${variables.permissionName}" added to group`)
+      showMessage('success', `Permission "${variables.permissionName}" added to group`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to add permission to group')
+      showMessage('error', error.message || 'Failed to add permission to group')
     },
   })
 }
@@ -125,10 +125,10 @@ export const useRemovePermissionFromGroup = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['permissionGroup', variables.permissionGroupName] })
       queryClient.invalidateQueries({ queryKey: ['permissionGroups'] }) // Update permission counts
-      toast.success(`Permission "${variables.permissionName}" removed from group`)
+      showMessage('success', `Permission "${variables.permissionName}" removed from group`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to remove permission from group')
+      showMessage('error', error.message || 'Failed to remove permission from group')
     },
   })
 }
@@ -145,10 +145,10 @@ export const useAssignUserToGroup = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
       queryClient.invalidateQueries({ queryKey: ['permissionGroup', variables.permissionGroupName] })
-      toast.success(`User assigned to permission group "${variables.permissionGroupName}"`)
+      showMessage('success', `User assigned to permission group "${variables.permissionGroupName}"`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to assign user to permission group')
+      showMessage('error', error.message || 'Failed to assign user to permission group')
     },
   })
 }

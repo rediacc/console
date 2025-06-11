@@ -317,5 +317,11 @@
     "generationError": "Failed to generate. Please try again.",
     "applied": "Values applied successfully",
     "copyError": "Failed to copy to clipboard"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications",
+    "markAllRead": "Mark all as read",
+    "clearAll": "Clear all"
   }
 }

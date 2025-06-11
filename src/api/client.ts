@@ -124,6 +124,20 @@ class ApiClient {
         return response
       },
       (error) => {
+        // First, check if the response has our API error structure with "errors" array
+        if (error.response?.data) {
+          const apiResponse = error.response.data as ApiResponse
+          if (apiResponse.errors && apiResponse.errors.length > 0) {
+            // Create a new error with the API error message
+            const errorMessage = apiResponse.errors.join('; ')
+            const customError = new Error(errorMessage)
+            // Copy over the response data
+            ;(customError as any).response = error.response
+            return Promise.reject(customError)
+          }
+        }
+
+        // Handle specific status codes
         if (error.response?.status === 401) {
           // Check if it's specifically a validation error on page refresh
           const errorMessage = error.response?.data?.tables?.[0]?.data?.[0]?.message
@@ -146,10 +160,12 @@ class ApiClient {
           }
         } else if (error.response?.status >= 500) {
           showMessage('error', 'Server error. Please try again later.')
-        } else if (error.request) {
+        } else if (error.request && !error.response) {
+          // Only show network error if there's truly no response
           showMessage('error', 'Network error. Please check your connection.')
         }
-
+        
+        // For other errors, pass them through as-is
         return Promise.reject(error)
       }
     )

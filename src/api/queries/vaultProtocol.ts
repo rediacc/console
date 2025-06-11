@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
-import toast from 'react-hot-toast'
+import { showMessage } from '@/utils/messages'
 import { useAppSelector, useAppDispatch } from '@/store/store'
 import { selectCompany } from '@/store/auth/authSelectors'
 import { setVaultCompany } from '@/store/auth/authSlice'
@@ -46,11 +46,11 @@ export const useEnableCompanyEncryption = () => {
       queryClient.invalidateQueries({ queryKey: ['company-vault'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       
-      toast.success('Vault encryption enabled successfully. All users must now use this master password.')
+      showMessage('success', 'Vault encryption enabled successfully. All users must now use this master password.')
     },
     onError: (error: any) => {
       console.error('Failed to enable encryption:', error)
-      toast.error(error.message || 'Failed to enable vault encryption')
+      showMessage('error', error.message || 'Failed to enable vault encryption')
     }
   })
 }
@@ -87,11 +87,11 @@ export const useDisableCompanyEncryption = () => {
       queryClient.invalidateQueries({ queryKey: ['company-vault'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       
-      toast.success('Vault encryption disabled. Master passwords are no longer required.')
+      showMessage('success', 'Vault encryption disabled. Master passwords are no longer required.')
     },
     onError: (error: any) => {
       console.error('Failed to disable encryption:', error)
-      toast.error(error.message || 'Failed to disable vault encryption')
+      showMessage('error', error.message || 'Failed to disable vault encryption')
     }
   })
 }

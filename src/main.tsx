@@ -15,6 +15,13 @@ const queryClient = new QueryClient({
       gcTime: 10 * 60 * 1000, // 10 minutes
       refetchOnWindowFocus: false,
     },
+    mutations: {
+      // Disable React Query's default error toasts
+      // We handle errors in our mutations
+      onError: () => {
+        // Do nothing - let individual mutations handle their errors
+      },
+    },
   },
 })
 

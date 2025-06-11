@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
-import toast from 'react-hot-toast'
+import { showMessage } from '@/utils/messages'
 import { minifyJSON } from '@/utils/json'
 import type { Machine } from '@/types'
 
@@ -50,10 +50,10 @@ export const useCreateMachine = () => {
       queryClient.invalidateQueries({ queryKey: ['teams'] })
       queryClient.invalidateQueries({ queryKey: ['bridges'] })
       queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      toast.success(`Machine "${variables.machineName}" created successfully`)
+      showMessage('success', `Machine "${variables.machineName}" created successfully`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to create machine')
+      showMessage('error', error.message || 'Failed to create machine')
     },
   })
 }
@@ -70,10 +70,10 @@ export const useUpdateMachineName = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['machines'] })
       queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      toast.success(`Machine renamed to "${variables.newMachineName}"`)
+      showMessage('success', `Machine renamed to "${variables.newMachineName}"`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update machine name')
+      showMessage('error', error.message || 'Failed to update machine name')
     },
   })
 }
@@ -90,10 +90,10 @@ export const useUpdateMachineBridge = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['machines'] })
       queryClient.invalidateQueries({ queryKey: ['bridges'] })
-      toast.success(`Machine "${variables.machineName}" reassigned to bridge "${variables.newBridgeName}"`)
+      showMessage('success', `Machine "${variables.machineName}" reassigned to bridge "${variables.newBridgeName}"`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update machine bridge')
+      showMessage('error', error.message || 'Failed to update machine bridge')
     },
   })
 }
@@ -114,10 +114,10 @@ export const useUpdateMachineVault = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['machines'] })
-      toast.success(`Machine vault updated for "${variables.machineName}"`)
+      showMessage('success', `Machine vault updated for "${variables.machineName}"`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update machine vault')
+      showMessage('error', error.message || 'Failed to update machine vault')
     },
   })
 }
@@ -136,10 +136,10 @@ export const useDeleteMachine = () => {
       queryClient.invalidateQueries({ queryKey: ['teams'] })
       queryClient.invalidateQueries({ queryKey: ['bridges'] })
       queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      toast.success(`Machine "${data.machineName}" deleted successfully`)
+      showMessage('success', `Machine "${data.machineName}" deleted successfully`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete machine')
+      showMessage('error', error.message || 'Failed to delete machine')
     },
   })
 }

@@ -49,7 +49,7 @@ import {
   useGetCompanyVaults,
   useUpdateCompanyVaults
 } from '@/api/queries/company'
-import toast from 'react-hot-toast'
+import { showMessage } from '@/utils/messages'
 
 // User queries
 import { 
@@ -451,11 +451,11 @@ const SystemPage: React.FC = () => {
         document.body.removeChild(a)
         URL.revokeObjectURL(url)
         
-        toast.success(tSystem('dangerZone.exportVaults.success'))
+        showMessage('success', tSystem('dangerZone.exportVaults.success'))
       }
     } catch (error) {
       console.error('Failed to export vaults:', error)
-      toast.error(tSystem('dangerZone.exportVaults.error'))
+      showMessage('error', tSystem('dangerZone.exportVaults.error'))
     }
   }
 
@@ -469,7 +469,7 @@ const SystemPage: React.FC = () => {
       // First, fetch all current vaults
       const vaultsResult = await exportVaultsQuery.refetch()
       if (!vaultsResult.data || !vaultsResult.data.allVaults) {
-        toast.error(tSystem('dangerZone.updateMasterPassword.error.fetchVaults'))
+        showMessage('error', tSystem('dangerZone.updateMasterPassword.error.fetchVaults'))
         return
       }
 
@@ -513,13 +513,13 @@ const SystemPage: React.FC = () => {
             })
           } catch (error) {
             console.error(`Failed to process vault ${vault.vaultName}:`, error)
-            toast.error(`Failed to process vault ${vault.vaultName}`)
+            showMessage('error', `Failed to process vault ${vault.vaultName}`)
           }
         }
       }
 
       if (vaultUpdates.length === 0) {
-        toast.error(tSystem('dangerZone.updateMasterPassword.error.noVaults'))
+        showMessage('error', tSystem('dangerZone.updateMasterPassword.error.noVaults'))
         return
       }
 
@@ -551,7 +551,7 @@ const SystemPage: React.FC = () => {
   // Permission handlers
   const handleCreateGroup = async () => {
     if (!newGroupName.trim()) {
-      toast.error('Please enter a group name')
+      showMessage('error', 'Please enter a group name')
       return
     }
 

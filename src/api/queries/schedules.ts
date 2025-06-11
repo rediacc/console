@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '../client'
-import toast from 'react-hot-toast'
+import { showMessage } from '@/utils/messages'
 import { minifyJSON } from '@/utils/json'
 
 export interface Schedule {
@@ -67,10 +67,10 @@ export const useCreateSchedule = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['schedules'] })
       queryClient.invalidateQueries({ queryKey: ['teams'] })
-      toast.success(`Schedule "${variables.scheduleName}" created successfully`)
+      showMessage('success', `Schedule "${variables.scheduleName}" created successfully`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to create schedule')
+      showMessage('error', error.message || 'Failed to create schedule')
     },
   })
 }
@@ -87,10 +87,10 @@ export const useDeleteSchedule = () => {
     onSuccess: (_, data) => {
       queryClient.invalidateQueries({ queryKey: ['schedules'] })
       queryClient.invalidateQueries({ queryKey: ['teams'] })
-      toast.success(`Schedule "${data.scheduleName}" deleted successfully`)
+      showMessage('success', `Schedule "${data.scheduleName}" deleted successfully`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete schedule')
+      showMessage('error', error.message || 'Failed to delete schedule')
     },
   })
 }
@@ -106,10 +106,10 @@ export const useUpdateScheduleName = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['schedules'] })
-      toast.success(`Schedule renamed to "${variables.newScheduleName}"`)
+      showMessage('success', `Schedule renamed to "${variables.newScheduleName}"`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update schedule name')
+      showMessage('error', error.message || 'Failed to update schedule name')
     },
   })
 }
@@ -130,10 +130,10 @@ export const useUpdateScheduleVault = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['schedules'] })
-      toast.success(`Schedule vault updated for "${variables.scheduleName}"`)
+      showMessage('success', `Schedule vault updated for "${variables.scheduleName}"`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update schedule vault')
+      showMessage('error', error.message || 'Failed to update schedule vault')
     },
   })
 }

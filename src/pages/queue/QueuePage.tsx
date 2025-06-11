@@ -5,7 +5,7 @@ import { useQueueItems, useCancelQueueItem, QueueFilters } from '@/api/queries/q
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import ResourceListView from '@/components/common/ResourceListView'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
-import toast from 'react-hot-toast'
+import { showMessage } from '@/utils/messages'
 import dayjs from 'dayjs'
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize'
 
@@ -97,7 +97,7 @@ const QueuePage: React.FC = () => {
       link.download = filename
       link.click()
       URL.revokeObjectURL(url)
-      toast.success(`Exported ${dataToExport.length} items to ${filename}`)
+      showMessage('success', `Exported ${dataToExport.length} items to ${filename}`)
     } else {
       // JSON Export
       const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' })
@@ -107,7 +107,7 @@ const QueuePage: React.FC = () => {
       link.download = filename
       link.click()
       URL.revokeObjectURL(url)
-      toast.success(`Exported ${dataToExport.length} items to ${filename}`)
+      showMessage('success', `Exported ${dataToExport.length} items to ${filename}`)
     }
   }
   

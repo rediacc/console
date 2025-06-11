@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
-import toast from 'react-hot-toast'
+import { showMessage } from '@/utils/messages'
 import { minifyJSON } from '@/utils/json'
 
 export interface Region {
@@ -54,10 +54,10 @@ export const useCreateRegion = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['regions'] })
       queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      toast.success(`Region "${variables.regionName}" created successfully`)
+      showMessage('success', `Region "${variables.regionName}" created successfully`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to create region')
+      showMessage('error', error.message || 'Failed to create region')
     },
   })
 }
@@ -74,10 +74,10 @@ export const useUpdateRegionName = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['regions'] })
       queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      toast.success(`Region renamed to "${variables.newRegionName}"`)
+      showMessage('success', `Region renamed to "${variables.newRegionName}"`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update region name')
+      showMessage('error', error.message || 'Failed to update region name')
     },
   })
 }
@@ -98,10 +98,10 @@ export const useUpdateRegionVault = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['regions'] })
-      toast.success(`Region vault updated for "${variables.regionName}"`)
+      showMessage('success', `Region vault updated for "${variables.regionName}"`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update region vault')
+      showMessage('error', error.message || 'Failed to update region vault')
     },
   })
 }
@@ -118,10 +118,10 @@ export const useDeleteRegion = () => {
     onSuccess: (_, regionName) => {
       queryClient.invalidateQueries({ queryKey: ['regions'] })
       queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      toast.success(`Region "${regionName}" deleted successfully`)
+      showMessage('success', `Region "${regionName}" deleted successfully`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete region')
+      showMessage('error', error.message || 'Failed to delete region')
     },
   })
 }

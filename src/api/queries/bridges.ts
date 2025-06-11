@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
-import toast from 'react-hot-toast'
+import { showMessage } from '@/utils/messages'
 import { minifyJSON } from '@/utils/json'
 
 export interface Bridge {
@@ -51,10 +51,10 @@ export const useCreateBridge = () => {
       queryClient.invalidateQueries({ queryKey: ['bridges'] })
       queryClient.invalidateQueries({ queryKey: ['regions'] })
       queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      toast.success(`Bridge "${variables.bridgeName}" created successfully`)
+      showMessage('success', `Bridge "${variables.bridgeName}" created successfully`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to create bridge')
+      showMessage('error', error.message || 'Failed to create bridge')
     },
   })
 }
@@ -71,7 +71,10 @@ export const useUpdateBridgeName = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['bridges'] })
       queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      toast.success(`Bridge renamed to "${variables.newBridgeName}"`)
+      showMessage('success', `Bridge renamed to "${variables.newBridgeName}"`)
+    },
+    onError: (error: any) => {
+      showMessage('error', error.message || 'Failed to update bridge name')
     },
   })
 }
@@ -92,10 +95,10 @@ export const useUpdateBridgeVault = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['bridges'] })
-      toast.success(`Bridge vault updated for "${variables.bridgeName}"`)
+      showMessage('success', `Bridge vault updated for "${variables.bridgeName}"`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update bridge vault')
+      showMessage('error', error.message || 'Failed to update bridge vault')
     },
   })
 }
@@ -113,10 +116,10 @@ export const useDeleteBridge = () => {
       queryClient.invalidateQueries({ queryKey: ['bridges'] })
       queryClient.invalidateQueries({ queryKey: ['regions'] })
       queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      toast.success(`Bridge "${data.bridgeName}" deleted successfully`)
+      showMessage('success', `Bridge "${data.bridgeName}" deleted successfully`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete bridge')
+      showMessage('error', error.message || 'Failed to delete bridge')
     },
   })
 }
@@ -132,10 +135,10 @@ export const useResetBridgeAuthorization = () => {
     },
     onSuccess: (_, data) => {
       queryClient.invalidateQueries({ queryKey: ['bridges'] })
-      toast.success(`Bridge authorization reset for "${data.bridgeName}"`)
+      showMessage('success', `Bridge authorization reset for "${data.bridgeName}"`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to reset bridge authorization')
+      showMessage('error', error.message || 'Failed to reset bridge authorization')
     },
   })
 }

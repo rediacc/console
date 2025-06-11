@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
-import toast from 'react-hot-toast'
+import { showMessage } from '@/utils/messages'
 import { minifyJSON } from '@/utils/json'
 
 export interface Repository {
@@ -60,10 +60,10 @@ export const useCreateRepository = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['repositories'] })
       queryClient.invalidateQueries({ queryKey: ['teams'] })
-      toast.success(`Repository "${variables.repositoryName}" created successfully`)
+      showMessage('success', `Repository "${variables.repositoryName}" created successfully`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to create repository')
+      showMessage('error', error.message || 'Failed to create repository')
     },
   })
 }
@@ -83,10 +83,10 @@ export const useUpdateRepositoryName = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['repositories'] })
-      toast.success(`Repository renamed to "${variables.newRepositoryName}"`)
+      showMessage('success', `Repository renamed to "${variables.newRepositoryName}"`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update repository name')
+      showMessage('error', error.message || 'Failed to update repository name')
     },
   })
 }
@@ -108,10 +108,10 @@ export const useUpdateRepositoryVault = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['repositories'] })
-      toast.success(`Repository vault updated for "${variables.repositoryName}"`)
+      showMessage('success', `Repository vault updated for "${variables.repositoryName}"`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update repository vault')
+      showMessage('error', error.message || 'Failed to update repository vault')
     },
   })
 }
@@ -131,10 +131,10 @@ export const useDeleteRepository = () => {
     onSuccess: (_, data) => {
       queryClient.invalidateQueries({ queryKey: ['repositories'] })
       queryClient.invalidateQueries({ queryKey: ['teams'] })
-      toast.success(`Repository "${data.repositoryName}" deleted successfully`)
+      showMessage('success', `Repository "${data.repositoryName}" deleted successfully`)
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete repository')
+      showMessage('error', error.message || 'Failed to delete repository')
     },
   })
 }

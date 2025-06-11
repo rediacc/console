@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
-import toast from 'react-hot-toast'
+import { showMessage } from '@/utils/messages'
 import { useAppSelector } from '@/store/store'
 import { selectCompany } from '@/store/auth/authSelectors'
 import { minifyJSON } from '@/utils/json'
@@ -45,11 +45,11 @@ export const useUpdateCompanyVault = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['company-vault'] })
-      toast.success('Vault configuration updated successfully')
+      showMessage('success', 'Vault configuration updated successfully')
     },
     onError: (error: any) => {
       console.error('Failed to update vault:', error)
-      toast.error('Failed to update vault configuration')
+      showMessage('error', 'Failed to update vault configuration')
     }
   })
 }
@@ -70,9 +70,9 @@ export const useUpdateCompanyBlockUserRequests = () => {
       const deactivatedCount = data?.DeactivatedCount || 0
       
       if (variables && deactivatedCount > 0) {
-        toast.success(`User requests ${action}. ${deactivatedCount} active sessions were terminated.`)
+        showMessage('success', `User requests ${action}. ${deactivatedCount} active sessions were terminated.`)
       } else {
-        toast.success(`User requests ${action} successfully`)
+        showMessage('success', `User requests ${action} successfully`)
       }
       
       // Invalidate relevant queries
@@ -81,7 +81,7 @@ export const useUpdateCompanyBlockUserRequests = () => {
     },
     onError: (error: any) => {
       console.error('Failed to update block user requests:', error)
-      toast.error('Failed to update user request blocking status')
+      showMessage('error', 'Failed to update user request blocking status')
     }
   })
 }
@@ -147,7 +147,7 @@ export const useUpdateCompanyVaults = () => {
           updated: totalUpdated,
           failed: failedCount
         })
-        toast.error(message)
+        showMessage('error', message)
       }
       // Success toast removed - handled by modal in SystemPage
       
@@ -156,7 +156,9 @@ export const useUpdateCompanyVaults = () => {
     },
     onError: (error: any) => {
       console.error('Failed to update vaults:', error)
-      toast.error(i18n.t('system:dangerZone.updateMasterPassword.error.updateFailed'))
+      // Show the actual error message from the API response
+      const errorMessage = error?.message || i18n.t('system:dangerZone.updateMasterPassword.error.updateFailed')
+      showMessage('error', errorMessage)
     }
   })
 }

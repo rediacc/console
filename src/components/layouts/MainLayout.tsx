@@ -31,9 +31,9 @@ import { logout, updateCompany } from '@/store/auth/authSlice'
 import { toggleUiMode } from '@/store/ui/uiSlice'
 import { clearAuthData, saveAuthData, getAuthData } from '@/utils/auth'
 import apiClient from '@/api/client'
-import MessageHistory from '@/components/common/MessageHistory'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
 import LanguageSelector from '@/components/common/LanguageSelector'
+import NotificationBell from '@/components/common/NotificationBell'
 import { useTheme } from '@/context/ThemeContext'
 import logoBlack from '@/assets/logo_black.png'
 import logoWhite from '@/assets/logo_white.png'
@@ -403,7 +403,7 @@ const MainLayout: React.FC = () => {
           <Space size={16} align="center">
             <LanguageSelector />
             <ThemeToggle />
-            <MessageHistory />
+            <NotificationBell />
           </Space>
         </Header>
         <Content

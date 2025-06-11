@@ -27,7 +27,7 @@ import ResourceFormWithVault from '@/components/forms/ResourceFormWithVault'
 import VaultEditorModal from '@/components/common/VaultEditorModal'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
-import toast from 'react-hot-toast'
+import { showMessage } from '@/utils/messages'
 
 // Team queries
 import { useTeams, useCreateTeam, useUpdateTeamName, useDeleteTeam, useUpdateTeamVault, Team } from '@/api/queries/teams'
@@ -497,7 +497,7 @@ const ResourcesPage: React.FC = () => {
     const machine = teamData?.machines?.find(m => m.value === functionData.selectedMachine);
     
     if (!machine) {
-      toast.error('Selected machine not found');
+      showMessage('error', 'Selected machine not found');
       return;
     }
 
@@ -524,7 +524,7 @@ const ResourcesPage: React.FC = () => {
       
       // Automatically open the trace modal if queue item was created successfully
       if (response?.taskId) {
-        toast.success(t('repositories.queueItemCreated'));
+        showMessage('success', t('repositories.queueItemCreated'));
         setQueueTraceModal({ visible: true, taskId: response.taskId });
       }
     } catch (error) {

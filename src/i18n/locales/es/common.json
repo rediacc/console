@@ -315,5 +315,11 @@
     "generationError": "Error al generar. Por favor intente de nuevo.",
     "applied": "Valores aplicados exitosamente",
     "copyError": "Error al copiar al portapapeles"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "empty": "Sin notificaciones",
+    "markAllRead": "Marcar todo como leído",
+    "clearAll": "Limpiar todo"
   }
 }

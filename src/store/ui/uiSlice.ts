@@ -1,20 +1,10 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
-export interface Message {
-  id: string
-  type: 'success' | 'error' | 'warning' | 'info'
-  content: string
-  timestamp: number
-  read: boolean
-}
-
 interface UIState {
   sidebarCollapsed: boolean
   activeView: string
   selectedResource: string | null
   filters: Record<string, any>
-  messages: Message[]
-  unreadMessageCount: number
   uiMode: 'simple' | 'expert'
   modals: {
     vaultConfig: {
@@ -35,8 +25,6 @@ const initialState: UIState = {
   activeView: 'resources',
   selectedResource: null,
   filters: {},
-  messages: [],
-  unreadMessageCount: 0,
   uiMode: getStoredUiMode(),
   modals: {
     vaultConfig: {
@@ -73,37 +61,6 @@ const uiSlice = createSlice({
         open: false,
       }
     },
-    addMessage: (state, action: PayloadAction<Omit<Message, 'id' | 'timestamp' | 'read'>>) => {
-      const message: Message = {
-        ...action.payload,
-        id: Date.now().toString(),
-        timestamp: Date.now(),
-        read: false,
-      }
-      state.messages.unshift(message)
-      state.unreadMessageCount += 1
-      // Keep only last 50 messages
-      if (state.messages.length > 50) {
-        state.messages = state.messages.slice(0, 50)
-      }
-    },
-    markMessageAsRead: (state, action: PayloadAction<string>) => {
-      const message = state.messages.find(m => m.id === action.payload)
-      if (message && !message.read) {
-        message.read = true
-        state.unreadMessageCount = Math.max(0, state.unreadMessageCount - 1)
-      }
-    },
-    markAllMessagesAsRead: (state) => {
-      state.messages.forEach(message => {
-        message.read = true
-      })
-      state.unreadMessageCount = 0
-    },
-    clearMessages: (state) => {
-      state.messages = []
-      state.unreadMessageCount = 0
-    },
     setUiMode: (state, action: PayloadAction<'simple' | 'expert'>) => {
       state.uiMode = action.payload
       localStorage.setItem('uiMode', action.payload)
@@ -123,10 +80,6 @@ export const {
   setFilters,
   openVaultModal,
   closeVaultModal,
-  addMessage,
-  markMessageAsRead,
-  markAllMessagesAsRead,
-  clearMessages,
   setUiMode,
   toggleUiMode,
 } = uiSlice.actions
