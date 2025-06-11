@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react'
-import { Modal, Row, Col, Card, Input, Space, Form, Slider, Empty, Typography, Tag, Button, Select, Tooltip, InputNumber } from 'antd'
+import { Modal, Row, Col, Card, Input, Space, Form, Slider, Empty, Typography, Tag, Button, Select, Tooltip, InputNumber, Alert } from 'antd'
 import { ExclamationCircleOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import type { QueueFunction } from '@/api/queries/queue'
@@ -359,6 +359,16 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                           } ({functionPriority})
                         </Tag>
                       </div>
+                      {functionPriority === 1 && (
+                        <Alert
+                          message={t('functions:priorityHighWarning')}
+                          description={t('functions:priorityHighWarningDescription')}
+                          type="warning"
+                          showIcon
+                          icon={<ExclamationCircleOutlined />}
+                          style={{ marginTop: 16 }}
+                        />
+                      )}
                     </div>
                   </Form.Item>
                   

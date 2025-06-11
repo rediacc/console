@@ -12,6 +12,8 @@
   "priorityBelowNormal": "Por debajo de lo normal",
   "priorityLow": "Baja",
   "currentPriority": "Actual",
+  "priorityHighWarning": "Advertencia de Uso de Alta Prioridad",
+  "priorityHighWarningDescription": "La prioridad alta (1) está reservada para comunicaciones críticas del sistema con las máquinas. Usar alta prioridad para tareas no críticas puede bloquear temporalmente la interfaz de usuario mientras se completa la operación. Para la mayoría de las tareas, recomendamos usar prioridad Normal (3) o Baja (5) para garantizar un rendimiento fluido del sistema.",
   "description": "Descripción (opcional)",
   "descriptionPlaceholder": "Agregar una descripción personalizada para este elemento de la cola",
   "categories": {

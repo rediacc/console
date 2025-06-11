@@ -12,6 +12,8 @@
   "priorityBelowNormal": "Below Normal",
   "priorityLow": "Low",
   "currentPriority": "Current",
+  "priorityHighWarning": "High Priority Usage Advisory",
+  "priorityHighWarningDescription": "High priority (1) is reserved for critical system communications with machines. Using high priority for non-critical tasks may temporarily block the user interface while the operation completes. For most tasks, we recommend using Normal (3) or Low (5) priority to ensure smooth system performance.",
   "description": "Description (optional)",
   "descriptionPlaceholder": "Add a custom description for this queue item",
   "categories": {
