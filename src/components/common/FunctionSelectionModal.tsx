@@ -359,7 +359,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                           } ({functionPriority})
                         </Tag>
                       </div>
-                      {functionPriority === 1 && (
+                      {(functionPriority === 1 || functionPriority === 2) && (
                         <Alert
                           message={t('functions:priorityHighWarning')}
                           description={t('functions:priorityHighWarningDescription')}
