@@ -133,7 +133,7 @@ export const useUpdateCompanyVaults = () => {
   return useMutation({
     mutationFn: async (vaultUpdates: any[]) => {
       const response = await apiClient.post('/UpdateCompanyVaults', {
-        vaultUpdates: JSON.stringify(vaultUpdates)
+        updates: JSON.stringify(vaultUpdates)  // Renamed to 'updates' to avoid automatic encryption
       })
       return response.tables[0]?.data[0]
     },

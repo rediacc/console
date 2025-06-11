@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Card, Tabs, Modal, Form, Input, Button, Space, Popconfirm, Tag, Select, Badge, List, Typography, Row, Col, Table, Empty, Spin, Alert, message, Checkbox, Result } from 'antd'
+import { Card, Tabs, Modal, Form, Input, Button, Space, Popconfirm, Tag, Select, Badge, List, Typography, Row, Col, Table, Empty, Spin, Alert, message, Checkbox, Result, Radio } from 'antd'
 import { 
   UserOutlined, 
   SafetyOutlined, 
@@ -217,6 +217,10 @@ const SystemPage: React.FC = () => {
   // Danger zone state
   const [masterPasswordModalOpen, setMasterPasswordModalOpen] = useState(false)
   const [masterPasswordForm] = Form.useForm()
+  // Set default operation based on whether a master password exists
+  const defaultOperation = currentMasterPassword ? 'update' : 'create'
+  const [masterPasswordOperation, setMasterPasswordOperation] = useState<'create' | 'update' | 'remove'>(defaultOperation)
+  const [completedOperation, setCompletedOperation] = useState<'create' | 'update' | 'remove'>('update')
   const [successModalOpen, setSuccessModalOpen] = useState(false)
   const [countdown, setCountdown] = useState(60)
   const countdownInterval = useRef<NodeJS.Timeout | null>(null)
@@ -281,6 +285,14 @@ const SystemPage: React.FC = () => {
       setSelectedRegion(regionsList[0].regionName)
     }
   }, [regionsList, selectedRegion])
+
+  // Update default operation when modal opens
+  useEffect(() => {
+    if (masterPasswordModalOpen) {
+      const newDefaultOperation = currentMasterPassword ? 'update' : 'create'
+      setMasterPasswordOperation(newDefaultOperation)
+    }
+  }, [masterPasswordModalOpen, currentMasterPassword])
 
   // Countdown effect
   useEffect(() => {
@@ -423,7 +435,7 @@ const SystemPage: React.FC = () => {
             totalVaults: allVaults.length,
             vaultTypes: Object.keys(vaultsByType).map(type => ({
               type,
-              count: vaultsByType[type].length
+              count: (vaultsByType as any)[type]?.length || 0
             }))
           }
         }
@@ -447,7 +459,7 @@ const SystemPage: React.FC = () => {
     }
   }
 
-  const handleUpdateMasterPassword = async (values: { password: string; confirmPassword: string }) => {
+  const handleUpdateMasterPassword = async (values: { password?: string; confirmPassword?: string }) => {
     // Prevent duplicate submissions
     if (updateVaultsMutation.isPending) {
       return
@@ -463,7 +475,7 @@ const SystemPage: React.FC = () => {
 
       // Prepare vault updates using the allVaults array directly
       const vaultUpdates: any[] = []
-      const newPassword = values.password
+      const newPassword = masterPasswordOperation === 'remove' ? '' : values.password!
 
       // Process all vaults from the allVaults array
       for (const vault of vaultsResult.data.allVaults) {
@@ -472,7 +484,7 @@ const SystemPage: React.FC = () => {
             let vaultContent = vault.decryptedVault
             
             // Try to decrypt if it's client-encrypted (has current master password)
-            if (currentMasterPassword) {
+            if (currentMasterPassword && masterPasswordOperation !== 'create') {
               try {
                 // Check if it looks like base64 encrypted data
                 if (vaultContent.match(/^[A-Za-z0-9+/]+=*$/)) {
@@ -483,13 +495,20 @@ const SystemPage: React.FC = () => {
               }
             }
             
-            // Now encrypt with the new password
-            const encryptedContent = await encryptString(vaultContent, newPassword)
+            // Handle based on operation type
+            let finalContent = vaultContent
+            if (masterPasswordOperation === 'remove') {
+              // For remove operation, we just use the decrypted content
+              finalContent = vaultContent
+            } else {
+              // For create and update operations, encrypt with the new password
+              finalContent = await encryptString(vaultContent, newPassword)
+            }
             
             vaultUpdates.push({
               credential: vault.credential,
               name: vault.vaultName,
-              content: encryptedContent,
+              content: finalContent,
               version: vault.version || 1
             })
           } catch (error) {
@@ -504,17 +523,7 @@ const SystemPage: React.FC = () => {
         return
       }
 
-      // Show confirmation with vault count
-      const vaultTypeCounts = vaultUpdates.reduce((acc: Record<string, number>, vault) => {
-        // Extract entity type from vault name if available
-        const entityType = vault.name?.split('_')[0] || 'Vault'
-        acc[entityType] = (acc[entityType] || 0) + 1
-        return acc
-      }, {})
-
-      const summaryMessage = `Updating ${vaultUpdates.length} vaults: ${Object.entries(vaultTypeCounts)
-        .map(([type, count]) => `${count} ${type}${count > 1 ? 's' : ''}`)
-        .join(', ')}`
+      // No need to show confirmation count since it's handled by mutations
 
       // Update all vaults
       await updateVaultsMutation.mutateAsync(vaultUpdates)
@@ -523,10 +532,12 @@ const SystemPage: React.FC = () => {
       await blockUserRequestsMutation.mutateAsync(false)
       
       // Update the master password in Redux store
-      dispatch(setMasterPassword(newPassword))
+      dispatch(setMasterPassword(masterPasswordOperation === 'remove' ? '' : newPassword))
       
       setMasterPasswordModalOpen(false)
       masterPasswordForm.resetFields()
+      setCompletedOperation(masterPasswordOperation) // Store completed operation
+      setMasterPasswordOperation(defaultOperation) // Reset to default
       
       // Show success modal with countdown
       setCountdown(60)
@@ -2470,83 +2481,114 @@ const SystemPage: React.FC = () => {
 
       {/* Master Password Update Modal */}
       <Modal
-        title={tSystem('dangerZone.updateMasterPassword.modal.title')}
+        title={currentMasterPassword ? tSystem('dangerZone.updateMasterPassword.modal.title') : tSystem('dangerZone.updateMasterPassword.modal.operationCreate')}
         open={masterPasswordModalOpen}
         onCancel={() => {
           setMasterPasswordModalOpen(false)
-          masterPasswordForm.reset()
+          masterPasswordForm.resetFields()
+          setMasterPasswordOperation(defaultOperation)
         }}
         footer={null}
         width={600}
       >
-        <Alert
-          message={<>{'\u26A0\uFE0F'} {tSystem('dangerZone.updateMasterPassword.modal.warningTitle').replace('⚠️ ', '')}</>}
-          description={
-            <Space direction="vertical" size={8}>
-              <Text>{tSystem('dangerZone.updateMasterPassword.modal.warningDescription')}</Text>
-              <ul style={{ margin: '4px 0', paddingLeft: 20 }}>
-                <li>{tSystem('dangerZone.updateMasterPassword.modal.warningEffect1')}</li>
-                <li>{tSystem('dangerZone.updateMasterPassword.modal.warningEffect2')}</li>
-                <li>{tSystem('dangerZone.updateMasterPassword.modal.warningEffect3')}</li>
-                <li>{tSystem('dangerZone.updateMasterPassword.modal.warningEffect4')}</li>
-              </ul>
-              <Text strong>{tSystem('dangerZone.updateMasterPassword.modal.warningPermanent')}</Text>
-              <Text strong style={{ color: '#ff4d4f' }}>{tSystem('dangerZone.updateMasterPassword.modal.warningSecure')}</Text>
-            </Space>
-          }
-          type="warning"
-          showIcon
-          style={{ marginBottom: 24 }}
-        />
-        
         <Form
           layout="vertical"
           form={masterPasswordForm}
           onFinish={handleUpdateMasterPassword}
         >
-          <Form.Item
-            label={tSystem('dangerZone.updateMasterPassword.modal.newPasswordLabel')}
-            name="password"
-            rules={[
-              { required: true, message: tSystem('dangerZone.updateMasterPassword.modal.newPasswordRequired') },
-              { min: 12, message: tSystem('dangerZone.updateMasterPassword.modal.newPasswordMinLength') },
-              { 
-                pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-                message: tSystem('dangerZone.updateMasterPassword.modal.newPasswordPattern')
-              }
-            ]}
-          >
-            <Input.Password 
-              placeholder={tSystem('dangerZone.updateMasterPassword.modal.newPasswordPlaceholder')}
-              size="large"
-            />
-          </Form.Item>
+          {/* Operation Type Selection - Only show when there are multiple options */}
+          {currentMasterPassword && (
+            <Form.Item
+              label={tSystem('dangerZone.updateMasterPassword.modal.operationType')}
+              style={{ marginBottom: 24 }}
+            >
+              <Radio.Group 
+                value={masterPasswordOperation} 
+                onChange={(e) => {
+                  setMasterPasswordOperation(e.target.value)
+                  masterPasswordForm.resetFields(['password', 'confirmPassword'])
+                }}
+              >
+                <Space direction="vertical">
+                  <Radio value="update">{tSystem('dangerZone.updateMasterPassword.modal.operationUpdate')}</Radio>
+                  <Radio value="remove">{tSystem('dangerZone.updateMasterPassword.modal.operationRemove')}</Radio>
+                </Space>
+              </Radio.Group>
+            </Form.Item>
+          )}
+
+          <Alert
+            message={<>{'\u26A0\uFE0F'} {tSystem('dangerZone.updateMasterPassword.modal.warningTitle').replace('⚠️ ', '')}</>}
+            description={
+              <Space direction="vertical" size={8}>
+                <Text>{tSystem(`dangerZone.updateMasterPassword.modal.warningDescription${masterPasswordOperation.charAt(0).toUpperCase() + masterPasswordOperation.slice(1)}`)}</Text>
+                <ul style={{ margin: '4px 0', paddingLeft: 20 }}>
+                  <li>{tSystem('dangerZone.updateMasterPassword.modal.warningEffect1')}</li>
+                  <li>{tSystem('dangerZone.updateMasterPassword.modal.warningEffect2')}</li>
+                  <li>{tSystem(`dangerZone.updateMasterPassword.modal.warningEffect3${masterPasswordOperation.charAt(0).toUpperCase() + masterPasswordOperation.slice(1)}`)}</li>
+                  {masterPasswordOperation !== 'remove' && (
+                    <li>{tSystem('dangerZone.updateMasterPassword.modal.warningEffect4')}</li>
+                  )}
+                </ul>
+                <Text strong>{tSystem('dangerZone.updateMasterPassword.modal.warningPermanent')}</Text>
+                <Text strong style={{ color: '#ff4d4f' }}>
+                  {tSystem(masterPasswordOperation === 'remove' ? 'dangerZone.updateMasterPassword.modal.warningSecureRemove' : 'dangerZone.updateMasterPassword.modal.warningSecure')}
+                </Text>
+              </Space>
+            }
+            type="warning"
+            showIcon
+            style={{ marginBottom: 24 }}
+          />
           
-          <Form.Item
-            label={tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordLabel')}
-            name="confirmPassword"
-            dependencies={['password']}
-            rules={[
-              { required: true, message: tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordRequired') },
-              ({ getFieldValue }) => ({
-                validator(_, value) {
-                  if (!value || getFieldValue('password') === value) {
-                    return Promise.resolve()
+          {/* Only show password fields for create and update operations */}
+          {masterPasswordOperation !== 'remove' && (
+            <>
+              <Form.Item
+                label={tSystem('dangerZone.updateMasterPassword.modal.newPasswordLabel')}
+                name="password"
+                rules={[
+                  { required: true, message: tSystem('dangerZone.updateMasterPassword.modal.newPasswordRequired') },
+                  { min: 12, message: tSystem('dangerZone.updateMasterPassword.modal.newPasswordMinLength') },
+                  { 
+                    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+                    message: tSystem('dangerZone.updateMasterPassword.modal.newPasswordPattern')
                   }
-                  return Promise.reject(new Error(tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordMatch')))
-                },
-              }),
-            ]}
-          >
-            <Input.Password 
-              placeholder={tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordPlaceholder')}
-              size="large"
-            />
-          </Form.Item>
+                ]}
+              >
+                <Input.Password 
+                  placeholder={tSystem('dangerZone.updateMasterPassword.modal.newPasswordPlaceholder')}
+                  size="large"
+                />
+              </Form.Item>
+              
+              <Form.Item
+                label={tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordLabel')}
+                name="confirmPassword"
+                dependencies={['password']}
+                rules={[
+                  { required: true, message: tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordRequired') },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value || getFieldValue('password') === value) {
+                        return Promise.resolve()
+                      }
+                      return Promise.reject(new Error(tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordMatch')))
+                    },
+                  }),
+                ]}
+              >
+                <Input.Password 
+                  placeholder={tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordPlaceholder')}
+                  size="large"
+                />
+              </Form.Item>
+            </>
+          )}
 
           <Alert
             message={tCommon('general.important')}
-            description={tSystem('dangerZone.updateMasterPassword.modal.importantNote')}
+            description={tSystem(`dangerZone.updateMasterPassword.modal.importantNote${masterPasswordOperation === 'create' ? 'Create' : masterPasswordOperation === 'remove' ? 'Remove' : ''}`)}
             type="info"
             showIcon
             style={{ marginBottom: 24 }}
@@ -2556,7 +2598,8 @@ const SystemPage: React.FC = () => {
             <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
               <Button onClick={() => {
                 setMasterPasswordModalOpen(false)
-                masterPasswordForm.reset()
+                masterPasswordForm.resetFields()
+                setMasterPasswordOperation(defaultOperation)
               }}>
                 {tSystem('dangerZone.updateMasterPassword.modal.cancel')}
               </Button>
@@ -2567,7 +2610,7 @@ const SystemPage: React.FC = () => {
                 loading={updateVaultsMutation.isPending}
                 disabled={updateVaultsMutation.isPending}
               >
-                {tSystem('dangerZone.updateMasterPassword.modal.submit')}
+                {tSystem(`dangerZone.updateMasterPassword.modal.submit${masterPasswordOperation.charAt(0).toUpperCase() + masterPasswordOperation.slice(1)}`)}
               </Button>
             </Space>
           </Form.Item>
@@ -2633,7 +2676,7 @@ const SystemPage: React.FC = () => {
       >
         <Result
           status="success"
-          title={tSystem('dangerZone.updateMasterPassword.success.title')}
+          title={tSystem(`dangerZone.updateMasterPassword.success.title${completedOperation.charAt(0).toUpperCase() + completedOperation.slice(1)}`)}
           subTitle={
             <Space direction="vertical" size={24} style={{ width: '100%' }}>
               <div>
@@ -2642,9 +2685,9 @@ const SystemPage: React.FC = () => {
                 </Typography.Paragraph>
                 <ol style={{ textAlign: 'left', paddingLeft: 20 }}>
                   <li>{tSystem('dangerZone.updateMasterPassword.success.step1')}</li>
-                  <li>{tSystem('dangerZone.updateMasterPassword.success.step2')}</li>
-                  <li>{tSystem('dangerZone.updateMasterPassword.success.step3')}</li>
-                  <li>{tSystem('dangerZone.updateMasterPassword.success.step4')}</li>
+                  <li>{tSystem(`dangerZone.updateMasterPassword.success.step2${completedOperation === 'remove' ? 'Remove' : ''}`)}</li>
+                  <li>{tSystem(`dangerZone.updateMasterPassword.success.step3${completedOperation === 'remove' ? 'Remove' : ''}`)}</li>
+                  <li>{tSystem(`dangerZone.updateMasterPassword.success.step4${completedOperation === 'remove' ? 'Remove' : ''}`)}</li>
                 </ol>
               </div>
               

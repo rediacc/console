@@ -109,6 +109,29 @@ export function analyzeVaultProtocolState(
 }
 
 /**
+ * Create the encrypted sentinel value for VaultCompany
+ * This is used to indicate that a company has enabled encryption
+ * @param company The company name
+ * @param masterPassword The master password to use for encryption
+ * @returns The encrypted sentinel value
+ */
+export async function createVaultCompanySentinel(
+  company: string,
+  masterPassword: string
+): Promise<string> {
+  // Create a sentinel object with company name and timestamp
+  const sentinel = {
+    company,
+    encryptionEnabled: true,
+    timestamp: new Date().toISOString()
+  }
+  
+  // Encrypt the sentinel using the master password
+  const encryptedSentinel = await encryptString(JSON.stringify(sentinel), masterPassword)
+  return encryptedSentinel
+}
+
+/**
  * Get user-friendly message for vault protocol state
  * Note: This returns message keys for i18n translation
  */
