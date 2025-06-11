@@ -2,6 +2,7 @@ import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 
 import { store } from '@/store/store'
 import { updateToken, logout } from '@/store/auth/authSlice'
 import { showMessage } from '@/utils/messages'
+import { encryptRequestData, decryptResponseData, hasVaultFields } from './encryptionMiddleware'
 
 // Use relative path in production (served via nginx proxy) and absolute in development
 const MIDDLEWARE_PORT = import.meta.env.VITE_MIDDLEWARE_PORT || '8080'
@@ -36,14 +37,24 @@ class ApiClient {
   }
 
   private setupInterceptors() {
-    // Request interceptor to add auth token
+    // Request interceptor to add auth token and encrypt vault fields
     this.client.interceptors.request.use(
-      (config: InternalAxiosRequestConfig) => {
+      async (config: InternalAxiosRequestConfig) => {
         const state = store.getState()
         const token = state.auth.token
 
         if (token) {
           config.headers['Rediacc-RequestToken'] = token
+        }
+
+        // Encrypt vault fields in request data if master password is set
+        if (config.data && hasVaultFields(config.data)) {
+          try {
+            config.data = await encryptRequestData(config.data)
+          } catch (error) {
+            // If encryption fails, the middleware will show error toast
+            return Promise.reject(error)
+          }
         }
 
         return config
@@ -53,10 +64,21 @@ class ApiClient {
       }
     )
 
-    // Response interceptor for token rotation and error handling
+    // Response interceptor for token rotation, decryption, and error handling
     this.client.interceptors.response.use(
       async (response) => {
-        const data = response.data as ApiResponse
+        let data = response.data as ApiResponse
+
+        // Decrypt vault fields in response data if master password is set
+        if (data && hasVaultFields(data)) {
+          try {
+            data = await decryptResponseData(data)
+            response.data = data
+          } catch (error) {
+            // Decryption errors are handled in middleware (shows toast)
+            // Continue with encrypted data
+          }
+        }
 
         // Check for API-level failure
         if (data.failure !== 0) {

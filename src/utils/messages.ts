@@ -29,8 +29,40 @@ export const showMessage = (type: MessageType, content: string) => {
     }
   }
   
-  // Show toast
-  toast[type](content)
+  // Show toast based on type
+  // react-hot-toast only has success, error, and the base toast function
+  switch (type) {
+    case 'success':
+      toast.success(content)
+      break
+    case 'error':
+      toast.error(content)
+      break
+    case 'warning':
+      // Use custom toast for warning
+      toast(content, {
+        icon: '⚠️',
+        style: {
+          background: '#FFF3CD',
+          color: '#856404',
+          border: '1px solid #FFEAA7',
+        },
+      })
+      break
+    case 'info':
+      // Use custom toast for info
+      toast(content, {
+        icon: 'ℹ️',
+        style: {
+          background: '#D1ECF1',
+          color: '#0C5460',
+          border: '1px solid #BEE5EB',
+        },
+      })
+      break
+    default:
+      toast(content)
+  }
   
   // Add to message history
   store.dispatch(addMessage({ type, content }))

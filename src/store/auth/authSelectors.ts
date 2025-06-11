@@ -4,3 +4,4 @@ export const selectIsAuthenticated = (state: RootState) => state.auth.isAuthenti
 export const selectUser = (state: RootState) => state.auth.user
 export const selectToken = (state: RootState) => state.auth.token
 export const selectCompany = (state: RootState) => state.auth.company
+export const selectMasterPassword = (state: RootState) => state.auth.masterPassword

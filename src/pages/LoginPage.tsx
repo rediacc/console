@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
-import { Card, Form, Input, Button, Typography, Space, Alert } from 'antd'
-import { UserOutlined, LockOutlined, GlobalOutlined } from '@ant-design/icons'
+import { Card, Form, Input, Button, Typography, Space, Alert, Tooltip } from 'antd'
+import { UserOutlined, LockOutlined, KeyOutlined, InfoCircleOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { loginSuccess } from '@/store/auth/authSlice'
 import { saveAuthData } from '@/utils/auth'
@@ -13,17 +13,26 @@ import { useTheme } from '@/context/ThemeContext'
 import LanguageSelector from '@/components/common/LanguageSelector'
 import logoBlack from '@/assets/logo_black.png'
 import logoWhite from '@/assets/logo_white.png'
+import { 
+  isEncrypted, 
+  validateMasterPassword, 
+  VaultProtocolState, 
+  analyzeVaultProtocolState,
+  getVaultProtocolMessage 
+} from '@/utils/vaultProtocol'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 
 interface LoginForm {
   email: string
   password: string
+  masterPassword?: string
 }
 
 const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [vaultProtocolState, setVaultProtocolState] = useState<VaultProtocolState | null>(null)
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const [form] = Form.useForm<LoginForm>()
@@ -33,6 +42,7 @@ const LoginPage: React.FC = () => {
   const handleLogin = async (values: LoginForm) => {
     setLoading(true)
     setError(null)
+    setVaultProtocolState(null)
 
     try {
       // Hash password
@@ -45,26 +55,100 @@ const LoginPage: React.FC = () => {
         throw new Error(loginResponse.errors?.join('; ') || 'Login failed')
       }
 
-      // Extract token
-      const token = loginResponse.tables[0].data[0].nextRequestCredential
+      // Extract token and company data
+      const userData = loginResponse.tables[0].data[0]
+      
+      const token = userData.nextRequestCredential
       if (!token) {
         throw new Error('No authentication token received')
       }
 
-      // Save auth data (company will be set from dashboard)
-      saveAuthData(token, values.email)
+      // Extract VaultCompany and company name from response
+      const vaultCompany = userData.vaultCompany || null
+      const companyName = userData.CompanyName || userData.company || null
+      
+      // Analyze vault protocol state
+      const companyHasEncryption = isEncrypted(vaultCompany)
+      const userProvidedPassword = !!values.masterPassword
+      
+      // Validate master password if company has encryption and user provided password
+      let passwordValid: boolean | undefined = undefined
+      if (companyHasEncryption && userProvidedPassword && companyName) {
+        passwordValid = await validateMasterPassword(
+          vaultCompany,
+          values.masterPassword!,
+          companyName
+        )
+      }
+      
+      // Determine protocol state
+      const protocolState = analyzeVaultProtocolState(
+        vaultCompany,
+        userProvidedPassword,
+        passwordValid
+      )
+      
+      // Handle different protocol states
+      switch (protocolState) {
+        case VaultProtocolState.PASSWORD_REQUIRED:
+          const protocolMessage = getVaultProtocolMessage(protocolState)
+          // Remove namespace prefix from messageKey for t() function
+          const messageKey = protocolMessage.messageKey.replace('auth:', '')
+          const translatedMessage = t(messageKey) || protocolMessage.message
+          setError(translatedMessage)
+          setVaultProtocolState(protocolState)
+          // Focus on master password field
+          setTimeout(() => {
+            form.getFieldInstance('masterPassword')?.focus()
+          }, 100)
+          return
+          
+        case VaultProtocolState.INVALID_PASSWORD:
+          const invalidMessage = getVaultProtocolMessage(protocolState)
+          const invalidMessageKey = invalidMessage.messageKey.replace('auth:', '')
+          setError(t(invalidMessageKey) || invalidMessage.message)
+          setVaultProtocolState(protocolState)
+          // Clear and focus on master password field
+          form.setFieldValue('masterPassword', '')
+          setTimeout(() => {
+            form.getFieldInstance('masterPassword')?.focus()
+          }, 100)
+          return
+          
+        case VaultProtocolState.PASSWORD_NOT_NEEDED:
+          // Show warning but continue with login
+          const warningMessage = getVaultProtocolMessage(protocolState)
+          const warningMessageKey = warningMessage.messageKey.replace('auth:', '')
+          const warningText = t(warningMessageKey)
+          if (warningText && warningText !== warningMessageKey) {
+            showMessage('warning', warningText)
+          } else {
+            showMessage('warning', warningMessage.message)
+          }
+          break
+          
+        case VaultProtocolState.VALID:
+          // Password is valid, continue with login
+          break
+      }
 
-      // Update Redux store
+      // Save auth data
+      saveAuthData(token, values.email, companyName)
+
+      // Update Redux store with all relevant data
       dispatch(loginSuccess({
-        user: { email: values.email },
+        user: { email: values.email, company: companyName },
         token,
+        company: companyName,
+        masterPassword: companyHasEncryption ? values.masterPassword : undefined,
+        vaultCompany: vaultCompany,
+        companyEncryptionEnabled: companyHasEncryption,
       }))
 
       showMessage('success', t('common:messages.success'))
       navigate('/dashboard')
     } catch (error: any) {
-      console.error('Login error:', error)
-      setError(error.message || t('auth:login.errors.invalidCredentials'))
+      setError(error.message || t('login.errors.invalidCredentials'))
     } finally {
       setLoading(false)
     }
@@ -139,6 +223,27 @@ const LoginPage: React.FC = () => {
               placeholder={t('auth:login.passwordPlaceholder')}
               size="large"
               autoComplete="current-password"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="masterPassword"
+            label={
+              <Space>
+                {t('auth:login.masterPassword')}
+                <Tooltip title={t('auth:login.masterPasswordTooltip')}>
+                  <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
+                </Tooltip>
+              </Space>
+            }
+            validateStatus={vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED || vaultProtocolState === VaultProtocolState.INVALID_PASSWORD ? 'error' : undefined}
+            required={vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED}
+          >
+            <Input.Password
+              prefix={<KeyOutlined />}
+              placeholder={t('auth:login.masterPasswordPlaceholder')}
+              size="large"
+              autoComplete="off"
             />
           </Form.Item>
 
