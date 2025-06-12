@@ -47,6 +47,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     const [vaultData, setVaultData] = useState<Record<string, any>>({})
     const [isVaultValid, setIsVaultValid] = useState(true)
     const [vaultValidationErrors, setVaultValidationErrors] = useState<string[]>([])
+    const [showVaultValidationErrors, setShowVaultValidationErrors] = useState(false)
     const importExportHandlers = useRef<{ handleImport: (file: any) => boolean; handleExport: () => void } | null>(null)
 
     const {
@@ -63,6 +64,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
 
     const handleFormSubmit = async (formData: any) => {
       if (!isVaultValid) {
+        setShowVaultValidationErrors(true)
         message.error(t('vaultEditor.pleaseFixErrors'))
         return
       }
@@ -160,7 +162,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     const wrapperCol = { span: 16 }
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, height: '100%' }}>
         {/* Form Section */}
         <Form 
           layout={formLayout}
@@ -168,6 +170,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
           wrapperCol={wrapperCol}
           labelAlign="left"
           colon={true}
+          style={{ flexShrink: 0 }}
         >
           {fields.map((field) => {
             if (field.hidden) return null
@@ -192,7 +195,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
         <Divider style={{ margin: '8px 0' }}>{t('vaultEditor.vaultConfiguration')}</Divider>
 
         {/* Vault Editor Section */}
-        <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
           <VaultEditor
             entityType={entityType}
             initialData={vaultData}
@@ -240,7 +243,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
         </div>
 
         {/* Validation Errors */}
-        {vaultValidationErrors.length > 0 && (
+        {showVaultValidationErrors && vaultValidationErrors.length > 0 && (
           <Alert
             message={t('vaultEditor.validationErrors')}
             description={

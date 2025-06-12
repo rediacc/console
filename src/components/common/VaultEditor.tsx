@@ -836,12 +836,12 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   const fields = entityDef.fields || {}
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Alert
         message={t(`vaultEditor.${entityDef.descriptionKey}`)}
         type="info"
         showIcon
-        style={{ marginBottom: 12 }}
+        style={{ marginBottom: 12, flexShrink: 0 }}
       />
 
       <Form
@@ -853,6 +853,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         colon={true}
         onValuesChange={(changedValues) => handleFormChange(changedValues)}
         autoComplete="off"
+        style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}
       >
         <Collapse 
           defaultActiveKey={[
@@ -860,6 +861,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
             optionalFields.length > 0 ? 'optional' : '',
             (entityType === 'STORAGE' && selectedProvider && providerFields) ? 'provider' : '',
           ].filter(Boolean)}
+          style={{ flex: 1 }}
         >
           {requiredFields.length > 0 && (
             <Collapse.Panel
@@ -1036,7 +1038,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               
               <div style={{ border: '1px solid #d9d9d9', borderRadius: 4 }}>
                 <Editor
-                  height="400px"
+                  height="auto"
                   defaultLanguage="json"
                   value={rawJsonValue}
                   onChange={handleRawJsonChange}
@@ -1047,6 +1049,27 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                     formatOnPaste: true,
                     formatOnType: true,
                     automaticLayout: true,
+                    scrollBeyondLastLine: false,
+                    scrollbar: {
+                      vertical: 'hidden',
+                      horizontal: 'hidden',
+                      handleMouseWheel: false,
+                    },
+                    wordWrap: 'on',
+                    lineNumbers: 'on',
+                    glyphMargin: false,
+                    folding: false,
+                    lineDecorationsWidth: 0,
+                    lineNumbersMinChars: 3,
+                  }}
+                  onMount={(editor) => {
+                    // Auto-resize based on content
+                    const updateHeight = () => {
+                      const contentHeight = Math.min(1000, Math.max(100, editor.getContentHeight()))
+                      editor.layout({ width: editor.getLayoutInfo().width, height: contentHeight })
+                    }
+                    editor.onDidContentSizeChange(updateHeight)
+                    updateHeight()
                   }}
                 />
               </div>

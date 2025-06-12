@@ -9,6 +9,11 @@
     "os_setup": {
       "name": "os_setup",
       "category": "machine",
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "company": true
+      },
       "params": {
         "datastore_size": {
           "type": "string",
@@ -25,16 +30,29 @@
     "hello": {
       "name": "hello",
       "category": "machine",
+      "requirements": {
+        "machine": true,
+        "team": true
+      },
       "params": {}
     },
     "uninstall": {
       "name": "uninstall",
       "category": "machine",
+      "requirements": {
+        "machine": true,
+        "team": true
+      },
       "params": {}
     },
     "repo_new": {
       "name": "repo_new",
       "category": "machine",
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
       "params": {
         "repo": {
           "type": "string",
@@ -51,6 +69,11 @@
     "repo_mount": {
       "name": "repo_mount",
       "category": "repository",
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
       "params": {
         "repo": {
           "type": "string",
@@ -64,6 +87,11 @@
     "repo_unmount": {
       "name": "repo_unmount",
       "category": "repository",
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
       "params": {
         "repo": {
           "type": "string",
@@ -77,6 +105,12 @@
     "repo_up": {
       "name": "repo_up",
       "category": "repository",
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true,
+        "bridge": true
+      },
       "params": {
         "repo": {
           "type": "string",
@@ -90,6 +124,11 @@
     "repo_down": {
       "name": "repo_down",
       "category": "repository",
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
       "params": {
         "repo": {
           "type": "string",
@@ -100,6 +139,11 @@
     "repo_resize": {
       "name": "repo_resize",
       "category": "repository",
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
       "params": {
         "repo": {
           "type": "string",
@@ -116,6 +160,11 @@
     "repo_rm": {
       "name": "repo_rm",
       "category": "repository",
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
       "params": {
         "repo": {
           "type": "string",
@@ -126,6 +175,12 @@
     "repo_plugin": {
       "name": "repo_plugin",
       "category": "repository",
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true,
+        "plugin": true
+      },
       "params": {
         "repo": {
           "type": "string",
@@ -140,6 +195,12 @@
     "repo_plugout": {
       "name": "repo_plugout",
       "category": "repository",
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true,
+        "plugin": true
+      },
       "params": {
         "repo": {
           "type": "string",
@@ -154,6 +215,11 @@
     "repo_ownership": {
       "name": "repo_ownership",
       "category": "repository",
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
       "params": {
         "repo": {
           "type": "string",
@@ -171,6 +237,10 @@
     "repo_list": {
       "name": "repo_list",
       "category": "repository",
+      "requirements": {
+        "machine": true,
+        "team": true
+      },
       "params": {
         "kind": {
           "type": "string",
@@ -184,6 +254,12 @@
     "repo_push": {
       "name": "repo_push",
       "category": "backup",
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true,
+        "storage": true
+      },
       "params": {
         "repo": {
           "type": "string",
@@ -200,6 +276,12 @@
     "repo_pull": {
       "name": "repo_pull",
       "category": "backup",
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true,
+        "storage": true
+      },
       "params": {
         "from": {
           "type": "string",
@@ -214,6 +296,13 @@
     "map_socket": {
       "name": "map_socket",
       "category": "network",
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true,
+        "plugin": true,
+        "bridge": true
+      },
       "params": {
         "machine": {
           "type": "string",

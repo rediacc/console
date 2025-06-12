@@ -1,7 +1,6 @@
-import React, { useState, useRef } from 'react'
-import { Card, Tabs, Button, Space, Modal, Tag, Typography, Table, Row, Col, Empty, Spin, Dropdown, Tooltip } from 'antd'
+import React, { useState, useRef, useEffect } from 'react'
+import { Card, Tabs, Button, Space, Modal, Tag, Typography, Table, Row, Col, Empty, Spin, Dropdown } from 'antd'
 import { 
-  TeamOutlined, 
   PlusOutlined, 
   EditOutlined, 
   DeleteOutlined, 
@@ -69,7 +68,6 @@ import {
   CreateStorageForm,
   createScheduleSchema,
   CreateScheduleForm,
-  EditTeamForm,
   EditRepositoryForm,
   EditStorageForm,
   EditScheduleForm
@@ -79,6 +77,7 @@ import { type QueueFunction } from '@/api/queries/queue'
 import { useCreateQueueItem } from '@/api/queries/queue'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 import TeamSelector from '@/components/common/TeamSelector'
+import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 
 const { Title, Text } = Typography
 
@@ -87,6 +86,47 @@ const ResourcesPage: React.FC = () => {
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const [selectedTeams, setSelectedTeams] = useState<string[]>([])
   const [teamResourcesTab, setTeamResourcesTab] = useState('machines')
+  
+  // Dynamic modal dimensions based on viewport
+  const [modalDimensions, setModalDimensions] = useState({
+    width: '90vw',
+    height: '85vh',
+    top: '5vh'
+  })
+  
+  useEffect(() => {
+    const calculateModalDimensions = () => {
+      const vw = window.innerWidth
+      
+      // For 4K and larger screens, use more space
+      let widthPercent = 90
+      let heightPercent = 85
+      let topPercent = 5
+      
+      if (vw >= 3840) { // 4K
+        widthPercent = 95
+        heightPercent = 92
+        topPercent = 3
+      } else if (vw >= 2560) { // 2K
+        widthPercent = 92
+        heightPercent = 88
+        topPercent = 4
+      }
+      
+      setModalDimensions({
+        width: `${widthPercent}vw`,
+        height: `${heightPercent}vh`,
+        top: `${topPercent}vh`
+      })
+    }
+    
+    calculateModalDimensions()
+    window.addEventListener('resize', calculateModalDimensions)
+    
+    return () => {
+      window.removeEventListener('resize', calculateModalDimensions)
+    }
+  }, [])
   
   // Refs for table containers
   const repositoryTableRef = useRef<HTMLDivElement>(null)
@@ -181,6 +221,7 @@ const ResourcesPage: React.FC = () => {
   
   // Queue mutation
   const createQueueItemMutation = useCreateQueueItem()
+  const { buildQueueVault } = useQueueVaultBuilder()
   
   // Queue trace modal state
   const [queueTraceModal, setQueueTraceModal] = useState<{
@@ -450,21 +491,34 @@ const ResourcesPage: React.FC = () => {
       return;
     }
 
-    // Build the queue vault
-    const queueVault = {
-      function: functionData.function.name,
+    // Find the team vault data for the repository's team
+    const repoTeamData = teamsList.find(t => t.teamName === functionModalRepository.teamName)
+    
+    // Build the queue vault with context data
+    const queueVault = await buildQueueVault({
+      teamName: functionModalRepository.teamName,
+      machineName: machine.value,
+      bridgeName: machine.bridgeName,
+      repositoryName: functionModalRepository.repositoryName,
+      functionName: functionData.function.name,
       params: functionData.params, // Params already include repo from defaultParams
       priority: functionData.priority,
       description: functionData.description,
-      addedVia: 'repository-table'
-    };
+      addedVia: 'repository-table',
+      // Pass vault data
+      teamVault: repoTeamData?.vaultContent,
+      // TODO: Machine vault not available in dropdown data (would need separate query)
+      // machineVault: machineData?.vaultContent,
+      // TODO: Repository vault not available in current interface
+      // repositoryVault: functionModalRepository.vaultContent
+    });
 
     try {
       const response = await createQueueItemMutation.mutateAsync({
         teamName: functionModalRepository.teamName,
         machineName: machine.value,
         bridgeName: machine.bridgeName,
-        queueVault: JSON.stringify(queueVault),
+        queueVault,
         priority: functionData.priority
       });
       
@@ -1167,8 +1221,17 @@ const ResourcesPage: React.FC = () => {
             {t('general.create')}
           </Button>
         ]}
-        width={800}
-        style={{ top: 20 }}
+        width={modalDimensions.width}
+        style={{ 
+          top: modalDimensions.top,
+          maxHeight: modalDimensions.height
+        }}
+        styles={{
+          body: {
+            height: `calc(${modalDimensions.height} - 120px)`,
+            overflowY: 'auto'
+          }
+        }}
       >
         <ResourceFormWithVault
           ref={repositoryFormRef}
@@ -1260,8 +1323,17 @@ const ResourcesPage: React.FC = () => {
             {t('general.create')}
           </Button>
         ]}
-        width={800}
-        style={{ top: 20 }}
+        width={modalDimensions.width}
+        style={{ 
+          top: modalDimensions.top,
+          maxHeight: modalDimensions.height
+        }}
+        styles={{
+          body: {
+            height: `calc(${modalDimensions.height} - 120px)`,
+            overflowY: 'auto'
+          }
+        }}
       >
         <ResourceFormWithVault
           ref={storageFormRef}
@@ -1353,8 +1425,17 @@ const ResourcesPage: React.FC = () => {
             {t('general.create')}
           </Button>
         ]}
-        width={800}
-        style={{ top: 20 }}
+        width={modalDimensions.width}
+        style={{ 
+          top: modalDimensions.top,
+          maxHeight: modalDimensions.height
+        }}
+        styles={{
+          body: {
+            height: `calc(${modalDimensions.height} - 120px)`,
+            overflowY: 'auto'
+          }
+        }}
       >
         <ResourceFormWithVault
           ref={scheduleFormRef}

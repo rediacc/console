@@ -247,7 +247,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                           readOnly: true,
                           minimap: { enabled: false },
                           scrollBeyondLastLine: false,
-                          wordWrap: 'on',
+                          wordWrap: 'off',
                           fontSize: 12,
                         }}
                       />
@@ -273,7 +273,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                           readOnly: true,
                           minimap: { enabled: false },
                           scrollBeyondLastLine: false,
-                          wordWrap: 'on',
+                          wordWrap: 'off',
                           fontSize: 12,
                         }}
                       />

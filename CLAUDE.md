@@ -271,11 +271,40 @@ The vault export and update features are implemented dynamically:
 - **Future-proof**: New entity types are automatically included without code changes
 - **Key mapping**: Converts entity types to lowercase plural (e.g., "User" → "users", "Company" → "company")
 
+## Queue Data Injection System
+
+The system now includes centralized queue data injection based on function requirements:
+
+### Function Requirements
+Each function in `src/data/functions.json` includes a `requirements` field specifying what context data it needs:
+- `machine`: Machine vault data (IP, user, datastore, SSH keys)
+- `team`: Team vault data (SSH keys)
+- `company`: Company vault data (universal user, Docker config)
+- `repository`: Repository credentials
+- `storage`: Storage configuration
+- `bridge`: Bridge network data
+- `plugin`: Plugin registry info
+
+### Components
+- **QueueDataService** (`src/services/queueDataService.ts`): Builds queue vault with injected data
+- **useQueueVaultBuilder** (`src/hooks/useQueueVaultBuilder.ts`): React hook for components
+
+### Usage
+```typescript
+const { buildQueueVault } = useQueueVaultBuilder()
+const queueVault = await buildQueueVault({
+  teamName, machineName, functionName, params, ...
+})
+```
+
+See `docs/QUEUE_DATA_INJECTION.md` for detailed documentation.
+
 ## Notes
 - Created: 2025-06-02
 - Updated: 2025-06-04 - Added centralized pricing
 - Updated: 2025-06-10 - Added centralized function definitions, JSON minification
 - Updated: 2025-06-11 - Added Danger Zone features (block users, export vaults, master password)
+- Updated: 2025-06-12 - Added Queue Data Injection System
 - NO additional packages beyond what's in PLAN.md
 - Use Ant Design components exclusively
 - Follow existing patterns for new features

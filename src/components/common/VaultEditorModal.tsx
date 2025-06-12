@@ -33,6 +33,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
   const [isValid, setIsValid] = useState(true) // Start with true to avoid blocking
   const [hasChanges, setHasChanges] = useState(false)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
+  const [showValidationErrors, setShowValidationErrors] = useState(false)
   const importExportHandlers = useRef<{ handleImport: (file: any) => boolean; handleExport: () => void } | null>(null)
 
   useEffect(() => {
@@ -46,6 +47,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
     setHasChanges(false)
     // Don't reset isValid to avoid blocking
     setValidationErrors([])
+    setShowValidationErrors(false)
   }, [initialVault, initialVersion])
 
   const handleVaultChange = (data: Record<string, any>, changed: boolean) => {
@@ -60,6 +62,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
 
   const handleSave = async () => {
     if (!isValid) {
+      setShowValidationErrors(true)
       message.error(t('vaultEditor.pleaseFixErrors'))
       return
     }
@@ -169,7 +172,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
         </div>
       </div>
 
-      {validationErrors.length > 0 && (
+      {showValidationErrors && validationErrors.length > 0 && (
         <div style={{ marginTop: 16, color: '#ff4d4f' }}>
           <strong>{t('vaultEditor.validationErrors')}</strong>
           <ul style={{ marginTop: 8 }}>

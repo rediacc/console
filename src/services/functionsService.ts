@@ -5,7 +5,18 @@ import functionDefinitions from '@/data/functions.json';
 export interface FunctionDefinition {
   name: string;
   category: string;
+  requirements?: FunctionRequirements;
   params?: Record<string, FunctionParam>;
+}
+
+export interface FunctionRequirements {
+  machine?: boolean;
+  team?: boolean;
+  company?: boolean;
+  repository?: boolean;
+  storage?: boolean;
+  plugin?: boolean;
+  bridge?: boolean;
 }
 
 export interface FunctionParam {
@@ -48,6 +59,7 @@ export function useLocalizedFunctions() {
     const localizedFunc = {
       ...funcDef,
       description: t(`functions.${functionName}.description`),
+      requirements: funcDef.requirements || {},
       params: {} as Record<string, any>
     };
 
@@ -110,6 +122,7 @@ export function getFunctionsWithTranslations(t: any) {
     functions[functionName] = {
       name: functionName,
       category: funcDef.category,
+      requirements: funcDef.requirements || {},
       description: t(`functions:functions.${functionName}.description`),
       params: {} as Record<string, any>
     };

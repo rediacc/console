@@ -34,6 +34,7 @@ import {
   FilterOutlined,
 } from '@ant-design/icons';
 import { useMachines, useDeleteMachine, useCreateMachine, useUpdateMachineName, useUpdateMachineBridge, useUpdateMachineVault } from '@/api/queries/machines';
+import { useTeams } from '@/api/queries/teams';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import { useCreateRepository } from '@/api/queries/repositories';
 import ResourceForm from '@/components/forms/ResourceForm';
@@ -48,6 +49,7 @@ import { z } from 'zod';
 import { createMachineSchema, CreateMachineForm, editMachineSchema, EditMachineForm } from '@/utils/validation';
 import { type QueueFunction, useCreateQueueItem } from '@/api/queries/queue';
 import { useLocalizedFunctions } from '@/services/functionsService';
+import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { 
   FunctionOutlined,
   HistoryOutlined 
@@ -126,6 +128,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   // Queries and mutations
   const { data: machines = [], isLoading } = useMachines(teamFilter, enabled);
   const { data: dropdownData } = useDropdownData();
+  const { data: teamsData = [] } = useTeams();
   const deleteMachine = useDeleteMachine();
   const createMachineMutation = useCreateMachine();
   const updateMachineNameMutation = useUpdateMachineName();
@@ -133,6 +136,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const updateMachineVaultMutation = useUpdateMachineVault();
   const createQueueItemMutation = useCreateQueueItem();
   const createRepositoryMutation = useCreateRepository();
+  const { buildQueueVault } = useQueueVaultBuilder();
   
   // Dynamic page size
   const dynamicPageSize = useDynamicPageSize(tableContainerRef, {
@@ -400,20 +404,33 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         }
       }
 
-      // Build the queue vault
-      const queueVault = {
-        function: functionData.function.name,
+      // Find the team vault data
+      const teamData = teamsData.find(t => t.teamName === functionModalMachine.teamName)
+      // TODO: Repository vault would need a separate query - not available in dropdown data
+      const repoData = null
+
+      // Build the queue vault with context data
+      const queueVault = await buildQueueVault({
+        teamName: functionModalMachine.teamName,
+        machineName: functionModalMachine.machineName,
+        bridgeName: functionModalMachine.bridgeName,
+        repositoryName: functionData.params.repo, // Include if repo param exists
+        functionName: functionData.function.name,
         params: functionData.params,
         priority: functionData.priority,
         description: functionData.description,
-        addedVia: 'machine-table'
-      };
+        addedVia: 'machine-table',
+        // Pass vault data
+        machineVault: functionModalMachine.vaultContent || '{}',
+        teamVault: teamData?.vaultContent || '{}',
+        repositoryVault: repoData?.vaultContent || '{}'
+      });
 
       const response = await createQueueItemMutation.mutateAsync({
         teamName: functionModalMachine.teamName,
         machineName: functionModalMachine.machineName,
         bridgeName: functionModalMachine.bridgeName,
-        queueVault: JSON.stringify(queueVault),
+        queueVault,
         priority: functionData.priority
       });
       

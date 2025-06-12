@@ -65,7 +65,7 @@
       "fields": { }
     },
     "STORAGE": {
-      "descriptionKey": "fields.STORAGE.description",
+      "descriptionKey": "fields.STORAGE.entityDescription",
       "required": ["provider"],
       "optional": ["description", "noVersioning", "parameters"],
       "dynamicFields": true,
