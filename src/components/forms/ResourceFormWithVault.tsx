@@ -42,6 +42,8 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     layout = 'vertical',
     showDefaultsAlert = false,
     defaultsContent,
+    hideImportExport = false,
+    onImportExportRef,
   }, ref) {
     const { t } = useTranslation('common')
     const [vaultData, setVaultData] = useState<Record<string, any>>({})
@@ -49,6 +51,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     const [vaultValidationErrors, setVaultValidationErrors] = useState<string[]>([])
     const [showVaultValidationErrors, setShowVaultValidationErrors] = useState(false)
     const importExportHandlers = useRef<{ handleImport: (file: any) => boolean; handleExport: () => void } | null>(null)
+    
 
     const {
       control,
@@ -203,44 +206,50 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
             onValidate={handleVaultValidate}
             onImportExport={(handlers) => {
               importExportHandlers.current = handlers
+              // Pass handlers to parent if callback is provided
+              if (onImportExportRef) {
+                onImportExportRef(handlers)
+              }
             }}
           />
         </div>
 
         {/* Import/Export Buttons */}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          paddingTop: 16,
-          borderTop: '1px solid #f0f0f0'
-        }}>
-          <Space>
-            <Upload
-              accept=".json"
-              showUploadList={false}
-              beforeUpload={(file) => {
-                if (importExportHandlers.current) {
-                  return importExportHandlers.current.handleImport(file)
-                }
-                return false
-              }}
-            >
-              <Button size="small" icon={<UploadOutlined />}>{t('vaultEditor.importJson')}</Button>
-            </Upload>
-            <Button 
-              size="small"
-              icon={<DownloadOutlined />} 
-              onClick={() => {
-                if (importExportHandlers.current) {
-                  importExportHandlers.current.handleExport()
-                }
-              }}
-            >
-              {t('vaultEditor.exportJson')}
-            </Button>
-          </Space>
-        </div>
+        {!hideImportExport && (
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            paddingTop: 16,
+            borderTop: '1px solid #f0f0f0'
+          }}>
+            <Space>
+              <Upload
+                accept=".json"
+                showUploadList={false}
+                beforeUpload={(file) => {
+                  if (importExportHandlers.current) {
+                    return importExportHandlers.current.handleImport(file)
+                  }
+                  return false
+                }}
+              >
+                <Button size="small" icon={<UploadOutlined />}>{t('vaultEditor.importJson')}</Button>
+              </Upload>
+              <Button 
+                size="small"
+                icon={<DownloadOutlined />} 
+                onClick={() => {
+                  if (importExportHandlers.current) {
+                    importExportHandlers.current.handleExport()
+                  }
+                }}
+              >
+                {t('vaultEditor.exportJson')}
+              </Button>
+            </Space>
+          </div>
+        )}
 
         {/* Validation Errors */}
         {showVaultValidationErrors && vaultValidationErrors.length > 0 && (

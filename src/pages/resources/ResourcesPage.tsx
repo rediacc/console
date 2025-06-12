@@ -12,14 +12,10 @@ import {
   MoreOutlined,
   FunctionOutlined
 } from '@ant-design/icons'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
-import ResourceForm from '@/components/forms/ResourceForm'
-import ResourceFormWithVault from '@/components/forms/ResourceFormWithVault'
-import VaultEditorModal from '@/components/common/VaultEditorModal'
+import UnifiedResourceModal, { ResourceType } from '@/components/resources/UnifiedResourceModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import { showMessage } from '@/utils/messages'
 
@@ -29,6 +25,14 @@ import { useTeams, Team } from '@/api/queries/teams'
 
 // Machine queries
 import { MachineTable } from '@/components/resources/MachineTable'
+import {
+  useCreateMachine,
+  useUpdateMachineName,
+  useUpdateMachineBridge,
+  useUpdateMachineVault,
+  useDeleteMachine,
+  type Machine
+} from '@/api/queries/machines'
 
 // Repository queries
 import { 
@@ -61,17 +65,7 @@ import {
 } from '@/api/queries/schedules'
 
 import { useDropdownData } from '@/api/queries/useDropdownData'
-import { 
-  createRepositorySchema,
-  CreateRepositoryForm,
-  createStorageSchema,
-  CreateStorageForm,
-  createScheduleSchema,
-  CreateScheduleForm,
-  EditRepositoryForm,
-  EditStorageForm,
-  EditScheduleForm
-} from '@/utils/validation'
+// Validation schemas now handled in UnifiedResourceModal
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize'
 import { type QueueFunction } from '@/api/queries/queue'
 import { useCreateQueueItem } from '@/api/queries/queue'
@@ -87,72 +81,25 @@ const ResourcesPage: React.FC = () => {
   const [selectedTeams, setSelectedTeams] = useState<string[]>([])
   const [teamResourcesTab, setTeamResourcesTab] = useState('machines')
   
-  // Dynamic modal dimensions based on viewport
-  const [modalDimensions, setModalDimensions] = useState({
-    width: '90vw',
-    height: '85vh',
-    top: '5vh'
-  })
-  
-  useEffect(() => {
-    const calculateModalDimensions = () => {
-      const vw = window.innerWidth
-      
-      // For 4K and larger screens, use more space
-      let widthPercent = 90
-      let heightPercent = 85
-      let topPercent = 5
-      
-      if (vw >= 3840) { // 4K
-        widthPercent = 95
-        heightPercent = 92
-        topPercent = 3
-      } else if (vw >= 2560) { // 2K
-        widthPercent = 92
-        heightPercent = 88
-        topPercent = 4
-      }
-      
-      setModalDimensions({
-        width: `${widthPercent}vw`,
-        height: `${heightPercent}vh`,
-        top: `${topPercent}vh`
-      })
-    }
-    
-    calculateModalDimensions()
-    window.addEventListener('resize', calculateModalDimensions)
-    
-    return () => {
-      window.removeEventListener('resize', calculateModalDimensions)
-    }
-  }, [])
+  // Unified modal state
+  const [unifiedModalState, setUnifiedModalState] = useState<{
+    open: boolean
+    resourceType: ResourceType
+    mode: 'create' | 'edit'
+    data?: any
+  }>({ open: false, resourceType: 'machine', mode: 'create' })
   
   // Refs for table containers
   const repositoryTableRef = useRef<HTMLDivElement>(null)
   const storageTableRef = useRef<HTMLDivElement>(null)
   const scheduleTableRef = useRef<HTMLDivElement>(null)
   
-  // Refs for form components
-  const repositoryFormRef = useRef<any>(null)
-  const storageFormRef = useRef<any>(null)
-  const scheduleFormRef = useRef<any>(null)
-  
   // Team state - removed create team functionality (exists in System page)
   
 
   // Machine state - removed modal states since we navigate to machines page instead
 
-  // Machine state
-  const [isCreateMachineModalOpen, setIsCreateMachineModalOpen] = useState(false)
-
-  // Repository state
-  const [isCreateRepositoryModalOpen, setIsCreateRepositoryModalOpen] = useState(false)
-  const [editingRepository, setEditingRepository] = useState<Repository | null>(null)
-  const [repositoryVaultModalConfig, setRepositoryVaultModalConfig] = useState<{
-    open: boolean
-    repository?: Repository
-  }>({ open: false })
+  // Machine state removed - now handled by unified modal
   
   // Helper to get create button text based on current tab
   const getCreateButtonText = () => {
@@ -164,24 +111,33 @@ const ResourcesPage: React.FC = () => {
     }
   }
 
-  // Storage state
-  const [isCreateStorageModalOpen, setIsCreateStorageModalOpen] = useState(false)
-  const [editingStorage, setEditingStorage] = useState<Storage | null>(null)
-  const [storageVaultModalConfig, setStorageVaultModalConfig] = useState<{
-    open: boolean
-    storage?: Storage
-  }>({ open: false })
-
-  // Schedule state
-  const [isCreateScheduleModalOpen, setIsCreateScheduleModalOpen] = useState(false)
-  const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null)
-  const [scheduleVaultModalConfig, setScheduleVaultModalConfig] = useState<{
-    open: boolean
-    schedule?: Schedule
-  }>({ open: false })
-
-  // Function modal state for repositories
-  const [functionModalRepository, setFunctionModalRepository] = useState<Repository | null>(null)
+  // State for current editing/creating resource
+  const [currentResource, setCurrentResource] = useState<any>(null)
+  
+  // Machine delete mutation
+  const deleteMachineMutation = useDeleteMachine()
+  
+  // Machine-specific handlers
+  const handleDeleteMachine = async (machine: Machine) => {
+    Modal.confirm({
+      title: t('machines:confirmDelete'),
+      content: t('machines:deleteWarning', { name: machine.machineName }),
+      okText: t('common:actions.delete'),
+      okType: 'danger',
+      cancelText: t('common:actions.cancel'),
+      onOk: async () => {
+        try {
+          await deleteMachineMutation.mutateAsync({
+            teamName: machine.teamName,
+            machineName: machine.machineName,
+          })
+          showMessage('success', t('machines:deleteSuccess'))
+        } catch (error) {
+          showMessage('error', t('machines:deleteError'))
+        }
+      },
+    })
+  }
 
   // Common hooks
   const { data: dropdownData } = useDropdownData()
@@ -272,85 +228,119 @@ const ResourcesPage: React.FC = () => {
     }
   }, [uiMode, teamsList, teamsLoading])
 
-  // Forms
-
-  const repositoryForm = useForm<CreateRepositoryForm>({
-    resolver: zodResolver(createRepositorySchema) as any,
-    defaultValues: {
-      teamName: '',
-      repositoryName: '',
-      repositoryVault: '{}',
-    },
-  })
-
-  const storageForm = useForm<CreateStorageForm>({
-    resolver: zodResolver(createStorageSchema) as any,
-    defaultValues: {
-      teamName: '',
-      storageName: '',
-      storageVault: '{}',
-    },
-  })
-
-  const scheduleForm = useForm<CreateScheduleForm>({
-    resolver: zodResolver(createScheduleSchema) as any,
-    defaultValues: {
-      teamName: '',
-      scheduleName: '',
-      scheduleVault: '{}',
-    },
-  })
+  // Handler to open unified modal
+  const openUnifiedModal = (resourceType: ResourceType, mode: 'create' | 'edit', data?: any) => {
+    setUnifiedModalState({
+      open: true,
+      resourceType,
+      mode,
+      data
+    })
+  }
+  
+  const closeUnifiedModal = () => {
+    setUnifiedModalState({
+      open: false,
+      resourceType: 'machine',
+      mode: 'create'
+    })
+    setCurrentResource(null)
+  }
 
   // Team handlers removed - create team functionality exists in System page
 
 
   // Machine handlers removed - handled in MachinePage
 
-  // Set default values for Simple mode when modals open
-  React.useEffect(() => {
-    if (isCreateRepositoryModalOpen && uiMode === 'simple') {
-      repositoryForm.setValue('teamName', 'Private Team');
-    }
-  }, [isCreateRepositoryModalOpen, uiMode, repositoryForm]);
-
-  React.useEffect(() => {
-    if (isCreateStorageModalOpen && uiMode === 'simple') {
-      storageForm.setValue('teamName', 'Private Team');
-    }
-  }, [isCreateStorageModalOpen, uiMode, storageForm]);
-
-  React.useEffect(() => {
-    if (isCreateScheduleModalOpen && uiMode === 'simple') {
-      scheduleForm.setValue('teamName', 'Private Team');
-    }
-  }, [isCreateScheduleModalOpen, uiMode, scheduleForm]);
-
-  // Repository handlers
-  const handleCreateRepository = async (data: CreateRepositoryForm) => {
+  // Unified modal submit handler
+  const handleUnifiedModalSubmit = async (data: any) => {
     try {
-      await createRepositoryMutation.mutateAsync(data)
-      setIsCreateRepositoryModalOpen(false)
-      repositoryForm.reset()
+      switch (unifiedModalState.resourceType) {
+        case 'repository':
+          if (unifiedModalState.mode === 'create') {
+            await createRepositoryMutation.mutateAsync(data)
+          } else {
+            await updateRepositoryNameMutation.mutateAsync({
+              teamName: currentResource.teamName,
+              currentRepositoryName: currentResource.repositoryName,
+              newRepositoryName: data.repositoryName,
+            })
+          }
+          break
+        case 'storage':
+          if (unifiedModalState.mode === 'create') {
+            await createStorageMutation.mutateAsync(data)
+          } else {
+            await updateStorageNameMutation.mutateAsync({
+              teamName: currentResource.teamName,
+              currentStorageName: currentResource.storageName,
+              newStorageName: data.storageName,
+            })
+          }
+          break
+        case 'schedule':
+          if (unifiedModalState.mode === 'create') {
+            await createScheduleMutation.mutateAsync(data)
+          } else {
+            await updateScheduleNameMutation.mutateAsync({
+              teamName: currentResource.teamName,
+              currentScheduleName: currentResource.scheduleName,
+              newScheduleName: data.scheduleName,
+            })
+          }
+          break
+      }
+      closeUnifiedModal()
     } catch (error) {
       // Error handled by mutation
     }
   }
 
-  const handleEditRepository = async (values: EditRepositoryForm) => {
-    if (!editingRepository) return
+  // Unified vault update handler
+  const handleUnifiedVaultUpdate = async (vault: string, version: number) => {
+    if (!currentResource) return
+
     try {
-      await updateRepositoryNameMutation.mutateAsync({
-        teamName: editingRepository.teamName,
-        currentRepositoryName: editingRepository.repositoryName,
-        newRepositoryName: values.repositoryName,
-      })
-      setEditingRepository(null)
-      repositoryForm.reset()
+      switch (unifiedModalState.resourceType) {
+        case 'machine':
+          await updateMachineVaultMutation.mutateAsync({
+            teamName: currentResource.teamName,
+            machineName: currentResource.machineName,
+            machineVault: vault,
+            vaultVersion: version,
+          })
+          break
+        case 'repository':
+          await updateRepositoryVaultMutation.mutateAsync({
+            teamName: currentResource.teamName,
+            repositoryName: currentResource.repositoryName,
+            repositoryVault: vault,
+            vaultVersion: version,
+          })
+          break
+        case 'storage':
+          await updateStorageVaultMutation.mutateAsync({
+            teamName: currentResource.teamName,
+            storageName: currentResource.storageName,
+            storageVault: vault,
+            vaultVersion: version,
+          })
+          break
+        case 'schedule':
+          await updateScheduleVaultMutation.mutateAsync({
+            teamName: currentResource.teamName,
+            scheduleName: currentResource.scheduleName,
+            scheduleVault: vault,
+            vaultVersion: version,
+          })
+          break
+      }
     } catch (error) {
       // Error handled by mutation
     }
   }
 
+  // Repository delete handler
   const handleDeleteRepository = async (repository: Repository) => {
     try {
       await deleteRepositoryMutation.mutateAsync({
@@ -362,44 +352,7 @@ const ResourcesPage: React.FC = () => {
     }
   }
 
-  const handleUpdateRepositoryVault = async (vault: string, version: number) => {
-    if (!repositoryVaultModalConfig.repository) return
-
-    await updateRepositoryVaultMutation.mutateAsync({
-      teamName: repositoryVaultModalConfig.repository.teamName,
-      repositoryName: repositoryVaultModalConfig.repository.repositoryName,
-      repositoryVault: vault,
-      vaultVersion: version,
-    })
-    setRepositoryVaultModalConfig({ open: false })
-  }
-
-  // Storage handlers
-  const handleCreateStorage = async (data: CreateStorageForm) => {
-    try {
-      await createStorageMutation.mutateAsync(data)
-      setIsCreateStorageModalOpen(false)
-      storageForm.reset()
-    } catch (error) {
-      // Error handled by mutation
-    }
-  }
-
-  const handleEditStorage = async (values: EditStorageForm) => {
-    if (!editingStorage) return
-    try {
-      await updateStorageNameMutation.mutateAsync({
-        teamName: editingStorage.teamName,
-        currentStorageName: editingStorage.storageName,
-        newStorageName: values.storageName,
-      })
-      setEditingStorage(null)
-      storageForm.reset()
-    } catch (error) {
-      // Error handled by mutation
-    }
-  }
-
+  // Storage delete handler
   const handleDeleteStorage = async (storage: Storage) => {
     try {
       await deleteStorageMutation.mutateAsync({
@@ -411,44 +364,7 @@ const ResourcesPage: React.FC = () => {
     }
   }
 
-  const handleUpdateStorageVault = async (vault: string, version: number) => {
-    if (!storageVaultModalConfig.storage) return
-
-    await updateStorageVaultMutation.mutateAsync({
-      teamName: storageVaultModalConfig.storage.teamName,
-      storageName: storageVaultModalConfig.storage.storageName,
-      storageVault: vault,
-      vaultVersion: version,
-    })
-    setStorageVaultModalConfig({ open: false })
-  }
-
-  // Schedule handlers
-  const handleCreateSchedule = async (data: CreateScheduleForm) => {
-    try {
-      await createScheduleMutation.mutateAsync(data)
-      setIsCreateScheduleModalOpen(false)
-      scheduleForm.reset()
-    } catch (error) {
-      // Error handled by mutation
-    }
-  }
-
-  const handleEditSchedule = async (values: EditScheduleForm) => {
-    if (!editingSchedule) return
-    try {
-      await updateScheduleNameMutation.mutateAsync({
-        teamName: editingSchedule.teamName,
-        currentScheduleName: editingSchedule.scheduleName,
-        newScheduleName: values.scheduleName,
-      })
-      setEditingSchedule(null)
-      scheduleForm.reset()
-    } catch (error) {
-      // Error handled by mutation
-    }
-  }
-
+  // Schedule delete handler
   const handleDeleteSchedule = async (schedule: Schedule) => {
     try {
       await deleteScheduleMutation.mutateAsync({
@@ -460,17 +376,79 @@ const ResourcesPage: React.FC = () => {
     }
   }
 
-  const handleUpdateScheduleVault = async (vault: string, version: number) => {
-    if (!scheduleVaultModalConfig.schedule) return
+  // Handle function selection for machine
+  const handleMachineFunctionSelected = async (functionData: {
+    function: QueueFunction;
+    params: Record<string, any>;
+    priority: number;
+    description: string;
+  }) => {
+    if (!currentResource) return;
 
-    await updateScheduleVaultMutation.mutateAsync({
-      teamName: scheduleVaultModalConfig.schedule.teamName,
-      scheduleName: scheduleVaultModalConfig.schedule.scheduleName,
-      scheduleVault: vault,
-      vaultVersion: version,
-    })
-    setScheduleVaultModalConfig({ open: false })
-  }
+    try {
+      // Check if this is repo_new function - if so, create repository first
+      if (functionData.function.name === 'repo_new') {
+        const repoName = functionData.params.repo;
+        if (!repoName) {
+          showMessage('error', 'Repository name is required for repo_new function');
+          return;
+        }
+
+        // Create repository in the system first
+        try {
+          await createRepositoryMutation.mutateAsync({
+            teamName: currentResource.teamName,
+            repositoryName: repoName,
+            repositoryVault: '{}'
+          });
+        } catch (error: any) {
+          // If repository creation fails, don't proceed with queue item
+          return;
+        }
+      }
+
+      // Find the team vault data
+      const teamData = teamsList.find(t => t.teamName === currentResource.teamName)
+      // TODO: Repository vault would need a separate query - not available in dropdown data
+      const repoData = null
+
+      // Build the queue vault with context data
+      const queueVault = await buildQueueVault({
+        teamName: currentResource.teamName,
+        machineName: currentResource.machineName,
+        bridgeName: currentResource.bridgeName,
+        repositoryName: functionData.params.repo, // Include if repo param exists
+        functionName: functionData.function.name,
+        params: functionData.params,
+        priority: functionData.priority,
+        description: functionData.description,
+        addedVia: 'machine-table',
+        // Pass vault data
+        machineVault: currentResource.vaultContent || '{}',
+        teamVault: teamData?.vaultContent || '{}',
+        repositoryVault: repoData?.vaultContent || '{}'
+      });
+
+      const response = await createQueueItemMutation.mutateAsync({
+        teamName: currentResource.teamName,
+        machineName: currentResource.machineName,
+        bridgeName: currentResource.bridgeName,
+        queueVault,
+        priority: functionData.priority
+      });
+      
+      // Reset the modal
+      closeUnifiedModal();
+      
+      // Automatically open the trace modal if queue item was created successfully
+      if (response?.taskId) {
+        showMessage('success', t('machines:queueItemCreated'));
+        setQueueTraceModal({ visible: true, taskId: response.taskId });
+      }
+    } catch (error) {
+      // Error is handled by the mutation
+    }
+  };
 
   // Handle function selection for repository
   const handleRepositoryFunctionSelected = async (functionData: {
@@ -480,10 +458,10 @@ const ResourcesPage: React.FC = () => {
     description: string;
     selectedMachine?: string;
   }) => {
-    if (!functionModalRepository || !functionData.selectedMachine) return;
+    if (!currentResource || !functionData.selectedMachine) return;
 
     // Find the selected machine data
-    const teamData = dropdownData?.machinesByTeam?.find(t => t.teamName === functionModalRepository.teamName);
+    const teamData = dropdownData?.machinesByTeam?.find(t => t.teamName === currentResource.teamName);
     const machine = teamData?.machines?.find(m => m.value === functionData.selectedMachine);
     
     if (!machine) {
@@ -492,14 +470,14 @@ const ResourcesPage: React.FC = () => {
     }
 
     // Find the team vault data for the repository's team
-    const repoTeamData = teamsList.find(t => t.teamName === functionModalRepository.teamName)
+    const repoTeamData = teamsList.find(t => t.teamName === currentResource.teamName)
     
     // Build the queue vault with context data
     const queueVault = await buildQueueVault({
-      teamName: functionModalRepository.teamName,
+      teamName: currentResource.teamName,
       machineName: machine.value,
       bridgeName: machine.bridgeName,
-      repositoryName: functionModalRepository.repositoryName,
+      repositoryName: currentResource.repositoryName,
       functionName: functionData.function.name,
       params: functionData.params, // Params already include repo from defaultParams
       priority: functionData.priority,
@@ -510,12 +488,12 @@ const ResourcesPage: React.FC = () => {
       // TODO: Machine vault not available in dropdown data (would need separate query)
       // machineVault: machineData?.vaultContent,
       // TODO: Repository vault not available in current interface
-      // repositoryVault: functionModalRepository.vaultContent
+      // repositoryVault: currentResource.vaultContent
     });
 
     try {
       const response = await createQueueItemMutation.mutateAsync({
-        teamName: functionModalRepository.teamName,
+        teamName: currentResource.teamName,
         machineName: machine.value,
         bridgeName: machine.bridgeName,
         queueVault,
@@ -523,7 +501,7 @@ const ResourcesPage: React.FC = () => {
       });
       
       // Reset the modal
-      setFunctionModalRepository(null);
+      closeUnifiedModal();
       
       // Automatically open the trace modal if queue item was created successfully
       if (response?.taskId) {
@@ -555,7 +533,8 @@ const ResourcesPage: React.FC = () => {
                 label: t('general.vault'),
                 icon: <SettingOutlined />,
                 onClick: () => {
-                  setRepositoryVaultModalConfig({ open: true, repository: record });
+                  setCurrentResource(record);
+                  openUnifiedModal('repository', 'edit', record);
                 },
               },
               {
@@ -563,8 +542,8 @@ const ResourcesPage: React.FC = () => {
                 label: t('general.edit'),
                 icon: <EditOutlined />,
                 onClick: () => {
-                  setEditingRepository(record);
-                  repositoryForm.setValue('repositoryName', record.repositoryName);
+                  setCurrentResource(record);
+                  openUnifiedModal('repository', 'edit', record);
                 },
               },
               {
@@ -572,7 +551,14 @@ const ResourcesPage: React.FC = () => {
                 label: t('repositories.repositoryFunctions'),
                 icon: <FunctionOutlined />,
                 onClick: () => {
-                  setFunctionModalRepository(record);
+                  setCurrentResource(record);
+                  // Use a special state to show function selection
+                  setUnifiedModalState({
+                    open: true,
+                    resourceType: 'repository',
+                    mode: 'create',
+                    data: record
+                  });
                 },
               },
               {
@@ -649,7 +635,8 @@ const ResourcesPage: React.FC = () => {
                 label: t('general.vault'),
                 icon: <SettingOutlined />,
                 onClick: () => {
-                  setStorageVaultModalConfig({ open: true, storage: record });
+                  setCurrentResource(record);
+                  openUnifiedModal('storage', 'edit', record);
                 },
               },
               {
@@ -657,8 +644,8 @@ const ResourcesPage: React.FC = () => {
                 label: t('general.edit'),
                 icon: <EditOutlined />,
                 onClick: () => {
-                  setEditingStorage(record);
-                  storageForm.setValue('storageName', record.storageName);
+                  setCurrentResource(record);
+                  openUnifiedModal('storage', 'edit', record);
                 },
               },
               {
@@ -735,7 +722,8 @@ const ResourcesPage: React.FC = () => {
                 label: t('general.vault'),
                 icon: <SettingOutlined />,
                 onClick: () => {
-                  setScheduleVaultModalConfig({ open: true, schedule: record });
+                  setCurrentResource(record);
+                  openUnifiedModal('schedule', 'edit', record);
                 },
               },
               {
@@ -743,8 +731,8 @@ const ResourcesPage: React.FC = () => {
                 label: t('general.edit'),
                 icon: <EditOutlined />,
                 onClick: () => {
-                  setEditingSchedule(record);
-                  scheduleForm.setValue('scheduleName', record.scheduleName);
+                  setCurrentResource(record);
+                  openUnifiedModal('schedule', 'edit', record);
                 },
               },
               {
@@ -804,85 +792,18 @@ const ResourcesPage: React.FC = () => {
     }] : []),
   ]
 
-  // Form fields
-
-  const repositoryFormFields = uiMode === 'simple' || selectedTeams.length === 1
-    ? [
-        {
-          name: 'repositoryName',
-          label: t('repositories.repositoryName'),
-          placeholder: t('repositories.placeholders.enterRepositoryName'),
-          required: true,
-        },
-      ]
-    : [
-        {
-          name: 'teamName',
-          label: t('general.team'),
-          placeholder: t('teams.placeholders.selectTeam'),
-          required: true,
-          type: 'select' as const,
-          options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
-        },
-        {
-          name: 'repositoryName',
-          label: t('repositories.repositoryName'),
-          placeholder: t('repositories.placeholders.enterRepositoryName'),
-          required: true,
-        },
-      ]
-
-  const storageFormFields = uiMode === 'simple' || selectedTeams.length === 1
-    ? [
-        {
-          name: 'storageName',
-          label: t('storage.storageName'),
-          placeholder: t('storage.placeholders.enterStorageName'),
-          required: true,
-        },
-      ]
-    : [
-        {
-          name: 'teamName',
-          label: t('general.team'),
-          placeholder: t('teams.placeholders.selectTeam'),
-          required: true,
-          type: 'select' as const,
-          options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
-        },
-        {
-          name: 'storageName',
-          label: t('storage.storageName'),
-          placeholder: t('storage.placeholders.enterStorageName'),
-          required: true,
-        },
-      ]
-
-  const scheduleFormFields = uiMode === 'simple' || selectedTeams.length === 1
-    ? [
-        {
-          name: 'scheduleName',
-          label: t('schedules.scheduleName'),
-          placeholder: t('schedules.placeholders.enterScheduleName'),
-          required: true,
-        },
-      ]
-    : [
-        {
-          name: 'teamName',
-          label: t('general.team'),
-          placeholder: t('teams.placeholders.selectTeam'),
-          required: true,
-          type: 'select' as const,
-          options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
-        },
-        {
-          name: 'scheduleName',
-          label: t('schedules.scheduleName'),
-          placeholder: t('schedules.placeholders.enterScheduleName'),
-          required: true,
-        },
-      ]
+  // Check if we're currently submitting or updating vault
+  const isSubmitting = createRepositoryMutation.isPending || 
+                      updateRepositoryNameMutation.isPending ||
+                      createStorageMutation.isPending ||
+                      updateStorageNameMutation.isPending ||
+                      createScheduleMutation.isPending ||
+                      updateScheduleNameMutation.isPending ||
+                      createQueueItemMutation.isPending
+                      
+  const isUpdatingVault = updateRepositoryVaultMutation.isPending ||
+                         updateStorageVaultMutation.isPending ||
+                         updateScheduleVaultMutation.isPending
 
   const teamResourcesTabs = [
     {
@@ -898,8 +819,25 @@ const ResourcesPage: React.FC = () => {
           teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
           showFilters={true}
           showActions={true}
-          showCreateModal={isCreateMachineModalOpen}
-          onCreateModalChange={setIsCreateMachineModalOpen}
+          onCreateMachine={() => openUnifiedModal('machine', 'create')}
+          onEditMachine={(machine) => {
+            setCurrentResource(machine)
+            openUnifiedModal('machine', 'edit', machine)
+          }}
+          onVaultMachine={(machine) => {
+            setCurrentResource(machine)
+            openUnifiedModal('machine', 'edit', machine)
+          }}
+          onFunctionsMachine={(machine) => {
+            setCurrentResource(machine)
+            setUnifiedModalState({
+              open: true,
+              resourceType: 'machine',
+              mode: 'create',
+              data: machine
+            })
+          }}
+          onDeleteMachine={handleDeleteMachine}
           enabled={teamResourcesTab === 'machines'}
           className="full-height-machine-table"
         />
@@ -1082,7 +1020,7 @@ const ResourcesPage: React.FC = () => {
                     />
                   </div>
                   
-                  {selectedTeams.length > 0 && teamResourcesTab !== 'repositories' && (
+                  {selectedTeams.length > 0 && (
                     <div style={{ 
                       display: 'flex',
                       gap: 8,
@@ -1094,19 +1032,16 @@ const ResourcesPage: React.FC = () => {
                         onClick={() => {
                           switch(teamResourcesTab) {
                             case 'machines':
-                              setIsCreateMachineModalOpen(true)
+                              openUnifiedModal('machine', 'create')
+                              break
+                            case 'repositories':
+                              openUnifiedModal('repository', 'create')
                               break
                             case 'storage':
-                              if (selectedTeams.length === 1) {
-                                storageForm.setValue('teamName', selectedTeams[0])
-                              }
-                              setIsCreateStorageModalOpen(true)
+                              openUnifiedModal('storage', 'create')
                               break
                             case 'schedules':
-                              if (selectedTeams.length === 1) {
-                                scheduleForm.setValue('teamName', selectedTeams[0])
-                              }
-                              setIsCreateScheduleModalOpen(true)
+                              openUnifiedModal('schedule', 'create')
                               break
                           }
                         }}
@@ -1148,18 +1083,17 @@ const ResourcesPage: React.FC = () => {
                   </Title>
                 </div>
                 <Space>
-                  {teamResourcesTab !== 'repositories' && (
+                  {(
                     <Button 
                       type="primary" 
                       icon={<PlusOutlined />}
                       onClick={() => {
                         switch(teamResourcesTab) {
                           case 'machines':
-                            setIsCreateMachineModalOpen(true)
+                            openUnifiedModal('machine', 'create')
                             break
                           case 'storage':
-                            storageForm.setValue('teamName', 'Private Team')
-                            setIsCreateStorageModalOpen(true)
+                            openUnifiedModal('storage', 'create')
                             break
                         }
                       }}
@@ -1187,335 +1121,33 @@ const ResourcesPage: React.FC = () => {
 
 
 
-      {/* Repository Modals */}
-      <Modal
-        title={
-          selectedTeams.length === 1 && uiMode === 'expert'
-            ? t('repositories.createRepository') + ' ' + t('teams.resourcesInTeam', { team: selectedTeams[0] })
-            : uiMode === 'simple'
-            ? t('repositories.createRepository') + ' ' + t('teams.resourcesInTeam', { team: 'Private Team' })
-            : t('repositories.createRepository')
+      {/* Unified Resource Modal */}
+      <UnifiedResourceModal
+        open={unifiedModalState.open}
+        onCancel={closeUnifiedModal}
+        resourceType={unifiedModalState.resourceType}
+        mode={unifiedModalState.mode}
+        existingData={unifiedModalState.data || currentResource}
+        teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
+        onSubmit={handleUnifiedModalSubmit}
+        onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
+        onFunctionSubmit={
+          unifiedModalState.data && 
+          (unifiedModalState.resourceType === 'machine' || unifiedModalState.resourceType === 'repository')
+            ? unifiedModalState.resourceType === 'machine' 
+              ? handleMachineFunctionSelected 
+              : handleRepositoryFunctionSelected
+            : undefined
         }
-        open={isCreateRepositoryModalOpen}
-        onCancel={() => {
-          setIsCreateRepositoryModalOpen(false)
-          repositoryForm.reset()
-        }}
-        footer={[
-          <Button 
-            key="cancel" 
-            onClick={() => {
-              setIsCreateRepositoryModalOpen(false)
-              repositoryForm.reset()
-            }}
-          >
-            {t('general.cancel')}
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            loading={createRepositoryMutation.isPending}
-            onClick={() => repositoryFormRef.current?.submit()}
-            style={{ background: '#556b2f', borderColor: '#556b2f' }}
-          >
-            {t('general.create')}
-          </Button>
-        ]}
-        width={modalDimensions.width}
-        style={{ 
-          top: modalDimensions.top,
-          maxHeight: modalDimensions.height
-        }}
-        styles={{
-          body: {
-            height: `calc(${modalDimensions.height} - 120px)`,
-            overflowY: 'auto'
-          }
-        }}
-      >
-        <ResourceFormWithVault
-          ref={repositoryFormRef}
-          form={repositoryForm}
-          fields={repositoryFormFields}
-          onSubmit={handleCreateRepository}
-          entityType="REPOSITORY"
-          vaultFieldName="repositoryVault"
-          showDefaultsAlert={uiMode === 'simple' || selectedTeams.length === 1}
-          defaultsContent={
-            <Space direction="vertical" size={0}>
-              <Text>{t('general.team')}: {uiMode === 'simple' ? 'Private Team' : selectedTeams[0]}</Text>
-            </Space>
-          }
-        />
-      </Modal>
-
-      <VaultEditorModal
-        open={repositoryVaultModalConfig.open}
-        onCancel={() => setRepositoryVaultModalConfig({ open: false })}
-        onSave={handleUpdateRepositoryVault}
-        entityType="REPOSITORY"
-        title={t('general.configureVault', { name: repositoryVaultModalConfig.repository?.repositoryName || '' })}
-        initialVault={repositoryVaultModalConfig.repository?.vaultContent || "{}"}
-        initialVersion={repositoryVaultModalConfig.repository?.vaultVersion || 1}
-        loading={updateRepositoryVaultMutation.isPending}
-      />
-
-      {/* Edit Repository Modal */}
-      <Modal
-        title={t('repositories.editRepository')}
-        open={!!editingRepository}
-        onCancel={() => {
-          setEditingRepository(null)
-          repositoryForm.reset()
-        }}
-        footer={null}
-      >
-        <ResourceForm
-          form={repositoryForm}
-          fields={[{
-            name: 'repositoryName',
-            label: t('repositories.repositoryName'),
-            placeholder: t('repositories.placeholders.enterRepositoryName'),
-            required: true,
-          }]}
-          onSubmit={handleEditRepository}
-          submitText={t('general.save')}
-          cancelText={t('general.cancel')}
-          onCancel={() => {
-            setEditingRepository(null)
-            repositoryForm.reset()
-          }}
-          loading={updateRepositoryNameMutation.isPending}
-        />
-      </Modal>
-
-      {/* Storage Modals */}
-      <Modal
-        title={
-          selectedTeams.length === 1 && uiMode === 'expert'
-            ? t('storage.createStorage') + ' ' + t('teams.resourcesInTeam', { team: selectedTeams[0] })
-            : uiMode === 'simple'
-            ? t('storage.createStorage') + ' ' + t('teams.resourcesInTeam', { team: 'Private Team' })
-            : t('storage.createStorage')
+        isSubmitting={isSubmitting}
+        isUpdatingVault={isUpdatingVault}
+        functionCategories={
+          unifiedModalState.resourceType === 'machine' ? ['machine'] :
+          unifiedModalState.resourceType === 'repository' ? ['repository', 'backup', 'network'] : 
+          []
         }
-        open={isCreateStorageModalOpen}
-        onCancel={() => {
-          setIsCreateStorageModalOpen(false)
-          storageForm.reset()
-        }}
-        footer={[
-          <Button 
-            key="cancel" 
-            onClick={() => {
-              setIsCreateStorageModalOpen(false)
-              storageForm.reset()
-            }}
-          >
-            {t('general.cancel')}
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            loading={createStorageMutation.isPending}
-            onClick={() => storageFormRef.current?.submit()}
-            style={{ background: '#556b2f', borderColor: '#556b2f' }}
-          >
-            {t('general.create')}
-          </Button>
-        ]}
-        width={modalDimensions.width}
-        style={{ 
-          top: modalDimensions.top,
-          maxHeight: modalDimensions.height
-        }}
-        styles={{
-          body: {
-            height: `calc(${modalDimensions.height} - 120px)`,
-            overflowY: 'auto'
-          }
-        }}
-      >
-        <ResourceFormWithVault
-          ref={storageFormRef}
-          form={storageForm}
-          fields={storageFormFields}
-          onSubmit={handleCreateStorage}
-          entityType="STORAGE"
-          vaultFieldName="storageVault"
-          showDefaultsAlert={uiMode === 'simple' || selectedTeams.length === 1}
-          defaultsContent={
-            <Space direction="vertical" size={0}>
-              <Text>{t('general.team')}: {uiMode === 'simple' ? 'Private Team' : selectedTeams[0]}</Text>
-            </Space>
-          }
-        />
-      </Modal>
-
-      <VaultEditorModal
-        open={storageVaultModalConfig.open}
-        onCancel={() => setStorageVaultModalConfig({ open: false })}
-        onSave={handleUpdateStorageVault}
-        entityType="STORAGE"
-        title={t('general.configureVault', { name: storageVaultModalConfig.storage?.storageName || '' })}
-        initialVault={storageVaultModalConfig.storage?.vaultContent || "{}"}
-        initialVersion={storageVaultModalConfig.storage?.vaultVersion || 1}
-        loading={updateStorageVaultMutation.isPending}
-      />
-
-      {/* Edit Storage Modal */}
-      <Modal
-        title={t('storage.editStorage')}
-        open={!!editingStorage}
-        onCancel={() => {
-          setEditingStorage(null)
-          storageForm.reset()
-        }}
-        footer={null}
-      >
-        <ResourceForm
-          form={storageForm}
-          fields={[{
-            name: 'storageName',
-            label: t('storage.storageName'),
-            placeholder: t('storage.placeholders.enterStorageName'),
-            required: true,
-          }]}
-          onSubmit={handleEditStorage}
-          submitText={t('general.save')}
-          cancelText={t('general.cancel')}
-          onCancel={() => {
-            setEditingStorage(null)
-            storageForm.reset()
-          }}
-          loading={updateStorageNameMutation.isPending}
-        />
-      </Modal>
-
-      {/* Schedule Modals */}
-      <Modal
-        title={
-          selectedTeams.length === 1 && uiMode === 'expert'
-            ? t('schedules.createSchedule') + ' ' + t('teams.resourcesInTeam', { team: selectedTeams[0] })
-            : uiMode === 'simple'
-            ? t('schedules.createSchedule') + ' ' + t('teams.resourcesInTeam', { team: 'Private Team' })
-            : t('schedules.createSchedule')
-        }
-        open={isCreateScheduleModalOpen}
-        onCancel={() => {
-          setIsCreateScheduleModalOpen(false)
-          scheduleForm.reset()
-        }}
-        footer={[
-          <Button 
-            key="cancel" 
-            onClick={() => {
-              setIsCreateScheduleModalOpen(false)
-              scheduleForm.reset()
-            }}
-          >
-            {t('general.cancel')}
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            loading={createScheduleMutation.isPending}
-            onClick={() => scheduleFormRef.current?.submit()}
-            style={{ background: '#556b2f', borderColor: '#556b2f' }}
-          >
-            {t('general.create')}
-          </Button>
-        ]}
-        width={modalDimensions.width}
-        style={{ 
-          top: modalDimensions.top,
-          maxHeight: modalDimensions.height
-        }}
-        styles={{
-          body: {
-            height: `calc(${modalDimensions.height} - 120px)`,
-            overflowY: 'auto'
-          }
-        }}
-      >
-        <ResourceFormWithVault
-          ref={scheduleFormRef}
-          form={scheduleForm}
-          fields={scheduleFormFields}
-          onSubmit={handleCreateSchedule}
-          entityType="SCHEDULE"
-          vaultFieldName="scheduleVault"
-          showDefaultsAlert={uiMode === 'simple' || selectedTeams.length === 1}
-          defaultsContent={
-            <Space direction="vertical" size={0}>
-              <Text>{t('general.team')}: {uiMode === 'simple' ? 'Private Team' : selectedTeams[0]}</Text>
-            </Space>
-          }
-        />
-      </Modal>
-
-      <VaultEditorModal
-        open={scheduleVaultModalConfig.open}
-        onCancel={() => setScheduleVaultModalConfig({ open: false })}
-        onSave={handleUpdateScheduleVault}
-        entityType="SCHEDULE"
-        title={t('general.configureVault', { name: scheduleVaultModalConfig.schedule?.scheduleName || '' })}
-        initialVault={scheduleVaultModalConfig.schedule?.vaultContent || "{}"}
-        initialVersion={scheduleVaultModalConfig.schedule?.vaultVersion || 1}
-        loading={updateScheduleVaultMutation.isPending}
-      />
-
-      {/* Edit Schedule Modal */}
-      <Modal
-        title={t('schedules.editSchedule')}
-        open={!!editingSchedule}
-        onCancel={() => {
-          setEditingSchedule(null)
-          scheduleForm.reset()
-        }}
-        footer={null}
-      >
-        <ResourceForm
-          form={scheduleForm}
-          fields={[{
-            name: 'scheduleName',
-            label: t('schedules.scheduleName'),
-            placeholder: t('schedules.placeholders.enterScheduleName'),
-            required: true,
-          }]}
-          onSubmit={handleEditSchedule}
-          submitText={t('general.save')}
-          cancelText={t('general.cancel')}
-          onCancel={() => {
-            setEditingSchedule(null)
-            scheduleForm.reset()
-          }}
-          loading={updateScheduleNameMutation.isPending}
-        />
-      </Modal>
-
-      {/* Repository Functions Modal */}
-      <FunctionSelectionModal
-        open={!!functionModalRepository}
-        onCancel={() => setFunctionModalRepository(null)}
-        onSubmit={handleRepositoryFunctionSelected}
-        title={t('repositories.repositoryFunctions')}
-        subtitle={
-          functionModalRepository && (
-            <Space size="small">
-              <Text type="secondary">{t('machines:team')}:</Text>
-              <Text strong>{functionModalRepository.teamName}</Text>
-              <Text type="secondary" style={{ marginLeft: 16 }}>{t('repositories.repository')}:</Text>
-              <Text strong>{functionModalRepository.repositoryName}</Text>
-            </Space>
-          )
-        }
-        allowedCategories={['repository', 'backup', 'network']}
-        loading={createQueueItemMutation.isPending}
-        showMachineSelection={true}
-        teamName={functionModalRepository?.teamName}
-        machines={dropdownData?.machinesByTeam?.find(t => t.teamName === functionModalRepository?.teamName)?.machines || []}
-        hiddenParams={['repo']} // Hide the repo parameter since it's automatically set
-        defaultParams={{ repo: functionModalRepository?.repositoryName }} // Set repo value automatically
+        hiddenParams={unifiedModalState.resourceType === 'repository' ? ['repo'] : []}
+        defaultParams={unifiedModalState.resourceType === 'repository' && currentResource ? { repo: currentResource.repositoryName } : {}}
       />
 
       {/* Queue Item Trace Modal */}

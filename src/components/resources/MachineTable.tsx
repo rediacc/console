@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Table,
@@ -33,43 +33,31 @@ import {
   TableOutlined,
   FilterOutlined,
 } from '@ant-design/icons';
-import { useMachines, useDeleteMachine, useCreateMachine, useUpdateMachineName, useUpdateMachineBridge, useUpdateMachineVault } from '@/api/queries/machines';
-import { useTeams } from '@/api/queries/teams';
+import { useMachines } from '@/api/queries/machines';
 import { useDropdownData } from '@/api/queries/useDropdownData';
-import { useCreateRepository } from '@/api/queries/repositories';
-import ResourceForm from '@/components/forms/ResourceForm';
-import ResourceFormWithVault from '@/components/forms/ResourceFormWithVault';
-import VaultEditorModal from '@/components/common/VaultEditorModal';
 import type { Machine } from '@/types';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { createMachineSchema, CreateMachineForm, editMachineSchema, EditMachineForm } from '@/utils/validation';
-import { type QueueFunction, useCreateQueueItem } from '@/api/queries/queue';
-import { useLocalizedFunctions } from '@/services/functionsService';
-import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { 
   FunctionOutlined,
   HistoryOutlined 
 } from '@ant-design/icons';
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
-import FunctionSelectionModal from '@/components/common/FunctionSelectionModal';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal';
 
 const { Option } = Select;
 const { Search } = Input;
-const { Title, Text, Paragraph } = Typography;
 
 interface MachineTableProps {
   teamFilter?: string | string[];
   showFilters?: boolean;
   showActions?: boolean;
   className?: string;
-  showCreateModal?: boolean;
-  onCreateModalChange?: (show: boolean) => void;
+  onCreateMachine?: () => void;
+  onEditMachine?: (machine: Machine) => void;
+  onVaultMachine?: (machine: Machine) => void;
+  onFunctionsMachine?: (machine: Machine) => void;
+  onDeleteMachine?: (machine: Machine) => void;
   enabled?: boolean;
 }
 
@@ -78,8 +66,11 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   showFilters = true,
   showActions = true,
   className = '',
-  showCreateModal: externalShowCreateModal,
-  onCreateModalChange,
+  onCreateMachine,
+  onEditMachine,
+  onVaultMachine,
+  onFunctionsMachine,
+  onDeleteMachine,
   enabled = true,
 }) => {
   const { t } = useTranslation(['machines', 'common', 'functions']);
@@ -96,47 +87,17 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const [selectedRegion, setSelectedRegion] = useState<string | undefined>(undefined);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [groupBy, setGroupBy] = useState<'bridge' | 'team' | 'region'>('bridge');
-  const [internalShowCreateModal, setInternalShowCreateModal] = useState(false);
-  const [editingMachine, setEditingMachine] = useState<Machine | null>(null);
-  const [vaultMachine, setVaultMachine] = useState<Machine | null>(null);
-  const [functionModalMachine, setFunctionModalMachine] = useState<Machine | null>(null);
   const [auditTraceModal, setAuditTraceModal] = useState<{
     open: boolean
     entityType: string | null
     entityIdentifier: string | null
     entityName?: string
   }>({ open: false, entityType: null, entityIdentifier: null });
-  const [queueTraceModal, setQueueTraceModal] = useState<{
-    visible: boolean
-    taskId: string | null
-  }>({ visible: false, taskId: null });
-  
-  // Refs for form components
-  const createFormRef = useRef<any>(null);
-  
-  // Use external control if provided, otherwise use internal state
-  const showCreateModal = externalShowCreateModal !== undefined ? externalShowCreateModal : internalShowCreateModal;
-  const setShowCreateModal = (show: boolean) => {
-    if (onCreateModalChange) {
-      onCreateModalChange(show);
-    } else {
-      setInternalShowCreateModal(show);
-    }
-  };
 
 
-  // Queries and mutations
+  // Queries only - mutations are handled by parent
   const { data: machines = [], isLoading } = useMachines(teamFilter, enabled);
   const { data: dropdownData } = useDropdownData();
-  const { data: teamsData = [] } = useTeams();
-  const deleteMachine = useDeleteMachine();
-  const createMachineMutation = useCreateMachine();
-  const updateMachineNameMutation = useUpdateMachineName();
-  const updateMachineBridgeMutation = useUpdateMachineBridge();
-  const updateMachineVaultMutation = useUpdateMachineVault();
-  const createQueueItemMutation = useCreateQueueItem();
-  const createRepositoryMutation = useCreateRepository();
-  const { buildQueueVault } = useQueueVaultBuilder();
   
   // Dynamic page size
   const dynamicPageSize = useDynamicPageSize(tableContainerRef, {
@@ -145,83 +106,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     maxRows: 50
   });
 
-  // Create a simple mode schema that only requires machineName
-  const simpleMachineSchema = React.useMemo(() => 
-    z.object({
-      machineName: z.string().min(1, 'Machine name is required').max(100, 'Machine name must be less than 100 characters'),
-      teamName: z.string().optional(),
-      regionName: z.string().optional(),
-      bridgeName: z.string().optional(),
-      machineVault: z.string().optional().default('{}'),
-    }),
-    []
-  );
-
-  // Machine form setup - recreate when uiMode changes
-  const machineForm = useForm<CreateMachineForm>({
-    resolver: zodResolver(uiMode === 'simple' ? simpleMachineSchema : createMachineSchema) as any,
-    defaultValues: {
-      teamName: uiMode === 'simple' ? 'Private Team' : '',
-      machineName: '',
-      regionName: uiMode === 'simple' ? 'Default Region' : '',
-      bridgeName: uiMode === 'simple' ? 'Global Bridges' : '',
-      machineVault: '{}',
-    },
-  });
-
-  // Edit machine form setup
-  const editMachineForm = useForm<EditMachineForm>({
-    resolver: zodResolver(editMachineSchema) as any,
-    defaultValues: {
-      machineName: '',
-      regionName: '',
-      bridgeName: '',
-    },
-  });
-
-  // Watch form values for dependent fields
-  const selectedRegionForMachine = machineForm.watch('regionName');
-  const selectedRegionForEdit = editMachineForm.watch('regionName');
-
-  // Get filtered bridges based on selected region
-  const filteredBridgesForMachine = React.useMemo(() => {
-    if (!selectedRegionForMachine || !dropdownData?.bridgesByRegion) return [];
-    
-    const regionData = dropdownData.bridgesByRegion.find(
-      (r: any) => r.regionName === selectedRegionForMachine
-    );
-    return regionData?.bridges?.map((b: any) => ({ 
-      value: b.value, 
-      label: b.label 
-    })) || [];
-  }, [selectedRegionForMachine, dropdownData]);
-
-  const filteredBridgesForEdit = React.useMemo(() => {
-    if (!selectedRegionForEdit || !dropdownData?.bridgesByRegion) return [];
-    
-    const regionData = dropdownData.bridgesByRegion.find(
-      (r: any) => r.regionName === selectedRegionForEdit
-    );
-    return regionData?.bridges?.map((b: any) => ({ 
-      value: b.value, 
-      label: b.label 
-    })) || [];
-  }, [selectedRegionForEdit, dropdownData]);
-
-  // Clear bridge selection when region changes
-  React.useEffect(() => {
-    const currentBridge = machineForm.getValues('bridgeName');
-    if (currentBridge && !filteredBridgesForMachine.find((b: any) => b.value === currentBridge)) {
-      machineForm.setValue('bridgeName', '');
-    }
-  }, [selectedRegionForMachine, filteredBridgesForMachine, machineForm]);
-
-  React.useEffect(() => {
-    const currentBridge = editMachineForm.getValues('bridgeName');
-    if (currentBridge && !filteredBridgesForEdit.find((b: any) => b.value === currentBridge)) {
-      editMachineForm.setValue('bridgeName', '');
-    }
-  }, [selectedRegionForEdit, filteredBridgesForEdit, editMachineForm]);
 
 
   // Get unique values for filters
@@ -275,177 +159,15 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     }, {} as Record<string, Machine[]>);
   }, [filteredMachines, viewMode, groupBy]);
 
-  const handleDelete = useCallback(async (machine: Machine) => {
-    Modal.confirm({
-      title: t('machines:confirmDelete'),
-      content: t('machines:deleteWarning', { name: machine.machineName }),
-      okText: t('common:actions.delete'),
-      okType: 'danger',
-      cancelText: t('common:actions.cancel'),
-      onOk: async () => {
-        try {
-          await deleteMachine.mutateAsync({
-            machineName: machine.machineName,
-            teamName: machine.teamName,
-          });
-          message.success(t('machines:deleteSuccess'));
-        } catch (error) {
-          message.error(t('machines:deleteError'));
-        }
-      },
-    });
-  }, [deleteMachine, t]);
-
-
-  // Handle create machine
-  const handleCreateMachine = async (data: CreateMachineForm) => {
-    try {
-      // In simple mode, ensure default values are used
-      const formData = {
-        teamName: uiMode === 'simple' ? 'Private Team' : data.teamName,
-        regionName: uiMode === 'simple' ? 'Default Region' : data.regionName,
-        bridgeName: uiMode === 'simple' ? 'Global Bridges' : data.bridgeName,
-        machineName: data.machineName,
-        machineVault: data.machineVault || '{}'
-      };
-      
-      await createMachineMutation.mutateAsync({
-        teamName: formData.teamName,
-        bridgeName: formData.bridgeName,
-        machineName: formData.machineName,
-        machineVault: formData.machineVault
-      });
-      setShowCreateModal(false);
-      machineForm.reset();
-      message.success(t('machines:createSuccess'));
-    } catch (error) {
-      // Error handled by mutation
+  const handleDelete = useCallback((machine: Machine) => {
+    if (onDeleteMachine) {
+      onDeleteMachine(machine);
     }
-  };
-
-  // Handle edit machine
-  const handleEditMachine = async (data: EditMachineForm) => {
-    if (!editingMachine) return;
-    
-    try {
-      // Check if name changed
-      if (data.machineName !== editingMachine.machineName) {
-        await updateMachineNameMutation.mutateAsync({
-          teamName: editingMachine.teamName,
-          currentMachineName: editingMachine.machineName,
-          newMachineName: data.machineName,
-        });
-      }
-      
-      // Check if bridge changed
-      if (data.bridgeName !== editingMachine.bridgeName) {
-        await updateMachineBridgeMutation.mutateAsync({
-          teamName: editingMachine.teamName,
-          machineName: data.machineName,
-          newBridgeName: data.bridgeName,
-        });
-      }
-      
-      message.success(t('machines:updateSuccess'));
-      setEditingMachine(null);
-      editMachineForm.reset();
-    } catch (error) {
-      // Error handled by mutation
-    }
-  };
-
-  // Handle update vault
-  const handleUpdateVault = async (vault: string, version: number) => {
-    if (!vaultMachine) return;
-    
-    try {
-      await updateMachineVaultMutation.mutateAsync({
-        teamName: vaultMachine.teamName,
-        machineName: vaultMachine.machineName,
-        machineVault: vault,
-        vaultVersion: version,
-      });
-      message.success(t('machines:vaultUpdateSuccess'));
-      setVaultMachine(null);
-    } catch (error) {
-      // Error handled by mutation
-    }
-  };
+  }, [onDeleteMachine]);
 
 
-  // Handle function selection from modal
-  const handleFunctionSelected = async (functionData: {
-    function: QueueFunction;
-    params: Record<string, any>;
-    priority: number;
-    description: string;
-  }) => {
-    if (!functionModalMachine) return;
 
-    try {
-      // Check if this is repo_new function - if so, create repository first
-      if (functionData.function.name === 'repo_new') {
-        const repoName = functionData.params.repo;
-        if (!repoName) {
-          message.error('Repository name is required for repo_new function');
-          return;
-        }
 
-        // Create repository in the system first
-        try {
-          await createRepositoryMutation.mutateAsync({
-            teamName: functionModalMachine.teamName,
-            repositoryName: repoName,
-            repositoryVault: '{}'
-          });
-        } catch (error: any) {
-          // If repository creation fails, don't proceed with queue item
-          return;
-        }
-      }
-
-      // Find the team vault data
-      const teamData = teamsData.find(t => t.teamName === functionModalMachine.teamName)
-      // TODO: Repository vault would need a separate query - not available in dropdown data
-      const repoData = null
-
-      // Build the queue vault with context data
-      const queueVault = await buildQueueVault({
-        teamName: functionModalMachine.teamName,
-        machineName: functionModalMachine.machineName,
-        bridgeName: functionModalMachine.bridgeName,
-        repositoryName: functionData.params.repo, // Include if repo param exists
-        functionName: functionData.function.name,
-        params: functionData.params,
-        priority: functionData.priority,
-        description: functionData.description,
-        addedVia: 'machine-table',
-        // Pass vault data
-        machineVault: functionModalMachine.vaultContent || '{}',
-        teamVault: teamData?.vaultContent || '{}',
-        repositoryVault: repoData?.vaultContent || '{}'
-      });
-
-      const response = await createQueueItemMutation.mutateAsync({
-        teamName: functionModalMachine.teamName,
-        machineName: functionModalMachine.machineName,
-        bridgeName: functionModalMachine.bridgeName,
-        queueVault,
-        priority: functionData.priority
-      });
-      
-      // Reset the modal
-      setFunctionModalMachine(null);
-      
-      // Automatically open the trace modal if queue item was created successfully
-      if (response?.taskId) {
-        message.success(t('machines:queueItemCreated'));
-        setQueueTraceModal({ visible: true, taskId: response.taskId });
-      }
-    } catch (error) {
-      // Error is handled by the mutation
-    }
-  };
 
   // Machine columns
   const columns: ColumnsType<Machine> = React.useMemo(() => {
@@ -577,32 +299,21 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             <Button
               type="link"
               icon={<KeyOutlined />}
-              onClick={() => setVaultMachine(record)}
+              onClick={() => onVaultMachine && onVaultMachine(record)}
             >
               {t('machines:vault')}
             </Button>
             <Button
               type="link"
               icon={<EditOutlined />}
-              onClick={() => {
-                setEditingMachine(record);
-                // Find the region for this machine's bridge
-                const region = dropdownData?.bridgesByRegion?.find(r => 
-                  r.bridges?.some(b => b.value === record.bridgeName)
-                );
-                editMachineForm.reset({
-                  machineName: record.machineName,
-                  regionName: region?.regionName || '',
-                  bridgeName: record.bridgeName,
-                });
-              }}
+              onClick={() => onEditMachine && onEditMachine(record)}
             >
               {t('common:actions.edit')}
             </Button>
             <Button
               type="link"
               icon={<FunctionOutlined />}
-              onClick={() => setFunctionModalMachine(record)}
+              onClick={() => onFunctionsMachine && onFunctionsMachine(record)}
             >
               {t('machines:functions')}
             </Button>
@@ -634,7 +345,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     }
 
     return baseColumns;
-  }, [isExpertMode, uiMode, showActions, t, handleDelete, dropdownData, editMachineForm]);
+  }, [isExpertMode, uiMode, showActions, t, handleDelete, dropdownData, onEditMachine, onVaultMachine, onFunctionsMachine]);
 
   // Render filters section
   const renderFilters = () => {
@@ -756,19 +467,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                       size="small"
                       hoverable
                       actions={showActions ? [
-                        <KeyOutlined key="vault" onClick={() => setVaultMachine(machine)} />,
-                        <EditOutlined key="edit" onClick={() => {
-                          setEditingMachine(machine);
-                          // Find the region for this machine's bridge
-                          const region = dropdownData?.bridgesByRegion?.find(r => 
-                            r.bridges?.some(b => b.value === machine.bridgeName)
-                          );
-                          editMachineForm.reset({
-                            machineName: machine.machineName,
-                            regionName: region?.regionName || '',
-                            bridgeName: machine.bridgeName,
-                          });
-                        }} />,
+                        <KeyOutlined key="vault" onClick={() => onVaultMachine && onVaultMachine(machine)} />,
+                        <EditOutlined key="edit" onClick={() => onEditMachine && onEditMachine(machine)} />,
                         <DeleteOutlined key="delete" onClick={() => handleDelete(machine)} />,
                       ] : undefined}
                     >
@@ -813,148 +513,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     );
   };
 
-  // Machine form fields
-  const { t: tRes } = useTranslation('resources');
-  
-  // Determine if team is already selected/known
-  const isTeamPreselected = uiMode === 'simple' || 
-    selectedTeam || 
-    (teamFilter && !Array.isArray(teamFilter)) || 
-    (teamFilter && Array.isArray(teamFilter) && teamFilter.length === 1);
-  
-  const machineFormFields = uiMode === 'simple' 
-    ? [
-        {
-          name: 'machineName',
-          label: tRes('machines.machineName'),
-          placeholder: tRes('machines.placeholders.enterMachineName'),
-          required: true,
-        },
-      ]
-    : isTeamPreselected
-    ? [
-        {
-          name: 'regionName',
-          label: tRes('general.region'),
-          placeholder: tRes('regions.placeholders.selectRegion'),
-          required: true,
-          type: 'select' as const,
-          options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
-        },
-        {
-          name: 'bridgeName',
-          label: tRes('bridges.bridge'),
-          placeholder: selectedRegionForMachine ? tRes('bridges.placeholders.selectBridge') : tRes('bridges.placeholders.selectRegionFirst'),
-          required: true,
-          type: 'select' as const,
-          options: filteredBridgesForMachine,
-          disabled: !selectedRegionForMachine,
-        },
-        {
-          name: 'machineName',
-          label: tRes('machines.machineName'),
-          placeholder: tRes('machines.placeholders.enterMachineName'),
-          required: true,
-        },
-      ]
-    : [
-        {
-          name: 'teamName',
-          label: tRes('general.team'),
-          placeholder: tRes('teams.placeholders.selectTeam'),
-          required: true,
-          type: 'select' as const,
-          options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
-        },
-        {
-          name: 'regionName',
-          label: tRes('general.region'),
-          placeholder: tRes('regions.placeholders.selectRegion'),
-          required: true,
-          type: 'select' as const,
-          options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
-        },
-        {
-          name: 'bridgeName',
-          label: tRes('bridges.bridge'),
-          placeholder: selectedRegionForMachine ? tRes('bridges.placeholders.selectBridge') : tRes('bridges.placeholders.selectRegionFirst'),
-          required: true,
-          type: 'select' as const,
-          options: filteredBridgesForMachine,
-          disabled: !selectedRegionForMachine,
-        },
-        {
-          name: 'machineName',
-          label: tRes('machines.machineName'),
-          placeholder: tRes('machines.placeholders.enterMachineName'),
-          required: true,
-        },
-      ];
-
-  // Edit machine form fields
-  const editMachineFormFields = [
-    {
-      name: 'machineName',
-      label: tRes('machines.machineName'),
-      placeholder: tRes('machines.placeholders.enterMachineName'),
-      required: true,
-    },
-    {
-      name: 'regionName',
-      label: tRes('general.region'),
-      placeholder: tRes('regions.placeholders.selectRegion'),
-      required: true,
-      type: 'select' as const,
-      options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
-    },
-    {
-      name: 'bridgeName',
-      label: tRes('bridges.bridge'),
-      placeholder: selectedRegionForEdit ? tRes('bridges.placeholders.selectBridge') : tRes('bridges.placeholders.selectRegionFirst'),
-      required: true,
-      type: 'select' as const,
-      options: filteredBridgesForEdit,
-      disabled: !selectedRegionForEdit,
-    },
-  ];
-
-  // Set preset team when modal opens
-  React.useEffect(() => {
-    if (showCreateModal) {
-      let teamToSet = '';
-      if (selectedTeam) {
-        teamToSet = selectedTeam;
-      } else if (teamFilter) {
-        // If teamFilter is an array, only set if there's exactly one team
-        if (Array.isArray(teamFilter)) {
-          if (teamFilter.length === 1) {
-            teamToSet = teamFilter[0];
-          }
-        } else {
-          teamToSet = teamFilter;
-        }
-      }
-      if (teamToSet) {
-        machineForm.setValue('teamName', teamToSet);
-      }
-      
-      // Automatically select first region if available
-      if (dropdownData?.regions && dropdownData.regions.length > 0) {
-        const firstRegion = dropdownData.regions[0].value;
-        machineForm.setValue('regionName', firstRegion);
-        
-        // Find and select first bridge for this region
-        const regionBridges = dropdownData.bridgesByRegion?.find(
-          (region: any) => region.regionName === firstRegion
-        );
-        
-        if (regionBridges?.bridges && regionBridges.bridges.length > 0) {
-          const firstBridge = regionBridges.bridges[0].value;
-          machineForm.setValue('bridgeName', firstBridge);
-        }
-      }
-    }
-  }, [showCreateModal, selectedTeam, teamFilter, machineForm, dropdownData]);
 
   return (
     <div className={className}>
@@ -982,152 +540,12 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       )}
 
       {/* Modals */}
-      <Modal
-        title={(() => {
-          // Determine which team(s) we're creating for
-          if (uiMode === 'simple') {
-            return t('machines:createMachine') + ' ' + tRes('teams.resourcesInTeam', { team: 'Private Team' });
-          } else if (selectedTeam) {
-            return t('machines:createMachine') + ' ' + tRes('teams.resourcesInTeam', { team: selectedTeam });
-          } else if (teamFilter && !Array.isArray(teamFilter)) {
-            return t('machines:createMachine') + ' ' + tRes('teams.resourcesInTeam', { team: teamFilter });
-          } else if (teamFilter && Array.isArray(teamFilter) && teamFilter.length === 1) {
-            return t('machines:createMachine') + ' ' + tRes('teams.resourcesInTeam', { team: teamFilter[0] });
-          }
-          return t('machines:createMachine');
-        })()}
-        open={showCreateModal}
-        onCancel={() => {
-          setShowCreateModal(false);
-          machineForm.reset();
-        }}
-        footer={[
-          <Button 
-            key="cancel" 
-            onClick={() => {
-              setShowCreateModal(false);
-              machineForm.reset();
-            }}
-          >
-            {t('common:actions.cancel')}
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            loading={createMachineMutation.isPending}
-            onClick={() => createFormRef.current?.submit()}
-            style={{ background: '#556b2f', borderColor: '#556b2f' }}
-          >
-            {t('common:actions.create')}
-          </Button>
-        ]}
-        width={800}
-        style={{ top: 20 }}
-      >
-        <ResourceFormWithVault
-          ref={createFormRef}
-          form={machineForm}
-          fields={machineFormFields}
-          onSubmit={handleCreateMachine}
-          entityType="MACHINE"
-          vaultFieldName="machineVault"
-          showDefaultsAlert={uiMode === 'simple' || isTeamPreselected}
-          defaultsContent={
-            <Space direction="vertical" size={0}>
-              {(uiMode === 'simple' || isTeamPreselected) && (
-                <Text>{t('machines:team')}: {
-                  uiMode === 'simple' ? 'Private Team' : 
-                  selectedTeam || 
-                  (!Array.isArray(teamFilter) ? teamFilter : teamFilter[0])
-                }</Text>
-              )}
-              {uiMode === 'simple' && (
-                <>
-                  <Text>{t('machines:region')}: Default Region</Text>
-                  <Text>{t('machines:bridge')}: Global Bridges</Text>
-                </>
-              )}
-            </Space>
-          }
-        />
-      </Modal>
-
-      {/* Edit Machine Modal */}
-      {editingMachine && (
-        <Modal
-          title={t('machines:form.title.edit')}
-          open={!!editingMachine}
-          onCancel={() => {
-            setEditingMachine(null);
-            editMachineForm.reset();
-          }}
-          footer={null}
-        >
-          <ResourceForm
-            form={editMachineForm}
-            fields={editMachineFormFields}
-            onSubmit={handleEditMachine}
-            submitText={t('common:actions.save')}
-            cancelText={t('common:actions.cancel')}
-            onCancel={() => {
-              setEditingMachine(null);
-              editMachineForm.reset();
-            }}
-            loading={updateMachineNameMutation.isPending || updateMachineBridgeMutation.isPending}
-          />
-        </Modal>
-      )}
-
-      {/* Vault Configuration Modal */}
-      <VaultEditorModal
-        key={vaultMachine?.machineName || 'vault-modal'}
-        open={!!vaultMachine}
-        onCancel={() => {
-          setVaultMachine(null);
-        }}
-        onSave={handleUpdateVault}
-        entityType="MACHINE"
-        title={t('machines:form.title.vault')}
-        initialVault={vaultMachine?.vaultContent || "{}"}
-        initialVersion={vaultMachine?.vaultVersion || 1}
-        loading={updateMachineVaultMutation.isPending}
-      />
-
-      {/* Machine Functions Modal */}
-      {/* Machine Functions Modal */}
-      <FunctionSelectionModal
-        open={!!functionModalMachine}
-        onCancel={() => setFunctionModalMachine(null)}
-        onSubmit={handleFunctionSelected}
-        title={t('machines:addSystemFunction')}
-        subtitle={
-          functionModalMachine && (
-            <Space size="small">
-              <Text type="secondary">{t('machines:team')}:</Text>
-              <Text strong>{functionModalMachine.teamName}</Text>
-              <Text type="secondary" style={{ marginLeft: 16 }}>{t('machines:machine')}:</Text>
-              <Text strong>{functionModalMachine.machineName}</Text>
-            </Space>
-          )
-        }
-        allowedCategories={['machine']}
-        loading={createQueueItemMutation.isPending}
-      />
-
-      {/* Audit Trace Modal */}
       <AuditTraceModal
         open={auditTraceModal.open}
         onCancel={() => setAuditTraceModal({ open: false, entityType: null, entityIdentifier: null })}
         entityType={auditTraceModal.entityType}
         entityIdentifier={auditTraceModal.entityIdentifier}
         entityName={auditTraceModal.entityName}
-      />
-
-      {/* Queue Item Trace Modal */}
-      <QueueItemTraceModal
-        taskId={queueTraceModal.taskId}
-        visible={queueTraceModal.visible}
-        onClose={() => setQueueTraceModal({ visible: false, taskId: null })}
       />
     </div>
   );
