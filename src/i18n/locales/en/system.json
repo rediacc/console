@@ -87,7 +87,7 @@
         "warningEffect3Create": "Encrypt all vault data with the master password",
         "warningEffect3Update": "Re-encrypt all vault data with the new password",
         "warningEffect3Remove": "Decrypt all vault data (vaults will be stored unencrypted)",
-        "warningEffect4": "Require manual reconfiguration of any cloud-managed bridges",
+        "warningEffect4": "Require manual reconfiguration of all bridges",
         "warningPermanent": "This action is permanent and cannot be undone.",
         "warningSecure": "Do you have your new password stored securely?",
         "warningSecureRemove": "Are you sure you want to remove encryption from all vaults?",

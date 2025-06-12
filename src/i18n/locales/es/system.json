@@ -87,7 +87,7 @@
         "warningEffect3Create": "Cifrará todos los datos de bóvedas con la contraseña compartida del cliente",
         "warningEffect3Update": "Re-cifrará todos los datos de bóvedas con la nueva contraseña",
         "warningEffect3Remove": "Descifrará todos los datos de bóvedas (las bóvedas se almacenarán sin cifrar)",
-        "warningEffect4": "Requerirá reconfiguración manual de cualquier puente administrado en la nube",
+        "warningEffect4": "Requerirá reconfiguración manual de todos los puentes",
         "warningPermanent": "Esta acción es permanente y no se puede deshacer.",
         "warningSecure": "¿Tiene su nueva contraseña guardada de forma segura?",
         "warningSecureRemove": "¿Está seguro de que desea eliminar el cifrado de todas las bóvedas?",
