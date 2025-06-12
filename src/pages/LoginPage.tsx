@@ -144,7 +144,6 @@ const LoginPage: React.FC = () => {
         companyEncryptionEnabled: companyHasEncryption,
       }))
 
-      showMessage('success', t('common:messages.success'))
       navigate('/dashboard')
     } catch (error: any) {
       setError(error.message || t('login.errors.invalidCredentials'))
