@@ -85,7 +85,7 @@ const ResourcesPage: React.FC = () => {
   const [unifiedModalState, setUnifiedModalState] = useState<{
     open: boolean
     resourceType: ResourceType
-    mode: 'create' | 'edit'
+    mode: 'create' | 'edit' | 'vault'
     data?: any
   }>({ open: false, resourceType: 'machine', mode: 'create' })
   
@@ -115,8 +115,9 @@ const ResourcesPage: React.FC = () => {
   // State for current editing/creating resource
   const [currentResource, setCurrentResource] = useState<any>(null)
   
-  // Machine delete mutation
+  // Machine mutations
   const deleteMachineMutation = useDeleteMachine()
+  const updateMachineVaultMutation = useUpdateMachineVault()
   
   // Machine-specific handlers
   const handleDeleteMachine = async (machine: Machine) => {
@@ -230,7 +231,7 @@ const ResourcesPage: React.FC = () => {
   }, [uiMode, teamsList, teamsLoading])
 
   // Handler to open unified modal
-  const openUnifiedModal = (resourceType: ResourceType, mode: 'create' | 'edit', data?: any) => {
+  const openUnifiedModal = (resourceType: ResourceType, mode: 'create' | 'edit' | 'vault', data?: any) => {
     setUnifiedModalState({
       open: true,
       resourceType,
@@ -535,7 +536,7 @@ const ResourcesPage: React.FC = () => {
                 icon: <SettingOutlined />,
                 onClick: () => {
                   setCurrentResource(record);
-                  openUnifiedModal('repository', 'edit', record);
+                  openUnifiedModal('repository', 'vault', record);
                 },
               },
               {
@@ -637,7 +638,7 @@ const ResourcesPage: React.FC = () => {
                 icon: <SettingOutlined />,
                 onClick: () => {
                   setCurrentResource(record);
-                  openUnifiedModal('storage', 'edit', record);
+                  openUnifiedModal('storage', 'vault', record);
                 },
               },
               {
@@ -724,7 +725,7 @@ const ResourcesPage: React.FC = () => {
                 icon: <SettingOutlined />,
                 onClick: () => {
                   setCurrentResource(record);
-                  openUnifiedModal('schedule', 'edit', record);
+                  openUnifiedModal('schedule', 'vault', record);
                 },
               },
               {
@@ -802,7 +803,8 @@ const ResourcesPage: React.FC = () => {
                       updateScheduleNameMutation.isPending ||
                       createQueueItemMutation.isPending
                       
-  const isUpdatingVault = updateRepositoryVaultMutation.isPending ||
+  const isUpdatingVault = updateMachineVaultMutation.isPending ||
+                         updateRepositoryVaultMutation.isPending ||
                          updateStorageVaultMutation.isPending ||
                          updateScheduleVaultMutation.isPending
 
@@ -827,7 +829,7 @@ const ResourcesPage: React.FC = () => {
           }}
           onVaultMachine={(machine) => {
             setCurrentResource(machine)
-            openUnifiedModal('machine', 'edit', machine)
+            openUnifiedModal('machine', 'vault', machine)
           }}
           onFunctionsMachine={(machine) => {
             setCurrentResource(machine)

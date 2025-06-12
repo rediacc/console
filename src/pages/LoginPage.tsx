@@ -132,12 +132,11 @@ const LoginPage: React.FC = () => {
       }
 
       // Save auth data
-      saveAuthData(token, values.email, companyName)
+      await saveAuthData(token, values.email, companyName)
 
-      // Update Redux store with all relevant data
+      // Update Redux store with all relevant data (token is now stored separately for security)
       dispatch(loginSuccess({
         user: { email: values.email, company: companyName },
-        token,
         company: companyName,
         masterPassword: companyHasEncryption ? values.masterPassword : undefined,
         vaultCompany: vaultCompany,

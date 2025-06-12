@@ -23,18 +23,22 @@ const AppContent: React.FC = () => {
   const isAuthenticated = useSelector(selectIsAuthenticated)
 
   useEffect(() => {
-    // Migrate any existing localStorage data to secure memory storage
-    migrateFromLocalStorage()
-    
-    // Check for existing auth data on mount
-    const authData = getAuthData()
-    if (authData.token && authData.email) {
-      dispatch(loginSuccess({
-        user: { email: authData.email, company: authData.company || undefined },
-        token: authData.token,
-        company: authData.company || undefined,
-      }))
+    const initializeAuth = async () => {
+      // Migrate any existing localStorage data to secure memory storage
+      await migrateFromLocalStorage()
+      
+      // Check for existing auth data on mount
+      const authData = await getAuthData()
+      if (authData.token && authData.email) {
+        // Token exists in secure storage, restore session (token not stored in Redux for security)
+        dispatch(loginSuccess({
+          user: { email: authData.email, company: authData.company || undefined },
+          company: authData.company || undefined,
+        }))
+      }
     }
+    
+    initializeAuth()
   }, [dispatch])
 
   return (

@@ -30,7 +30,7 @@ export interface UnifiedResourceModalProps {
   open: boolean
   onCancel: () => void
   resourceType: ResourceType
-  mode: 'create' | 'edit'
+  mode: 'create' | 'edit' | 'vault'
   existingData?: any
   teamFilter?: string | string[]
   onSubmit: (data: any) => Promise<void>
@@ -462,6 +462,25 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       setTimeout(() => setShowFunctionModal(true), 100)
     }
   }, [open, mode, existingData, showFunctions])
+
+  // If we're in vault mode, show the vault editor directly
+  if (mode === 'vault' && existingData && onUpdateVault) {
+    return (
+      <VaultEditorModal
+        open={open}
+        onCancel={onCancel}
+        onSave={async (vault, version) => {
+          await onUpdateVault(vault, version)
+          onCancel()
+        }}
+        entityType={getEntityType()}
+        title={t('general.configureVault', { name: existingData[`${resourceType}Name`] || '' })}
+        initialVault={existingData.vaultContent || "{}"}
+        initialVersion={existingData.vaultVersion || 1}
+        loading={isUpdatingVault}
+      />
+    )
+  }
 
   // If we're showing functions directly, don't show the main modal
   if (mode === 'create' && existingData && showFunctions && showFunctionModal) {

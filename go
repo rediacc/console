@@ -171,37 +171,6 @@ function setup() {
   echo "You can now run: ./go dev"
 }
 
-# Function to build and run Docker container
-function docker_build() {
-  echo "Building Docker image..."
-  docker build -t rediacc-console .
-  echo "✅ Docker image built: rediacc-console"
-}
-
-# Function to run Docker container
-function docker_run() {
-  echo "Running Docker container..."
-  
-  # Stop and remove existing container if it exists
-  docker stop rediacc-console 2>/dev/null || true
-  docker rm rediacc-console 2>/dev/null || true
-  
-  # Run new container
-  docker run -d \
-    --name rediacc-console \
-    -p 3001:80 \
-    rediacc-console
-  
-  echo "✅ Console is running at: http://localhost:3001"
-}
-
-# Function to stop Docker container
-function docker_stop() {
-  echo "Stopping Docker container..."
-  docker stop rediacc-console || true
-  docker rm rediacc-console || true
-  echo "✅ Docker container stopped"
-}
 
 # Function to check status
 function status() {
@@ -250,18 +219,11 @@ function show_help() {
   echo "  release       Build and create release package in bin/"
   echo "  setup         Setup development environment"
   echo "  status        Check application status"
-  echo "  docker_build  Build Docker image"
-  echo "  docker_run    Run Docker container"
-  echo "  docker_stop   Stop Docker container"
   echo "  help          Show this help message"
   echo ""
   echo "Quick Start:"
   echo "  ./go setup    # Setup environment"
   echo "  ./go dev      # Start development"
-  echo ""
-  echo "Docker:"
-  echo "  ./go docker_build  # Build image"
-  echo "  ./go docker_run    # Run container on port 3001"
   echo ""
 }
 
@@ -293,15 +255,6 @@ case "$1" in
     ;;
   status)
     status
-    ;;
-  docker_build)
-    docker_build
-    ;;
-  docker_run)
-    docker_run
-    ;;
-  docker_stop)
-    docker_stop
     ;;
   help|--help|-h)
     show_help

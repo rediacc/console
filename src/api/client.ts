@@ -1,8 +1,9 @@
 import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import { store } from '@/store/store'
-import { updateToken, logout } from '@/store/auth/authSlice'
+import { logout } from '@/store/auth/authSlice'
 import { showMessage } from '@/utils/messages'
 import { encryptRequestData, decryptResponseData, hasVaultFields } from './encryptionMiddleware'
+import { tokenService } from '@/services/tokenService'
 
 // Use relative path in production (served via nginx proxy) and absolute in development
 const MIDDLEWARE_PORT = import.meta.env.VITE_MIDDLEWARE_PORT || '8080'
@@ -40,8 +41,8 @@ class ApiClient {
     // Request interceptor to add auth token and encrypt vault fields
     this.client.interceptors.request.use(
       async (config: InternalAxiosRequestConfig) => {
-        const state = store.getState()
-        const token = state.auth.token
+        // Get token from secure storage instead of Redux state
+        const token = await tokenService.getToken()
 
         if (token) {
           config.headers['Rediacc-RequestToken'] = token
@@ -113,8 +114,9 @@ class ApiClient {
           this.isUpdatingToken = true
           try {
             const newToken = data.tables[0].data[0].nextRequestCredential
-            store.dispatch(updateToken(newToken))
-            // Small delay to ensure Redux state is updated
+            // Update token in secure storage instead of Redux
+            await tokenService.updateToken(newToken)
+            // Small delay to ensure token is updated
             await new Promise(resolve => setTimeout(resolve, 5))
           } finally {
             this.isUpdatingToken = false

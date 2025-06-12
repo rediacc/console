@@ -9,17 +9,16 @@ interface User {
 interface AuthState {
   isAuthenticated: boolean
   user: User | null
-  token: string | null
   company: string | null
   masterPassword: string | null // Stored in memory only, never persisted
   companyEncryptionEnabled: boolean
   vaultCompany: string | null // Stores the VaultCompany sentinel value
+  // Token removed from Redux state for security - now managed by tokenService
 }
 
 const initialState: AuthState = {
   isAuthenticated: false,
   user: null,
-  token: null,
   company: null,
   masterPassword: null,
   companyEncryptionEnabled: false,
@@ -32,7 +31,6 @@ const authSlice = createSlice({
   reducers: {
     loginSuccess: (state, action: PayloadAction<{ 
       user: User; 
-      token: string; 
       company?: string; 
       masterPassword?: string;
       vaultCompany?: string;
@@ -40,27 +38,25 @@ const authSlice = createSlice({
     }>) => {
       state.isAuthenticated = true
       state.user = action.payload.user
-      state.token = action.payload.token
       state.company = action.payload.company || null
       state.masterPassword = action.payload.masterPassword || null
       state.vaultCompany = action.payload.vaultCompany || null
       state.companyEncryptionEnabled = action.payload.companyEncryptionEnabled || false
+      // Token is now handled separately by tokenService for security
     },
     logout: (state) => {
       state.isAuthenticated = false
       state.user = null
-      state.token = null
       state.company = null
       state.masterPassword = null
       state.companyEncryptionEnabled = false
       state.vaultCompany = null
+      // Token cleanup is handled by tokenService
     },
     setMasterPassword: (state, action: PayloadAction<string | null>) => {
       state.masterPassword = action.payload
     },
-    updateToken: (state, action: PayloadAction<string>) => {
-      state.token = action.payload
-    },
+    // updateToken action removed - token updates now handled by tokenService
     updateCompany: (state, action: PayloadAction<string>) => {
       state.company = action.payload
       if (state.user) {
@@ -74,5 +70,5 @@ const authSlice = createSlice({
   },
 })
 
-export const { loginSuccess, logout, setMasterPassword, updateToken, updateCompany, setVaultCompany } = authSlice.actions
+export const { loginSuccess, logout, setMasterPassword, updateCompany, setVaultCompany } = authSlice.actions
 export default authSlice.reducer

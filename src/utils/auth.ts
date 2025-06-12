@@ -1,5 +1,6 @@
 // Authentication and password utilities for browser environment
 import { secureStorage } from './secureMemoryStorage'
+import { tokenService } from '@/services/tokenService'
 
 // Static salt for password hashing - provides additional protection against dictionary attacks
 // This salt is concatenated with the password before hashing to ensure even common passwords
@@ -19,39 +20,45 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 // Session storage helpers using secure memory storage
-export function saveAuthData(token: string, email: string, company?: string) {
-  secureStorage.setItem('auth_token', token)
-  secureStorage.setItem('user_email', email)
+export async function saveAuthData(token: string, email: string, company?: string) {
+  // Use token service for token storage (provides additional security)
+  await tokenService.setToken(token)
+  // Store email and company in secure storage
+  await secureStorage.setItem('user_email', email)
   if (company) {
-    secureStorage.setItem('user_company', company)
+    await secureStorage.setItem('user_company', company)
   }
 }
 
-export function getAuthData() {
-  return {
-    token: secureStorage.getItem('auth_token'),
-    email: secureStorage.getItem('user_email'),
-    company: secureStorage.getItem('user_company'),
-  }
+export async function getAuthData() {
+  const [token, email, company] = await Promise.all([
+    tokenService.getToken(),
+    secureStorage.getItem('user_email'),
+    secureStorage.getItem('user_company'),
+  ])
+  
+  return { token, email, company }
 }
 
 export function clearAuthData() {
-  secureStorage.removeItem('auth_token')
+  // Clear token using token service
+  tokenService.clearToken()
+  // Clear other auth data
   secureStorage.removeItem('user_email')
   secureStorage.removeItem('user_company')
 }
 
 // Migration helper to move existing localStorage data to secure storage
-export function migrateFromLocalStorage() {
+export async function migrateFromLocalStorage() {
   const token = localStorage.getItem('auth_token')
   const email = localStorage.getItem('user_email')
   const company = localStorage.getItem('user_company')
   
   if (token || email || company) {
     // Save to secure storage
-    if (token) secureStorage.setItem('auth_token', token)
-    if (email) secureStorage.setItem('user_email', email)
-    if (company) secureStorage.setItem('user_company', company)
+    if (token) await secureStorage.setItem('auth_token', token)
+    if (email) await secureStorage.setItem('user_email', email)
+    if (company) await secureStorage.setItem('user_company', company)
     
     // Clear from localStorage
     localStorage.removeItem('auth_token')

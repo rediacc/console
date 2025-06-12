@@ -1,55 +1,133 @@
 /**
- * Secure in-memory storage with encryption for sensitive authentication data
+ * Secure in-memory storage with AES-GCM encryption for sensitive authentication data
  * This replaces localStorage to prevent token theft from browser storage
  */
 
+interface EncryptedData {
+  ciphertext: string;
+  iv: string;
+  salt: string;
+}
+
 class SecureMemoryStorage {
-  private storage: Map<string, string> = new Map();
-  private encryptionKey: string;
+  private storage: Map<string, EncryptedData> = new Map();
+  private cryptoKey: CryptoKey | null = null;
+  private masterPassword: string;
 
   constructor() {
-    // Generate a random encryption key for this session
-    this.encryptionKey = this.generateKey();
+    // Generate a random master password for this session
+    this.masterPassword = this.generateMasterPassword();
   }
 
   /**
-   * Generate a random key for encryption
+   * Generate a cryptographically secure random master password
    */
-  private generateKey(): string {
+  private generateMasterPassword(): string {
     const array = new Uint8Array(32);
     crypto.getRandomValues(array);
     return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
   }
 
   /**
-   * Simple XOR encryption (can be replaced with more robust encryption)
+   * Derive a cryptographic key from the master password using PBKDF2
    */
-  private encrypt(text: string): string {
-    if (!text) return '';
-    
-    let encrypted = '';
-    for (let i = 0; i < text.length; i++) {
-      const charCode = text.charCodeAt(i) ^ this.encryptionKey.charCodeAt(i % this.encryptionKey.length);
-      encrypted += String.fromCharCode(charCode);
-    }
-    return btoa(encrypted); // Base64 encode for safe storage
+  private async deriveKey(salt: Uint8Array): Promise<CryptoKey> {
+    const encoder = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(this.masterPassword),
+      'PBKDF2',
+      false,
+      ['deriveBits', 'deriveKey']
+    );
+
+    return crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 100000, // OWASP recommended minimum
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt', 'decrypt']
+    );
   }
 
   /**
-   * Decrypt XOR encrypted text
+   * Encrypt text using AES-GCM with authenticated encryption
    */
-  private decrypt(encryptedText: string): string {
-    if (!encryptedText) return '';
-    
+  private async encrypt(text: string): Promise<EncryptedData> {
+    if (!text) return { ciphertext: '', iv: '', salt: '' };
+
     try {
-      const encrypted = atob(encryptedText); // Base64 decode
-      let decrypted = '';
-      for (let i = 0; i < encrypted.length; i++) {
-        const charCode = encrypted.charCodeAt(i) ^ this.encryptionKey.charCodeAt(i % this.encryptionKey.length);
-        decrypted += String.fromCharCode(charCode);
-      }
-      return decrypted;
-    } catch {
+      // Generate random salt for key derivation
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      
+      // Derive key from master password
+      const key = await this.deriveKey(salt);
+      
+      // Generate random IV for AES-GCM
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      
+      // Encode text to bytes
+      const encoder = new TextEncoder();
+      const data = encoder.encode(text);
+      
+      // Encrypt with AES-GCM
+      const ciphertext = await crypto.subtle.encrypt(
+        {
+          name: 'AES-GCM',
+          iv: iv
+        },
+        key,
+        data
+      );
+      
+      // Return encrypted data with metadata
+      return {
+        ciphertext: btoa(String.fromCharCode(...new Uint8Array(ciphertext))),
+        iv: btoa(String.fromCharCode(...iv)),
+        salt: btoa(String.fromCharCode(...salt))
+      };
+    } catch (error) {
+      console.error('Encryption failed:', error);
+      throw new Error('Failed to encrypt data');
+    }
+  }
+
+  /**
+   * Decrypt AES-GCM encrypted text with authentication
+   */
+  private async decrypt(encryptedData: EncryptedData): Promise<string> {
+    if (!encryptedData.ciphertext) return '';
+
+    try {
+      // Decode from base64
+      const ciphertext = Uint8Array.from(atob(encryptedData.ciphertext), c => c.charCodeAt(0));
+      const iv = Uint8Array.from(atob(encryptedData.iv), c => c.charCodeAt(0));
+      const salt = Uint8Array.from(atob(encryptedData.salt), c => c.charCodeAt(0));
+      
+      // Derive key from master password
+      const key = await this.deriveKey(salt);
+      
+      // Decrypt with AES-GCM (includes authentication)
+      const decrypted = await crypto.subtle.decrypt(
+        {
+          name: 'AES-GCM',
+          iv: iv
+        },
+        key,
+        ciphertext
+      );
+      
+      // Decode bytes to text
+      const decoder = new TextDecoder();
+      return decoder.decode(decrypted);
+    } catch (error) {
+      // Authentication failure or tampering detected
+      console.error('Decryption failed - data may be tampered:', error);
       return '';
     }
   }
@@ -57,19 +135,21 @@ class SecureMemoryStorage {
   /**
    * Store encrypted value in memory
    */
-  setItem(key: string, value: string): void {
+  async setItem(key: string, value: string): Promise<void> {
     if (value) {
-      this.storage.set(key, this.encrypt(value));
+      const encrypted = await this.encrypt(value);
+      this.storage.set(key, encrypted);
     }
   }
 
   /**
    * Retrieve and decrypt value from memory
    */
-  getItem(key: string): string | null {
+  async getItem(key: string): Promise<string | null> {
     const encrypted = this.storage.get(key);
     if (!encrypted) return null;
-    return this.decrypt(encrypted);
+    const decrypted = await this.decrypt(encrypted);
+    return decrypted || null;
   }
 
   /**
@@ -80,10 +160,13 @@ class SecureMemoryStorage {
   }
 
   /**
-   * Clear all stored data
+   * Clear all stored data and regenerate master password
    */
   clear(): void {
     this.storage.clear();
+    // Regenerate master password for additional security
+    this.masterPassword = this.generateMasterPassword();
+    this.cryptoKey = null;
   }
 
   /**
@@ -99,6 +182,22 @@ class SecureMemoryStorage {
   keys(): string[] {
     return Array.from(this.storage.keys());
   }
+
+  /**
+   * Secure wipe of sensitive data from memory
+   */
+  secureWipe(): void {
+    // Clear storage
+    this.storage.clear();
+    
+    // Overwrite master password
+    const length = this.masterPassword.length;
+    this.masterPassword = '0'.repeat(length);
+    this.masterPassword = '';
+    
+    // Clear crypto key
+    this.cryptoKey = null;
+  }
 }
 
 // Create a singleton instance
@@ -106,9 +205,17 @@ export const secureStorage = new SecureMemoryStorage();
 
 // Export storage interface for type safety
 export interface ISecureStorage {
-  setItem(key: string, value: string): void;
-  getItem(key: string): string | null;
+  setItem(key: string, value: string): Promise<void>;
+  getItem(key: string): Promise<string | null>;
   removeItem(key: string): void;
   clear(): void;
   hasItem(key: string): boolean;
+  secureWipe(): void;
+}
+
+// Auto-wipe on page unload for security
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    secureStorage.secureWipe();
+  });
 }

@@ -60,14 +60,18 @@ const MainLayout: React.FC = () => {
 
   // Update company name when company data is loaded
   useEffect(() => {
-    if (companyData?.companyInfo?.CompanyName && companyData.companyInfo.CompanyName !== company) {
-      dispatch(updateCompany(companyData.companyInfo.CompanyName))
-      // Also update secure storage to persist the company name
-      const authData = getAuthData()
-      if (authData.token && authData.email) {
-        saveAuthData(authData.token, authData.email, companyData.companyInfo.CompanyName)
+    const updateCompanyData = async () => {
+      if (companyData?.companyInfo?.CompanyName && companyData.companyInfo.CompanyName !== company) {
+        dispatch(updateCompany(companyData.companyInfo.CompanyName))
+        // Also update secure storage to persist the company name
+        const authData = await getAuthData()
+        if (authData.token && authData.email) {
+          await saveAuthData(authData.token, authData.email, companyData.companyInfo.CompanyName)
+        }
       }
     }
+    
+    updateCompanyData()
   }, [companyData, company, dispatch])
 
   // Define all menu items with visibility flags
