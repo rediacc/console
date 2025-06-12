@@ -557,18 +557,12 @@ const ResourcesPage: React.FC = () => {
                 },
               },
               {
-                type: 'divider',
-              },
-              {
                 key: 'functions',
                 label: t('repositories.repositoryFunctions'),
                 icon: <FunctionOutlined />,
                 onClick: () => {
                   setFunctionModalRepository(record);
                 },
-              },
-              {
-                type: 'divider',
               },
               {
                 key: 'trace',
@@ -670,9 +664,6 @@ const ResourcesPage: React.FC = () => {
                 },
               },
               {
-                type: 'divider',
-              },
-              {
                 key: 'trace',
                 label: t('audit.trace'),
                 icon: <HistoryOutlined />,
@@ -770,9 +761,6 @@ const ResourcesPage: React.FC = () => {
                   setEditingSchedule(record);
                   scheduleForm.setValue('scheduleName', record.scheduleName);
                 },
-              },
-              {
-                type: 'divider',
               },
               {
                 key: 'trace',
@@ -1102,6 +1090,17 @@ const ResourcesPage: React.FC = () => {
                             type: 'divider' as const,
                           },
                           {
+                            key: 'vault',
+                            label: t('general.vault'),
+                            icon: <SettingOutlined />,
+                            onClick: () => {
+                              const team = teamsList.find(t => t.teamName === selectedTeams[0]);
+                              if (team) {
+                                setTeamVaultModalConfig({ open: true, team });
+                              }
+                            },
+                          },
+                          {
                             key: 'edit',
                             label: t('teams.editTeam'),
                             icon: <EditOutlined />,
@@ -1110,17 +1109,6 @@ const ResourcesPage: React.FC = () => {
                               if (team) {
                                 setEditingTeam(team);
                                 teamForm.setFieldValue('teamName', team.teamName);
-                              }
-                            },
-                          },
-                          {
-                            key: 'vault',
-                            label: t('general.vault'),
-                            icon: <SettingOutlined />,
-                            onClick: () => {
-                              const team = teamsList.find(t => t.teamName === selectedTeams[0]);
-                              if (team) {
-                                setTeamVaultModalConfig({ open: true, team });
                               }
                             },
                           },

@@ -836,20 +836,6 @@ const SystemPage: React.FC = () => {
         <Space>
           <Button
             type="link"
-            icon={<HistoryOutlined />}
-            onClick={() => {
-              setAuditTraceModal({
-                open: true,
-                entityType: 'Permissions',
-                entityIdentifier: record.permissionGroupName,
-                entityName: record.permissionGroupName
-              })
-            }}
-          >
-            Trace
-          </Button>
-          <Button
-            type="link"
             icon={<KeyOutlined />}
             onClick={() => {
               setSelectedGroup(record)
@@ -867,6 +853,20 @@ const SystemPage: React.FC = () => {
             }}
           >
             Assign User
+          </Button>
+          <Button
+            type="link"
+            icon={<HistoryOutlined />}
+            onClick={() => {
+              setAuditTraceModal({
+                open: true,
+                entityType: 'Permissions',
+                entityIdentifier: record.permissionGroupName,
+                entityName: record.permissionGroupName
+              })
+            }}
+          >
+            Trace
           </Button>
           <Popconfirm
             title="Delete Permission Group"
@@ -940,6 +940,16 @@ const SystemPage: React.FC = () => {
         <Space>
           <Button
             type="link"
+            icon={<SafetyOutlined />}
+            onClick={() => {
+              setAssignPermissionModal({ open: true, user: record })
+              setSelectedUserGroup(record.permissionGroupName || '')
+            }}
+          >
+            Permissions
+          </Button>
+          <Button
+            type="link"
             icon={<HistoryOutlined />}
             onClick={() => {
               setAuditTraceModal({
@@ -951,16 +961,6 @@ const SystemPage: React.FC = () => {
             }}
           >
             Trace
-          </Button>
-          <Button
-            type="link"
-            icon={<SafetyOutlined />}
-            onClick={() => {
-              setAssignPermissionModal({ open: true, user: record })
-              setSelectedUserGroup(record.permissionGroupName || '')
-            }}
-          >
-            Permissions
           </Button>
           {record.activated && (
             <Popconfirm
@@ -1075,30 +1075,6 @@ const SystemPage: React.FC = () => {
         <Space>
           <Button
             type="link"
-            icon={<HistoryOutlined />}
-            onClick={() => {
-              setAuditTraceModal({
-                open: true,
-                entityType: 'Team',
-                entityIdentifier: record.teamName,
-                entityName: record.teamName
-              })
-            }}
-          >
-            Trace
-          </Button>
-          <Button
-            type="link"
-            icon={<UserOutlined />}
-            onClick={() => {
-              setSelectedTeam(record)
-              setIsManageTeamModalOpen(true)
-            }}
-          >
-            Members
-          </Button>
-          <Button
-            type="link"
             icon={<SettingOutlined />}
             onClick={() => setTeamVaultModalConfig({ open: true, team: record })}
           >
@@ -1113,6 +1089,30 @@ const SystemPage: React.FC = () => {
             }}
           >
             Edit
+          </Button>
+          <Button
+            type="link"
+            icon={<UserOutlined />}
+            onClick={() => {
+              setSelectedTeam(record)
+              setIsManageTeamModalOpen(true)
+            }}
+          >
+            Members
+          </Button>
+          <Button
+            type="link"
+            icon={<HistoryOutlined />}
+            onClick={() => {
+              setAuditTraceModal({
+                open: true,
+                entityType: 'Team',
+                entityIdentifier: record.teamName,
+                entityName: record.teamName
+              })
+            }}
+          >
+            Trace
           </Button>
           <Popconfirm
             title="Delete Team"
@@ -1176,20 +1176,6 @@ const SystemPage: React.FC = () => {
         <Space>
           <Button
             type="link"
-            icon={<HistoryOutlined />}
-            onClick={() => {
-              setAuditTraceModal({
-                open: true,
-                entityType: 'Region',
-                entityIdentifier: record.regionName,
-                entityName: record.regionName
-              })
-            }}
-          >
-            Trace
-          </Button>
-          <Button
-            type="link"
             icon={<SettingOutlined />}
             onClick={() => setRegionVaultModalConfig({ open: true, region: record })}
           >
@@ -1204,6 +1190,20 @@ const SystemPage: React.FC = () => {
             }}
           >
             {tOrg('general.edit')}
+          </Button>
+          <Button
+            type="link"
+            icon={<HistoryOutlined />}
+            onClick={() => {
+              setAuditTraceModal({
+                open: true,
+                entityType: 'Region',
+                entityIdentifier: record.regionName,
+                entityName: record.regionName
+              })
+            }}
+          >
+            Trace
           </Button>
           <Popconfirm
             title={tOrg('regions.deleteRegion')}
@@ -1297,31 +1297,10 @@ const SystemPage: React.FC = () => {
         <Space>
           <Button
             type="link"
-            icon={<HistoryOutlined />}
-            onClick={() => {
-              setAuditTraceModal({
-                open: true,
-                entityType: 'Bridge',
-                entityIdentifier: record.bridgeName,
-                entityName: record.bridgeName
-              })
-            }}
-          >
-            Trace
-          </Button>
-          <Button
-            type="link"
             icon={<SettingOutlined />}
             onClick={() => setBridgeVaultModalConfig({ open: true, bridge: record })}
           >
             {tOrg('general.vault')}
-          </Button>
-          <Button
-            type="link"
-            icon={<KeyOutlined />}
-            onClick={() => setBridgeCredentialsModal({ open: true, bridge: record })}
-          >
-            Token
           </Button>
           <Button 
             type="link" 
@@ -1333,6 +1312,13 @@ const SystemPage: React.FC = () => {
           >
             {tOrg('general.edit')}
           </Button>
+          <Button
+            type="link"
+            icon={<KeyOutlined />}
+            onClick={() => setBridgeCredentialsModal({ open: true, bridge: record })}
+          >
+            Token
+          </Button>
           <Button 
             type="link" 
             icon={<SyncOutlined />}
@@ -1343,6 +1329,20 @@ const SystemPage: React.FC = () => {
             })}
           >
             Reset Auth
+          </Button>
+          <Button
+            type="link"
+            icon={<HistoryOutlined />}
+            onClick={() => {
+              setAuditTraceModal({
+                open: true,
+                entityType: 'Bridge',
+                entityIdentifier: record.bridgeName,
+                entityName: record.bridgeName
+              })
+            }}
+          >
+            Trace
           </Button>
           <Popconfirm
             title={tOrg('bridges.deleteBridge')}
