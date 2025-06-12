@@ -1,11 +1,10 @@
 import React, { useState, useRef } from 'react'
-import { Card, Tabs, Button, Space, Modal, Popconfirm, Tag, Typography, Form, Input, Table, Row, Col, Empty, Alert, Spin, Dropdown } from 'antd'
+import { Card, Tabs, Button, Space, Modal, Tag, Typography, Form, Input, Table, Row, Col, Empty, Spin, Dropdown } from 'antd'
 import { 
   TeamOutlined, 
   PlusOutlined, 
   EditOutlined, 
   DeleteOutlined, 
-  UserOutlined,
   SettingOutlined,
   CloudOutlined,
   InboxOutlined,
@@ -13,7 +12,6 @@ import {
   ScheduleOutlined,
   MoreOutlined,
   FunctionOutlined,
-  ExclamationCircleOutlined,
   HistoryOutlined
 } from '@ant-design/icons'
 import { useForm } from 'react-hook-form'
@@ -21,7 +19,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
-import ResourceListView from '@/components/common/ResourceListView'
 import ResourceForm from '@/components/forms/ResourceForm'
 import ResourceFormWithVault from '@/components/forms/ResourceFormWithVault'
 import VaultEditorModal from '@/components/common/VaultEditorModal'
@@ -81,9 +78,9 @@ import {
 } from '@/utils/validation'
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize'
 import { type QueueFunction } from '@/api/queries/queue'
-import { useLocalizedFunctions } from '@/services/functionsService'
 import { useCreateQueueItem } from '@/api/queries/queue'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
+import TeamSelector from '@/components/common/TeamSelector'
 
 const { Title, Text } = Typography
 
@@ -144,11 +141,6 @@ const ResourcesPage: React.FC = () => {
 
   // Function modal state for repositories
   const [functionModalRepository, setFunctionModalRepository] = useState<Repository | null>(null)
-  const [selectedFunction, setSelectedFunction] = useState<QueueFunction | null>(null)
-  const [functionParams, setFunctionParams] = useState<Record<string, any>>({})
-  const [functionPriority, setFunctionPriority] = useState(5)
-  const [functionDescription, setFunctionDescription] = useState('')
-  const [functionSearchTerm, setFunctionSearchTerm] = useState('')
 
   // Common hooks
   const { data: dropdownData } = useDropdownData()
@@ -532,90 +524,6 @@ const ResourcesPage: React.FC = () => {
     }
   };
 
-  // Team columns
-  const teamColumns = [
-    {
-      title: t('teams.teamName'),
-      dataIndex: 'teamName',
-      key: 'teamName',
-      ellipsis: true,
-      render: (text: string) => (
-        <Space>
-          <TeamOutlined style={{ color: '#556b2f' }} />
-          <strong>{text}</strong>
-        </Space>
-      ),
-    },
-    {
-      title: t('general.actions'),
-      key: 'actions',
-      width: 80,
-      align: 'center' as const,
-      render: (_: any, record: Team) => (
-        <Dropdown
-          menu={{
-            items: [
-              {
-                key: 'vault',
-                label: t('general.vault'),
-                icon: <SettingOutlined />,
-                onClick: () => {
-                  setTeamVaultModalConfig({ open: true, team: record });
-                },
-              },
-              {
-                key: 'edit',
-                label: t('general.edit'),
-                icon: <EditOutlined />,
-                onClick: () => {
-                  setEditingTeam(record);
-                  teamForm.setValue('teamName', record.teamName);
-                },
-              },
-              {
-                type: 'divider',
-              },
-              {
-                key: 'trace',
-                label: t('audit.trace'),
-                icon: <HistoryOutlined />,
-                onClick: () => {
-                  setAuditTraceModal({
-                    open: true,
-                    entityType: 'Team',
-                    entityIdentifier: record.teamName,
-                    entityName: record.teamName
-                  });
-                },
-              },
-              {
-                type: 'divider',
-              },
-              {
-                key: 'delete',
-                label: t('general.delete'),
-                icon: <DeleteOutlined />,
-                danger: true,
-                onClick: () => {
-                  Modal.confirm({
-                    title: t('teams.deleteTeam'),
-                    content: t('teams.confirmDelete', { teamName: record.teamName }),
-                    okText: t('general.yes'),
-                    okType: 'danger',
-                    cancelText: t('general.no'),
-                    onOk: () => handleDeleteTeam(record.teamName),
-                  });
-                },
-              },
-            ],
-          }}
-          trigger={['click']}
-        >
-          <Button type="text" icon={<MoreOutlined />} />
-        </Dropdown>
-      ),
-    },
-  ]
 
 
 
@@ -720,7 +628,7 @@ const ResourcesPage: React.FC = () => {
       key: 'teamName',
       width: 150,
       ellipsis: true,
-      render: (teamName: string) => <Tag color="blue">{teamName}</Tag>,
+      render: (teamName: string) => <Tag color="#8FBC8F">{teamName}</Tag>,
     },
     ...(uiMode === 'expert' ? [{
       title: t('general.vaultVersion'),
@@ -822,7 +730,7 @@ const ResourcesPage: React.FC = () => {
       key: 'teamName',
       width: 150,
       ellipsis: true,
-      render: (teamName: string) => <Tag color="blue">{teamName}</Tag>,
+      render: (teamName: string) => <Tag color="#8FBC8F">{teamName}</Tag>,
     },
     ...(uiMode === 'expert' ? [{
       title: t('general.vaultVersion'),
@@ -924,7 +832,7 @@ const ResourcesPage: React.FC = () => {
       key: 'teamName',
       width: 150,
       ellipsis: true,
-      render: (teamName: string) => <Tag color="blue">{teamName}</Tag>,
+      render: (teamName: string) => <Tag color="#8FBC8F">{teamName}</Tag>,
     },
     ...(uiMode === 'expert' ? [{
       title: t('general.vaultVersion'),
@@ -1165,71 +1073,98 @@ const ResourcesPage: React.FC = () => {
     <>
       {uiMode !== 'simple' ? (
         <Row gutter={24} style={containerStyle}>
-          <Col span={8} style={{ height: '100%' }}>
-            <ResourceListView
-              title={
-                <Space>
-                  <span style={{ fontSize: 16, fontWeight: 500 }}>{t('teams.title')}</span>
-                </Space>
-              }
-              loading={teamsLoading}
-              data={teamsList}
-              columns={teamColumns}
-              rowKey="teamName"
-              searchPlaceholder={t('teams.searchTeams')}
-              actions={null}
-              rowSelection={{
-                type: 'checkbox',
-                selectedRowKeys: selectedTeams,
-                onChange: (selectedRowKeys: React.Key[]) => {
-                  setSelectedTeams(selectedRowKeys as string[])
-                },
-              }}
-              onRow={(record) => ({
-                onClick: (e: React.MouseEvent) => {
-                  // Check if the click is on the checkbox or its parent elements
-                  const target = e.target as HTMLElement
-                  const isCheckboxClick = target.closest('.ant-checkbox-wrapper') || 
-                                        target.closest('.ant-checkbox') ||
-                                        target.closest('td[class*="ant-table-selection-column"]')
-                  
-                  if (!isCheckboxClick) {
-                    // Row click selects only one team (not on checkbox)
-                    setSelectedTeams([record.teamName])
-                  }
-                },
-                className: selectedTeams.includes(record.teamName) ? 'selected-row' : '',
-                style: { cursor: 'pointer' },
-              })}
-              containerStyle={{
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-              tableStyle={{ 
-                height: 'calc(100vh - 300px)'
-              }}
-              enableDynamicPageSize={true}
-              pagination={{
-                position: ['bottomRight'],
-              }}
-            />
-          </Col>
-          
-          <Col span={16} style={{ height: '100%' }}>
+          <Col span={24} style={{ height: '100%' }}>
             <Card style={cardStyle} bodyStyle={cardBodyStyle}>
               <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <Title level={4} style={{ margin: 0 }}>
-                    {selectedTeams.length > 0 ? t('teams.resourcesInTeams', { count: selectedTeams.length }) : t('teams.teamResources')}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
+                  <Title level={4} style={{ margin: 0, minWidth: 'fit-content' }}>
+                    {t('teams.teamResources')}
                   </Title>
-                  {selectedTeams.length === 0 && (
-                    <Text type="secondary" style={{ fontSize: 14 }}>
-                      {t('teams.selectTeamToView')}
-                    </Text>
-                  )}
+                  <TeamSelector
+                    teams={teamsList}
+                    selectedTeams={selectedTeams}
+                    onChange={setSelectedTeams}
+                    loading={teamsLoading}
+                    placeholder={t('teams.selectTeamToView')}
+                    style={{ minWidth: 300, maxWidth: 500 }}
+                  />
+                  <Dropdown
+                    menu={{
+                      items: [
+                        {
+                          key: 'create',
+                          label: t('teams.createTeam'),
+                          icon: <PlusOutlined />,
+                          onClick: () => setIsCreateTeamModalOpen(true),
+                        },
+                        ...(selectedTeams.length === 1 ? [
+                          {
+                            type: 'divider' as const,
+                          },
+                          {
+                            key: 'edit',
+                            label: t('teams.editTeam'),
+                            icon: <EditOutlined />,
+                            onClick: () => {
+                              const team = teamsList.find(t => t.teamName === selectedTeams[0]);
+                              if (team) {
+                                setEditingTeam(team);
+                                teamForm.setFieldValue('teamName', team.teamName);
+                              }
+                            },
+                          },
+                          {
+                            key: 'vault',
+                            label: t('general.vault'),
+                            icon: <SettingOutlined />,
+                            onClick: () => {
+                              const team = teamsList.find(t => t.teamName === selectedTeams[0]);
+                              if (team) {
+                                setTeamVaultModalConfig({ open: true, team });
+                              }
+                            },
+                          },
+                          {
+                            key: 'trace',
+                            label: t('audit.trace'),
+                            icon: <HistoryOutlined />,
+                            onClick: () => {
+                              setAuditTraceModal({
+                                open: true,
+                                entityType: 'Team',
+                                entityIdentifier: selectedTeams[0],
+                                entityName: selectedTeams[0]
+                              });
+                            },
+                          },
+                          {
+                            type: 'divider' as const,
+                          },
+                          {
+                            key: 'delete',
+                            label: t('teams.deleteTeam'),
+                            icon: <DeleteOutlined />,
+                            danger: true,
+                            onClick: () => {
+                              Modal.confirm({
+                                title: t('teams.deleteTeam'),
+                                content: t('teams.confirmDelete', { teamName: selectedTeams[0] }),
+                                okText: t('general.yes'),
+                                okType: 'danger',
+                                cancelText: t('general.no'),
+                                onOk: () => handleDeleteTeam(selectedTeams[0]),
+                              });
+                            },
+                          },
+                        ] : []),
+                      ],
+                    }}
+                    trigger={['click']}
+                  >
+                    <Button icon={<MoreOutlined />} />
+                  </Dropdown>
                 </div>
-                {selectedTeams.length > 0 && teamResourcesTab !== 'repositories' && (
+                {selectedTeams.length > 0 && (
                   <Space>
                     <Button 
                       type="primary" 
@@ -1238,6 +1173,12 @@ const ResourcesPage: React.FC = () => {
                         switch(teamResourcesTab) {
                           case 'machines':
                             setIsCreateMachineModalOpen(true)
+                            break
+                          case 'repositories':
+                            if (selectedTeams.length === 1) {
+                              repositoryForm.setValue('teamName', selectedTeams[0])
+                            }
+                            setIsCreateRepositoryModalOpen(true)
                             break
                           case 'storage':
                             if (selectedTeams.length === 1) {
@@ -1256,6 +1197,7 @@ const ResourcesPage: React.FC = () => {
                       style={{ background: '#556b2f', borderColor: '#556b2f' }}
                     >
                       {teamResourcesTab === 'machines' && t('machines.createMachine')}
+                      {teamResourcesTab === 'repositories' && t('repositories.createRepository')}
                       {teamResourcesTab === 'storage' && t('storage.createStorage')}
                       {teamResourcesTab === 'schedules' && t('schedules.createSchedule')}
                     </Button>

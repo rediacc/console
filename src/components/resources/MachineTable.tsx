@@ -434,91 +434,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const columns: ColumnsType<Machine> = React.useMemo(() => {
     const baseColumns: ColumnsType<Machine> = [];
 
-    // Actions column first if showActions is true
-    if (showActions) {
-      baseColumns.push({
-        title: t('common:table.actions'),
-        key: 'actions',
-        width: 50,
-        align: 'center' as const,
-        fixed: 'left' as const,
-        render: (_: unknown, record: Machine) => (
-          <Dropdown
-            menu={{
-              items: [
-                {
-                  key: 'vault',
-                  label: t('machines:vault'),
-                  icon: <KeyOutlined />,
-                  onClick: () => {
-                    setVaultMachine(record);
-                  },
-                },
-                {
-                  key: 'edit',
-                  label: t('common:actions.edit'),
-                  icon: <EditOutlined />,
-                  onClick: () => {
-                    setEditingMachine(record);
-                    // Find the region for this machine's bridge
-                    const region = dropdownData?.bridgesByRegion?.find(r => 
-                      r.bridges?.some(b => b.value === record.bridgeName)
-                    );
-                    editMachineForm.reset({
-                      machineName: record.machineName,
-                      regionName: region?.regionName || '',
-                      bridgeName: record.bridgeName,
-                    });
-                  },
-                },
-                {
-                  type: 'divider',
-                },
-                {
-                  key: 'systemFunctions',
-                  label: t('machines:systemFunctions'),
-                  icon: <FunctionOutlined />,
-                  onClick: () => {
-                    setFunctionModalMachine(record);
-                  },
-                },
-                {
-                  type: 'divider',
-                },
-                {
-                  key: 'trace',
-                  label: t('machines:trace'),
-                  icon: <HistoryOutlined />,
-                  onClick: () => {
-                    setAuditTraceModal({
-                      open: true,
-                      entityType: 'Machine',
-                      entityIdentifier: record.machineName,
-                      entityName: record.machineName
-                    });
-                  },
-                },
-                {
-                  type: 'divider',
-                },
-                {
-                  key: 'delete',
-                  label: t('common:actions.delete'),
-                  icon: <DeleteOutlined />,
-                  danger: true,
-                  onClick: () => handleDelete(record),
-                },
-              ],
-            }}
-            trigger={['click']}
-          >
-            <Button type="text" icon={<MoreOutlined />} />
-          </Dropdown>
-        ),
-      });
-    }
-
-    // Then add the other columns
+    // Add the other columns first
     baseColumns.push(
       {
         title: t('machines:machineName'),
@@ -567,7 +483,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         key: 'teamName',
         width: 150,
         ellipsis: true,
-        render: (teamName: string) => <Tag color="blue">{teamName}</Tag>,
+        render: (teamName: string) => <Tag color="#8FBC8F">{teamName}</Tag>,
         sorter: (a: Machine, b: Machine) => a.teamName.localeCompare(b.teamName),
       },
     );
@@ -603,7 +519,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         key: 'bridgeName',
         width: 150,
         ellipsis: true,
-        render: (bridge: string) => <Tag color="blue">{bridge}</Tag>,
+        render: (bridge: string) => <Tag color="#8FBC8F">{bridge}</Tag>,
       });
     }
 
@@ -630,6 +546,73 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         align: 'center' as const,
         sorter: (a: Machine, b: Machine) => a.vaultVersion - b.vaultVersion,
         render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
+      });
+    }
+
+    // Actions column last if showActions is true
+    if (showActions) {
+      baseColumns.push({
+        title: t('common:table.actions'),
+        key: 'actions',
+        width: 350,
+        render: (_: unknown, record: Machine) => (
+          <Space>
+            <Button
+              type="link"
+              icon={<KeyOutlined />}
+              onClick={() => setVaultMachine(record)}
+            >
+              {t('machines:vault')}
+            </Button>
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              onClick={() => {
+                setEditingMachine(record);
+                // Find the region for this machine's bridge
+                const region = dropdownData?.bridgesByRegion?.find(r => 
+                  r.bridges?.some(b => b.value === record.bridgeName)
+                );
+                editMachineForm.reset({
+                  machineName: record.machineName,
+                  regionName: region?.regionName || '',
+                  bridgeName: record.bridgeName,
+                });
+              }}
+            >
+              {t('common:actions.edit')}
+            </Button>
+            <Button
+              type="link"
+              icon={<FunctionOutlined />}
+              onClick={() => setFunctionModalMachine(record)}
+            >
+              {t('machines:functions')}
+            </Button>
+            <Button
+              type="link"
+              icon={<HistoryOutlined />}
+              onClick={() => {
+                setAuditTraceModal({
+                  open: true,
+                  entityType: 'Machine',
+                  entityIdentifier: record.machineName,
+                  entityName: record.machineName
+                });
+              }}
+            >
+              {t('machines:trace')}
+            </Button>
+            <Button
+              type="link"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleDelete(record)}
+            >
+              {t('common:actions.delete')}
+            </Button>
+          </Space>
+        ),
       });
     }
 
@@ -740,7 +723,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             <Card
               title={
                 <Space>
-                  <Tag color={groupBy === 'bridge' ? 'green' : groupBy === 'team' ? 'blue' : 'purple'} style={{ fontSize: '14px' }}>
+                  <Tag color={groupBy === 'bridge' ? 'green' : groupBy === 'team' ? '#8FBC8F' : 'purple'} style={{ fontSize: '14px' }}>
                     {groupKey}
                   </Tag>
                   <span style={{ fontSize: '14px', color: '#666' }}>
@@ -778,7 +761,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                           <Space direction="vertical" size="small" style={{ width: '100%' }}>
                             {groupBy !== 'team' && (
                               <div>
-                                <Tag color="blue" style={{ marginRight: 4 }}>{machine.teamName}</Tag>
+                                <Tag color="#8FBC8F" style={{ marginRight: 4 }}>{machine.teamName}</Tag>
                               </div>
                             )}
                             {groupBy !== 'region' && machine.regionName && (
