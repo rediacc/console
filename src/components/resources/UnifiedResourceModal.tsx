@@ -175,6 +175,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             regionName: existingData.regionName,
             bridgeName: existingData.bridgeName,
           }),
+          [`${resourceType}Vault`]: existingData.vaultContent || '{}',
         }
       }
 
@@ -272,6 +273,20 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     }
   }, [open, mode, teamFilter, resourceType, form, dropdownData])
 
+  // Reset form values when modal opens in edit mode
+  useEffect(() => {
+    if (open && mode === 'edit' && existingData) {
+      form.reset({
+        [`${resourceType}Name`]: existingData[`${resourceType}Name`],
+        ...(resourceType === 'machine' && {
+          regionName: existingData.regionName,
+          bridgeName: existingData.bridgeName,
+        }),
+        [`${resourceType}Vault`]: existingData.vaultContent || '{}',
+      })
+    }
+  }, [open, mode, existingData, resourceType, form])
+
   // Determine if team is already selected/known
   const isTeamPreselected = uiMode === 'simple' || 
     (teamFilter && !Array.isArray(teamFilter)) || 
@@ -287,7 +302,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         required: true,
       }
 
-      if (resourceType === 'machine' && isExpertMode) {
+      if (resourceType === 'machine') {
         return [
           nameField,
           {
@@ -615,6 +630,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           entityType={getEntityType()}
           vaultFieldName={getVaultFieldName()}
           showDefaultsAlert={mode === 'create' && uiMode === 'simple'}
+          initialVaultData={mode === 'edit' && existingData ? JSON.parse(existingData.vaultContent || '{}') : undefined}
           hideImportExport={true}
           onImportExportRef={(handlers) => {
             importExportHandlers.current = handlers

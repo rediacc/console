@@ -116,6 +116,9 @@ const ResourcesPage: React.FC = () => {
   const [currentResource, setCurrentResource] = useState<any>(null)
   
   // Machine mutations
+  const createMachineMutation = useCreateMachine()
+  const updateMachineNameMutation = useUpdateMachineName()
+  const updateMachineBridgeMutation = useUpdateMachineBridge()
   const deleteMachineMutation = useDeleteMachine()
   const updateMachineVaultMutation = useUpdateMachineVault()
   
@@ -258,37 +261,108 @@ const ResourcesPage: React.FC = () => {
   const handleUnifiedModalSubmit = async (data: any) => {
     try {
       switch (unifiedModalState.resourceType) {
+        case 'machine':
+          if (unifiedModalState.mode === 'edit') {
+            // Update machine name if changed
+            if (data.machineName !== currentResource.machineName) {
+              await updateMachineNameMutation.mutateAsync({
+                teamName: currentResource.teamName,
+                currentMachineName: currentResource.machineName,
+                newMachineName: data.machineName,
+              })
+            }
+            // Update bridge if changed
+            if (data.bridgeName !== currentResource.bridgeName) {
+              await updateMachineBridgeMutation.mutateAsync({
+                teamName: currentResource.teamName,
+                machineName: data.machineName || currentResource.machineName,
+                bridgeName: data.bridgeName,
+              })
+            }
+            // Update vault if changed
+            const vaultData = data.machineVault
+            if (vaultData && vaultData !== currentResource.vaultContent) {
+              await updateMachineVaultMutation.mutateAsync({
+                teamName: currentResource.teamName,
+                machineName: data.machineName || currentResource.machineName,
+                machineVault: vaultData,
+                vaultVersion: currentResource.vaultVersion + 1,
+              })
+            }
+          } else {
+            await createMachineMutation.mutateAsync(data)
+          }
+          break
         case 'repository':
           if (unifiedModalState.mode === 'create') {
             await createRepositoryMutation.mutateAsync(data)
           } else {
-            await updateRepositoryNameMutation.mutateAsync({
-              teamName: currentResource.teamName,
-              currentRepositoryName: currentResource.repositoryName,
-              newRepositoryName: data.repositoryName,
-            })
+            // Update name if changed
+            if (data.repositoryName !== currentResource.repositoryName) {
+              await updateRepositoryNameMutation.mutateAsync({
+                teamName: currentResource.teamName,
+                currentRepositoryName: currentResource.repositoryName,
+                newRepositoryName: data.repositoryName,
+              })
+            }
+            // Update vault if changed
+            const vaultData = data.repositoryVault
+            if (vaultData && vaultData !== currentResource.vaultContent) {
+              await updateRepositoryVaultMutation.mutateAsync({
+                teamName: currentResource.teamName,
+                repositoryName: data.repositoryName || currentResource.repositoryName,
+                repositoryVault: vaultData,
+                vaultVersion: currentResource.vaultVersion + 1,
+              })
+            }
           }
           break
         case 'storage':
           if (unifiedModalState.mode === 'create') {
             await createStorageMutation.mutateAsync(data)
           } else {
-            await updateStorageNameMutation.mutateAsync({
-              teamName: currentResource.teamName,
-              currentStorageName: currentResource.storageName,
-              newStorageName: data.storageName,
-            })
+            // Update name if changed
+            if (data.storageName !== currentResource.storageName) {
+              await updateStorageNameMutation.mutateAsync({
+                teamName: currentResource.teamName,
+                currentStorageName: currentResource.storageName,
+                newStorageName: data.storageName,
+              })
+            }
+            // Update vault if changed
+            const vaultData = data.storageVault
+            if (vaultData && vaultData !== currentResource.vaultContent) {
+              await updateStorageVaultMutation.mutateAsync({
+                teamName: currentResource.teamName,
+                storageName: data.storageName || currentResource.storageName,
+                storageVault: vaultData,
+                vaultVersion: currentResource.vaultVersion + 1,
+              })
+            }
           }
           break
         case 'schedule':
           if (unifiedModalState.mode === 'create') {
             await createScheduleMutation.mutateAsync(data)
           } else {
-            await updateScheduleNameMutation.mutateAsync({
-              teamName: currentResource.teamName,
-              currentScheduleName: currentResource.scheduleName,
-              newScheduleName: data.scheduleName,
-            })
+            // Update name if changed
+            if (data.scheduleName !== currentResource.scheduleName) {
+              await updateScheduleNameMutation.mutateAsync({
+                teamName: currentResource.teamName,
+                currentScheduleName: currentResource.scheduleName,
+                newScheduleName: data.scheduleName,
+              })
+            }
+            // Update vault if changed
+            const vaultData = data.scheduleVault
+            if (vaultData && vaultData !== currentResource.vaultContent) {
+              await updateScheduleVaultMutation.mutateAsync({
+                teamName: currentResource.teamName,
+                scheduleName: data.scheduleName || currentResource.scheduleName,
+                scheduleVault: vaultData,
+                vaultVersion: currentResource.vaultVersion + 1,
+              })
+            }
           }
           break
       }
@@ -531,15 +605,6 @@ const ResourcesPage: React.FC = () => {
           menu={{
             items: [
               {
-                key: 'vault',
-                label: t('general.vault'),
-                icon: <SettingOutlined />,
-                onClick: () => {
-                  setCurrentResource(record);
-                  openUnifiedModal('repository', 'vault', record);
-                },
-              },
-              {
                 key: 'edit',
                 label: t('general.edit'),
                 icon: <EditOutlined />,
@@ -633,15 +698,6 @@ const ResourcesPage: React.FC = () => {
           menu={{
             items: [
               {
-                key: 'vault',
-                label: t('general.vault'),
-                icon: <SettingOutlined />,
-                onClick: () => {
-                  setCurrentResource(record);
-                  openUnifiedModal('storage', 'vault', record);
-                },
-              },
-              {
                 key: 'edit',
                 label: t('general.edit'),
                 icon: <EditOutlined />,
@@ -720,15 +776,6 @@ const ResourcesPage: React.FC = () => {
           menu={{
             items: [
               {
-                key: 'vault',
-                label: t('general.vault'),
-                icon: <SettingOutlined />,
-                onClick: () => {
-                  setCurrentResource(record);
-                  openUnifiedModal('schedule', 'vault', record);
-                },
-              },
-              {
                 key: 'edit',
                 label: t('general.edit'),
                 icon: <EditOutlined />,
@@ -795,7 +842,10 @@ const ResourcesPage: React.FC = () => {
   ]
 
   // Check if we're currently submitting or updating vault
-  const isSubmitting = createRepositoryMutation.isPending || 
+  const isSubmitting = createMachineMutation.isPending ||
+                      updateMachineNameMutation.isPending ||
+                      updateMachineBridgeMutation.isPending ||
+                      createRepositoryMutation.isPending || 
                       updateRepositoryNameMutation.isPending ||
                       createStorageMutation.isPending ||
                       updateStorageNameMutation.isPending ||

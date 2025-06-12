@@ -298,13 +298,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           <Space>
             <Button
               type="link"
-              icon={<KeyOutlined />}
-              onClick={() => onVaultMachine && onVaultMachine(record)}
-            >
-              {t('machines:vault')}
-            </Button>
-            <Button
-              type="link"
               icon={<EditOutlined />}
               onClick={() => onEditMachine && onEditMachine(record)}
             >
@@ -467,7 +460,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                       size="small"
                       hoverable
                       actions={showActions ? [
-                        <KeyOutlined key="vault" onClick={() => onVaultMachine && onVaultMachine(machine)} />,
                         <EditOutlined key="edit" onClick={() => onEditMachine && onEditMachine(machine)} />,
                         <DeleteOutlined key="delete" onClick={() => handleDelete(machine)} />,
                       ] : undefined}

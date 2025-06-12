@@ -30,6 +30,9 @@ interface ResourceFormWithVaultProps<T = any> {
   layout?: 'horizontal' | 'vertical' | 'inline'
   showDefaultsAlert?: boolean
   defaultsContent?: React.ReactNode
+  hideImportExport?: boolean
+  onImportExportRef?: (handlers: { handleImport: (file: any) => boolean; handleExport: () => void }) => void
+  initialVaultData?: Record<string, any>
 }
 
 const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormWithVaultProps<any>>(
@@ -44,9 +47,10 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     defaultsContent,
     hideImportExport = false,
     onImportExportRef,
+    initialVaultData = {},
   }, ref) {
     const { t } = useTranslation('common')
-    const [vaultData, setVaultData] = useState<Record<string, any>>({})
+    const [vaultData, setVaultData] = useState<Record<string, any>>(initialVaultData)
     const [isVaultValid, setIsVaultValid] = useState(true)
     const [vaultValidationErrors, setVaultValidationErrors] = useState<string[]>([])
     const [showVaultValidationErrors, setShowVaultValidationErrors] = useState(false)
@@ -201,7 +205,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
           <VaultEditor
             entityType={entityType}
-            initialData={vaultData}
+            initialData={initialVaultData}
             onChange={handleVaultChange}
             onValidate={handleVaultValidate}
             onImportExport={(handlers) => {
