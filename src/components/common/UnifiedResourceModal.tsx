@@ -15,6 +15,9 @@ import {
   createRepositorySchema,
   createStorageSchema,
   createScheduleSchema,
+  createTeamSchema,
+  createRegionSchema,
+  createBridgeSchema,
   CreateMachineForm,
   CreateRepositoryForm,
   CreateStorageForm,
@@ -24,7 +27,7 @@ import { z } from 'zod'
 
 const { Text } = Typography
 
-export type ResourceType = 'machine' | 'repository' | 'storage' | 'schedule'
+export type ResourceType = 'machine' | 'repository' | 'storage' | 'schedule' | 'team' | 'region' | 'bridge'
 
 export interface UnifiedResourceModalProps {
   open: boolean
@@ -90,6 +93,12 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         return 'machines'
       case 'schedule':
         return 'schedules'
+      case 'team':
+        return 'teams'
+      case 'region':
+        return 'regions'
+      case 'bridge':
+        return 'bridges'
       default:
         return `${resourceType}s`
     }
@@ -159,6 +168,12 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         return createStorageSchema
       case 'schedule':
         return createScheduleSchema
+      case 'team':
+        return createTeamSchema
+      case 'region':
+        return createRegionSchema
+      case 'bridge':
+        return createBridgeSchema
       default:
         return z.object({})
     }
@@ -174,6 +189,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           ...(resourceType === 'machine' && {
             regionName: existingData.regionName,
             bridgeName: existingData.bridgeName,
+          }),
+          ...(resourceType === 'bridge' && {
+            regionName: existingData.regionName,
           }),
           [`${resourceType}Vault`]: existingData.vaultContent || '{}',
         }
@@ -211,6 +229,22 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             ...baseDefaults,
             scheduleName: '',
             scheduleVault: '{}',
+          }
+        case 'team':
+          return {
+            teamName: '',
+            teamVault: '{}',
+          }
+        case 'region':
+          return {
+            regionName: '',
+            regionVault: '{}',
+          }
+        case 'bridge':
+          return {
+            regionName: '',
+            bridgeName: '',
+            bridgeVault: '{}',
           }
         default:
           return baseDefaults
@@ -282,6 +316,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           regionName: existingData.regionName,
           bridgeName: existingData.bridgeName,
         }),
+        ...(resourceType === 'bridge' && {
+          regionName: existingData.regionName,
+        }),
         [`${resourceType}Vault`]: existingData.vaultContent || '{}',
       })
     }
@@ -321,6 +358,20 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             type: 'select' as const,
             options: filteredBridges,
             disabled: !selectedRegion,
+          },
+        ]
+      }
+
+      if (resourceType === 'bridge') {
+        return [
+          nameField,
+          {
+            name: 'regionName',
+            label: t('general.region'),
+            placeholder: t('regions.placeholders.selectRegion'),
+            required: true,
+            type: 'select' as const,
+            options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
           },
         ]
       }
@@ -378,6 +429,26 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       return baseFields
     }
 
+    // Bridge fields
+    if (resourceType === 'bridge') {
+      return [
+        {
+          name: 'regionName',
+          label: t('general.region'),
+          placeholder: t('regions.placeholders.selectRegion'),
+          required: true,
+          type: 'select' as const,
+          options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
+        },
+        nameField
+      ]
+    }
+
+    // Team and Region fields (no dependencies)
+    if (resourceType === 'team' || resourceType === 'region') {
+      return [nameField]
+    }
+
     // Repository, Storage, Schedule fields
     if (isTeamPreselected) {
       return [nameField]
@@ -403,6 +474,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       case 'repository': return 'REPOSITORY'
       case 'storage': return 'STORAGE'
       case 'schedule': return 'SCHEDULE'
+      case 'team': return 'TEAM'
+      case 'region': return 'REGION'
+      case 'bridge': return 'BRIDGE'
       default: return 'UNKNOWN'
     }
   }
@@ -429,6 +503,15 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           break
         case 'schedule':
           createText = t('resources:schedules.createSchedule')
+          break
+        case 'team':
+          createText = t('system:teams.createTeam')
+          break
+        case 'region':
+          createText = t('system:regions.createRegion')
+          break
+        case 'bridge':
+          createText = t('system:bridges.createBridge')
           break
       }
       

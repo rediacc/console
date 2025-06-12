@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Button, Popover, Space, Radio, message, Spin, Tooltip } from 'antd'
+import { Button, Popover, Space, Radio, message, Tooltip } from 'antd'
 import { KeyOutlined, ReloadOutlined, CopyOutlined, CheckOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { 
@@ -9,14 +9,14 @@ import {
 } from '@/utils/cryptoGenerators'
 
 interface FieldGeneratorProps {
-  fieldName: string
+  fieldName: string  // Still in interface but not used in component
   fieldType: 'ssh_keys' | 'repository_credential'
   onGenerate: (values: Record<string, string>) => void
   entityType?: string
 }
 
 const FieldGenerator: React.FC<FieldGeneratorProps> = ({
-  fieldName,
+  fieldName,  // Included to match interface but not used
   fieldType,
   onGenerate,
   entityType
@@ -110,7 +110,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = ({
       {Object.entries(generatedValues).map(([field, value]) => (
         <div key={field} style={{ 
           padding: 12, 
-          background: '#f5f5f5', 
+          background: 'var(--color-bg-tertiary)', 
           borderRadius: 6,
           fontFamily: 'monospace',
           fontSize: 12
@@ -130,8 +130,8 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = ({
             maxHeight: 100, 
             overflow: 'auto',
             padding: 8,
-            background: '#fff',
-            border: '1px solid #d9d9d9',
+            background: 'var(--color-bg-primary)',
+            border: '1px solid var(--color-border-primary)',
             borderRadius: 4
           }}>
             {value}
@@ -154,7 +154,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = ({
             icon={<KeyOutlined />} 
             onClick={handleGenerate}
             loading={generating}
-            style={{ backgroundColor: '#556b2f' }}
+            style={{ backgroundColor: 'var(--color-primary)' }}
           >
             {t('fieldGenerator.generate')}
           </Button>
@@ -173,7 +173,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = ({
             <Button 
               type="primary" 
               onClick={handleApply}
-              style={{ backgroundColor: '#556b2f' }}
+              style={{ backgroundColor: 'var(--color-primary)' }}
             >
               {t('fieldGenerator.apply')}
             </Button>
@@ -202,7 +202,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = ({
           type="text" 
           icon={<KeyOutlined />} 
           size="small"
-          style={{ color: '#556b2f' }}
+          style={{ color: 'var(--color-primary)' }}
         />
       </Tooltip>
     </Popover>

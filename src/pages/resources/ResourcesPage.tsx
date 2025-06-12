@@ -15,7 +15,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
-import UnifiedResourceModal, { ResourceType } from '@/components/resources/UnifiedResourceModal'
+import UnifiedResourceModal, { ResourceType } from '@/components/common/UnifiedResourceModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import { showMessage } from '@/utils/messages'
 

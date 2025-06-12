@@ -20,6 +20,7 @@ import {
   analyzeVaultProtocolState,
   getVaultProtocolMessage 
 } from '@/utils/vaultProtocol'
+import { masterPasswordService } from '@/services/masterPasswordService'
 
 const { Text } = Typography
 
@@ -134,11 +135,15 @@ const LoginPage: React.FC = () => {
       // Save auth data
       await saveAuthData(token, values.email, companyName)
 
-      // Update Redux store with all relevant data (token is now stored separately for security)
+      // Store master password in secure memory if encryption is enabled
+      if (companyHasEncryption && values.masterPassword) {
+        await masterPasswordService.setMasterPassword(values.masterPassword)
+      }
+
+      // Update Redux store with all relevant data (token and masterPassword are now stored separately for security)
       dispatch(loginSuccess({
         user: { email: values.email, company: companyName },
         company: companyName,
-        masterPassword: companyHasEncryption ? values.masterPassword : undefined,
         vaultCompany: vaultCompany,
         companyEncryptionEnabled: companyHasEncryption,
       }))

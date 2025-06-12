@@ -364,3 +364,87 @@ body[data-theme="dark"] .ant-typography-secondary {
 [data-theme="dark"] .ant-timeline-item-content {
   color: var(--color-text-primary);
 }
+
+/* Ant Design Popover for dark theme */
+[data-theme="dark"] .ant-popover {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-popover-inner {
+  background: var(--color-bg-secondary);
+  background-color: var(--color-bg-secondary);
+  box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.48), 0 6px 16px 0 rgba(0, 0, 0, 0.32), 0 9px 28px 8px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .ant-popover-title {
+  color: var(--color-text-primary);
+  border-bottom-color: var(--color-border-primary);
+}
+
+[data-theme="dark"] .ant-popover-inner-content {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-popover-arrow {
+  background: transparent;
+}
+
+[data-theme="dark"] .ant-popover-arrow-content {
+  background-color: var(--color-bg-secondary);
+}
+
+/* Ant Design Radio for dark theme */
+[data-theme="dark"] .ant-radio-wrapper {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-radio-wrapper-disabled {
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .ant-radio-inner {
+  background-color: var(--color-bg-primary);
+  border-color: var(--color-border-primary);
+}
+
+[data-theme="dark"] .ant-radio:hover .ant-radio-inner {
+  border-color: var(--color-input-focus-border);
+}
+
+[data-theme="dark"] .ant-radio-checked .ant-radio-inner {
+  border-color: var(--color-button-primary-bg);
+}
+
+[data-theme="dark"] .ant-radio-checked .ant-radio-inner::after {
+  background-color: var(--color-button-primary-bg);
+}
+
+/* Ant Design Button for dark theme - additional styles */
+[data-theme="dark"] .ant-btn {
+  color: var(--color-text-primary);
+  border-color: var(--color-border-primary);
+}
+
+[data-theme="dark"] .ant-btn:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-border-hover);
+}
+
+[data-theme="dark"] .ant-btn-default {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border-primary);
+}
+
+[data-theme="dark"] .ant-btn-default:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-hover);
+}
+
+[data-theme="dark"] .ant-btn-text {
+  background: transparent;
+  border-color: transparent;
+}
+
+[data-theme="dark"] .ant-btn-text:hover {
+  background: var(--color-bg-hover);
+}

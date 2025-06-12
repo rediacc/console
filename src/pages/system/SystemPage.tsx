@@ -32,15 +32,16 @@ import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { selectMasterPassword } from '@/store/auth/authSelectors'
-import { setMasterPassword, logout } from '@/store/auth/authSlice'
+import { logout } from '@/store/auth/authSlice'
 import { encryptString, decryptString } from '@/utils/encryption'
 import { useDispatch } from 'react-redux'
 import ResourceListView from '@/components/common/ResourceListView'
+import { masterPasswordService } from '@/services/masterPasswordService'
 import ResourceForm from '@/components/forms/ResourceForm'
 import ResourceFormWithVault, { ResourceFormWithVaultRef } from '@/components/forms/ResourceFormWithVault'
 import VaultEditorModal from '@/components/common/VaultEditorModal'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
+import UnifiedResourceModal, { ResourceType } from '@/components/common/UnifiedResourceModal'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import { 
   useUpdateCompanyVault, 
@@ -111,18 +112,7 @@ import {
 
 import { 
   createUserSchema, 
-  CreateUserForm,
-  createTeamSchema,
-  CreateTeamForm,
-  editTeamSchema,
-  EditTeamForm,
-  createRegionSchema, 
-  CreateRegionForm,
-  createBridgeSchema, 
-  CreateBridgeForm,
-  EditRegionForm,
-  editBridgeSchema,
-  EditBridgeForm
+  CreateUserForm
 } from '@/utils/validation'
 
 const { Title, Text } = Typography
@@ -133,17 +123,23 @@ const SystemPage: React.FC = () => {
   const { t: tOrg } = useTranslation('resources')
   const { t: tCommon } = useTranslation('common')
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
-  const currentMasterPassword = useSelector(selectMasterPassword)
+  const [currentMasterPassword, setCurrentMasterPassword] = useState<string | null>(null)
   const currentUser = useSelector((state: RootState) => state.auth.user)
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('users')
   
+  // Load master password from secure storage on mount
+  useEffect(() => {
+    const loadMasterPassword = async () => {
+      const password = await masterPasswordService.getMasterPassword()
+      setCurrentMasterPassword(password)
+    }
+    loadMasterPassword()
+  }, [])
+  
   // Form refs
   const userFormRef = React.useRef<ResourceFormWithVaultRef>(null)
-  const teamFormRef = React.useRef<ResourceFormWithVaultRef>(null)
-  const regionFormRef = React.useRef<ResourceFormWithVaultRef>(null)
-  const bridgeFormRef = React.useRef<ResourceFormWithVaultRef>(null)
   
   // Set initial tab to users
   React.useEffect(() => {
@@ -173,33 +169,10 @@ const SystemPage: React.FC = () => {
   const [selectedPermission, setSelectedPermission] = useState<string>('')
   const [selectedUser, setSelectedUser] = useState<string>('')
 
-  // Team state
-  const [isCreateTeamModalOpen, setIsCreateTeamModalOpen] = useState(false)
   const [isManageTeamModalOpen, setIsManageTeamModalOpen] = useState(false)
-  const [editingTeam, setEditingTeam] = useState<Team | null>(null)
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
   const [selectedMemberEmail, setSelectedMemberEmail] = useState<string>('')
-  const [teamVaultModalConfig, setTeamVaultModalConfig] = useState<{
-    open: boolean
-    team?: Team
-  }>({ open: false })
-
-  // Region state
-  const [isCreateRegionModalOpen, setIsCreateRegionModalOpen] = useState(false)
-  const [editingRegion, setEditingRegion] = useState<Region | null>(null)
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
-  const [regionVaultModalConfig, setRegionVaultModalConfig] = useState<{
-    open: boolean
-    region?: Region
-  }>({ open: false })
-
-  // Bridge state
-  const [isCreateBridgeModalOpen, setIsCreateBridgeModalOpen] = useState(false)
-  const [editingBridge, setEditingBridge] = useState<Bridge | null>(null)
-  const [bridgeVaultModalConfig, setBridgeVaultModalConfig] = useState<{
-    open: boolean
-    bridge?: Bridge
-  }>({ open: false })
   const [bridgeCredentialsModal, setBridgeCredentialsModal] = useState<{
     open: boolean
     bridge?: Bridge
@@ -217,6 +190,15 @@ const SystemPage: React.FC = () => {
     entityIdentifier: string | null
     entityName?: string
   }>({ open: false, entityType: null, entityIdentifier: null })
+
+  // Unified modal state
+  const [unifiedModalState, setUnifiedModalState] = useState<{
+    open: boolean
+    resourceType: ResourceType
+    mode: 'create' | 'edit' | 'vault'
+    data?: any
+  }>({ open: false, resourceType: 'team', mode: 'create' })
+  const [currentResource, setCurrentResource] = useState<any>(null)
 
   // Danger zone state
   const [masterPasswordModalOpen, setMasterPasswordModalOpen] = useState(false)
@@ -324,48 +306,6 @@ const SystemPage: React.FC = () => {
     defaultValues: {
       newUserEmail: '',
       newUserPassword: '',
-    },
-  })
-
-  // Team forms
-  const teamForm = useForm<CreateTeamForm>({
-    resolver: zodResolver(createTeamSchema) as any,
-    defaultValues: {
-      teamName: '',
-      teamVault: '{}',
-    },
-  })
-
-  const editTeamForm = useForm<EditTeamForm>({
-    resolver: zodResolver(editTeamSchema) as any,
-    defaultValues: {
-      teamName: '',
-    },
-  })
-
-  // Region form
-  const regionForm = useForm<CreateRegionForm>({
-    resolver: zodResolver(createRegionSchema) as any,
-    defaultValues: {
-      regionName: '',
-      regionVault: '{}',
-    },
-  })
-
-  // Bridge forms
-  const bridgeForm = useForm<CreateBridgeForm>({
-    resolver: zodResolver(createBridgeSchema) as any,
-    defaultValues: {
-      regionName: '',
-      bridgeName: '',
-      bridgeVault: '{}',
-    },
-  })
-
-  const editBridgeForm = useForm<EditBridgeForm>({
-    resolver: zodResolver(editBridgeSchema) as any,
-    defaultValues: {
-      bridgeName: '',
     },
   })
 
@@ -578,8 +518,9 @@ const SystemPage: React.FC = () => {
       // Unblock user requests after successful vault update
       await blockUserRequestsMutation.mutateAsync(false)
       
-      // Update the master password in Redux store
-      dispatch(setMasterPassword(masterPasswordOperation === 'remove' ? '' : newPassword))
+      // Update the master password in secure storage
+      await masterPasswordService.setMasterPassword(masterPasswordOperation === 'remove' ? null : newPassword)
+      setCurrentMasterPassword(masterPasswordOperation === 'remove' ? null : newPassword)
       
       setMasterPasswordModalOpen(false)
       masterPasswordForm.resetFields()
@@ -662,29 +603,7 @@ const SystemPage: React.FC = () => {
   }
 
   // Team handlers
-  const handleCreateTeam = async (data: CreateTeamForm) => {
-    try {
-      await createTeamMutation.mutateAsync(data)
-      setIsCreateTeamModalOpen(false)
-      teamForm.reset()
-    } catch (error) {
-      // Error handled by mutation
-    }
-  }
 
-  const handleEditTeam = async (values: EditTeamForm) => {
-    if (!editingTeam) return
-    try {
-      await updateTeamNameMutation.mutateAsync({
-        currentTeamName: editingTeam.teamName,
-        newTeamName: values.teamName,
-      })
-      setEditingTeam(null)
-      editTeamForm.reset()
-    } catch (error) {
-      // Error handled by mutation
-    }
-  }
 
   const handleDeleteTeam = async (teamName: string) => {
     try {
@@ -694,16 +613,6 @@ const SystemPage: React.FC = () => {
     }
   }
 
-  const handleUpdateTeamVault = async (vault: string, version: number) => {
-    if (!teamVaultModalConfig.team) return
-
-    await updateTeamVaultMutation.mutateAsync({
-      teamName: teamVaultModalConfig.team.teamName,
-      teamVault: vault,
-      vaultVersion: version,
-    })
-    setTeamVaultModalConfig({ open: false })
-  }
 
   const handleAddTeamMember = async () => {
     if (!selectedTeam || !selectedMemberEmail) return
@@ -733,29 +642,7 @@ const SystemPage: React.FC = () => {
   }
 
   // Region handlers
-  const handleCreateRegion = async (data: CreateRegionForm) => {
-    try {
-      await createRegionMutation.mutateAsync(data)
-      setIsCreateRegionModalOpen(false)
-      regionForm.reset()
-    } catch (error) {
-      // Error handled by mutation
-    }
-  }
 
-  const handleEditRegion = async (values: EditRegionForm) => {
-    if (!editingRegion) return
-    try {
-      await updateRegionNameMutation.mutateAsync({
-        currentRegionName: editingRegion.regionName,
-        newRegionName: values.regionName,
-      })
-      setEditingRegion(null)
-      regionForm.reset()
-    } catch (error) {
-      // Error handled by mutation
-    }
-  }
 
   const handleDeleteRegion = async (regionName: string) => {
     try {
@@ -768,42 +655,9 @@ const SystemPage: React.FC = () => {
     }
   }
 
-  const handleUpdateRegionVault = async (vault: string, version: number) => {
-    if (!regionVaultModalConfig.region) return
-
-    await updateRegionVaultMutation.mutateAsync({
-      regionName: regionVaultModalConfig.region.regionName,
-      regionVault: vault,
-      vaultVersion: version,
-    })
-    setRegionVaultModalConfig({ open: false })
-  }
 
   // Bridge handlers
-  const handleCreateBridge = async (data: CreateBridgeForm) => {
-    try {
-      await createBridgeMutation.mutateAsync(data)
-      setIsCreateBridgeModalOpen(false)
-      bridgeForm.reset()
-    } catch (error) {
-      // Error handled by mutation
-    }
-  }
 
-  const handleEditBridge = async (values: EditBridgeForm) => {
-    if (!editingBridge) return
-    try {
-      await updateBridgeNameMutation.mutateAsync({
-        regionName: editingBridge.regionName,
-        currentBridgeName: editingBridge.bridgeName,
-        newBridgeName: values.bridgeName,
-      })
-      setEditingBridge(null)
-      editBridgeForm.reset()
-    } catch (error) {
-      // Error handled by mutation
-    }
-  }
 
   const handleDeleteBridge = async (bridge: Bridge) => {
     try {
@@ -816,17 +670,6 @@ const SystemPage: React.FC = () => {
     }
   }
 
-  const handleUpdateBridgeVault = async (vault: string, version: number) => {
-    if (!bridgeVaultModalConfig.bridge) return
-
-    await updateBridgeVaultMutation.mutateAsync({
-      regionName: bridgeVaultModalConfig.bridge.regionName,
-      bridgeName: bridgeVaultModalConfig.bridge.bridgeName,
-      bridgeVault: vault,
-      vaultVersion: version,
-    })
-    setBridgeVaultModalConfig({ open: false })
-  }
 
   const handleResetBridgeAuth = async () => {
     try {
@@ -835,6 +678,136 @@ const SystemPage: React.FC = () => {
         isCloudManaged: resetAuthModal.isCloudManaged 
       })
       setResetAuthModal({ open: false, bridgeName: '', isCloudManaged: false })
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
+  // Unified modal helpers
+  const openUnifiedModal = (resourceType: ResourceType, mode: 'create' | 'edit' | 'vault', data?: any) => {
+    setUnifiedModalState({
+      open: true,
+      resourceType,
+      mode,
+      data
+    })
+    setCurrentResource(data)
+  }
+
+  const closeUnifiedModal = () => {
+    setUnifiedModalState({
+      open: false,
+      resourceType: 'team',
+      mode: 'create'
+    })
+    setCurrentResource(null)
+  }
+
+  // Unified modal submit handler
+  const handleUnifiedModalSubmit = async (data: any) => {
+    try {
+      switch (unifiedModalState.resourceType) {
+        case 'team':
+          if (unifiedModalState.mode === 'create') {
+            await createTeamMutation.mutateAsync(data)
+          } else if (unifiedModalState.mode === 'edit') {
+            if (data.teamName !== currentResource.teamName) {
+              await updateTeamNameMutation.mutateAsync({
+                currentTeamName: currentResource.teamName,
+                newTeamName: data.teamName,
+              })
+            }
+            // Update vault if changed
+            const vaultData = data.teamVault
+            if (vaultData && vaultData !== currentResource.vaultContent) {
+              await updateTeamVaultMutation.mutateAsync({
+                teamName: data.teamName || currentResource.teamName,
+                teamVault: vaultData,
+                vaultVersion: currentResource.vaultVersion + 1,
+              })
+            }
+          }
+          break
+        case 'region':
+          if (unifiedModalState.mode === 'create') {
+            await createRegionMutation.mutateAsync(data)
+          } else if (unifiedModalState.mode === 'edit') {
+            if (data.regionName !== currentResource.regionName) {
+              await updateRegionNameMutation.mutateAsync({
+                currentRegionName: currentResource.regionName,
+                newRegionName: data.regionName,
+              })
+            }
+            // Update vault if changed
+            const vaultData = data.regionVault
+            if (vaultData && vaultData !== currentResource.vaultContent) {
+              await updateRegionVaultMutation.mutateAsync({
+                regionName: data.regionName || currentResource.regionName,
+                regionVault: vaultData,
+                vaultVersion: currentResource.vaultVersion + 1,
+              })
+            }
+          }
+          break
+        case 'bridge':
+          if (unifiedModalState.mode === 'create') {
+            await createBridgeMutation.mutateAsync(data)
+          } else if (unifiedModalState.mode === 'edit') {
+            if (data.bridgeName !== currentResource.bridgeName) {
+              await updateBridgeNameMutation.mutateAsync({
+                regionName: currentResource.regionName,
+                currentBridgeName: currentResource.bridgeName,
+                newBridgeName: data.bridgeName,
+              })
+            }
+            // Update vault if changed
+            const vaultData = data.bridgeVault
+            if (vaultData && vaultData !== currentResource.vaultContent) {
+              await updateBridgeVaultMutation.mutateAsync({
+                regionName: data.regionName || currentResource.regionName,
+                bridgeName: data.bridgeName || currentResource.bridgeName,
+                bridgeVault: vaultData,
+                vaultVersion: currentResource.vaultVersion + 1,
+              })
+            }
+          }
+          break
+      }
+      closeUnifiedModal()
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
+  // Unified vault update handler
+  const handleUnifiedVaultUpdate = async (vault: string, version: number) => {
+    if (!currentResource) return
+
+    try {
+      switch (unifiedModalState.resourceType) {
+        case 'team':
+          await updateTeamVaultMutation.mutateAsync({
+            teamName: currentResource.teamName,
+            teamVault: vault,
+            vaultVersion: version,
+          })
+          break
+        case 'region':
+          await updateRegionVaultMutation.mutateAsync({
+            regionName: currentResource.regionName,
+            regionVault: vault,
+            vaultVersion: version,
+          })
+          break
+        case 'bridge':
+          await updateBridgeVaultMutation.mutateAsync({
+            regionName: currentResource.regionName,
+            bridgeName: currentResource.bridgeName,
+            bridgeVault: vault,
+            vaultVersion: version,
+          })
+          break
+      }
     } catch (error) {
       // Error handled by mutation
     }
@@ -1120,20 +1093,10 @@ const SystemPage: React.FC = () => {
       width: 350,
       render: (_: any, record: Team) => (
         <Space>
-          <Button
-            type="link"
-            icon={<SettingOutlined />}
-            onClick={() => setTeamVaultModalConfig({ open: true, team: record })}
-          >
-            Vault
-          </Button>
           <Button 
             type="link" 
             icon={<EditOutlined />}
-            onClick={() => {
-              setEditingTeam(record)
-              editTeamForm.setValue('teamName', record.teamName)
-            }}
+            onClick={() => openUnifiedModal('team', 'edit', record)}
           >
             Edit
           </Button>
@@ -1221,20 +1184,10 @@ const SystemPage: React.FC = () => {
       width: 300,
       render: (_: any, record: Region) => (
         <Space>
-          <Button
-            type="link"
-            icon={<SettingOutlined />}
-            onClick={() => setRegionVaultModalConfig({ open: true, region: record })}
-          >
-            {tOrg('general.vault')}
-          </Button>
           <Button 
             type="link" 
             icon={<EditOutlined />}
-            onClick={() => {
-              setEditingRegion(record)
-              regionForm.setValue('regionName', record.regionName)
-            }}
+            onClick={() => openUnifiedModal('region', 'edit', record)}
           >
             {tOrg('general.edit')}
           </Button>
@@ -1342,20 +1295,10 @@ const SystemPage: React.FC = () => {
       width: 400,
       render: (_: any, record: Bridge) => (
         <Space>
-          <Button
-            type="link"
-            icon={<SettingOutlined />}
-            onClick={() => setBridgeVaultModalConfig({ open: true, bridge: record })}
-          >
-            {tOrg('general.vault')}
-          </Button>
           <Button 
             type="link" 
             icon={<EditOutlined />}
-            onClick={() => {
-              setEditingBridge(record)
-              editBridgeForm.setValue('bridgeName', record.bridgeName)
-            }}
+            onClick={() => openUnifiedModal('bridge', 'edit', record)}
           >
             {tOrg('general.edit')}
           </Button>
@@ -1569,7 +1512,7 @@ const SystemPage: React.FC = () => {
           <Button 
             type="primary" 
             icon={<PlusOutlined />}
-            onClick={() => setIsCreateTeamModalOpen(true)}
+            onClick={() => openUnifiedModal('team', 'create')}
           >
             Create Team
           </Button>
@@ -1874,47 +1817,6 @@ const SystemPage: React.FC = () => {
         loading={false}
       />
 
-      {/* Team Modals */}
-      <Modal
-        title="Create Team"
-        open={isCreateTeamModalOpen}
-        onCancel={() => {
-          setIsCreateTeamModalOpen(false)
-          teamForm.reset()
-        }}
-        footer={[
-          <Button 
-            key="cancel" 
-            onClick={() => {
-              setIsCreateTeamModalOpen(false)
-              teamForm.reset()
-            }}
-          >
-            Cancel
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            loading={createTeamMutation.isPending}
-            onClick={() => teamFormRef.current?.submit()}
-            style={{ background: '#556b2f', borderColor: '#556b2f' }}
-          >
-            Create
-          </Button>
-        ]}
-        width={800}
-        style={{ top: 20 }}
-      >
-        <ResourceFormWithVault
-          ref={teamFormRef}
-          form={teamForm}
-          fields={teamFormFields}
-          onSubmit={handleCreateTeam}
-          entityType="TEAM"
-          vaultFieldName="teamVault"
-        />
-      </Modal>
-
       <Modal
         title={`Manage Team Members - ${selectedTeam?.teamName}`}
         open={isManageTeamModalOpen}
@@ -2012,45 +1914,7 @@ const SystemPage: React.FC = () => {
         />
       </Modal>
 
-      <VaultEditorModal
-        open={teamVaultModalConfig.open}
-        onCancel={() => setTeamVaultModalConfig({ open: false })}
-        onSave={handleUpdateTeamVault}
-        entityType="TEAM"
-        title={`Configure Vault - ${teamVaultModalConfig.team?.teamName || ''}`}
-        initialVault={teamVaultModalConfig.team?.vaultContent || "{}"}
-        initialVersion={teamVaultModalConfig.team?.vaultVersion || 1}
-        loading={updateTeamVaultMutation.isPending}
-      />
 
-      {/* Edit Team Modal */}
-      <Modal
-        title="Edit Team"
-        open={!!editingTeam}
-        onCancel={() => {
-          setEditingTeam(null)
-          editTeamForm.reset()
-        }}
-        footer={null}
-      >
-        <ResourceForm
-          form={editTeamForm}
-          fields={[{
-            name: 'teamName',
-            label: 'Team Name',
-            placeholder: 'Enter team name',
-            required: true,
-          }]}
-          onSubmit={handleEditTeam}
-          submitText="Save"
-          cancelText="Cancel"
-          onCancel={() => {
-            setEditingTeam(null)
-            editTeamForm.reset()
-          }}
-          loading={updateTeamNameMutation.isPending}
-        />
-      </Modal>
 
       {/* Regions & Infrastructure Section */}
       {uiMode === 'expert' && (
@@ -2076,7 +1940,7 @@ const SystemPage: React.FC = () => {
                 <Button 
                   type="primary" 
                   icon={<PlusOutlined />}
-                  onClick={() => setIsCreateRegionModalOpen(true)}
+                  onClick={() => openUnifiedModal('region', 'create')}
                   style={{ background: '#556b2f', borderColor: '#556b2f' }}
                 >
                   {tOrg('regions.createRegion')}
@@ -2115,8 +1979,7 @@ const SystemPage: React.FC = () => {
                     type="primary" 
                     icon={<PlusOutlined />}
                     onClick={() => {
-                      bridgeForm.setValue('regionName', selectedRegion)
-                      setIsCreateBridgeModalOpen(true)
+                      openUnifiedModal('bridge', 'create', { regionName: selectedRegion })
                     }}
                     style={{ background: '#556b2f', borderColor: '#556b2f' }}
                   >
@@ -2158,169 +2021,6 @@ const SystemPage: React.FC = () => {
         </>
       )}
 
-      {/* Region Modals */}
-      <Modal
-        title={tOrg('regions.createRegion')}
-        open={isCreateRegionModalOpen}
-        onCancel={() => {
-          setIsCreateRegionModalOpen(false)
-          regionForm.reset()
-        }}
-        footer={[
-          <Button 
-            key="cancel" 
-            onClick={() => {
-              setIsCreateRegionModalOpen(false)
-              regionForm.reset()
-            }}
-          >
-            {tOrg('general.cancel')}
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            loading={createRegionMutation.isPending}
-            onClick={() => regionFormRef.current?.submit()}
-            style={{ background: '#556b2f', borderColor: '#556b2f' }}
-          >
-            {tOrg('general.create')}
-          </Button>
-        ]}
-        width={800}
-        style={{ top: 20 }}
-      >
-        <ResourceFormWithVault
-          ref={regionFormRef}
-          form={regionForm}
-          fields={regionFormFields}
-          onSubmit={handleCreateRegion}
-          entityType="REGION"
-          vaultFieldName="regionVault"
-        />
-      </Modal>
-
-      <VaultEditorModal
-        open={regionVaultModalConfig.open}
-        onCancel={() => setRegionVaultModalConfig({ open: false })}
-        onSave={handleUpdateRegionVault}
-        entityType="REGION"
-        title={tOrg('general.configureVault', { name: regionVaultModalConfig.region?.regionName || '' })}
-        initialVault={regionVaultModalConfig.region?.vaultContent || "{}"}
-        initialVersion={regionVaultModalConfig.region?.vaultVersion || 1}
-        loading={updateRegionVaultMutation.isPending}
-      />
-
-      {/* Edit Region Modal */}
-      <Modal
-        title={tOrg('regions.editRegion')}
-        open={!!editingRegion}
-        onCancel={() => {
-          setEditingRegion(null)
-          regionForm.reset()
-        }}
-        footer={null}
-      >
-        <ResourceForm
-          form={regionForm}
-          fields={[{
-            name: 'regionName',
-            label: tOrg('regions.regionName'),
-            placeholder: tOrg('regions.placeholders.enterRegionName'),
-            required: true,
-          }]}
-          onSubmit={handleEditRegion}
-          submitText={tOrg('general.save')}
-          cancelText={tOrg('general.cancel')}
-          onCancel={() => {
-            setEditingRegion(null)
-            regionForm.reset()
-          }}
-          loading={updateRegionNameMutation.isPending}
-        />
-      </Modal>
-
-      {/* Bridge Modals */}
-      <Modal
-        title={tOrg('bridges.createBridge')}
-        open={isCreateBridgeModalOpen}
-        onCancel={() => {
-          setIsCreateBridgeModalOpen(false)
-          bridgeForm.reset()
-        }}
-        footer={[
-          <Button 
-            key="cancel" 
-            onClick={() => {
-              setIsCreateBridgeModalOpen(false)
-              bridgeForm.reset()
-            }}
-          >
-            {tOrg('general.cancel')}
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            loading={createBridgeMutation.isPending}
-            onClick={() => bridgeFormRef.current?.submit()}
-            style={{ background: '#556b2f', borderColor: '#556b2f' }}
-          >
-            {tOrg('general.create')}
-          </Button>
-        ]}
-        width={800}
-        style={{ top: 20 }}
-      >
-        <ResourceFormWithVault
-          ref={bridgeFormRef}
-          form={bridgeForm}
-          fields={bridgeFormFields}
-          onSubmit={handleCreateBridge}
-          entityType="BRIDGE"
-          vaultFieldName="bridgeVault"
-        />
-      </Modal>
-
-      <VaultEditorModal
-        open={bridgeVaultModalConfig.open}
-        onCancel={() => setBridgeVaultModalConfig({ open: false })}
-        onSave={handleUpdateBridgeVault}
-        entityType="BRIDGE"
-        title={tOrg('general.configureVault', { name: bridgeVaultModalConfig.bridge?.bridgeName || '' })}
-        initialVault={bridgeVaultModalConfig.bridge?.vaultContent || "{}"}
-        initialVersion={bridgeVaultModalConfig.bridge?.vaultVersion || 1}
-        loading={updateBridgeVaultMutation.isPending}
-      />
-
-      {/* Edit Bridge Modal */}
-      <Modal
-        title={tOrg('bridges.editBridge')}
-        open={!!editingBridge}
-        onCancel={() => {
-          setEditingBridge(null)
-          editBridgeForm.reset()
-        }}
-        footer={null}
-      >
-        <ResourceForm
-          form={editBridgeForm}
-          fields={[{
-            name: 'bridgeName',
-            label: tOrg('bridges.bridgeName'),
-            placeholder: tOrg('bridges.placeholders.enterBridgeName'),
-            required: true,
-          }]}
-          onSubmit={handleEditBridge}
-          submitText={tOrg('general.save')}
-          cancelText={tOrg('general.cancel')}
-          onCancel={() => {
-            setEditingBridge(null)
-            editBridgeForm.reset()
-          }}
-          loading={updateBridgeNameMutation.isPending}
-        />
-      </Modal>
-
-      {/* Bridge Credentials Modal */}
       <Modal
         title={`Bridge Token - ${bridgeCredentialsModal.bridge?.bridgeName || ''}`}
         open={bridgeCredentialsModal.open}
@@ -2410,6 +2110,30 @@ const SystemPage: React.FC = () => {
         entityType={auditTraceModal.entityType}
         entityIdentifier={auditTraceModal.entityIdentifier}
         entityName={auditTraceModal.entityName}
+      />
+
+      {/* Unified Resource Modal */}
+      <UnifiedResourceModal
+        open={unifiedModalState.open}
+        onCancel={closeUnifiedModal}
+        resourceType={unifiedModalState.resourceType}
+        mode={unifiedModalState.mode}
+        existingData={unifiedModalState.data || currentResource}
+        onSubmit={handleUnifiedModalSubmit}
+        onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
+        isSubmitting={
+          createTeamMutation.isPending ||
+          updateTeamNameMutation.isPending ||
+          createRegionMutation.isPending ||
+          updateRegionNameMutation.isPending ||
+          createBridgeMutation.isPending ||
+          updateBridgeNameMutation.isPending
+        }
+        isUpdatingVault={
+          updateTeamVaultMutation.isPending ||
+          updateRegionVaultMutation.isPending ||
+          updateBridgeVaultMutation.isPending
+        }
       />
 
       {/* Danger Zone Section */}

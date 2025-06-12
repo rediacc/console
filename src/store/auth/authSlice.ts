@@ -10,7 +10,7 @@ interface AuthState {
   isAuthenticated: boolean
   user: User | null
   company: string | null
-  masterPassword: string | null // Stored in memory only, never persisted
+  // masterPassword removed from Redux state for security - now managed by masterPasswordService
   companyEncryptionEnabled: boolean
   vaultCompany: string | null // Stores the VaultCompany sentinel value
   // Token removed from Redux state for security - now managed by tokenService
@@ -20,7 +20,6 @@ const initialState: AuthState = {
   isAuthenticated: false,
   user: null,
   company: null,
-  masterPassword: null,
   companyEncryptionEnabled: false,
   vaultCompany: null,
 }
@@ -32,30 +31,27 @@ const authSlice = createSlice({
     loginSuccess: (state, action: PayloadAction<{ 
       user: User; 
       company?: string; 
-      masterPassword?: string;
       vaultCompany?: string;
       companyEncryptionEnabled?: boolean;
     }>) => {
       state.isAuthenticated = true
       state.user = action.payload.user
       state.company = action.payload.company || null
-      state.masterPassword = action.payload.masterPassword || null
       state.vaultCompany = action.payload.vaultCompany || null
       state.companyEncryptionEnabled = action.payload.companyEncryptionEnabled || false
       // Token is now handled separately by tokenService for security
+      // masterPassword is now handled separately by masterPasswordService for security
     },
     logout: (state) => {
       state.isAuthenticated = false
       state.user = null
       state.company = null
-      state.masterPassword = null
       state.companyEncryptionEnabled = false
       state.vaultCompany = null
       // Token cleanup is handled by tokenService
+      // masterPassword cleanup is handled by masterPasswordService
     },
-    setMasterPassword: (state, action: PayloadAction<string | null>) => {
-      state.masterPassword = action.payload
-    },
+    // setMasterPassword action removed - masterPassword updates now handled by masterPasswordService
     // updateToken action removed - token updates now handled by tokenService
     updateCompany: (state, action: PayloadAction<string>) => {
       state.company = action.payload
@@ -70,5 +66,5 @@ const authSlice = createSlice({
   },
 })
 
-export const { loginSuccess, logout, setMasterPassword, updateCompany, setVaultCompany } = authSlice.actions
+export const { loginSuccess, logout, updateCompany, setVaultCompany } = authSlice.actions
 export default authSlice.reducer

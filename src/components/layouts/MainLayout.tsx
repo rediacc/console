@@ -28,6 +28,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { selectUser, selectCompany } from '@/store/auth/authSelectors'
 import { logout, updateCompany } from '@/store/auth/authSlice'
+import { masterPasswordService } from '@/services/masterPasswordService'
 import { toggleUiMode } from '@/store/ui/uiSlice'
 import { clearAuthData, saveAuthData, getAuthData } from '@/utils/auth'
 import apiClient from '@/api/client'
@@ -157,6 +158,7 @@ const MainLayout: React.FC = () => {
       // Continue with logout even if API call fails
     }
     clearAuthData()
+    masterPasswordService.clearMasterPassword() // Clear master password from secure memory
     queryClient.clear() // Clear all React Query caches
     dispatch(logout())
     navigate('/login')

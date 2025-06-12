@@ -1,6 +1,5 @@
 import { encryptVaultFields, decryptVaultFields } from '../utils/encryption'
-import { store } from '../store/store'
-import { selectMasterPassword } from '../store/auth/authSelectors'
+import { masterPasswordService } from '../services/masterPasswordService'
 import { showMessage } from '../utils/messages'
 
 /**
@@ -12,8 +11,7 @@ import { showMessage } from '../utils/messages'
  * Encrypts vault fields in request data before sending
  */
 export async function encryptRequestData(data: any): Promise<any> {
-  const state = store.getState()
-  const masterPassword = selectMasterPassword(state)
+  const masterPassword = await masterPasswordService.getMasterPassword()
   
   if (!masterPassword || !data) {
     return data
@@ -32,8 +30,7 @@ export async function encryptRequestData(data: any): Promise<any> {
  * Decrypts vault fields in response data after receiving
  */
 export async function decryptResponseData(data: any): Promise<any> {
-  const state = store.getState()
-  const masterPassword = selectMasterPassword(state)
+  const masterPassword = await masterPasswordService.getMasterPassword()
   
   if (!masterPassword || !data) {
     return data
