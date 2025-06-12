@@ -15,6 +15,7 @@ import {
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useCompanyArchitecture } from '@/api/queries/architecture'
+import { useTheme } from '@/context/ThemeContext'
 import * as d3 from 'd3'
 
 const { Title, Text } = Typography
@@ -43,6 +44,7 @@ const ArchitecturePage: React.FC = () => {
   ])
   const svgRef = useRef<SVGSVGElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const { theme } = useTheme()
 
   // Available entity types for filtering
   const entityTypes = [
@@ -127,7 +129,7 @@ const ArchitecturePage: React.FC = () => {
 
   // Get color for node type
   const getNodeColor = (nodeType: string) => {
-    const colors: Record<string, string> = {
+    const lightColors: Record<string, string> = {
       company: '#e0e0e0',
       user: '#d6d6d6',
       team: '#cccccc',
@@ -138,7 +140,21 @@ const ArchitecturePage: React.FC = () => {
       schedule: '#9a9a9a',
       storage: '#909090',
     }
-    return colors[nodeType] || '#cccccc'
+    
+    const darkColors: Record<string, string> = {
+      company: '#4a5568',
+      user: '#5a6778',
+      team: '#6a7788',
+      region: '#7a8798',
+      bridge: '#8a97a8',
+      machine: '#9aa7b8',
+      repository: '#aab7c8',
+      schedule: '#bac7d8',
+      storage: '#cad7e8',
+    }
+    
+    const colors = theme === 'dark' ? darkColors : lightColors
+    return colors[nodeType] || (theme === 'dark' ? '#6a7788' : '#cccccc')
   }
 
   // Render D3 visualization
@@ -203,7 +219,7 @@ const ArchitecturePage: React.FC = () => {
       .attr('markerHeight', 8)
       .append('path')
       .attr('d', 'M 0,-5 L 10,0 L 0,5')
-      .attr('fill', '#666')
+      .attr('fill', theme === 'dark' ? '#999' : '#666')
 
     if (viewMode === 'force') {
       // Force-directed layout

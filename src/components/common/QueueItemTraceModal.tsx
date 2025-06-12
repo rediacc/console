@@ -6,6 +6,7 @@ import dayjs from 'dayjs'
 import MonacoEditor from '@monaco-editor/react'
 import { queueMonitoringService } from '@/services/queueMonitoringService'
 import { showMessage } from '@/utils/messages'
+import { useTheme } from '@/context/ThemeContext'
 
 const { Text } = Typography
 
@@ -19,6 +20,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
   const [lastTraceFetchTime, setLastTraceFetchTime] = useState<dayjs.Dayjs | null>(null)
   const [isMonitoring, setIsMonitoring] = useState(false)
   const { data: traceData, isLoading: isTraceLoading, refetch: refetchTrace } = useQueueItemTrace(taskId, visible)
+  const { theme } = useTheme()
 
   // Update last fetch time when trace data is loaded
   useEffect(() => {
@@ -241,7 +243,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                       <MonacoEditor
                         height="300px"
                         language="json"
-                        theme="vs-dark"
+                        theme={theme === 'dark' ? 'vs-dark' : 'vs-light'}
                         value={JSON.stringify(JSON.parse(traceData.vaultContent.vaultContent || '{}'), null, 2)}
                         options={{
                           readOnly: true,
@@ -267,7 +269,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                       <MonacoEditor
                         height="300px"
                         language="json"
-                        theme="vs-dark"
+                        theme={theme === 'dark' ? 'vs-dark' : 'vs-light'}
                         value={JSON.stringify(JSON.parse(traceData.responseVaultContent.vaultContentResponse || '{}'), null, 2)}
                         options={{
                           readOnly: true,

@@ -333,7 +333,9 @@ const DashboardPage = () => {
                   <Progress 
                     percent={resource.ResourceLimit === 0 ? 0 : resource.UsagePercentage} 
                     status={getProgressStatus(resource.UsagePercentage)}
-                    strokeColor={resource.IsLimitReached === 1 ? token.colorError : token.colorPrimary}
+                    strokeColor={resource.IsLimitReached === 1 ? 
+                      (currentTheme === 'dark' ? '#ff6b6b' : token.colorError) : 
+                      (currentTheme === 'dark' ? '#7d9b49' : token.colorPrimary)}
                   />
                   {resource.IsLimitReached === 1 && (
                     <Text type="danger" style={{ fontSize: 12 }}>Limit reached</Text>
@@ -696,7 +698,9 @@ const DashboardPage = () => {
                               })()}
                               showInfo={false}
                               size="small"
-                              strokeColor={sub.daysRemaining <= 30 ? token.colorError : token.colorPrimary}
+                              strokeColor={sub.daysRemaining <= 30 ? 
+                                (currentTheme === 'dark' ? '#ff6b6b' : token.colorError) : 
+                                (currentTheme === 'dark' ? '#7d9b49' : token.colorPrimary)}
                             />
                           </Tooltip>
                         </div>

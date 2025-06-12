@@ -271,6 +271,459 @@ body {
   animation: fadeInOut 0.6s ease-in-out;
 }
 
+/* Tab styling for dark theme - Active tabs should be brighter */
+[data-theme="dark"] .ant-tabs-tab {
+  color: var(--color-text-tertiary);
+  transition: all 0.3s ease;
+}
+
+[data-theme="dark"] .ant-tabs-tab:hover {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .ant-tabs-tab-active {
+  background-color: var(--color-bg-tertiary) !important;
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--color-text-primary) !important;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .ant-tabs-ink-bar {
+  background-color: var(--color-primary);
+}
+
+/* Additional contrast for active tab in dark theme */
+[data-theme="dark"] .ant-tabs-card .ant-tabs-tab-active {
+  background-color: #4a4a4a !important;
+  border-color: var(--color-border-secondary) !important;
+}
+
+[data-theme="dark"] .ant-tabs-card .ant-tabs-tab {
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-border-primary);
+}
+
+/* Logout button styling */
+.logout-button {
+  color: var(--color-text-tertiary) !important;
+}
+
+.logout-button:hover {
+  color: var(--color-primary) !important;
+  background-color: rgba(85, 107, 47, 0.08) !important;
+}
+
+/* Logout button styling for dark theme */
+[data-theme="dark"] .logout-button {
+  color: var(--color-text-secondary) !important;
+}
+
+[data-theme="dark"] .logout-button:hover {
+  color: var(--color-primary) !important;
+  background-color: rgba(85, 107, 47, 0.15) !important;
+}
+
+/* Notification Bell Dropdown styles */
+.notification-dropdown {
+  background-color: var(--color-bg-primary);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.notification-dropdown-header {
+  border-bottom: 1px solid var(--color-border-primary);
+}
+
+.notification-dropdown .ant-list-item {
+  border-bottom: 1px solid var(--color-border-primary);
+}
+
+.notification-dropdown .ant-list-item-unread {
+  background-color: rgba(85, 107, 47, 0.05);
+}
+
+.notification-dropdown .ant-list-item-read {
+  background-color: var(--color-bg-primary);
+}
+
+.notification-dropdown .ant-list-item:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.notification-message {
+  color: var(--color-text-primary);
+}
+
+/* Notification Bell Dropdown for dark theme */
+[data-theme="dark"] .notification-dropdown {
+  background-color: var(--color-bg-secondary) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important;
+}
+
+[data-theme="dark"] .notification-dropdown-header {
+  border-bottom-color: var(--color-border-primary) !important;
+}
+
+[data-theme="dark"] .notification-dropdown .ant-list-item {
+  border-bottom-color: var(--color-border-primary) !important;
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .notification-dropdown .ant-list-item-unread {
+  background-color: rgba(85, 107, 47, 0.1) !important;
+}
+
+[data-theme="dark"] .notification-dropdown .ant-list-item-read {
+  background-color: var(--color-bg-secondary) !important;
+}
+
+[data-theme="dark"] .notification-dropdown .ant-list-item:hover {
+  background-color: var(--color-bg-hover) !important;
+}
+
+[data-theme="dark"] .notification-dropdown .ant-typography {
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] .notification-dropdown .notification-message {
+  color: var(--color-text-secondary) !important;
+}
+
+[data-theme="dark"] .notification-dropdown .ant-empty-description {
+  color: var(--color-text-secondary) !important;
+}
+
+/* Ant Design DatePicker/RangePicker for dark theme */
+[data-theme="dark"] .ant-picker-dropdown {
+  background: var(--color-bg-secondary);
+  box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.48), 0 6px 16px 0 rgba(0, 0, 0, 0.32), 0 9px 28px 8px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .ant-picker-panel-container {
+  background: var(--color-bg-secondary);
+}
+
+[data-theme="dark"] .ant-picker-header {
+  color: var(--color-text-primary);
+  border-bottom-color: var(--color-border-primary);
+}
+
+[data-theme="dark"] .ant-picker-header button {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .ant-picker-header button:hover {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-picker-content th {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .ant-picker-cell {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-picker-cell-in-view {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-picker-cell-disabled {
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .ant-picker-cell:hover .ant-picker-cell-inner {
+  background: var(--color-bg-hover);
+}
+
+[data-theme="dark"] .ant-picker-cell-selected .ant-picker-cell-inner {
+  background: var(--color-primary);
+}
+
+[data-theme="dark"] .ant-picker-cell-today .ant-picker-cell-inner {
+  border-color: var(--color-primary);
+}
+
+[data-theme="dark"] .ant-picker-footer {
+  border-top-color: var(--color-border-primary);
+  background: var(--color-bg-secondary);
+}
+
+[data-theme="dark"] .ant-picker-today-btn {
+  color: var(--color-primary);
+}
+
+[data-theme="dark"] .ant-picker-today-btn:hover {
+  color: var(--color-primary-hover);
+}
+
+/* Fix for OK button in RangePicker */
+[data-theme="dark"] .ant-picker-ok .ant-btn-primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .ant-picker-ok .ant-btn-primary:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .ant-picker-ok .ant-btn-primary:focus {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff !important;
+}
+
+/* Time picker panel for dark theme */
+[data-theme="dark"] .ant-picker-time-panel {
+  border-left-color: var(--color-border-primary);
+}
+
+[data-theme="dark"] .ant-picker-time-panel-column > li {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-picker-time-panel-column > li:hover {
+  background: var(--color-bg-hover);
+}
+
+[data-theme="dark"] .ant-picker-time-panel-column > li.ant-picker-time-panel-cell-selected {
+  background: var(--color-bg-hover);
+  font-weight: 600;
+}
+
+[data-theme="dark"] .ant-picker-time-panel-column > li.ant-picker-time-panel-cell-disabled {
+  color: var(--color-text-muted);
+}
+
+/* Preset buttons for dark theme */
+[data-theme="dark"] .ant-picker-presets button {
+  color: var(--color-primary);
+  border-color: var(--color-border-primary);
+}
+
+[data-theme="dark"] .ant-picker-presets button:hover {
+  color: var(--color-primary-hover);
+  border-color: var(--color-primary);
+  background: rgba(85, 107, 47, 0.08);
+}
+
+/* Ant Design Tooltip for dark theme */
+[data-theme="dark"] .ant-tooltip {
+  background: transparent;
+}
+
+[data-theme="dark"] .ant-tooltip-inner {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .ant-tooltip-arrow-content {
+  background-color: var(--color-bg-tertiary);
+}
+
+/* Ant Design Popover for dark theme */
+[data-theme="dark"] .ant-popover {
+  background: transparent;
+}
+
+[data-theme="dark"] .ant-popover-inner {
+  background-color: var(--color-bg-secondary);
+  box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.48), 0 6px 16px 0 rgba(0, 0, 0, 0.32), 0 9px 28px 8px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .ant-popover-title {
+  border-bottom-color: var(--color-border-primary);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-popover-inner-content {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-popover-arrow-content {
+  background-color: var(--color-bg-secondary);
+}
+
+/* FieldGenerator popover specific styles for dark theme */
+[data-theme="dark"] .ant-popover label {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-popover .ant-radio-wrapper {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-popover .ant-radio-wrapper-disabled span {
+  color: var(--color-text-muted) !important;
+}
+
+/* Fix generated values display in dark theme */
+[data-theme="dark"] .ant-popover pre,
+[data-theme="dark"] .ant-popover code {
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-tertiary);
+}
+
+/* Ensure all text in popovers is visible in dark mode */
+[data-theme="dark"] .ant-popover .ant-space-item {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-popover .ant-alert {
+  background-color: var(--color-bg-tertiary);
+  border-color: var(--color-border-secondary);
+}
+
+[data-theme="dark"] .ant-popover .ant-alert-message {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-popover .ant-alert-description {
+  color: var(--color-text-secondary);
+}
+
+/* Monaco Editor styling for dark theme */
+[data-theme="dark"] .monaco-editor {
+  border-color: var(--color-border-primary) !important;
+}
+
+/* VaultEditor JSON display in dark theme */
+[data-theme="dark"] .ant-card pre {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-primary);
+}
+
+/* Architecture page D3 visualization text for dark theme */
+[data-theme="dark"] svg text {
+  fill: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] svg .node-label {
+  fill: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] svg line,
+[data-theme="dark"] svg path {
+  stroke: rgba(255, 255, 255, 0.3) !important;
+}
+
+[data-theme="dark"] svg circle {
+  stroke: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Progress bars in dark theme - make them brighter */
+[data-theme="dark"] .ant-progress-inner {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .ant-progress-bg {
+  background-color: #7d9b49 !important;
+}
+
+[data-theme="dark"] .ant-progress-success-bg {
+  background-color: #73d13d !important;
+}
+
+/* Override inline stroke colors for better visibility in dark mode */
+[data-theme="dark"] .ant-progress .ant-progress-inner:not(.ant-progress-circle-gradient) .ant-progress-circle-path {
+  stroke: #7d9b49 !important;
+}
+
+[data-theme="dark"] .ant-progress .ant-progress-bg,
+[data-theme="dark"] .ant-progress .ant-progress-success-bg {
+  background-color: #7d9b49 !important;
+}
+
+/* Specific override for Resource Usage progress bars with inline strokeColor */
+[data-theme="dark"] .ant-card:has(.ant-progress) .ant-progress-inner:not(.ant-progress-circle-gradient) path:first-child {
+  stroke: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .ant-card:has(.ant-progress) .ant-progress-inner:not(.ant-progress-circle-gradient) path:last-child {
+  stroke: #7d9b49 !important;
+}
+
+/* Status-specific colors for progress bars in dark mode */
+[data-theme="dark"] .ant-progress-status-success .ant-progress-bg,
+[data-theme="dark"] .ant-progress-status-success .ant-progress-inner:not(.ant-progress-circle-gradient) path:last-child {
+  stroke: #73d13d !important;
+  background-color: #73d13d !important;
+}
+
+[data-theme="dark"] .ant-progress-status-exception .ant-progress-bg,
+[data-theme="dark"] .ant-progress-status-exception .ant-progress-inner:not(.ant-progress-circle-gradient) path:last-child {
+  stroke: #ff6b6b !important;
+  background-color: #ff6b6b !important;
+}
+
+[data-theme="dark"] .ant-progress-status-normal .ant-progress-bg,
+[data-theme="dark"] .ant-progress-status-normal .ant-progress-inner:not(.ant-progress-circle-gradient) path:last-child {
+  stroke: #faad14 !important;
+  background-color: #faad14 !important;
+}
+
+/* Force all progress bars in dark mode to use bright colors - override inline styles */
+[data-theme="dark"] .ant-progress-line .ant-progress-outer .ant-progress-inner .ant-progress-bg {
+  background-color: #7d9b49 !important;
+  opacity: 1 !important;
+}
+
+/* Specifically target Resource Usage progress bars */
+[data-theme="dark"] .ant-card-body .ant-progress .ant-progress-bg[style*="556b2f"] {
+  background-color: #7d9b49 !important;
+}
+
+[data-theme="dark"] .ant-card-body .ant-progress .ant-progress-bg[style*="ff4d4f"] {
+  background-color: #ff6b6b !important;
+}
+
+/* Override any inline style attribute for progress bars in dark mode */
+[data-theme="dark"] .ant-progress-line .ant-progress-bg {
+  background-color: #7d9b49 !important;
+}
+
+[data-theme="dark"] .ant-progress-status-exception .ant-progress-line .ant-progress-bg {
+  background-color: #ff6b6b !important;
+}
+
+/* Target the actual div element that has inline styles */
+[data-theme="dark"] .ant-progress .ant-progress-inner .ant-progress-bg[style] {
+  background-color: #7d9b49 !important;
+  filter: brightness(1.5) !important;
+}
+
+/* For progress bars with error status */
+[data-theme="dark"] .ant-progress-status-exception .ant-progress-inner .ant-progress-bg[style] {
+  background-color: #ff6b6b !important;
+  filter: brightness(1) !important;
+}
+
+/* Target Progress component with inline strokeColor */
+[data-theme="dark"] .ant-progress[style*="--progress-line-stroke-color"] {
+  --progress-line-stroke-color: #7d9b49 !important;
+}
+
+/* Use attribute selector to override inline styles more specifically */
+[data-theme="dark"] div[class*="ant-progress"] div[style*="background-color: rgb(85, 107, 47)"] {
+  background-color: #7d9b49 !important;
+}
+
+[data-theme="dark"] div[class*="ant-progress"] div[style*="background-color: #556b2f"] {
+  background-color: #7d9b49 !important;
+}
+
+/* Also brighten the track background */
+[data-theme="dark"] .ant-progress-line .ant-progress-inner {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
 /* Full height tabs for Resources page */
 .full-height-tabs {
   height: 100%;

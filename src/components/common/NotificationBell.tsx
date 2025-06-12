@@ -72,16 +72,13 @@ const NotificationBell: React.FC = () => {
   }
 
   const dropdownContent = (
-    <div style={{ 
+    <div className="notification-dropdown" style={{ 
       width: 400, 
       maxHeight: 500, 
-      backgroundColor: '#fff',
       borderRadius: 8,
-      boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
     }}>
-      <div style={{ 
+      <div className="notification-dropdown-header" style={{ 
         padding: '12px 16px', 
-        borderBottom: '1px solid #f0f0f0',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center'
@@ -123,20 +120,13 @@ const NotificationBell: React.FC = () => {
             renderItem={(notification) => (
               <List.Item
                 key={notification.id}
+                className={notification.read ? 'ant-list-item-read' : 'ant-list-item-unread'}
                 style={{ 
                   padding: '12px 16px',
                   cursor: 'pointer',
-                  backgroundColor: notification.read ? '#fff' : '#f6ffed',
-                  borderBottom: '1px solid #f0f0f0',
                   transition: 'background-color 0.3s'
                 }}
                 onClick={() => handleMarkAsRead(notification.id)}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = notification.read ? '#fafafa' : '#f0f9ff'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = notification.read ? '#fff' : '#f6ffed'
-                }}
               >
                 <List.Item.Meta
                   avatar={getIcon(notification.type)}
@@ -159,9 +149,8 @@ const NotificationBell: React.FC = () => {
                   }
                   description={
                     <div>
-                      <Text style={{ 
+                      <Text className="notification-message" style={{ 
                         fontSize: 13, 
-                        color: 'rgba(0, 0, 0, 0.85)',
                         display: 'block',
                         marginBottom: 4,
                         wordBreak: 'break-word'

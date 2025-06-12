@@ -30,6 +30,7 @@ import vaultDefinitions from '../../data/vaults.json'
 import storageProviders from '../../data/storageProviders.json'
 import { useAppSelector } from '@/store/store'
 import FieldGenerator from './FieldGenerator'
+import { useTheme } from '@/context/ThemeContext'
 
 const { Text } = Typography
 
@@ -77,6 +78,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null)
   
   const uiMode = useAppSelector((state) => state.ui.uiMode)
+  const { theme } = useTheme()
 
   // Get entity definition from JSON
   const entityDef = useMemo(() => {
@@ -1036,13 +1038,16 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 />
               )}
               
-              <div style={{ border: '1px solid #d9d9d9', borderRadius: 4 }}>
+              <div style={{ 
+                border: `1px solid ${theme === 'dark' ? 'var(--color-border-primary)' : '#d9d9d9'}`, 
+                borderRadius: 4 
+              }}>
                 <Editor
                   height="auto"
                   defaultLanguage="json"
                   value={rawJsonValue}
                   onChange={handleRawJsonChange}
-                  theme="vs-light"
+                  theme={theme === 'dark' ? 'vs-dark' : 'vs-light'}
                   options={{
                     minimap: { enabled: false },
                     fontSize: 14,

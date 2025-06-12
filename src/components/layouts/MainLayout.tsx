@@ -342,23 +342,15 @@ const MainLayout: React.FC = () => {
                 type="text"
                 icon={<LogoutOutlined />}
                 onClick={handleLogout}
+                className="logout-button"
                 style={{
                   width: '100%',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: collapsed ? 'center' : 'flex-start',
                   gap: collapsed ? 0 : 8,
-                  color: '#666',
                   transition: 'all 0.3s ease',
                   padding: collapsed ? '4px 0' : '4px 12px',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = '#556b2f';
-                  e.currentTarget.style.backgroundColor = 'rgba(85, 107, 47, 0.08)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = '#666';
-                  e.currentTarget.style.backgroundColor = 'transparent';
                 }}
               >
                 {!collapsed && (
