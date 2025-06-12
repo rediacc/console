@@ -300,7 +300,7 @@ const QueuePage: React.FC = () => {
 
   // Calculate container style for full height layout
   const containerStyle: React.CSSProperties = {
-    height: 'calc(100vh - 64px - 48px - 32px)', // viewport - header - breadcrumb - margins
+    height: 'calc(100vh - 64px - 48px)', // viewport - header - content margin
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden'

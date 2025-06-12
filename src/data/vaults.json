@@ -41,14 +41,9 @@
     },
     "REPOSITORY": {
       "descriptionKey": "fields.REPOSITORY.description",
-      "required": ["size", "credential"],
+      "required": ["credential"],
       "optional": [],
       "fields": {
-        "size": {
-          "type": "string",
-          "pattern": "^[0-9]+[KMGT]$",
-          "example": "128M"
-        },
         "credential": {
           "type": "string",
           "pattern": "^[A-Za-z0-9!@#$%^&*()_+{}|:<>,.?/]{32}$",

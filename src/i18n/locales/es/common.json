@@ -159,10 +159,6 @@
           "label": "Nombre del Repositorio",
           "description": "Identificador del nombre del repositorio"
         },
-        "size": {
-          "label": "Tamaño Inicial",
-          "description": "Tamaño inicial del repositorio (K/M/G/T)"
-        },
         "credential": {
           "label": "Contraseña de Acceso",
           "description": "Contraseña de acceso al repositorio (32 caracteres, alfanuméricos + especiales)"

@@ -161,10 +161,6 @@
           "label": "Repository Name",
           "description": "Repository name identifier"
         },
-        "size": {
-          "label": "Initial Size",
-          "description": "Initial repository size (K/M/G/T)"
-        },
         "credential": {
           "label": "Access Password",
           "description": "Repository access password (32 characters, alphanumeric + special chars)"

@@ -72,18 +72,7 @@ const MainLayout: React.FC = () => {
 
   // Define all menu items with visibility flags
   const allMenuItems = [
-    {
-      key: '/dashboard',
-      icon: <DashboardOutlined />,
-      label: t('navigation.dashboard'),
-      showInSimple: true,
-    },
-    {
-      key: '/architecture',
-      icon: <PartitionOutlined />,
-      label: t('navigation.architecture'),
-      showInSimple: false,
-    },
+    // Non-scrolling pages group
     {
       key: '/resources',
       icon: <AppstoreOutlined />,
@@ -100,6 +89,18 @@ const MainLayout: React.FC = () => {
       key: '/audit',
       icon: <HistoryOutlined />,
       label: t('navigation.audit'),
+      showInSimple: false,
+    },
+    {
+      key: 'divider-1',
+      type: 'divider',
+      showInSimple: true,
+    },
+    // Scrolling pages group
+    {
+      key: '/architecture',
+      icon: <PartitionOutlined />,
+      label: t('navigation.architecture'),
       showInSimple: false,
     },
     {
@@ -131,7 +132,7 @@ const MainLayout: React.FC = () => {
     // Only navigate if current page is not visible in new mode
     if (!isCurrentPageVisibleInNewMode) {
       const firstVisibleItem = allMenuItems.find(item => 
-        newMode === 'expert' || item.showInSimple
+        item.type !== 'divider' && (newMode === 'expert' || item.showInSimple)
       )
       
       if (firstVisibleItem) {
@@ -158,7 +159,7 @@ const MainLayout: React.FC = () => {
   }
 
   const menuItems = allMenuItems
-    .filter(item => uiMode === 'expert' || item.showInSimple)
+    .filter(item => item.type === 'divider' || uiMode === 'expert' || item.showInSimple)
     .map(({ showInSimple, ...item }) => item)
 
   // Don't select any menu during transition
@@ -167,8 +168,12 @@ const MainLayout: React.FC = () => {
     .filter(item => item.children?.some(child => child.key === location.pathname))
     .map(item => item.key)
 
+  // Determine if current page needs no-scroll behavior
+  const noScrollPages = ['/audit', '/resources', '/queue']
+  const isNoScrollPage = noScrollPages.includes(location.pathname)
+
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: '100vh' }} className={isNoScrollPage ? 'no-scroll-page' : ''}>
       <Sider
         trigger={null}
         collapsible
@@ -194,7 +199,9 @@ const MainLayout: React.FC = () => {
             borderBottom: '1px solid #f0f0f0',
             padding: collapsed ? '0 8px' : '0 16px',
             flexShrink: 0,
+            cursor: 'pointer',
           }}
+          onClick={() => navigate('/dashboard')}
         >
           <img
             src={theme === 'dark' ? logoWhite : logoBlack}

@@ -65,7 +65,7 @@
   "repositories": {
     "repositoryName": "Nombre del Repositorio",
     "repository": "Repositorio",
-    "createRepository": "Crear Repositorio",
+    "createRepository": "Crear Repo (Credenciales)",
     "editRepository": "Editar Repositorio",
     "deleteRepository": "Eliminar Repositorio",
     "confirmDelete": "¿Está seguro de que desea eliminar el repositorio \"{{repositoryName}}\"?",
@@ -115,7 +115,7 @@
   },
   "resourceTabs": {
     "machines": "Máquinas",
-    "repositories": "Repositorios",
+    "repositories": "Repo (Credenciales)",
     "storage": "Almacenamiento",
     "schedules": "Horarios"
   },

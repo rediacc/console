@@ -65,7 +65,7 @@
   "repositories": {
     "repositoryName": "Repository Name",
     "repository": "Repository",
-    "createRepository": "Create Repository",
+    "createRepository": "Create Repo (Credentials)",
     "editRepository": "Edit Repository",
     "deleteRepository": "Delete Repository",
     "confirmDelete": "Are you sure you want to delete repository \"{{repositoryName}}\"?",
@@ -115,7 +115,7 @@
   },
   "resourceTabs": {
     "machines": "Machines",
-    "repositories": "Repositories",
+    "repositories": "Repo (Credentials)",
     "storage": "Storage",
     "schedules": "Schedules"
   },

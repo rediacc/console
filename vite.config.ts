@@ -22,5 +22,17 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-antd': ['antd', '@ant-design/icons'],
+          'vendor-charts': ['@ant-design/charts', 'd3'],
+          'vendor-monaco': ['@monaco-editor/react'],
+          'vendor-state': ['@reduxjs/toolkit', 'react-redux', '@tanstack/react-query'],
+          'vendor-utils': ['lodash', 'axios', 'date-fns', 'zod'],
+        },
+      },
+    },
   },
 })

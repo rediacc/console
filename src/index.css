@@ -40,6 +40,21 @@ body {
   min-height: 100vh;
 }
 
+/* No-scroll pages (Audit, Resources, Queue) */
+.no-scroll-page {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.no-scroll-page .ant-layout {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.no-scroll-page .ant-layout-content {
+  overflow: hidden;
+}
+
 .ant-layout-sider {
   background: var(--color-bg-primary);
   box-shadow: 1px 0 4px var(--color-shadow);
@@ -55,6 +70,14 @@ body {
 
 .ant-menu-item-selected::after {
   border-right-color: var(--color-primary);
+}
+
+/* Menu divider styling */
+.ant-menu-item-divider {
+  height: 1px !important;
+  margin: 12px 16px !important;
+  background: var(--color-border-secondary) !important;
+  opacity: 0.6;
 }
 
 .ant-layout-header {
@@ -1009,4 +1032,85 @@ body {
   overflow-y: auto !important;
   overflow-x: auto !important;
   min-height: 0;
+}
+
+/* Full height table styles for audit page */
+.full-height-table {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-table .ant-table-wrapper {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.full-height-table .ant-table {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-table .ant-table-container {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-table .ant-table-header {
+  flex-shrink: 0;
+}
+
+.full-height-table .ant-table-body {
+  flex: 1;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  min-height: 0;
+}
+
+/* Ensure sticky headers work in full-height-table */
+.full-height-table .ant-table-thead > tr > th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+/* Custom scrollbar for full-height-table */
+.full-height-table .ant-table-body::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.full-height-table .ant-table-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.full-height-table .ant-table-body::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.full-height-table .ant-table-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .full-height-table .ant-table-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .full-height-table .ant-table-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Ensure table pagination stays at bottom */
+.full-height-table .ant-table-pagination {
+  margin: 16px 0 0 0;
+  padding: 0;
 }

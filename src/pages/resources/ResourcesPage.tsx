@@ -105,6 +105,7 @@ const ResourcesPage: React.FC = () => {
   const getCreateButtonText = () => {
     switch(teamResourcesTab) {
       case 'machines': return t('machines.createMachine')
+      case 'repositories': return t('repositories.createRepository')
       case 'storage': return t('storage.createStorage')
       case 'schedules': return t('schedules.createSchedule')
       default: return t('general.create')
@@ -964,8 +965,10 @@ const ResourcesPage: React.FC = () => {
 
   // Calculate available height for full-height layout
   const containerStyle: React.CSSProperties = {
-    height: 'calc(100vh - 64px - 48px - 32px)', // viewport - header - breadcrumb - margins
-    overflow: 'hidden'
+    height: 'calc(100vh - 64px - 48px)', // viewport - header - content margin
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column'
   }
 
   const cardStyle: React.CSSProperties = {

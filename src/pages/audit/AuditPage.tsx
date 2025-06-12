@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, Space, Typography, DatePicker, Select, Button, Table, Tag, Input, Row, Col, Empty, Dropdown, message } from 'antd';
 import { 
   HistoryOutlined, 
@@ -19,12 +19,14 @@ import { useAuditLogs, AuditLog } from '../../api/queries/audit';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
+import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
 const AuditPage = () => {
   const { t } = useTranslation('system');
+  const tableRef = useRef<HTMLDivElement>(null);
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([
     dayjs().subtract(7, 'days'),
     dayjs()
@@ -37,6 +39,13 @@ const AuditPage = () => {
     endDate: dateRange[1]?.endOf('day').format('YYYY-MM-DD HH:mm:ss'),
     entityFilter,
     maxRecords: 1000
+  });
+
+  const pageSize = useDynamicPageSize(tableRef, {
+    containerOffset: 180, // Account for table header, pagination, and internal padding
+    minRows: 10,
+    maxRows: 100,
+    rowHeight: 55
   });
 
   const getActionIcon = (action: string) => {
@@ -222,11 +231,34 @@ const AuditPage = () => {
     }
   ];
 
+  // Calculate container height similar to ResourcesPage
+  const containerStyle: React.CSSProperties = {
+    height: 'calc(100vh - 64px - 48px)', // viewport - header - content margin
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column'
+  };
+
+  const cardStyle: React.CSSProperties = {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden'
+  };
+
+  const cardBodyStyle: React.CSSProperties = {
+    flex: 1,
+    overflow: 'hidden',
+    padding: '16px',
+    display: 'flex',
+    flexDirection: 'column'
+  };
+
   return (
-    <div style={{ padding: 24 }}>
+    <div style={containerStyle}>
       {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <Title level={2}>
+      <div style={{ marginBottom: 16, flexShrink: 0 }}>
+        <Title level={2} style={{ marginBottom: 8 }}>
           <HistoryOutlined style={{ marginRight: 8 }} />
           Audit Logs
         </Title>
@@ -234,7 +266,7 @@ const AuditPage = () => {
       </div>
 
       {/* Filters */}
-      <Card style={{ marginBottom: 16 }}>
+      <Card style={{ marginBottom: 16, flexShrink: 0 }}>
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={24} md={8}>
@@ -323,23 +355,29 @@ const AuditPage = () => {
       </Card>
 
       {/* Audit Logs Table */}
-      <Card>
-        <Table
-          columns={columns}
-          dataSource={filteredLogs}
-          loading={isLoading}
-          rowKey={(record) => `${record.timestamp}-${record.action}-${record.entityName}`}
-          pagination={{
-            showSizeChanger: true,
-            showTotal: (total) => `Total ${total} logs`,
-            defaultPageSize: 50,
-            pageSizeOptions: ['20', '50', '100', '200']
-          }}
-          scroll={{ x: 1000 }}
-          locale={{
-            emptyText: <Empty description="No audit logs found" />
-          }}
-        />
+      <Card style={cardStyle} bodyStyle={cardBodyStyle}>
+        <div ref={tableRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <Table
+            columns={columns}
+            dataSource={filteredLogs}
+            loading={isLoading}
+            rowKey={(record) => `${record.timestamp}-${record.action}-${record.entityName}`}
+            pagination={{
+              total: filteredLogs?.length || 0,
+              pageSize: pageSize,
+              showSizeChanger: false,
+              showTotal: (total, range) => `Showing ${range[0]}-${range[1]} of ${total} logs`,
+              position: ['bottomRight']
+            }}
+            scroll={{ x: 1000 }}
+            className="full-height-table"
+            style={{ flex: 1 }}
+            sticky
+            locale={{
+              emptyText: <Empty description="No audit logs found" />
+            }}
+          />
+        </div>
       </Card>
     </div>
   );
