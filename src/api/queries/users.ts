@@ -176,8 +176,7 @@ export const useUpdateUserPassword = () => {
     mutationFn: async (data: { userEmail: string; newPassword: string }) => {
       const passwordHash = await hashPassword(data.newPassword)
       const response = await apiClient.put('/UpdateUserPassword', {
-        userEmail: data.userEmail,
-        newUserHash: passwordHash,
+        userNewPass: passwordHash,
       })
       return response
     },
