@@ -167,3 +167,25 @@ export const useAssignUserPermissions = () => {
     },
   })
 }
+
+// Update user password
+export const useUpdateUserPassword = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (data: { userEmail: string; newPassword: string }) => {
+      const passwordHash = await hashPassword(data.newPassword)
+      const response = await apiClient.put('/UpdateUserPassword', {
+        userEmail: data.userEmail,
+        newUserHash: passwordHash,
+      })
+      return response
+    },
+    onSuccess: (_, variables) => {
+      showMessage('success', 'Password updated successfully. Please login with your new password.')
+    },
+    onError: (error: any) => {
+      showMessage('error', error.message || 'Failed to update password')
+    },
+  })
+}

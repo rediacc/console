@@ -56,7 +56,8 @@ import {
   useUsers, 
   useCreateUser, 
   useDeactivateUser, 
-  useAssignUserPermissions, 
+  useAssignUserPermissions,
+  useUpdateUserPassword, 
   User 
 } from '@/api/queries/users'
 
@@ -133,6 +134,7 @@ const SystemPage: React.FC = () => {
   const { t: tCommon } = useTranslation('common')
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const currentMasterPassword = useSelector(selectMasterPassword)
+  const currentUser = useSelector((state: RootState) => state.auth.user)
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('users')
@@ -151,6 +153,8 @@ const SystemPage: React.FC = () => {
   // Settings state
   const [companyVaultModalOpen, setCompanyVaultModalOpen] = useState(false)
   const [userVaultModalOpen, setUserVaultModalOpen] = useState(false)
+  const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false)
+  const [changePasswordForm] = Form.useForm()
   
   // User state
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false)
@@ -242,6 +246,7 @@ const SystemPage: React.FC = () => {
   const createUserMutation = useCreateUser()
   const deactivateUserMutation = useDeactivateUser()
   const assignUserPermissionsMutation = useAssignUserPermissions()
+  const updateUserPasswordMutation = useUpdateUserPassword()
 
   // Permission hooks
   const { data: permissionGroups = [], isLoading: permissionsLoading } = usePermissionGroupsQuery()
@@ -377,6 +382,48 @@ const SystemPage: React.FC = () => {
     // TODO: Implement user vault update when API is available
     console.log('User vault update:', { vault, version })
     setUserVaultModalOpen(false)
+  }
+
+  const handleChangePassword = async (values: { currentPassword: string; newPassword: string; confirmPassword: string }) => {
+    if (!currentUser?.email) return
+
+    try {
+      await updateUserPasswordMutation.mutateAsync({
+        userEmail: currentUser.email,
+        newPassword: values.newPassword,
+      })
+      
+      setChangePasswordModalOpen(false)
+      changePasswordForm.resetFields()
+      
+      // Show success message with countdown
+      let countdown = 3
+      const modal = Modal.success({
+        title: 'Password Changed Successfully',
+        content: `Your password has been changed. You will be logged out in ${countdown} seconds...`,
+        okText: 'Logout Now',
+        onOk: () => {
+          dispatch(logout())
+          navigate('/login')
+        },
+      })
+      
+      const timer = setInterval(() => {
+        countdown--
+        modal.update({
+          content: `Your password has been changed. You will be logged out in ${countdown} seconds...`,
+        })
+        
+        if (countdown === 0) {
+          clearInterval(timer)
+          modal.destroy()
+          dispatch(logout())
+          navigate('/login')
+        }
+      }, 1000)
+    } catch (error) {
+      // Error handled by mutation
+    }
   }
 
   // User handlers
@@ -1582,15 +1629,23 @@ const SystemPage: React.FC = () => {
                   {t('personal.description')}
                 </Text>
 
-                <Button
-                  type="primary"
-                  icon={<SettingOutlined />}
-                  onClick={() => setUserVaultModalOpen(true)}
-                  size="large"
-                  style={{ marginTop: 16 }}
-                >
-                  {t('personal.configureVault')}
-                </Button>
+                <Space style={{ marginTop: 16 }}>
+                  <Button
+                    type="primary"
+                    icon={<SettingOutlined />}
+                    onClick={() => setUserVaultModalOpen(true)}
+                    size="large"
+                  >
+                    {t('personal.configureVault')}
+                  </Button>
+                  <Button
+                    icon={<KeyOutlined />}
+                    onClick={() => setChangePasswordModalOpen(true)}
+                    size="large"
+                  >
+                    Change Password
+                  </Button>
+                </Space>
               </Space>
             </Card>
           </Col>
@@ -2717,6 +2772,101 @@ const SystemPage: React.FC = () => {
             </Space>
           }
         />
+      </Modal>
+
+      {/* Change Password Modal */}
+      <Modal
+        title="Change Password"
+        open={changePasswordModalOpen}
+        onCancel={() => {
+          setChangePasswordModalOpen(false)
+          changePasswordForm.resetFields()
+        }}
+        footer={null}
+        width={500}
+      >
+        <Form
+          form={changePasswordForm}
+          layout="vertical"
+          onFinish={handleChangePassword}
+          autoComplete="off"
+        >
+          <Alert
+            message="Password Requirements"
+            description={
+              <ul style={{ margin: '8px 0 0 20px', fontSize: 14 }}>
+                <li>At least 8 characters long</li>
+                <li>Contains at least one uppercase letter</li>
+                <li>Contains at least one lowercase letter</li>
+                <li>Contains at least one number</li>
+                <li>Contains at least one special character (@$!%*?&)</li>
+              </ul>
+            }
+            type="info"
+            showIcon
+            style={{ marginBottom: 24 }}
+          />
+
+          <Form.Item
+            label="New Password"
+            name="newPassword"
+            rules={[
+              { required: true, message: 'Please enter your new password' },
+              { min: 8, message: 'Password must be at least 8 characters long' },
+              {
+                pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+                message: 'Password must contain uppercase, lowercase, number and special character',
+              },
+            ]}
+          >
+            <Input.Password 
+              placeholder="Enter new password"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Confirm New Password"
+            name="confirmPassword"
+            dependencies={['newPassword']}
+            rules={[
+              { required: true, message: 'Please confirm your new password' },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue('newPassword') === value) {
+                    return Promise.resolve()
+                  }
+                  return Promise.reject(new Error('Passwords do not match'))
+                },
+              }),
+            ]}
+          >
+            <Input.Password 
+              placeholder="Confirm new password"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
+            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+              <Button
+                onClick={() => {
+                  setChangePasswordModalOpen(false)
+                  changePasswordForm.resetFields()
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={updateUserPasswordMutation.isPending}
+              >
+                Change Password
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
       </Modal>
     </>
   )

@@ -38,7 +38,8 @@ import { useTheme } from '@/context/ThemeContext'
 import logoBlack from '@/assets/logo_black.png'
 import logoWhite from '@/assets/logo_white.png'
 import { RootState } from '@/store/store'
-import { useDashboard } from '@/api/queries/dashboard'
+import { useCompanyInfo } from '@/api/queries/dashboard'
+import { useQueryClient } from '@tanstack/react-query'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
@@ -49,24 +50,25 @@ const MainLayout: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const dispatch = useDispatch()
+  const queryClient = useQueryClient()
   const user = useSelector(selectUser)
   const company = useSelector(selectCompany)
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const { theme } = useTheme()
   const { t } = useTranslation('common')
-  const { data: dashboardData } = useDashboard()
+  const { data: companyData } = useCompanyInfo()
 
-  // Update company name when dashboard data is loaded
+  // Update company name when company data is loaded
   useEffect(() => {
-    if (dashboardData?.companyInfo?.CompanyName && dashboardData.companyInfo.CompanyName !== company) {
-      dispatch(updateCompany(dashboardData.companyInfo.CompanyName))
+    if (companyData?.companyInfo?.CompanyName && companyData.companyInfo.CompanyName !== company) {
+      dispatch(updateCompany(companyData.companyInfo.CompanyName))
       // Also update secure storage to persist the company name
       const authData = getAuthData()
       if (authData.token && authData.email) {
-        saveAuthData(authData.token, authData.email, dashboardData.companyInfo.CompanyName)
+        saveAuthData(authData.token, authData.email, companyData.companyInfo.CompanyName)
       }
     }
-  }, [dashboardData, company, dispatch])
+  }, [companyData, company, dispatch])
 
   // Define all menu items with visibility flags
   const allMenuItems = [
@@ -150,6 +152,7 @@ const MainLayout: React.FC = () => {
       // Continue with logout even if API call fails
     }
     clearAuthData()
+    queryClient.clear() // Clear all React Query caches
     dispatch(logout())
     navigate('/login')
   }
@@ -173,6 +176,13 @@ const MainLayout: React.FC = () => {
         style={{
           background: theme === 'dark' ? '#1a1a1a' : '#fff',
           boxShadow: theme === 'dark' ? '2px 0 8px rgba(0,0,0,0.3)' : '2px 0 8px rgba(0,0,0,0.06)',
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          height: '100vh',
+          overflow: 'hidden',
+          zIndex: 100,
         }}
       >
         <div
@@ -183,6 +193,7 @@ const MainLayout: React.FC = () => {
             justifyContent: 'center',
             borderBottom: '1px solid #f0f0f0',
             padding: collapsed ? '0 8px' : '0 16px',
+            flexShrink: 0,
           }}
         >
           <img
@@ -197,23 +208,24 @@ const MainLayout: React.FC = () => {
             }}
           />
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100% - 64px)' }}>
-          <Menu
-            mode="inline"
-            selectedKeys={selectedKeys}
-            defaultOpenKeys={openKeys}
-            items={menuItems}
-            onClick={({ key }) => {
-              if (key.startsWith('/')) {
-                navigate(key)
-              }
-            }}
-            style={{ 
-              flex: 1, 
-              borderRight: 0,
-              transition: 'all 0.3s ease',
-            }}
-          />
+        <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100% - 64px)', overflow: 'hidden' }}>
+          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+            <Menu
+              mode="inline"
+              selectedKeys={selectedKeys}
+              defaultOpenKeys={openKeys}
+              items={menuItems}
+              onClick={({ key }) => {
+                if (key.startsWith('/')) {
+                  navigate(key)
+                }
+              }}
+              style={{ 
+                borderRight: 0,
+                transition: 'all 0.3s ease',
+              }}
+            />
+          </div>
           <div
             style={{
               borderTop: '1px solid #f0f0f0',
@@ -357,7 +369,7 @@ const MainLayout: React.FC = () => {
           </div>
         </div>
       </Sider>
-      <Layout>
+      <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'margin-left 0.2s' }}>
         <Header
           style={{
             padding: '0 24px',
@@ -385,9 +397,9 @@ const MainLayout: React.FC = () => {
                 {company}
               </Text>
             )}
-            {dashboardData?.activeSubscription && (
+            {companyData?.activeSubscription && (
               <Badge 
-                count={dashboardData.activeSubscription.PlanName} 
+                count={companyData.activeSubscription.PlanName} 
                 style={{ 
                   backgroundColor: '#556b2f',
                   fontSize: '12px',

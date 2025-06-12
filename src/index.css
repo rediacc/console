@@ -469,6 +469,38 @@ body {
   transition: background 0.3s ease;
 }
 
+/* Sidebar menu scrollbar */
+.ant-layout-sider .ant-menu {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+}
+
+.ant-layout-sider .ant-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ant-layout-sider .ant-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ant-layout-sider .ant-menu::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+.ant-layout-sider .ant-menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .ant-layout-sider .ant-menu::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .ant-layout-sider .ant-menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
 /* Full height machine table */
 .full-height-machine-table {
   height: 100%;

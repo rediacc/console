@@ -134,6 +134,46 @@ interface DashboardData {
   allActiveSubscriptions?: SubscriptionDetail[];
 }
 
+// Lightweight query just for company info - used by MainLayout
+export const useCompanyInfo = () => {
+  return useQuery({
+    queryKey: ['company-info'],
+    queryFn: async () => {
+      const response = await apiClient.post('/GetCompanyDashboardJson', {});
+      
+      if (response.failure !== 0) {
+        throw new Error(response.errors?.join(', ') || 'Failed to fetch company info');
+      }
+      
+      // Look for the data in the second result set
+      if (!response.tables?.[1]?.data?.[0]?.subscriptionAndResourcesJson) {
+        throw new Error('Invalid dashboard data format');
+      }
+      
+      const jsonData = response.tables[1].data[0].subscriptionAndResourcesJson;
+      
+      // Parse the main JSON string
+      const parsedData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
+      
+      // Parse only what we need for the layout
+      const companyInfo = typeof parsedData.companyInfo === 'string' 
+        ? JSON.parse(parsedData.companyInfo) 
+        : parsedData.companyInfo;
+        
+      const activeSubscription = typeof parsedData.activeSubscription === 'string' 
+        ? JSON.parse(parsedData.activeSubscription) 
+        : parsedData.activeSubscription;
+      
+      return { companyInfo, activeSubscription };
+    },
+    staleTime: Infinity, // Never consider stale
+    cacheTime: Infinity, // Keep in cache forever (until logout)
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    refetchOnMount: false, // Don't refetch when component mounts
+    refetchOnReconnect: false, // Don't refetch when reconnecting
+  });
+};
+
 export const useDashboard = () => {
   return useQuery({
     queryKey: ['dashboard'],
@@ -191,7 +231,7 @@ export const useDashboard = () => {
       
       return parsedData as DashboardData;
     },
-    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
-    staleTime: 2 * 60 * 1000, // Consider data stale after 2 minutes
+    // Remove automatic refetch - dashboard will only fetch when explicitly needed
+    staleTime: 10 * 60 * 1000, // Consider data stale after 10 minutes
   });
 };

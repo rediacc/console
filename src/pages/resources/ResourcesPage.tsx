@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { Card, Tabs, Button, Space, Modal, Tag, Typography, Form, Input, Table, Row, Col, Empty, Spin, Dropdown } from 'antd'
+import { Card, Tabs, Button, Space, Modal, Tag, Typography, Table, Row, Col, Empty, Spin, Dropdown, Tooltip } from 'antd'
 import { 
   TeamOutlined, 
   PlusOutlined, 
@@ -25,7 +25,7 @@ import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import { showMessage } from '@/utils/messages'
 
 // Team queries
-import { useTeams, useCreateTeam, Team } from '@/api/queries/teams'
+import { useTeams, Team } from '@/api/queries/teams'
 
 
 // Machine queries
@@ -98,9 +98,7 @@ const ResourcesPage: React.FC = () => {
   const storageFormRef = useRef<any>(null)
   const scheduleFormRef = useRef<any>(null)
   
-  // Team state
-  const [isCreateTeamModalOpen, setIsCreateTeamModalOpen] = useState(false)
-  const [teamForm] = Form.useForm()
+  // Team state - removed create team functionality (exists in System page)
   
 
   // Machine state - removed modal states since we navigate to machines page instead
@@ -115,6 +113,16 @@ const ResourcesPage: React.FC = () => {
     open: boolean
     repository?: Repository
   }>({ open: false })
+  
+  // Helper to get create button text based on current tab
+  const getCreateButtonText = () => {
+    switch(teamResourcesTab) {
+      case 'machines': return t('machines.createMachine')
+      case 'storage': return t('storage.createStorage')
+      case 'schedules': return t('schedules.createSchedule')
+      default: return t('general.create')
+    }
+  }
 
   // Storage state
   const [isCreateStorageModalOpen, setIsCreateStorageModalOpen] = useState(false)
@@ -141,7 +149,6 @@ const ResourcesPage: React.FC = () => {
   // Team hooks
   const { data: teams, isLoading: teamsLoading } = useTeams()
   const teamsList: Team[] = teams || []
-  const createTeamMutation = useCreateTeam()
 
 
 
@@ -183,33 +190,46 @@ const ResourcesPage: React.FC = () => {
   
   // Dynamic page sizes for tables
   const repositoryPageSize = useDynamicPageSize(repositoryTableRef, {
-    containerOffset: 120, // Account for tab headers and extra padding
+    containerOffset: 200, // Account for tab headers, pagination, and padding
     minRows: 5,
-    maxRows: 50
+    maxRows: 50,
+    rowHeight: 55 // Typical row height with padding
   })
   
   const storagePageSize = useDynamicPageSize(storageTableRef, {
-    containerOffset: 120,
+    containerOffset: 200,
     minRows: 5,
-    maxRows: 50
+    maxRows: 50,
+    rowHeight: 55
   })
   
   const schedulePageSize = useDynamicPageSize(scheduleTableRef, {
-    containerOffset: 120,
+    containerOffset: 200,
     minRows: 5,
-    maxRows: 50
+    maxRows: 50,
+    rowHeight: 55
   })
 
-  // Set default selected team in Simple mode
+  // Set default selected team on startup
+  const hasInitializedTeam = useRef(false)
   React.useEffect(() => {
-    if (uiMode === 'simple' && selectedTeams.length === 0 && teamsList && teamsList.length > 0) {
-      // Check if "Private Team" exists
-      const privateTeam = teamsList.find((team: Team) => team.teamName === 'Private Team')
-      if (privateTeam) {
-        setSelectedTeams(['Private Team'])
+    if (!teamsLoading && !hasInitializedTeam.current && teamsList && teamsList.length > 0) {
+      hasInitializedTeam.current = true
+      if (uiMode === 'simple') {
+        // In simple mode, try to select "Private Team" first
+        const privateTeam = teamsList.find((team: Team) => team.teamName === 'Private Team')
+        if (privateTeam) {
+          setSelectedTeams(['Private Team'])
+        } else {
+          // Fall back to first team if Private Team doesn't exist
+          setSelectedTeams([teamsList[0].teamName])
+        }
+      } else {
+        // In expert mode, select the first team
+        setSelectedTeams([teamsList[0].teamName])
       }
     }
-  }, [uiMode, selectedTeams, teamsList])
+  }, [uiMode, teamsList, teamsLoading])
 
   // Forms
 
@@ -240,16 +260,7 @@ const ResourcesPage: React.FC = () => {
     },
   })
 
-  // Team handlers
-  const handleCreateTeam = async (values: { teamName: string }) => {
-    try {
-      await createTeamMutation.mutateAsync(values)
-      setIsCreateTeamModalOpen(false)
-      teamForm.resetFields()
-    } catch (error) {
-      // Error handled by mutation
-    }
-  }
+  // Team handlers removed - create team functionality exists in System page
 
 
   // Machine handlers removed - handled in MachinePage
@@ -848,29 +859,34 @@ const ResourcesPage: React.FC = () => {
           {t('resourceTabs.repositories')}
         </span>
       ),
-      children: repositoriesLoading ? (
-        <div style={{ textAlign: 'center', padding: '100px 0' }}>
-          <Spin size="large" tip={t('common:general.loading')} />
-        </div>
-      ) : (
+      children: (
         <div ref={repositoryTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <Table
-            columns={repositoryColumns}
-            dataSource={repositories}
-            rowKey="repositoryName"
-            scroll={{ x: 'max-content', y: 'calc(100vh - 400px)' }}
-            pagination={{
-              total: repositories?.length || 0,
-              pageSize: repositoryPageSize,
-              showSizeChanger: false,
-              showTotal: (total, range) => `${t('common:general.showingRecords', { start: range[0], end: range[1], total })}`,
-              position: ['bottomRight'],
-            }}
-            locale={{
-              emptyText: t('repositories.noRepositories'),
-            }}
-            sticky
-          />
+          {repositoriesLoading ? (
+            <div style={{ textAlign: 'center', padding: '100px 0' }}>
+              <Spin size="large" tip={t('common:general.loading')} />
+            </div>
+          ) : repositories.length === 0 ? (
+            <Empty
+              description={t('repositories.noRepositories')}
+              style={{ margin: 'auto' }}
+            />
+          ) : (
+            <Table
+              columns={repositoryColumns}
+              dataSource={repositories}
+              rowKey="repositoryName"
+              scroll={{ x: 'max-content' }}
+              pagination={{
+                total: repositories?.length || 0,
+                pageSize: repositoryPageSize,
+                showSizeChanger: false,
+                showTotal: (total, range) => `${t('common:general.showingRecords', { start: range[0], end: range[1], total })}`,
+                position: ['bottomRight'],
+              }}
+              style={{ flex: 1 }}
+              sticky
+            />
+          )}
         </div>
       ),
     },
@@ -882,29 +898,34 @@ const ResourcesPage: React.FC = () => {
           {t('resourceTabs.storage')}
         </span>
       ),
-      children: storagesLoading ? (
-        <div style={{ textAlign: 'center', padding: '100px 0' }}>
-          <Spin size="large" tip={t('common:general.loading')} />
-        </div>
-      ) : (
+      children: (
         <div ref={storageTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <Table
-            columns={storageColumns}
-            dataSource={storages}
-            rowKey="storageName"
-            scroll={{ x: 'max-content', y: 'calc(100vh - 400px)' }}
-            pagination={{
-              total: storages?.length || 0,
-              pageSize: storagePageSize,
-              showSizeChanger: false,
-              showTotal: (total, range) => `${t('common:general.showingRecords', { start: range[0], end: range[1], total })}`,
-              position: ['bottomRight'],
-            }}
-            locale={{
-              emptyText: t('storage.noStorage'),
-            }}
-            sticky
-          />
+          {storagesLoading ? (
+            <div style={{ textAlign: 'center', padding: '100px 0' }}>
+              <Spin size="large" tip={t('common:general.loading')} />
+            </div>
+          ) : storages.length === 0 ? (
+            <Empty
+              description={t('storage.noStorage')}
+              style={{ margin: 'auto' }}
+            />
+          ) : (
+            <Table
+              columns={storageColumns}
+              dataSource={storages}
+              rowKey="storageName"
+              scroll={{ x: 'max-content' }}
+              pagination={{
+                total: storages?.length || 0,
+                pageSize: storagePageSize,
+                showSizeChanger: false,
+                showTotal: (total, range) => `${t('common:general.showingRecords', { start: range[0], end: range[1], total })}`,
+                position: ['bottomRight'],
+              }}
+              style={{ flex: 1 }}
+              sticky
+            />
+          )}
         </div>
       ),
     },
@@ -916,29 +937,34 @@ const ResourcesPage: React.FC = () => {
           {t('resourceTabs.schedules')}
         </span>
       ),
-      children: schedulesLoading ? (
-        <div style={{ textAlign: 'center', padding: '100px 0' }}>
-          <Spin size="large" tip={t('common:general.loading')} />
-        </div>
-      ) : (
+      children: (
         <div ref={scheduleTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <Table
-            columns={scheduleColumns}
-            dataSource={schedules}
-            rowKey="scheduleName"
-            scroll={{ x: 'max-content', y: 'calc(100vh - 400px)' }}
-            pagination={{
-              total: schedules?.length || 0,
-              pageSize: schedulePageSize,
-              showSizeChanger: false,
-              showTotal: (total, range) => `${t('common:general.showingRecords', { start: range[0], end: range[1], total })}`,
-              position: ['bottomRight'],
-            }}
-            locale={{
-              emptyText: t('schedules.noSchedules'),
-            }}
-            sticky
-          />
+          {schedulesLoading ? (
+            <div style={{ textAlign: 'center', padding: '100px 0' }}>
+              <Spin size="large" tip={t('common:general.loading')} />
+            </div>
+          ) : schedules.length === 0 ? (
+            <Empty
+              description={t('schedules.noSchedules')}
+              style={{ margin: 'auto' }}
+            />
+          ) : (
+            <Table
+              columns={scheduleColumns}
+              dataSource={schedules}
+              rowKey="scheduleName"
+              scroll={{ x: 'max-content' }}
+              pagination={{
+                total: schedules?.length || 0,
+                pageSize: schedulePageSize,
+                showSizeChanger: false,
+                showTotal: (total, range) => `${t('common:general.showingRecords', { start: range[0], end: range[1], total })}`,
+                position: ['bottomRight'],
+              }}
+              style={{ flex: 1 }}
+              sticky
+            />
+          )}
         </div>
       ),
     },
@@ -971,30 +997,43 @@ const ResourcesPage: React.FC = () => {
           <Col span={24} style={{ height: '100%' }}>
             <Card style={cardStyle} bodyStyle={cardBodyStyle}>
               <div style={{ marginBottom: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 8 }}>
-                  <Title level={4} style={{ margin: 0, minWidth: 'fit-content' }}>
-                    {t('teams.teamResources')}
-                  </Title>
-                  <TeamSelector
-                    teams={teamsList}
-                    selectedTeams={selectedTeams}
-                    onChange={setSelectedTeams}
-                    loading={teamsLoading}
-                    placeholder={t('teams.selectTeamToView')}
-                    style={{ minWidth: 300, maxWidth: 500 }}
-                  />
-                </div>
-                <div style={{ marginLeft: 332 }}>
-                  <Space>
-                    <Button 
-                      type="primary"
-                      icon={<TeamOutlined />}
-                      onClick={() => setIsCreateTeamModalOpen(true)}
-                      style={{ background: '#556b2f', borderColor: '#556b2f' }}
-                    >
-                      {t('teams.createTeam')}
-                    </Button>
-                    {selectedTeams.length > 0 && teamResourcesTab !== 'repositories' && (
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 16
+                }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 16,
+                    flex: '1 1 auto',
+                    minWidth: 0
+                  }}>
+                    <Title level={4} style={{ margin: 0, flexShrink: 0 }}>
+                      {t('teams.teamResources')}
+                    </Title>
+                    <TeamSelector
+                      teams={teamsList}
+                      selectedTeams={selectedTeams}
+                      onChange={setSelectedTeams}
+                      loading={teamsLoading}
+                      placeholder={t('teams.selectTeamToView')}
+                      style={{ 
+                        minWidth: 250, 
+                        maxWidth: 400,
+                        width: '100%'
+                      }}
+                    />
+                  </div>
+                  
+                  {selectedTeams.length > 0 && teamResourcesTab !== 'repositories' && (
+                    <div style={{ 
+                      display: 'flex',
+                      gap: 8,
+                      flexShrink: 0
+                    }}>
                       <Button 
                         type="primary" 
                         icon={<PlusOutlined />}
@@ -1019,12 +1058,10 @@ const ResourcesPage: React.FC = () => {
                         }}
                         style={{ background: '#556b2f', borderColor: '#556b2f' }}
                       >
-                        {teamResourcesTab === 'machines' && t('machines.createMachine')}
-                        {teamResourcesTab === 'storage' && t('storage.createStorage')}
-                        {teamResourcesTab === 'schedules' && t('schedules.createSchedule')}
+                        {getCreateButtonText()}
                       </Button>
-                    )}
-                  </Space>
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -1039,7 +1076,7 @@ const ResourcesPage: React.FC = () => {
                   activeKey={teamResourcesTab}
                   onChange={setTeamResourcesTab}
                   items={teamResourcesTabs}
-                  style={{ height: 'calc(100% - 60px)', display: 'flex', flexDirection: 'column' }}
+                  style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
                   className="full-height-tabs"
                 />
               )}
@@ -1047,99 +1084,51 @@ const ResourcesPage: React.FC = () => {
           </Col>
         </Row>
       ) : (
-        <Card>
-          <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <Title level={4} style={{ margin: 0 }}>
-                {t('teams.teamResources')}
-              </Title>
-            </div>
-            <Space>
-              {teamResourcesTab !== 'repositories' && (
-                <Button 
-                  type="primary" 
-                  icon={<PlusOutlined />}
-                  onClick={() => {
-                    switch(teamResourcesTab) {
-                      case 'machines':
-                        setIsCreateMachineModalOpen(true)
-                        break
-                      case 'storage':
-                        storageForm.setValue('teamName', 'Private Team')
-                        setIsCreateStorageModalOpen(true)
-                        break
-                    }
-                  }}
-                  style={{ background: '#556b2f', borderColor: '#556b2f' }}
-                >
-                  {teamResourcesTab === 'machines' && t('machines.createMachine')}
-                  {teamResourcesTab === 'storage' && t('storage.createStorage')}
-                </Button>
-              )}
-            </Space>
-          </div>
-          
-          <Tabs
-            activeKey={teamResourcesTab}
-            onChange={setTeamResourcesTab}
-            items={teamResourcesTabs.filter(tab => tab.key !== 'schedules')}
-          />
-        </Card>
+        <Row gutter={24} style={containerStyle}>
+          <Col span={24} style={{ height: '100%' }}>
+            <Card style={cardStyle} bodyStyle={cardBodyStyle}>
+              <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+                <div>
+                  <Title level={4} style={{ margin: 0 }}>
+                    {t('teams.teamResources')}
+                  </Title>
+                </div>
+                <Space>
+                  {teamResourcesTab !== 'repositories' && (
+                    <Button 
+                      type="primary" 
+                      icon={<PlusOutlined />}
+                      onClick={() => {
+                        switch(teamResourcesTab) {
+                          case 'machines':
+                            setIsCreateMachineModalOpen(true)
+                            break
+                          case 'storage':
+                            storageForm.setValue('teamName', 'Private Team')
+                            setIsCreateStorageModalOpen(true)
+                            break
+                        }
+                      }}
+                      style={{ background: '#556b2f', borderColor: '#556b2f' }}
+                    >
+                      {getCreateButtonText()}
+                    </Button>
+                  )}
+                </Space>
+              </div>
+              
+              <Tabs
+                activeKey={teamResourcesTab}
+                onChange={setTeamResourcesTab}
+                items={teamResourcesTabs.filter(tab => tab.key !== 'schedules')}
+                style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+                className="full-height-tabs"
+              />
+            </Card>
+          </Col>
+        </Row>
       )}
 
-      {/* Team Modals */}
-      <Modal
-        title={t('teams.createTeam')}
-        open={isCreateTeamModalOpen}
-        onCancel={() => {
-          setIsCreateTeamModalOpen(false)
-          teamForm.resetFields()
-        }}
-        footer={null}
-      >
-        <Form
-          form={teamForm}
-          layout="horizontal"
-          labelCol={{ span: 8 }}
-          wrapperCol={{ span: 16 }}
-          labelAlign="left"
-          colon={true}
-          onFinish={handleCreateTeam}
-        >
-          <Form.Item
-            name="teamName"
-            label={t('teams.teamName')}
-            rules={[
-              { required: true, message: t('teams.validation.teamNameRequired') },
-              { pattern: /^[a-zA-Z0-9-_]+$/, message: t('teams.validation.teamNamePattern') },
-            ]}
-          >
-            <Input placeholder={t('teams.placeholders.enterTeamName')} />
-          </Form.Item>
-
-          <Form.Item 
-            style={{ marginBottom: 0 }}
-            wrapperCol={{ offset: 8, span: 16 }}
-          >
-            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-              <Button onClick={() => {
-                setIsCreateTeamModalOpen(false)
-                teamForm.resetFields()
-              }}>
-                {t('general.cancel')}
-              </Button>
-              <Button 
-                type="primary" 
-                htmlType="submit"
-                loading={createTeamMutation.isPending}
-                style={{ background: '#556b2f', borderColor: '#556b2f' }}
-              >
-                {t('general.create')}
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
 
 
 
