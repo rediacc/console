@@ -407,27 +407,27 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           createText = t('machines:createMachine')
           break
         case 'repository':
-          createText = t('repositories.createRepository')
+          createText = t('resources:repositories.createRepository')
           break
         case 'storage':
-          createText = t('storage.createStorage')
+          createText = t('resources:storage.createStorage')
           break
         case 'schedule':
-          createText = t('schedules.createSchedule')
+          createText = t('resources:schedules.createSchedule')
           break
       }
       
       if (isTeamPreselected || uiMode === 'simple') {
         const team = uiMode === 'simple' ? 'Private Team' : 
           (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter)
-        return `${createText} ${t('teams.resourcesInTeam', { team })}`
+        return `${createText} in ${team}`
       }
       
       return createText
     } else {
       // Edit mode
-      const editText = t('general.edit')
-      const resourceName = t(`${getResourceTranslationKey()}.${resourceType}Name`)
+      const editText = t('resources:general.edit')
+      const resourceName = t(`resources:${getResourceTranslationKey()}.${resourceType}Name`)
       return `${editText} ${resourceName}`
     }
   }
