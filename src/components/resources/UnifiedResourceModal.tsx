@@ -595,20 +595,15 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           onSubmit={handleSubmit}
           entityType={getEntityType()}
           vaultFieldName={getVaultFieldName()}
-          showDefaultsAlert={mode === 'create' && (uiMode === 'simple' || isTeamPreselected)}
+          showDefaultsAlert={mode === 'create' && uiMode === 'simple'}
           hideImportExport={true}
           onImportExportRef={(handlers) => {
             importExportHandlers.current = handlers
           }}
           defaultsContent={
             <Space direction="vertical" size={0}>
-              {(uiMode === 'simple' || isTeamPreselected) && (
-                <Text>{t('general.team')}: {
-                  uiMode === 'simple' ? 'Private Team' : 
-                  (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter)
-                }</Text>
-              )}
-              {uiMode === 'simple' && resourceType === 'machine' && (
+              <Text>{t('general.team')}: Private Team</Text>
+              {resourceType === 'machine' && (
                 <>
                   <Text>{t('machines:region')}: Default Region</Text>
                   <Text>{t('machines:bridge')}: Global Bridges</Text>

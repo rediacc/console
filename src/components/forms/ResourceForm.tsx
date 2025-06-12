@@ -104,8 +104,8 @@ function ResourceForm<T = any>({
 
   // Force horizontal layout for popup forms to save space
   const formLayout = layout === 'vertical' ? 'horizontal' : layout
-  const labelCol = { span: 8 }
-  const wrapperCol = { span: 16 }
+  const labelCol = { span: 6 }
+  const wrapperCol = { span: 18 }
 
   return (
     <Form 
@@ -113,7 +113,7 @@ function ResourceForm<T = any>({
       onFinish={handleSubmit(onSubmit)}
       labelCol={labelCol}
       wrapperCol={wrapperCol}
-      labelAlign="left"
+      labelAlign="right"
       colon={true}
     >
       {fields.map((field) => {

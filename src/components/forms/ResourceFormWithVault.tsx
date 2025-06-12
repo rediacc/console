@@ -161,8 +161,8 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
 
     // Force horizontal layout for popup forms to save space
     const formLayout = layout === 'vertical' ? 'horizontal' : layout
-    const labelCol = { span: 8 }
-    const wrapperCol = { span: 16 }
+    const labelCol = { span: 6 }
+    const wrapperCol = { span: 18 }
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, height: '100%' }}>
@@ -171,7 +171,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
           layout={formLayout}
           labelCol={labelCol}
           wrapperCol={wrapperCol}
-          labelAlign="left"
+          labelAlign="right"
           colon={true}
           style={{ flexShrink: 0 }}
         >

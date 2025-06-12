@@ -847,9 +847,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       <Form
         form={form}
         layout="horizontal"
-        labelCol={{ span: 8 }}
-        wrapperCol={{ span: 16 }}
-        labelAlign="left"
+        labelCol={{ span: 6 }}
+        wrapperCol={{ span: 18 }}
+        labelAlign="right"
         colon={true}
         onValuesChange={(changedValues) => handleFormChange(changedValues)}
         autoComplete="off"
