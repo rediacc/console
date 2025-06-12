@@ -3,7 +3,7 @@
     "title": "Teams",
     "searchTeams": "Search teams...",
     "teamName": "Team Name",
-    "createTeam": "Create Team",
+    "createTeam": "Add Team",
     "editTeam": "Edit Team",
     "deleteTeam": "Delete Team",
     "confirmDelete": "Are you sure you want to delete team \"{{teamName}}\"? This will remove all resources in the team.",
@@ -57,7 +57,7 @@
   },
   "machines": {
     "machineName": "Machine Name",
-    "createMachine": "Create Machine",
+    "createMachine": "Add Machine",
     "placeholders": {
       "enterMachineName": "Enter machine name"
     }
@@ -78,7 +78,7 @@
   },
   "storage": {
     "storageName": "Storage Name",
-    "createStorage": "Create Storage",
+    "createStorage": "Add Storage",
     "editStorage": "Edit Storage",
     "deleteStorage": "Delete Storage",
     "confirmDelete": "Are you sure you want to delete storage \"{{storageName}}\"?",
@@ -89,7 +89,7 @@
   },
   "schedules": {
     "scheduleName": "Schedule Name",
-    "createSchedule": "Create Schedule",
+    "createSchedule": "Add Schedule",
     "editSchedule": "Edit Schedule",
     "deleteSchedule": "Delete Schedule",
     "confirmDelete": "Are you sure you want to delete schedule \"{{scheduleName}}\"?",

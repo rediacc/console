@@ -3,7 +3,7 @@
     "title": "Equipos",
     "searchTeams": "Buscar equipos...",
     "teamName": "Nombre del Equipo",
-    "createTeam": "Crear Equipo",
+    "createTeam": "Agregar Equipo",
     "editTeam": "Editar Equipo",
     "deleteTeam": "Eliminar Equipo",
     "confirmDelete": "¿Está seguro de que desea eliminar el equipo \"{{teamName}}\"? Esto eliminará todos los recursos del equipo.",
@@ -57,7 +57,7 @@
   },
   "machines": {
     "machineName": "Nombre de la Máquina",
-    "createMachine": "Crear Máquina",
+    "createMachine": "Agregar Máquina",
     "placeholders": {
       "enterMachineName": "Ingrese el nombre de la máquina"
     }
@@ -78,7 +78,7 @@
   },
   "storage": {
     "storageName": "Nombre del Almacenamiento",
-    "createStorage": "Crear Almacenamiento",
+    "createStorage": "Agregar Almacenamiento",
     "editStorage": "Editar Almacenamiento",
     "deleteStorage": "Eliminar Almacenamiento",
     "confirmDelete": "¿Está seguro de que desea eliminar el almacenamiento \"{{storageName}}\"?",
@@ -89,7 +89,7 @@
   },
   "schedules": {
     "scheduleName": "Nombre del Horario",
-    "createSchedule": "Crear Horario",
+    "createSchedule": "Agregar Horario",
     "editSchedule": "Editar Horario",
     "deleteSchedule": "Eliminar Horario",
     "confirmDelete": "¿Está seguro de que desea eliminar el horario \"{{scheduleName}}\"?",

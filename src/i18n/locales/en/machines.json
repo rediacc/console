@@ -1,6 +1,6 @@
 {
   "title": "Machines",
-  "createMachine": "Create Machine",
+  "createMachine": "Add Machine",
   "machineName": "Machine Name",
   "team": "Team",
   "region": "Region",

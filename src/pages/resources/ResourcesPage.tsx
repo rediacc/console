@@ -11,8 +11,7 @@ import {
   DesktopOutlined,
   ScheduleOutlined,
   MoreOutlined,
-  FunctionOutlined,
-  HistoryOutlined
+  FunctionOutlined
 } from '@ant-design/icons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -22,12 +21,11 @@ import { RootState } from '@/store/store'
 import ResourceForm from '@/components/forms/ResourceForm'
 import ResourceFormWithVault from '@/components/forms/ResourceFormWithVault'
 import VaultEditorModal from '@/components/common/VaultEditorModal'
-import AuditTraceModal from '@/components/common/AuditTraceModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import { showMessage } from '@/utils/messages'
 
 // Team queries
-import { useTeams, useCreateTeam, useUpdateTeamName, useDeleteTeam, useUpdateTeamVault, Team } from '@/api/queries/teams'
+import { useTeams, useCreateTeam, Team } from '@/api/queries/teams'
 
 
 // Machine queries
@@ -102,12 +100,7 @@ const ResourcesPage: React.FC = () => {
   
   // Team state
   const [isCreateTeamModalOpen, setIsCreateTeamModalOpen] = useState(false)
-  const [editingTeam, setEditingTeam] = useState<Team | null>(null)
   const [teamForm] = Form.useForm()
-  const [teamVaultModalConfig, setTeamVaultModalConfig] = useState<{
-    open: boolean
-    team?: Team
-  }>({ open: false })
   
 
   // Machine state - removed modal states since we navigate to machines page instead
@@ -149,9 +142,6 @@ const ResourcesPage: React.FC = () => {
   const { data: teams, isLoading: teamsLoading } = useTeams()
   const teamsList: Team[] = teams || []
   const createTeamMutation = useCreateTeam()
-  const updateTeamNameMutation = useUpdateTeamName()
-  const deleteTeamMutation = useDeleteTeam()
-  const updateTeamVaultMutation = useUpdateTeamVault()
 
 
 
@@ -184,14 +174,6 @@ const ResourcesPage: React.FC = () => {
   
   // Queue mutation
   const createQueueItemMutation = useCreateQueueItem()
-  
-  // Audit trace modal state
-  const [auditTraceModal, setAuditTraceModal] = useState<{
-    open: boolean
-    entityType: string | null
-    entityIdentifier: string | null
-    entityName?: string
-  }>({ open: false, entityType: null, entityIdentifier: null })
   
   // Queue trace modal state
   const [queueTraceModal, setQueueTraceModal] = useState<{
@@ -267,42 +249,6 @@ const ResourcesPage: React.FC = () => {
     } catch (error) {
       // Error handled by mutation
     }
-  }
-
-  const handleEditTeam = async (values: EditTeamForm) => {
-    if (!editingTeam) return
-    try {
-      await updateTeamNameMutation.mutateAsync({
-        currentTeamName: editingTeam.teamName,
-        newTeamName: values.teamName,
-      })
-      setEditingTeam(null)
-      teamForm.resetFields()
-    } catch (error) {
-      // Error handled by mutation
-    }
-  }
-
-  const handleDeleteTeam = async (teamName: string) => {
-    try {
-      await deleteTeamMutation.mutateAsync(teamName)
-      if (selectedTeams.includes(teamName)) {
-        setSelectedTeams(selectedTeams.filter(t => t !== teamName))
-      }
-    } catch (error) {
-      // Error handled by mutation
-    }
-  }
-
-  const handleUpdateTeamVault = async (vault: string, version: number) => {
-    if (!teamVaultModalConfig.team) return
-
-    await updateTeamVaultMutation.mutateAsync({
-      teamName: teamVaultModalConfig.team.teamName,
-      teamVault: vault,
-      vaultVersion: version,
-    })
-    setTeamVaultModalConfig({ open: false })
   }
 
 
@@ -565,19 +511,6 @@ const ResourcesPage: React.FC = () => {
                 },
               },
               {
-                key: 'trace',
-                label: t('audit.trace'),
-                icon: <HistoryOutlined />,
-                onClick: () => {
-                  setAuditTraceModal({
-                    open: true,
-                    entityType: 'Repo',
-                    entityIdentifier: record.repositoryName,
-                    entityName: record.repositoryName
-                  });
-                },
-              },
-              {
                 type: 'divider',
               },
               {
@@ -664,19 +597,6 @@ const ResourcesPage: React.FC = () => {
                 },
               },
               {
-                key: 'trace',
-                label: t('audit.trace'),
-                icon: <HistoryOutlined />,
-                onClick: () => {
-                  setAuditTraceModal({
-                    open: true,
-                    entityType: 'Storage',
-                    entityIdentifier: record.storageName,
-                    entityName: record.storageName
-                  });
-                },
-              },
-              {
                 type: 'divider',
               },
               {
@@ -760,19 +680,6 @@ const ResourcesPage: React.FC = () => {
                 onClick: () => {
                   setEditingSchedule(record);
                   scheduleForm.setValue('scheduleName', record.scheduleName);
-                },
-              },
-              {
-                key: 'trace',
-                label: t('audit.trace'),
-                icon: <HistoryOutlined />,
-                onClick: () => {
-                  setAuditTraceModal({
-                    open: true,
-                    entityType: 'Schedule',
-                    entityIdentifier: record.scheduleName,
-                    entityName: record.scheduleName
-                  });
                 },
               },
               {
@@ -1063,8 +970,8 @@ const ResourcesPage: React.FC = () => {
         <Row gutter={24} style={containerStyle}>
           <Col span={24} style={{ height: '100%' }}>
             <Card style={cardStyle} bodyStyle={cardBodyStyle}>
-              <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 8 }}>
                   <Title level={4} style={{ margin: 0, minWidth: 'fit-content' }}>
                     {t('teams.teamResources')}
                   </Title>
@@ -1076,121 +983,49 @@ const ResourcesPage: React.FC = () => {
                     placeholder={t('teams.selectTeamToView')}
                     style={{ minWidth: 300, maxWidth: 500 }}
                   />
-                  <Dropdown
-                    menu={{
-                      items: [
-                        {
-                          key: 'create',
-                          label: t('teams.createTeam'),
-                          icon: <PlusOutlined />,
-                          onClick: () => setIsCreateTeamModalOpen(true),
-                        },
-                        ...(selectedTeams.length === 1 ? [
-                          {
-                            type: 'divider' as const,
-                          },
-                          {
-                            key: 'vault',
-                            label: t('general.vault'),
-                            icon: <SettingOutlined />,
-                            onClick: () => {
-                              const team = teamsList.find(t => t.teamName === selectedTeams[0]);
-                              if (team) {
-                                setTeamVaultModalConfig({ open: true, team });
-                              }
-                            },
-                          },
-                          {
-                            key: 'edit',
-                            label: t('teams.editTeam'),
-                            icon: <EditOutlined />,
-                            onClick: () => {
-                              const team = teamsList.find(t => t.teamName === selectedTeams[0]);
-                              if (team) {
-                                setEditingTeam(team);
-                                teamForm.setFieldValue('teamName', team.teamName);
-                              }
-                            },
-                          },
-                          {
-                            key: 'trace',
-                            label: t('audit.trace'),
-                            icon: <HistoryOutlined />,
-                            onClick: () => {
-                              setAuditTraceModal({
-                                open: true,
-                                entityType: 'Team',
-                                entityIdentifier: selectedTeams[0],
-                                entityName: selectedTeams[0]
-                              });
-                            },
-                          },
-                          {
-                            type: 'divider' as const,
-                          },
-                          {
-                            key: 'delete',
-                            label: t('teams.deleteTeam'),
-                            icon: <DeleteOutlined />,
-                            danger: true,
-                            onClick: () => {
-                              Modal.confirm({
-                                title: t('teams.deleteTeam'),
-                                content: t('teams.confirmDelete', { teamName: selectedTeams[0] }),
-                                okText: t('general.yes'),
-                                okType: 'danger',
-                                cancelText: t('general.no'),
-                                onOk: () => handleDeleteTeam(selectedTeams[0]),
-                              });
-                            },
-                          },
-                        ] : []),
-                      ],
-                    }}
-                    trigger={['click']}
-                  >
-                    <Button icon={<MoreOutlined />} />
-                  </Dropdown>
                 </div>
-                {selectedTeams.length > 0 && (
+                <div style={{ marginLeft: 332 }}>
                   <Space>
                     <Button 
-                      type="primary" 
-                      icon={<PlusOutlined />}
-                      onClick={() => {
-                        switch(teamResourcesTab) {
-                          case 'machines':
-                            setIsCreateMachineModalOpen(true)
-                            break
-                          case 'repositories':
-                            if (selectedTeams.length === 1) {
-                              repositoryForm.setValue('teamName', selectedTeams[0])
-                            }
-                            setIsCreateRepositoryModalOpen(true)
-                            break
-                          case 'storage':
-                            if (selectedTeams.length === 1) {
-                              storageForm.setValue('teamName', selectedTeams[0])
-                            }
-                            setIsCreateStorageModalOpen(true)
-                            break
-                          case 'schedules':
-                            if (selectedTeams.length === 1) {
-                              scheduleForm.setValue('teamName', selectedTeams[0])
-                            }
-                            setIsCreateScheduleModalOpen(true)
-                            break
-                        }
-                      }}
+                      type="primary"
+                      icon={<TeamOutlined />}
+                      onClick={() => setIsCreateTeamModalOpen(true)}
                       style={{ background: '#556b2f', borderColor: '#556b2f' }}
                     >
-                      {teamResourcesTab === 'machines' && t('machines.createMachine')}
-                      {teamResourcesTab === 'repositories' && t('repositories.createRepository')}
-                      {teamResourcesTab === 'storage' && t('storage.createStorage')}
-                      {teamResourcesTab === 'schedules' && t('schedules.createSchedule')}
+                      {t('teams.createTeam')}
                     </Button>
+                    {selectedTeams.length > 0 && teamResourcesTab !== 'repositories' && (
+                      <Button 
+                        type="primary" 
+                        icon={<PlusOutlined />}
+                        onClick={() => {
+                          switch(teamResourcesTab) {
+                            case 'machines':
+                              setIsCreateMachineModalOpen(true)
+                              break
+                            case 'storage':
+                              if (selectedTeams.length === 1) {
+                                storageForm.setValue('teamName', selectedTeams[0])
+                              }
+                              setIsCreateStorageModalOpen(true)
+                              break
+                            case 'schedules':
+                              if (selectedTeams.length === 1) {
+                                scheduleForm.setValue('teamName', selectedTeams[0])
+                              }
+                              setIsCreateScheduleModalOpen(true)
+                              break
+                          }
+                        }}
+                        style={{ background: '#556b2f', borderColor: '#556b2f' }}
+                      >
+                        {teamResourcesTab === 'machines' && t('machines.createMachine')}
+                        {teamResourcesTab === 'storage' && t('storage.createStorage')}
+                        {teamResourcesTab === 'schedules' && t('schedules.createSchedule')}
+                      </Button>
+                    )}
                   </Space>
-                )}
+                </div>
               </div>
               
               {selectedTeams.length === 0 ? (
@@ -1206,7 +1041,6 @@ const ResourcesPage: React.FC = () => {
                   items={teamResourcesTabs}
                   style={{ height: 'calc(100% - 60px)', display: 'flex', flexDirection: 'column' }}
                   className="full-height-tabs"
-                  destroyInactiveTabPane
                 />
               )}
             </Card>
@@ -1221,30 +1055,27 @@ const ResourcesPage: React.FC = () => {
               </Title>
             </div>
             <Space>
-              <Button 
-                type="primary" 
-                icon={<PlusOutlined />}
-                onClick={() => {
-                  switch(teamResourcesTab) {
-                    case 'machines':
-                      setIsCreateMachineModalOpen(true)
-                      break
-                    case 'repositories':
-                      repositoryForm.setValue('teamName', 'Private Team')
-                      setIsCreateRepositoryModalOpen(true)
-                      break
-                    case 'storage':
-                      storageForm.setValue('teamName', 'Private Team')
-                      setIsCreateStorageModalOpen(true)
-                      break
-                  }
-                }}
-                style={{ background: '#556b2f', borderColor: '#556b2f' }}
-              >
-                {teamResourcesTab === 'machines' && t('machines.createMachine')}
-                {teamResourcesTab === 'repositories' && t('repositories.createRepository')}
-                {teamResourcesTab === 'storage' && t('storage.createStorage')}
-              </Button>
+              {teamResourcesTab !== 'repositories' && (
+                <Button 
+                  type="primary" 
+                  icon={<PlusOutlined />}
+                  onClick={() => {
+                    switch(teamResourcesTab) {
+                      case 'machines':
+                        setIsCreateMachineModalOpen(true)
+                        break
+                      case 'storage':
+                        storageForm.setValue('teamName', 'Private Team')
+                        setIsCreateStorageModalOpen(true)
+                        break
+                    }
+                  }}
+                  style={{ background: '#556b2f', borderColor: '#556b2f' }}
+                >
+                  {teamResourcesTab === 'machines' && t('machines.createMachine')}
+                  {teamResourcesTab === 'storage' && t('storage.createStorage')}
+                </Button>
+              )}
             </Space>
           </div>
           
@@ -1252,7 +1083,6 @@ const ResourcesPage: React.FC = () => {
             activeKey={teamResourcesTab}
             onChange={setTeamResourcesTab}
             items={teamResourcesTabs.filter(tab => tab.key !== 'schedules')}
-            destroyInactiveTabPane
           />
         </Card>
       )}
@@ -1311,70 +1141,6 @@ const ResourcesPage: React.FC = () => {
         </Form>
       </Modal>
 
-      {/* Edit Team Modal */}
-      <Modal
-        title={t('teams.editTeam')}
-        open={!!editingTeam}
-        onCancel={() => {
-          setEditingTeam(null)
-          teamForm.resetFields()
-        }}
-        footer={null}
-      >
-        <Form
-          form={teamForm}
-          layout="horizontal"
-          labelCol={{ span: 8 }}
-          wrapperCol={{ span: 16 }}
-          labelAlign="left"
-          colon={true}
-          onFinish={handleEditTeam}
-        >
-          <Form.Item
-            name="teamName"
-            label={t('teams.teamName')}
-            rules={[
-              { required: true, message: t('teams.validation.teamNameRequired') },
-              { pattern: /^[a-zA-Z0-9-_]+$/, message: t('teams.validation.teamNamePattern') },
-            ]}
-          >
-            <Input placeholder={t('teams.placeholders.enterTeamName')} />
-          </Form.Item>
-
-          <Form.Item 
-            style={{ marginBottom: 0 }}
-            wrapperCol={{ offset: 8, span: 16 }}
-          >
-            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-              <Button onClick={() => {
-                setEditingTeam(null)
-                teamForm.resetFields()
-              }}>
-                {t('general.cancel')}
-              </Button>
-              <Button 
-                type="primary" 
-                htmlType="submit"
-                loading={updateTeamNameMutation.isPending}
-                style={{ background: '#556b2f', borderColor: '#556b2f' }}
-              >
-                {t('general.save')}
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <VaultEditorModal
-        open={teamVaultModalConfig.open}
-        onCancel={() => setTeamVaultModalConfig({ open: false })}
-        onSave={handleUpdateTeamVault}
-        entityType="TEAM"
-        title={t('general.configureVault', { name: teamVaultModalConfig.team?.teamName || '' })}
-        initialVault={teamVaultModalConfig.team?.vaultContent || "{}"}
-        initialVersion={teamVaultModalConfig.team?.vaultVersion || 1}
-        loading={updateTeamVaultMutation.isPending}
-      />
 
 
 
@@ -1680,15 +1446,6 @@ const ResourcesPage: React.FC = () => {
         machines={dropdownData?.machinesByTeam?.find(t => t.teamName === functionModalRepository?.teamName)?.machines || []}
         hiddenParams={['repo']} // Hide the repo parameter since it's automatically set
         defaultParams={{ repo: functionModalRepository?.repositoryName }} // Set repo value automatically
-      />
-
-      {/* Audit Trace Modal */}
-      <AuditTraceModal
-        open={auditTraceModal.open}
-        onCancel={() => setAuditTraceModal({ open: false, entityType: null, entityIdentifier: null })}
-        entityType={auditTraceModal.entityType}
-        entityIdentifier={auditTraceModal.entityIdentifier}
-        entityName={auditTraceModal.entityName}
       />
 
       {/* Queue Item Trace Modal */}

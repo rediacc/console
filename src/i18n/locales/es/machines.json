@@ -1,6 +1,6 @@
 {
   "title": "Máquinas",
-  "createMachine": "Crear Máquina",
+  "createMachine": "Agregar Máquina",
   "machineName": "Nombre de Máquina",
   "team": "Equipo",
   "region": "Región",

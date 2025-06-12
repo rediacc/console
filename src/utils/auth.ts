@@ -1,10 +1,17 @@
 // Authentication and password utilities for browser environment
 import { secureStorage } from './secureMemoryStorage'
 
-// Password hashing using Web Crypto API
+// Static salt for password hashing - provides additional protection against dictionary attacks
+// This salt is concatenated with the password before hashing to ensure even common passwords
+// produce unique hashes. The salt value must be consistent across all components.
+const STATIC_SALT = 'Rd!@cc111$ecur3P@$$w0rd$@lt#H@$h'
+
+// Password hashing using Web Crypto API with static salt
 export async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder()
-  const data = encoder.encode(password)
+  // Concatenate password with static salt before hashing
+  const saltedPassword = password + STATIC_SALT
+  const data = encoder.encode(saltedPassword)
   const hashBuffer = await crypto.subtle.digest('SHA-256', data)
   const hashArray = Array.from(new Uint8Array(hashBuffer))
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
