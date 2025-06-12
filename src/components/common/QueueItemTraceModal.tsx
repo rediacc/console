@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Spin, Row, Col, Tabs } from 'antd'
-import { ReloadOutlined, HistoryOutlined, FileTextOutlined } from '@ant-design/icons'
+import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Spin, Row, Col, Tabs, Switch } from 'antd'
+import { ReloadOutlined, HistoryOutlined, FileTextOutlined, BellOutlined } from '@ant-design/icons'
 import { useQueueItemTrace } from '@/api/queries/queue'
 import dayjs from 'dayjs'
 import MonacoEditor from '@monaco-editor/react'
+import { queueMonitoringService } from '@/services/queueMonitoringService'
+import { showMessage } from '@/utils/messages'
 
 const { Text } = Typography
 
@@ -15,6 +17,7 @@ interface QueueItemTraceModalProps {
 
 const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visible, onClose }) => {
   const [lastTraceFetchTime, setLastTraceFetchTime] = useState<dayjs.Dayjs | null>(null)
+  const [isMonitoring, setIsMonitoring] = useState(false)
   const { data: traceData, isLoading: isTraceLoading, refetch: refetchTrace } = useQueueItemTrace(taskId, visible)
 
   // Update last fetch time when trace data is loaded
@@ -26,13 +29,50 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
 
   // Reset last fetch time when modal is opened with new taskId
   useEffect(() => {
-    if (visible) {
+    if (visible && taskId) {
       setLastTraceFetchTime(null)
+      // Check if this task is already being monitored
+      setIsMonitoring(queueMonitoringService.isTaskMonitored(taskId))
     }
   }, [taskId, visible])
 
   const handleRefreshTrace = async () => {
     await refetchTrace()
+  }
+
+  const handleToggleMonitoring = () => {
+    if (!taskId || !traceData?.queueDetails) return
+
+    const status = traceData.queueDetails.status || traceData.queueDetails.Status
+    
+    // Don't allow monitoring completed or cancelled tasks
+    if (status === 'COMPLETED' || status === 'CANCELLED') {
+      showMessage('warning', 'Cannot monitor completed or cancelled tasks')
+      return
+    }
+
+    if (isMonitoring) {
+      queueMonitoringService.removeTask(taskId)
+      setIsMonitoring(false)
+      showMessage('info', 'Background monitoring disabled for this task')
+    } else {
+      const teamName = traceData.queueDetails.teamName || ''
+      const machineName = traceData.queueDetails.machineName || ''
+      queueMonitoringService.addTask(taskId, teamName, machineName, status)
+      setIsMonitoring(true)
+      showMessage('success', 'Background monitoring enabled. You will be notified when the task status changes.')
+    }
+  }
+
+  const handleClose = () => {
+    // If task is still active and monitoring is enabled, remind user
+    if (taskId && isMonitoring && traceData?.queueDetails) {
+      const status = traceData.queueDetails.status || traceData.queueDetails.Status
+      if (status !== 'COMPLETED' && status !== 'CANCELLED') {
+        showMessage('info', `Task ${taskId} will continue to be monitored in the background`)
+      }
+    }
+    onClose()
   }
 
   return (
@@ -51,9 +91,26 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
         </div>
       }
       open={visible}
-      onCancel={onClose}
+      onCancel={handleClose}
       width={900}
       footer={[
+        traceData?.queueDetails && (
+          <div key="monitor-switch" style={{ float: 'left', marginRight: 'auto' }}>
+            <Space>
+              <BellOutlined />
+              <Switch
+                checked={isMonitoring}
+                onChange={handleToggleMonitoring}
+                disabled={
+                  !traceData?.queueDetails ||
+                  traceData.queueDetails.status === 'COMPLETED' ||
+                  traceData.queueDetails.status === 'CANCELLED'
+                }
+              />
+              <Text type="secondary">Background Monitoring</Text>
+            </Space>
+          </div>
+        ),
         <Button 
           key="refresh" 
           icon={<ReloadOutlined />} 
@@ -62,7 +119,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
         >
           Refresh
         </Button>,
-        <Button key="close" onClick={onClose}>
+        <Button key="close" onClick={handleClose}>
           Close
         </Button>
       ]}
