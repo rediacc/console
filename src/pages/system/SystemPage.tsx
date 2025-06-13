@@ -855,7 +855,8 @@ const SystemPage: React.FC = () => {
       render: (_: any, record: PermissionGroup) => (
         <Space>
           <Button
-            type="link"
+            type="primary"
+            size="small"
             icon={<KeyOutlined />}
             onClick={() => {
               setSelectedGroup(record)
@@ -865,7 +866,8 @@ const SystemPage: React.FC = () => {
             Permissions
           </Button>
           <Button
-            type="link"
+            type="primary"
+            size="small"
             icon={<UserOutlined />}
             onClick={() => {
               setSelectedGroup(record)
@@ -875,7 +877,8 @@ const SystemPage: React.FC = () => {
             Assign User
           </Button>
           <Button
-            type="link"
+            type="primary"
+            size="small"
             icon={<HistoryOutlined />}
             onClick={() => {
               setAuditTraceModal({
@@ -897,8 +900,9 @@ const SystemPage: React.FC = () => {
             okButtonProps={{ danger: true }}
           >
             <Button 
-              type="link" 
-              danger 
+              type="primary"
+              danger
+              size="small"
               icon={<DeleteOutlined />}
               loading={deleteGroupMutation.isPending}
             >
@@ -959,7 +963,8 @@ const SystemPage: React.FC = () => {
       render: (_: any, record: User) => (
         <Space>
           <Button
-            type="link"
+            type="primary"
+            size="small"
             icon={<SafetyOutlined />}
             onClick={() => {
               setAssignPermissionModal({ open: true, user: record })
@@ -969,7 +974,8 @@ const SystemPage: React.FC = () => {
             Permissions
           </Button>
           <Button
-            type="link"
+            type="primary"
+            size="small"
             icon={<HistoryOutlined />}
             onClick={() => {
               setAuditTraceModal({
@@ -992,8 +998,9 @@ const SystemPage: React.FC = () => {
               okButtonProps={{ danger: true }}
             >
               <Button 
-                type="link" 
+                type="primary"
                 danger
+                size="small"
                 loading={deactivateUserMutation.isPending}
               >
                 Deactivate
@@ -1594,6 +1601,7 @@ const SystemPage: React.FC = () => {
                     {t('personal.configureVault')}
                   </Button>
                   <Button
+                    type="primary"
                     icon={<KeyOutlined />}
                     onClick={() => setChangePasswordModalOpen(true)}
                     size="large"
@@ -1662,7 +1670,7 @@ const SystemPage: React.FC = () => {
                         actions={[
                           <Button
                             key="remove"
-                            type="link"
+                            type="primary"
                             danger
                             size="small"
                             onClick={() => handleRemovePermission(permission)}
@@ -1862,7 +1870,7 @@ const SystemPage: React.FC = () => {
                             okButtonProps={{ danger: true }}
                           >
                             <Button
-                              type="link"
+                              type="primary"
                               danger
                               size="small"
                               loading={removeTeamMemberMutation.isPending}
@@ -2187,6 +2195,7 @@ const SystemPage: React.FC = () => {
                   okButtonProps={{ danger: true }}
                 >
                   <Button 
+                    type="primary"
                     danger
                     icon={<LockOutlined />}
                     loading={blockUserRequestsMutation.isPending}
@@ -2202,6 +2211,7 @@ const SystemPage: React.FC = () => {
                   cancelText={tCommon('general.cancel')}
                 >
                   <Button 
+                    type="primary"
                     icon={<UnlockOutlined />}
                     loading={blockUserRequestsMutation.isPending}
                   >
@@ -2226,6 +2236,7 @@ const SystemPage: React.FC = () => {
             </Col>
             <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
               <Button 
+                type="primary"
                 icon={<DownloadOutlined />}
                 onClick={handleExportVaults}
                 loading={exportVaultsQuery.isFetching}
