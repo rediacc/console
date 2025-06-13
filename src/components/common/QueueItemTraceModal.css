@@ -1,0 +1,149 @@
+/* Animations for Queue Item Trace Modal */
+
+/* Fade in animation for the modal content */
+.ant-modal-content {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Pulse animation for processing status */
+.queue-trace-status-icon {
+  display: inline-flex;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Smooth progress bar animation */
+.queue-trace-progress .ant-progress-bg {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Step transitions */
+.queue-trace-steps .ant-steps-item-finish .ant-steps-item-icon,
+.queue-trace-steps .ant-steps-item-process .ant-steps-item-icon {
+  animation: stepComplete 0.5s ease-in-out;
+}
+
+@keyframes stepComplete {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Collapse panel animations */
+.queue-trace-collapse .ant-collapse-content {
+  animation: slideDown 0.3s ease-in-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 1000px;
+  }
+}
+
+/* Hover effects for key info cards */
+.queue-trace-key-info {
+  transition: all 0.3s ease;
+}
+
+.queue-trace-key-info:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Timeline item animations */
+.queue-trace-timeline .ant-timeline-item {
+  animation: fadeInLeft 0.4s ease-in-out;
+  animation-fill-mode: both;
+}
+
+.queue-trace-timeline .ant-timeline-item:nth-child(1) { animation-delay: 0.1s; }
+.queue-trace-timeline .ant-timeline-item:nth-child(2) { animation-delay: 0.2s; }
+.queue-trace-timeline .ant-timeline-item:nth-child(3) { animation-delay: 0.3s; }
+.queue-trace-timeline .ant-timeline-item:nth-child(4) { animation-delay: 0.4s; }
+.queue-trace-timeline .ant-timeline-item:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Loading spinner enhancement */
+.queue-trace-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+/* Status badge glow effect */
+.queue-trace-status-badge {
+  position: relative;
+}
+
+.queue-trace-status-badge.processing::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  background: inherit;
+  border-radius: inherit;
+  animation: glow 2s infinite;
+  z-index: -1;
+}
+
+@keyframes glow {
+  0%, 100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.5);
+  }
+  50% {
+    opacity: 0.3;
+  }
+}

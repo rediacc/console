@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react'
-import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Spin, Row, Col, Tabs, Switch } from 'antd'
-import { ReloadOutlined, HistoryOutlined, FileTextOutlined, BellOutlined } from '@ant-design/icons'
+import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Spin, Row, Col, Tabs, Switch, Collapse, Steps, Progress } from 'antd'
+import { ReloadOutlined, HistoryOutlined, FileTextOutlined, BellOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, RightOutlined } from '@ant-design/icons'
 import { useQueueItemTrace } from '@/api/queries/queue'
 import dayjs from 'dayjs'
 import { SimpleJsonEditor } from './SimpleJsonEditor'
 import { queueMonitoringService } from '@/services/queueMonitoringService'
 import { showMessage } from '@/utils/messages'
 import { useTheme } from '@/context/ThemeContext'
+import './QueueItemTraceModal.css'
 
-const { Text } = Typography
+const { Text, Title } = Typography
+const { Panel } = Collapse
+const { Step } = Steps
 
 // Helper function to normalize property names from API responses
 const normalizeProperty = <T extends Record<string, any>>(obj: T, ...propertyNames: string[]): any => {
@@ -30,6 +33,8 @@ interface QueueItemTraceModalProps {
 const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visible, onClose }) => {
   const [lastTraceFetchTime, setLastTraceFetchTime] = useState<dayjs.Dayjs | null>(null)
   const [isMonitoring, setIsMonitoring] = useState(false)
+  const [activeKeys, setActiveKeys] = useState<string[]>([]) // Start with all panels collapsed
+  const [simpleMode, setSimpleMode] = useState(true) // Start in simple mode
   const { data: traceData, isLoading: isTraceLoading, refetch: refetchTrace } = useQueueItemTrace(taskId, visible)
   const { theme } = useTheme()
 
@@ -46,6 +51,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
       setLastTraceFetchTime(null)
       // Check if this task is already being monitored
       setIsMonitoring(queueMonitoringService.isTaskMonitored(taskId))
+      // Reset collapsed state and simple mode when opening modal
+      setActiveKeys([])
+      setSimpleMode(true)
     }
   }, [taskId, visible])
 
@@ -88,6 +96,67 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
     onClose()
   }
 
+  // Helper function to get simplified status
+  const getSimplifiedStatus = () => {
+    if (!traceData?.queueDetails) return { status: 'unknown', color: 'default', icon: null }
+    const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
+    
+    switch (status) {
+      case 'COMPLETED':
+        return { status: 'Completed', color: 'success', icon: <CheckCircleOutlined /> }
+      case 'FAILED':
+        return { status: 'Failed', color: 'error', icon: <CloseCircleOutlined /> }
+      case 'CANCELLED':
+        return { status: 'Cancelled', color: 'error', icon: <CloseCircleOutlined /> }
+      case 'PROCESSING':
+        return { status: 'Processing', color: 'processing', icon: <SyncOutlined spin /> }
+      case 'ASSIGNED':
+        return { status: 'Assigned', color: 'blue', icon: <ClockCircleOutlined /> }
+      default:
+        return { status: status || 'Pending', color: 'default', icon: <ClockCircleOutlined /> }
+    }
+  }
+
+  // Helper function to calculate progress percentage
+  const getProgressPercentage = () => {
+    if (!traceData?.queueDetails) return 0
+    const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
+    
+    switch (status) {
+      case 'COMPLETED':
+        return 100
+      case 'FAILED':
+      case 'CANCELLED':
+        return 100
+      case 'PROCESSING':
+        return 60
+      case 'ASSIGNED':
+        return 30
+      default:
+        return 10
+    }
+  }
+
+  // Get current step for Steps component
+  const getCurrentStep = () => {
+    if (!traceData?.queueDetails) return 0
+    const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
+    
+    switch (status) {
+      case 'COMPLETED':
+        return 3
+      case 'FAILED':
+      case 'CANCELLED':
+        return -1
+      case 'PROCESSING':
+        return 2
+      case 'ASSIGNED':
+        return 1
+      default:
+        return 0
+    }
+  }
+
   return (
     <Modal
       title={
@@ -96,11 +165,20 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             <HistoryOutlined />
             {`Queue Item Trace - ${taskId || ''}`}
           </Space>
-          {lastTraceFetchTime && (
-            <Text type="secondary" style={{ fontSize: '14px', marginRight: '20px' }}>
-              Last fetched: {lastTraceFetchTime.format('HH:mm:ss')}
-            </Text>
-          )}
+          <Space>
+            <Switch
+              checked={!simpleMode}
+              onChange={(checked) => setSimpleMode(!checked)}
+              checkedChildren="Detailed"
+              unCheckedChildren="Simple"
+              style={{ marginRight: 16 }}
+            />
+            {lastTraceFetchTime && (
+              <Text type="secondary" style={{ fontSize: '14px' }}>
+                Last fetched: {lastTraceFetchTime.format('HH:mm:ss')}
+              </Text>
+            )}
+          </Space>
         </div>
       }
       open={visible}
@@ -139,15 +217,118 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
       ]}
     >
       {isTraceLoading ? (
-        <div style={{ textAlign: 'center', padding: '50px 0' }}>
+        <div className="queue-trace-loading">
           <Spin size="large" />
         </div>
       ) : traceData ? (
         <div>
-          {/* Queue Details */}
+          {/* Simple Progress Overview */}
           {traceData.queueDetails && (
-            <Card title="Queue Item Details" style={{ marginBottom: 16 }}>
-              <Descriptions column={2} size="small">
+            <Card 
+              style={{ 
+                marginBottom: 16, 
+                background: theme === 'dark' ? '#1f1f1f' : '#f0f2f5',
+                border: `1px solid ${theme === 'dark' ? '#303030' : '#e8e8e8'}`
+              }}
+            >
+              <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                {/* Status Summary */}
+                <div style={{ textAlign: 'center' }}>
+                  <Space size="large">
+                    <span className={`queue-trace-status-icon ${getSimplifiedStatus().status === 'Processing' ? 'processing' : ''}`}>
+                      {getSimplifiedStatus().icon}
+                    </span>
+                    <Title level={3} style={{ margin: 0 }}>
+                      Task {getSimplifiedStatus().status}
+                    </Title>
+                  </Space>
+                </div>
+
+                {/* Progress Bar */}
+                <Progress
+                  className="queue-trace-progress" 
+                  percent={getProgressPercentage()} 
+                  status={
+                    getSimplifiedStatus().status === 'Failed' || getSimplifiedStatus().status === 'Cancelled' ? 'exception' :
+                    getSimplifiedStatus().status === 'Completed' ? 'success' : 'active'
+                  }
+                  strokeColor={{
+                    '0%': '#108ee9',
+                    '100%': getSimplifiedStatus().status === 'Failed' || getSimplifiedStatus().status === 'Cancelled' ? '#ff4d4f' : '#87d068'
+                  }}
+                />
+
+                {/* Steps */}
+                <Steps
+                  className="queue-trace-steps" 
+                  current={getCurrentStep()} 
+                  status={getCurrentStep() === -1 ? 'error' : undefined}
+                  size="small"
+                >
+                  <Step title="Created" description={traceData.queueDetails.createdTime ? dayjs(traceData.queueDetails.createdTime).format('HH:mm:ss') : ''} />
+                  <Step title="Assigned" description={traceData.queueDetails.assignedTime ? dayjs(traceData.queueDetails.assignedTime).format('HH:mm:ss') : 'Waiting'} />
+                  <Step title="Processing" description={normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PROCESSING' ? 'In Progress' : ''} />
+                  <Step 
+                    title="Completed" 
+                    description={
+                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' ? 'Done' :
+                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED' ? 'Failed' :
+                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED' ? 'Cancelled' : ''
+                    }
+                  />
+                </Steps>
+
+                {/* Key Info */}
+                <Row gutter={[16, 16]} style={{ textAlign: 'center' }}>
+                  <Col span={8}>
+                    <div className="queue-trace-key-info" style={{ padding: '12px', borderRadius: '8px', background: theme === 'dark' ? '#262626' : '#fafafa' }}>
+                      <Text type="secondary">Duration</Text>
+                      <div>
+                        <Text strong style={{ fontSize: '18px' }}>
+                          {Math.floor(traceData.queueDetails.totalDurationSeconds / 60)}m
+                        </Text>
+                      </div>
+                    </div>
+                  </Col>
+                  <Col span={8}>
+                    <div className="queue-trace-key-info" style={{ padding: '12px', borderRadius: '8px', background: theme === 'dark' ? '#262626' : '#fafafa' }}>
+                      <Text type="secondary">Machine</Text>
+                      <div>
+                        <Text strong>{traceData.queueDetails.machineName}</Text>
+                      </div>
+                    </div>
+                  </Col>
+                  <Col span={8}>
+                    <div className="queue-trace-key-info" style={{ padding: '12px', borderRadius: '8px', background: theme === 'dark' ? '#262626' : '#fafafa' }}>
+                      <Text type="secondary">Priority</Text>
+                      <div>
+                        <Tag color={traceData.queueDetails.priorityLabel === 'High' ? 'red' : 'default'}>
+                          {traceData.queueDetails.priorityLabel || 'Normal'}
+                        </Tag>
+                      </div>
+                    </div>
+                  </Col>
+                </Row>
+              </Space>
+            </Card>
+          )}
+
+          {/* Collapsible Sections */}
+          {!simpleMode && (
+            <div style={{ marginTop: 16 }}>
+              <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: 8 }}>
+                Click on any section below to view more details
+              </Text>
+              <Collapse 
+              className="queue-trace-collapse"
+              activeKey={activeKeys}
+              onChange={setActiveKeys}
+              expandIcon={({ isActive }) => <RightOutlined rotate={isActive ? 90 : 0} />}
+            >
+            {/* Queue Details Panel */}
+            {traceData.queueDetails && (
+              <Panel header="Detailed Information" key="details">
+                <Descriptions column={2} size="small">
                 <Descriptions.Item label="Task ID">
                   <Text code>{normalizeProperty(traceData.queueDetails, 'taskId', 'TaskId')}</Text>
                 </Descriptions.Item>
@@ -216,13 +397,13 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   </Descriptions.Item>
                 )}
               </Descriptions>
-            </Card>
-          )}
+              </Panel>
+            )}
 
-          {/* Trace Logs */}
-          <Card title="Activity Timeline">
-            {traceData.traceLogs && traceData.traceLogs.length > 0 ? (
-              <Timeline mode="left">
+            {/* Trace Logs Panel */}
+            {traceData.traceLogs && traceData.traceLogs.length > 0 && (
+              <Panel header="Activity Timeline" key="timeline">
+                <Timeline mode="left" className="queue-trace-timeline">
                 {traceData.traceLogs.map((log: any, index: number) => {
                   const action = normalizeProperty(log, 'action', 'Action')
                   const timestamp = normalizeProperty(log, 'timestamp', 'Timestamp')
@@ -252,15 +433,13 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   )
                 })}
               </Timeline>
-            ) : (
-              <Empty description="No trace logs available" />
+              </Panel>
             )}
-          </Card>
 
-          {/* Vault Content Section */}
-          {(traceData.vaultContent || traceData.responseVaultContent) && (
-            <Card title="Vault Content" style={{ marginTop: 16 }}>
-              <Tabs
+            {/* Vault Content Panel */}
+            {(traceData.vaultContent || traceData.responseVaultContent) && (
+              <Panel header="Vault Content" key="vault">
+                <Tabs
                 items={[
                   {
                     key: 'request',
@@ -322,12 +501,13 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   }] : []),
                 ]}
               />
-            </Card>
-          )}
+              </Panel>
+            )}
 
-          {/* Additional Information */}
-          {(traceData.queuePosition || traceData.machineStats || traceData.planInfo) && (
-            <Row gutter={16} style={{ marginTop: 16 }}>
+            {/* Additional Information Panel */}
+            {(traceData.queuePosition || traceData.machineStats || traceData.planInfo) && (
+              <Panel header="Additional Information" key="additional">
+                <Row gutter={16}>
               {traceData.machineStats && (
                 <Col span={8}>
                   <Card title="Machine Statistics" size="small">
@@ -367,7 +547,11 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   </Card>
                 </Col>
               )}
-            </Row>
+              </Row>
+              </Panel>
+            )}
+              </Collapse>
+            </div>
           )}
         </div>
       ) : (
