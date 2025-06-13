@@ -10,13 +10,15 @@ import {
   DesktopOutlined,
   ScheduleOutlined,
   MoreOutlined,
-  FunctionOutlined
+  FunctionOutlined,
+  WifiOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 import UnifiedResourceModal, { ResourceType } from '@/components/common/UnifiedResourceModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
+import ConnectivityTestModal from '@/components/common/ConnectivityTestModal'
 import { showMessage } from '@/utils/messages'
 
 // Team queries
@@ -31,6 +33,7 @@ import {
   useUpdateMachineBridge,
   useUpdateMachineVault,
   useDeleteMachine,
+  useMachines,
   type Machine
 } from '@/api/queries/machines'
 
@@ -150,6 +153,12 @@ const ResourcesPage: React.FC = () => {
   // Team hooks
   const { data: teams, isLoading: teamsLoading } = useTeams()
   const teamsList: Team[] = teams || []
+  
+  // Machine hooks - fetch machines for connectivity test
+  const { data: machines = [] } = useMachines(
+    selectedTeams.length > 0 && teamResourcesTab === 'machines' ? selectedTeams : undefined,
+    teamResourcesTab === 'machines'
+  )
 
 
 
@@ -189,6 +198,9 @@ const ResourcesPage: React.FC = () => {
     visible: boolean
     taskId: string | null
   }>({ visible: false, taskId: null })
+  
+  // Connectivity test modal state
+  const [connectivityTestModal, setConnectivityTestModal] = useState(false)
   
   // Dynamic page sizes for tables
   const repositoryPageSize = useDynamicPageSize(repositoryTableRef, {
@@ -1104,6 +1116,15 @@ const ResourcesPage: React.FC = () => {
                       >
                         {getCreateButtonText()}
                       </Button>
+                      {teamResourcesTab === 'machines' && (
+                        <Button 
+                          icon={<WifiOutlined />}
+                          onClick={() => setConnectivityTestModal(true)}
+                          disabled={machines.length === 0}
+                        >
+                          Connectivity Test
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1138,23 +1159,30 @@ const ResourcesPage: React.FC = () => {
                   </Title>
                 </div>
                 <Space>
-                  {(
+                  <Button 
+                    type="primary" 
+                    icon={<PlusOutlined />}
+                    onClick={() => {
+                      switch(teamResourcesTab) {
+                        case 'machines':
+                          openUnifiedModal('machine', 'create')
+                          break
+                        case 'storage':
+                          openUnifiedModal('storage', 'create')
+                          break
+                      }
+                    }}
+                    style={{ background: '#556b2f', borderColor: '#556b2f' }}
+                  >
+                    {getCreateButtonText()}
+                  </Button>
+                  {teamResourcesTab === 'machines' && (
                     <Button 
-                      type="primary" 
-                      icon={<PlusOutlined />}
-                      onClick={() => {
-                        switch(teamResourcesTab) {
-                          case 'machines':
-                            openUnifiedModal('machine', 'create')
-                            break
-                          case 'storage':
-                            openUnifiedModal('storage', 'create')
-                            break
-                        }
-                      }}
-                      style={{ background: '#556b2f', borderColor: '#556b2f' }}
+                      icon={<WifiOutlined />}
+                      onClick={() => setConnectivityTestModal(true)}
+                      disabled={machines.length === 0}
                     >
-                      {getCreateButtonText()}
+                      Connectivity Test
                     </Button>
                   )}
                 </Space>
@@ -1210,6 +1238,14 @@ const ResourcesPage: React.FC = () => {
         taskId={queueTraceModal.taskId}
         visible={queueTraceModal.visible}
         onClose={() => setQueueTraceModal({ visible: false, taskId: null })}
+      />
+
+      {/* Connectivity Test Modal */}
+      <ConnectivityTestModal
+        open={connectivityTestModal}
+        onClose={() => setConnectivityTestModal(false)}
+        machines={machines}
+        teamFilter={selectedTeams}
       />
     </>
   )

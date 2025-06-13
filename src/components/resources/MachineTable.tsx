@@ -12,13 +12,10 @@ import {
   Space,
   Alert,
   Modal,
-  message,
   Row,
   Col,
   Segmented,
   Form,
-  Typography,
-  Slider,
   Empty,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table/interface';
@@ -32,18 +29,19 @@ import {
   AppstoreOutlined,
   TableOutlined,
   FilterOutlined,
+  FunctionOutlined,
+  HistoryOutlined,
+  WifiOutlined
 } from '@ant-design/icons';
 import { useMachines } from '@/api/queries/machines';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import type { Machine } from '@/types';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { 
-  FunctionOutlined,
-  HistoryOutlined 
-} from '@ant-design/icons';
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { useHelloFunction } from '@/services/helloService';
+import { showMessage } from '@/utils/messages';
 
 const { Option } = Select;
 const { Search } = Input;
@@ -76,6 +74,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const { t } = useTranslation(['machines', 'common', 'functions']);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
   const isExpertMode = uiMode === 'expert';
+  const { executeHelloForMachineAndWait } = useHelloFunction();
   
   // Ref for table container
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -304,14 +303,46 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             >
               {t('common:actions.edit')}
             </Button>
-            <Button
-              type="primary"
-              size="small"
-              icon={<FunctionOutlined />}
-              onClick={() => onFunctionsMachine && onFunctionsMachine(record)}
+            <Dropdown
+              menu={{
+                items: [
+                  {
+                    key: 'functions',
+                    label: t('machines:runFunction'),
+                    icon: <FunctionOutlined />,
+                    onClick: () => onFunctionsMachine && onFunctionsMachine(record)
+                  },
+                  {
+                    key: 'test',
+                    label: t('machines:testConnection'),
+                    icon: <WifiOutlined />,
+                    onClick: async () => {
+                      showMessage('info', t('machines:testingConnection'));
+                      const result = await executeHelloForMachineAndWait(record, {
+                        priority: 3,
+                        description: 'Quick connection test',
+                        addedVia: 'machine-table',
+                        timeout: 15000 // 15 seconds timeout for quick test
+                      });
+                      if (result.success) {
+                        showMessage('success', t('machines:connectionSuccessful'));
+                      } else {
+                        showMessage('error', result.error || t('machines:connectionFailed'));
+                      }
+                    }
+                  }
+                ]
+              }}
+              trigger={['click']}
             >
-              Run
-            </Button>
+              <Button
+                type="primary"
+                size="small"
+                icon={<FunctionOutlined />}
+              >
+                Run
+              </Button>
+            </Dropdown>
             <Button
               type="primary"
               size="small"
