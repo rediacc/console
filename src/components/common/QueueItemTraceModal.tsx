@@ -3,7 +3,7 @@ import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Em
 import { ReloadOutlined, HistoryOutlined, FileTextOutlined, BellOutlined } from '@ant-design/icons'
 import { useQueueItemTrace } from '@/api/queries/queue'
 import dayjs from 'dayjs'
-import MonacoEditor from '@monaco-editor/react'
+import { SimpleJsonEditor } from './SimpleJsonEditor'
 import { queueMonitoringService } from '@/services/queueMonitoringService'
 import { showMessage } from '@/utils/messages'
 import { useTheme } from '@/context/ThemeContext'
@@ -240,18 +240,10 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                       </Space>
                     ),
                     children: traceData.vaultContent ? (
-                      <MonacoEditor
-                        height="300px"
-                        language="json"
-                        theme={theme === 'dark' ? 'vs-dark' : 'vs-light'}
+                      <SimpleJsonEditor
                         value={JSON.stringify(JSON.parse(traceData.vaultContent.vaultContent || '{}'), null, 2)}
-                        options={{
-                          readOnly: true,
-                          minimap: { enabled: false },
-                          scrollBeyondLastLine: false,
-                          wordWrap: 'off',
-                          fontSize: 12,
-                        }}
+                        readOnly={true}
+                        height="300px"
                       />
                     ) : (
                       <Empty description="No request vault content" />
@@ -266,18 +258,10 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                       </Space>
                     ),
                     children: (
-                      <MonacoEditor
-                        height="300px"
-                        language="json"
-                        theme={theme === 'dark' ? 'vs-dark' : 'vs-light'}
+                      <SimpleJsonEditor
                         value={JSON.stringify(JSON.parse(traceData.responseVaultContent.vaultContentResponse || '{}'), null, 2)}
-                        options={{
-                          readOnly: true,
-                          minimap: { enabled: false },
-                          scrollBeyondLastLine: false,
-                          wordWrap: 'off',
-                          fontSize: 12,
-                        }}
+                        readOnly={true}
+                        height="300px"
                       />
                     ),
                   }] : []),

@@ -209,13 +209,6 @@ body {
   color: var(--color-warning);
 }
 
-/* Monaco Editor container */
-.monaco-editor-container {
-  border: 1px solid var(--color-border-primary);
-  border-radius: 6px;
-  overflow: hidden;
-}
-
 /* Table row selection styles */
 .ant-table-tbody > tr.ant-table-row-selected > td {
   background: rgba(85, 107, 47, 0.08) !important;
@@ -609,11 +602,6 @@ body {
 
 [data-theme="dark"] .ant-popover .ant-alert-description {
   color: var(--color-text-secondary);
-}
-
-/* Monaco Editor styling for dark theme */
-[data-theme="dark"] .monaco-editor {
-  border-color: var(--color-border-primary) !important;
 }
 
 /* VaultEditor JSON display in dark theme */

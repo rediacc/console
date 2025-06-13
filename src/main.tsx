@@ -7,7 +7,6 @@ import App from './App'
 import { AppProviders } from './components/common/AppProviders'
 import './index.css'
 import i18n from './i18n/config'
-import './utils/monacoConfig'
 
 const queryClient = new QueryClient({
   defaultOptions: {

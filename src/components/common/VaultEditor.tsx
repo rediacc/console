@@ -23,7 +23,7 @@ import {
   QuestionCircleOutlined,
   BulbOutlined,
 } from '@ant-design/icons'
-import Editor from '@monaco-editor/react'
+import { SimpleJsonEditor } from './SimpleJsonEditor'
 import type { UploadFile } from 'antd/es/upload/interface'
 import { useTranslation } from 'react-i18next'
 import vaultDefinitions from '../../data/vaults.json'
@@ -1038,46 +1038,11 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 />
               )}
               
-              <div style={{ 
-                border: `1px solid ${theme === 'dark' ? 'var(--color-border-primary)' : '#d9d9d9'}`, 
-                borderRadius: 4 
-              }}>
-                <Editor
-                  height="auto"
-                  defaultLanguage="json"
-                  value={rawJsonValue}
-                  onChange={handleRawJsonChange}
-                  theme={theme === 'dark' ? 'vs-dark' : 'vs-light'}
-                  options={{
-                    minimap: { enabled: false },
-                    fontSize: 14,
-                    formatOnPaste: true,
-                    formatOnType: true,
-                    automaticLayout: true,
-                    scrollBeyondLastLine: false,
-                    scrollbar: {
-                      vertical: 'hidden',
-                      horizontal: 'hidden',
-                      handleMouseWheel: false,
-                    },
-                    wordWrap: 'on',
-                    lineNumbers: 'on',
-                    glyphMargin: false,
-                    folding: false,
-                    lineDecorationsWidth: 0,
-                    lineNumbersMinChars: 3,
-                  }}
-                  onMount={(editor) => {
-                    // Auto-resize based on content
-                    const updateHeight = () => {
-                      const contentHeight = Math.min(1000, Math.max(100, editor.getContentHeight()))
-                      editor.layout({ width: editor.getLayoutInfo().width, height: contentHeight })
-                    }
-                    editor.onDidContentSizeChange(updateHeight)
-                    updateHeight()
-                  }}
-                />
-              </div>
+              <SimpleJsonEditor
+                value={rawJsonValue}
+                onChange={handleRawJsonChange}
+                height="400px"
+              />
             </Collapse.Panel>
           )}
         </Collapse>

@@ -596,7 +596,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             setShowFunctionModal(false)
             onCancel()
           }}
-          title={t(`${getResourceTranslationKey()}.${resourceType}Functions`)}
+          title={resourceType === 'machine' ? t('machines:systemFunctions') : t(`${getResourceTranslationKey()}.${resourceType}Functions`)}
           subtitle={
             <Space size="small">
               <Text type="secondary">{t('machines:team')}:</Text>
@@ -758,7 +758,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             await onFunctionSubmit(functionData)
             setShowFunctionModal(false)
           }}
-          title={t(`${getResourceTranslationKey()}.${resourceType}Functions`)}
+          title={resourceType === 'machine' ? t('machines:systemFunctions') : t(`${getResourceTranslationKey()}.${resourceType}Functions`)}
           subtitle={
             <Space size="small">
               <Text type="secondary">{t('machines:team')}:</Text>

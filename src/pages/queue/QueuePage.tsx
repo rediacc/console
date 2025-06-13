@@ -276,6 +276,7 @@ const QueuePage: React.FC = () => {
         <Space size="small">
           <Button
             size="small"
+            type="primary"
             icon={<HistoryOutlined />}
             onClick={() => handleViewTrace(record.taskId)}
           >

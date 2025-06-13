@@ -297,21 +297,24 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         render: (_: unknown, record: Machine) => (
           <Space>
             <Button
-              type="link"
+              type="primary"
+              size="small"
               icon={<EditOutlined />}
               onClick={() => onEditMachine && onEditMachine(record)}
             >
               {t('common:actions.edit')}
             </Button>
             <Button
-              type="link"
+              type="primary"
+              size="small"
               icon={<FunctionOutlined />}
               onClick={() => onFunctionsMachine && onFunctionsMachine(record)}
             >
-              {t('machines:functions')}
+              Run
             </Button>
             <Button
-              type="link"
+              type="primary"
+              size="small"
               icon={<HistoryOutlined />}
               onClick={() => {
                 setAuditTraceModal({
@@ -325,8 +328,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               {t('machines:trace')}
             </Button>
             <Button
-              type="link"
+              type="primary"
               danger
+              size="small"
               icon={<DeleteOutlined />}
               onClick={() => handleDelete(record)}
             >

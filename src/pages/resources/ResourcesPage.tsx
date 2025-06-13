@@ -615,7 +615,7 @@ const ResourcesPage: React.FC = () => {
               },
               {
                 key: 'functions',
-                label: t('repositories.repositoryFunctions'),
+                label: 'Run',
                 icon: <FunctionOutlined />,
                 onClick: () => {
                   setCurrentResource(record);
@@ -651,7 +651,7 @@ const ResourcesPage: React.FC = () => {
           }}
           trigger={['click']}
         >
-          <Button type="text" icon={<MoreOutlined />} />
+          <Button size="small" type="primary" icon={<MoreOutlined />} />
         </Dropdown>
       ),
     },
@@ -729,7 +729,7 @@ const ResourcesPage: React.FC = () => {
           }}
           trigger={['click']}
         >
-          <Button type="text" icon={<MoreOutlined />} />
+          <Button size="small" type="primary" icon={<MoreOutlined />} />
         </Dropdown>
       ),
     },
@@ -807,7 +807,7 @@ const ResourcesPage: React.FC = () => {
           }}
           trigger={['click']}
         >
-          <Button type="text" icon={<MoreOutlined />} />
+          <Button size="small" type="primary" icon={<MoreOutlined />} />
         </Dropdown>
       ),
     },

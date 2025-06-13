@@ -1094,14 +1094,16 @@ const SystemPage: React.FC = () => {
       render: (_: any, record: Team) => (
         <Space>
           <Button 
-            type="link" 
+            type="primary" 
+            size="small"
             icon={<EditOutlined />}
             onClick={() => openUnifiedModal('team', 'edit', record)}
           >
             Edit
           </Button>
           <Button
-            type="link"
+            type="primary"
+            size="small"
             icon={<UserOutlined />}
             onClick={() => {
               setSelectedTeam(record)
@@ -1111,7 +1113,8 @@ const SystemPage: React.FC = () => {
             Members
           </Button>
           <Button
-            type="link"
+            type="primary"
+            size="small"
             icon={<HistoryOutlined />}
             onClick={() => {
               setAuditTraceModal({
@@ -1133,8 +1136,9 @@ const SystemPage: React.FC = () => {
             okButtonProps={{ danger: true }}
           >
             <Button 
-              type="link" 
-              danger 
+              type="primary" 
+              danger
+              size="small"
               icon={<DeleteOutlined />}
               loading={deleteTeamMutation.isPending}
             >
@@ -1185,14 +1189,16 @@ const SystemPage: React.FC = () => {
       render: (_: any, record: Region) => (
         <Space>
           <Button 
-            type="link" 
+            type="primary" 
+            size="small"
             icon={<EditOutlined />}
             onClick={() => openUnifiedModal('region', 'edit', record)}
           >
             {tOrg('general.edit')}
           </Button>
           <Button
-            type="link"
+            type="primary"
+            size="small"
             icon={<HistoryOutlined />}
             onClick={() => {
               setAuditTraceModal({
@@ -1214,8 +1220,9 @@ const SystemPage: React.FC = () => {
             okButtonProps={{ danger: true }}
           >
             <Button 
-              type="link" 
-              danger 
+              type="primary" 
+              danger
+              size="small"
               icon={<DeleteOutlined />}
               loading={deleteRegionMutation.isPending}
             >
@@ -1296,21 +1303,24 @@ const SystemPage: React.FC = () => {
       render: (_: any, record: Bridge) => (
         <Space>
           <Button 
-            type="link" 
+            type="primary" 
+            size="small"
             icon={<EditOutlined />}
             onClick={() => openUnifiedModal('bridge', 'edit', record)}
           >
             {tOrg('general.edit')}
           </Button>
           <Button
-            type="link"
+            type="primary"
+            size="small"
             icon={<KeyOutlined />}
             onClick={() => setBridgeCredentialsModal({ open: true, bridge: record })}
           >
             Token
           </Button>
           <Button 
-            type="link" 
+            type="primary" 
+            size="small"
             icon={<SyncOutlined />}
             onClick={() => setResetAuthModal({ 
               open: true, 
@@ -1321,7 +1331,8 @@ const SystemPage: React.FC = () => {
             Reset Auth
           </Button>
           <Button
-            type="link"
+            type="primary"
+            size="small"
             icon={<HistoryOutlined />}
             onClick={() => {
               setAuditTraceModal({
@@ -1343,8 +1354,9 @@ const SystemPage: React.FC = () => {
             okButtonProps={{ danger: true }}
           >
             <Button 
-              type="link" 
-              danger 
+              type="primary" 
+              danger
+              size="small"
               icon={<DeleteOutlined />}
               loading={deleteBridgeMutation.isPending}
             >
@@ -1941,7 +1953,6 @@ const SystemPage: React.FC = () => {
                   type="primary" 
                   icon={<PlusOutlined />}
                   onClick={() => openUnifiedModal('region', 'create')}
-                  style={{ background: '#556b2f', borderColor: '#556b2f' }}
                 >
                   {tOrg('regions.createRegion')}
                 </Button>
@@ -1981,7 +1992,6 @@ const SystemPage: React.FC = () => {
                     onClick={() => {
                       openUnifiedModal('bridge', 'create', { regionName: selectedRegion })
                     }}
-                    style={{ background: '#556b2f', borderColor: '#556b2f' }}
                   >
                     {tOrg('bridges.createBridge')}
                   </Button>
@@ -2137,11 +2147,13 @@ const SystemPage: React.FC = () => {
       />
 
       {/* Danger Zone Section */}
-      <Title level={3} style={{ marginTop: 48, marginBottom: 24, color: '#ff4d4f' }}>
-        <WarningOutlined /> {tSystem('dangerZone.title')}
-      </Title>
-      
-      <Card style={{ borderColor: '#ff4d4f' }}>
+      {uiMode === 'expert' && (
+        <>
+          <Title level={3} style={{ marginTop: 48, marginBottom: 24, color: '#ff4d4f' }}>
+            <WarningOutlined /> {tSystem('dangerZone.title')}
+          </Title>
+          
+          <Card style={{ borderColor: '#ff4d4f' }}>
         <Space direction="vertical" size={24} style={{ width: '100%' }}>
           
           {/* Block/Unblock User Requests */}
@@ -2257,6 +2269,8 @@ const SystemPage: React.FC = () => {
 
         </Space>
       </Card>
+        </>
+      )}
 
       {/* Master Password Update Modal */}
       <Modal

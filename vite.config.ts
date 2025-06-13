@@ -37,15 +37,11 @@ export default defineConfig(({ mode }) => ({
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-antd': ['antd', '@ant-design/icons'],
           'vendor-charts': ['@ant-design/charts', 'd3'],
-          'vendor-monaco': ['@monaco-editor/react', 'monaco-editor'],
           'vendor-state': ['@reduxjs/toolkit', 'react-redux', '@tanstack/react-query'],
           'vendor-utils': ['lodash', 'axios', 'date-fns', 'zod'],
         },
       },
     },
-  },
-  optimizeDeps: {
-    include: ['monaco-editor']
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify(mode),
