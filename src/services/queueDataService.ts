@@ -56,9 +56,6 @@ class QueueDataService {
     const queueVault: any = {
       function: context.functionName,
       params: context.params,
-      priority: context.priority,
-      description: context.description,
-      addedVia: context.addedVia,
       contextData: {}
     }
 

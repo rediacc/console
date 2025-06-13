@@ -80,16 +80,10 @@ export function useSimpleQueueVault() {
   const buildSimpleVault = useCallback((data: {
     function: string
     params: Record<string, any>
-    priority: number
-    description: string
-    addedVia: string
   }) => {
     return minifyJSON(JSON.stringify({
       function: data.function,
-      params: data.params,
-      priority: data.priority,
-      description: data.description,
-      addedVia: data.addedVia
+      params: data.params
     }))
   }, [])
 

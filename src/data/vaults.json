@@ -272,7 +272,7 @@
         "UNIVERSAL_USER_ID": {
           "type": "string",
           "pattern": "^[0-9]+$",
-          "example": "777"
+          "example": "7322"
         },
         "UNIVERSAL_USER_NAME": {
           "type": "string",

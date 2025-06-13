@@ -348,12 +348,16 @@ export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true
       }
     },
     enabled: enabled && !!taskId,
-    refetchInterval: (data) => {
+    refetchInterval: (query) => {
+      // The query parameter contains the full query state, with data in query.state.data
+      const data = query.state.data
       // Stop refreshing if the task is completed or cancelled
       const status = data?.queueDetails?.status || data?.queueDetails?.Status
+      
       if (status === 'COMPLETED' || status === 'CANCELLED') {
         return false
       }
+      
       // Otherwise refresh every 3 seconds when enabled
       return enabled && taskId ? 3000 : false
     },
