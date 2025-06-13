@@ -10,6 +10,17 @@ import { useTheme } from '@/context/ThemeContext'
 
 const { Text } = Typography
 
+// Helper function to normalize property names from API responses
+const normalizeProperty = <T extends Record<string, any>>(obj: T, ...propertyNames: string[]): any => {
+  if (!obj) return null
+  for (const prop of propertyNames) {
+    if (obj[prop] !== undefined && obj[prop] !== null) {
+      return obj[prop]
+    }
+  }
+  return null
+}
+
 interface QueueItemTraceModalProps {
   taskId: string | null
   visible: boolean
@@ -45,7 +56,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
   const handleToggleMonitoring = () => {
     if (!taskId || !traceData?.queueDetails) return
 
-    const status = traceData.queueDetails.status || traceData.queueDetails.Status
+    const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
     
     // Don't allow monitoring completed or cancelled tasks
     if (status === 'COMPLETED' || status === 'CANCELLED') {
@@ -69,7 +80,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
   const handleClose = () => {
     // If task is still active and monitoring is enabled, remind user
     if (taskId && isMonitoring && traceData?.queueDetails) {
-      const status = traceData.queueDetails.status || traceData.queueDetails.Status
+      const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
       if (status !== 'COMPLETED' && status !== 'CANCELLED') {
         showMessage('info', `Task ${taskId} will continue to be monitored in the background`)
       }
@@ -105,8 +116,8 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                 onChange={handleToggleMonitoring}
                 disabled={
                   !traceData?.queueDetails ||
-                  traceData.queueDetails.status === 'COMPLETED' ||
-                  traceData.queueDetails.status === 'CANCELLED'
+                  normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' ||
+                  normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED'
                 }
               />
               <Text type="secondary">Background Monitoring</Text>
@@ -137,17 +148,17 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             <Card title="Queue Item Details" style={{ marginBottom: 16 }}>
               <Descriptions column={2} size="small">
                 <Descriptions.Item label="Task ID">
-                  <Text code>{traceData.queueDetails.taskId || traceData.queueDetails.TaskId}</Text>
+                  <Text code>{normalizeProperty(traceData.queueDetails, 'taskId', 'TaskId')}</Text>
                 </Descriptions.Item>
                 <Descriptions.Item label="Status">
                   <Tag color={
-                    traceData.queueDetails.status === 'COMPLETED' ? 'success' :
-                    traceData.queueDetails.status === 'CANCELLED' ? 'error' :
-                    traceData.queueDetails.status === 'PROCESSING' ? 'processing' :
-                    traceData.queueDetails.status === 'ASSIGNED' ? 'blue' :
+                    normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' ? 'success' :
+                    normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED' ? 'error' :
+                    normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PROCESSING' ? 'processing' :
+                    normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'ASSIGNED' ? 'blue' :
                     'default'
                   }>
-                    {traceData.queueDetails.status}
+                    {normalizeProperty(traceData.queueDetails, 'status', 'Status')}
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Priority">
@@ -195,10 +206,10 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             {traceData.traceLogs && traceData.traceLogs.length > 0 ? (
               <Timeline mode="left">
                 {traceData.traceLogs.map((log: any, index: number) => {
-                  const action = log.action || log.Action
-                  const timestamp = log.timestamp || log.Timestamp
-                  const details = log.details || log.Details || ''
-                  const actionByUser = log.actionByUser || log.ActionByUser || ''
+                  const action = normalizeProperty(log, 'action', 'Action')
+                  const timestamp = normalizeProperty(log, 'timestamp', 'Timestamp')
+                  const details = normalizeProperty(log, 'details', 'Details') || ''
+                  const actionByUser = normalizeProperty(log, 'actionByUser', 'ActionByUser') || ''
 
                   // Determine timeline item color based on action type
                   let color = 'gray'
@@ -239,17 +250,29 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                         Request Vault
                       </Space>
                     ),
-                    children: traceData.vaultContent ? (
-                      <SimpleJsonEditor
-                        value={JSON.stringify(JSON.parse(traceData.vaultContent.vaultContent || '{}'), null, 2)}
-                        readOnly={true}
-                        height="300px"
-                      />
+                    children: traceData.vaultContent && traceData.vaultContent.hasContent ? (
+                      (() => {
+                        try {
+                          const content = typeof traceData.vaultContent.vaultContent === 'string' 
+                            ? JSON.parse(traceData.vaultContent.vaultContent) 
+                            : traceData.vaultContent.vaultContent || {}
+                          return (
+                            <SimpleJsonEditor
+                              value={JSON.stringify(content, null, 2)}
+                              readOnly={true}
+                              height="300px"
+                            />
+                          )
+                        } catch (error) {
+                          console.error('Failed to parse request vault content:', error)
+                          return <Empty description="Invalid request vault content format" />
+                        }
+                      })()
                     ) : (
                       <Empty description="No request vault content" />
                     ),
                   },
-                  ...(traceData.responseVaultContent ? [{
+                  ...(traceData.responseVaultContent && traceData.responseVaultContent.hasContent ? [{
                     key: 'response',
                     label: (
                       <Space>
@@ -258,11 +281,23 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                       </Space>
                     ),
                     children: (
-                      <SimpleJsonEditor
-                        value={JSON.stringify(JSON.parse(traceData.responseVaultContent.vaultContentResponse || '{}'), null, 2)}
-                        readOnly={true}
-                        height="300px"
-                      />
+                      (() => {
+                        try {
+                          const content = typeof traceData.responseVaultContent.vaultContent === 'string' 
+                            ? JSON.parse(traceData.responseVaultContent.vaultContent) 
+                            : traceData.responseVaultContent.vaultContent || {}
+                          return (
+                            <SimpleJsonEditor
+                              value={JSON.stringify(content, null, 2)}
+                              readOnly={true}
+                              height="300px"
+                            />
+                          )
+                        } catch (error) {
+                          console.error('Failed to parse response vault content:', error)
+                          return <Empty description="Invalid response vault content format" />
+                        }
+                      })()
                     ),
                   }] : []),
                 ]}
@@ -278,15 +313,11 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   <Card title="Machine Statistics" size="small">
                     <Space direction="vertical" size="small" style={{ width: '100%' }}>
                       <div>
-                        <Text type="secondary">Success Rate:</Text>{' '}
-                        <Text strong>{traceData.machineStats.machineSuccessRate}%</Text>
-                      </div>
-                      <div>
-                        <Text type="secondary">Queue Depth:</Text>{' '}
+                        <Text type="secondary">Current Queue Depth:</Text>{' '}
                         <Text strong>{traceData.machineStats.currentQueueDepth}</Text>
                       </div>
                       <div>
-                        <Text type="secondary">Active Tasks:</Text>{' '}
+                        <Text type="secondary">Active Processing:</Text>{' '}
                         <Text strong>{traceData.machineStats.activeProcessingCount}</Text>
                       </div>
                     </Space>
