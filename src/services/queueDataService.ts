@@ -62,21 +62,52 @@ class QueueDataService {
       contextData: {}
     }
 
+    // Add team at root level if required
+    if (requirements.team) {
+      queueVault.team = this.extractTeamData(context.teamVault, context.teamName)
+    }
+
+    // Initialize GENERAL_SETTINGS under contextData
+    queueVault.contextData.GENERAL_SETTINGS = {}
+    
+    if (context.companyVault && typeof context.companyVault === 'object') {
+      // Only add if values exist
+      if (context.companyVault.UNIVERSAL_USER_ID) {
+        queueVault.contextData.GENERAL_SETTINGS.UNIVERSAL_USER_ID = context.companyVault.UNIVERSAL_USER_ID
+      }
+      if (context.companyVault.UNIVERSAL_USER_NAME) {
+        queueVault.contextData.GENERAL_SETTINGS.UNIVERSAL_USER_NAME = context.companyVault.UNIVERSAL_USER_NAME
+      }
+      // Add SSH keys to GENERAL_SETTINGS from company vault
+      if (context.companyVault.SSH_PRIVATE_KEY) {
+        queueVault.contextData.GENERAL_SETTINGS.SSH_PRIVATE_KEY = this.ensureBase64(context.companyVault.SSH_PRIVATE_KEY)
+      }
+      if (context.companyVault.SSH_PUBLIC_KEY) {
+        queueVault.contextData.GENERAL_SETTINGS.SSH_PUBLIC_KEY = this.ensureBase64(context.companyVault.SSH_PUBLIC_KEY)
+      }
+    }
+
+    // Also check team vault for SSH keys and add them to GENERAL_SETTINGS
+    if (context.teamVault && typeof context.teamVault === 'object') {
+      // Team SSH keys override company SSH keys if present
+      if (context.teamVault.SSH_PRIVATE_KEY) {
+        queueVault.contextData.GENERAL_SETTINGS.SSH_PRIVATE_KEY = this.ensureBase64(context.teamVault.SSH_PRIVATE_KEY)
+      }
+      if (context.teamVault.SSH_PUBLIC_KEY) {
+        queueVault.contextData.GENERAL_SETTINGS.SSH_PUBLIC_KEY = this.ensureBase64(context.teamVault.SSH_PUBLIC_KEY)
+      }
+    }
+
+    // Add MACHINES structure under contextData if machine is required
+    if (requirements.machine && context.machineVault && context.machineName) {
+      queueVault.contextData.MACHINES = {
+        [context.machineName]: this.extractMachineForGeneralSettings(context.machineVault)
+      }
+    }
+
     // Add data based on requirements
     if (requirements.company) {
       queueVault.contextData.company = this.extractCompanyData(context.companyVault)
-    }
-
-    if (requirements.team) {
-      queueVault.contextData.team = this.extractTeamData(context.teamVault, context.teamName)
-    }
-
-    if (requirements.machine) {
-      queueVault.contextData.machine = this.extractMachineData(
-        context.machineVault, 
-        context.machineName,
-        context.companyVault
-      )
     }
 
     if (requirements.repository && context.repositoryName) {
@@ -122,14 +153,6 @@ class QueueDataService {
     data.UNIVERSAL_USER_NAME = companyVault.UNIVERSAL_USER_NAME
     data.DOCKER_JSON_CONF = companyVault.DOCKER_JSON_CONF
     data.LOG_FILE = companyVault.LOG_FILE
-    
-    // Ensure SSH keys are in base64 format
-    if (companyVault.SSH_PRIVATE_KEY) {
-      data.SSH_PRIVATE_KEY = this.ensureBase64(companyVault.SSH_PRIVATE_KEY)
-    }
-    if (companyVault.SSH_PUBLIC_KEY) {
-      data.SSH_PUBLIC_KEY = this.ensureBase64(companyVault.SSH_PUBLIC_KEY)
-    }
 
     return data
   }
@@ -142,38 +165,23 @@ class QueueDataService {
       name: teamName
     }
 
-    if (teamVault) {
-      // Team vault fields from TEAM entity - ensure base64 format
-      if (teamVault.SSH_PRIVATE_KEY) {
-        data.SSH_PRIVATE_KEY = this.ensureBase64(teamVault.SSH_PRIVATE_KEY)
-      }
-      if (teamVault.SSH_PUBLIC_KEY) {
-        data.SSH_PUBLIC_KEY = this.ensureBase64(teamVault.SSH_PUBLIC_KEY)
-      }
-    }
+    // SSH keys are now handled in GENERAL_SETTINGS, not in team context data
 
     return data
   }
 
   /**
-   * Extract machine-specific data
+   * Extract machine data for GENERAL_SETTINGS.MACHINES structure
    */
-  private extractMachineData(machineVault: any, machineName: string, companyVault: any): any {
-    const data: any = {
-      name: machineName
-    }
+  private extractMachineForGeneralSettings(machineVault: any): any {
+    const data: any = {}
 
-    // Machine vault fields from MACHINE entity
+    // Machine vault fields formatted for GENERAL_SETTINGS.MACHINES
     if (machineVault && Object.keys(machineVault).length > 0) {
       data.IP = machineVault.ip || machineVault.IP
       data.USER = machineVault.user || machineVault.USER
       data.DATASTORE = machineVault.datastore || machineVault.DATASTORE
       data.HOST_ENTRY = machineVault.host_entry || machineVault.HOST_ENTRY
-      data.ssh_key_configured = machineVault.ssh_key_configured
-      data.SSH_PASSWORD = machineVault.ssh_password
-      if (machineVault.port) {
-        data.port = machineVault.port
-      }
     }
 
     return data
@@ -182,7 +190,7 @@ class QueueDataService {
   /**
    * Extract repository-specific data
    */
-  private extractRepositoryData(repositoryVault: any, repositoryName: string, companyVault: any): any {
+  private extractRepositoryData(repositoryVault: any, repositoryName: string, _companyVault: any): any {
     const data: any = {
       name: repositoryName
     }
@@ -217,7 +225,7 @@ class QueueDataService {
   /**
    * Extract bridge-specific data
    */
-  private extractBridgeData(bridgeVault: any, bridgeName: string, companyVault: any): any {
+  private extractBridgeData(bridgeVault: any, bridgeName: string, _companyVault: any): any {
     const data: any = {
       name: bridgeName
     }
@@ -246,7 +254,7 @@ class QueueDataService {
    * Helper to fetch vault data from API if needed
    * This is a placeholder - actual implementation would use React Query hooks
    */
-  async fetchVaultData(entityType: string, entityName: string): Promise<any> {
+  async fetchVaultData(_entityType: string, _entityName: string): Promise<any> {
     // This would be implemented with actual API calls
     // For now, return empty object
     return {}
@@ -274,7 +282,7 @@ class QueueDataService {
     try {
       // Convert string to base64
       return btoa(value)
-    } catch (e) {
+    } catch {
       // If btoa fails (e.g., for non-Latin1 characters), use a more robust approach
       // Convert to UTF-8 bytes first, then to base64
       const utf8Bytes = new TextEncoder().encode(value)

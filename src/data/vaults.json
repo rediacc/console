@@ -20,7 +20,6 @@
         },
         "port": {
           "type": "number",
-          "default": 22,
           "example": 22
         },
         "host_entry": {
@@ -29,7 +28,6 @@
         },
         "ssh_key_configured": {
           "type": "boolean",
-          "default": false,
           "example": false
         },
         "ssh_password": {
@@ -131,7 +129,6 @@
         },
         "noVersioning": {
           "type": "boolean",
-          "default": false,
           "description": "Disable versioning for this storage"
         },
         "parameters": {
@@ -167,19 +164,16 @@
         },
         "timezone": {
           "type": "string",
-          "default": "UTC",
           "example": "America/New_York"
         },
         "notifications": {
           "type": "object",
           "properties": {
             "onSuccess": {
-              "type": "boolean",
-              "default": false
+              "type": "boolean"
             },
             "onFailure": {
-              "type": "boolean",
-              "default": true
+              "type": "boolean"
             },
             "channels": {
               "type": "array",
@@ -194,12 +188,10 @@
           "type": "object",
           "properties": {
             "attempts": {
-              "type": "number",
-              "default": 3
+              "type": "number"
             },
             "interval": {
-              "type": "number",
-              "default": 5
+              "type": "number"
             }
           }
         }
@@ -280,13 +272,11 @@
         "UNIVERSAL_USER_ID": {
           "type": "string",
           "pattern": "^[0-9]+$",
-          "default": "777",
           "example": "777"
         },
         "UNIVERSAL_USER_NAME": {
           "type": "string",
           "pattern": "^[a-z_][a-z0-9_-]*$",
-          "default": "rediacc",
           "example": "rediacc"
         },
         "DOCKER_JSON_CONF": {
@@ -338,7 +328,6 @@
         },
         "LOG_FILE": {
           "type": "string",
-          "default": "/tmp/rediacc.log",
           "example": "/tmp/rediacc.log"
         }
       }

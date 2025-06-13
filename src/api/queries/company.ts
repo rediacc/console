@@ -14,15 +14,16 @@ export const useCompanyVault = () => {
     queryKey: ['company-vault', company],
     queryFn: async () => {
       const response = await apiClient.get('/GetCompanyVault')
-      const vaultData = response.tables[0]?.data[0]
+      // Company vault data is in the second table (index 1)
+      const vaultData = response.tables[1]?.data[0]
       
       if (!vaultData) {
         return { vault: '{}', vaultVersion: 1 }
       }
       
       return {
-        vault: vaultData.VaultContent || vaultData.vault || '{}',
-        vaultVersion: vaultData.VaultVersion || vaultData.vaultVersion || 1
+        vault: vaultData.vaultContent || vaultData.VaultContent || '{}',
+        vaultVersion: vaultData.vaultVersion || vaultData.VaultVersion || 1
       }
     },
     enabled: !!company
