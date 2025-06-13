@@ -250,7 +250,7 @@ const DashboardPage = () => {
                     <Col span={6}>
                       <Statistic
                         title="Pending"
-                        value={dashboard.queueStats.PendingCount}
+                        value={dashboard.queueStats.pending_count || dashboard.queueStats.PendingCount || 0}
                         valueStyle={{ color: token.colorWarning }}
                         prefix={<ClockCircleOutlined />}
                       />
@@ -258,7 +258,7 @@ const DashboardPage = () => {
                     <Col span={6}>
                       <Statistic
                         title="Processing"
-                        value={dashboard.queueStats.ActiveCount}
+                        value={dashboard.queueStats.active_count || dashboard.queueStats.ActiveCount || 0}
                         valueStyle={{ color: token.colorInfo }}
                         prefix={<SyncOutlined spin />}
                       />
@@ -266,7 +266,7 @@ const DashboardPage = () => {
                     <Col span={6}>
                       <Statistic
                         title="Completed"
-                        value={dashboard.queueStats.CompletedCount}
+                        value={dashboard.queueStats.completed_count || dashboard.queueStats.CompletedCount || 0}
                         valueStyle={{ color: token.colorSuccess }}
                         prefix={<CheckCircleOutlined />}
                       />
@@ -274,7 +274,7 @@ const DashboardPage = () => {
                     <Col span={6}>
                       <Statistic
                         title="Failed"
-                        value={dashboard.queueStats.FailedCount || 0}
+                        value={dashboard.queueStats.failed_count || dashboard.queueStats.FailedCount || 0}
                         valueStyle={{ color: token.colorError }}
                         prefix={<ExclamationCircleOutlined />}
                       />
@@ -282,19 +282,20 @@ const DashboardPage = () => {
                   </Row>
 
                   {/* Queue Alerts */}
-                  {(dashboard.queueStats.HasStaleItems === 1 || dashboard.queueStats.HasOldPendingItems === 1) && (
+                  {((dashboard.queueStats.has_stale_items || dashboard.queueStats.HasStaleItems) === 1 || 
+                    (dashboard.queueStats.has_old_pending_items || dashboard.queueStats.HasOldPendingItems) === 1) && (
                     <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                      {dashboard.queueStats.HasStaleItems === 1 && (
+                      {(dashboard.queueStats.has_stale_items || dashboard.queueStats.HasStaleItems) === 1 && (
                         <Alert
-                          message={`${dashboard.queueStats.StaleCount} stale items`}
+                          message={`${dashboard.queueStats.stale_count || dashboard.queueStats.StaleCount || 0} stale items`}
                           type="warning"
                           showIcon
                           icon={<WarningOutlined />}
                         />
                       )}
-                      {dashboard.queueStats.HasOldPendingItems === 1 && (
+                      {(dashboard.queueStats.has_old_pending_items || dashboard.queueStats.HasOldPendingItems) === 1 && (
                         <Alert
-                          message={`Oldest: ${Math.floor(dashboard.queueStats.OldestPendingAgeMinutes / 60)}h`}
+                          message={`Oldest: ${Math.floor((dashboard.queueStats.oldest_pending_age_minutes || dashboard.queueStats.OldestPendingAgeMinutes || 0) / 60)}h`}
                           type="info"
                           showIcon
                           icon={<FieldTimeOutlined />}
@@ -405,8 +406,12 @@ const DashboardPage = () => {
 
         {/* Queue Details - Team and Machine breakdown */}
         {dashboard.queueStats && (
-          dashboard.queueStats.TeamIssues && Array.isArray(dashboard.queueStats.TeamIssues) && dashboard.queueStats.TeamIssues.length > 0 ||
-          dashboard.queueStats.MachineIssues && Array.isArray(dashboard.queueStats.MachineIssues) && dashboard.queueStats.MachineIssues.length > 0
+          (dashboard.queueStats.team_issues || dashboard.queueStats.TeamIssues) && 
+          Array.isArray(dashboard.queueStats.team_issues || dashboard.queueStats.TeamIssues) && 
+          (dashboard.queueStats.team_issues || dashboard.queueStats.TeamIssues).length > 0 ||
+          (dashboard.queueStats.machine_issues || dashboard.queueStats.MachineIssues) && 
+          Array.isArray(dashboard.queueStats.machine_issues || dashboard.queueStats.MachineIssues) && 
+          (dashboard.queueStats.machine_issues || dashboard.queueStats.MachineIssues).length > 0
         ) && (
           <Card 
             title={
@@ -430,15 +435,19 @@ const DashboardPage = () => {
                   <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Text type="secondary">Created</Text>
-                      <Text strong style={{ fontSize: 18 }}>{dashboard.queueStats.CreatedToday}</Text>
+                      <Text strong style={{ fontSize: 18 }}>{dashboard.queueStats.created_today || dashboard.queueStats.CreatedToday || 0}</Text>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Text type="secondary">Completed</Text>
-                      <Text strong style={{ fontSize: 18, color: token.colorSuccess }}>{dashboard.queueStats.CompletedToday}</Text>
+                      <Text strong style={{ fontSize: 18, color: token.colorSuccess }}>{dashboard.queueStats.completed_today || dashboard.queueStats.CompletedToday || 0}</Text>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Text type="secondary">Cancelled</Text>
-                      <Text strong style={{ fontSize: 18, color: token.colorError }}>{dashboard.queueStats.CancelledToday}</Text>
+                      <Text strong style={{ fontSize: 18, color: token.colorError }}>{dashboard.queueStats.cancelled_today || dashboard.queueStats.CancelledToday || 0}</Text>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Text type="secondary">Failed</Text>
+                      <Text strong style={{ fontSize: 18, color: token.colorError }}>{dashboard.queueStats.failed_today || dashboard.queueStats.FailedToday || 0}</Text>
                     </div>
                   </Space>
                 </div>
@@ -448,27 +457,29 @@ const DashboardPage = () => {
               <Col xs={24} lg={16}>
                 <Space direction="vertical" size="large" style={{ width: '100%' }}>
                   {/* Team Issues */}
-                  {dashboard.queueStats.TeamIssues && Array.isArray(dashboard.queueStats.TeamIssues) && dashboard.queueStats.TeamIssues.length > 0 && (
+                  {(dashboard.queueStats.team_issues || dashboard.queueStats.TeamIssues) && 
+                   Array.isArray(dashboard.queueStats.team_issues || dashboard.queueStats.TeamIssues) && 
+                   (dashboard.queueStats.team_issues || dashboard.queueStats.TeamIssues).length > 0 && (
                     <div>
                       <Text strong style={{ display: 'block', marginBottom: 12 }}>
                         <TeamOutlined /> Team Queue Status
                       </Text>
                       <List
                         size="small"
-                        dataSource={dashboard.queueStats.TeamIssues}
+                        dataSource={dashboard.queueStats.team_issues || dashboard.queueStats.TeamIssues}
                         renderItem={(team) => (
                           <List.Item style={{ paddingLeft: 0, paddingRight: 0 }}>
                             <div style={{ width: '100%' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                <Text strong>{team.TeamName}</Text>
+                                <Text strong>{team.team_name || team.TeamName}</Text>
                                 <Space size="small">
-                                  {team.StaleItems > 0 && (
+                                  {(team.stale_items || team.StaleItems || 0) > 0 && (
                                     <Tag color="warning">
-                                      <WarningOutlined /> {team.StaleItems} stale
+                                      <WarningOutlined /> {team.stale_items || team.StaleItems} stale
                                     </Tag>
                                   )}
-                                  <Tag color="blue">{team.PendingItems} pending</Tag>
-                                  <Tag color="processing">{team.ActiveItems} active</Tag>
+                                  <Tag color="blue">{team.pending_items || team.PendingItems || 0} pending</Tag>
+                                  <Tag color="processing">{team.active_items || team.ActiveItems || 0} active</Tag>
                                 </Space>
                               </div>
                             </div>
@@ -479,7 +490,9 @@ const DashboardPage = () => {
                   )}
 
                   {/* Machine Issues */}
-                  {dashboard.queueStats.MachineIssues && Array.isArray(dashboard.queueStats.MachineIssues) && dashboard.queueStats.MachineIssues.length > 0 && (
+                  {(dashboard.queueStats.machine_issues || dashboard.queueStats.MachineIssues) && 
+                   Array.isArray(dashboard.queueStats.machine_issues || dashboard.queueStats.MachineIssues) && 
+                   (dashboard.queueStats.machine_issues || dashboard.queueStats.MachineIssues).length > 0 && (
                     <div>
                       <Text strong style={{ display: 'block', marginBottom: 12 }}>
                         <DesktopOutlined /> Machine Queue Status
@@ -487,7 +500,7 @@ const DashboardPage = () => {
                       <div style={{ overflowX: 'auto' }}>
                         <Table
                           size="small"
-                          dataSource={dashboard.queueStats.MachineIssues}
+                          dataSource={dashboard.queueStats.machine_issues || dashboard.queueStats.MachineIssues}
                           pagination={false}
                           columns={[
                             {
@@ -495,12 +508,14 @@ const DashboardPage = () => {
                               dataIndex: 'MachineName',
                               key: 'MachineName',
                               ellipsis: true,
+                              render: (value, record) => record.machine_name || record.MachineName || value,
                             },
                             {
                               title: 'Team',
                               dataIndex: 'TeamName',
                               key: 'TeamName',
                               ellipsis: true,
+                              render: (value, record) => record.team_name || record.TeamName || value,
                             },
                             {
                               title: 'Status',
@@ -508,11 +523,11 @@ const DashboardPage = () => {
                               width: 200,
                               render: (_, record) => (
                                 <Space size="small">
-                                  {record.StaleItems > 0 && (
-                                    <Tag color="warning">{record.StaleItems} stale</Tag>
+                                  {(record.stale_items || record.StaleItems || 0) > 0 && (
+                                    <Tag color="warning">{record.stale_items || record.StaleItems} stale</Tag>
                                   )}
-                                  <Tag color="blue">{record.PendingItems} pending</Tag>
-                                  <Tag color="processing">{record.ActiveItems} active</Tag>
+                                  <Tag color="blue">{record.pending_items || record.PendingItems || 0} pending</Tag>
+                                  <Tag color="processing">{record.active_items || record.ActiveItems || 0} active</Tag>
                                 </Space>
                               ),
                             },
@@ -523,8 +538,8 @@ const DashboardPage = () => {
                   )}
 
                   {/* Priority Breakdown (Premium/Elite only) */}
-                  {dashboard.featureAccess.HasAdvancedAnalytics === 1 && 
-                   dashboard.queueStats.HighestPriorityPending !== null && (
+                  {(dashboard.featureAccess.has_advanced_analytics || dashboard.featureAccess.HasAdvancedAnalytics) === 1 && 
+                   (dashboard.queueStats.highest_priority_pending !== null || dashboard.queueStats.HighestPriorityPending !== null) && (
                     <div style={{ 
                       padding: '16px', 
                       backgroundColor: currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout, 
@@ -537,19 +552,19 @@ const DashboardPage = () => {
                       <Space direction="vertical" size="small" style={{ width: '100%' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <Text>Highest Priority</Text>
-                          <Badge count={dashboard.queueStats.HighestPriorityPending} style={{ backgroundColor: token.colorError }} />
+                          <Badge count={dashboard.queueStats.highest_priority_pending ?? dashboard.queueStats.HighestPriorityPending ?? 0} style={{ backgroundColor: token.colorError }} />
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <Text>High Priority</Text>
-                          <Badge count={dashboard.queueStats.HighPriorityPending} style={{ backgroundColor: token.colorWarning }} />
+                          <Badge count={dashboard.queueStats.high_priority_pending ?? dashboard.queueStats.HighPriorityPending ?? 0} style={{ backgroundColor: token.colorWarning }} />
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <Text>Normal Priority</Text>
-                          <Badge count={dashboard.queueStats.NormalPriorityPending} style={{ backgroundColor: token.colorInfo }} />
+                          <Badge count={dashboard.queueStats.normal_priority_pending ?? dashboard.queueStats.NormalPriorityPending ?? 0} style={{ backgroundColor: token.colorInfo }} />
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <Text>Low Priority</Text>
-                          <Badge count={dashboard.queueStats.LowPriorityPending} style={{ backgroundColor: token.colorTextSecondary }} />
+                          <Badge count={dashboard.queueStats.low_priority_pending ?? dashboard.queueStats.LowPriorityPending ?? 0} style={{ backgroundColor: token.colorTextSecondary }} />
                         </div>
                       </Space>
                     </div>

@@ -24,6 +24,10 @@ export interface QueueItem {
   healthStatus: 'PENDING' | 'ACTIVE' | 'STALE' | 'COMPLETED' | 'CANCELLED' | 'FAILED' | 'UNKNOWN'
   canBeCancelled: boolean
   hasResponse: boolean
+  retryCount?: number
+  lastFailureReason?: string
+  permanentlyFailed?: boolean
+  createdBy?: string
 }
 
 export interface QueueStatistics {
@@ -68,6 +72,7 @@ export interface QueueFilters {
   onlyStale?: boolean
   staleThresholdMinutes?: number
   maxRecords?: number
+  createdByUserEmail?: string
 }
 
 // Get queue items with advanced filtering

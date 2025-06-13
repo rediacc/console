@@ -80,7 +80,7 @@ const QueuePage: React.FC = () => {
     
     if (format === 'csv') {
       // CSV Export
-      const headers = ['Task ID', 'Status', 'Priority', 'Age (minutes)', 'Team', 'Machine', 'Region', 'Bridge', 'Has Response', 'Created']
+      const headers = ['Task ID', 'Status', 'Priority', 'Age (minutes)', 'Team', 'Machine', 'Region', 'Bridge', 'Has Response', 'Retry Count', 'Created By', 'Created']
       const csvContent = [
         headers.join(','),
         ...dataToExport.map((item: any) => [
@@ -93,6 +93,8 @@ const QueuePage: React.FC = () => {
           item.regionName,
           item.bridgeName,
           item.hasResponse ? 'Yes' : 'No',
+          item.retryCount || 0,
+          item.createdBy || '',
           item.createdTime
         ].map(val => `"${val || ''}"`).join(','))
       ].join('\n')
@@ -267,6 +269,34 @@ const QueuePage: React.FC = () => {
       render: (hasResponse: boolean) => hasResponse ? 
         <Tag color="success">Yes</Tag> : 
         <Tag>No</Tag>
+    },
+    {
+      title: 'Retries',
+      dataIndex: 'retryCount',
+      key: 'retryCount',
+      width: 80,
+      render: (retryCount: number | undefined, record: any) => {
+        if (!retryCount && retryCount !== 0) return <Text type="secondary">-</Text>
+        
+        const color = retryCount === 0 ? 'green' : retryCount < 3 ? 'orange' : 'red'
+        const icon = retryCount >= 3 && record.permanentlyFailed ? <ExclamationCircleOutlined /> : undefined
+        
+        return (
+          <Tooltip title={record.lastFailureReason || 'No failures'}>
+            <Tag color={color} icon={icon}>
+              {retryCount}/3
+            </Tag>
+          </Tooltip>
+        )
+      },
+      sorter: (a: any, b: any) => (a.retryCount || 0) - (b.retryCount || 0),
+    },
+    {
+      title: 'Created By',
+      dataIndex: 'createdBy',
+      key: 'createdBy',
+      width: 150,
+      render: (createdBy: string | undefined) => createdBy || <Text type="secondary">-</Text>,
     },
     {
       title: 'Created',

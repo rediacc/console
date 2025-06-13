@@ -58,9 +58,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
 
     const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
     
-    // Don't allow monitoring completed or cancelled tasks
-    if (status === 'COMPLETED' || status === 'CANCELLED') {
-      showMessage('warning', 'Cannot monitor completed or cancelled tasks')
+    // Don't allow monitoring completed, cancelled, or failed tasks
+    if (status === 'COMPLETED' || status === 'CANCELLED' || status === 'FAILED') {
+      showMessage('warning', 'Cannot monitor completed, cancelled, or failed tasks')
       return
     }
 
@@ -81,7 +81,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
     // If task is still active and monitoring is enabled, remind user
     if (taskId && isMonitoring && traceData?.queueDetails) {
       const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
-      if (status !== 'COMPLETED' && status !== 'CANCELLED') {
+      if (status !== 'COMPLETED' && status !== 'CANCELLED' && status !== 'FAILED') {
         showMessage('info', `Task ${taskId} will continue to be monitored in the background`)
       }
     }
@@ -117,7 +117,8 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                 disabled={
                   !traceData?.queueDetails ||
                   normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' ||
-                  normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED'
+                  normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED' ||
+                  normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED'
                 }
               />
               <Text type="secondary">Background Monitoring</Text>
@@ -154,6 +155,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   <Tag color={
                     normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' ? 'success' :
                     normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED' ? 'error' :
+                    normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED' ? 'error' :
                     normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PROCESSING' ? 'processing' :
                     normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'ASSIGNED' ? 'blue' :
                     'default'
@@ -197,6 +199,22 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                     {Math.floor(traceData.queueDetails.processingDurationSeconds / 60)} minutes
                   </Descriptions.Item>
                 )}
+                <Descriptions.Item label="Created By">
+                  {normalizeProperty(traceData.queueDetails, 'createdBy', 'CreatedBy') || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Retry Count">
+                  <Tag color={
+                    normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') === 0 ? 'green' :
+                    normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') < 3 ? 'orange' : 'red'
+                  }>
+                    {normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0}/3
+                  </Tag>
+                </Descriptions.Item>
+                {normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason') && (
+                  <Descriptions.Item label="Last Failure Reason" span={2}>
+                    <Text type="warning">{normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason')}</Text>
+                  </Descriptions.Item>
+                )}
               </Descriptions>
             </Card>
           )}
@@ -218,6 +236,8 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   else if (action === 'QUEUE_ITEM_PROCESSING' || action === 'QUEUE_ITEM_RESPONSE_UPDATED') color = 'orange'
                   else if (action === 'QUEUE_ITEM_COMPLETED') color = 'green'
                   else if (action === 'QUEUE_ITEM_CANCELLED') color = 'red'
+                  else if (action === 'QUEUE_ITEM_FAILED') color = 'red'
+                  else if (action === 'QUEUE_ITEM_RETRY') color = 'orange'
                   else if (action.includes('ERROR') || action.includes('FAILED')) color = 'red'
 
                   return (
