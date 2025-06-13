@@ -55,13 +55,10 @@ class QueueDataService {
     // Start with base queue vault structure
     const queueVault: any = {
       function: context.functionName,
+      machine: context.machineName,
+      team: context.teamName,
       params: context.params,
       contextData: {}
-    }
-
-    // Add team at root level if required
-    if (requirements.team) {
-      queueVault.team = this.extractTeamData(context.teamVault, context.teamName)
     }
 
     // Initialize GENERAL_SETTINGS under contextData
@@ -154,18 +151,6 @@ class QueueDataService {
     return data
   }
 
-  /**
-   * Extract team-specific data
-   */
-  private extractTeamData(teamVault: any, teamName: string): any {
-    const data: any = {
-      name: teamName
-    }
-
-    // SSH keys are now handled in GENERAL_SETTINGS, not in team context data
-
-    return data
-  }
 
   /**
    * Extract machine data for GENERAL_SETTINGS.MACHINES structure
