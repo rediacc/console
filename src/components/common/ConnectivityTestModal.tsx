@@ -81,6 +81,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
 
     try {
       // Execute hello function using the shared service
+      // The hello service will automatically fetch the team vault data
       const result = await executeHelloForMachine(machine, {
         priority: 1, // High priority for connectivity tests
         description: 'Connectivity test',

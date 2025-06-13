@@ -3,6 +3,7 @@ import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import { useCreateQueueItem } from '@/api/queries/queue'
 import type { Machine } from '@/types'
 import apiClient from '@/api/client'
+import { useTeams } from '@/api/queries/teams'
 
 export interface HelloFunctionParams {
   teamName: string
@@ -117,9 +118,18 @@ export async function waitForQueueItemCompletion(
 export function useHelloFunction() {
   const { buildQueueVault } = useQueueVaultBuilder()
   const createQueueItemMutation = useCreateQueueItem()
+  const { data: teams } = useTeams()
 
   const executeHello = useCallback(async (params: HelloFunctionParams): Promise<HelloFunctionResult> => {
     try {
+      // Get team vault data if not provided
+      let teamVault = params.teamVault
+      if (!teamVault || teamVault === '{}') {
+        // Find the team vault from the fetched data
+        const teamData = teams?.find(team => team.teamName === params.teamName)
+        teamVault = teamData?.vaultContent || '{}'
+      }
+      
       // Build the queue vault for hello function
       const queueVault = await buildQueueVault({
         teamName: params.teamName,
@@ -131,7 +141,7 @@ export function useHelloFunction() {
         description: params.description || 'Hello function call',
         addedVia: params.addedVia || 'hello-service',
         machineVault: params.machineVault || '{}',
-        teamVault: params.teamVault || '{}',
+        teamVault: teamVault,
         repositoryVault: params.repositoryVault || '{}'
       })
 
@@ -154,7 +164,7 @@ export function useHelloFunction() {
         error: error.message || 'Failed to execute hello function'
       }
     }
-  }, [buildQueueVault, createQueueItemMutation])
+  }, [buildQueueVault, createQueueItemMutation, teams])
 
   const executeHelloForMachine = useCallback(async (machine: Machine, options?: {
     priority?: number
