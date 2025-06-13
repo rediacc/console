@@ -105,10 +105,12 @@ interface QueueStats {
   ActiveCount: number;
   CompletedCount: number;
   CancelledCount: number;
+  FailedCount: number;
   TotalCount: number;
   StaleCount: number;
   CompletedToday: number;
   CancelledToday: number;
+  FailedToday: number;
   CreatedToday: number;
   OldestPendingAgeMinutes: number;
   AvgPendingAgeMinutes: number;

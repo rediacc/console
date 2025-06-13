@@ -13,7 +13,7 @@ export interface QueueItem {
   vaultVersion: number
   vaultContentResponse?: string
   vaultVersionResponse?: number
-  status: 'PENDING' | 'ASSIGNED' | 'PROCESSING' | 'COMPLETED' | 'CANCELLED'
+  status: 'PENDING' | 'ASSIGNED' | 'PROCESSING' | 'COMPLETED' | 'CANCELLED' | 'FAILED'
   priority?: number // Only for Premium/Elite plans, 1-5 where 1 is highest
   priorityLabel?: string // 'Highest', 'High', 'Normal', 'Low', 'Lowest'
   createdTime: string
@@ -21,7 +21,7 @@ export interface QueueItem {
   assignedTime?: string
   lastHeartbeat?: string
   minutesSinceHeartbeat?: number
-  healthStatus: 'PENDING' | 'ACTIVE' | 'STALE' | 'COMPLETED' | 'CANCELLED' | 'UNKNOWN'
+  healthStatus: 'PENDING' | 'ACTIVE' | 'STALE' | 'COMPLETED' | 'CANCELLED' | 'FAILED' | 'UNKNOWN'
   canBeCancelled: boolean
   hasResponse: boolean
 }
@@ -33,6 +33,7 @@ export interface QueueStatistics {
   processingCount: number
   completedCount: number
   cancelledCount: number
+  failedCount: number
   staleCount: number
 }
 
@@ -184,26 +185,31 @@ export const useUpdateQueueItemResponse = () => {
   })
 }
 
-// Complete queue item
+// Complete or fail queue item
 export const useCompleteQueueItem = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async (data: { taskId: string; finalVault: string }) => {
+    mutationFn: async (data: { taskId: string; finalVault: string; finalStatus?: 'COMPLETED' | 'FAILED' }) => {
       // Minify the vault JSON before sending
       const minifiedData = {
         ...data,
-        finalVault: minifyJSON(data.finalVault)
+        finalVault: minifyJSON(data.finalVault),
+        finalStatus: data.finalStatus || 'COMPLETED' // Default to COMPLETED for backward compatibility
       }
       const response = await apiClient.put('/UpdateQueueItemToCompleted', minifiedData)
       return response
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['queue-items'] })
-      showMessage('success', `Queue item ${variables.taskId} completed`)
+      const status = variables.finalStatus || 'COMPLETED'
+      const message = status === 'FAILED' ? 
+        `Queue item ${variables.taskId} marked as failed` : 
+        `Queue item ${variables.taskId} completed`
+      showMessage('success', message)
     },
     onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to complete queue item')
+      showMessage('error', error.message || 'Failed to update queue item')
     },
   })
 }
@@ -351,10 +357,10 @@ export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true
     refetchInterval: (query) => {
       // The query parameter contains the full query state, with data in query.state.data
       const data = query.state.data
-      // Stop refreshing if the task is completed or cancelled
+      // Stop refreshing if the task is completed, cancelled, or failed
       const status = data?.queueDetails?.status || data?.queueDetails?.Status
       
-      if (status === 'COMPLETED' || status === 'CANCELLED') {
+      if (status === 'COMPLETED' || status === 'CANCELLED' || status === 'FAILED') {
         return false
       }
       

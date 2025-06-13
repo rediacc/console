@@ -247,7 +247,7 @@ const DashboardPage = () => {
                 <Space direction="vertical" size="large" style={{ width: '100%' }}>
                   {/* Status Grid */}
                   <Row gutter={[16, 16]}>
-                    <Col span={8}>
+                    <Col span={6}>
                       <Statistic
                         title="Pending"
                         value={dashboard.queueStats.PendingCount}
@@ -255,7 +255,7 @@ const DashboardPage = () => {
                         prefix={<ClockCircleOutlined />}
                       />
                     </Col>
-                    <Col span={8}>
+                    <Col span={6}>
                       <Statistic
                         title="Processing"
                         value={dashboard.queueStats.ActiveCount}
@@ -263,12 +263,20 @@ const DashboardPage = () => {
                         prefix={<SyncOutlined spin />}
                       />
                     </Col>
-                    <Col span={8}>
+                    <Col span={6}>
                       <Statistic
                         title="Completed"
                         value={dashboard.queueStats.CompletedCount}
                         valueStyle={{ color: token.colorSuccess }}
                         prefix={<CheckCircleOutlined />}
+                      />
+                    </Col>
+                    <Col span={6}>
+                      <Statistic
+                        title="Failed"
+                        value={dashboard.queueStats.FailedCount || 0}
+                        valueStyle={{ color: token.colorError }}
+                        prefix={<ExclamationCircleOutlined />}
                       />
                     </Col>
                   </Row>

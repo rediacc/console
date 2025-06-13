@@ -30,6 +30,7 @@ const QueuePage: React.FC = () => {
   const activeTableRef = useRef<HTMLDivElement>(null)
   const completedTableRef = useRef<HTMLDivElement>(null)
   const cancelledTableRef = useRef<HTMLDivElement>(null)
+  const failedTableRef = useRef<HTMLDivElement>(null)
   
   // Combine team selection with filters
   const queryFilters = useMemo(() => ({
@@ -60,6 +61,12 @@ const QueuePage: React.FC = () => {
   })
   
   const cancelledPageSize = useDynamicPageSize(cancelledTableRef, {
+    containerOffset: 280,
+    minRows: 8,
+    maxRows: 50
+  })
+  
+  const failedPageSize = useDynamicPageSize(failedTableRef, {
     containerOffset: 280,
     minRows: 8,
     maxRows: 50
@@ -155,6 +162,7 @@ const QueuePage: React.FC = () => {
           'ACTIVE': { color: 'processing', icon: <PlayCircleOutlined /> },
           'STALE': { color: 'warning', icon: <WarningOutlined /> },
           'COMPLETED': { color: 'success', icon: <CheckCircleOutlined /> },
+          'FAILED': { color: 'error', icon: <ExclamationCircleOutlined /> },
           'CANCELLED': { color: 'error', icon: <CloseCircleOutlined /> },
           'UNKNOWN': { color: 'default', icon: <ExclamationCircleOutlined /> }
         }
@@ -374,6 +382,7 @@ const QueuePage: React.FC = () => {
               <Select.Option value="ACTIVE">Active</Select.Option>
               <Select.Option value="STALE">Stale</Select.Option>
               <Select.Option value="COMPLETED">Completed</Select.Option>
+              <Select.Option value="FAILED">Failed</Select.Option>
               <Select.Option value="CANCELLED">Cancelled</Select.Option>
             </Select>
           </Col>
@@ -497,7 +506,7 @@ const QueuePage: React.FC = () => {
                 />
               </Card>
             </Col>
-            <Col xs={24} sm={12} md={8} lg={4} xl={4}>
+            <Col xs={24} sm={12} md={8} lg={4} xl={3}>
               <Card>
                 <Statistic
                   title="Completed"
@@ -507,7 +516,17 @@ const QueuePage: React.FC = () => {
                 />
               </Card>
             </Col>
-            <Col xs={24} sm={12} md={8} lg={4} xl={4}>
+            <Col xs={24} sm={12} md={8} lg={4} xl={3}>
+              <Card>
+                <Statistic
+                  title="Failed"
+                  value={(queueData?.statistics as any)?.failedCount || 0}
+                  valueStyle={{ color: '#ff4d4f' }}
+                  prefix={<ExclamationCircleOutlined />}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={4} xl={3}>
               <Card>
                 <Statistic
                   title="Cancelled"
@@ -517,7 +536,7 @@ const QueuePage: React.FC = () => {
                 />
               </Card>
             </Col>
-            <Col xs={24} sm={12} md={8} lg={4} xl={4}>
+            <Col xs={24} sm={12} md={8} lg={4} xl={3}>
               <Card>
                 <Statistic
                   title="Stale"
@@ -552,7 +571,7 @@ const QueuePage: React.FC = () => {
               <div ref={activeTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <ResourceListView
                   loading={isLoading || isRefetching}
-                  data={queueData?.items?.filter((item: any) => !['COMPLETED', 'CANCELLED'].includes(item.healthStatus)) || []}
+                  data={queueData?.items?.filter((item: any) => !['COMPLETED', 'CANCELLED', 'FAILED'].includes(item.healthStatus)) || []}
                   columns={queueColumns}
                   rowKey="taskId"
                   searchPlaceholder="Search queue items..."
@@ -640,6 +659,42 @@ const QueuePage: React.FC = () => {
                   }}
                   pagination={{
                     pageSize: cancelledPageSize,
+                    showSizeChanger: false,
+                    showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
+                    position: ['bottomRight'],
+                  }}
+                />
+              </div>
+            </Tabs.TabPane>
+            
+            <Tabs.TabPane 
+              tab={
+                <Space>
+                  <span style={{ marginRight: 8 }}>Failed</span>
+                  <Badge count={(queueData?.statistics as any)?.failedCount || 0} showZero color="#ff4d4f" />
+                </Space>
+              } 
+              key="failed"
+            >
+              <div ref={failedTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <ResourceListView
+                  loading={isLoading || isRefetching}
+                  data={queueData?.items?.filter((item: any) => item.healthStatus === 'FAILED') || []}
+                  columns={queueColumns}
+                  rowKey="taskId"
+                  searchPlaceholder="Search failed items..."
+                  enableDynamicPageSize={true}
+                  containerStyle={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                  tableStyle={{ 
+                    height: 'calc(100vh - 450px)',
+                    minHeight: '400px'
+                  }}
+                  pagination={{
+                    pageSize: failedPageSize,
                     showSizeChanger: false,
                     showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
                     position: ['bottomRight'],
