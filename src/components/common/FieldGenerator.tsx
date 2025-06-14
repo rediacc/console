@@ -9,14 +9,12 @@ import {
 } from '@/utils/cryptoGenerators'
 
 interface FieldGeneratorProps {
-  fieldName: string  // Still in interface but not used in component
   fieldType: 'ssh_keys' | 'repository_credential'
   onGenerate: (values: Record<string, string>) => void
   entityType?: string
 }
 
 const FieldGenerator: React.FC<FieldGeneratorProps> = ({
-  fieldName,  // Included to match interface but not used
   fieldType,
   onGenerate,
   entityType

@@ -15,7 +15,13 @@ class QueueMonitoringService {
   private static instance: QueueMonitoringService
   private monitoredTasks: Map<string, MonitoredTask> = new Map()
   private intervalId: NodeJS.Timeout | null = null
-  private readonly CHECK_INTERVAL = 60000 // 1 minute
+  
+  // Time constants
+  private readonly CHECK_INTERVAL_MS = 60000 // 1 minute
+  private readonly STALE_TASK_THRESHOLD_MS = 24 * 60 * 60 * 1000 // 24 hours
+  private readonly STALE_PROCESSING_MINUTES = 5 // 5 minutes without progress
+  private readonly MAX_RETRY_COUNT = 2 // Maximum retry attempts
+  
   private readonly STORAGE_KEY = 'queue_monitored_tasks'
 
   private constructor() {
@@ -37,7 +43,7 @@ class QueueMonitoringService {
         const tasks = JSON.parse(stored) as MonitoredTask[]
         tasks.forEach(task => {
           // Only restore tasks that are less than 24 hours old
-          if (Date.now() - task.startTime < 24 * 60 * 60 * 1000) {
+          if (Date.now() - task.startTime < this.STALE_TASK_THRESHOLD_MS) {
             this.monitoredTasks.set(task.taskId, task)
           }
         })
@@ -67,7 +73,7 @@ class QueueMonitoringService {
     // Set up periodic checking
     this.intervalId = setInterval(() => {
       this.checkAllTasks()
-    }, this.CHECK_INTERVAL)
+    }, this.CHECK_INTERVAL_MS)
   }
 
   stopMonitoring() {
@@ -78,13 +84,13 @@ class QueueMonitoringService {
   }
 
   addTask(taskId: string, teamName: string, machineName: string, currentStatus: string, retryCount?: number, lastFailureReason?: string) {
-    // Don't monitor completed, cancelled, or permanently failed tasks
-    if (currentStatus === 'COMPLETED' || currentStatus === 'CANCELLED' || currentStatus === 'FAILED') {
+    const terminalStatuses = ['COMPLETED', 'CANCELLED', 'FAILED']
+    if (terminalStatuses.includes(currentStatus)) {
       return
     }
     
     // Don't monitor PENDING tasks that have reached max retries
-    if (currentStatus === 'PENDING' && retryCount && retryCount >= 2 && lastFailureReason) {
+    if (currentStatus === 'PENDING' && retryCount && retryCount >= this.MAX_RETRY_COUNT && lastFailureReason) {
       return
     }
 
@@ -94,7 +100,7 @@ class QueueMonitoringService {
       machineName,
       lastStatus: currentStatus,
       startTime: Date.now(),
-      checkInterval: this.CHECK_INTERVAL,
+      checkInterval: this.CHECK_INTERVAL_MS,
       lastCheckTime: Date.now()
     }
 
@@ -131,12 +137,7 @@ class QueueMonitoringService {
       const response = await apiClient.get('/GetQueueItemTrace', { taskId: task.taskId })
       
       // Extract queue details from response
-      let queueDetails: any = null
-      response.tables?.forEach((table) => {
-        if (table.data && table.data.length > 0 && table.resultSetIndex === 1) {
-          queueDetails = table.data[0]
-        }
-      })
+      const queueDetails = this.extractQueueDetails(response)
 
       if (!queueDetails) {
         return
@@ -161,14 +162,14 @@ class QueueMonitoringService {
         } else if (currentStatus === 'FAILED') {
           // Note: In the middleware, FAILED status with retryCount < 2 gets reset to PENDING immediately
           // So we might not see FAILED status for long, but handle it just in case
-          const retryCount = queueDetails.retryCount || queueDetails.RetryCount || 0
-          if (retryCount >= 2) {
-            showMessage('error', `Queue task ${task.taskId} permanently failed after 2 attempts (${task.teamName} - ${task.machineName})`)
+          const retryCount = this.getRetryCount(queueDetails)
+          if (retryCount >= this.MAX_RETRY_COUNT) {
+            showMessage('error', `Queue task ${task.taskId} permanently failed after ${this.MAX_RETRY_COUNT} attempts (${task.teamName} - ${task.machineName})`)
             this.removeTask(task.taskId)
             return // Stop processing this task
           } else {
             // This should be rare as middleware immediately resets to PENDING
-            showMessage('warning', `Queue task ${task.taskId} failed - waiting for retry (attempt ${retryCount} of 2) (${task.teamName} - ${task.machineName})`)
+            showMessage('warning', `Queue task ${task.taskId} failed - waiting for retry (attempt ${retryCount} of ${this.MAX_RETRY_COUNT}) (${task.teamName} - ${task.machineName})`)
             // Continue monitoring as it should become PENDING soon
             this.monitoredTasks.set(task.taskId, task)
             this.saveToStorage()
@@ -183,35 +184,35 @@ class QueueMonitoringService {
           // Update the task with new status
           this.monitoredTasks.set(task.taskId, task)
           this.saveToStorage()
-        } else if (currentStatus === 'PENDING' && oldStatus !== 'PENDING' && (queueDetails.retryCount || queueDetails.RetryCount || 0) > 0) {
+        } else if (currentStatus === 'PENDING' && oldStatus !== 'PENDING' && this.getRetryCount(queueDetails) > 0) {
           // Task has been reset to PENDING for retry
-          const retryCount = queueDetails.retryCount || queueDetails.RetryCount || 0
-          const lastFailureReason = queueDetails.lastFailureReason || queueDetails.LastFailureReason
+          const retryCount = this.getRetryCount(queueDetails)
+          const lastFailureReason = this.getLastFailureReason(queueDetails)
           
           // Check if we've reached max retries
-          if (retryCount >= 2 && lastFailureReason) {
-            showMessage('error', `Queue task ${task.taskId} permanently failed after 2 attempts (${task.teamName} - ${task.machineName})`)
+          if (retryCount >= this.MAX_RETRY_COUNT && lastFailureReason) {
+            showMessage('error', `Queue task ${task.taskId} permanently failed after ${this.MAX_RETRY_COUNT} attempts (${task.teamName} - ${task.machineName})`)
             this.removeTask(task.taskId)
             return
           }
           
-          showMessage('info', `Queue task ${task.taskId} queued for retry (attempt ${retryCount} of 2) (${task.teamName} - ${task.machineName})`)
+          showMessage('info', `Queue task ${task.taskId} queued for retry (attempt ${retryCount} of ${this.MAX_RETRY_COUNT}) (${task.teamName} - ${task.machineName})`)
           // Update the task with new status
           this.monitoredTasks.set(task.taskId, task)
           this.saveToStorage()
-        } else if (currentStatus === 'PENDING' && (queueDetails.retryCount || queueDetails.RetryCount || 0) >= 2 && (queueDetails.lastFailureReason || queueDetails.LastFailureReason)) {
+        } else if (currentStatus === 'PENDING' && this.getRetryCount(queueDetails) >= this.MAX_RETRY_COUNT && this.getLastFailureReason(queueDetails)) {
           // Task is stuck in PENDING with max retries - treat as permanently failed
-          showMessage('error', `Queue task ${task.taskId} permanently failed after 3 attempts (${task.teamName} - ${task.machineName})`)
+          showMessage('error', `Queue task ${task.taskId} permanently failed after ${this.MAX_RETRY_COUNT + 1} attempts (${task.teamName} - ${task.machineName})`)
           this.removeTask(task.taskId)
           return
         }
       }
 
       // Check for stale tasks (no assignment update for more than 5 minutes during processing)
-      if (currentStatus === 'PROCESSING' && queueDetails.minutesSinceAssigned && queueDetails.minutesSinceAssigned > 5) {
+      if (currentStatus === 'PROCESSING' && queueDetails.minutesSinceAssigned && queueDetails.minutesSinceAssigned > this.STALE_PROCESSING_MINUTES) {
         showMessage('error', `Queue task ${task.taskId} appears to be stale (no progress for ${queueDetails.minutesSinceAssigned} minutes)`)
         // Continue monitoring but less frequently
-        task.checkInterval = this.CHECK_INTERVAL * 2 // Check every 2 minutes for stale tasks
+        task.checkInterval = this.CHECK_INTERVAL_MS * 2 // Double the check interval for stale tasks
         this.monitoredTasks.set(task.taskId, task)
         this.saveToStorage()
       }
@@ -232,13 +233,31 @@ class QueueMonitoringService {
     return Array.from(this.monitoredTasks.values())
   }
 
+  private extractQueueDetails(response: any): any {
+    let queueDetails: any = null
+    response.tables?.forEach((table: any) => {
+      if (table.data && table.data.length > 0 && table.resultSetIndex === 1) {
+        queueDetails = table.data[0]
+      }
+    })
+    return queueDetails
+  }
+
+  private getRetryCount(queueDetails: any): number {
+    return queueDetails.retryCount || queueDetails.RetryCount || 0
+  }
+
+  private getLastFailureReason(queueDetails: any): string | undefined {
+    return queueDetails.lastFailureReason || queueDetails.LastFailureReason
+  }
+
   // Clear old tasks (older than 24 hours)
   clearOldTasks() {
     const now = Date.now()
     const oldTaskIds: string[] = []
 
     this.monitoredTasks.forEach((task, taskId) => {
-      if (now - task.startTime > 24 * 60 * 60 * 1000) {
+      if (now - task.startTime > this.STALE_TASK_THRESHOLD_MS) {
         oldTaskIds.push(taskId)
       }
     })

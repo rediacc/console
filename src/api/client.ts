@@ -25,6 +25,15 @@ class ApiClient {
   private requestQueue: Promise<any> = Promise.resolve()
   private isUpdatingToken = false
 
+  // HTTP status codes
+  private readonly HTTP_UNAUTHORIZED = 401
+  private readonly HTTP_SERVER_ERROR = 500
+  
+  // Timing constants
+  private readonly TOKEN_UPDATE_DELAY_MS = 5
+  private readonly TOKEN_UPDATE_POLL_INTERVAL_MS = 10
+  private readonly REDIRECT_DELAY_MS = 1500
+
   constructor() {
     this.client = axios.create({
       baseURL: `${API_BASE_URL}${API_PREFIX}`,
@@ -68,108 +77,23 @@ class ApiClient {
     // Response interceptor for token rotation, decryption, and error handling
     this.client.interceptors.response.use(
       async (response) => {
-        let data = response.data as ApiResponse
+        let responseData = response.data as ApiResponse
 
         // Decrypt vault fields in response data if master password is set
-        if (data && hasVaultFields(data)) {
-          try {
-            data = await decryptResponseData(data)
-            response.data = data
-          } catch (error) {
-            // Decryption errors are handled in middleware (shows toast)
-            // Continue with encrypted data
-          }
-        }
+        responseData = await this.handleResponseDecryption(responseData)
+        response.data = responseData
 
         // Check for API-level failure
-        if (data.failure !== 0) {
-          // Check if failure code is 401 (unauthorized)
-          if (data.failure === 401) {
-            // Handle as unauthorized - same as HTTP 401
-            showMessage('error', 'Session expired. Please login again.')
-            store.dispatch(logout())
-            
-            // Only redirect if not already on login page
-            const currentPath = window.location.pathname
-            const basePath = import.meta.env.BASE_URL || '/'
-            const loginPath = `${basePath}login`.replace('//', '/')
-            
-            if (!currentPath.includes('/login')) {
-              // Delay redirect so user can see the message
-              setTimeout(() => {
-                window.location.href = loginPath
-              }, 1500) // 1.5 second delay
-            }
-            return Promise.reject(new Error('Unauthorized'))
-          }
-          
-          const errorMessage = data.errors?.join('; ') || data.message || 'Request failed'
-          // Don't show message here - let the mutation handler show it
-          // This prevents duplicate messages and allows mutation handlers to customize error display
-          return Promise.reject(new Error(errorMessage))
+        if (responseData.failure !== 0) {
+          return this.handleApiFailure(responseData)
         }
 
         // Handle token rotation with lock to prevent race conditions
-        if (data.tables?.[0]?.data?.[0]?.nextRequestCredential) {
-          this.isUpdatingToken = true
-          try {
-            const newToken = data.tables[0].data[0].nextRequestCredential
-            // Update token in secure storage instead of Redux
-            await tokenService.updateToken(newToken)
-            // Small delay to ensure token is updated
-            await new Promise(resolve => setTimeout(resolve, 5))
-          } finally {
-            this.isUpdatingToken = false
-          }
-        }
+        await this.handleTokenRotation(responseData)
 
         return response
       },
-      (error) => {
-        // First, check if the response has our API error structure with "errors" array
-        if (error.response?.data) {
-          const apiResponse = error.response.data as ApiResponse
-          if (apiResponse.errors && apiResponse.errors.length > 0) {
-            // Create a new error with the API error message
-            const errorMessage = apiResponse.errors.join('; ')
-            const customError = new Error(errorMessage)
-            // Copy over the response data
-            ;(customError as any).response = error.response
-            return Promise.reject(customError)
-          }
-        }
-
-        // Handle specific status codes
-        if (error.response?.status === 401) {
-          // Check if it's specifically a validation error on page refresh
-          const errorMessage = error.response?.data?.tables?.[0]?.data?.[0]?.message
-          if (errorMessage?.includes('Invalid request credential')) {
-            // Only show this message once, not for each failed request
-            showMessage('error', 'Session expired. Please login again.')
-          }
-          store.dispatch(logout())
-          
-          // Only redirect if not already on login page
-          const currentPath = window.location.pathname
-          const basePath = import.meta.env.BASE_URL || '/'
-          const loginPath = `${basePath}login`.replace('//', '/')
-          
-          if (!currentPath.includes('/login')) {
-            // Delay redirect so user can see the message
-            setTimeout(() => {
-              window.location.href = loginPath
-            }, 1500) // 1.5 second delay
-          }
-        } else if (error.response?.status >= 500) {
-          showMessage('error', 'Server error. Please try again later.')
-        } else if (error.request && !error.response) {
-          // Only show network error if there's truly no response
-          showMessage('error', 'Network error. Please check your connection.')
-        }
-        
-        // For other errors, pass them through as-is
-        return Promise.reject(error)
-      }
+      (error) => this.handleResponseError(error)
     )
   }
 
@@ -222,9 +146,7 @@ class ApiClient {
     // Queue requests to prevent race conditions with token rotation
     const executeRequest = async () => {
       // Wait for any token update to complete
-      while (this.isUpdatingToken) {
-        await new Promise(resolve => setTimeout(resolve, 10))
-      }
+      await this.waitForTokenUpdate()
       
       const response = await request()
       return response.data
@@ -236,6 +158,101 @@ class ApiClient {
       .catch(executeRequest) // Continue queue even if previous request failed
 
     return this.requestQueue
+  }
+
+  private async waitForTokenUpdate(): Promise<void> {
+    while (this.isUpdatingToken) {
+      await new Promise(resolve => setTimeout(resolve, this.TOKEN_UPDATE_POLL_INTERVAL_MS))
+    }
+  }
+
+  private async handleResponseDecryption(responseData: ApiResponse): Promise<ApiResponse> {
+    if (responseData && hasVaultFields(responseData)) {
+      try {
+        return await decryptResponseData(responseData)
+      } catch (error) {
+        // Decryption errors are handled in middleware (shows toast)
+        // Continue with encrypted data
+        return responseData
+      }
+    }
+    return responseData
+  }
+
+  private handleApiFailure(responseData: ApiResponse): Promise<never> {
+    if (responseData.failure === this.HTTP_UNAUTHORIZED) {
+      this.handleUnauthorizedError()
+      return Promise.reject(new Error('Unauthorized'))
+    }
+    
+    const errorMessage = responseData.errors?.join('; ') || responseData.message || 'Request failed'
+    return Promise.reject(new Error(errorMessage))
+  }
+
+  private handleUnauthorizedError(): void {
+    showMessage('error', 'Session expired. Please login again.')
+    store.dispatch(logout())
+    this.redirectToLogin()
+  }
+
+  private async handleTokenRotation(responseData: ApiResponse): Promise<void> {
+    const newToken = responseData.tables?.[0]?.data?.[0]?.nextRequestCredential
+    
+    if (newToken) {
+      this.isUpdatingToken = true
+      try {
+        await tokenService.updateToken(newToken)
+        // Small delay to ensure token is updated
+        await new Promise(resolve => setTimeout(resolve, this.TOKEN_UPDATE_DELAY_MS))
+      } finally {
+        this.isUpdatingToken = false
+      }
+    }
+  }
+
+  private handleResponseError(error: any): Promise<never> {
+    // First, check if the response has our API error structure with "errors" array
+    if (error.response?.data) {
+      const apiResponse = error.response.data as ApiResponse
+      if (apiResponse.errors && apiResponse.errors.length > 0) {
+        const errorMessage = apiResponse.errors.join('; ')
+        const customError = new Error(errorMessage)
+        ;(customError as any).response = error.response
+        return Promise.reject(customError)
+      }
+    }
+
+    // Handle specific status codes
+    if (error.response?.status === this.HTTP_UNAUTHORIZED) {
+      this.handleUnauthorizedResponseError(error.response)
+    } else if (error.response?.status >= this.HTTP_SERVER_ERROR) {
+      showMessage('error', 'Server error. Please try again later.')
+    } else if (error.request && !error.response) {
+      showMessage('error', 'Network error. Please check your connection.')
+    }
+    
+    return Promise.reject(error)
+  }
+
+  private handleUnauthorizedResponseError(response: any): void {
+    const errorMessage = response?.data?.tables?.[0]?.data?.[0]?.message
+    if (errorMessage?.includes('Invalid request credential')) {
+      showMessage('error', 'Session expired. Please login again.')
+    }
+    store.dispatch(logout())
+    this.redirectToLogin()
+  }
+
+  private redirectToLogin(): void {
+    const currentPath = window.location.pathname
+    const basePath = import.meta.env.BASE_URL || '/'
+    const loginPath = `${basePath}login`.replace('//', '/')
+    
+    if (!currentPath.includes('/login')) {
+      setTimeout(() => {
+        window.location.href = loginPath
+      }, this.REDIRECT_DELAY_MS)
+    }
   }
 }
 

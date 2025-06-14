@@ -54,9 +54,15 @@ const resourceIcons: Record<string, React.ReactNode> = {
   'Storage': <CloudOutlined />
 };
 
+// Constants
+const CRITICAL_DAYS_THRESHOLD = 30;
+const MAX_NOTIFICATIONS = 50;
+const RECENT_AUDIT_LOGS_COUNT = 10;
+const DESCRIPTION_TRUNCATE_LENGTH = 100;
+
 const DashboardPage = () => {
   const { data: dashboard, isLoading, error } = useDashboard();
-  const { data: auditLogs, isLoading: auditLoading } = useRecentAuditLogs(10);
+  const { data: auditLogs, isLoading: auditLoading } = useRecentAuditLogs(RECENT_AUDIT_LOGS_COUNT);
   const [pricing, setPricing] = useState<PricingConfig | null>(null);
   const [pricingLoading, setPricingLoading] = useState(true);
   const { t } = useTranslation('common');
@@ -112,18 +118,24 @@ const DashboardPage = () => {
   }
 
 
+  const STATUS_TYPE_MAP: Record<string, 'success' | 'warning' | 'error'> = {
+    'Critical': 'error',
+    'Warning': 'warning',
+    'Good': 'success'
+  };
+
+  const PROGRESS_THRESHOLDS = {
+    EXCEPTION: 90,
+    NORMAL: 75
+  };
+
   const getStatusType = (status: string): 'success' | 'warning' | 'error' => {
-    switch (status) {
-      case 'Critical': return 'error';
-      case 'Warning': return 'warning';
-      case 'Good': return 'success';
-      default: return 'success';
-    }
+    return STATUS_TYPE_MAP[status] || 'success';
   };
 
   const getProgressStatus = (percentage: number): 'exception' | 'normal' | 'success' => {
-    if (percentage >= 90) return 'exception';
-    if (percentage >= 75) return 'normal';
+    if (percentage >= PROGRESS_THRESHOLDS.EXCEPTION) return 'exception';
+    if (percentage >= PROGRESS_THRESHOLDS.NORMAL) return 'normal';
     return 'success';
   };
 
@@ -137,20 +149,27 @@ const DashboardPage = () => {
     return <InfoCircleOutlined style={{ color: token.colorTextSecondary }} />;
   };
 
+  const TIME_UNITS = {
+    MINUTE: 60000,
+    HOUR: 60,
+    DAY: 24,
+    WEEK: 7
+  };
+
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
+    const diffMins = Math.floor(diffMs / TIME_UNITS.MINUTE);
     
     if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffMins < TIME_UNITS.HOUR) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
     
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    const diffHours = Math.floor(diffMins / TIME_UNITS.HOUR);
+    if (diffHours < TIME_UNITS.DAY) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
     
-    const diffDays = Math.floor(diffHours / 24);
-    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    const diffDays = Math.floor(diffHours / TIME_UNITS.DAY);
+    if (diffDays < TIME_UNITS.WEEK) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
     
     return date.toLocaleDateString();
   };
@@ -392,7 +411,7 @@ const DashboardPage = () => {
                     </Text>
                     {log.details && (
                       <Text type="secondary" style={{ fontSize: 12 }}>
-                        {log.details.length > 100 ? `${log.details.substring(0, 100)}...` : log.details}
+                        {log.details.length > DESCRIPTION_TRUNCATE_LENGTH ? `${log.details.substring(0, DESCRIPTION_TRUNCATE_LENGTH)}...` : log.details}
                       </Text>
                     )}
                   </Space>
@@ -611,7 +630,7 @@ const DashboardPage = () => {
                         <Statistic
                           title="Days Remaining"
                           value={dashboard.activeSubscription.DaysRemaining}
-                          valueStyle={{ color: dashboard.activeSubscription.DaysRemaining <= 30 ? token.colorError : token.colorText }}
+                          valueStyle={{ color: dashboard.activeSubscription.DaysRemaining <= CRITICAL_DAYS_THRESHOLD ? token.colorError : token.colorText }}
                         />
                       </Col>
                     </Row>
@@ -692,7 +711,7 @@ const DashboardPage = () => {
                               <Badge count={`×${sub.quantity}`} style={{ backgroundColor: '#52c41a' }} />
                               {sub.isTrial === 1 && <Tag color="blue">Trial</Tag>}
                             </Space>
-                            <Text type={sub.daysRemaining <= 30 ? 'danger' : 'secondary'} style={{ fontSize: 12 }}>
+                            <Text type={sub.daysRemaining <= CRITICAL_DAYS_THRESHOLD ? 'danger' : 'secondary'} style={{ fontSize: 12 }}>
                               {sub.daysRemaining} {sub.daysRemaining === 1 ? 'day' : 'days'} remaining
                             </Text>
                           </div>
@@ -721,7 +740,7 @@ const DashboardPage = () => {
                               })()}
                               showInfo={false}
                               size="small"
-                              strokeColor={sub.daysRemaining <= 30 ? 
+                              strokeColor={sub.daysRemaining <= CRITICAL_DAYS_THRESHOLD ? 
                                 (currentTheme === 'dark' ? '#ff6b6b' : token.colorError) : 
                                 (currentTheme === 'dark' ? '#7d9b49' : token.colorPrimary)}
                             />

@@ -82,26 +82,25 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   // Import/Export handlers ref
   const importExportHandlers = useRef<{ handleImport: (file: any) => boolean; handleExport: () => void } | null>(null)
   
+  // Translation key mapping for resource types
+  const RESOURCE_TRANSLATION_KEYS: Record<string, string> = {
+    'storage': 'storage',
+    'repository': 'repositories',
+    'machine': 'machines',
+    'schedule': 'schedules',
+    'team': 'teams',
+    'region': 'regions',
+    'bridge': 'bridges'
+  }
+
   // Helper to get the correct translation key prefix
   const getResourceTranslationKey = () => {
-    switch (resourceType) {
-      case 'storage':
-        return 'storage' // singular
-      case 'repository':
-        return 'repositories' // special plural
-      case 'machine':
-        return 'machines'
-      case 'schedule':
-        return 'schedules'
-      case 'team':
-        return 'teams'
-      case 'region':
-        return 'regions'
-      case 'bridge':
-        return 'bridges'
-      default:
-        return `${resourceType}s`
-    }
+    return RESOURCE_TRANSLATION_KEYS[resourceType] || `${resourceType}s`
+  }
+
+  // Helper to map items to options format
+  const mapToOptions = (items: any[] | undefined) => {
+    return items?.map(item => ({ value: item.value, label: item.label })) || []
   }
 
   // Calculate modal dimensions based on viewport
@@ -348,7 +347,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             placeholder: t('regions.placeholders.selectRegion'),
             required: true,
             type: 'select' as const,
-            options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
+            options: mapToOptions(dropdownData?.regions),
           },
           {
             name: 'bridgeName',
@@ -371,7 +370,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             placeholder: t('regions.placeholders.selectRegion'),
             required: true,
             type: 'select' as const,
-            options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
+            options: mapToOptions(dropdownData?.regions),
           },
         ]
       }
@@ -401,7 +400,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           placeholder: t('teams.placeholders.selectTeam'),
           required: true,
           type: 'select' as const,
-          options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
+          options: mapToOptions(dropdownData?.teams),
         })
       }
 
@@ -461,24 +460,26 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         placeholder: t('teams.placeholders.selectTeam'),
         required: true,
         type: 'select' as const,
-        options: dropdownData?.teams?.map(t => ({ value: t.value, label: t.label })) || [],
+        options: mapToOptions(dropdownData?.teams),
       },
       nameField
     ]
   }
 
+  // Entity type mapping for vault editor
+  const ENTITY_TYPE_MAP: Record<string, string> = {
+    'machine': 'MACHINE',
+    'repository': 'REPOSITORY',
+    'storage': 'STORAGE',
+    'schedule': 'SCHEDULE',
+    'team': 'TEAM',
+    'region': 'REGION',
+    'bridge': 'BRIDGE'
+  }
+
   // Get entity type for vault editor
   const getEntityType = () => {
-    switch (resourceType) {
-      case 'machine': return 'MACHINE'
-      case 'repository': return 'REPOSITORY'
-      case 'storage': return 'STORAGE'
-      case 'schedule': return 'SCHEDULE'
-      case 'team': return 'TEAM'
-      case 'region': return 'REGION'
-      case 'bridge': return 'BRIDGE'
-      default: return 'UNKNOWN'
-    }
+    return ENTITY_TYPE_MAP[resourceType] || 'UNKNOWN'
   }
 
   // Get vault field name
@@ -486,34 +487,23 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     return `${resourceType}Vault`
   }
 
+  // Create translation mappings for resource types
+  const CREATE_TRANSLATION_KEYS: Record<string, string> = {
+    'machine': 'machines:createMachine',
+    'repository': 'resources:repositories.createRepository',
+    'storage': 'resources:storage.createStorage',
+    'schedule': 'resources:schedules.createSchedule',
+    'team': 'system:teams.createTeam',
+    'region': 'system:regions.createRegion',
+    'bridge': 'system:bridges.createBridge'
+  }
+
   // Get modal title
   const getModalTitle = () => {
     if (mode === 'create') {
       // Use specific create translation for each resource type
-      let createText = ''
-      switch (resourceType) {
-        case 'machine':
-          createText = t('machines:createMachine')
-          break
-        case 'repository':
-          createText = t('resources:repositories.createRepository')
-          break
-        case 'storage':
-          createText = t('resources:storage.createStorage')
-          break
-        case 'schedule':
-          createText = t('resources:schedules.createSchedule')
-          break
-        case 'team':
-          createText = t('system:teams.createTeam')
-          break
-        case 'region':
-          createText = t('system:regions.createRegion')
-          break
-        case 'bridge':
-          createText = t('system:bridges.createBridge')
-          break
-      }
+      const translationKey = CREATE_TRANSLATION_KEYS[resourceType]
+      let createText = translationKey ? t(translationKey) : ''
       
       if (isTeamPreselected || uiMode === 'simple') {
         const team = uiMode === 'simple' ? 'Private Team' : 

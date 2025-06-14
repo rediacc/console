@@ -6,7 +6,8 @@ export type MessageType = 'success' | 'error' | 'warning' | 'info'
 
 // Track recent error messages to prevent duplicates
 const recentErrors = new Map<string, number>()
-const ERROR_DEDUP_WINDOW = 1000 // 1 second window for deduplication
+const ERROR_DEDUP_WINDOW_MS = 1000 // 1 second window for deduplication
+const ERROR_CLEANUP_THRESHOLD_MS = ERROR_DEDUP_WINDOW_MS * 2
 
 const getNotificationTitle = (type: MessageType): string => {
   switch (type) {
@@ -25,61 +26,87 @@ const getNotificationTitle = (type: MessageType): string => {
 
 export const showMessage = (type: MessageType, content: string) => {
   // For error messages, check if we've shown this recently
-  if (type === 'error') {
-    const now = Date.now()
-    const lastShown = recentErrors.get(content)
-    
-    if (lastShown && now - lastShown < ERROR_DEDUP_WINDOW) {
-      // Skip showing duplicate error
-      return
-    }
-    
-    recentErrors.set(content, now)
-    
-    // Clean up old entries
-    for (const [msg, time] of recentErrors.entries()) {
-      if (now - time > ERROR_DEDUP_WINDOW * 2) {
-        recentErrors.delete(msg)
-      }
-    }
+  if (type === 'error' && isDuplicateError(content)) {
+    return
   }
   
-  // Show toast based on type
-  // react-hot-toast only has success, error, and the base toast function
+  displayToast(type, content)
+  addToNotificationCenter(type, content)
+}
+
+function isDuplicateError(content: string): boolean {
+  const now = Date.now()
+  const lastShown = recentErrors.get(content)
+  
+  if (lastShown && now - lastShown < ERROR_DEDUP_WINDOW_MS) {
+    return true
+  }
+  
+  recentErrors.set(content, now)
+  cleanupOldErrors(now)
+  
+  return false
+}
+
+function cleanupOldErrors(currentTime: number): void {
+  for (const [message, time] of recentErrors.entries()) {
+    if (currentTime - time > ERROR_CLEANUP_THRESHOLD_MS) {
+      recentErrors.delete(message)
+    }
+  }
+}
+
+function displayToast(type: MessageType, content: string): void {
+  const toastConfig = getToastConfig(type)
+  
+  if (toastConfig.isCustom) {
+    toast(content, toastConfig.options)
+  } else {
+    toastConfig.handler(content)
+  }
+}
+
+interface ToastConfig {
+  handler?: (message: string) => void
+  isCustom: boolean
+  options?: any
+}
+
+const TOAST_STYLES = {
+  warning: {
+    icon: '⚠️',
+    style: {
+      background: '#FFF3CD',
+      color: '#856404',
+      border: '1px solid #FFEAA7',
+    },
+  },
+  info: {
+    icon: 'ℹ️',
+    style: {
+      background: '#D1ECF1',
+      color: '#0C5460',
+      border: '1px solid #BEE5EB',
+    },
+  },
+}
+
+function getToastConfig(type: MessageType): ToastConfig {
   switch (type) {
     case 'success':
-      toast.success(content)
-      break
+      return { handler: toast.success, isCustom: false }
     case 'error':
-      toast.error(content)
-      break
+      return { handler: toast.error, isCustom: false }
     case 'warning':
-      // Use custom toast for warning
-      toast(content, {
-        icon: '⚠️',
-        style: {
-          background: '#FFF3CD',
-          color: '#856404',
-          border: '1px solid #FFEAA7',
-        },
-      })
-      break
+      return { isCustom: true, options: TOAST_STYLES.warning }
     case 'info':
-      // Use custom toast for info
-      toast(content, {
-        icon: 'ℹ️',
-        style: {
-          background: '#D1ECF1',
-          color: '#0C5460',
-          border: '1px solid #BEE5EB',
-        },
-      })
-      break
+      return { isCustom: true, options: TOAST_STYLES.info }
     default:
-      toast(content)
+      return { handler: toast, isCustom: false }
   }
-  
-  // Add to notification center
+}
+
+function addToNotificationCenter(type: MessageType, content: string): void {
   store.dispatch(addNotification({
     type,
     title: getNotificationTitle(type),

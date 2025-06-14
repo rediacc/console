@@ -25,8 +25,7 @@ const queryClient = new QueryClient({
   },
 })
 
-// Wait for i18n to initialize before rendering
-i18n.on('initialized', () => {
+const renderApplication = () => {
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
       <Provider store={store}>
@@ -38,19 +37,12 @@ i18n.on('initialized', () => {
       </Provider>
     </React.StrictMode>
   )
-})
+}
+
+// Wait for i18n to initialize before rendering
+i18n.on('initialized', renderApplication)
 
 // If i18n is already initialized, render immediately
 if (i18n.isInitialized) {
-  ReactDOM.createRoot(document.getElementById('root')!).render(
-    <React.StrictMode>
-      <Provider store={store}>
-        <QueryClientProvider client={queryClient}>
-          <AppProviders>
-            <App />
-          </AppProviders>
-        </QueryClientProvider>
-      </Provider>
-    </React.StrictMode>
-  )
+  renderApplication()
 }

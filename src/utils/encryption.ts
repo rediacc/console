@@ -11,11 +11,14 @@
  * C++ equivalent: OpenSSL with PKCS5_PBKDF2_HMAC, EVP_aes_256_gcm
  */
 
-const SALT = new TextEncoder().encode('rediacc-vault-2024');
-const ITERATIONS = 100000;
-const KEY_LENGTH = 256;
-const IV_LENGTH = 12; // 96 bits for GCM
-const TAG_LENGTH = 16; // 128 bits for GCM
+// Encryption configuration constants
+const ENCRYPTION_CONFIG = {
+  SALT: new TextEncoder().encode('rediacc-vault-2024'),
+  ITERATIONS: 100000,
+  KEY_LENGTH: 256,
+  IV_LENGTH: 12, // 96 bits for GCM
+  TAG_LENGTH: 16 // 128 bits for GCM
+} as const
 
 /**
  * Derives a cryptographic key from a password using PBKDF2
@@ -34,12 +37,12 @@ async function deriveKey(password: string): Promise<CryptoKey> {
   return crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt: SALT,
-      iterations: ITERATIONS,
+      salt: ENCRYPTION_CONFIG.SALT,
+      iterations: ENCRYPTION_CONFIG.ITERATIONS,
       hash: 'SHA-256'
     },
     baseKey,
-    { name: 'AES-GCM', length: KEY_LENGTH },
+    { name: 'AES-GCM', length: ENCRYPTION_CONFIG.KEY_LENGTH },
     false,
     ['encrypt', 'decrypt']
   );
@@ -50,32 +53,45 @@ async function deriveKey(password: string): Promise<CryptoKey> {
  * @returns base64 encoded string containing IV + ciphertext + auth tag
  */
 export async function encryptString(plaintext: string, password: string): Promise<string> {
-  try {
-    const key = await deriveKey(password);
-    const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
-    const encodedText = new TextEncoder().encode(plaintext);
+  const key = await deriveKey(password);
+  const iv = generateInitializationVector();
+  const encodedText = new TextEncoder().encode(plaintext);
 
-    const ciphertext = await crypto.subtle.encrypt(
-      {
-        name: 'AES-GCM',
-        iv: iv,
-        tagLength: TAG_LENGTH * 8 // in bits
-      },
-      key,
-      encodedText
-    );
+  const ciphertext = await performEncryption(key, iv, encodedText);
+  const combined = combineIvAndCiphertext(iv, ciphertext);
+  
+  return arrayToBase64(combined);
+}
 
-    // Combine IV + ciphertext (which includes auth tag)
-    const combined = new Uint8Array(iv.length + ciphertext.byteLength);
-    combined.set(iv, 0);
-    combined.set(new Uint8Array(ciphertext), iv.length);
+function generateInitializationVector(): Uint8Array {
+  return crypto.getRandomValues(new Uint8Array(ENCRYPTION_CONFIG.IV_LENGTH));
+}
 
-    // Convert to base64
-    return btoa(String.fromCharCode(...combined));
-  } catch (error) {
-    console.error('Encryption failed:', error);
-    throw new Error('Failed to encrypt data');
-  }
+async function performEncryption(
+  key: CryptoKey, 
+  iv: Uint8Array, 
+  data: Uint8Array
+): Promise<ArrayBuffer> {
+  return crypto.subtle.encrypt(
+    {
+      name: 'AES-GCM',
+      iv: iv,
+      tagLength: ENCRYPTION_CONFIG.TAG_LENGTH * 8 // in bits
+    },
+    key,
+    data
+  );
+}
+
+function combineIvAndCiphertext(iv: Uint8Array, ciphertext: ArrayBuffer): Uint8Array {
+  const combined = new Uint8Array(iv.length + ciphertext.byteLength);
+  combined.set(iv, 0);
+  combined.set(new Uint8Array(ciphertext), iv.length);
+  return combined;
+}
+
+function arrayToBase64(array: Uint8Array): string {
+  return btoa(String.fromCharCode(...array));
 }
 
 /**
@@ -84,31 +100,39 @@ export async function encryptString(plaintext: string, password: string): Promis
  * @returns decrypted plaintext string
  */
 export async function decryptString(encrypted: string, password: string): Promise<string> {
-  try {
-    const key = await deriveKey(password);
-    
-    // Decode from base64
-    const combined = Uint8Array.from(atob(encrypted), c => c.charCodeAt(0));
-    
-    // Extract IV and ciphertext
-    const iv = combined.slice(0, IV_LENGTH);
-    const ciphertext = combined.slice(IV_LENGTH);
+  const key = await deriveKey(password);
+  const combined = base64ToArray(encrypted);
+  const { iv, ciphertext } = extractIvAndCiphertext(combined);
+  
+  const decrypted = await performDecryption(key, iv, ciphertext);
+  
+  return new TextDecoder().decode(decrypted);
+}
 
-    const decrypted = await crypto.subtle.decrypt(
-      {
-        name: 'AES-GCM',
-        iv: iv,
-        tagLength: TAG_LENGTH * 8
-      },
-      key,
-      ciphertext
-    );
+function base64ToArray(base64: string): Uint8Array {
+  return Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+}
 
-    return new TextDecoder().decode(decrypted);
-  } catch (error) {
-    console.error('Decryption failed:', error);
-    throw new Error('Failed to decrypt data - invalid password or corrupted data');
-  }
+function extractIvAndCiphertext(combined: Uint8Array): { iv: Uint8Array; ciphertext: Uint8Array } {
+  const iv = combined.slice(0, ENCRYPTION_CONFIG.IV_LENGTH);
+  const ciphertext = combined.slice(ENCRYPTION_CONFIG.IV_LENGTH);
+  return { iv, ciphertext };
+}
+
+async function performDecryption(
+  key: CryptoKey, 
+  iv: Uint8Array, 
+  ciphertext: Uint8Array
+): Promise<ArrayBuffer> {
+  return crypto.subtle.decrypt(
+    {
+      name: 'AES-GCM',
+      iv: iv,
+      tagLength: ENCRYPTION_CONFIG.TAG_LENGTH * 8
+    },
+    key,
+    ciphertext
+  );
 }
 
 /**
@@ -129,24 +153,7 @@ export async function encryptVaultFields(
   }
 
   if (typeof obj === 'object' && obj !== null) {
-    const result: any = {};
-    
-    for (const [key, value] of Object.entries(obj)) {
-      if (key.toLowerCase().includes('vault') && typeof value === 'string' && value) {
-        try {
-          result[key] = await encryptString(value, password);
-        } catch (error) {
-          console.error(`Failed to encrypt field ${key}:`, error);
-          result[key] = value; // Keep original on error
-        }
-      } else if (typeof value === 'object') {
-        result[key] = await encryptVaultFields(value, password);
-      } else {
-        result[key] = value;
-      }
-    }
-    
-    return result;
+    return encryptObjectFields(obj, password);
   }
 
   return obj;
@@ -170,32 +177,79 @@ export async function decryptVaultFields(
   }
 
   if (typeof obj === 'object' && obj !== null) {
-    const result: any = {};
-    
-    for (const [key, value] of Object.entries(obj)) {
-      if (key.toLowerCase().includes('vault') && typeof value === 'string' && value) {
-        try {
-          // Check if it looks like base64 encrypted data
-          if (value.match(/^[A-Za-z0-9+/]+=*$/)) {
-            result[key] = await decryptString(value, password);
-          } else {
-            result[key] = value; // Not encrypted, keep as is
-          }
-        } catch (error) {
-          console.error(`Failed to decrypt field ${key}:`, error);
-          result[key] = value; // Keep encrypted on error
-        }
-      } else if (typeof value === 'object') {
-        result[key] = await decryptVaultFields(value, password);
-      } else {
-        result[key] = value;
-      }
-    }
-    
-    return result;
+    return decryptObjectFields(obj, password);
   }
 
   return obj;
+}
+
+async function decryptObjectFields(obj: any, password: string): Promise<any> {
+  const result: any = {};
+  
+  for (const [key, value] of Object.entries(obj)) {
+    if (shouldDecryptField(key, value)) {
+      result[key] = await tryDecryptField(key, value as string, password);
+    } else if (typeof value === 'object') {
+      result[key] = await decryptVaultFields(value, password);
+    } else {
+      result[key] = value;
+    }
+  }
+  
+  return result;
+}
+
+function shouldDecryptField(key: string, value: any): boolean {
+  return key.toLowerCase().includes('vault') && 
+         typeof value === 'string' && 
+         value.length > 0;
+}
+
+async function tryDecryptField(key: string, value: string, password: string): Promise<string> {
+  try {
+    if (isBase64Encrypted(value)) {
+      return await decryptString(value, password);
+    }
+    return value; // Not encrypted, keep as is
+  } catch (error) {
+    console.error(`Failed to decrypt field ${key}:`, error);
+    return value; // Keep encrypted on error
+  }
+}
+
+function isBase64Encrypted(value: string): boolean {
+  return /^[A-Za-z0-9+/]+=*$/.test(value);
+}
+
+async function encryptObjectFields(obj: any, password: string): Promise<any> {
+  const result: any = {};
+  
+  for (const [key, value] of Object.entries(obj)) {
+    if (shouldEncryptField(key, value)) {
+      result[key] = await tryEncryptField(key, value as string, password);
+    } else if (typeof value === 'object') {
+      result[key] = await encryptVaultFields(value, password);
+    } else {
+      result[key] = value;
+    }
+  }
+  
+  return result;
+}
+
+function shouldEncryptField(key: string, value: any): boolean {
+  return key.toLowerCase().includes('vault') && 
+         typeof value === 'string' && 
+         value.length > 0;
+}
+
+async function tryEncryptField(key: string, value: string, password: string): Promise<string> {
+  try {
+    return await encryptString(value, password);
+  } catch (error) {
+    console.error(`Failed to encrypt field ${key}:`, error);
+    return value; // Keep original on error
+  }
 }
 
 /**

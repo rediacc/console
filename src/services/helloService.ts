@@ -36,79 +36,107 @@ export interface QueueItemCompletionResult {
  * @param timeout Maximum time to wait in milliseconds (default: 30 seconds)
  * @returns Completion result with success status and message
  */
+const DEFAULT_TIMEOUT = 30000
+const POLLING_INTERVAL = 1000
+const QUEUE_DETAILS_TABLE_INDEX = 1
+const RESPONSE_VAULT_TABLE_INDEX = 3
+
 export async function waitForQueueItemCompletion(
   taskId: string, 
-  timeout: number = 30000
+  timeout: number = DEFAULT_TIMEOUT
 ): Promise<QueueItemCompletionResult> {
   const startTime = Date.now()
   
   while (Date.now() - startTime < timeout) {
-    try {
-      const response = await apiClient.get('/GetQueueItemTrace', { taskId })
-      
-      // Queue details are in the second table (index 1)
-      const queueDetails = response.tables?.[1]?.data?.[0]
-      
-      if (queueDetails) {
-        const status = queueDetails.status || queueDetails.Status
-        
-        if (status === 'COMPLETED') {
-          // Check if there was an error in the response vault (usually in table index 3)
-          const responseVault = response.tables?.[3]?.data?.[0]
-          if (responseVault?.vaultContent) {
-            try {
-              const vaultData = JSON.parse(responseVault.vaultContent)
-              if (vaultData.result && typeof vaultData.result === 'string' && vaultData.result.includes('Error')) {
-                return { 
-                  success: false, 
-                  message: vaultData.result,
-                  status: 'COMPLETED',
-                  responseData: vaultData
-                }
-              }
-              return { 
-                success: true, 
-                message: vaultData.result || 'Hello function completed successfully',
-                status: 'COMPLETED',
-                responseData: vaultData
-              }
-            } catch (e) {
-              // If vault parsing fails, still consider it a success
-              return { 
-                success: true, 
-                message: 'Hello function completed',
-                status: 'COMPLETED'
-              }
-            }
-          }
-          return { 
-            success: true, 
-            message: 'Hello function completed successfully',
-            status: 'COMPLETED'
-          }
-        } else if (status === 'FAILED' || status === 'CANCELLED') {
-          const failureReason = queueDetails.lastFailureReason || queueDetails.LastFailureReason || 'Operation failed'
-          return { 
-            success: false, 
-            message: failureReason,
-            status
-          }
-        }
-      }
-    } catch (error) {
-      // Continue polling on error
-      console.debug('Error polling queue item status:', error)
+    const pollResult = await pollQueueItemStatus(taskId)
+    
+    if (pollResult) {
+      return pollResult
     }
     
-    // Wait 1 second before next poll
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // Wait before next poll
+    await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL))
   }
   
-  return { 
-    success: false, 
-    message: 'Operation timeout - no response received',
-    status: 'TIMEOUT'
+  return createTimeoutResult()
+}
+
+async function pollQueueItemStatus(taskId: string): Promise<QueueItemCompletionResult | null> {
+  try {
+    const response = await apiClient.get('/GetQueueItemTrace', { taskId })
+    const queueDetails = response.tables?.[QUEUE_DETAILS_TABLE_INDEX]?.data?.[0]
+    
+    if (!queueDetails) {
+      return null
+    }
+    
+    const status = queueDetails.status || queueDetails.Status
+    
+    switch (status) {
+      case 'COMPLETED':
+        return handleCompletedStatus(response)
+      case 'FAILED':
+      case 'CANCELLED':
+        return handleFailedStatus(queueDetails, status)
+      default:
+        return null
+    }
+  } catch (error) {
+    // Continue polling on error
+    console.debug('Error polling queue item status:', error)
+    return null
   }
+}
+
+function handleCompletedStatus(response: any): QueueItemCompletionResult {
+  const responseVault = response.tables?.[RESPONSE_VAULT_TABLE_INDEX]?.data?.[0]
+  
+  if (!responseVault?.vaultContent) {
+    return createSuccessResult('Hello function completed successfully', 'COMPLETED')
+  }
+  
+  try {
+    const vaultData = JSON.parse(responseVault.vaultContent)
+    const isError = vaultData.result && typeof vaultData.result === 'string' && vaultData.result.includes('Error')
+    
+    return isError
+      ? createErrorResult(vaultData.result, 'COMPLETED', vaultData)
+      : createSuccessResult(
+          vaultData.result || 'Hello function completed successfully',
+          'COMPLETED',
+          vaultData
+        )
+  } catch {
+    return createSuccessResult('Hello function completed', 'COMPLETED')
+  }
+}
+
+function handleFailedStatus(queueDetails: any, status: string): QueueItemCompletionResult {
+  const failureReason = queueDetails.lastFailureReason || 
+                       queueDetails.LastFailureReason || 
+                       'Operation failed'
+  
+  return createErrorResult(failureReason, status)
+}
+
+function createSuccessResult(
+  message: string, 
+  status: string, 
+  responseData?: any
+): QueueItemCompletionResult {
+  return { success: true, message, status, responseData }
+}
+
+function createErrorResult(
+  message: string, 
+  status: string, 
+  responseData?: any
+): QueueItemCompletionResult {
+  return { success: false, message, status, responseData }
+}
+
+function createTimeoutResult(): QueueItemCompletionResult {
+  return createErrorResult('Operation timeout - no response received', 'TIMEOUT')
 }
 
 /**
@@ -122,37 +150,9 @@ export function useHelloFunction() {
 
   const executeHello = useCallback(async (params: HelloFunctionParams): Promise<HelloFunctionResult> => {
     try {
-      // Get team vault data if not provided
-      let teamVault = params.teamVault
-      if (!teamVault || teamVault === '{}') {
-        // Find the team vault from the fetched data
-        const teamData = teams?.find(team => team.teamName === params.teamName)
-        teamVault = teamData?.vaultContent || '{}'
-      }
-      
-      // Build the queue vault for hello function
-      const queueVault = await buildQueueVault({
-        teamName: params.teamName,
-        machineName: params.machineName,
-        bridgeName: params.bridgeName,
-        functionName: 'hello',
-        params: {},
-        priority: params.priority || 3,
-        description: params.description || 'Hello function call',
-        addedVia: params.addedVia || 'hello-service',
-        machineVault: params.machineVault || '{}',
-        teamVault: teamVault,
-        repositoryVault: params.repositoryVault || '{}'
-      })
-
-      // Create the queue item
-      const response = await createQueueItemMutation.mutateAsync({
-        teamName: params.teamName,
-        machineName: params.machineName,
-        bridgeName: params.bridgeName,
-        queueVault,
-        priority: params.priority || 3
-      })
+      const teamVault = getTeamVault(params, teams)
+      const queueVault = await buildHelloQueueVault(params, teamVault, buildQueueVault)
+      const response = await createHelloQueueItem(params, queueVault, createQueueItemMutation)
 
       return {
         taskId: response?.taskId,
@@ -242,6 +242,57 @@ export function useHelloFunction() {
   }
 }
 
+// Helper functions
+function getTeamVault(params: HelloFunctionParams, teams: any[] | undefined): string {
+  if (params.teamVault && params.teamVault !== '{}') {
+    return params.teamVault
+  }
+  
+  const teamData = teams?.find(team => team.teamName === params.teamName)
+  return teamData?.vaultContent || '{}'
+}
+
+async function buildHelloQueueVault(
+  params: HelloFunctionParams,
+  teamVault: string,
+  buildQueueVault: any
+): Promise<string> {
+  const DEFAULT_PRIORITY = 3
+  const DEFAULT_DESCRIPTION = 'Hello function call'
+  const DEFAULT_ADDED_VIA = 'hello-service'
+  const DEFAULT_VAULT = '{}'
+  
+  return buildQueueVault({
+    teamName: params.teamName,
+    machineName: params.machineName,
+    bridgeName: params.bridgeName,
+    functionName: 'hello',
+    params: {},
+    priority: params.priority || DEFAULT_PRIORITY,
+    description: params.description || DEFAULT_DESCRIPTION,
+    addedVia: params.addedVia || DEFAULT_ADDED_VIA,
+    machineVault: params.machineVault || DEFAULT_VAULT,
+    teamVault: teamVault,
+    repositoryVault: params.repositoryVault || DEFAULT_VAULT
+  })
+}
+
+async function createHelloQueueItem(
+  params: HelloFunctionParams,
+  queueVault: string,
+  createQueueItemMutation: any
+): Promise<any> {
+  const DEFAULT_PRIORITY = 3
+  
+  return createQueueItemMutation.mutateAsync({
+    teamName: params.teamName,
+    machineName: params.machineName,
+    bridgeName: params.bridgeName,
+    queueVault,
+    priority: params.priority || DEFAULT_PRIORITY
+  })
+}
+
 /**
  * Service class for hello function operations (if class-based approach is preferred)
  */
@@ -252,20 +303,9 @@ export class HelloService {
     createQueueItem: any
   ): Promise<HelloFunctionResult> {
     try {
-      const queueVault = await buildQueueVault({
-        teamName: params.teamName,
-        machineName: params.machineName,
-        bridgeName: params.bridgeName,
-        functionName: 'hello',
-        params: {},
-        priority: params.priority || 3,
-        description: params.description || 'Hello function call',
-        addedVia: params.addedVia || 'hello-service',
-        machineVault: params.machineVault || '{}',
-        teamVault: params.teamVault || '{}',
-        repositoryVault: params.repositoryVault || '{}'
-      })
-
+      const teamVault = params.teamVault || '{}'
+      const queueVault = await buildHelloQueueVault(params, teamVault, buildQueueVault)
+      
       const response = await createQueueItem({
         teamName: params.teamName,
         machineName: params.machineName,

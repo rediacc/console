@@ -856,7 +856,6 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           type={field.sensitive ? 'password' : 'text'}
           addonAfter={isGeneratable ? (
             <FieldGenerator
-              fieldName={fieldName}
               fieldType={
                 fieldName === 'credential' ? 'repository_credential' : 'ssh_keys'
               }

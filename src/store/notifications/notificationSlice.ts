@@ -2,6 +2,15 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
 export type NotificationType = 'success' | 'error' | 'warning' | 'info'
 
+// Helper functions
+const generateNotificationId = (): string => {
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+}
+
+const decrementUnreadCount = (count: number): number => {
+  return Math.max(0, count - 1)
+}
+
 export interface Notification {
   id: string
   type: NotificationType
@@ -28,7 +37,7 @@ const notificationSlice = createSlice({
     addNotification: (state, action: PayloadAction<Omit<Notification, 'id' | 'timestamp' | 'read'>>) => {
       const notification: Notification = {
         ...action.payload,
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: generateNotificationId(),
         timestamp: Date.now(),
         read: false
       }
@@ -38,8 +47,9 @@ const notificationSlice = createSlice({
       state.unreadCount++
       
       // Keep only last 50 notifications
-      if (state.notifications.length > 50) {
-        state.notifications = state.notifications.slice(0, 50)
+      const MAX_NOTIFICATIONS = 50
+      if (state.notifications.length > MAX_NOTIFICATIONS) {
+        state.notifications = state.notifications.slice(0, MAX_NOTIFICATIONS)
       }
     },
     
@@ -47,7 +57,7 @@ const notificationSlice = createSlice({
       const notification = state.notifications.find(n => n.id === action.payload)
       if (notification && !notification.read) {
         notification.read = true
-        state.unreadCount = Math.max(0, state.unreadCount - 1)
+        state.unreadCount = decrementUnreadCount(state.unreadCount)
       }
     },
     
@@ -63,7 +73,7 @@ const notificationSlice = createSlice({
       if (index !== -1) {
         const notification = state.notifications[index]
         if (!notification.read) {
-          state.unreadCount = Math.max(0, state.unreadCount - 1)
+          state.unreadCount = decrementUnreadCount(state.unreadCount)
         }
         state.notifications.splice(index, 1)
       }

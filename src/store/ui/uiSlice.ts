@@ -15,9 +15,16 @@ interface UIState {
   }
 }
 
+const UI_MODE_KEY = 'uiMode'
+const DEFAULT_UI_MODE = 'simple' as const
+
 const getStoredUiMode = (): 'simple' | 'expert' => {
-  const stored = localStorage.getItem('uiMode')
-  return stored === 'expert' ? 'expert' : 'simple'
+  const stored = localStorage.getItem(UI_MODE_KEY)
+  return stored === 'expert' ? 'expert' : DEFAULT_UI_MODE
+}
+
+const persistUiMode = (mode: 'simple' | 'expert'): void => {
+  localStorage.setItem(UI_MODE_KEY, mode)
 }
 
 const initialState: UIState = {
@@ -63,12 +70,12 @@ const uiSlice = createSlice({
     },
     setUiMode: (state, action: PayloadAction<'simple' | 'expert'>) => {
       state.uiMode = action.payload
-      localStorage.setItem('uiMode', action.payload)
+      persistUiMode(action.payload)
     },
     toggleUiMode: (state) => {
       const newMode = state.uiMode === 'simple' ? 'expert' : 'simple'
       state.uiMode = newMode
-      localStorage.setItem('uiMode', newMode)
+      persistUiMode(newMode)
     },
   },
 })

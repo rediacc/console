@@ -7,6 +7,13 @@ import { tokenService } from '@/services/tokenService'
 // produce unique hashes. The salt value must be consistent across all components.
 const STATIC_SALT = 'Rd!@cc111$ecur3P@$$w0rd$@lt#H@$h'
 
+// Storage keys constants
+const STORAGE_KEYS = {
+  USER_EMAIL: 'user_email',
+  USER_COMPANY: 'user_company',
+  AUTH_TOKEN: 'auth_token'
+} as const
+
 // Password hashing using Web Crypto API with static salt
 export async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder()
@@ -24,17 +31,17 @@ export async function saveAuthData(token: string, email: string, company?: strin
   // Use token service for token storage (provides additional security)
   await tokenService.setToken(token)
   // Store email and company in secure storage
-  await secureStorage.setItem('user_email', email)
+  await secureStorage.setItem(STORAGE_KEYS.USER_EMAIL, email)
   if (company) {
-    await secureStorage.setItem('user_company', company)
+    await secureStorage.setItem(STORAGE_KEYS.USER_COMPANY, company)
   }
 }
 
 export async function getAuthData() {
   const [token, email, company] = await Promise.all([
     tokenService.getToken(),
-    secureStorage.getItem('user_email'),
-    secureStorage.getItem('user_company'),
+    secureStorage.getItem(STORAGE_KEYS.USER_EMAIL),
+    secureStorage.getItem(STORAGE_KEYS.USER_COMPANY),
   ])
   
   return { token, email, company }
@@ -44,25 +51,44 @@ export function clearAuthData() {
   // Clear token using token service
   tokenService.clearToken()
   // Clear other auth data
-  secureStorage.removeItem('user_email')
-  secureStorage.removeItem('user_company')
+  secureStorage.removeItem(STORAGE_KEYS.USER_EMAIL)
+  secureStorage.removeItem(STORAGE_KEYS.USER_COMPANY)
+}
+
+// Helper function for batch storage operations
+async function batchStorageOperation(
+  source: Storage, 
+  keys: Record<string, string>,
+  operation: 'migrate' | 'clear'
+) {
+  const entries = Object.entries(keys)
+  const values = entries.map(([_, key]) => source.getItem(key))
+  
+  if (operation === 'migrate') {
+    // Save non-null values to secure storage
+    await Promise.all(
+      entries.map(([storageKey, localKey], index) => {
+        const value = values[index]
+        return value ? secureStorage.setItem(storageKey, value) : null
+      }).filter(Boolean)
+    )
+  }
+  
+  // Clear from source storage
+  entries.forEach(([_, key]) => source.removeItem(key))
 }
 
 // Migration helper to move existing localStorage data to secure storage
 export async function migrateFromLocalStorage() {
-  const token = localStorage.getItem('auth_token')
-  const email = localStorage.getItem('user_email')
-  const company = localStorage.getItem('user_company')
+  const migrationKeys = {
+    [STORAGE_KEYS.AUTH_TOKEN]: STORAGE_KEYS.AUTH_TOKEN,
+    [STORAGE_KEYS.USER_EMAIL]: STORAGE_KEYS.USER_EMAIL,
+    [STORAGE_KEYS.USER_COMPANY]: STORAGE_KEYS.USER_COMPANY
+  }
   
-  if (token || email || company) {
-    // Save to secure storage
-    if (token) await secureStorage.setItem('auth_token', token)
-    if (email) await secureStorage.setItem('user_email', email)
-    if (company) await secureStorage.setItem('user_company', company)
-    
-    // Clear from localStorage
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('user_email')
-    localStorage.removeItem('user_company')
+  // Check if migration is needed
+  const hasData = Object.values(migrationKeys).some(key => localStorage.getItem(key))
+  if (hasData) {
+    await batchStorageOperation(localStorage, migrationKeys, 'migrate')
   }
 }

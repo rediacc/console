@@ -30,6 +30,57 @@ interface LoginForm {
   masterPassword?: string
 }
 
+const FIELD_FOCUS_DELAY_MS = 100
+
+interface ProtocolHandlerResult {
+  shouldReturn: boolean
+}
+
+const handleProtocolState = (
+  protocolState: VaultProtocolState,
+  t: (key: string) => string,
+  form: any,
+  setError: (error: string) => void,
+  setVaultProtocolState: (state: VaultProtocolState) => void
+): ProtocolHandlerResult => {
+  const protocolMessage = getVaultProtocolMessage(protocolState)
+  const messageKey = protocolMessage.messageKey.replace('auth:', '')
+  const translatedMessage = t(messageKey) || protocolMessage.message
+
+  switch (protocolState) {
+    case VaultProtocolState.PASSWORD_REQUIRED:
+      setError(translatedMessage)
+      setVaultProtocolState(protocolState)
+      setTimeout(() => {
+        form.getFieldInstance('masterPassword')?.focus()
+      }, FIELD_FOCUS_DELAY_MS)
+      return { shouldReturn: true }
+      
+    case VaultProtocolState.INVALID_PASSWORD:
+      setError(translatedMessage)
+      setVaultProtocolState(protocolState)
+      form.setFieldValue('masterPassword', '')
+      setTimeout(() => {
+        form.getFieldInstance('masterPassword')?.focus()
+      }, FIELD_FOCUS_DELAY_MS)
+      return { shouldReturn: true }
+      
+    case VaultProtocolState.PASSWORD_NOT_NEEDED:
+      if (translatedMessage && translatedMessage !== messageKey) {
+        showMessage('warning', translatedMessage)
+      } else {
+        showMessage('warning', protocolMessage.message)
+      }
+      return { shouldReturn: false }
+      
+    case VaultProtocolState.VALID:
+      return { shouldReturn: false }
+      
+    default:
+      return { shouldReturn: false }
+  }
+}
+
 const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -89,47 +140,9 @@ const LoginPage: React.FC = () => {
       )
       
       // Handle different protocol states
-      switch (protocolState) {
-        case VaultProtocolState.PASSWORD_REQUIRED:
-          const protocolMessage = getVaultProtocolMessage(protocolState)
-          // Remove namespace prefix from messageKey for t() function
-          const messageKey = protocolMessage.messageKey.replace('auth:', '')
-          const translatedMessage = t(messageKey) || protocolMessage.message
-          setError(translatedMessage)
-          setVaultProtocolState(protocolState)
-          // Focus on master password field
-          setTimeout(() => {
-            form.getFieldInstance('masterPassword')?.focus()
-          }, 100)
-          return
-          
-        case VaultProtocolState.INVALID_PASSWORD:
-          const invalidMessage = getVaultProtocolMessage(protocolState)
-          const invalidMessageKey = invalidMessage.messageKey.replace('auth:', '')
-          setError(t(invalidMessageKey) || invalidMessage.message)
-          setVaultProtocolState(protocolState)
-          // Clear and focus on master password field
-          form.setFieldValue('masterPassword', '')
-          setTimeout(() => {
-            form.getFieldInstance('masterPassword')?.focus()
-          }, 100)
-          return
-          
-        case VaultProtocolState.PASSWORD_NOT_NEEDED:
-          // Show warning but continue with login
-          const warningMessage = getVaultProtocolMessage(protocolState)
-          const warningMessageKey = warningMessage.messageKey.replace('auth:', '')
-          const warningText = t(warningMessageKey)
-          if (warningText && warningText !== warningMessageKey) {
-            showMessage('warning', warningText)
-          } else {
-            showMessage('warning', warningMessage.message)
-          }
-          break
-          
-        case VaultProtocolState.VALID:
-          // Password is valid, continue with login
-          break
+      const protocolResult = handleProtocolState(protocolState, t, form, setError, setVaultProtocolState)
+      if (protocolResult.shouldReturn) {
+        return
       }
 
       // Save auth data

@@ -49,20 +49,24 @@ export async function decryptResponseData(data: any): Promise<any> {
 /**
  * Checks if any vault fields exist in the object
  */
-export function hasVaultFields(obj: any): boolean {
-  if (!obj || typeof obj !== 'object') return false
+export function hasVaultFields(data: any): boolean {
+  if (!data || typeof data !== 'object') return false
 
-  const checkObject = (o: any): boolean => {
-    for (const key in o) {
-      if (key.toLowerCase().includes('vault')) {
+  return checkObjectForVaultFields(data)
+}
+
+function checkObjectForVaultFields(object: any): boolean {
+  for (const key in object) {
+    if (key.toLowerCase().includes('vault')) {
+      return true
+    }
+    
+    const value = object[key]
+    if (typeof value === 'object' && value !== null) {
+      if (checkObjectForVaultFields(value)) {
         return true
       }
-      if (typeof o[key] === 'object' && o[key] !== null) {
-        if (checkObject(o[key])) return true
-      }
     }
-    return false
   }
-
-  return checkObject(obj)
+  return false
 }
