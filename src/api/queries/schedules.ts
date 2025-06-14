@@ -43,8 +43,15 @@ export const useSchedules = (teamFilter?: string | string[]) => {
       
       const response = await apiClient.get('/GetTeamSchedules', params)
       const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
-      if (!Array.isArray(data)) return []
-      return data.filter((schedule: any) => schedule && schedule.scheduleName)
+      const schedules = Array.isArray(data) ? data : []
+      return schedules
+        .filter((schedule: any) => schedule && schedule.scheduleName)
+        .map((schedule: any) => ({
+          scheduleName: schedule.scheduleName,
+          teamName: schedule.teamName,
+          vaultVersion: schedule.vaultVersion || 1,
+          vaultContent: schedule.vaultContent || '{}',
+        }))
     },
     enabled: !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0),
     staleTime: 30 * 1000, // 30 seconds

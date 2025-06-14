@@ -37,6 +37,7 @@ export const useRepositories = (teamFilter?: string | string[]) => {
           repositoryName: repo.repoName,
           teamName: repo.teamName,
           vaultVersion: repo.vaultVersion || 1,
+          vaultContent: repo.vaultContent || '{}',
         }))
     },
     enabled: !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0),

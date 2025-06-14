@@ -22,9 +22,19 @@ export const useMachines = (teamFilter?: string | string[], enabled: boolean = t
       // If no teamFilter, params remains empty (get all machines)
       
       const response = await apiClient.get('/GetTeamMachines', params)
-      const machines = response.tables?.[1]?.data || response.tables?.[0]?.data || []
-      if (!Array.isArray(machines)) return []
-      return machines.filter(machine => machine && machine.machineName)
+      const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
+      const machines = Array.isArray(data) ? data : []
+      return machines
+        .filter(machine => machine && machine.machineName)
+        .map((machine: any) => ({
+          machineName: machine.machineName,
+          teamName: machine.teamName,
+          bridgeName: machine.bridgeName,
+          regionName: machine.regionName,
+          queueCount: machine.queueCount || 0,
+          vaultVersion: machine.vaultVersion || 1,
+          vaultContent: machine.vaultContent || '{}',
+        }))
     },
     enabled,
     staleTime: 30 * 1000, // 30 seconds

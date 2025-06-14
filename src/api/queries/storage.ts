@@ -30,8 +30,15 @@ export const useStorage = (teamFilter?: string | string[]) => {
       
       const response = await apiClient.get('/GetTeamStorages', params)
       const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
-      if (!Array.isArray(data)) return []
-      return data.filter((storage: any) => storage && storage.storageName)
+      const storages = Array.isArray(data) ? data : []
+      return storages
+        .filter((storage: any) => storage && storage.storageName)
+        .map((storage: any) => ({
+          storageName: storage.storageName,
+          teamName: storage.teamName,
+          vaultVersion: storage.vaultVersion || 1,
+          vaultContent: storage.vaultContent || '{}',
+        }))
     },
     enabled: !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0),
     staleTime: 30 * 1000, // 30 seconds

@@ -4,6 +4,7 @@ import { ExclamationCircleOutlined, WarningOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import type { QueueFunction } from '@/api/queries/queue'
 import { useLocalizedFunctions } from '@/services/functionsService'
+import { useRepositories } from '@/api/queries/repositories'
 
 const { Search } = Input
 const { Text, Paragraph } = Typography
@@ -52,6 +53,9 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   const [functionDescription, setFunctionDescription] = useState('')
   const [functionSearchTerm, setFunctionSearchTerm] = useState('')
   const [selectedMachine, setSelectedMachine] = useState<string>('')
+
+  // Fetch repositories for the current team
+  const { data: repositories } = useRepositories(teamName)
 
   // Initialize parameters when function is selected
   useEffect(() => {
@@ -317,6 +321,24 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                 value: option,
                                 label: option
                               }))}
+                            />
+                          ) : paramInfo.ui === 'repository-dropdown' ? (
+                            <Select
+                              value={functionParams[paramName] || ''}
+                              onChange={(value) => setFunctionParams({
+                                ...functionParams,
+                                [paramName]: value
+                              })}
+                              placeholder={t('resources:repositories.selectRepository')}
+                              options={repositories?.map(repo => ({
+                                value: repo.repositoryName,
+                                label: repo.repositoryName
+                              })) || []}
+                              notFoundContent={t('resources:repositories.noRepositoriesFound')}
+                              showSearch
+                              filterOption={(input, option) =>
+                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                              }
                             />
                           ) : (
                             <Input

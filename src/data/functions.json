@@ -81,7 +81,8 @@
       "params": {
         "repo": {
           "type": "string",
-          "required": true
+          "required": true,
+          "ui": "repository-dropdown"
         },
         "size": {
           "type": "string",

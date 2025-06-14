@@ -72,10 +72,13 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   const [form] = Form.useForm()
   const [extraFields, setExtraFields] = useState<Record<string, any>>({})
   const [importedData, setImportedData] = useState<Record<string, any>>(initialData)
-  const [rawJsonValue, setRawJsonValue] = useState<string>('')
+  const [rawJsonValue, setRawJsonValue] = useState<string>(() => {
+    return Object.keys(initialData).length > 0 ? JSON.stringify(initialData, null, 2) : '{}'
+  })
   const [rawJsonError, setRawJsonError] = useState<string | null>(null)
   const [sshKeyConfigured, setSshKeyConfigured] = useState(false)
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null)
+  const [lastInitializedData, setLastInitializedData] = useState<string>('')
   
   const uiMode = useAppSelector((state) => state.ui.uiMode)
   const { theme } = useTheme()
@@ -175,16 +178,31 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 
   // Initialize form with data
   useEffect(() => {
-    if (entityDef && importedData) {
+    if (entityDef) {
+      // Check if this is truly new data by comparing serialized versions
+      const currentDataString = JSON.stringify(initialData)
+      if (currentDataString === lastInitializedData) {
+        // Same data, don't re-initialize
+        return
+      }
+      
       const formData: Record<string, any> = {}
       Object.entries(entityDef.fields || {}).forEach(([key, field]) => {
-        if (importedData[key] !== undefined) {
-          formData[key] = importedData[key]
+        if (initialData[key] !== undefined) {
+          formData[key] = initialData[key]
         } else if (field.default !== undefined) {
           formData[key] = field.default
         }
       })
+      
+      // Reset form first to clear any previous values
+      form.resetFields()
       form.setFieldsValue(formData)
+      
+      // Reset state variables
+      setSshKeyConfigured(false)
+      setSelectedProvider(null)
+      setRawJsonError(null)
       
       // Initialize ssh_key_configured state for MACHINE and BRIDGE entities
       if ((entityType === 'MACHINE' || entityType === 'BRIDGE') && formData.ssh_key_configured !== undefined) {
@@ -196,14 +214,33 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         setSelectedProvider(formData.provider)
       }
       
+      // Calculate extra fields for this data
+      const schemaFields = Object.keys(entityDef.fields || {})
+      const extras: Record<string, any> = {}
+      
+      // Check if initialData has extraFields structure
+      if (initialData.extraFields && typeof initialData.extraFields === 'object') {
+        Object.assign(extras, initialData.extraFields)
+      }
+      
+      // Also check for non-schema fields at root level
+      Object.entries(initialData).forEach(([key, value]) => {
+        if (key !== 'extraFields' && !schemaFields.includes(key)) {
+          extras[key] = value
+        }
+      })
+      
       // Build complete data structure for raw JSON
       const completeData = { ...formData }
-      if (Object.keys(extraFields).length > 0) {
-        completeData.extraFields = extraFields
+      if (Object.keys(extras).length > 0) {
+        completeData.extraFields = extras
       }
       
       // Initialize raw JSON with proper structure
       updateRawJson(completeData)
+      
+      // Remember what data we initialized with
+      setLastInitializedData(currentDataString)
       
       // Validate initial data
       setTimeout(() => {
@@ -217,7 +254,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           })
       }, 0)
     }
-  }, [form, entityDef, importedData, extraFields])
+  }, [form, entityDef, entityType, initialData])
 
   // Pass import/export handlers to parent
   useEffect(() => {
@@ -228,6 +265,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       })
     }
   }, [onImportExport])
+
 
   if (!entityDef) {
     return (
@@ -243,7 +281,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   // Update raw JSON when form data changes
   const updateRawJson = (data: Record<string, any>) => {
     try {
-      setRawJsonValue(JSON.stringify(data, null, 2))
+      const jsonString = JSON.stringify(data, null, 2)
+      setRawJsonValue(jsonString)
       setRawJsonError(null)
     } catch (error) {
       setRawJsonError(t('vaultEditor.failedToSerialize'))
@@ -575,14 +614,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           valuePropName="checked"
           initialValue={field.default}
         >
-          <Switch 
-            onChange={(checked) => {
-              // Special handling for ssh_key_configured
-              if (fieldName === 'ssh_key_configured') {
-                handleFormChange({ ssh_key_configured: checked })
-              }
-            }}
-          />
+          <Switch />
         </Form.Item>
       )
     }
@@ -788,14 +820,18 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           SSH_PRIVATE_KEY: values.SSH_PRIVATE_KEY,
           SSH_PUBLIC_KEY: values.SSH_PUBLIC_KEY
         })
+        // Use setTimeout to ensure form state is updated before calling handleFormChange
+        setTimeout(() => {
+          handleFormChange({ SSH_PRIVATE_KEY: values.SSH_PRIVATE_KEY, SSH_PUBLIC_KEY: values.SSH_PUBLIC_KEY })
+        }, 0)
       } else {
         // For single field generation
         form.setFieldValue(fieldName, values[fieldName])
+        // Use setTimeout to ensure form state is updated before calling handleFormChange
+        setTimeout(() => {
+          handleFormChange({ [fieldName]: values[fieldName] })
+        }, 0)
       }
-      // Trigger validation and change event
-      handleFormChange()
-      // Force form to re-render
-      form.validateFields([fieldName])
     }
 
     // Default to text input
@@ -853,7 +889,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         wrapperCol={{ span: 18 }}
         labelAlign="right"
         colon={true}
-        onValuesChange={(changedValues) => handleFormChange(changedValues)}
+        onValuesChange={(changedValues, allValues) => {
+          handleFormChange(changedValues)
+        }}
         autoComplete="off"
         style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}
       >

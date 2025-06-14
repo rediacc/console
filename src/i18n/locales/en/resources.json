@@ -72,6 +72,8 @@
     "noRepositories": "No repositories found in this team",
     "repositoryFunctions": "Repository Functions",
     "functionsFor": "Functions for {{name}}",
+    "selectRepository": "Select repository",
+    "noRepositoriesFound": "No repositories found",
     "placeholders": {
       "enterRepositoryName": "Enter repository name"
     }
