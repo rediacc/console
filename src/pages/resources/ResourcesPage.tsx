@@ -474,11 +474,11 @@ const ResourcesPage: React.FC = () => {
     if (!currentResource) return;
 
     try {
-      // Check if this is repo_new function - if so, create repository first
-      if (functionData.function.name === 'repo_new') {
+      // Check if this is new function - if so, create repository first
+      if (functionData.function.name === 'new') {
         const repoName = functionData.params.repo;
         if (!repoName) {
-          showMessage('error', 'Repository name is required for repo_new function');
+          showMessage('error', 'Repository name is required for new function');
           return;
         }
 

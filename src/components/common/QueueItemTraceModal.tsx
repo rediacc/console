@@ -499,6 +499,58 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                       })()
                     ),
                   }] : []),
+                  ...(traceData.responseVaultContent && traceData.responseVaultContent.hasContent ? [{
+                    key: 'console',
+                    label: (
+                      <Space>
+                        <FileTextOutlined />
+                        Response (Console)
+                      </Space>
+                    ),
+                    children: (
+                      (() => {
+                        try {
+                          // Parse the vault content
+                          const vaultContent = typeof traceData.responseVaultContent.vaultContent === 'string' 
+                            ? JSON.parse(traceData.responseVaultContent.vaultContent) 
+                            : traceData.responseVaultContent.vaultContent || {}
+                          
+                          // Parse the result field which contains the actual response
+                          let result = {}
+                          if (vaultContent.result && typeof vaultContent.result === 'string') {
+                            result = JSON.parse(vaultContent.result)
+                          }
+                          
+                          // Extract command_output
+                          const commandOutput = result.command_output || ''
+                          
+                          // Display command output in a pre-formatted text area
+                          return commandOutput ? (
+                            <div style={{ 
+                              backgroundColor: theme === 'dark' ? '#1f1f1f' : '#f5f5f5',
+                              border: `1px solid ${theme === 'dark' ? '#303030' : '#d9d9d9'}`,
+                              borderRadius: '4px',
+                              padding: '12px',
+                              fontFamily: 'monospace',
+                              fontSize: '12px',
+                              lineHeight: '1.5',
+                              whiteSpace: 'pre-wrap',
+                              wordBreak: 'break-word',
+                              maxHeight: '400px',
+                              overflowY: 'auto'
+                            }}>
+                              {commandOutput}
+                            </div>
+                          ) : (
+                            <Empty description="No console output available" />
+                          )
+                        } catch (error) {
+                          console.error('Failed to parse response console output:', error)
+                          return <Empty description="Failed to parse console output" />
+                        }
+                      })()
+                    ),
+                  }] : []),
                 ]}
               />
               </Panel>

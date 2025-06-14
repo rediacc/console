@@ -35,8 +35,8 @@
     }
   },
   "functions": { 
-    "os_setup": {
-      "name": "os_setup",
+    "setup": {
+      "name": "setup",
       "description": "Configurar el sistema operativo con las herramientas y configuraciones requeridas",
       "params": {
         "datastore_size": {
@@ -57,8 +57,8 @@
       "name": "uninstall",
       "description": "Limpiar y desinstalar componentes del sistema"
     },
-    "repo_new": {
-      "name": "repo_new",
+    "new": {
+      "name": "new",
       "description": "Crear un nuevo repositorio",
       "params": {
         "repo": {
@@ -69,8 +69,8 @@
         }
       }
     },
-    "repo_mount": {
-      "name": "repo_mount",
+    "mount": {
+      "name": "mount",
       "description": "Montar sistemas de archivos del repositorio",
       "params": {
         "repo": {
@@ -81,8 +81,8 @@
         }
       }
     },
-    "repo_unmount": {
-      "name": "repo_unmount",
+    "unmount": {
+      "name": "unmount",
       "description": "Desmontar sistemas de archivos del repositorio",
       "params": {
         "repo": {
@@ -93,8 +93,8 @@
         }
       }
     },
-    "repo_up": {
-      "name": "repo_up",
+    "up": {
+      "name": "up",
       "description": "Iniciar servicios del repositorio usando Rediaccfile",
       "params": {
         "repo": {
@@ -105,8 +105,8 @@
         }
       }
     },
-    "repo_down": {
-      "name": "repo_down",
+    "down": {
+      "name": "down",
       "description": "Detener servicios del repositorio",
       "params": {
         "repo": {
@@ -114,8 +114,8 @@
         }
       }
     },
-    "repo_resize": {
-      "name": "repo_resize",
+    "resize": {
+      "name": "resize",
       "description": "Redimensionar almacenamiento del repositorio",
       "params": {
         "repo": {
@@ -126,8 +126,8 @@
         }
       }
     },
-    "repo_rm": {
-      "name": "repo_rm",
+    "rm": {
+      "name": "rm",
       "description": "Eliminar repositorio",
       "params": {
         "repo": {
@@ -135,8 +135,8 @@
         }
       }
     },
-    "repo_plugin": {
-      "name": "repo_plugin",
+    "plugin": {
+      "name": "plugin",
       "description": "Activar plugins del repositorio",
       "params": {
         "repo": {
@@ -147,8 +147,8 @@
         }
       }
     },
-    "repo_plugout": {
-      "name": "repo_plugout",
+    "plugout": {
+      "name": "plugout",
       "description": "Desactivar plugins del repositorio",
       "params": {
         "repo": {
@@ -159,8 +159,8 @@
         }
       }
     },
-    "repo_ownership": {
-      "name": "repo_ownership",
+    "ownership": {
+      "name": "ownership",
       "description": "Cambiar propiedad del repositorio",
       "params": {
         "repo": {
@@ -174,8 +174,8 @@
         }
       }
     },
-    "repo_list": {
-      "name": "repo_list",
+    "list": {
+      "name": "list",
       "description": "Listar repositorios",
       "params": {
         "kind": {
@@ -186,8 +186,8 @@
         }
       }
     },
-    "repo_push": {
-      "name": "repo_push",
+    "push": {
+      "name": "push",
       "description": "Enviar repositorio a almacenamiento remoto",
       "params": {
         "repo": {
@@ -201,8 +201,8 @@
         }
       }
     },
-    "repo_pull": {
-      "name": "repo_pull",
+    "pull": {
+      "name": "pull",
       "description": "Obtener repositorio desde almacenamiento remoto",
       "params": {
         "from": {

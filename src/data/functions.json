@@ -6,8 +6,8 @@
     "network"
   ],
   "functions": {
-    "os_setup": {
-      "name": "os_setup",
+    "setup": {
+      "name": "setup",
       "category": "machine",
       "requirements": {
         "machine": true,
@@ -45,8 +45,8 @@
       },
       "params": {}
     },
-    "repo_new": {
-      "name": "repo_new",
+    "new": {
+      "name": "new",
       "category": "machine",
       "requirements": {
         "machine": true,
@@ -66,8 +66,8 @@
         }
       }
     },
-    "repo_mount": {
-      "name": "repo_mount",
+    "mount": {
+      "name": "mount",
       "category": "repository",
       "requirements": {
         "machine": true,
@@ -84,8 +84,8 @@
         }
       }
     },
-    "repo_unmount": {
-      "name": "repo_unmount",
+    "unmount": {
+      "name": "unmount",
       "category": "repository",
       "requirements": {
         "machine": true,
@@ -102,8 +102,8 @@
         }
       }
     },
-    "repo_up": {
-      "name": "repo_up",
+    "up": {
+      "name": "up",
       "category": "repository",
       "requirements": {
         "machine": true,
@@ -121,8 +121,8 @@
         }
       }
     },
-    "repo_down": {
-      "name": "repo_down",
+    "down": {
+      "name": "down",
       "category": "repository",
       "requirements": {
         "machine": true,
@@ -136,8 +136,8 @@
         }
       }
     },
-    "repo_resize": {
-      "name": "repo_resize",
+    "resize": {
+      "name": "resize",
       "category": "repository",
       "requirements": {
         "machine": true,
@@ -157,8 +157,8 @@
         }
       }
     },
-    "repo_rm": {
-      "name": "repo_rm",
+    "rm": {
+      "name": "rm",
       "category": "repository",
       "requirements": {
         "machine": true,
@@ -172,8 +172,8 @@
         }
       }
     },
-    "repo_plugin": {
-      "name": "repo_plugin",
+    "plugin": {
+      "name": "plugin",
       "category": "repository",
       "requirements": {
         "machine": true,
@@ -192,8 +192,8 @@
         }
       }
     },
-    "repo_plugout": {
-      "name": "repo_plugout",
+    "plugout": {
+      "name": "plugout",
       "category": "repository",
       "requirements": {
         "machine": true,
@@ -212,8 +212,8 @@
         }
       }
     },
-    "repo_ownership": {
-      "name": "repo_ownership",
+    "ownership": {
+      "name": "ownership",
       "category": "repository",
       "requirements": {
         "machine": true,
@@ -234,8 +234,8 @@
         }
       }
     },
-    "repo_list": {
-      "name": "repo_list",
+    "list": {
+      "name": "list",
       "category": "repository",
       "requirements": {
         "machine": true,
@@ -251,8 +251,8 @@
         }
       }
     },
-    "repo_push": {
-      "name": "repo_push",
+    "push": {
+      "name": "push",
       "category": "backup",
       "requirements": {
         "machine": true,
@@ -273,8 +273,8 @@
         }
       }
     },
-    "repo_pull": {
-      "name": "repo_pull",
+    "pull": {
+      "name": "pull",
       "category": "backup",
       "requirements": {
         "machine": true,

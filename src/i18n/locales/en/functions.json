@@ -35,8 +35,8 @@
     }
   },
   "functions": {
-    "os_setup": {
-      "name": "os_setup",
+    "setup": {
+      "name": "setup",
       "description": "Setup operating system with required tools and configurations",
       "params": {
         "datastore_size": {
@@ -57,8 +57,8 @@
       "name": "uninstall",
       "description": "Cleanup and uninstall system components"
     },
-    "repo_new": {
-      "name": "repo_new",
+    "new": {
+      "name": "new",
       "description": "Create a new repository",
       "params": {
         "repo": {
@@ -71,8 +71,8 @@
         }
       }
     },
-    "repo_mount": {
-      "name": "repo_mount",
+    "mount": {
+      "name": "mount",
       "description": "Mount repository filesystems",
       "params": {
         "repo": {
@@ -85,8 +85,8 @@
         }
       }
     },
-    "repo_unmount": {
-      "name": "repo_unmount",
+    "unmount": {
+      "name": "unmount",
       "description": "Unmount repository filesystems",
       "params": {
         "repo": {
@@ -99,8 +99,8 @@
         }
       }
     },
-    "repo_up": {
-      "name": "repo_up",
+    "up": {
+      "name": "up",
       "description": "Start repository services using Rediaccfile",
       "params": {
         "repo": {
@@ -113,8 +113,8 @@
         }
       }
     },
-    "repo_down": {
-      "name": "repo_down",
+    "down": {
+      "name": "down",
       "description": "Stop repository services",
       "params": {
         "repo": {
@@ -123,8 +123,8 @@
         }
       }
     },
-    "repo_resize": {
-      "name": "repo_resize",
+    "resize": {
+      "name": "resize",
       "description": "Resize repository storage",
       "params": {
         "repo": {
@@ -137,8 +137,8 @@
         }
       }
     },
-    "repo_rm": {
-      "name": "repo_rm",
+    "rm": {
+      "name": "rm",
       "description": "Delete repository",
       "params": {
         "repo": {
@@ -147,8 +147,8 @@
         }
       }
     },
-    "repo_plugin": {
-      "name": "repo_plugin",
+    "plugin": {
+      "name": "plugin",
       "description": "Activate repository plugins",
       "params": {
         "repo": {
@@ -161,8 +161,8 @@
         }
       }
     },
-    "repo_plugout": {
-      "name": "repo_plugout",
+    "plugout": {
+      "name": "plugout",
       "description": "Deactivate repository plugins",
       "params": {
         "repo": {
@@ -175,8 +175,8 @@
         }
       }
     },
-    "repo_ownership": {
-      "name": "repo_ownership",
+    "ownership": {
+      "name": "ownership",
       "description": "Change repository ownership",
       "params": {
         "repo": {
@@ -193,8 +193,8 @@
         }
       }
     },
-    "repo_list": {
-      "name": "repo_list",
+    "list": {
+      "name": "list",
       "description": "List repositories",
       "params": {
         "kind": {
@@ -207,8 +207,8 @@
         }
       }
     },
-    "repo_push": {
-      "name": "repo_push",
+    "push": {
+      "name": "push",
       "description": "Push repository to remote storage",
       "params": {
         "repo": {
@@ -225,8 +225,8 @@
         }
       }
     },
-    "repo_pull": {
-      "name": "repo_pull",
+    "pull": {
+      "name": "pull",
       "description": "Pull repository from remote storage",
       "params": {
         "from": {
