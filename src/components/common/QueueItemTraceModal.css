@@ -16,9 +16,19 @@
   }
 }
 
+/* Enhanced modal width for better content display */
+.ant-modal {
+  max-width: 1200px !important;
+  width: 90% !important;
+}
+
 /* Pulse animation for processing status */
 .queue-trace-status-icon {
   display: inline-flex;
+  font-size: 24px;
+}
+
+.queue-trace-status-icon.processing {
   animation: pulse 2s infinite;
 }
 
@@ -34,6 +44,20 @@
   100% {
     transform: scale(1);
     opacity: 1;
+  }
+}
+
+/* Stale task warning animation */
+.ant-alert-warning {
+  animation: warningPulse 3s infinite;
+}
+
+@keyframes warningPulse {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(250, 173, 20, 0.2);
+  }
+  50% {
+    box-shadow: 0 2px 16px rgba(250, 173, 20, 0.4);
   }
 }
 
@@ -145,5 +169,156 @@
   }
   50% {
     opacity: 0.3;
+  }
+}
+
+/* Responsive adjustments for 2-column layout */
+@media (max-width: 992px) {
+  .ant-col-xs-24 {
+    margin-bottom: 16px;
+  }
+  
+  .ant-col-xs-24:last-child {
+    margin-bottom: 0;
+  }
+}
+
+/* Ensure equal height cards in overview */
+.queue-trace-overview-col .ant-card {
+  height: 100%;
+}
+
+/* Console output styling */
+.queue-trace-console-output {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Priority icon animations */
+.anticon-thunderbolt {
+  animation: thunder 1.5s infinite;
+}
+
+@keyframes thunder {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.anticon-rocket {
+  animation: rocket 2s ease-in-out infinite;
+}
+
+@keyframes rocket {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Overview panel enhancements */
+.queue-trace-collapse .ant-collapse-content-box {
+  padding: 20px;
+}
+
+.queue-trace-collapse .ant-card-small {
+  margin-bottom: 0;
+}
+
+.queue-trace-collapse .ant-statistic {
+  margin-bottom: 0;
+}
+
+.queue-trace-collapse .ant-statistic-title {
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.queue-trace-collapse .ant-statistic-content {
+  font-size: 20px;
+}
+
+/* Performance metrics styling */
+.ant-progress {
+  margin-top: 8px;
+}
+
+.ant-card .ant-statistic + .ant-progress {
+  margin-top: 12px;
+}
+
+/* Related queue items styling */
+.queue-trace-related-item {
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.queue-trace-related-item:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+/* Dark theme specific adjustments */
+.dark .queue-trace-related-item:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Subscription tier badge */
+.anticon-crown {
+  animation: sparkle 3s infinite;
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+/* Alert enhancements */
+.ant-alert {
+  margin-bottom: 16px;
+}
+
+.ant-alert-with-description {
+  padding: 12px 16px;
+}
+
+/* Panel header enhancements */
+.queue-trace-collapse .ant-collapse-header {
+  font-weight: 500;
+}
+
+.queue-trace-collapse .ant-collapse-header .ant-tag {
+  margin-left: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .ant-modal {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0;
+  }
+  
+  .queue-trace-collapse .ant-row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  
+  .queue-trace-collapse .ant-col {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-bottom: 16px;
   }
 }

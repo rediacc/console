@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react'
-import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Spin, Row, Col, Tabs, Switch, Collapse, Steps, Progress } from 'antd'
-import { ReloadOutlined, HistoryOutlined, FileTextOutlined, BellOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, RightOutlined } from '@ant-design/icons'
+import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Spin, Row, Col, Tabs, Switch, Collapse, Steps, Progress, Statistic, Alert, Divider, Badge, Tooltip } from 'antd'
+import { ReloadOutlined, HistoryOutlined, FileTextOutlined, BellOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, RightOutlined, UserOutlined, RetweetOutlined, WarningOutlined, RocketOutlined, TeamOutlined, DashboardOutlined, ThunderboltOutlined, HourglassOutlined, ExclamationCircleOutlined, CrownOutlined, CodeOutlined } from '@ant-design/icons'
 import { useQueueItemTrace } from '@/api/queries/queue'
 import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
 import { SimpleJsonEditor } from './SimpleJsonEditor'
 import { queueMonitoringService } from '@/services/queueMonitoringService'
 import { showMessage } from '@/utils/messages'
 import { useTheme } from '@/context/ThemeContext'
 import './QueueItemTraceModal.css'
+
+dayjs.extend(relativeTime)
 
 const { Text, Title } = Typography
 const { Panel } = Collapse
@@ -33,8 +36,8 @@ interface QueueItemTraceModalProps {
 const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visible, onClose }) => {
   const [lastTraceFetchTime, setLastTraceFetchTime] = useState<dayjs.Dayjs | null>(null)
   const [isMonitoring, setIsMonitoring] = useState(false)
-  const [activeKeys, setActiveKeys] = useState<string[]>([]) // Start with all panels collapsed
-  const [simpleMode, setSimpleMode] = useState(true) // Start in simple mode
+  const [activeKeys, setActiveKeys] = useState<string[]>(['overview']) // Start with overview panel open
+  const [simpleMode, setSimpleMode] = useState(false) // Start in detailed mode to show all 7 result sets
   const { data: traceData, isLoading: isTraceLoading, refetch: refetchTrace } = useQueueItemTrace(taskId, visible)
   const { theme } = useTheme()
 
@@ -52,8 +55,8 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
       // Check if this task is already being monitored
       setIsMonitoring(queueMonitoringService.isTaskMonitored(taskId))
       // Reset collapsed state and simple mode when opening modal
-      setActiveKeys([])
-      setSimpleMode(true)
+      setActiveKeys(['overview'])
+      setSimpleMode(false)
     }
   }, [taskId, visible])
 
@@ -114,6 +117,40 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
         return { status: 'Assigned', color: 'blue', icon: <ClockCircleOutlined /> }
       default:
         return { status: status || 'Pending', color: 'default', icon: <ClockCircleOutlined /> }
+    }
+  }
+
+  // Helper function to check if task is stale (5+ minute heartbeat timeout)
+  const isTaskStale = () => {
+    if (!traceData?.queueDetails) return false
+    const lastHeartbeat = normalizeProperty(traceData.queueDetails, 'lastHeartbeat', 'LastHeartbeat')
+    const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
+    
+    if (!lastHeartbeat || status === 'COMPLETED' || status === 'CANCELLED' || status === 'FAILED') {
+      return false
+    }
+    
+    const minutesSinceHeartbeat = dayjs().diff(dayjs(lastHeartbeat), 'minute')
+    return minutesSinceHeartbeat >= 5
+  }
+
+  // Helper function to get priority color and icon
+  const getPriorityInfo = (priority: number | undefined) => {
+    if (!priority) return { color: 'default', icon: null, label: 'Normal' }
+    
+    switch (priority) {
+      case 1:
+        return { color: 'red', icon: <ThunderboltOutlined />, label: 'Highest' }
+      case 2:
+        return { color: 'orange', icon: <RocketOutlined />, label: 'High' }
+      case 3:
+        return { color: 'default', icon: null, label: 'Normal' }
+      case 4:
+        return { color: 'blue', icon: null, label: 'Low' }
+      case 5:
+        return { color: 'cyan', icon: null, label: 'Lowest' }
+      default:
+        return { color: 'default', icon: null, label: 'Normal' }
     }
   }
 
@@ -183,7 +220,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
       }
       open={visible}
       onCancel={handleClose}
-      width={900}
+      width={1200}
       footer={[
         traceData?.queueDetails && (
           <div key="monitor-switch" style={{ float: 'left', marginRight: 'auto' }}>
@@ -222,8 +259,31 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
         </div>
       ) : traceData ? (
         <div>
+          {/* Stale Task Warning */}
+          {isTaskStale() && (
+            <Alert
+              message="Task May Be Stale"
+              description="This task hasn't reported a heartbeat in over 5 minutes and may be stuck."
+              type="warning"
+              showIcon
+              icon={<WarningOutlined />}
+              style={{ marginBottom: 16 }}
+            />
+          )}
+
+          {/* Failure Reason Alert */}
+          {traceData.queueDetails && normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason') && (
+            <Alert
+              message="Task Failed"
+              description={normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason')}
+              type="error"
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
+          )}
+
           {/* Simple Progress Overview */}
-          {traceData.queueDetails && (
+          {simpleMode && traceData.queueDetails && (
             <Card 
               style={{ 
                 marginBottom: 16, 
@@ -302,8 +362,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                     <div className="queue-trace-key-info" style={{ padding: '12px', borderRadius: '8px', background: theme === 'dark' ? '#262626' : '#fafafa' }}>
                       <Text type="secondary">Priority</Text>
                       <div>
-                        <Tag color={traceData.queueDetails.priorityLabel === 'High' ? 'red' : 'default'}>
-                          {traceData.queueDetails.priorityLabel || 'Normal'}
+                        <Tag color={getPriorityInfo(normalizeProperty(traceData.queueDetails, 'priority', 'Priority')).color}>
+                          {getPriorityInfo(normalizeProperty(traceData.queueDetails, 'priority', 'Priority')).icon}
+                          {getPriorityInfo(normalizeProperty(traceData.queueDetails, 'priority', 'Priority')).label}
                         </Tag>
                       </div>
                     </div>
@@ -313,21 +374,211 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             </Card>
           )}
 
-          {/* Collapsible Sections */}
+          {/* Detailed View with All 7 Result Sets */}
           {!simpleMode && (
             <div style={{ marginTop: 16 }}>
-              <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: 8 }}>
-                Click on any section below to view more details
-              </Text>
               <Collapse 
               className="queue-trace-collapse"
               activeKey={activeKeys}
               onChange={setActiveKeys}
               expandIcon={({ isActive }) => <RightOutlined rotate={isActive ? 90 : 0} />}
             >
-            {/* Queue Details Panel */}
+            {/* Overview Panel - Combines key information from multiple result sets */}
             {traceData.queueDetails && (
-              <Panel header="Detailed Information" key="details">
+              <Panel 
+                header={
+                  <Space>
+                    <DashboardOutlined />
+                    <span>Task Overview</span>
+                    <Tag color={getSimplifiedStatus().color}>{getSimplifiedStatus().status}</Tag>
+                    {isTaskStale() && <Tag color="warning" icon={<WarningOutlined />}>Stale</Tag>}
+                  </Space>
+                } 
+                key="overview"
+                extra={
+                  traceData.queueDetails.canBeCancelled && 
+                  normalizeProperty(traceData.queueDetails, 'status', 'Status') !== 'COMPLETED' &&
+                  normalizeProperty(traceData.queueDetails, 'status', 'Status') !== 'CANCELLED' &&
+                  normalizeProperty(traceData.queueDetails, 'status', 'Status') !== 'FAILED' && (
+                    <Tooltip title="This task can be cancelled">
+                      <Badge status="processing" text="Cancellable" />
+                    </Tooltip>
+                  )
+                }
+              >
+                <Row gutter={[24, 16]}>
+                  {/* Left Column - Task Details */}
+                  <Col xs={24} lg={12}>
+                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                      <Card size="small" title="Task Information">
+                        <Descriptions column={1} size="small">
+                          <Descriptions.Item label="Task ID">
+                            <Text code>{normalizeProperty(traceData.queueDetails, 'taskId', 'TaskId')}</Text>
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Created By">
+                            <Space>
+                              <UserOutlined />
+                              <Text>{normalizeProperty(traceData.queueDetails, 'createdBy', 'CreatedBy') || 'System'}</Text>
+                            </Space>
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Retry Status">
+                            <Space>
+                              <RetweetOutlined />
+                              <Tag color={
+                                normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') === 0 ? 'green' :
+                                normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') < 3 ? 'orange' : 'red'
+                              }>
+                                {normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0} / 3 retries
+                              </Tag>
+                              {normalizeProperty(traceData.queueDetails, 'permanentlyFailed', 'PermanentlyFailed') && (
+                                <Tag color="error">Permanently Failed</Tag>
+                              )}
+                            </Space>
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Priority">
+                            <Space>
+                              {getPriorityInfo(normalizeProperty(traceData.queueDetails, 'priority', 'Priority')).icon}
+                              <Tag color={getPriorityInfo(normalizeProperty(traceData.queueDetails, 'priority', 'Priority')).color}>
+                                {getPriorityInfo(normalizeProperty(traceData.queueDetails, 'priority', 'Priority')).label}
+                              </Tag>
+                              {(normalizeProperty(traceData.queueDetails, 'priority', 'Priority') === 1 || 
+                                normalizeProperty(traceData.queueDetails, 'priority', 'Priority') === 2) && 
+                                traceData.planInfo && 
+                                (traceData.planInfo.planName === 'Premium' || traceData.planInfo.planName === 'Elite') && (
+                                <Tooltip title="Using high priority slot">
+                                  <CrownOutlined style={{ color: '#faad14' }} />
+                                </Tooltip>
+                              )}
+                            </Space>
+                          </Descriptions.Item>
+                        </Descriptions>
+                      </Card>
+
+                      <Card size="small" title="Processing Information">
+                        <Descriptions column={1} size="small">
+                          <Descriptions.Item label="Machine">
+                            <Space>
+                              <TeamOutlined />
+                              <Text>{traceData.queueDetails.machineName}</Text>
+                            </Space>
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Team">
+                            <Text>{traceData.queueDetails.teamName}</Text>
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Bridge">
+                            <Text>{traceData.queueDetails.bridgeName}</Text>
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Region">
+                            <Text>{traceData.queueDetails.regionName}</Text>
+                          </Descriptions.Item>
+                        </Descriptions>
+                      </Card>
+
+                      <Row gutter={[16, 16]}>
+                        <Col span={8}>
+                          <Statistic
+                            title="Total Duration"
+                            value={Math.floor(traceData.queueDetails.totalDurationSeconds / 60)}
+                            suffix="min"
+                            prefix={<ClockCircleOutlined />}
+                          />
+                        </Col>
+                        <Col span={8}>
+                          <Statistic
+                            title="Processing"
+                            value={traceData.queueDetails.processingDurationSeconds ? Math.floor(traceData.queueDetails.processingDurationSeconds / 60) : 0}
+                            suffix="min"
+                            prefix={<SyncOutlined />}
+                          />
+                        </Col>
+                        <Col span={8}>
+                          <Statistic
+                            title="Last HB"
+                            value={traceData.queueDetails.lastHeartbeat ? dayjs().diff(dayjs(traceData.queueDetails.lastHeartbeat), 'minute') : 'N/A'}
+                            suffix={traceData.queueDetails.lastHeartbeat ? 'min ago' : ''}
+                            prefix={<HourglassOutlined />}
+                            valueStyle={{ color: isTaskStale() ? '#ff4d4f' : undefined }}
+                          />
+                        </Col>
+                      </Row>
+                    </Space>
+                  </Col>
+
+                  {/* Right Column - Response Console */}
+                  <Col xs={24} lg={12}>
+                    <Card 
+                      title={
+                        <Space>
+                          <CodeOutlined />
+                          <Text>Response (Console)</Text>
+                        </Space>
+                      }
+                      size="small"
+                      style={{ height: '100%' }}
+                    >
+                      {traceData.responseVaultContent && traceData.responseVaultContent.hasContent ? (
+                        (() => {
+                          try {
+                            // Parse the vault content
+                            const vaultContent = typeof traceData.responseVaultContent.vaultContent === 'string' 
+                              ? JSON.parse(traceData.responseVaultContent.vaultContent) 
+                              : traceData.responseVaultContent.vaultContent || {}
+                            
+                            // Parse the result field which contains the actual response
+                            let result = {}
+                            if (vaultContent.result && typeof vaultContent.result === 'string') {
+                              result = JSON.parse(vaultContent.result)
+                            }
+                            
+                            // Extract command_output
+                            const commandOutput = result.command_output || ''
+                            
+                            // Display command output in a pre-formatted text area
+                            return commandOutput ? (
+                              <div style={{ 
+                                backgroundColor: theme === 'dark' ? '#1f1f1f' : '#f5f5f5',
+                                border: `1px solid ${theme === 'dark' ? '#303030' : '#d9d9d9'}`,
+                                borderRadius: '4px',
+                                padding: '12px',
+                                fontFamily: 'monospace',
+                                fontSize: '12px',
+                                lineHeight: '1.5',
+                                whiteSpace: 'pre-wrap',
+                                wordBreak: 'break-word',
+                                maxHeight: '400px',
+                                overflowY: 'auto'
+                              }}>
+                                {commandOutput}
+                              </div>
+                            ) : (
+                              <Empty description="No console output available" />
+                            )
+                          } catch (error) {
+                            console.error('Failed to parse response console output:', error)
+                            return <Empty description="Failed to parse console output" />
+                          }
+                        })()
+                      ) : (
+                        <Empty description="No response available yet" />
+                      )}
+                    </Card>
+                  </Col>
+                </Row>
+              </Panel>
+            )}
+
+            {/* Result Set 1: Queue Item Details */}
+            {traceData.queueDetails && (
+              <Panel 
+                header={
+                  <Space>
+                    <FileTextOutlined />
+                    <span>Queue Item Details</span>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>(Result Set 1)</Text>
+                  </Space>
+                } 
+                key="details"
+              >
                 <Descriptions column={2} size="small">
                 <Descriptions.Item label="Task ID">
                   <Text code>{normalizeProperty(traceData.queueDetails, 'taskId', 'TaskId')}</Text>
@@ -400,9 +651,18 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
               </Panel>
             )}
 
-            {/* Trace Logs Panel */}
+            {/* Result Set 4: Processing Timeline (Audit Log) */}
             {traceData.traceLogs && traceData.traceLogs.length > 0 && (
-              <Panel header="Activity Timeline" key="timeline">
+              <Panel 
+                header={
+                  <Space>
+                    <HistoryOutlined />
+                    <span>Processing Timeline</span>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>(Result Set 4 - Audit Log)</Text>
+                  </Space>
+                } 
+                key="timeline"
+              >
                 <Timeline mode="left" className="queue-trace-timeline">
                 {traceData.traceLogs.map((log: any, index: number) => {
                   const action = normalizeProperty(log, 'action', 'Action')
@@ -436,9 +696,18 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
               </Panel>
             )}
 
-            {/* Vault Content Panel */}
+            {/* Result Sets 2 & 3: Request and Response Vault Content */}
             {(traceData.vaultContent || traceData.responseVaultContent) && (
-              <Panel header="Vault Content" key="vault">
+              <Panel 
+                header={
+                  <Space>
+                    <FileTextOutlined />
+                    <span>Vault Content</span>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>(Result Sets 2 & 3)</Text>
+                  </Space>
+                } 
+                key="vault"
+              >
                 <Tabs
                 items={[
                   {
@@ -499,107 +768,224 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                       })()
                     ),
                   }] : []),
-                  ...(traceData.responseVaultContent && traceData.responseVaultContent.hasContent ? [{
-                    key: 'console',
-                    label: (
-                      <Space>
-                        <FileTextOutlined />
-                        Response (Console)
-                      </Space>
-                    ),
-                    children: (
-                      (() => {
-                        try {
-                          // Parse the vault content
-                          const vaultContent = typeof traceData.responseVaultContent.vaultContent === 'string' 
-                            ? JSON.parse(traceData.responseVaultContent.vaultContent) 
-                            : traceData.responseVaultContent.vaultContent || {}
-                          
-                          // Parse the result field which contains the actual response
-                          let result = {}
-                          if (vaultContent.result && typeof vaultContent.result === 'string') {
-                            result = JSON.parse(vaultContent.result)
-                          }
-                          
-                          // Extract command_output
-                          const commandOutput = result.command_output || ''
-                          
-                          // Display command output in a pre-formatted text area
-                          return commandOutput ? (
-                            <div style={{ 
-                              backgroundColor: theme === 'dark' ? '#1f1f1f' : '#f5f5f5',
-                              border: `1px solid ${theme === 'dark' ? '#303030' : '#d9d9d9'}`,
-                              borderRadius: '4px',
-                              padding: '12px',
-                              fontFamily: 'monospace',
-                              fontSize: '12px',
-                              lineHeight: '1.5',
-                              whiteSpace: 'pre-wrap',
-                              wordBreak: 'break-word',
-                              maxHeight: '400px',
-                              overflowY: 'auto'
-                            }}>
-                              {commandOutput}
-                            </div>
-                          ) : (
-                            <Empty description="No console output available" />
-                          )
-                        } catch (error) {
-                          console.error('Failed to parse response console output:', error)
-                          return <Empty description="Failed to parse console output" />
-                        }
-                      })()
-                    ),
-                  }] : []),
                 ]}
               />
               </Panel>
             )}
 
-            {/* Additional Information Panel */}
-            {(traceData.queuePosition || traceData.machineStats || traceData.planInfo) && (
-              <Panel header="Additional Information" key="additional">
+            {/* Result Set 5: Related Queue Items */}
+            {traceData.queuePosition && traceData.queuePosition.length > 0 && (
+              <Panel 
+                header={
+                  <Space>
+                    <TeamOutlined />
+                    <span>Related Queue Items</span>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>(Result Set 5 - Nearby Tasks)</Text>
+                  </Space>
+                } 
+                key="related"
+              >
+                <Row gutter={[16, 16]}>
+                  <Col span={12}>
+                    <Card size="small" title="Tasks Before This One">
+                      <div style={{ maxHeight: 200, overflow: 'auto' }}>
+                        {traceData.queuePosition
+                          .filter((p: any) => p.relativePosition === 'Before')
+                          .map((item: any, index: number) => (
+                            <div key={index} style={{ marginBottom: 8 }}>
+                              <Space>
+                                <Text code style={{ fontSize: '11px' }}>{item.taskId}</Text>
+                                <Tag color={item.status === 'PROCESSING' ? 'processing' : 'default'} style={{ fontSize: '11px' }}>
+                                  {item.status}
+                                </Tag>
+                                <Text type="secondary" style={{ fontSize: '11px' }}>
+                                  {dayjs(item.createdTime).fromNow()}
+                                </Text>
+                              </Space>
+                            </div>
+                          ))
+                        }
+                        {traceData.queuePosition.filter((p: any) => p.relativePosition === 'Before').length === 0 && (
+                          <Empty description="No tasks ahead" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                        )}
+                      </div>
+                    </Card>
+                  </Col>
+                  <Col span={12}>
+                    <Card size="small" title="Tasks After This One">
+                      <div style={{ maxHeight: 200, overflow: 'auto' }}>
+                        {traceData.queuePosition
+                          .filter((p: any) => p.relativePosition === 'After')
+                          .map((item: any, index: number) => (
+                            <div key={index} style={{ marginBottom: 8 }}>
+                              <Space>
+                                <Text code style={{ fontSize: '11px' }}>{item.taskId}</Text>
+                                <Tag color={item.status === 'PROCESSING' ? 'processing' : 'default'} style={{ fontSize: '11px' }}>
+                                  {item.status}
+                                </Tag>
+                                <Text type="secondary" style={{ fontSize: '11px' }}>
+                                  {dayjs(item.createdTime).fromNow()}
+                                </Text>
+                              </Space>
+                            </div>
+                          ))
+                        }
+                        {traceData.queuePosition.filter((p: any) => p.relativePosition === 'After').length === 0 && (
+                          <Empty description="No tasks behind" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                        )}
+                      </div>
+                    </Card>
+                  </Col>
+                </Row>
+                <div style={{ marginTop: 16, textAlign: 'center' }}>
+                  <Text type="secondary">
+                    Total: {traceData.queuePosition.filter((p: any) => p.relativePosition === 'Before').length} tasks ahead, 
+                    {traceData.queuePosition.filter((p: any) => p.relativePosition === 'After').length} tasks behind
+                  </Text>
+                </div>
+              </Panel>
+            )}
+
+            {/* Result Set 6: Performance Metrics */}
+            {traceData.machineStats && (
+              <Panel 
+                header={
+                  <Space>
+                    <DashboardOutlined />
+                    <span>Performance Metrics</span>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>(Result Set 6 - Machine Stats)</Text>
+                  </Space>
+                } 
+                key="performance"
+              >
                 <Row gutter={16}>
-              {traceData.machineStats && (
-                <Col span={8}>
-                  <Card title="Machine Statistics" size="small">
-                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                      <div>
-                        <Text type="secondary">Current Queue Depth:</Text>{' '}
-                        <Text strong>{traceData.machineStats.currentQueueDepth}</Text>
-                      </div>
-                      <div>
-                        <Text type="secondary">Active Processing:</Text>{' '}
-                        <Text strong>{traceData.machineStats.activeProcessingCount}</Text>
-                      </div>
+                  <Col span={8}>
+                    <Card>
+                      <Statistic
+                        title="Current Queue Depth"
+                        value={traceData.machineStats.currentQueueDepth}
+                        prefix={<HourglassOutlined />}
+                        suffix="tasks"
+                        valueStyle={{ color: traceData.machineStats.currentQueueDepth > 50 ? '#ff4d4f' : traceData.machineStats.currentQueueDepth > 20 ? '#faad14' : '#52c41a' }}
+                      />
+                      <Progress 
+                        percent={Math.min(100, (traceData.machineStats.currentQueueDepth / 100) * 100)} 
+                        showInfo={false}
+                        strokeColor={traceData.machineStats.currentQueueDepth > 50 ? '#ff4d4f' : traceData.machineStats.currentQueueDepth > 20 ? '#faad14' : '#52c41a'}
+                      />
+                    </Card>
+                  </Col>
+                  <Col span={8}>
+                    <Card>
+                      <Statistic
+                        title="Active Processing Count"
+                        value={traceData.machineStats.activeProcessingCount}
+                        prefix={<SyncOutlined spin />}
+                        suffix="tasks"
+                      />
+                      <Text type="secondary">Currently being processed on this machine</Text>
+                    </Card>
+                  </Col>
+                  <Col span={8}>
+                    <Card>
+                      <Statistic
+                        title="Processing Capacity"
+                        value={`${traceData.machineStats.activeProcessingCount}/${traceData.planInfo?.maxConcurrentTasks || 'N/A'}`}
+                        prefix={<DashboardOutlined />}
+                        valueStyle={{ color: traceData.machineStats.activeProcessingCount >= (traceData.planInfo?.maxConcurrentTasks || 0) ? '#ff4d4f' : '#52c41a' }}
+                      />
+                      <Progress 
+                        percent={traceData.planInfo ? Math.min(100, (traceData.machineStats.activeProcessingCount / traceData.planInfo.maxConcurrentTasks) * 100) : 0} 
+                        showInfo={false}
+                        strokeColor={traceData.machineStats.activeProcessingCount >= (traceData.planInfo?.maxConcurrentTasks || 0) ? '#ff4d4f' : '#52c41a'}
+                      />
+                    </Card>
+                  </Col>
+                </Row>
+                <Divider />
+                <Alert
+                  message="Performance Analysis"
+                  description={
+                    <Space direction="vertical">
+                      {traceData.machineStats.currentQueueDepth > 50 && (
+                        <Text>⚠️ High queue depth detected. Tasks may experience delays.</Text>
+                      )}
+                      {traceData.machineStats.activeProcessingCount >= (traceData.planInfo?.maxConcurrentTasks || 0) && (
+                        <Text>⚠️ Machine at full capacity. New tasks will wait in queue.</Text>
+                      )}
+                      {traceData.machineStats.currentQueueDepth === 0 && traceData.machineStats.activeProcessingCount === 0 && (
+                        <Text>✅ Machine is idle and ready to process tasks immediately.</Text>
+                      )}
                     </Space>
-                  </Card>
-                </Col>
-              )}
-              {traceData.planInfo && (
-                <Col span={8}>
-                  <Card title="Plan Information" size="small">
-                    <div><Text strong>Plan:</Text> {traceData.planInfo.planName}</div>
-                    <div><Text strong>Status:</Text> <Tag color="success">{traceData.planInfo.subscriptionStatus}</Tag></div>
-                    <div><Text strong>Max Tasks:</Text> {traceData.planInfo.maxConcurrentTasks}</div>
-                  </Card>
-                </Col>
-              )}
-              {traceData.queuePosition && traceData.queuePosition.length > 0 && (
-                <Col span={8}>
-                  <Card title="Queue Position" size="small">
-                    <div style={{ maxHeight: 200, overflow: 'auto' }}>
-                      {traceData.queuePosition.filter((p: any) => p.relativePosition === 'Before').length > 0 && (
-                        <div><Text type="secondary">{traceData.queuePosition.filter((p: any) => p.relativePosition === 'Before').length} tasks ahead</Text></div>
-                      )}
-                      {traceData.queuePosition.filter((p: any) => p.relativePosition === 'After').length > 0 && (
-                        <div><Text type="secondary">{traceData.queuePosition.filter((p: any) => p.relativePosition === 'After').length} tasks behind</Text></div>
-                      )}
-                    </div>
-                  </Card>
-                </Col>
-              )}
-              </Row>
+                  }
+                  type={traceData.machineStats.currentQueueDepth > 50 ? 'warning' : 'info'}
+                />
+              </Panel>
+            )}
+
+            {/* Result Set 7: Subscription Context */}
+            {traceData.planInfo && (
+              <Panel 
+                header={
+                  <Space>
+                    <CrownOutlined />
+                    <span>Subscription Context</span>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>(Result Set 7 - Plan Info)</Text>
+                  </Space>
+                } 
+                key="subscription"
+              >
+                <Card>
+                  <Row gutter={[16, 16]}>
+                    <Col span={8}>
+                      <Card type="inner">
+                        <Statistic
+                          title="Current Plan"
+                          value={traceData.planInfo.planName}
+                          prefix={traceData.planInfo.planName === 'Elite' ? <CrownOutlined style={{ color: '#faad14' }} /> : traceData.planInfo.planName === 'Premium' ? <RocketOutlined style={{ color: '#1890ff' }} /> : null}
+                        />
+                      </Card>
+                    </Col>
+                    <Col span={8}>
+                      <Card type="inner">
+                        <Statistic
+                          title="Subscription Status"
+                          value={traceData.planInfo.subscriptionStatus}
+                          valueStyle={{ color: traceData.planInfo.subscriptionStatus === 'Active' ? '#52c41a' : '#ff4d4f' }}
+                        />
+                      </Card>
+                    </Col>
+                    <Col span={8}>
+                      <Card type="inner">
+                        <Statistic
+                          title="Max Concurrent Tasks"
+                          value={traceData.planInfo.maxConcurrentTasks}
+                          suffix="tasks"
+                        />
+                      </Card>
+                    </Col>
+                  </Row>
+                  
+                  {(traceData.planInfo.planName === 'Premium' || traceData.planInfo.planName === 'Elite') && (
+                    <>
+                      <Divider />
+                      <Alert
+                        message="Premium Features"
+                        description={
+                          <Space direction="vertical">
+                            <Text>✓ High priority slots available (Priority 1-2)</Text>
+                            <Text>✓ Increased concurrent task limit</Text>
+                            {traceData.planInfo.planName === 'Elite' && (
+                              <Text>✓ Maximum performance and priority access</Text>
+                            )}
+                          </Space>
+                        }
+                        type="success"
+                        icon={<CrownOutlined />}
+                      />
+                    </>
+                  )}
+                </Card>
               </Panel>
             )}
               </Collapse>
