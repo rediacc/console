@@ -369,8 +369,12 @@ export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true
         return false
       }
       
-      // Otherwise refresh every 3 seconds when enabled
-      return enabled && taskId ? 3000 : false
+      // Refresh every 1 second when enabled
+      return enabled && taskId ? 1000 : false
     },
+    // Ensure that refetch waits for the previous request to complete
+    refetchIntervalInBackground: false,
+    // This ensures new requests wait for the previous one to complete
+    networkMode: 'online',
   })
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Spin, Row, Col, Tabs, Switch, Collapse, Steps, Progress, Statistic, Alert, Divider, Badge, Tooltip } from 'antd'
 import { ReloadOutlined, HistoryOutlined, FileTextOutlined, BellOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, RightOutlined, UserOutlined, RetweetOutlined, WarningOutlined, RocketOutlined, TeamOutlined, DashboardOutlined, ThunderboltOutlined, HourglassOutlined, ExclamationCircleOutlined, CrownOutlined, CodeOutlined } from '@ant-design/icons'
 import { useQueueItemTrace } from '@/api/queries/queue'
@@ -40,6 +40,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
   const [simpleMode, setSimpleMode] = useState(false) // Start in detailed mode to show all 7 result sets
   const { data: traceData, isLoading: isTraceLoading, refetch: refetchTrace } = useQueueItemTrace(taskId, visible)
   const { theme } = useTheme()
+  const consoleOutputRef = useRef<HTMLDivElement>(null)
 
   // Update last fetch time when trace data is loaded
   useEffect(() => {
@@ -47,6 +48,13 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
       setLastTraceFetchTime(dayjs())
     }
   }, [traceData, visible])
+
+  // Auto-scroll console output to bottom when trace data updates
+  useEffect(() => {
+    if (consoleOutputRef.current && traceData?.responseVaultContent?.hasContent) {
+      consoleOutputRef.current.scrollTop = consoleOutputRef.current.scrollHeight
+    }
+  }, [traceData?.responseVaultContent])
 
   // Reset last fetch time when modal is opened with new taskId
   useEffect(() => {
@@ -535,7 +543,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                             
                             // Display command output in a pre-formatted text area
                             return commandOutput ? (
-                              <div style={{ 
+                              <div 
+                                ref={consoleOutputRef}
+                                style={{ 
                                 backgroundColor: theme === 'dark' ? '#1f1f1f' : '#f5f5f5',
                                 border: `1px solid ${theme === 'dark' ? '#303030' : '#d9d9d9'}`,
                                 borderRadius: '4px',
