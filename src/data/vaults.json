@@ -325,10 +325,6 @@
           "type": "string",
           "pattern": "^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/=]+ .+$",
           "example": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... rediacc1"
-        },
-        "LOG_FILE": {
-          "type": "string",
-          "example": "/tmp/rediacc.log"
         }
       }
     }
