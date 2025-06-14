@@ -77,9 +77,14 @@ class QueueMonitoringService {
     }
   }
 
-  addTask(taskId: string, teamName: string, machineName: string, currentStatus: string) {
-    // Don't monitor completed or cancelled tasks
-    if (currentStatus === 'COMPLETED' || currentStatus === 'CANCELLED') {
+  addTask(taskId: string, teamName: string, machineName: string, currentStatus: string, retryCount?: number, lastFailureReason?: string) {
+    // Don't monitor completed, cancelled, or permanently failed tasks
+    if (currentStatus === 'COMPLETED' || currentStatus === 'CANCELLED' || currentStatus === 'FAILED') {
+      return
+    }
+    
+    // Don't monitor PENDING tasks that have reached max retries
+    if (currentStatus === 'PENDING' && retryCount && retryCount >= 2 && lastFailureReason) {
       return
     }
 
@@ -148,9 +153,26 @@ class QueueMonitoringService {
         if (currentStatus === 'COMPLETED') {
           showMessage('success', `Queue task ${task.taskId} completed successfully! (${task.teamName} - ${task.machineName})`)
           this.removeTask(task.taskId)
+          return // Stop processing this task
         } else if (currentStatus === 'CANCELLED') {
           showMessage('warning', `Queue task ${task.taskId} was cancelled (${task.teamName} - ${task.machineName})`)
           this.removeTask(task.taskId)
+          return // Stop processing this task
+        } else if (currentStatus === 'FAILED') {
+          // Note: In the middleware, FAILED status with retryCount < 2 gets reset to PENDING immediately
+          // So we might not see FAILED status for long, but handle it just in case
+          const retryCount = queueDetails.retryCount || queueDetails.RetryCount || 0
+          if (retryCount >= 2) {
+            showMessage('error', `Queue task ${task.taskId} permanently failed after 2 attempts (${task.teamName} - ${task.machineName})`)
+            this.removeTask(task.taskId)
+            return // Stop processing this task
+          } else {
+            // This should be rare as middleware immediately resets to PENDING
+            showMessage('warning', `Queue task ${task.taskId} failed - waiting for retry (attempt ${retryCount} of 2) (${task.teamName} - ${task.machineName})`)
+            // Continue monitoring as it should become PENDING soon
+            this.monitoredTasks.set(task.taskId, task)
+            this.saveToStorage()
+          }
         } else if (currentStatus === 'PROCESSING' && oldStatus !== 'PROCESSING') {
           showMessage('info', `Queue task ${task.taskId} started processing (${task.teamName} - ${task.machineName})`)
           // Update the task with new status
@@ -161,6 +183,27 @@ class QueueMonitoringService {
           // Update the task with new status
           this.monitoredTasks.set(task.taskId, task)
           this.saveToStorage()
+        } else if (currentStatus === 'PENDING' && oldStatus !== 'PENDING' && (queueDetails.retryCount || queueDetails.RetryCount || 0) > 0) {
+          // Task has been reset to PENDING for retry
+          const retryCount = queueDetails.retryCount || queueDetails.RetryCount || 0
+          const lastFailureReason = queueDetails.lastFailureReason || queueDetails.LastFailureReason
+          
+          // Check if we've reached max retries
+          if (retryCount >= 2 && lastFailureReason) {
+            showMessage('error', `Queue task ${task.taskId} permanently failed after 2 attempts (${task.teamName} - ${task.machineName})`)
+            this.removeTask(task.taskId)
+            return
+          }
+          
+          showMessage('info', `Queue task ${task.taskId} queued for retry (attempt ${retryCount} of 2) (${task.teamName} - ${task.machineName})`)
+          // Update the task with new status
+          this.monitoredTasks.set(task.taskId, task)
+          this.saveToStorage()
+        } else if (currentStatus === 'PENDING' && (queueDetails.retryCount || queueDetails.RetryCount || 0) >= 2 && (queueDetails.lastFailureReason || queueDetails.LastFailureReason)) {
+          // Task is stuck in PENDING with max retries - treat as permanently failed
+          showMessage('error', `Queue task ${task.taskId} permanently failed after 3 attempts (${task.teamName} - ${task.machineName})`)
+          this.removeTask(task.taskId)
+          return
         }
       }
 

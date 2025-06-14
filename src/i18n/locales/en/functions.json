@@ -46,6 +46,22 @@
         "source": {
           "label": "Source",
           "help": "Package source"
+        },
+        "rclone_source": {
+          "label": "Rclone Installation Source",
+          "help": "How to install rclone (install-script = official script, package-manager = apt/dnf, manual = skip)"
+        },
+        "docker_source": {
+          "label": "Docker Installation Source",
+          "help": "How to install Docker (docker-repo = official repository, package-manager = OS packages, snap = snap store, manual = skip)"
+        },
+        "install_amd_driver": {
+          "label": "Install AMD GPU Driver",
+          "help": "Install AMD GPU drivers (auto = detect GPU first, true = always install, false = skip)"
+        },
+        "install_nvidia_driver": {
+          "label": "Install NVIDIA GPU Driver",
+          "help": "Install NVIDIA GPU drivers (auto = detect GPU first, true = always install, false = skip)"
         }
       }
     },

@@ -50,6 +50,10 @@ export interface QueueFunction {
     required?: boolean
     default?: any
     help?: string
+    label?: string
+    format?: string
+    units?: string[]
+    options?: string[]
   }>
 }
 
@@ -362,13 +366,29 @@ export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true
     refetchInterval: (query) => {
       // The query parameter contains the full query state, with data in query.state.data
       const data = query.state.data
-      // Stop refreshing if the task is completed, cancelled, or failed
+      // Stop refreshing if the task is completed, cancelled, or permanently failed
       const status = data?.queueDetails?.status || data?.queueDetails?.Status
+      const retryCount = data?.queueDetails?.retryCount || data?.queueDetails?.RetryCount || 0
+      const permanentlyFailed = data?.queueDetails?.permanentlyFailed || data?.queueDetails?.PermanentlyFailed
+      const lastFailureReason = data?.queueDetails?.lastFailureReason || data?.queueDetails?.LastFailureReason
       
-      if (status === 'COMPLETED' || status === 'CANCELLED' || status === 'FAILED') {
+      // Stop polling for completed or cancelled tasks
+      if (status === 'COMPLETED' || status === 'CANCELLED') {
         return false
       }
       
+      // Stop polling for permanently failed tasks (retry count >= 3)
+      if (status === 'FAILED' && (permanentlyFailed || retryCount >= 3)) {
+        return false
+      }
+      
+      // Stop polling for PENDING tasks that have reached max retries (3)
+      // These are tasks that failed 3 times and are stuck in PENDING status
+      if (status === 'PENDING' && retryCount >= 3 && lastFailureReason) {
+        return false
+      }
+      
+      // Continue polling for all other states, including FAILED tasks that can be retried
       // Refresh every 1 second when enabled
       return enabled && taskId ? 1000 : false
     },

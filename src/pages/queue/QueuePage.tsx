@@ -278,13 +278,13 @@ const QueuePage: React.FC = () => {
       render: (retryCount: number | undefined, record: any) => {
         if (!retryCount && retryCount !== 0) return <Text type="secondary">-</Text>
         
-        const color = retryCount === 0 ? 'green' : retryCount < 3 ? 'orange' : 'red'
-        const icon = retryCount >= 3 && record.permanentlyFailed ? <ExclamationCircleOutlined /> : undefined
+        const color = retryCount === 0 ? 'green' : retryCount < 2 ? 'orange' : 'red'
+        const icon = retryCount >= 2 && record.permanentlyFailed ? <ExclamationCircleOutlined /> : undefined
         
         return (
           <Tooltip title={record.lastFailureReason || 'No failures'}>
             <Tag color={color} icon={icon}>
-              {retryCount}/3
+              {retryCount}/2
             </Tag>
           </Tooltip>
         )

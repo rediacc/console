@@ -53,7 +53,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   const [functionSearchTerm, setFunctionSearchTerm] = useState('')
   const [selectedMachine, setSelectedMachine] = useState<string>('')
 
-  // Initialize size parameters when function is selected
+  // Initialize parameters when function is selected
   useEffect(() => {
     if (selectedFunction) {
       const initialParams: Record<string, any> = {}
@@ -74,6 +74,12 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
             const defaultUnit = paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0]
             initialParams[`${paramName}_unit`] = defaultUnit
           }
+        } else if (paramInfo.options && paramInfo.options.length > 0) {
+          // Initialize dropdown parameters with default value
+          initialParams[paramName] = paramInfo.default || paramInfo.options[0]
+        } else if (paramInfo.default) {
+          // Initialize other parameters with default value
+          initialParams[paramName] = paramInfo.default
         }
       })
       
@@ -276,7 +282,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                   setFunctionParams({
                                     ...functionParams,
                                     [`${paramName}_value`]: value,
-                                    [paramName]: `${value || ''}${functionParams[`${paramName}_unit`] || paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0]}`
+                                    [paramName]: `${value || ''}${functionParams[`${paramName}_unit`] || (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0])}`
                                   })
                                 }}
                                 placeholder={paramInfo.units.includes('percentage') ? '95' : '100'}
@@ -299,6 +305,19 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                 }))}
                               />
                             </Space.Compact>
+                          ) : paramInfo.options && paramInfo.options.length > 0 ? (
+                            <Select
+                              value={functionParams[paramName] || paramInfo.default || ''}
+                              onChange={(value) => setFunctionParams({
+                                ...functionParams,
+                                [paramName]: value
+                              })}
+                              placeholder={paramInfo.help || ''}
+                              options={paramInfo.options.map(option => ({
+                                value: option,
+                                label: option
+                              }))}
+                            />
                           ) : (
                             <Input
                               value={functionParams[paramName] || ''}

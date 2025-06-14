@@ -76,10 +76,16 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
     if (!taskId || !traceData?.queueDetails) return
 
     const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
+    const retryCount = normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0
+    const permanentlyFailed = normalizeProperty(traceData.queueDetails, 'permanentlyFailed', 'PermanentlyFailed')
     
-    // Don't allow monitoring completed, cancelled, or failed tasks
-    if (status === 'COMPLETED' || status === 'CANCELLED' || status === 'FAILED') {
-      showMessage('warning', 'Cannot monitor completed, cancelled, or failed tasks')
+    const lastFailureReason = normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason')
+    
+    // Don't allow monitoring completed, cancelled, or permanently failed tasks
+    if (status === 'COMPLETED' || status === 'CANCELLED' || 
+        (status === 'FAILED' && (permanentlyFailed || retryCount >= 2)) ||
+        (status === 'PENDING' && retryCount >= 2 && lastFailureReason)) {
+      showMessage('warning', 'Cannot monitor completed, cancelled, or permanently failed tasks')
       return
     }
 
@@ -90,7 +96,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
     } else {
       const teamName = traceData.queueDetails.teamName || ''
       const machineName = traceData.queueDetails.machineName || ''
-      queueMonitoringService.addTask(taskId, teamName, machineName, status)
+      queueMonitoringService.addTask(taskId, teamName, machineName, status, retryCount, lastFailureReason)
       setIsMonitoring(true)
       showMessage('success', 'Background monitoring enabled. You will be notified when the task status changes.')
     }
@@ -100,7 +106,15 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
     // If task is still active and monitoring is enabled, remind user
     if (taskId && isMonitoring && traceData?.queueDetails) {
       const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
-      if (status !== 'COMPLETED' && status !== 'CANCELLED' && status !== 'FAILED') {
+      const retryCount = normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0
+      const permanentlyFailed = normalizeProperty(traceData.queueDetails, 'permanentlyFailed', 'PermanentlyFailed')
+      
+      const lastFailureReason = normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason')
+      
+      // Check if task is not in a terminal state
+      if (status !== 'COMPLETED' && status !== 'CANCELLED' && 
+          !(status === 'FAILED' && (permanentlyFailed || retryCount >= 2)) &&
+          !(status === 'PENDING' && retryCount >= 2 && lastFailureReason)) {
         showMessage('info', `Task ${taskId} will continue to be monitored in the background`)
       }
     }
@@ -111,6 +125,17 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
   const getSimplifiedStatus = () => {
     if (!traceData?.queueDetails) return { status: 'unknown', color: 'default', icon: null }
     const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
+    const retryCount = normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0
+    const lastFailureReason = normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason')
+    
+    // Check if this is a PENDING status after retry (it was failed and is being retried)
+    if (status === 'PENDING' && retryCount > 0 && lastFailureReason) {
+      // If we've reached max retries (2), show as failed instead of retrying
+      if (retryCount >= 2) {
+        return { status: 'Failed (Max Retries)', color: 'error', icon: <CloseCircleOutlined /> }
+      }
+      return { status: 'Retrying', color: 'warning', icon: <RetweetOutlined spin /> }
+    }
     
     switch (status) {
       case 'COMPLETED':
@@ -241,7 +266,12 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   !traceData?.queueDetails ||
                   normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' ||
                   normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED' ||
-                  normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED'
+                  (normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED' && 
+                   ((normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0) >= 2 ||
+                    normalizeProperty(traceData.queueDetails, 'permanentlyFailed', 'PermanentlyFailed'))) ||
+                  (normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' && 
+                   (normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0) >= 2 &&
+                   normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason'))
                 }
               />
               <Text type="secondary">Background Monitoring</Text>
@@ -282,10 +312,32 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
           {/* Failure Reason Alert */}
           {traceData.queueDetails && normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason') && (
             <Alert
-              message="Task Failed"
+              message={
+                normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' && 
+                normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') > 0 
+                  ? normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') >= 2 
+                    ? "Task Failed - Max Retries Reached"
+                    : "Task Failed - Retrying" 
+                  : "Task Failed"
+              }
               description={normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason')}
-              type="error"
+              type={
+                normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' && 
+                normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') > 0 
+                  ? normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') >= 2 
+                    ? "error"
+                    : "warning" 
+                  : "error"
+              }
               showIcon
+              icon={
+                normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' && 
+                normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') > 0 
+                  ? normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') >= 2 
+                    ? <CloseCircleOutlined />
+                    : <RetweetOutlined /> 
+                  : undefined
+              }
               style={{ marginBottom: 16 }}
             />
           )}
@@ -434,9 +486,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                               <RetweetOutlined />
                               <Tag color={
                                 normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') === 0 ? 'green' :
-                                normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') < 3 ? 'orange' : 'red'
+                                normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') < 2 ? 'orange' : 'red'
                               }>
-                                {normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0} / 3 retries
+                                {normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0} / 2 retries
                               </Tag>
                               {normalizeProperty(traceData.queueDetails, 'permanentlyFailed', 'PermanentlyFailed') && (
                                 <Tag color="error">Permanently Failed</Tag>
@@ -533,7 +585,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                               : traceData.responseVaultContent.vaultContent || {}
                             
                             // Parse the result field which contains the actual response
-                            let result = {}
+                            let result: any = {}
                             if (vaultContent.result && typeof vaultContent.result === 'string') {
                               result = JSON.parse(vaultContent.result)
                             }
@@ -649,7 +701,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                     normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') === 0 ? 'green' :
                     normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') < 3 ? 'orange' : 'red'
                   }>
-                    {normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0}/3
+                    {normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0}/2
                   </Tag>
                 </Descriptions.Item>
                 {normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason') && (

@@ -23,7 +23,32 @@
         },
         "source": {
           "type": "string",
-          "default": "apt-repo"
+          "default": "apt-repo",
+          "options": ["apt-repo", "tar-static", "deb-local"]
+        },
+        "rclone_source": {
+          "type": "string",
+          "default": "install-script",
+          "options": ["install-script", "package-manager", "manual"],
+          "ui": "dropdown"
+        },
+        "docker_source": {
+          "type": "string",
+          "default": "docker-repo",
+          "options": ["docker-repo", "package-manager", "snap", "manual"],
+          "ui": "dropdown"
+        },
+        "install_amd_driver": {
+          "type": "string",
+          "default": "auto",
+          "options": ["auto", "true", "false"],
+          "ui": "dropdown"
+        },
+        "install_nvidia_driver": {
+          "type": "string",
+          "default": "auto",
+          "options": ["auto", "true", "false"],
+          "ui": "dropdown"
         }
       }
     },

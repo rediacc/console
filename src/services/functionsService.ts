@@ -27,6 +27,7 @@ export interface FunctionParam {
   units?: string[];
   help?: string;
   label?: string;
+  options?: string[]; // For dropdown parameters
 }
 
 // Import function definitions from JSON
