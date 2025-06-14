@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import apiClient from '@/api/client'
+import { extractTableData, parseDoubleEncodedJson, fixTripleEncodedFields } from '@/api/utils/responseHelpers'
 
 interface GraphNode {
   nodeType: string
@@ -61,47 +62,32 @@ export const useCompanyArchitecture = () => {
     queryFn: async () => {
       const response = await apiClient.post('/GetCompanyDataGraphJson', {})
       
-      // The response is already parsed by apiClient, which returns response.data
-      const data = response
-      
       // Check for failure
-      if (data.failure !== 0) {
-        throw new Error(data.errors?.join(', ') || 'Failed to fetch company architecture')
+      if (response.failure !== 0) {
+        throw new Error(response.errors?.join(', ') || 'Failed to fetch company architecture')
       }
       
-      // Get the JSON string from the second table (index 1), lowercase field name
-      const jsonString = data.tables?.[1]?.data?.[0]?.companyDataGraph
+      // Extract the JSON string from the response
+      const jsonString = extractTableData(response, 1, [])[0]?.companyDataGraph
       if (!jsonString) {
         throw new Error('No architecture data returned')
       }
       
       try {
-        // Parse the double-encoded JSON
-        const parsedData = JSON.parse(jsonString)
+        // Parse the double-encoded JSON structure
+        const { metadata, nodes, relationships, summary } = parseDoubleEncodedJson<CompanyDataGraph>(
+          jsonString, 
+          ['metadata', 'nodes', 'relationships', 'summary']
+        )
         
-        // Parse each section which is also JSON-encoded
-        const metadata = JSON.parse(parsedData.metadata)
-        const nodes = JSON.parse(parsedData.nodes)
-        const relationships = JSON.parse(parsedData.relationships)
-        const summary = JSON.parse(parsedData.summary)
+        // Fix triple-encoded fields
+        fixTripleEncodedFields(nodes, ['users'])
         
-        // Fix the users field if it's a string (appears to be triple-encoded)
-        if (typeof nodes.users === 'string') {
-          nodes.users = JSON.parse(nodes.users)
-        }
+        // Ensure all node arrays exist with defaults
+        const nodeDefaults = ['machines', 'repositories', 'schedules', 'storages']
+        nodeDefaults.forEach(field => { nodes[field] = nodes[field] || [] })
         
-        // Ensure all node arrays exist
-        nodes.machines = nodes.machines || []
-        nodes.repositories = nodes.repositories || []
-        nodes.schedules = nodes.schedules || []
-        nodes.storages = nodes.storages || []
-        
-        return {
-          metadata,
-          nodes,
-          relationships,
-          summary
-        }
+        return { metadata, nodes, relationships, summary }
       } catch (e) {
         throw new Error('Invalid JSON data returned from server')
       }

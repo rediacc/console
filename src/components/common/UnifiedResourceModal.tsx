@@ -82,26 +82,20 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   // Import/Export handlers ref
   const importExportHandlers = useRef<{ handleImport: (file: any) => boolean; handleExport: () => void } | null>(null)
   
-  // Translation key mapping for resource types
-  const RESOURCE_TRANSLATION_KEYS: Record<string, string> = {
-    'storage': 'storage',
-    'repository': 'repositories',
-    'machine': 'machines',
-    'schedule': 'schedules',
-    'team': 'teams',
-    'region': 'regions',
-    'bridge': 'bridges'
-  }
+  // Resource configuration
+  const RESOURCE_CONFIG = {
+    storage: { key: 'storage', createKey: 'resources:storage.createStorage' },
+    repository: { key: 'repositories', createKey: 'resources:repositories.createRepository' },
+    machine: { key: 'machines', createKey: 'machines:createMachine' },
+    schedule: { key: 'schedules', createKey: 'resources:schedules.createSchedule' },
+    team: { key: 'teams', createKey: 'system:teams.createTeam' },
+    region: { key: 'regions', createKey: 'system:regions.createRegion' },
+    bridge: { key: 'bridges', createKey: 'system:bridges.createBridge' }
+  } as const
 
-  // Helper to get the correct translation key prefix
-  const getResourceTranslationKey = () => {
-    return RESOURCE_TRANSLATION_KEYS[resourceType] || `${resourceType}s`
-  }
-
-  // Helper to map items to options format
-  const mapToOptions = (items: any[] | undefined) => {
-    return items?.map(item => ({ value: item.value, label: item.label })) || []
-  }
+  // Helper functions
+  const getResourceTranslationKey = () => RESOURCE_CONFIG[resourceType as keyof typeof RESOURCE_CONFIG]?.key || `${resourceType}s`
+  const mapToOptions = (items: any[] | undefined) => items?.map(item => ({ value: item.value, label: item.label })) || []
 
   // Calculate modal dimensions based on viewport
   useEffect(() => {
@@ -137,118 +131,67 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     }
   }, [])
 
-  // Get the appropriate schema based on resource type
-  const getSchema = () => {
-    if (mode === 'edit') {
-      // For edit mode, we only need name field validation
-      return z.object({
-        [`${resourceType}Name`]: z.string().min(1, `${resourceType} name is required`),
-        regionName: resourceType === 'machine' ? z.string().optional() : z.string().optional(),
-        bridgeName: resourceType === 'machine' ? z.string().optional() : z.string().optional(),
-      })
-    }
-
-    // Create mode schemas
-    switch (resourceType) {
-      case 'machine':
-        if (uiMode === 'simple') {
-          return z.object({
-            machineName: z.string().min(1, 'Machine name is required'),
-            teamName: z.string().optional(),
-            regionName: z.string().optional(),
-            bridgeName: z.string().optional(),
-            machineVault: z.string().optional().default('{}'),
-          })
-        }
-        return createMachineSchema
-      case 'repository':
-        return createRepositorySchema
-      case 'storage':
-        return createStorageSchema
-      case 'schedule':
-        return createScheduleSchema
-      case 'team':
-        return createTeamSchema
-      case 'region':
-        return createRegionSchema
-      case 'bridge':
-        return createBridgeSchema
-      default:
-        return z.object({})
-    }
+  // Schema mapping
+  const SCHEMA_MAP = {
+    machine: uiMode === 'simple' ? z.object({
+      machineName: z.string().min(1, 'Machine name is required'),
+      teamName: z.string().optional(),
+      regionName: z.string().optional(),
+      bridgeName: z.string().optional(),
+      machineVault: z.string().optional().default('{}'),
+    }) : createMachineSchema,
+    repository: createRepositorySchema,
+    storage: createStorageSchema,
+    schedule: createScheduleSchema,
+    team: createTeamSchema,
+    region: createRegionSchema,
+    bridge: createBridgeSchema
   }
 
-  // Initialize form based on resource type
+  const getSchema = () => {
+    if (mode === 'edit') {
+      return z.object({
+        [`${resourceType}Name`]: z.string().min(1, `${resourceType} name is required`),
+        ...(resourceType === 'machine' && { regionName: z.string().optional(), bridgeName: z.string().optional() }),
+      })
+    }
+    return SCHEMA_MAP[resourceType as keyof typeof SCHEMA_MAP] || z.object({})
+  }
+
+  // Default values factory
+  const getDefaultValues = () => {
+    if (mode === 'edit' && existingData) {
+      return {
+        [`${resourceType}Name`]: existingData[`${resourceType}Name`],
+        ...(resourceType === 'machine' && { regionName: existingData.regionName, bridgeName: existingData.bridgeName }),
+        ...(resourceType === 'bridge' && { regionName: existingData.regionName }),
+        [`${resourceType}Vault`]: existingData.vaultContent || '{}',
+      }
+    }
+
+    const baseDefaults = {
+      teamName: uiMode === 'simple' ? 'Private Team' : '',
+      [`${resourceType}Vault`]: '{}',
+      [`${resourceType}Name`]: '',
+    }
+
+    const resourceDefaults = {
+      machine: {
+        regionName: uiMode === 'simple' ? 'Default Region' : '',
+        bridgeName: uiMode === 'simple' ? 'Global Bridges' : '',
+        machineVault: '{}',
+      },
+      team: { teamName: '', teamVault: '{}' },
+      region: { regionName: '', regionVault: '{}' },
+      bridge: { regionName: '', bridgeName: '', bridgeVault: '{}' },
+    }
+
+    return { ...baseDefaults, ...resourceDefaults[resourceType as keyof typeof resourceDefaults] }
+  }
+
   const form = useForm({
     resolver: zodResolver(getSchema()) as any,
-    defaultValues: (() => {
-      if (mode === 'edit' && existingData) {
-        return {
-          [`${resourceType}Name`]: existingData[`${resourceType}Name`],
-          ...(resourceType === 'machine' && {
-            regionName: existingData.regionName,
-            bridgeName: existingData.bridgeName,
-          }),
-          ...(resourceType === 'bridge' && {
-            regionName: existingData.regionName,
-          }),
-          [`${resourceType}Vault`]: existingData.vaultContent || '{}',
-        }
-      }
-
-      // Create mode defaults
-      const baseDefaults = {
-        teamName: uiMode === 'simple' ? 'Private Team' : '',
-        [`${resourceType}Vault`]: '{}',
-      }
-
-      switch (resourceType) {
-        case 'machine':
-          return {
-            ...baseDefaults,
-            machineName: '',
-            regionName: uiMode === 'simple' ? 'Default Region' : '',
-            bridgeName: uiMode === 'simple' ? 'Global Bridges' : '',
-            machineVault: '{}',
-          }
-        case 'repository':
-          return {
-            ...baseDefaults,
-            repositoryName: '',
-            repositoryVault: '{}',
-          }
-        case 'storage':
-          return {
-            ...baseDefaults,
-            storageName: '',
-            storageVault: '{}',
-          }
-        case 'schedule':
-          return {
-            ...baseDefaults,
-            scheduleName: '',
-            scheduleVault: '{}',
-          }
-        case 'team':
-          return {
-            teamName: '',
-            teamVault: '{}',
-          }
-        case 'region':
-          return {
-            regionName: '',
-            regionVault: '{}',
-          }
-        case 'bridge':
-          return {
-            regionName: '',
-            bridgeName: '',
-            bridgeVault: '{}',
-          }
-        default:
-          return baseDefaults
-      }
-    })(),
+    defaultValues: getDefaultValues(),
   })
 
   // Watch form values for dependent fields (machines only)
@@ -328,211 +271,123 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     (teamFilter && !Array.isArray(teamFilter)) || 
     (teamFilter && Array.isArray(teamFilter) && teamFilter.length === 1)
 
+  // Field factories
+  const createNameField = () => ({
+    name: `${resourceType}Name`,
+    label: t(`${getResourceTranslationKey()}.${resourceType}Name`),
+    placeholder: t(`${getResourceTranslationKey()}.placeholders.enter${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)}Name`),
+    required: true,
+  })
+
+  const createTeamField = () => ({
+    name: 'teamName',
+    label: t('general.team'),
+    placeholder: t('teams.placeholders.selectTeam'),
+    required: true,
+    type: 'select' as const,
+    options: mapToOptions(dropdownData?.teams),
+  })
+
+  const createRegionField = () => ({
+    name: 'regionName',
+    label: t('general.region'),
+    placeholder: t('regions.placeholders.selectRegion'),
+    required: true,
+    type: 'select' as const,
+    options: mapToOptions(dropdownData?.regions),
+  })
+
+  const createBridgeField = () => ({
+    name: 'bridgeName',
+    label: t('bridges.bridge'),
+    placeholder: selectedRegion ? t('bridges.placeholders.selectBridge') : t('bridges.placeholders.selectRegionFirst'),
+    required: true,
+    type: 'select' as const,
+    options: filteredBridges,
+    disabled: !selectedRegion,
+  })
+
   // Get form fields based on resource type and mode
   const getFormFields = () => {
+    const nameField = createNameField()
+    
     if (mode === 'edit') {
-      const nameField = {
-        name: `${resourceType}Name`,
-        label: t(`${getResourceTranslationKey()}.${resourceType}Name`),
-        placeholder: t(`${getResourceTranslationKey()}.placeholders.enter${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)}Name`),
-        required: true,
-      }
-
-      if (resourceType === 'machine') {
-        return [
-          nameField,
-          {
-            name: 'regionName',
-            label: t('general.region'),
-            placeholder: t('regions.placeholders.selectRegion'),
-            required: true,
-            type: 'select' as const,
-            options: mapToOptions(dropdownData?.regions),
-          },
-          {
-            name: 'bridgeName',
-            label: t('bridges.bridge'),
-            placeholder: selectedRegion ? t('bridges.placeholders.selectBridge') : t('bridges.placeholders.selectRegionFirst'),
-            required: true,
-            type: 'select' as const,
-            options: filteredBridges,
-            disabled: !selectedRegion,
-          },
-        ]
-      }
-
-      if (resourceType === 'bridge') {
-        return [
-          nameField,
-          {
-            name: 'regionName',
-            label: t('general.region'),
-            placeholder: t('regions.placeholders.selectRegion'),
-            required: true,
-            type: 'select' as const,
-            options: mapToOptions(dropdownData?.regions),
-          },
-        ]
-      }
-
+      if (resourceType === 'machine') return [nameField, createRegionField(), createBridgeField()]
+      if (resourceType === 'bridge') return [nameField, createRegionField()]
       return [nameField]
     }
 
-    // Create mode fields
-    const nameField = {
-      name: `${resourceType}Name`,
-      label: t(`${getResourceTranslationKey()}.${resourceType}Name`),
-      placeholder: t(`${getResourceTranslationKey()}.placeholders.enter${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)}Name`),
-      required: true,
-    }
+    if (uiMode === 'simple') return [nameField]
 
-    if (uiMode === 'simple') {
-      return [nameField]
-    }
-
+    const fields = []
+    if (!isTeamPreselected) fields.push(createTeamField())
+    
     if (resourceType === 'machine') {
-      const baseFields = []
-      
-      if (!isTeamPreselected) {
-        baseFields.push({
-          name: 'teamName',
-          label: t('general.team'),
-          placeholder: t('teams.placeholders.selectTeam'),
-          required: true,
-          type: 'select' as const,
-          options: mapToOptions(dropdownData?.teams),
-        })
-      }
-
-      baseFields.push(
-        {
-          name: 'regionName',
-          label: t('general.region'),
-          placeholder: t('regions.placeholders.selectRegion'),
-          required: true,
-          type: 'select' as const,
-          options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
-        },
-        {
-          name: 'bridgeName',
-          label: t('bridges.bridge'),
-          placeholder: selectedRegion ? t('bridges.placeholders.selectBridge') : t('bridges.placeholders.selectRegionFirst'),
-          required: true,
-          type: 'select' as const,
-          options: filteredBridges,
-          disabled: !selectedRegion,
-        },
-        nameField
-      )
-
-      return baseFields
-    }
-
-    // Bridge fields
-    if (resourceType === 'bridge') {
-      return [
-        {
-          name: 'regionName',
-          label: t('general.region'),
-          placeholder: t('regions.placeholders.selectRegion'),
-          required: true,
-          type: 'select' as const,
-          options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
-        },
-        nameField
-      ]
-    }
-
-    // Team and Region fields (no dependencies)
-    if (resourceType === 'team' || resourceType === 'region') {
+      fields.push(createRegionField(), createBridgeField(), nameField)
+    } else if (resourceType === 'bridge') {
+      fields.push(createRegionField(), nameField)
+    } else if (!['team', 'region'].includes(resourceType)) {
+      fields.push(nameField)
+    } else {
       return [nameField]
     }
-
-    // Repository, Storage, Schedule fields
-    if (isTeamPreselected) {
-      return [nameField]
-    }
-
-    return [
-      {
-        name: 'teamName',
-        label: t('general.team'),
-        placeholder: t('teams.placeholders.selectTeam'),
-        required: true,
-        type: 'select' as const,
-        options: mapToOptions(dropdownData?.teams),
-      },
-      nameField
-    ]
+    
+    return fields.length ? fields : [nameField]
   }
 
-  // Entity type mapping for vault editor
-  const ENTITY_TYPE_MAP: Record<string, string> = {
-    'machine': 'MACHINE',
-    'repository': 'REPOSITORY',
-    'storage': 'STORAGE',
-    'schedule': 'SCHEDULE',
-    'team': 'TEAM',
-    'region': 'REGION',
-    'bridge': 'BRIDGE'
-  }
-
-  // Get entity type for vault editor
-  const getEntityType = () => {
-    return ENTITY_TYPE_MAP[resourceType] || 'UNKNOWN'
-  }
-
-  // Get vault field name
-  const getVaultFieldName = () => {
-    return `${resourceType}Vault`
-  }
-
-  // Create translation mappings for resource types
-  const CREATE_TRANSLATION_KEYS: Record<string, string> = {
-    'machine': 'machines:createMachine',
-    'repository': 'resources:repositories.createRepository',
-    'storage': 'resources:storage.createStorage',
-    'schedule': 'resources:schedules.createSchedule',
-    'team': 'system:teams.createTeam',
-    'region': 'system:regions.createRegion',
-    'bridge': 'system:bridges.createBridge'
+  // Helper functions
+  const getEntityType = () => resourceType.toUpperCase()
+  const getVaultFieldName = () => `${resourceType}Vault`
+  
+  const createFunctionSubtitle = () => (
+    <Space size="small">
+      <Text type="secondary">{t('machines:team')}:</Text>
+      <Text strong>{existingData.teamName}</Text>
+      {['machine', 'repository', 'storage'].includes(resourceType) && (
+        <>
+          <Text type="secondary" style={{ marginLeft: 16 }}>
+            {t(resourceType === 'machine' ? 'machines:machine' : 
+               resourceType === 'storage' ? 'resources:storage.storage' : 
+               'repositories.repository')}:
+          </Text>
+          <Text strong>{existingData[`${resourceType}Name`]}</Text>
+        </>
+      )}
+    </Space>
+  )
+  
+  const getFunctionTitle = () => {
+    if (resourceType === 'machine') return t('machines:systemFunctions')
+    if (resourceType === 'storage') return t('resources:storage.storageFunctions')
+    return t(`${getResourceTranslationKey()}.${resourceType}Functions`)
   }
 
   // Get modal title
   const getModalTitle = () => {
     if (mode === 'create') {
-      // Use specific create translation for each resource type
-      const translationKey = CREATE_TRANSLATION_KEYS[resourceType]
-      let createText = translationKey ? t(translationKey) : ''
+      const createKey = RESOURCE_CONFIG[resourceType as keyof typeof RESOURCE_CONFIG]?.createKey
+      const createText = createKey ? t(createKey) : ''
       
       if (isTeamPreselected || uiMode === 'simple') {
-        const team = uiMode === 'simple' ? 'Private Team' : 
-          (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter)
+        const team = uiMode === 'simple' ? 'Private Team' : (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter)
         return `${createText} in ${team}`
       }
-      
       return createText
-    } else {
-      // Edit mode
-      const editText = t('resources:general.edit')
-      const resourceName = t(`resources:${getResourceTranslationKey()}.${resourceType}Name`)
-      return `${editText} ${resourceName}`
     }
+    return `${t('resources:general.edit')} ${t(`resources:${getResourceTranslationKey()}.${resourceType}Name`)}`
   }
 
   // Handle form submission
   const handleSubmit = async (data: any) => {
-    // Ensure proper defaults for simple mode
     if (uiMode === 'simple' && mode === 'create') {
-      if (resourceType === 'machine') {
-        data.teamName = 'Private Team'
-        data.regionName = 'Default Region'
-        data.bridgeName = 'Global Bridges'
-      } else {
-        data.teamName = 'Private Team'
-      }
+      Object.assign(data, {
+        teamName: 'Private Team',
+        ...(resourceType === 'machine' && {
+          regionName: 'Default Region',
+          bridgeName: 'Global Bridges'
+        })
+      })
     }
-    
     await onSubmit(data)
   }
 
@@ -586,35 +441,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             setShowFunctionModal(false)
             onCancel()
           }}
-          title={
-            resourceType === 'machine' ? t('machines:systemFunctions') : 
-            resourceType === 'storage' ? t('resources:storage.storageFunctions') :
-            t(`${getResourceTranslationKey()}.${resourceType}Functions`)
-          }
-          subtitle={
-            <Space size="small">
-              <Text type="secondary">{t('machines:team')}:</Text>
-              <Text strong>{existingData.teamName}</Text>
-              {resourceType === 'machine' && (
-                <>
-                  <Text type="secondary" style={{ marginLeft: 16 }}>{t('machines:machine')}:</Text>
-                  <Text strong>{existingData.machineName}</Text>
-                </>
-              )}
-              {resourceType === 'repository' && (
-                <>
-                  <Text type="secondary" style={{ marginLeft: 16 }}>{t('repositories.repository')}:</Text>
-                  <Text strong>{existingData.repositoryName}</Text>
-                </>
-              )}
-              {resourceType === 'storage' && (
-                <>
-                  <Text type="secondary" style={{ marginLeft: 16 }}>{t('resources:storage.storage')}:</Text>
-                  <Text strong>{existingData.storageName}</Text>
-                </>
-              )}
-            </Space>
-          }
+          title={getFunctionTitle()}
+          subtitle={createFunctionSubtitle()}
           allowedCategories={functionCategories}
           loading={isSubmitting}
           showMachineSelection={resourceType === 'repository' || resourceType === 'storage'}
@@ -758,25 +586,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             await onFunctionSubmit(functionData)
             setShowFunctionModal(false)
           }}
-          title={resourceType === 'machine' ? t('machines:systemFunctions') : t(`${getResourceTranslationKey()}.${resourceType}Functions`)}
-          subtitle={
-            <Space size="small">
-              <Text type="secondary">{t('machines:team')}:</Text>
-              <Text strong>{existingData.teamName}</Text>
-              {resourceType === 'machine' && (
-                <>
-                  <Text type="secondary" style={{ marginLeft: 16 }}>{t('machines:machine')}:</Text>
-                  <Text strong>{existingData.machineName}</Text>
-                </>
-              )}
-              {resourceType === 'repository' && (
-                <>
-                  <Text type="secondary" style={{ marginLeft: 16 }}>{t('repositories.repository')}:</Text>
-                  <Text strong>{existingData.repositoryName}</Text>
-                </>
-              )}
-            </Space>
-          }
+          title={getFunctionTitle()}
+          subtitle={createFunctionSubtitle()}
           allowedCategories={functionCategories}
           loading={isSubmitting}
           showMachineSelection={resourceType === 'repository'}

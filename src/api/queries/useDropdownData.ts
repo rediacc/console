@@ -39,83 +39,61 @@ export interface DropdownData {
   userRole?: string
 }
 
+const DROPDOWN_FIELDS = [
+  'teams', 'allTeams', 'regions', 'bridgesByRegion', 
+  'machinesByTeam', 'users', 'permissionGroups', 'permissions', 'subscriptionPlans'
+] as const
+
+const EMPTY_DROPDOWN_DATA: DropdownData = DROPDOWN_FIELDS.reduce((acc, field) => ({ ...acc, [field]: [] }), {} as DropdownData)
+
+const parseJsonField = (data: any, field: string): any => {
+  if (!data[field] || typeof data[field] !== 'string') return data[field]
+  try {
+    return JSON.parse(data[field])
+  } catch (e) {
+    console.error(`Failed to parse ${field}:`, e)
+    return data[field]
+  }
+}
+
+const parseDropdownData = (rawData: any): DropdownData => {
+  const dropdownData = typeof rawData.dropdownValues === 'string' 
+    ? JSON.parse(rawData.dropdownValues) 
+    : rawData.dropdownValues
+
+  // Parse all nested JSON strings
+  DROPDOWN_FIELDS.forEach(field => {
+    dropdownData[field] = parseJsonField(dropdownData, field)
+  })
+  
+  // Special handling for bridgesByRegion
+  if (Array.isArray(dropdownData.bridgesByRegion)) {
+    dropdownData.bridgesByRegion = dropdownData.bridgesByRegion.map((region: any) => ({
+      ...region,
+      bridges: parseJsonField(region, 'bridges')
+    }))
+  }
+  
+  return dropdownData as DropdownData
+}
+
 export const useDropdownData = (context?: string) => {
   return useQuery({
     queryKey: ['dropdown-data', context],
     queryFn: async () => {
-      const response = await apiClient.get<any>('/GetLookupData', 
-        context ? { context } : {}
-      )
+      const response = await apiClient.get<any>('/GetLookupData', context ? { context } : {})
+      const rawData = response.tables[1]?.data[0] ?? response.tables[0]?.data[0]
       
-      // The stored procedure returns data wrapped in a 'dropdownValues' field as JSON string
-      const rawData = response.tables[1]?.data[0] || response.tables[0]?.data[0];
       if (rawData?.dropdownValues) {
         try {
-          // Parse the JSON string if it's a string
-          const dropdownData = typeof rawData.dropdownValues === 'string' 
-            ? JSON.parse(rawData.dropdownValues) 
-            : rawData.dropdownValues;
-          
-          // Parse all nested JSON strings
-          const fieldsToParser = [
-            'teams', 'allTeams', 'regions', 'bridgesByRegion', 
-            'machinesByTeam', 'users', 'permissionGroups', 'permissions', 'subscriptionPlans'
-          ];
-          
-          fieldsToParser.forEach(field => {
-            if (dropdownData[field] && typeof dropdownData[field] === 'string') {
-              try {
-                dropdownData[field] = JSON.parse(dropdownData[field]);
-              } catch (e) {
-                console.error(`Failed to parse ${field}:`, e);
-              }
-            }
-          });
-          
-          // Special handling for bridgesByRegion which has nested bridges as JSON strings
-          if (dropdownData.bridgesByRegion && Array.isArray(dropdownData.bridgesByRegion)) {
-            dropdownData.bridgesByRegion = dropdownData.bridgesByRegion.map((region: any) => ({
-              ...region,
-              bridges: typeof region.bridges === 'string' 
-                ? JSON.parse(region.bridges) 
-                : region.bridges
-            }));
-          }
-          
-          return dropdownData as DropdownData;
+          return parseDropdownData(rawData)
         } catch (e) {
-          console.error('Failed to parse dropdown data:', e);
-          // Return structure with empty arrays on parse error
-          return {
-            teams: [],
-            allTeams: [],
-            regions: [],
-            bridgesByRegion: [],
-            machinesByTeam: [],
-            users: [],
-            permissionGroups: [],
-            permissions: [],
-            subscriptionPlans: []
-          } as DropdownData;
+          console.error('Failed to parse dropdown data:', e)
+          return EMPTY_DROPDOWN_DATA
         }
       }
       
-      // Fallback to direct data if no dropdownValues field
-      const fallbackData = response.tables[1]?.data[0] || response.tables[0]?.data[0] || {};
-      
-      // Ensure all arrays exist with empty defaults
-      return {
-        teams: [],
-        allTeams: [],
-        regions: [],
-        bridgesByRegion: [],
-        machinesByTeam: [],
-        users: [],
-        permissionGroups: [],
-        permissions: [],
-        subscriptionPlans: [],
-        ...fallbackData
-      } as DropdownData;
+      return { ...EMPTY_DROPDOWN_DATA, ...rawData } as DropdownData
     },
     staleTime: 30 * 60 * 1000, // 30 minutes
     gcTime: 60 * 60 * 1000, // 1 hour

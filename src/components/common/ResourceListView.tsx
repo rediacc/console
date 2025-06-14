@@ -50,18 +50,18 @@ function ResourceListView<T = any>({
     minRows: 5,
     maxRows: 50
   })
-  const cardBodyStyle: React.CSSProperties | undefined = containerStyle?.height ? {
+  const cardBodyStyle = containerStyle?.height ? {
     padding: '16px',
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden'
-  } : undefined
+  } : {}
 
   return (
     <Card 
       style={containerStyle} 
-      styles={{ body: cardBodyStyle || {} }}
+      styles={{ body: cardBodyStyle }}
     >
       {(title || onSearch || filters || actions) && (
         <div style={{ marginBottom: 16, flexShrink: 0 }}>
@@ -104,18 +104,14 @@ function ResourceListView<T = any>({
             columns={columns}
             dataSource={data}
             rowKey={rowKey}
-            pagination={
-              pagination !== false
-                ? {
-                    showSizeChanger: !enableDynamicPageSize,
-                    showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
-                    pageSizeOptions: enableDynamicPageSize ? undefined : ['10', '20', '50', '100'],
-                    pageSize: enableDynamicPageSize ? dynamicPageSize : undefined,
-                    defaultPageSize: enableDynamicPageSize ? undefined : 20,
-                    ...pagination,
-                  }
-                : false
-            }
+            pagination={pagination !== false ? {
+              showSizeChanger: !enableDynamicPageSize,
+              showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
+              pageSizeOptions: enableDynamicPageSize ? undefined : ['10', '20', '50', '100'],
+              pageSize: enableDynamicPageSize ? dynamicPageSize : undefined,
+              defaultPageSize: enableDynamicPageSize ? undefined : 20,
+              ...pagination,
+            } : false}
             onRow={onRow}
             rowSelection={rowSelection}
             scroll={{ x: 'max-content', y: tableStyle?.height || 400 }}

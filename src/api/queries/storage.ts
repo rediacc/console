@@ -1,7 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import apiClient from '@/api/client'
-import { showMessage } from '@/utils/messages'
-import { minifyJSON } from '@/utils/json'
+import { createResourceMutation, createVaultUpdateMutation, createMutation } from '@/api/utils/mutationFactory'
 
 export interface Storage {
   storageName: string
@@ -46,88 +45,56 @@ export const useStorage = (teamFilter?: string | string[]) => {
 }
 
 // Create storage
-export const useCreateStorage = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async (data: { teamName: string; storageName: string; storageVault?: string }) => {
-      const response = await apiClient.post('/CreateStorage', {
-        teamName: data.teamName,
-        storageName: data.storageName,
-        storageVault: data.storageVault || '{}',
-      })
-      return response
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['storage'] })
-      queryClient.invalidateQueries({ queryKey: ['teams'] })
-      showMessage('success', `Storage "${variables.storageName}" created successfully`)
-    },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to create storage')
-    },
+export const useCreateStorage = createMutation<{
+  teamName: string
+  storageName: string
+  storageVault?: string
+}>({
+  endpoint: '/CreateStorage',
+  method: 'post',
+  invalidateKeys: ['storage', 'teams'],
+  successMessage: (vars) => `Storage "${vars.storageName}" created successfully`,
+  errorMessage: 'Failed to create storage',
+  transformData: (data) => ({
+    ...data,
+    storageVault: data.storageVault || '{}'
   })
-}
+})
 
 // Update storage name
-export const useUpdateStorageName = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async (data: { teamName: string; currentStorageName: string; newStorageName: string }) => {
-      const response = await apiClient.put('/UpdateStorageName', data)
-      return response
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['storage'] })
-      showMessage('success', `Storage renamed to "${variables.newStorageName}"`)
-    },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to update storage name')
-    },
-  })
-}
+export const useUpdateStorageName = createMutation<{
+  teamName: string
+  currentStorageName: string
+  newStorageName: string
+}>({
+  endpoint: '/UpdateStorageName',
+  method: 'put',
+  invalidateKeys: ['storage'],
+  successMessage: (vars) => `Storage renamed to "${vars.newStorageName}"`,
+  errorMessage: 'Failed to update storage name'
+})
 
 // Update storage vault
-export const useUpdateStorageVault = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async (data: { teamName: string; storageName: string; storageVault: string; vaultVersion: number }) => {
-      // Minify the vault JSON before sending
-      const minifiedData = {
-        ...data,
-        storageVault: minifyJSON(data.storageVault)
-      }
-      const response = await apiClient.put('/UpdateStorageVault', minifiedData)
-      return response
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['storage'] })
-      showMessage('success', `Storage vault updated for "${variables.storageName}"`)
-    },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to update storage vault')
-    },
-  })
-}
+export const useUpdateStorageVault = createVaultUpdateMutation<{
+  teamName: string
+  storageName: string
+  storageVault: string
+  vaultVersion: number
+}>(
+  'Storage',
+  '/UpdateStorageVault',
+  'storageName',
+  'storageVault'
+)
 
 // Delete storage
-export const useDeleteStorage = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async (data: { teamName: string; storageName: string }) => {
-      const response = await apiClient.delete('/DeleteStorage', data)
-      return response
-    },
-    onSuccess: (_, data) => {
-      queryClient.invalidateQueries({ queryKey: ['storage'] })
-      queryClient.invalidateQueries({ queryKey: ['teams'] })
-      showMessage('success', `Storage "${data.storageName}" deleted successfully`)
-    },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to delete storage')
-    },
-  })
-}
+export const useDeleteStorage = createResourceMutation<{
+  teamName: string
+  storageName: string
+}>(
+  'Storage',
+  'delete',
+  '/DeleteStorage',
+  'storageName',
+  ['teams']
+)

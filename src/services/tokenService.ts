@@ -48,9 +48,7 @@ class TokenService {
   /**
    * Update token (for rotation)
    */
-  async updateToken(newToken: string): Promise<void> {
-    await this.setToken(newToken)
-  }
+  updateToken = (newToken: string): Promise<void> => this.setToken(newToken)
 
   /**
    * Clear token from memory
@@ -69,23 +67,13 @@ class TokenService {
   /**
    * Secure wipe of all auth data
    */
-  secureWipe(): void {
-    this.clearToken()
-  }
+  secureWipe = (): void => this.clearToken()
 }
 
 // Export singleton instance
 export const tokenService = TokenService.getInstance()
 
 // Helper functions for backward compatibility
-export async function getAuthToken(): Promise<string | null> {
-  return await tokenService.getToken()
-}
-
-export async function setAuthToken(token: string): Promise<void> {
-  await tokenService.setToken(token)
-}
-
-export function clearAuthToken(): void {
-  tokenService.clearToken()
-}
+export const getAuthToken = (): Promise<string | null> => tokenService.getToken()
+export const setAuthToken = (token: string): Promise<void> => tokenService.setToken(token)
+export const clearAuthToken = (): void => tokenService.clearToken()

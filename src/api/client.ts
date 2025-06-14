@@ -25,11 +25,8 @@ class ApiClient {
   private requestQueue: Promise<any> = Promise.resolve()
   private isUpdatingToken = false
 
-  // HTTP status codes
   private readonly HTTP_UNAUTHORIZED = 401
   private readonly HTTP_SERVER_ERROR = 500
-  
-  // Timing constants
   private readonly TOKEN_UPDATE_DELAY_MS = 5
   private readonly TOKEN_UPDATE_POLL_INTERVAL_MS = 10
   private readonly REDIRECT_DELAY_MS = 1500
@@ -47,116 +44,79 @@ class ApiClient {
   }
 
   private setupInterceptors() {
-    // Request interceptor to add auth token and encrypt vault fields
     this.client.interceptors.request.use(
       async (config: InternalAxiosRequestConfig) => {
-        // Get token from secure storage instead of Redux state
         const token = await tokenService.getToken()
+        if (token) config.headers['Rediacc-RequestToken'] = token
 
-        if (token) {
-          config.headers['Rediacc-RequestToken'] = token
-        }
-
-        // Encrypt vault fields in request data if master password is set
         if (config.data && hasVaultFields(config.data)) {
           try {
             config.data = await encryptRequestData(config.data)
           } catch (error) {
-            // If encryption fails, the middleware will show error toast
             return Promise.reject(error)
           }
         }
-
         return config
-      },
-      (error) => {
-        return Promise.reject(error)
       }
     )
 
-    // Response interceptor for token rotation, decryption, and error handling
     this.client.interceptors.response.use(
       async (response) => {
-        let responseData = response.data as ApiResponse
-
-        // Decrypt vault fields in response data if master password is set
-        responseData = await this.handleResponseDecryption(responseData)
+        const responseData = await this.handleResponseDecryption(response.data as ApiResponse)
         response.data = responseData
 
-        // Check for API-level failure
-        if (responseData.failure !== 0) {
-          return this.handleApiFailure(responseData)
-        }
-
-        // Handle token rotation with lock to prevent race conditions
+        if (responseData.failure !== 0) return this.handleApiFailure(responseData)
+        
         await this.handleTokenRotation(responseData)
-
         return response
       },
       (error) => this.handleResponseError(error)
     )
   }
 
-  // Auth endpoints
-  async login(email: string, passwordHash: string, sessionName: string = 'Web Session') {
+  async login(email: string, passwordHash: string, sessionName = 'Web Session') {
     const response = await axios.post<ApiResponse>(
       `${API_BASE_URL}${API_PREFIX}/CreateAuthenticationRequest`,
       { name: sessionName },
-      {
-        headers: {
-          'Rediacc-UserEmail': email,
-          'Rediacc-UserHash': passwordHash,
-        },
-      }
+      { headers: { 'Rediacc-UserEmail': email, 'Rediacc-UserHash': passwordHash } }
     )
     return response.data
   }
 
   async logout() {
-    const response = await this.client.post<ApiResponse>('/DeleteUserRequest', {})
-    return response.data
+    return (await this.client.post<ApiResponse>('/DeleteUserRequest', {})).data
   }
 
   async activateUser(email: string, activationCode: string) {
-    const response = await axios.post<ApiResponse>(
+    return (await axios.post<ApiResponse>(
       `${API_BASE_URL}${API_PREFIX}/ActivateUserAccount`,
       { userEmail: email, activationCode }
-    )
-    return response.data
+    )).data
   }
 
-  // Generic API methods with request queuing for token rotation
-  async get<T = any>(endpoint: string, params?: any): Promise<ApiResponse<T>> {
-    return this.queueRequest(() => this.client.post<ApiResponse<T>>(endpoint, params || {}))
+  private async makeRequest<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+    return this.queueRequest(() => this.client.post<ApiResponse<T>>(endpoint, data || {}))
   }
 
-  async post<T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> {
-    return this.queueRequest(() => this.client.post<ApiResponse<T>>(endpoint, data))
-  }
+  get = <T = any>(endpoint: string, params?: any): Promise<ApiResponse<T>> => 
+    this.makeRequest<T>(endpoint, params)
 
-  async put<T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> {
-    return this.queueRequest(() => this.client.post<ApiResponse<T>>(endpoint, data))
-  }
+  post = <T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> => 
+    this.makeRequest<T>(endpoint, data)
 
-  async delete<T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> {
-    return this.queueRequest(() => this.client.post<ApiResponse<T>>(endpoint, data))
-  }
+  put = <T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> => 
+    this.makeRequest<T>(endpoint, data)
+
+  delete = <T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> => 
+    this.makeRequest<T>(endpoint, data)
 
   private async queueRequest<T>(request: () => Promise<AxiosResponse<ApiResponse<T>>>): Promise<ApiResponse<T>> {
-    // Queue requests to prevent race conditions with token rotation
     const executeRequest = async () => {
-      // Wait for any token update to complete
       await this.waitForTokenUpdate()
-      
-      const response = await request()
-      return response.data
+      return (await request()).data
     }
 
-    // Add to queue and wait for previous requests to complete
-    this.requestQueue = this.requestQueue
-      .then(executeRequest)
-      .catch(executeRequest) // Continue queue even if previous request failed
-
+    this.requestQueue = this.requestQueue.then(executeRequest).catch(executeRequest)
     return this.requestQueue
   }
 
@@ -167,91 +127,79 @@ class ApiClient {
   }
 
   private async handleResponseDecryption(responseData: ApiResponse): Promise<ApiResponse> {
-    if (responseData && hasVaultFields(responseData)) {
-      try {
-        return await decryptResponseData(responseData)
-      } catch (error) {
-        // Decryption errors are handled in middleware (shows toast)
-        // Continue with encrypted data
-        return responseData
-      }
+    if (!responseData || !hasVaultFields(responseData)) return responseData
+    try {
+      return await decryptResponseData(responseData)
+    } catch {
+      return responseData
     }
-    return responseData
   }
 
-  private handleApiFailure(responseData: ApiResponse): Promise<never> {
-    if (responseData.failure === this.HTTP_UNAUTHORIZED) {
-      this.handleUnauthorizedError()
-      return Promise.reject(new Error('Unauthorized'))
-    }
-    
-    const errorMessage = responseData.errors?.join('; ') || responseData.message || 'Request failed'
-    return Promise.reject(new Error(errorMessage))
+  private extractErrorMessage(error: any): string {
+    const { response, errors, message } = error
+    return [
+      response?.data?.errors?.join('; '),
+      response?.data?.message,
+      response?.data?.tables?.[0]?.data?.[0]?.message,
+      errors?.join('; '),
+      message,
+    ].find(Boolean) || 'Request failed'
   }
-
+  
+  private isUnauthorizedError(error: any): boolean {
+    return error.failure === this.HTTP_UNAUTHORIZED || error.response?.status === this.HTTP_UNAUTHORIZED
+  }
+  
   private handleUnauthorizedError(): void {
     showMessage('error', 'Session expired. Please login again.')
     store.dispatch(logout())
     this.redirectToLogin()
   }
+  
+  private handleApiFailure(responseData: ApiResponse): Promise<never> {
+    if (this.isUnauthorizedError(responseData)) {
+      this.handleUnauthorizedError()
+      return Promise.reject(new Error('Unauthorized'))
+    }
+    return Promise.reject(new Error(this.extractErrorMessage(responseData)))
+  }
 
   private async handleTokenRotation(responseData: ApiResponse): Promise<void> {
     const newToken = responseData.tables?.[0]?.data?.[0]?.nextRequestCredential
+    if (!newToken) return
     
-    if (newToken) {
-      this.isUpdatingToken = true
-      try {
-        await tokenService.updateToken(newToken)
-        // Small delay to ensure token is updated
-        await new Promise(resolve => setTimeout(resolve, this.TOKEN_UPDATE_DELAY_MS))
-      } finally {
-        this.isUpdatingToken = false
-      }
+    this.isUpdatingToken = true
+    try {
+      await tokenService.updateToken(newToken)
+      await new Promise(resolve => setTimeout(resolve, this.TOKEN_UPDATE_DELAY_MS))
+    } finally {
+      this.isUpdatingToken = false
     }
   }
 
   private handleResponseError(error: any): Promise<never> {
-    // First, check if the response has our API error structure with "errors" array
-    if (error.response?.data) {
-      const apiResponse = error.response.data as ApiResponse
-      if (apiResponse.errors && apiResponse.errors.length > 0) {
-        const errorMessage = apiResponse.errors.join('; ')
-        const customError = new Error(errorMessage)
-        ;(customError as any).response = error.response
-        return Promise.reject(customError)
-      }
-    }
-
-    // Handle specific status codes
-    if (error.response?.status === this.HTTP_UNAUTHORIZED) {
-      this.handleUnauthorizedResponseError(error.response)
-    } else if (error.response?.status >= this.HTTP_SERVER_ERROR) {
-      showMessage('error', 'Server error. Please try again later.')
-    } else if (error.request && !error.response) {
-      showMessage('error', 'Network error. Please check your connection.')
+    const errorHandlers = {
+      [this.isUnauthorizedError(error) ? 'unauthorized' : '']: () => this.handleUnauthorizedError(),
+      [error.response?.status >= this.HTTP_SERVER_ERROR ? 'server' : '']: () => 
+        showMessage('error', 'Server error. Please try again later.'),
+      [error.request && !error.response ? 'network' : '']: () => 
+        showMessage('error', 'Network error. Please check your connection.')
     }
     
-    return Promise.reject(error)
-  }
-
-  private handleUnauthorizedResponseError(response: any): void {
-    const errorMessage = response?.data?.tables?.[0]?.data?.[0]?.message
-    if (errorMessage?.includes('Invalid request credential')) {
-      showMessage('error', 'Session expired. Please login again.')
-    }
-    store.dispatch(logout())
-    this.redirectToLogin()
+    Object.entries(errorHandlers).forEach(([key, handler]) => key && handler())
+    
+    const customError = new Error(this.extractErrorMessage(error))
+    ;(customError as any).response = error.response
+    return Promise.reject(customError)
   }
 
   private redirectToLogin(): void {
-    const currentPath = window.location.pathname
+    const { pathname } = window.location
     const basePath = import.meta.env.BASE_URL || '/'
     const loginPath = `${basePath}login`.replace('//', '/')
     
-    if (!currentPath.includes('/login')) {
-      setTimeout(() => {
-        window.location.href = loginPath
-      }, this.REDIRECT_DELAY_MS)
+    if (!pathname.includes('/login')) {
+      setTimeout(() => window.location.href = loginPath, this.REDIRECT_DELAY_MS)
     }
   }
 }

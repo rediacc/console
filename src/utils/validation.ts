@@ -1,33 +1,15 @@
 import { z } from 'zod'
 
+// Resource name schema factory
+const createResourceNameSchema = (resourceType: string) => 
+  z.string()
+    .min(1, `${resourceType} name is required`)
+    .max(100, `${resourceType} name must be less than 100 characters`)
+
 // Resource name schemas
-export const teamNameSchema = z.string()
-  .min(1, 'Team name is required')
-  .max(100, 'Team name must be less than 100 characters')
-
-export const regionNameSchema = z.string()
-  .min(1, 'Region name is required')
-  .max(100, 'Region name must be less than 100 characters')
-
-export const bridgeNameSchema = z.string()
-  .min(1, 'Bridge name is required')
-  .max(100, 'Bridge name must be less than 100 characters')
-
-export const machineNameSchema = z.string()
-  .min(1, 'Machine name is required')
-  .max(100, 'Machine name must be less than 100 characters')
-
-export const repositoryNameSchema = z.string()
-  .min(1, 'Repository name is required')
-  .max(100, 'Repository name must be less than 100 characters')
-
-export const storageNameSchema = z.string()
-  .min(1, 'Storage name is required')
-  .max(100, 'Storage name must be less than 100 characters')
-
-export const scheduleNameSchema = z.string()
-  .min(1, 'Schedule name is required')
-  .max(100, 'Schedule name must be less than 100 characters')
+const resourceTypes = ['Team', 'Region', 'Bridge', 'Machine', 'Repository', 'Storage', 'Schedule'] as const
+export const [teamNameSchema, regionNameSchema, bridgeNameSchema, machineNameSchema, repositoryNameSchema, storageNameSchema, scheduleNameSchema] = 
+  resourceTypes.map(type => createResourceNameSchema(type))
 
 // User schemas
 export const emailSchema = z.string()
@@ -50,48 +32,28 @@ export const vaultSchema = z.string()
     }
   }, 'Vault must be valid JSON')
 
-// Form schemas
-export const createTeamSchema = z.object({
-  teamName: teamNameSchema,
-  teamVault: vaultSchema.optional().default('{}'),
-})
+// Form schemas factory
+const withVault = (fields: Record<string, z.ZodSchema>, vaultFieldName: string) =>
+  z.object({ ...fields, [vaultFieldName]: vaultSchema.optional().default('{}') })
 
-export const createRegionSchema = z.object({
-  regionName: regionNameSchema,
-  regionVault: vaultSchema.optional().default('{}'),
-})
+// Create schemas using configuration
+const resourceSchemas = {
+  team: { teamName: teamNameSchema },
+  region: { regionName: regionNameSchema },
+  bridge: { regionName: regionNameSchema, bridgeName: bridgeNameSchema },
+  machine: { teamName: teamNameSchema, regionName: regionNameSchema, bridgeName: bridgeNameSchema, machineName: machineNameSchema },
+  repository: { teamName: teamNameSchema, repositoryName: repositoryNameSchema },
+  storage: { teamName: teamNameSchema, storageName: storageNameSchema },
+  schedule: { teamName: teamNameSchema, scheduleName: scheduleNameSchema }
+} as const
 
-export const createBridgeSchema = z.object({
-  regionName: regionNameSchema,
-  bridgeName: bridgeNameSchema,
-  bridgeVault: vaultSchema.optional().default('{}'),
-})
-
-export const createMachineSchema = z.object({
-  teamName: teamNameSchema,
-  regionName: regionNameSchema,
-  bridgeName: bridgeNameSchema,
-  machineName: machineNameSchema,
-  machineVault: vaultSchema.optional().default('{}'),
-})
-
-export const createRepositorySchema = z.object({
-  teamName: teamNameSchema,
-  repositoryName: repositoryNameSchema,
-  repositoryVault: vaultSchema.optional().default('{}'),
-})
-
-export const createStorageSchema = z.object({
-  teamName: teamNameSchema,
-  storageName: storageNameSchema,
-  storageVault: vaultSchema.optional().default('{}'),
-})
-
-export const createScheduleSchema = z.object({
-  teamName: teamNameSchema,
-  scheduleName: scheduleNameSchema,
-  scheduleVault: vaultSchema.optional().default('{}'),
-})
+export const createTeamSchema = withVault(resourceSchemas.team, 'teamVault')
+export const createRegionSchema = withVault(resourceSchemas.region, 'regionVault')
+export const createBridgeSchema = withVault(resourceSchemas.bridge, 'bridgeVault')
+export const createMachineSchema = withVault(resourceSchemas.machine, 'machineVault')
+export const createRepositorySchema = withVault(resourceSchemas.repository, 'repositoryVault')
+export const createStorageSchema = withVault(resourceSchemas.storage, 'storageVault')
+export const createScheduleSchema = withVault(resourceSchemas.schedule, 'scheduleVault')
 
 export const createUserSchema = z.object({
   newUserEmail: emailSchema,
@@ -112,36 +74,26 @@ export const queueItemSchema = z.object({
   priority: z.number().min(1).max(5).optional().default(3),
 })
 
-// Edit schemas
-export const editTeamSchema = z.object({
-  teamName: teamNameSchema,
-})
+// Edit schemas - factory function for single field schemas
+const createEditSchema = <T extends z.ZodSchema>(schema: T, fieldName: string) => 
+  z.object({ [fieldName]: schema })
 
-export const editRegionSchema = z.object({
-  regionName: regionNameSchema,
-})
+const editSchemaConfigs = [
+  ['editTeamSchema', teamNameSchema, 'teamName'],
+  ['editRegionSchema', regionNameSchema, 'regionName'],
+  ['editBridgeSchema', bridgeNameSchema, 'bridgeName'],
+  ['editRepositorySchema', repositoryNameSchema, 'repositoryName'],
+  ['editStorageSchema', storageNameSchema, 'storageName'],
+  ['editScheduleSchema', scheduleNameSchema, 'scheduleName']
+] as const
 
-export const editBridgeSchema = z.object({
-  bridgeName: bridgeNameSchema,
-})
-
-export const editMachineSchema = z.object({
-  machineName: machineNameSchema,
-  regionName: regionNameSchema,
-  bridgeName: bridgeNameSchema,
-})
-
-export const editRepositorySchema = z.object({
-  repositoryName: repositoryNameSchema,
-})
-
-export const editStorageSchema = z.object({
-  storageName: storageNameSchema,
-})
-
-export const editScheduleSchema = z.object({
-  scheduleName: scheduleNameSchema,
-})
+export const editTeamSchema = createEditSchema(teamNameSchema, 'teamName')
+export const editRegionSchema = createEditSchema(regionNameSchema, 'regionName')
+export const editBridgeSchema = createEditSchema(bridgeNameSchema, 'bridgeName')
+export const editMachineSchema = z.object(resourceSchemas.machine)
+export const editRepositorySchema = createEditSchema(repositoryNameSchema, 'repositoryName')
+export const editStorageSchema = createEditSchema(storageNameSchema, 'storageName')
+export const editScheduleSchema = createEditSchema(scheduleNameSchema, 'scheduleName')
 
 // Type exports
 export type CreateTeamForm = z.infer<typeof createTeamSchema>

@@ -30,21 +30,19 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = ({
   })
   const [copiedField, setCopiedField] = useState<string | null>(null)
 
+  const generators = {
+    ssh_keys: async () => {
+      const keys = await generateSSHKeyPair(keyOptions)
+      return { SSH_PRIVATE_KEY: keys.privateKey, SSH_PUBLIC_KEY: keys.publicKey }
+    },
+    repository_credential: () => ({ credential: generateRepositoryCredential() })
+  }
+
   const handleGenerate = async () => {
     setGenerating(true)
     try {
-      if (fieldType === 'ssh_keys') {
-        const keys = await generateSSHKeyPair(keyOptions)
-        setGeneratedValues({
-          SSH_PRIVATE_KEY: keys.privateKey,
-          SSH_PUBLIC_KEY: keys.publicKey
-        })
-      } else if (fieldType === 'repository_credential') {
-        const credential = generateRepositoryCredential()
-        setGeneratedValues({
-          credential: credential
-        })
-      }
+      const values = await generators[fieldType]()
+      setGeneratedValues(values)
       message.success(t('fieldGenerator.generationSuccess'))
     } catch (error) {
       console.error('Generation error:', error)
@@ -62,43 +60,49 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = ({
   }
 
   const handleCopy = (field: string, value: string) => {
-    navigator.clipboard.writeText(value).then(() => {
-      setCopiedField(field)
-      message.success(t('fieldGenerator.copied'))
-      setTimeout(() => setCopiedField(null), 2000)
-    }).catch(() => {
-      message.error(t('fieldGenerator.copyError'))
-    })
+    navigator.clipboard.writeText(value)
+      .then(() => {
+        setCopiedField(field)
+        message.success(t('fieldGenerator.copied'))
+        setTimeout(() => setCopiedField(null), 2000)
+      })
+      .catch(() => message.error(t('fieldGenerator.copyError')))
   }
+
+  const keyTypeOptions = [
+    { value: 'rsa', label: 'RSA' },
+    { value: 'ed25519', label: `Ed25519 ${t('fieldGenerator.comingSoon')}`, disabled: true }
+  ]
+  
+  const keySizeOptions = [
+    { value: 2048, label: '2048 bits' },
+    { value: 4096, label: `4096 bits (${t('fieldGenerator.moreSecure')})` }
+  ]
+
+  const renderRadioGroup = (label: string, value: any, options: any[], onChange: (val: any) => void) => (
+    <div>
+      <label style={{ fontWeight: 500 }}>{label}</label>
+      <Radio.Group value={value} onChange={(e) => onChange(e.target.value)} style={{ display: 'block', marginTop: 8 }}>
+        {options.map(opt => 
+          <Radio key={opt.value} value={opt.value} disabled={opt.disabled}>{opt.label}</Radio>
+        )}
+      </Radio.Group>
+    </div>
+  )
 
   const renderSSHKeyOptions = () => (
     <Space direction="vertical" style={{ width: '100%' }}>
-      <div>
-        <label style={{ fontWeight: 500 }}>{t('fieldGenerator.keyType')}</label>
-        <Radio.Group 
-          value={keyOptions.keyType} 
-          onChange={(e) => setKeyOptions({ ...keyOptions, keyType: e.target.value })}
-          style={{ display: 'block', marginTop: 8 }}
-        >
-          <Radio value="rsa">RSA</Radio>
-          <Radio value="ed25519" disabled>
-            Ed25519 <span style={{ color: '#999' }}>({t('fieldGenerator.comingSoon')})</span>
-          </Radio>
-        </Radio.Group>
-      </div>
-      
-      {keyOptions.keyType === 'rsa' && (
-        <div>
-          <label style={{ fontWeight: 500 }}>{t('fieldGenerator.keySize')}</label>
-          <Radio.Group 
-            value={keyOptions.keySize} 
-            onChange={(e) => setKeyOptions({ ...keyOptions, keySize: e.target.value })}
-            style={{ display: 'block', marginTop: 8 }}
-          >
-            <Radio value={2048}>2048 bits</Radio>
-            <Radio value={4096}>4096 bits ({t('fieldGenerator.moreSecure')})</Radio>
-          </Radio.Group>
-        </div>
+      {renderRadioGroup(
+        t('fieldGenerator.keyType'), 
+        keyOptions.keyType, 
+        keyTypeOptions,
+        (val) => setKeyOptions({ ...keyOptions, keyType: val })
+      )}
+      {keyOptions.keyType === 'rsa' && renderRadioGroup(
+        t('fieldGenerator.keySize'),
+        keyOptions.keySize,
+        keySizeOptions,
+        (val) => setKeyOptions({ ...keyOptions, keySize: val })
       )}
     </Space>
   )

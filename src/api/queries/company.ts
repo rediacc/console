@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
 import { showMessage } from '@/utils/messages'
+import { createMutation, createVaultUpdateMutation } from '@/api/utils/mutationFactory'
 import { useAppSelector } from '@/store/store'
 import { selectCompany } from '@/store/auth/authSelectors'
 import { minifyJSON } from '@/utils/json'
@@ -31,31 +32,19 @@ export const useCompanyVault = () => {
 }
 
 // Update company vault configuration
-export const useUpdateCompanyVault = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async (data: { companyVault: string; vaultVersion: number }) => {
-      // Minify the vault JSON before sending
-      const minifiedData = {
-        ...data,
-        companyVault: minifyJSON(data.companyVault)
-      }
-      const response = await apiClient.post('/UpdateCompanyVault', minifiedData)
-      return response.tables[0]?.data[0]
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['company-vault'] })
-      showMessage('success', 'Vault configuration updated successfully')
-    },
-    onError: (error: any) => {
-      console.error('Failed to update vault:', error)
-      showMessage('error', 'Failed to update vault configuration')
-    }
+export const useUpdateCompanyVault = createMutation<{ companyVault: string; vaultVersion: number }>({
+  endpoint: '/UpdateCompanyVault',
+  method: 'post',
+  invalidateKeys: ['company-vault'],
+  successMessage: () => 'Vault configuration updated successfully',
+  errorMessage: 'Failed to update vault configuration',
+  transformData: (data) => ({
+    ...data,
+    companyVault: minifyJSON(data.companyVault)
   })
-}
+})
 
-// Block or unblock user requests
+// Block or unblock user requests - Special case with dynamic success message
 export const useUpdateCompanyBlockUserRequests = () => {
   const queryClient = useQueryClient()
   

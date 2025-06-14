@@ -1,7 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import apiClient from '@/api/client'
-import { showMessage } from '@/utils/messages'
-import { minifyJSON } from '@/utils/json'
+import { createResourceMutation, createVaultUpdateMutation, createMutation } from '@/api/utils/mutationFactory'
 
 export interface Bridge {
   bridgeName: string
@@ -35,110 +34,68 @@ export const useBridges = (regionName?: string) => {
 }
 
 // Create bridge
-export const useCreateBridge = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async (data: { regionName: string; bridgeName: string; bridgeVault?: string }) => {
-      const response = await apiClient.post('/CreateBridge', {
-        regionName: data.regionName,
-        bridgeName: data.bridgeName,
-        bridgeVault: data.bridgeVault || '{}',
-      })
-      return response
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['bridges'] })
-      queryClient.invalidateQueries({ queryKey: ['regions'] })
-      queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      showMessage('success', `Bridge "${variables.bridgeName}" created successfully`)
-    },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to create bridge')
-    },
+export const useCreateBridge = createMutation<{
+  regionName: string
+  bridgeName: string
+  bridgeVault?: string
+}>({
+  endpoint: '/CreateBridge',
+  method: 'post',
+  invalidateKeys: ['bridges', 'regions', 'dropdown-data'],
+  successMessage: (vars) => `Bridge "${vars.bridgeName}" created successfully`,
+  errorMessage: 'Failed to create bridge',
+  transformData: (data) => ({
+    ...data,
+    bridgeVault: data.bridgeVault || '{}'
   })
-}
+})
 
 // Update bridge name
-export const useUpdateBridgeName = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async (data: { regionName: string; currentBridgeName: string; newBridgeName: string }) => {
-      const response = await apiClient.put('/UpdateBridgeName', data)
-      return response
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['bridges'] })
-      queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      showMessage('success', `Bridge renamed to "${variables.newBridgeName}"`)
-    },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to update bridge name')
-    },
-  })
-}
+export const useUpdateBridgeName = createMutation<{
+  regionName: string
+  currentBridgeName: string
+  newBridgeName: string
+}>({
+  endpoint: '/UpdateBridgeName',
+  method: 'put',
+  invalidateKeys: ['bridges', 'dropdown-data'],
+  successMessage: (vars) => `Bridge renamed to "${vars.newBridgeName}"`,
+  errorMessage: 'Failed to update bridge name'
+})
 
 // Update bridge vault
-export const useUpdateBridgeVault = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async (data: { regionName: string; bridgeName: string; bridgeVault: string; vaultVersion: number }) => {
-      // Minify the vault JSON before sending
-      const minifiedData = {
-        ...data,
-        bridgeVault: minifyJSON(data.bridgeVault)
-      }
-      const response = await apiClient.put('/UpdateBridgeVault', minifiedData)
-      return response
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['bridges'] })
-      showMessage('success', `Bridge vault updated for "${variables.bridgeName}"`)
-    },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to update bridge vault')
-    },
-  })
-}
+export const useUpdateBridgeVault = createVaultUpdateMutation<{
+  regionName: string
+  bridgeName: string
+  bridgeVault: string
+  vaultVersion: number
+}>(
+  'Bridge',
+  '/UpdateBridgeVault',
+  'bridgeName',
+  'bridgeVault'
+)
 
 // Delete bridge
-export const useDeleteBridge = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async (data: { regionName: string; bridgeName: string }) => {
-      const response = await apiClient.delete('/DeleteBridge', data)
-      return response
-    },
-    onSuccess: (_, data) => {
-      queryClient.invalidateQueries({ queryKey: ['bridges'] })
-      queryClient.invalidateQueries({ queryKey: ['regions'] })
-      queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      showMessage('success', `Bridge "${data.bridgeName}" deleted successfully`)
-    },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to delete bridge')
-    },
-  })
-}
+export const useDeleteBridge = createResourceMutation<{
+  regionName: string
+  bridgeName: string
+}>(
+  'Bridge',
+  'delete',
+  '/DeleteBridge',
+  'bridgeName',
+  ['regions']
+)
 
 // Reset bridge authorization
-export const useResetBridgeAuthorization = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async (data: { bridgeName: string; isCloudManaged?: boolean }) => {
-      const response = await apiClient.post('/ResetBridgeAuthorization', data)
-      return response
-    },
-    onSuccess: (_, data) => {
-      queryClient.invalidateQueries({ queryKey: ['bridges'] })
-      showMessage('success', `Bridge authorization reset for "${data.bridgeName}"`)
-    },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to reset bridge authorization')
-    },
-  })
-}
+export const useResetBridgeAuthorization = createMutation<{
+  bridgeName: string
+  isCloudManaged?: boolean
+}>({
+  endpoint: '/ResetBridgeAuthorization',
+  method: 'post',
+  invalidateKeys: ['bridges'],
+  successMessage: (vars) => `Bridge authorization reset for "${vars.bridgeName}"`,
+  errorMessage: 'Failed to reset bridge authorization'
+})

@@ -126,27 +126,38 @@ const ResourcesPage: React.FC = () => {
   const deleteMachineMutation = useDeleteMachine()
   const updateMachineVaultMutation = useUpdateMachineVault()
   
-  // Machine-specific handlers
-  const handleDeleteMachine = async (machine: Machine) => {
+  // Generic delete handler
+  const handleDelete = async (resourceType: ResourceType, resource: any) => {
+    const resourceName = resource[`${resourceType}Name`]
+    const mutations = {
+      machine: deleteMachineMutation,
+      repository: deleteRepositoryMutation,
+      storage: deleteStorageMutation,
+      schedule: deleteScheduleMutation
+    }
+    
     Modal.confirm({
-      title: t('machines:confirmDelete'),
-      content: t('machines:deleteWarning', { name: machine.machineName }),
+      title: t(`${resourceType}s:confirmDelete`),
+      content: t(`${resourceType}s:deleteWarning`, { name: resourceName }),
       okText: t('common:actions.delete'),
       okType: 'danger',
       cancelText: t('common:actions.cancel'),
       onOk: async () => {
         try {
-          await deleteMachineMutation.mutateAsync({
-            teamName: machine.teamName,
-            machineName: machine.machineName,
+          await mutations[resourceType as keyof typeof mutations].mutateAsync({
+            teamName: resource.teamName,
+            [`${resourceType}Name`]: resourceName,
           })
-          showMessage('success', t('machines:deleteSuccess'))
+          showMessage('success', t(`${resourceType}s:deleteSuccess`))
         } catch (error) {
-          showMessage('error', t('machines:deleteError'))
+          showMessage('error', t(`${resourceType}s:deleteError`))
         }
       },
     })
   }
+  
+  // Specific delete handlers using generic function
+  const handleDeleteMachine = (machine: Machine) => handleDelete('machine', machine)
 
   // Common hooks
   const { data: dropdownData } = useDropdownData()
@@ -281,112 +292,51 @@ const ResourcesPage: React.FC = () => {
   // Unified modal submit handler
   const handleUnifiedModalSubmit = async (data: any) => {
     try {
-      switch (unifiedModalState.resourceType) {
-        case 'machine':
-          if (unifiedModalState.mode === 'edit') {
-            // Update machine name if changed
-            if (data.machineName !== currentResource.machineName) {
-              await updateMachineNameMutation.mutateAsync({
-                teamName: currentResource.teamName,
-                currentMachineName: currentResource.machineName,
-                newMachineName: data.machineName,
-              })
-            }
-            // Update bridge if changed
-            if (data.bridgeName !== currentResource.bridgeName) {
-              await updateMachineBridgeMutation.mutateAsync({
-                teamName: currentResource.teamName,
-                machineName: data.machineName || currentResource.machineName,
-                bridgeName: data.bridgeName,
-              })
-            }
-            // Update vault if changed
-            const vaultData = data.machineVault
-            if (vaultData && vaultData !== currentResource.vaultContent) {
-              await updateMachineVaultMutation.mutateAsync({
-                teamName: currentResource.teamName,
-                machineName: data.machineName || currentResource.machineName,
-                machineVault: vaultData,
-                vaultVersion: currentResource.vaultVersion + 1,
-              })
-            }
-          } else {
-            await createMachineMutation.mutateAsync(data)
-          }
-          break
-        case 'repository':
-          if (unifiedModalState.mode === 'create') {
-            await createRepositoryMutation.mutateAsync(data)
-          } else {
-            // Update name if changed
-            if (data.repositoryName !== currentResource.repositoryName) {
-              await updateRepositoryNameMutation.mutateAsync({
-                teamName: currentResource.teamName,
-                currentRepositoryName: currentResource.repositoryName,
-                newRepositoryName: data.repositoryName,
-              })
-            }
-            // Update vault if changed
-            const vaultData = data.repositoryVault
-            if (vaultData && vaultData !== currentResource.vaultContent) {
-              await updateRepositoryVaultMutation.mutateAsync({
-                teamName: currentResource.teamName,
-                repositoryName: data.repositoryName || currentResource.repositoryName,
-                repositoryVault: vaultData,
-                vaultVersion: currentResource.vaultVersion + 1,
-              })
-            }
-          }
-          break
-        case 'storage':
-          if (unifiedModalState.mode === 'create') {
-            await createStorageMutation.mutateAsync(data)
-          } else {
-            // Update name if changed
-            if (data.storageName !== currentResource.storageName) {
-              await updateStorageNameMutation.mutateAsync({
-                teamName: currentResource.teamName,
-                currentStorageName: currentResource.storageName,
-                newStorageName: data.storageName,
-              })
-            }
-            // Update vault if changed
-            const vaultData = data.storageVault
-            if (vaultData && vaultData !== currentResource.vaultContent) {
-              await updateStorageVaultMutation.mutateAsync({
-                teamName: currentResource.teamName,
-                storageName: data.storageName || currentResource.storageName,
-                storageVault: vaultData,
-                vaultVersion: currentResource.vaultVersion + 1,
-              })
-            }
-          }
-          break
-        case 'schedule':
-          if (unifiedModalState.mode === 'create') {
-            await createScheduleMutation.mutateAsync(data)
-          } else {
-            // Update name if changed
-            if (data.scheduleName !== currentResource.scheduleName) {
-              await updateScheduleNameMutation.mutateAsync({
-                teamName: currentResource.teamName,
-                currentScheduleName: currentResource.scheduleName,
-                newScheduleName: data.scheduleName,
-              })
-            }
-            // Update vault if changed
-            const vaultData = data.scheduleVault
-            if (vaultData && vaultData !== currentResource.vaultContent) {
-              await updateScheduleVaultMutation.mutateAsync({
-                teamName: currentResource.teamName,
-                scheduleName: data.scheduleName || currentResource.scheduleName,
-                scheduleVault: vaultData,
-                vaultVersion: currentResource.vaultVersion + 1,
-              })
-            }
-          }
-          break
+      const { resourceType, mode } = unifiedModalState
+      const mutations = {
+        machine: { create: createMachineMutation, updateName: updateMachineNameMutation, updateVault: updateMachineVaultMutation },
+        repository: { create: createRepositoryMutation, updateName: updateRepositoryNameMutation, updateVault: updateRepositoryVaultMutation },
+        storage: { create: createStorageMutation, updateName: updateStorageNameMutation, updateVault: updateStorageVaultMutation },
+        schedule: { create: createScheduleMutation, updateName: updateScheduleNameMutation, updateVault: updateScheduleVaultMutation }
       }
+      
+      if (mode === 'create') {
+        await mutations[resourceType as keyof typeof mutations].create.mutateAsync(data)
+      } else {
+        const resourceName = `${resourceType}Name`
+        const currentName = currentResource[resourceName]
+        const newName = data[resourceName]
+        
+        // Update name if changed
+        if (newName !== currentName) {
+          await mutations[resourceType as keyof typeof mutations].updateName.mutateAsync({
+            teamName: currentResource.teamName,
+            [`current${resourceName.charAt(0).toUpperCase() + resourceName.slice(1)}`]: currentName,
+            [`new${resourceName.charAt(0).toUpperCase() + resourceName.slice(1)}`]: newName,
+          })
+        }
+        
+        // Update vault if changed
+        const vaultData = data[`${resourceType}Vault`]
+        if (vaultData && vaultData !== currentResource.vaultContent) {
+          await mutations[resourceType as keyof typeof mutations].updateVault.mutateAsync({
+            teamName: currentResource.teamName,
+            [resourceName]: newName || currentName,
+            [`${resourceType}Vault`]: vaultData,
+            vaultVersion: currentResource.vaultVersion + 1,
+          })
+        }
+        
+        // Handle machine-specific bridge update
+        if (resourceType === 'machine' && data.bridgeName !== currentResource.bridgeName) {
+          await updateMachineBridgeMutation.mutateAsync({
+            teamName: currentResource.teamName,
+            machineName: newName || currentName,
+            bridgeName: data.bridgeName,
+          })
+        }
+      }
+      
       closeUnifiedModal()
     } catch (error) {
       // Error handled by mutation
@@ -398,280 +348,143 @@ const ResourcesPage: React.FC = () => {
     if (!currentResource) return
 
     try {
-      switch (unifiedModalState.resourceType) {
-        case 'machine':
-          await updateMachineVaultMutation.mutateAsync({
-            teamName: currentResource.teamName,
-            machineName: currentResource.machineName,
-            machineVault: vault,
-            vaultVersion: version,
-          })
-          break
-        case 'repository':
-          await updateRepositoryVaultMutation.mutateAsync({
-            teamName: currentResource.teamName,
-            repositoryName: currentResource.repositoryName,
-            repositoryVault: vault,
-            vaultVersion: version,
-          })
-          break
-        case 'storage':
-          await updateStorageVaultMutation.mutateAsync({
-            teamName: currentResource.teamName,
-            storageName: currentResource.storageName,
-            storageVault: vault,
-            vaultVersion: version,
-          })
-          break
-        case 'schedule':
-          await updateScheduleVaultMutation.mutateAsync({
-            teamName: currentResource.teamName,
-            scheduleName: currentResource.scheduleName,
-            scheduleVault: vault,
-            vaultVersion: version,
-          })
-          break
+      const { resourceType } = unifiedModalState
+      const mutations = {
+        machine: updateMachineVaultMutation,
+        repository: updateRepositoryVaultMutation,
+        storage: updateStorageVaultMutation,
+        schedule: updateScheduleVaultMutation
       }
-    } catch (error) {
-      // Error handled by mutation
-    }
-  }
-
-  // Repository delete handler
-  const handleDeleteRepository = async (repository: Repository) => {
-    try {
-      await deleteRepositoryMutation.mutateAsync({
-        teamName: repository.teamName,
-        repositoryName: repository.repositoryName,
+      
+      await mutations[resourceType as keyof typeof mutations].mutateAsync({
+        teamName: currentResource.teamName,
+        [`${resourceType}Name`]: currentResource[`${resourceType}Name`],
+        [`${resourceType}Vault`]: vault,
+        vaultVersion: version,
       })
     } catch (error) {
       // Error handled by mutation
     }
   }
 
-  // Storage delete handler
-  const handleDeleteStorage = async (storage: Storage) => {
-    try {
-      await deleteStorageMutation.mutateAsync({
-        teamName: storage.teamName,
-        storageName: storage.storageName,
-      })
-    } catch (error) {
-      // Error handled by mutation
-    }
-  }
+  const handleDeleteRepository = (repository: Repository) => handleDelete('repository', repository)
+  const handleDeleteStorage = (storage: Storage) => handleDelete('storage', storage)
+  const handleDeleteSchedule = (schedule: Schedule) => handleDelete('schedule', schedule)
 
-  // Schedule delete handler
-  const handleDeleteSchedule = async (schedule: Schedule) => {
-    try {
-      await deleteScheduleMutation.mutateAsync({
-        teamName: schedule.teamName,
-        scheduleName: schedule.scheduleName,
-      })
-    } catch (error) {
-      // Error handled by mutation
+  // Generic function selection handler
+  const handleResourceFunctionSelected = async (
+    resourceType: 'machine' | 'repository' | 'storage',
+    functionData: {
+      function: QueueFunction;
+      params: Record<string, any>;
+      priority: number;
+      description: string;
+      selectedMachine?: string;
     }
-  }
-
-  // Handle function selection for machine
-  const handleMachineFunctionSelected = async (functionData: {
-    function: QueueFunction;
-    params: Record<string, any>;
-    priority: number;
-    description: string;
-  }) => {
+  ) => {
     if (!currentResource) return;
-
+    
     try {
-      // Check if this is new function - if so, create repository first
-      if (functionData.function.name === 'new') {
-        const repoName = functionData.params.repo;
-        if (!repoName) {
-          showMessage('error', 'Repository name is required for new function');
-          return;
-        }
-
-        // Create repository in the system first
-        try {
+      // Determine machine details
+      let machineName: string;
+      let bridgeName: string;
+      
+      if (resourceType === 'machine') {
+        machineName = currentResource.machineName;
+        bridgeName = currentResource.bridgeName;
+        
+        // Special handling for "new" function
+        if (functionData.function.name === 'new') {
+          const repoName = functionData.params.repo;
+          if (!repoName) {
+            showMessage('error', 'Repository name is required for new function');
+            return;
+          }
+          
           await createRepositoryMutation.mutateAsync({
             teamName: currentResource.teamName,
             repositoryName: repoName,
             repositoryVault: '{}'
           });
-        } catch (error: any) {
-          // If repository creation fails, don't proceed with queue item
+        }
+      } else {
+        if (!functionData.selectedMachine) return;
+        
+        const teamData = dropdownData?.machinesByTeam?.find(
+          t => t.teamName === currentResource.teamName
+        );
+        const machine = teamData?.machines?.find(
+          m => m.value === functionData.selectedMachine
+        );
+        
+        if (!machine) {
+          showMessage('error', 'Selected machine not found');
           return;
         }
+        
+        machineName = machine.value;
+        bridgeName = machine.bridgeName;
       }
-
-      // Find the team vault data
-      const teamData = teamsList.find(t => t.teamName === currentResource.teamName)
-      // TODO: Repository vault would need a separate query - not available in dropdown data
-      const repoData = null
-
-      // Build the queue vault with context data
-      const queueVault = await buildQueueVault({
+      
+      // Find team vault data
+      const teamData = teamsList.find(t => t.teamName === currentResource.teamName);
+      
+      // Build queue vault with dynamic resource name
+      const queueVaultParams: any = {
         teamName: currentResource.teamName,
-        machineName: currentResource.machineName,
-        bridgeName: currentResource.bridgeName,
-        repositoryName: functionData.params.repo, // Include if repo param exists
+        machineName,
+        bridgeName,
         functionName: functionData.function.name,
         params: functionData.params,
         priority: functionData.priority,
         description: functionData.description,
-        addedVia: 'machine-table',
-        // Pass vault data
-        machineVault: currentResource.vaultContent || '{}',
-        teamVault: teamData?.vaultContent || '{}',
-        repositoryVault: repoData?.vaultContent || '{}'
-      });
-
+        addedVia: `${resourceType}-table`,
+        teamVault: teamData?.vaultContent || '{}'
+      };
+      
+      // Add resource-specific field and vault
+      if (resourceType === 'machine') {
+        queueVaultParams.repositoryName = functionData.params.repo;
+        queueVaultParams.machineVault = currentResource.vaultContent || '{}';
+        queueVaultParams.repositoryVault = '{}';
+      } else if (resourceType === 'repository') {
+        queueVaultParams.repositoryName = currentResource.repositoryName;
+      } else if (resourceType === 'storage') {
+        queueVaultParams.storageName = currentResource.storageName;
+      }
+      
+      const queueVault = await buildQueueVault(queueVaultParams);
+      
       const response = await createQueueItemMutation.mutateAsync({
         teamName: currentResource.teamName,
-        machineName: currentResource.machineName,
-        bridgeName: currentResource.bridgeName,
+        machineName,
+        bridgeName,
         queueVault,
         priority: functionData.priority
       });
       
-      // Reset the modal
       closeUnifiedModal();
       
-      // Automatically open the trace modal if queue item was created successfully
       if (response?.taskId) {
-        showMessage('success', t('machines:queueItemCreated'));
+        showMessage('success', t(`${resourceType}s:queueItemCreated`));
         setQueueTraceModal({ visible: true, taskId: response.taskId });
       }
     } catch (error) {
       // Error is handled by the mutation
     }
   };
+  
+  // Specific handlers using generic function
+  const handleMachineFunctionSelected = (functionData: any) => 
+    handleResourceFunctionSelected('machine', functionData);
 
-  // Handle function selection for repository
-  const handleRepositoryFunctionSelected = async (functionData: {
-    function: QueueFunction;
-    params: Record<string, any>;
-    priority: number;
-    description: string;
-    selectedMachine?: string;
-  }) => {
-    if (!currentResource || !functionData.selectedMachine) return;
-
-    // Find the selected machine data
-    const teamData = dropdownData?.machinesByTeam?.find(t => t.teamName === currentResource.teamName);
-    const machine = teamData?.machines?.find(m => m.value === functionData.selectedMachine);
+  const handleRepositoryFunctionSelected = (functionData: any) => 
+    handleResourceFunctionSelected('repository', functionData);
     
-    if (!machine) {
-      showMessage('error', 'Selected machine not found');
-      return;
-    }
+  const handleStorageFunctionSelected = (functionData: any) => 
+    handleResourceFunctionSelected('storage', functionData);
 
-    // Find the team vault data for the repository's team
-    const repoTeamData = teamsList.find(t => t.teamName === currentResource.teamName)
-    
-    // Build the queue vault with context data
-    const queueVault = await buildQueueVault({
-      teamName: currentResource.teamName,
-      machineName: machine.value,
-      bridgeName: machine.bridgeName,
-      repositoryName: currentResource.repositoryName,
-      functionName: functionData.function.name,
-      params: functionData.params, // Params already include repo from defaultParams
-      priority: functionData.priority,
-      description: functionData.description,
-      addedVia: 'repository-table',
-      // Pass vault data
-      teamVault: repoTeamData?.vaultContent,
-      // TODO: Machine vault not available in dropdown data (would need separate query)
-      // machineVault: machineData?.vaultContent,
-      // TODO: Repository vault not available in current interface
-      // repositoryVault: currentResource.vaultContent
-    });
-
-    try {
-      const response = await createQueueItemMutation.mutateAsync({
-        teamName: currentResource.teamName,
-        machineName: machine.value,
-        bridgeName: machine.bridgeName,
-        queueVault,
-        priority: functionData.priority
-      });
-      
-      // Reset the modal
-      closeUnifiedModal();
-      
-      // Automatically open the trace modal if queue item was created successfully
-      if (response?.taskId) {
-        showMessage('success', t('repositories.queueItemCreated'));
-        setQueueTraceModal({ visible: true, taskId: response.taskId });
-      }
-    } catch (error) {
-      // Error is handled by the mutation
-    }
-  };
-
-  // Handle function selection for storage
-  const handleStorageFunctionSelected = async (functionData: {
-    function: QueueFunction;
-    params: Record<string, any>;
-    priority: number;
-    description: string;
-    selectedMachine?: string;
-  }) => {
-    if (!currentResource || !functionData.selectedMachine) return;
-
-    // Find the selected machine data
-    const teamData = dropdownData?.machinesByTeam?.find(t => t.teamName === currentResource.teamName);
-    const machine = teamData?.machines?.find(m => m.value === functionData.selectedMachine);
-    
-    if (!machine) {
-      showMessage('error', 'Selected machine not found');
-      return;
-    }
-
-    // Find the team vault data for the storage's team
-    const storageTeamData = teamsList.find(t => t.teamName === currentResource.teamName)
-    
-    // Build the queue vault with context data
-    const queueVault = await buildQueueVault({
-      teamName: currentResource.teamName,
-      machineName: machine.value,
-      bridgeName: machine.bridgeName,
-      storageName: currentResource.storageName,
-      functionName: functionData.function.name,
-      params: functionData.params, // Params already include storage from defaultParams
-      priority: functionData.priority,
-      description: functionData.description,
-      addedVia: 'storage-table',
-      // Pass vault data
-      teamVault: storageTeamData?.vaultContent,
-      // TODO: Machine vault not available in dropdown data (would need separate query)
-      // machineVault: machineData?.vaultContent,
-      // TODO: Storage vault not available in current interface
-      // storageVault: currentResource.vaultContent
-    });
-
-    try {
-      const response = await createQueueItemMutation.mutateAsync({
-        teamName: currentResource.teamName,
-        machineName: machine.value,
-        bridgeName: machine.bridgeName,
-        queueVault,
-        priority: functionData.priority
-      });
-      
-      // Reset the modal
-      closeUnifiedModal();
-      
-      // Automatically open the trace modal if queue item was created successfully
-      if (response?.taskId) {
-        showMessage('success', t('storage.queueItemCreated'));
-        setQueueTraceModal({ visible: true, taskId: response.taskId });
-      }
-    } catch (error) {
-      // Error is handled by the mutation
-    }
-  };
+  // Removed individual function handlers - now using generic handler above
 
 
 

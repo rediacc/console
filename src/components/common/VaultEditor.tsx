@@ -60,6 +60,38 @@ interface FieldDefinition {
   items?: any
 }
 
+// Helper components for reduced repetition
+const FieldLabel: React.FC<{ label: string; description?: string }> = ({ label, description }) => (
+  <Space>
+    {label}
+    {description && (
+      <Tooltip title={description}>
+        <InfoCircleOutlined style={{ fontSize: 12 }} />
+      </Tooltip>
+    )}
+  </Space>
+)
+
+const FieldFormItem: React.FC<{
+  name: string;
+  label: string;
+  description?: string;
+  rules?: any[];
+  initialValue?: any;
+  valuePropName?: string;
+  children: React.ReactNode;
+}> = ({ name, label, description, rules, initialValue, valuePropName, children }) => (
+  <Form.Item
+    name={name}
+    label={<FieldLabel label={label} description={description} />}
+    rules={rules}
+    initialValue={initialValue}
+    valuePropName={valuePropName}
+  >
+    {children}
+  </Form.Item>
+)
+
 const VaultEditor: React.FC<VaultEditorProps> = ({
   entityType,
   initialData = {},
@@ -116,52 +148,40 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     
     return field
   }
-
-  // Update importedData when initialData prop changes
-  useEffect(() => {
-    setImportedData(initialData)
-  }, [initialData])
-
-  // Calculate extra fields not in schema
-  useEffect(() => {
-    if (!entityDef) return
-
-    const schemaFields = Object.keys(entityDef.fields || {})
+  
+  // Helper to process extra fields
+  const processExtraFields = (data: Record<string, any>, schemaFields: string[]) => {
     const extras: Record<string, any> = {}
     const movedToExtra: string[] = []
     const movedFromExtra: string[] = []
-
-    // Check if importedData has extraFields structure
-    if (importedData.extraFields && typeof importedData.extraFields === 'object') {
-      Object.assign(extras, importedData.extraFields)
+    
+    // Check if data has extraFields structure
+    if (data.extraFields && typeof data.extraFields === 'object') {
+      Object.assign(extras, data.extraFields)
     }
-
-    // Also check for non-schema fields at root level
-    Object.entries(importedData).forEach(([key, value]) => {
+    
+    // Check for non-schema fields at root level
+    Object.entries(data).forEach(([key, value]) => {
       if (key !== 'extraFields' && !schemaFields.includes(key)) {
         extras[key] = value
-        // Track fields that are being moved to extraFields
         if (!extraFields[key] && value !== undefined) {
           movedToExtra.push(key)
         }
       }
     })
-
+    
     // Check if any fields were moved from extraFields back to regular fields
     Object.keys(extraFields).forEach(key => {
-      if (!extras[key] && schemaFields.includes(key) && importedData[key] !== undefined) {
+      if (!extras[key] && schemaFields.includes(key) && data[key] !== undefined) {
         movedFromExtra.push(key)
       }
     })
-
-    setExtraFields(extras)
-
-    // Notify about field movements
-    if ((movedToExtra.length > 0 || movedFromExtra.length > 0) && onFieldMovement) {
-      onFieldMovement(movedToExtra, movedFromExtra)
-    }
-
-    // Show toast messages for field movements
+    
+    return { extras, movedToExtra, movedFromExtra }
+  }
+  
+  // Helper to show field movement toast messages
+  const showFieldMovementToasts = (movedToExtra: string[], movedFromExtra: string[]) => {
     if (movedToExtra.length > 0) {
       message.info(t('vaultEditor.fieldsMovedToExtra', { 
         count: movedToExtra.length,
@@ -174,6 +194,90 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         fields: movedFromExtra.join(', ')
       }))
     }
+  }
+  
+  // Helper to build validation rules
+  const buildValidationRules = (field: FieldDefinition, required: boolean, fieldLabel: string) => {
+    const rules: any[] = []
+    
+    if (required) {
+      rules.push({ required: true, message: t('vaultEditor.isRequired', { field: fieldLabel }) })
+    }
+    
+    const ruleBuilders = {
+      pattern: (value: string) => ({
+        pattern: new RegExp(value),
+        message: t('vaultEditor.invalidFormat', { description: field.description || '' })
+      }),
+      minLength: (value: number) => ({ min: value, message: t('vaultEditor.minLength', { length: value }) }),
+      maxLength: (value: number) => ({ max: value, message: t('vaultEditor.maxLength', { length: value }) }),
+      minimum: (value: number) => ({ type: 'number' as const, min: value, message: t('vaultEditor.minValue', { value }) }),
+      maximum: (value: number) => ({ type: 'number' as const, max: value, message: t('vaultEditor.maxValue', { value }) })
+    }
+    
+    Object.entries(ruleBuilders).forEach(([key, ruleFn]) => {
+      if (field[key as keyof FieldDefinition] !== undefined) {
+        rules.push(ruleFn(field[key as keyof FieldDefinition] as any))
+      }
+    })
+    
+    return rules
+  }
+  
+  // Helper for JSON field validation and handling
+  const getJsonFieldProps = (isArray = false) => {
+    const validator = (_: any, value: any) => {
+      if (!value) return Promise.resolve()
+      try {
+        const parsed = typeof value === 'string' ? JSON.parse(value) : value
+        if (isArray && !Array.isArray(parsed)) {
+          return Promise.reject(t('vaultEditor.mustBeArray'))
+        }
+        return Promise.resolve()
+      } catch {
+        return Promise.reject(t(isArray ? 'vaultEditor.mustBeValidJsonArray' : 'vaultEditor.mustBeValidJson'))
+      }
+    }
+    
+    const getValueFromEvent = (e: any) => {
+      const value = e.target.value
+      try {
+        return value ? JSON.parse(value) : undefined
+      } catch {
+        return value
+      }
+    }
+    
+    const getValueProps = (value: any) => ({
+      value: (isArray ? Array.isArray(value) : typeof value === 'object') 
+        ? JSON.stringify(value, null, 2) 
+        : value
+    })
+    
+    return { validator, getValueFromEvent, getValueProps }
+  }
+
+  // Update importedData when initialData prop changes
+  useEffect(() => {
+    setImportedData(initialData)
+  }, [initialData])
+
+  // Calculate extra fields not in schema
+  useEffect(() => {
+    if (!entityDef) return
+
+    const schemaFields = Object.keys(entityDef.fields || {})
+    const { extras, movedToExtra, movedFromExtra } = processExtraFields(importedData, schemaFields)
+    
+    setExtraFields(extras)
+
+    // Notify about field movements
+    if ((movedToExtra.length > 0 || movedFromExtra.length > 0) && onFieldMovement) {
+      onFieldMovement(movedToExtra, movedFromExtra)
+    }
+
+    // Show toast messages for field movements
+    showFieldMovementToasts(movedToExtra, movedFromExtra)
   }, [importedData, entityDef])
 
   // Initialize form with data
@@ -546,49 +650,20 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       fieldPlaceholder = field.example
     }
     
-    const rules: any[] = []
-    
     // Special validation for ssh_password - required only if SSH key not configured
+    let effectiveRequired = required
     if ((entityType === 'MACHINE' || entityType === 'BRIDGE') && fieldName === 'ssh_password') {
-      if (!sshKeyConfigured && required) {
-        rules.push({ 
-          required: true, 
-          message: t('vaultEditor.sshPasswordRequiredWhenNoKey', { defaultValue: 'SSH password is required when SSH key is not configured' }) 
-        })
+      effectiveRequired = !sshKeyConfigured && required
+    }
+    
+    const rules = buildValidationRules(field, effectiveRequired, fieldLabel)
+    
+    // Add special ssh_password message if needed
+    if ((entityType === 'MACHINE' || entityType === 'BRIDGE') && fieldName === 'ssh_password' && !sshKeyConfigured && required) {
+      rules[0] = { 
+        required: true, 
+        message: t('vaultEditor.sshPasswordRequiredWhenNoKey', { defaultValue: 'SSH password is required when SSH key is not configured' }) 
       }
-    } else if (required) {
-      rules.push({ required: true, message: t('vaultEditor.isRequired', { field: fieldLabel }) })
-    }
-    
-    if (field.pattern) {
-      rules.push({
-        pattern: new RegExp(field.pattern),
-        message: t('vaultEditor.invalidFormat', { description: fieldDescription || '' }),
-      })
-    }
-    
-    if (field.minLength !== undefined) {
-      rules.push({ min: field.minLength, message: t('vaultEditor.minLength', { length: field.minLength }) })
-    }
-    
-    if (field.maxLength !== undefined) {
-      rules.push({ max: field.maxLength, message: t('vaultEditor.maxLength', { length: field.maxLength }) })
-    }
-    
-    if (field.minimum !== undefined) {
-      rules.push({ 
-        type: 'number', 
-        min: field.minimum, 
-        message: t('vaultEditor.minValue', { value: field.minimum }) 
-      })
-    }
-    
-    if (field.maximum !== undefined) {
-      rules.push({ 
-        type: 'number', 
-        max: field.maximum, 
-        message: t('vaultEditor.maxValue', { value: field.maximum }) 
-      })
     }
 
     const commonProps = {
@@ -596,43 +671,27 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       style: { width: '100%' },
     }
 
-    // Render based on type
+    // Render based on type using helper components
     if (field.type === 'boolean') {
       return (
-        <Form.Item
+        <FieldFormItem
           name={fieldName}
-          label={
-            <Space>
-              {fieldLabel}
-              {fieldDescription && (
-                <Tooltip title={fieldDescription}>
-                  <InfoCircleOutlined style={{ fontSize: 12 }} />
-                </Tooltip>
-              )}
-            </Space>
-          }
-          valuePropName="checked"
+          label={fieldLabel}
+          description={fieldDescription}
           initialValue={field.default}
+          valuePropName="checked"
         >
           <Switch />
-        </Form.Item>
+        </FieldFormItem>
       )
     }
 
     if (field.enum) {
       return (
-        <Form.Item
+        <FieldFormItem
           name={fieldName}
-          label={
-            <Space>
-              {fieldLabel}
-              {fieldDescription && (
-                <Tooltip title={fieldDescription}>
-                  <InfoCircleOutlined style={{ fontSize: 12 }} />
-                </Tooltip>
-              )}
-            </Space>
-          }
+          label={fieldLabel}
+          description={fieldDescription}
           rules={rules}
           initialValue={field.default}
         >
@@ -643,24 +702,16 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               </Select.Option>
             ))}
           </Select>
-        </Form.Item>
+        </FieldFormItem>
       )
     }
 
     if (field.type === 'number') {
       return (
-        <Form.Item
+        <FieldFormItem
           name={fieldName}
-          label={
-            <Space>
-              {fieldLabel}
-              {fieldDescription && (
-                <Tooltip title={fieldDescription}>
-                  <InfoCircleOutlined style={{ fontSize: 12 }} />
-                </Tooltip>
-              )}
-            </Space>
-          }
+          label={fieldLabel}
+          description={fieldDescription}
           rules={rules}
           initialValue={field.default}
         >
@@ -669,52 +720,19 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
             min={field.minimum}
             max={field.maximum}
           />
-        </Form.Item>
+        </FieldFormItem>
       )
     }
 
     if (field.type === 'object') {
-      // For complex objects, use a text area with JSON
+      const { validator, getValueFromEvent, getValueProps } = getJsonFieldProps(false)
       return (
         <Form.Item
           name={fieldName}
-          label={
-            <Space>
-              {fieldLabel}
-              {fieldDescription && (
-                <Tooltip title={fieldDescription}>
-                  <InfoCircleOutlined style={{ fontSize: 12 }} />
-                </Tooltip>
-              )}
-            </Space>
-          }
-          rules={[
-            ...rules,
-            {
-              validator: (_, value) => {
-                if (!value) return Promise.resolve()
-                try {
-                  if (typeof value === 'string') {
-                    JSON.parse(value)
-                  }
-                  return Promise.resolve()
-                } catch {
-                  return Promise.reject(t('vaultEditor.mustBeValidJson'))
-                }
-              },
-            },
-          ]}
-          getValueFromEvent={(e) => {
-            const value = e.target.value
-            try {
-              return value ? JSON.parse(value) : undefined
-            } catch {
-              return value
-            }
-          }}
-          getValueProps={(value) => ({
-            value: typeof value === 'object' ? JSON.stringify(value, null, 2) : value,
-          })}
+          label={<FieldLabel label={fieldLabel} description={fieldDescription} />}
+          rules={[...rules, { validator }]}
+          getValueFromEvent={getValueFromEvent}
+          getValueProps={getValueProps}
         >
           <Input.TextArea
             {...commonProps}
@@ -726,48 +744,14 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     }
 
     if (field.type === 'array') {
-      // For arrays, use a text area with JSON
+      const { validator, getValueFromEvent, getValueProps } = getJsonFieldProps(true)
       return (
         <Form.Item
           name={fieldName}
-          label={
-            <Space>
-              {fieldLabel}
-              {fieldDescription && (
-                <Tooltip title={fieldDescription}>
-                  <InfoCircleOutlined style={{ fontSize: 12 }} />
-                </Tooltip>
-              )}
-            </Space>
-          }
-          rules={[
-            ...rules,
-            {
-              validator: (_, value) => {
-                if (!value) return Promise.resolve()
-                try {
-                  const parsed = typeof value === 'string' ? JSON.parse(value) : value
-                  if (!Array.isArray(parsed)) {
-                    return Promise.reject(t('vaultEditor.mustBeArray'))
-                  }
-                  return Promise.resolve()
-                } catch {
-                  return Promise.reject(t('vaultEditor.mustBeValidJsonArray'))
-                }
-              },
-            },
-          ]}
-          getValueFromEvent={(e) => {
-            const value = e.target.value
-            try {
-              return value ? JSON.parse(value) : undefined
-            } catch {
-              return value
-            }
-          }}
-          getValueProps={(value) => ({
-            value: Array.isArray(value) ? JSON.stringify(value, null, 2) : value,
-          })}
+          label={<FieldLabel label={fieldLabel} description={fieldDescription} />}
+          rules={[...rules, { validator }]}
+          getValueFromEvent={getValueFromEvent}
+          getValueProps={getValueProps}
         >
           <Input.TextArea
             {...commonProps}
@@ -781,18 +765,10 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     // Special handling for port type
     if (fieldName === 'port' || field.format === 'port') {
       return (
-        <Form.Item
+        <FieldFormItem
           name={fieldName}
-          label={
-            <Space>
-              {fieldLabel}
-              {fieldDescription && (
-                <Tooltip title={fieldDescription}>
-                  <InfoCircleOutlined style={{ fontSize: 12 }} />
-                </Tooltip>
-              )}
-            </Space>
-          }
+          label={fieldLabel}
+          description={fieldDescription}
           rules={rules}
           initialValue={field.default}
         >
@@ -802,7 +778,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
             max={65535}
             placeholder={t('vaultEditor.portPlaceholder')}
           />
-        </Form.Item>
+        </FieldFormItem>
       )
     }
 

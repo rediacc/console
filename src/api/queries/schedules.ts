@@ -1,7 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import apiClient from '../client'
-import { showMessage } from '@/utils/messages'
-import { minifyJSON } from '@/utils/json'
+import { createResourceMutation, createVaultUpdateMutation, createMutation } from '@/api/utils/mutationFactory'
 
 export interface Schedule {
   scheduleName: string
@@ -59,88 +58,47 @@ export const useSchedules = (teamFilter?: string | string[]) => {
 }
 
 // Create schedule
-export const useCreateSchedule = () => {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (data: CreateScheduleRequest) => {
-      const response = await apiClient.post('/CreateSchedule', {
-        teamName: data.teamName,
-        scheduleName: data.scheduleName,
-        scheduleVault: data.scheduleVault || '{}',
-      })
-      return response
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['schedules'] })
-      queryClient.invalidateQueries({ queryKey: ['teams'] })
-      showMessage('success', `Schedule "${variables.scheduleName}" created successfully`)
-    },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to create schedule')
-    },
+export const useCreateSchedule = createMutation<CreateScheduleRequest>({
+  endpoint: '/CreateSchedule',
+  method: 'post',
+  invalidateKeys: ['schedules', 'teams'],
+  successMessage: (vars) => `Schedule "${vars.scheduleName}" created successfully`,
+  errorMessage: 'Failed to create schedule',
+  transformData: (data) => ({
+    ...data,
+    scheduleVault: data.scheduleVault || '{}'
   })
-}
+})
 
 // Delete schedule
-export const useDeleteSchedule = () => {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (data: { teamName: string; scheduleName: string }) => {
-      const response = await apiClient.delete('/DeleteSchedule', data)
-      return response
-    },
-    onSuccess: (_, data) => {
-      queryClient.invalidateQueries({ queryKey: ['schedules'] })
-      queryClient.invalidateQueries({ queryKey: ['teams'] })
-      showMessage('success', `Schedule "${data.scheduleName}" deleted successfully`)
-    },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to delete schedule')
-    },
-  })
-}
+export const useDeleteSchedule = createResourceMutation<{
+  teamName: string
+  scheduleName: string
+}>(
+  'Schedule',
+  'delete',
+  '/DeleteSchedule',
+  'scheduleName',
+  ['teams']
+)
 
 // Update schedule name
-export const useUpdateScheduleName = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async (data: { teamName: string; currentScheduleName: string; newScheduleName: string }) => {
-      const response = await apiClient.put('/UpdateScheduleName', data)
-      return response
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['schedules'] })
-      showMessage('success', `Schedule renamed to "${variables.newScheduleName}"`)
-    },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to update schedule name')
-    },
-  })
-}
+export const useUpdateScheduleName = createMutation<{
+  teamName: string
+  currentScheduleName: string
+  newScheduleName: string
+}>({
+  endpoint: '/UpdateScheduleName',
+  method: 'put',
+  invalidateKeys: ['schedules'],
+  successMessage: (vars) => `Schedule renamed to "${vars.newScheduleName}"`,
+  errorMessage: 'Failed to update schedule name'
+})
 
 // Update schedule vault
-export const useUpdateScheduleVault = () => {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (data: UpdateScheduleVaultRequest) => {
-      // Minify the vault JSON before sending
-      const minifiedData = {
-        ...data,
-        scheduleVault: minifyJSON(data.scheduleVault)
-      }
-      const response = await apiClient.put('/UpdateScheduleVault', minifiedData)
-      return response
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['schedules'] })
-      showMessage('success', `Schedule vault updated for "${variables.scheduleName}"`)
-    },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to update schedule vault')
-    },
-  })
-}
+export const useUpdateScheduleVault = createVaultUpdateMutation<UpdateScheduleVaultRequest>(
+  'Schedule',
+  '/UpdateScheduleVault',
+  'scheduleName',
+  'scheduleVault'
+)

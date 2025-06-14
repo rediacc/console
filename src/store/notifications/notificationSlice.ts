@@ -2,14 +2,8 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
 export type NotificationType = 'success' | 'error' | 'warning' | 'info'
 
-// Helper functions
-const generateNotificationId = (): string => {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-}
-
-const decrementUnreadCount = (count: number): number => {
-  return Math.max(0, count - 1)
-}
+const generateNotificationId = (): string => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+const decrementUnreadCount = (count: number): number => Math.max(0, count - 1)
 
 export interface Notification {
   id: string
@@ -42,11 +36,9 @@ const notificationSlice = createSlice({
         read: false
       }
       
-      // Add to beginning of array (newest first)
       state.notifications.unshift(notification)
       state.unreadCount++
       
-      // Keep only last 50 notifications
       const MAX_NOTIFICATIONS = 50
       if (state.notifications.length > MAX_NOTIFICATIONS) {
         state.notifications = state.notifications.slice(0, MAX_NOTIFICATIONS)
@@ -62,9 +54,7 @@ const notificationSlice = createSlice({
     },
     
     markAllAsRead: (state) => {
-      state.notifications.forEach(n => {
-        n.read = true
-      })
+      state.notifications.forEach(n => n.read = true)
       state.unreadCount = 0
     },
     

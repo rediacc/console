@@ -14,12 +14,7 @@ export function generateSecureString(length: number, charset: string): string {
   const array = new Uint8Array(length)
   crypto.getRandomValues(array)
   
-  let result = ''
-  for (let i = 0; i < length; i++) {
-    result += charset.charAt(array[i] % charset.length)
-  }
-  
-  return result
+  return Array.from(array, byte => charset[byte % charset.length]).join('')
 }
 
 // Generate repository credential (32 characters)
@@ -30,20 +25,12 @@ export function generateRepositoryCredential(): string {
 
 // Convert ArrayBuffer to Base64
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer)
-  let binary = ''
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i])
-  }
-  return btoa(binary)
+  return btoa(String.fromCharCode(...new Uint8Array(buffer)))
 }
 
 // Convert ArrayBuffer to hex string
-function arrayBufferToHex(buffer: ArrayBuffer): string {
-  return Array.from(new Uint8Array(buffer))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('')
-}
+const arrayBufferToHex = (buffer: ArrayBuffer): string => 
+  Array.from(new Uint8Array(buffer), b => b.toString(16).padStart(2, '0')).join('')
 
 // Generate RSA key pair using Web Crypto API
 async function generateRSAKeyPair(keySize: 2048 | 4096 = 2048): Promise<CryptoKeyPair> {

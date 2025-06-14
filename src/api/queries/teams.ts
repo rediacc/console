@@ -1,7 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import apiClient from '@/api/client'
-import { showMessage } from '@/utils/messages'
-import { minifyJSON } from '@/utils/json'
+import { createResourceMutation, createVaultUpdateMutation, createMutation } from '@/api/utils/mutationFactory'
+import { extractResourceData, extractTableData } from '@/api/utils/responseHelpers'
 
 export interface Team {
   teamName: string
@@ -26,11 +26,7 @@ export const useTeams = () => {
     queryKey: ['teams'],
     queryFn: async () => {
       const response = await apiClient.get('/GetCompanyTeams')
-      // Ensure we always return an array
-      const teams = response.tables?.[1]?.data || response.tables?.[0]?.data || []
-      if (!Array.isArray(teams)) return []
-      // Filter out any empty or invalid team objects
-      return teams.filter(team => team && team.teamName)
+      return extractResourceData<Team>(response, 'teamName')
     },
     staleTime: 30 * 1000, // 30 seconds
   })
@@ -42,133 +38,55 @@ export const useTeamMembers = (teamName: string) => {
     queryKey: ['team-members', teamName],
     queryFn: async () => {
       const response = await apiClient.get('/GetTeamMembers', { teamName })
-      return response.tables[1]?.data || []
+      return extractTableData(response, 1, [])
     },
     enabled: !!teamName,
   })
 }
 
 // Create team
-export const useCreateTeam = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async (data: { teamName: string; teamVault?: string }) => {
-      const response = await apiClient.post('/CreateTeam', {
-        teamName: data.teamName,
-        teamVault: data.teamVault || '{}',
-      })
-      return response
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['teams'] })
-      queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      showMessage('success', `Team "${variables.teamName}" created successfully`)
-    },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to create team')
-    },
-  })
-}
+export const useCreateTeam = createResourceMutation<{ teamName: string; teamVault?: string }>(
+  'Team', 'create', '/CreateTeam', 'teamName'
+)
 
 // Update team name
-export const useUpdateTeamName = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async (data: { currentTeamName: string; newTeamName: string }) => {
-      const response = await apiClient.put('/UpdateTeamName', data)
-      return response
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['teams'] })
-      queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      showMessage('success', `Team renamed to "${variables.newTeamName}"`)
-    },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to update team name')
-    },
-  })
-}
+export const useUpdateTeamName = createMutation<{ currentTeamName: string; newTeamName: string }>({
+  endpoint: '/UpdateTeamName',
+  method: 'put',
+  invalidateKeys: ['teams', 'dropdown-data'],
+  successMessage: (variables) => `Team renamed to "${variables.newTeamName}"`,
+  errorMessage: 'Failed to update team name'
+})
 
 // Update team vault
-export const useUpdateTeamVault = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async (data: { teamName: string; teamVault: string; vaultVersion: number }) => {
-      // Minify the vault JSON before sending
-      const minifiedData = {
-        ...data,
-        teamVault: minifyJSON(data.teamVault)
-      }
-      const response = await apiClient.put('/UpdateTeamVault', minifiedData)
-      return response
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['teams'] })
-      showMessage('success', `Team vault updated for "${variables.teamName}"`)
-    },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to update team vault')
-    },
-  })
-}
+export const useUpdateTeamVault = createVaultUpdateMutation<{ teamName: string; teamVault: string; vaultVersion: number }>(
+  'Team', '/UpdateTeamVault', 'teamName', 'teamVault'
+)
 
 // Delete team
-export const useDeleteTeam = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async (teamName: string) => {
-      const response = await apiClient.delete('/DeleteTeam', { teamName })
-      return response
-    },
-    onSuccess: (_, teamName) => {
-      queryClient.invalidateQueries({ queryKey: ['teams'] })
-      queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      showMessage('success', `Team "${teamName}" deleted successfully`)
-    },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to delete team')
-    },
-  })
-}
+export const useDeleteTeam = createMutation<string>({
+  endpoint: '/DeleteTeam',
+  method: 'delete',
+  invalidateKeys: ['teams', 'dropdown-data'],
+  successMessage: (teamName) => `Team "${teamName}" deleted successfully`,
+  errorMessage: 'Failed to delete team',
+  transformData: (teamName) => ({ teamName })
+})
 
 // Add team member
-export const useAddTeamMember = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async (data: { teamName: string; newUserEmail: string }) => {
-      const response = await apiClient.post('/CreateTeamMembership', data)
-      return response
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['team-members', variables.teamName] })
-      showMessage('success', `User "${variables.newUserEmail}" added to team`)
-    },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to add team member')
-    },
-  })
-}
+export const useAddTeamMember = createMutation<{ teamName: string; newUserEmail: string }>({
+  endpoint: '/CreateTeamMembership',
+  method: 'post',
+  invalidateKeys: (variables) => ['team-members', variables.teamName],
+  successMessage: (variables) => `User "${variables.newUserEmail}" added to team`,
+  errorMessage: 'Failed to add team member'
+})
 
 // Remove team member
-export const useRemoveTeamMember = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async (data: { teamName: string; removeUserEmail: string }) => {
-      const response = await apiClient.delete('/DeleteUserFromTeam', data)
-      return response
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['team-members', variables.teamName] })
-      showMessage('success', `User "${variables.removeUserEmail}" removed from team`)
-    },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to remove team member')
-    },
-  })
-}
+export const useRemoveTeamMember = createMutation<{ teamName: string; removeUserEmail: string }>({
+  endpoint: '/DeleteUserFromTeam',
+  method: 'delete',
+  invalidateKeys: (variables) => ['team-members', variables.teamName],
+  successMessage: (variables) => `User "${variables.removeUserEmail}" removed from team`,
+  errorMessage: 'Failed to remove team member'
+})

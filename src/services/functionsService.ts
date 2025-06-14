@@ -39,55 +39,44 @@ export function useLocalizedFunctions() {
   const { t } = useTranslation('functions');
 
   // Get localized category data
-  const getLocalizedCategories = () => {
-    const categories: Record<string, { name: string; description: string }> = {};
-    
-    FUNCTION_CATEGORIES.forEach(category => {
-      categories[category] = {
-        name: t(`categories.${category}.name`),
-        description: t(`categories.${category}.description`)
-      };
-    });
-
-    return categories;
-  };
+  const getLocalizedCategories = () => 
+    Object.fromEntries(
+      FUNCTION_CATEGORIES.map(category => [
+        category,
+        {
+          name: t(`categories.${category}.name`),
+          description: t(`categories.${category}.description`)
+        }
+      ])
+    );
 
   // Get localized function data
   const getLocalizedFunction = (functionName: string) => {
     const funcDef = FUNCTION_DEFINITIONS[functionName];
     if (!funcDef) return null;
 
-    const localizedFunc = {
+    return {
       ...funcDef,
       description: t(`functions.${functionName}.description`),
       requirements: funcDef.requirements || {},
-      params: {} as Record<string, any>
+      params: funcDef.params ? Object.fromEntries(
+        Object.entries(funcDef.params).map(([paramName, paramDef]) => [
+          paramName,
+          {
+            ...paramDef,
+            label: t(`functions.${functionName}.params.${paramName}.label`),
+            help: t(`functions.${functionName}.params.${paramName}.help`)
+          }
+        ])
+      ) : {}
     };
-
-    // Localize parameters
-    if (funcDef.params) {
-      Object.entries(funcDef.params).forEach(([paramName, paramDef]) => {
-        localizedFunc.params[paramName] = {
-          ...paramDef,
-          label: t(`functions.${functionName}.params.${paramName}.label`),
-          help: t(`functions.${functionName}.params.${paramName}.help`)
-        };
-      });
-    }
-
-    return localizedFunc;
   };
 
   // Get all localized functions
-  const getLocalizedFunctions = () => {
-    const functions: Record<string, any> = {};
-    
-    Object.keys(FUNCTION_DEFINITIONS).forEach(functionName => {
-      functions[functionName] = getLocalizedFunction(functionName);
-    });
-
-    return functions;
-  };
+  const getLocalizedFunctions = () => 
+    Object.fromEntries(
+      Object.keys(FUNCTION_DEFINITIONS).map(name => [name, getLocalizedFunction(name)])
+    );
 
   // Get functions by category
   const getFunctionsByCategory = (category: string) => {
@@ -107,37 +96,36 @@ export function useLocalizedFunctions() {
 
 // Export function to get raw function data with translations
 export function getFunctionsWithTranslations(t: any) {
-  const categories: Record<string, any> = {};
-  const functions: Record<string, any> = {};
+  const categories = Object.fromEntries(
+    FUNCTION_CATEGORIES.map(category => [
+      category,
+      {
+        name: t(`functions:categories.${category}.name`),
+        description: t(`functions:categories.${category}.description`)
+      }
+    ])
+  );
 
-  // Process categories
-  FUNCTION_CATEGORIES.forEach(category => {
-    categories[category] = {
-      name: t(`functions:categories.${category}.name`),
-      description: t(`functions:categories.${category}.description`)
-    };
-  });
-
-  // Process functions
-  Object.entries(FUNCTION_DEFINITIONS).forEach(([functionName, funcDef]) => {
-    functions[functionName] = {
-      name: functionName,
-      category: funcDef.category,
-      requirements: funcDef.requirements || {},
-      description: t(`functions:functions.${functionName}.description`),
-      params: {} as Record<string, any>
-    };
-
-    // Process parameters
-    if (funcDef.params) {
-      Object.entries(funcDef.params).forEach(([paramName, paramDef]) => {
-        functions[functionName].params[paramName] = {
-          ...paramDef,
-          help: t(`functions:functions.${functionName}.params.${paramName}.help`)
-        };
-      });
-    }
-  });
+  const functions = Object.fromEntries(
+    Object.entries(FUNCTION_DEFINITIONS).map(([functionName, funcDef]) => [
+      functionName,
+      {
+        name: functionName,
+        category: funcDef.category,
+        requirements: funcDef.requirements || {},
+        description: t(`functions:functions.${functionName}.description`),
+        params: funcDef.params ? Object.fromEntries(
+          Object.entries(funcDef.params).map(([paramName, paramDef]) => [
+            paramName,
+            {
+              ...paramDef,
+              help: t(`functions:functions.${functionName}.params.${paramName}.help`)
+            }
+          ])
+        ) : {}
+      }
+    ])
+  );
 
   return { categories, functions };
 }
