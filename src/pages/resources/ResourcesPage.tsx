@@ -9,9 +9,9 @@ import {
   InboxOutlined,
   DesktopOutlined,
   ScheduleOutlined,
-  MoreOutlined,
   FunctionOutlined,
-  WifiOutlined
+  WifiOutlined,
+  HistoryOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
@@ -19,6 +19,7 @@ import { RootState } from '@/store/store'
 import UnifiedResourceModal, { ResourceType } from '@/components/common/UnifiedResourceModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import ConnectivityTestModal from '@/components/common/ConnectivityTestModal'
+import AuditTraceModal from '@/components/common/AuditTraceModal'
 import { showMessage } from '@/utils/messages'
 
 // Team queries
@@ -201,6 +202,14 @@ const ResourcesPage: React.FC = () => {
   
   // Connectivity test modal state
   const [connectivityTestModal, setConnectivityTestModal] = useState(false)
+  
+  // Audit trace modal state
+  const [auditTraceModal, setAuditTraceModal] = useState<{
+    open: boolean
+    entityType: string | null
+    entityIdentifier: string | null
+    entityName?: string
+  }>({ open: false, entityType: null, entityIdentifier: null })
   
   // Dynamic page sizes for tables
   const repositoryPageSize = useDynamicPageSize(repositoryTableRef, {
@@ -601,72 +610,74 @@ const ResourcesPage: React.FC = () => {
     }
   };
 
+  // Handle function selection for storage
+  const handleStorageFunctionSelected = async (functionData: {
+    function: QueueFunction;
+    params: Record<string, any>;
+    priority: number;
+    description: string;
+    selectedMachine?: string;
+  }) => {
+    if (!currentResource || !functionData.selectedMachine) return;
+
+    // Find the selected machine data
+    const teamData = dropdownData?.machinesByTeam?.find(t => t.teamName === currentResource.teamName);
+    const machine = teamData?.machines?.find(m => m.value === functionData.selectedMachine);
+    
+    if (!machine) {
+      showMessage('error', 'Selected machine not found');
+      return;
+    }
+
+    // Find the team vault data for the storage's team
+    const storageTeamData = teamsList.find(t => t.teamName === currentResource.teamName)
+    
+    // Build the queue vault with context data
+    const queueVault = await buildQueueVault({
+      teamName: currentResource.teamName,
+      machineName: machine.value,
+      bridgeName: machine.bridgeName,
+      storageName: currentResource.storageName,
+      functionName: functionData.function.name,
+      params: functionData.params, // Params already include storage from defaultParams
+      priority: functionData.priority,
+      description: functionData.description,
+      addedVia: 'storage-table',
+      // Pass vault data
+      teamVault: storageTeamData?.vaultContent,
+      // TODO: Machine vault not available in dropdown data (would need separate query)
+      // machineVault: machineData?.vaultContent,
+      // TODO: Storage vault not available in current interface
+      // storageVault: currentResource.vaultContent
+    });
+
+    try {
+      const response = await createQueueItemMutation.mutateAsync({
+        teamName: currentResource.teamName,
+        machineName: machine.value,
+        bridgeName: machine.bridgeName,
+        queueVault,
+        priority: functionData.priority
+      });
+      
+      // Reset the modal
+      closeUnifiedModal();
+      
+      // Automatically open the trace modal if queue item was created successfully
+      if (response?.taskId) {
+        showMessage('success', t('storage.queueItemCreated'));
+        setQueueTraceModal({ visible: true, taskId: response.taskId });
+      }
+    } catch (error) {
+      // Error is handled by the mutation
+    }
+  };
+
 
 
 
   // Repository columns
   const repositoryColumns = [
-    {
-      title: t('general.actions'),
-      key: 'actions',
-      width: 80,
-      align: 'center' as const,
-      fixed: 'left' as const,
-      render: (_: any, record: Repository) => (
-        <Dropdown
-          menu={{
-            items: [
-              {
-                key: 'edit',
-                label: t('general.edit'),
-                icon: <EditOutlined />,
-                onClick: () => {
-                  setCurrentResource(record);
-                  openUnifiedModal('repository', 'edit', record);
-                },
-              },
-              {
-                key: 'functions',
-                label: 'Run',
-                icon: <FunctionOutlined />,
-                onClick: () => {
-                  setCurrentResource(record);
-                  // Use a special state to show function selection
-                  setUnifiedModalState({
-                    open: true,
-                    resourceType: 'repository',
-                    mode: 'create',
-                    data: record
-                  });
-                },
-              },
-              {
-                type: 'divider',
-              },
-              {
-                key: 'delete',
-                label: t('general.delete'),
-                icon: <DeleteOutlined />,
-                danger: true,
-                onClick: () => {
-                  Modal.confirm({
-                    title: t('repositories.deleteRepository'),
-                    content: t('repositories.confirmDelete', { repositoryName: record.repositoryName }),
-                    okText: t('general.yes'),
-                    okType: 'danger',
-                    cancelText: t('general.no'),
-                    onOk: () => handleDeleteRepository(record),
-                  });
-                },
-              },
-            ],
-          }}
-          trigger={['click']}
-        >
-          <Button size="small" type="primary" icon={<MoreOutlined />} />
-        </Dropdown>
-      ),
-    },
     {
       title: t('repositories.repositoryName'),
       dataIndex: 'repositoryName',
@@ -695,56 +706,80 @@ const ResourcesPage: React.FC = () => {
       align: 'center' as const,
       render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
     }] : []),
+    {
+      title: t('common:table.actions'),
+      key: 'actions',
+      width: 350,
+      render: (_: any, record: Repository) => (
+        <Space>
+          <Button
+            type="primary"
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => {
+              setCurrentResource(record);
+              openUnifiedModal('repository', 'edit', record);
+            }}
+          >
+            {t('common:actions.edit')}
+          </Button>
+          <Button
+            type="primary"
+            size="small"
+            icon={<FunctionOutlined />}
+            onClick={() => {
+              setCurrentResource(record);
+              // Use a special state to show function selection
+              setUnifiedModalState({
+                open: true,
+                resourceType: 'repository',
+                mode: 'create',
+                data: record
+              });
+            }}
+          >
+            Run
+          </Button>
+          <Button
+            type="primary"
+            size="small"
+            icon={<HistoryOutlined />}
+            onClick={() => {
+              setAuditTraceModal({
+                open: true,
+                entityType: 'Repository',
+                entityIdentifier: record.repositoryName,
+                entityName: record.repositoryName
+              });
+            }}
+          >
+            {t('machines:trace')}
+          </Button>
+          <Button
+            type="primary"
+            danger
+            size="small"
+            icon={<DeleteOutlined />}
+            onClick={() => {
+              Modal.confirm({
+                title: t('repositories.deleteRepository'),
+                content: t('repositories.confirmDelete', { repositoryName: record.repositoryName }),
+                okText: t('general.yes'),
+                okType: 'danger',
+                cancelText: t('general.no'),
+                onOk: () => handleDeleteRepository(record),
+              });
+            }}
+          >
+            {t('common:actions.delete')}
+          </Button>
+        </Space>
+      ),
+    },
   ]
 
   // Storage columns
   const storageColumns = [
-    {
-      title: t('general.actions'),
-      key: 'actions',
-      width: 80,
-      align: 'center' as const,
-      fixed: 'left' as const,
-      render: (_: any, record: Storage) => (
-        <Dropdown
-          menu={{
-            items: [
-              {
-                key: 'edit',
-                label: t('general.edit'),
-                icon: <EditOutlined />,
-                onClick: () => {
-                  setCurrentResource(record);
-                  openUnifiedModal('storage', 'edit', record);
-                },
-              },
-              {
-                type: 'divider',
-              },
-              {
-                key: 'delete',
-                label: t('general.delete'),
-                icon: <DeleteOutlined />,
-                danger: true,
-                onClick: () => {
-                  Modal.confirm({
-                    title: t('storage.deleteStorage'),
-                    content: t('storage.confirmDelete', { storageName: record.storageName }),
-                    okText: t('general.yes'),
-                    okType: 'danger',
-                    cancelText: t('general.no'),
-                    onOk: () => handleDeleteStorage(record),
-                  });
-                },
-              },
-            ],
-          }}
-          trigger={['click']}
-        >
-          <Button size="small" type="primary" icon={<MoreOutlined />} />
-        </Dropdown>
-      ),
-    },
     {
       title: t('storage.storageName'),
       dataIndex: 'storageName',
@@ -773,56 +808,80 @@ const ResourcesPage: React.FC = () => {
       align: 'center' as const,
       render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
     }] : []),
+    {
+      title: t('common:table.actions'),
+      key: 'actions',
+      width: 350,
+      render: (_: any, record: Storage) => (
+        <Space>
+          <Button
+            type="primary"
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => {
+              setCurrentResource(record);
+              openUnifiedModal('storage', 'edit', record);
+            }}
+          >
+            {t('common:actions.edit')}
+          </Button>
+          <Button
+            type="primary"
+            size="small"
+            icon={<FunctionOutlined />}
+            onClick={() => {
+              setCurrentResource(record);
+              // Use a special state to show function selection
+              setUnifiedModalState({
+                open: true,
+                resourceType: 'storage',
+                mode: 'create',
+                data: record
+              });
+            }}
+          >
+            Run
+          </Button>
+          <Button
+            type="primary"
+            size="small"
+            icon={<HistoryOutlined />}
+            onClick={() => {
+              setAuditTraceModal({
+                open: true,
+                entityType: 'Storage',
+                entityIdentifier: record.storageName,
+                entityName: record.storageName
+              });
+            }}
+          >
+            {t('machines:trace')}
+          </Button>
+          <Button
+            type="primary"
+            danger
+            size="small"
+            icon={<DeleteOutlined />}
+            onClick={() => {
+              Modal.confirm({
+                title: t('storage.deleteStorage'),
+                content: t('storage.confirmDelete', { storageName: record.storageName }),
+                okText: t('general.yes'),
+                okType: 'danger',
+                cancelText: t('general.no'),
+                onOk: () => handleDeleteStorage(record),
+              });
+            }}
+          >
+            {t('common:actions.delete')}
+          </Button>
+        </Space>
+      ),
+    },
   ]
 
   // Schedule columns
   const scheduleColumns = [
-    {
-      title: t('general.actions'),
-      key: 'actions',
-      width: 80,
-      align: 'center' as const,
-      fixed: 'left' as const,
-      render: (_: any, record: Schedule) => (
-        <Dropdown
-          menu={{
-            items: [
-              {
-                key: 'edit',
-                label: t('general.edit'),
-                icon: <EditOutlined />,
-                onClick: () => {
-                  setCurrentResource(record);
-                  openUnifiedModal('schedule', 'edit', record);
-                },
-              },
-              {
-                type: 'divider',
-              },
-              {
-                key: 'delete',
-                label: t('general.delete'),
-                icon: <DeleteOutlined />,
-                danger: true,
-                onClick: () => {
-                  Modal.confirm({
-                    title: t('schedules.deleteSchedule'),
-                    content: t('schedules.confirmDelete', { scheduleName: record.scheduleName }),
-                    okText: t('general.yes'),
-                    okType: 'danger',
-                    cancelText: t('general.no'),
-                    onOk: () => handleDeleteSchedule(record),
-                  });
-                },
-              },
-            ],
-          }}
-          trigger={['click']}
-        >
-          <Button size="small" type="primary" icon={<MoreOutlined />} />
-        </Dropdown>
-      ),
-    },
     {
       title: t('schedules.scheduleName'),
       dataIndex: 'scheduleName',
@@ -851,6 +910,59 @@ const ResourcesPage: React.FC = () => {
       align: 'center' as const,
       render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
     }] : []),
+    {
+      title: t('common:table.actions'),
+      key: 'actions',
+      width: 250,
+      render: (_: any, record: Schedule) => (
+        <Space>
+          <Button
+            type="primary"
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => {
+              setCurrentResource(record);
+              openUnifiedModal('schedule', 'edit', record);
+            }}
+          >
+            {t('common:actions.edit')}
+          </Button>
+          <Button
+            type="primary"
+            size="small"
+            icon={<HistoryOutlined />}
+            onClick={() => {
+              setAuditTraceModal({
+                open: true,
+                entityType: 'Schedule',
+                entityIdentifier: record.scheduleName,
+                entityName: record.scheduleName
+              });
+            }}
+          >
+            {t('machines:trace')}
+          </Button>
+          <Button
+            type="primary"
+            danger
+            size="small"
+            icon={<DeleteOutlined />}
+            onClick={() => {
+              Modal.confirm({
+                title: t('schedules.deleteSchedule'),
+                content: t('schedules.confirmDelete', { scheduleName: record.scheduleName }),
+                okText: t('general.yes'),
+                okType: 'danger',
+                cancelText: t('general.no'),
+                onOk: () => handleDeleteSchedule(record),
+              });
+            }}
+          >
+            {t('common:actions.delete')}
+          </Button>
+        </Space>
+      ),
+    },
   ]
 
   // Check if we're currently submitting or updating vault
@@ -1216,10 +1328,12 @@ const ResourcesPage: React.FC = () => {
         onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
         onFunctionSubmit={
           unifiedModalState.data && 
-          (unifiedModalState.resourceType === 'machine' || unifiedModalState.resourceType === 'repository')
+          (unifiedModalState.resourceType === 'machine' || unifiedModalState.resourceType === 'repository' || unifiedModalState.resourceType === 'storage')
             ? unifiedModalState.resourceType === 'machine' 
               ? handleMachineFunctionSelected 
-              : handleRepositoryFunctionSelected
+              : unifiedModalState.resourceType === 'repository'
+              ? handleRepositoryFunctionSelected
+              : handleStorageFunctionSelected
             : undefined
         }
         isSubmitting={isSubmitting}
@@ -1227,10 +1341,19 @@ const ResourcesPage: React.FC = () => {
         functionCategories={
           unifiedModalState.resourceType === 'machine' ? ['machine'] :
           unifiedModalState.resourceType === 'repository' ? ['repository', 'backup', 'network'] : 
+          unifiedModalState.resourceType === 'storage' ? ['backup'] :
           []
         }
-        hiddenParams={unifiedModalState.resourceType === 'repository' ? ['repo'] : []}
-        defaultParams={unifiedModalState.resourceType === 'repository' && currentResource ? { repo: currentResource.repositoryName } : {}}
+        hiddenParams={
+          unifiedModalState.resourceType === 'repository' ? ['repo'] : 
+          unifiedModalState.resourceType === 'storage' ? ['storage'] : 
+          []
+        }
+        defaultParams={
+          unifiedModalState.resourceType === 'repository' && currentResource ? { repo: currentResource.repositoryName } : 
+          unifiedModalState.resourceType === 'storage' && currentResource ? { storage: currentResource.storageName } : 
+          {}
+        }
       />
 
       {/* Queue Item Trace Modal */}
@@ -1246,6 +1369,15 @@ const ResourcesPage: React.FC = () => {
         onClose={() => setConnectivityTestModal(false)}
         machines={machines}
         teamFilter={selectedTeams}
+      />
+
+      {/* Audit Trace Modal */}
+      <AuditTraceModal
+        open={auditTraceModal.open}
+        onCancel={() => setAuditTraceModal({ open: false, entityType: null, entityIdentifier: null })}
+        entityType={auditTraceModal.entityType}
+        entityIdentifier={auditTraceModal.entityIdentifier}
+        entityName={auditTraceModal.entityName}
       />
     </>
   )

@@ -80,11 +80,14 @@
   },
   "storage": {
     "storageName": "Storage Name",
+    "storage": "Storage",
     "createStorage": "Add Storage",
     "editStorage": "Edit Storage",
     "deleteStorage": "Delete Storage",
     "confirmDelete": "Are you sure you want to delete storage \"{{storageName}}\"?",
     "noStorage": "No storage found in this team",
+    "storageFunctions": "Storage Functions",
+    "queueItemCreated": "Queue item created successfully",
     "placeholders": {
       "enterStorageName": "Enter storage name"
     }

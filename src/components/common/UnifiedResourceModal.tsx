@@ -546,8 +546,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     await onSubmit(data)
   }
 
-  // Show functions button only for machines and repositories
-  const showFunctions = (resourceType === 'machine' || resourceType === 'repository') && 
+  // Show functions button only for machines, repositories, and storage
+  const showFunctions = (resourceType === 'machine' || resourceType === 'repository' || resourceType === 'storage') && 
     mode === 'create' && 
     existingData &&
     onFunctionSubmit &&
@@ -596,7 +596,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             setShowFunctionModal(false)
             onCancel()
           }}
-          title={resourceType === 'machine' ? t('machines:systemFunctions') : t(`${getResourceTranslationKey()}.${resourceType}Functions`)}
+          title={
+            resourceType === 'machine' ? t('machines:systemFunctions') : 
+            resourceType === 'storage' ? t('resources:storage.storageFunctions') :
+            t(`${getResourceTranslationKey()}.${resourceType}Functions`)
+          }
           subtitle={
             <Space size="small">
               <Text type="secondary">{t('machines:team')}:</Text>
@@ -613,11 +617,17 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                   <Text strong>{existingData.repositoryName}</Text>
                 </>
               )}
+              {resourceType === 'storage' && (
+                <>
+                  <Text type="secondary" style={{ marginLeft: 16 }}>{t('resources:storage.storage')}:</Text>
+                  <Text strong>{existingData.storageName}</Text>
+                </>
+              )}
             </Space>
           }
           allowedCategories={functionCategories}
           loading={isSubmitting}
-          showMachineSelection={resourceType === 'repository'}
+          showMachineSelection={resourceType === 'repository' || resourceType === 'storage'}
           teamName={existingData?.teamName}
           machines={dropdownData?.machinesByTeam?.find(t => t.teamName === existingData?.teamName)?.machines || []}
           hiddenParams={hiddenParams}

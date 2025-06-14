@@ -80,11 +80,14 @@
   },
   "storage": {
     "storageName": "Nombre del Almacenamiento",
+    "storage": "Almacenamiento",
     "createStorage": "Agregar Almacenamiento",
     "editStorage": "Editar Almacenamiento",
     "deleteStorage": "Eliminar Almacenamiento",
     "confirmDelete": "¿Está seguro de que desea eliminar el almacenamiento \"{{storageName}}\"?",
     "noStorage": "No se encontró almacenamiento en este equipo",
+    "storageFunctions": "Funciones de Almacenamiento",
+    "queueItemCreated": "Elemento de cola creado exitosamente",
     "placeholders": {
       "enterStorageName": "Ingrese el nombre del almacenamiento"
     }
