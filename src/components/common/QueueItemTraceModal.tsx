@@ -38,6 +38,8 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
   const [isMonitoring, setIsMonitoring] = useState(false)
   const [activeKeys, setActiveKeys] = useState<string[]>(['overview']) // Start with overview panel open
   const [simpleMode, setSimpleMode] = useState(false) // Start in detailed mode to show all 7 result sets
+  const [accumulatedOutput, setAccumulatedOutput] = useState<string>('') // Store accumulated console output
+  const [lastOutputStatus, setLastOutputStatus] = useState<string>('') // Track the last status to detect completion
   const { data: traceData, isLoading: isTraceLoading, refetch: refetchTrace } = useQueueItemTrace(taskId, visible)
   const { theme } = useTheme()
   const consoleOutputRef = useRef<HTMLDivElement>(null)
@@ -49,12 +51,70 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
     }
   }, [traceData, visible])
 
-  // Auto-scroll console output to bottom when trace data updates
+  // Auto-scroll console output to bottom when output updates
   useEffect(() => {
-    if (consoleOutputRef.current && traceData?.responseVaultContent?.hasContent) {
+    if (consoleOutputRef.current && accumulatedOutput) {
       consoleOutputRef.current.scrollTop = consoleOutputRef.current.scrollHeight
     }
-  }, [traceData?.responseVaultContent])
+  }, [accumulatedOutput])
+
+  // Handle accumulating console output
+  useEffect(() => {
+    if (traceData?.responseVaultContent?.hasContent && traceData.responseVaultContent.vaultContent) {
+      try {
+        const vaultContent = typeof traceData.responseVaultContent.vaultContent === 'string' 
+          ? JSON.parse(traceData.responseVaultContent.vaultContent) 
+          : traceData.responseVaultContent.vaultContent || {}
+        
+        if (vaultContent.status === 'completed') {
+          // For completed status, replace accumulated output with final result
+          let finalOutput = ''
+          if (vaultContent.result && typeof vaultContent.result === 'string') {
+            try {
+              const result = JSON.parse(vaultContent.result)
+              finalOutput = result.command_output || result.output || result.message || ''
+            } catch (e) {
+              finalOutput = vaultContent.result
+            }
+          }
+          setAccumulatedOutput(finalOutput)
+          setLastOutputStatus('completed')
+        } else if (vaultContent.status === 'in_progress' && vaultContent.message) {
+          // For in-progress updates, append new output
+          const newLine = vaultContent.message
+          if (newLine && lastOutputStatus !== 'completed') {
+            setAccumulatedOutput(prev => {
+              // Only append if it's actually new content
+              if (!prev.endsWith(newLine)) {
+                return prev + (prev ? '\n' : '') + newLine
+              }
+              return prev
+            })
+            setLastOutputStatus('in_progress')
+          }
+        } else if (!accumulatedOutput) {
+          // Handle initial load for already completed tasks or other formats
+          let initialOutput = ''
+          if (vaultContent.result && typeof vaultContent.result === 'string') {
+            try {
+              const result = JSON.parse(vaultContent.result)
+              initialOutput = result.command_output || result.output || result.message || ''
+            } catch (e) {
+              initialOutput = vaultContent.result
+            }
+          } else if (vaultContent.result && typeof vaultContent.result === 'object') {
+            const result = vaultContent.result
+            initialOutput = result.command_output || result.output || result.message || ''
+          }
+          if (initialOutput) {
+            setAccumulatedOutput(initialOutput)
+          }
+        }
+      } catch (error) {
+        console.error('Error processing console output:', error)
+      }
+    }
+  }, [traceData?.responseVaultContent, lastOutputStatus, accumulatedOutput])
 
   // Reset last fetch time when modal is opened with new taskId
   useEffect(() => {
@@ -65,6 +125,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
       // Reset collapsed state and simple mode when opening modal
       setActiveKeys(['overview'])
       setSimpleMode(false)
+      // Reset accumulated output when opening modal with new task
+      setAccumulatedOutput('')
+      setLastOutputStatus('')
     }
   }, [taskId, visible])
 
@@ -604,6 +667,11 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                         <Space>
                           <CodeOutlined />
                           <Text>Response (Console)</Text>
+                          {traceData.queueDetails?.status === 'PROCESSING' && (
+                            <Tag icon={<SyncOutlined spin />} color="processing">
+                              Live Output
+                            </Tag>
+                          )}
                         </Space>
                       }
                       size="small"
@@ -612,39 +680,30 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                       {traceData.responseVaultContent && traceData.responseVaultContent.hasContent ? (
                         (() => {
                           try {
-                            // Parse the vault content
+                            // Parse the vault content for progress info
                             const vaultContent = typeof traceData.responseVaultContent.vaultContent === 'string' 
                               ? JSON.parse(traceData.responseVaultContent.vaultContent) 
                               : traceData.responseVaultContent.vaultContent || {}
                             
-                            // Parse the result field which contains the actual response
-                            let result: any = {}
-                            if (vaultContent.result && typeof vaultContent.result === 'string') {
-                              try {
-                                result = JSON.parse(vaultContent.result)
-                              } catch (e) {
-                                // If parsing fails, treat result as a plain string
-                                result = { command_output: vaultContent.result }
-                              }
-                            } else if (vaultContent.result && typeof vaultContent.result === 'object') {
-                              result = vaultContent.result
-                            }
+                            // Check for progress information in intermediate updates
+                            const progressInfo = vaultContent.progress
                             
-                            // Extract command_output - handle various possible structures
-                            let commandOutput = result.command_output || result.output || result.message || ''
-                            
-                            // If still no output, check if the entire result is a string
-                            if (!commandOutput && typeof result === 'string') {
-                              commandOutput = result
-                            }
-                            
-                            // If still no output, try to display the entire vault content as JSON
-                            if (!commandOutput && Object.keys(result).length > 0) {
-                              commandOutput = JSON.stringify(result, null, 2)
-                            }
+                            // Use accumulated output instead of parsing each time
+                            const commandOutput = accumulatedOutput
                             
                             // Display command output in a pre-formatted text area
-                            return commandOutput ? (
+                            return (
+                              <div>
+                                {progressInfo && progressInfo.percentage !== undefined && (
+                                  <div style={{ marginBottom: '12px' }}>
+                                    <Progress 
+                                      percent={progressInfo.percentage} 
+                                      status="active"
+                                      format={(percent) => `${percent}% - ${progressInfo.rate || ''} - ETA: ${progressInfo.eta || ''}`}
+                                    />
+                                  </div>
+                                )}
+                                {commandOutput ? (
                               <div 
                                 ref={consoleOutputRef}
                                 style={{ 
@@ -664,6 +723,8 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                               </div>
                             ) : (
                               <Empty description="No console output available" />
+                            )}
+                              </div>
                             )
                           } catch (error) {
                             console.error('Failed to parse response console output:', error, traceData.responseVaultContent)
