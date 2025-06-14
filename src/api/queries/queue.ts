@@ -19,12 +19,13 @@ export interface QueueItem {
   createdTime: string
   ageInMinutes: number
   assignedTime?: string
-  lastHeartbeat?: string
-  minutesSinceHeartbeat?: number
-  healthStatus: 'PENDING' | 'ACTIVE' | 'STALE' | 'COMPLETED' | 'CANCELLED' | 'FAILED' | 'UNKNOWN'
+  lastAssigned?: string
+  minutesSinceAssigned?: number
+  healthStatus: 'PENDING' | 'ACTIVE' | 'STALE' | 'STALE_PENDING' | 'COMPLETED' | 'CANCELLED' | 'FAILED' | 'UNKNOWN'
   canBeCancelled: boolean
   hasResponse: boolean
   retryCount?: number
+  lastRetryAt?: string
   lastFailureReason?: string
   permanentlyFailed?: boolean
   createdBy?: string

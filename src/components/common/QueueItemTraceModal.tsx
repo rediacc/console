@@ -153,18 +153,39 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
     }
   }
 
-  // Helper function to check if task is stale (5+ minute heartbeat timeout)
+  // Helper function to check if task is stale (5+ minute since assigned)
   const isTaskStale = () => {
     if (!traceData?.queueDetails) return false
-    const lastHeartbeat = normalizeProperty(traceData.queueDetails, 'lastHeartbeat', 'LastHeartbeat')
+    const lastAssigned = normalizeProperty(traceData.queueDetails, 'lastAssigned', 'LastAssigned') || normalizeProperty(traceData.queueDetails, 'assignedTime', 'AssignedTime')
+    const lastRetryAt = normalizeProperty(traceData.queueDetails, 'lastRetryAt', 'LastRetryAt')
     const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
     
-    if (!lastHeartbeat || status === 'COMPLETED' || status === 'CANCELLED' || status === 'FAILED') {
+    if (!lastAssigned || status === 'COMPLETED' || status === 'CANCELLED' || status === 'FAILED' || status === 'PENDING') {
       return false
     }
     
-    const minutesSinceHeartbeat = dayjs().diff(dayjs(lastHeartbeat), 'minute')
-    return minutesSinceHeartbeat >= 5
+    const minutesSinceAssigned = dayjs().diff(dayjs(lastAssigned), 'minute')
+    // If there was a recent retry, check from retry time instead
+    if (lastRetryAt) {
+      const minutesSinceRetry = dayjs().diff(dayjs(lastRetryAt), 'minute')
+      return minutesSinceAssigned >= 5 && minutesSinceRetry >= 5
+    }
+    return minutesSinceAssigned >= 5
+  }
+
+  // Helper function to check if task is old pending (6+ hours)
+  const isStalePending = () => {
+    if (!traceData?.queueDetails) return false
+    const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
+    const healthStatus = normalizeProperty(traceData.queueDetails, 'healthStatus', 'HealthStatus')
+    const createdTime = normalizeProperty(traceData.queueDetails, 'createdTime', 'CreatedTime')
+    
+    if (healthStatus === 'STALE_PENDING') return true
+    
+    if (status !== 'PENDING' || !createdTime) return false
+    
+    const hoursSinceCreated = dayjs().diff(dayjs(createdTime), 'hour')
+    return hoursSinceCreated >= 6
   }
 
   // Helper function to get priority color and icon
@@ -301,7 +322,19 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
           {isTaskStale() && (
             <Alert
               message="Task May Be Stale"
-              description="This task hasn't reported a heartbeat in over 5 minutes and may be stuck."
+              description="This task has been processing for over 5 minutes and may be stuck."
+              type="warning"
+              showIcon
+              icon={<WarningOutlined />}
+              style={{ marginBottom: 16 }}
+            />
+          )}
+          
+          {/* Old Pending Warning */}
+          {isStalePending() && (
+            <Alert
+              message="Old Pending Task"
+              description={`This task has been pending for over 6 hours. It may expire soon if not processed.`}
               type="warning"
               showIcon
               icon={<WarningOutlined />}
@@ -553,9 +586,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                         </Col>
                         <Col span={8}>
                           <Statistic
-                            title="Last HB"
-                            value={traceData.queueDetails.lastHeartbeat ? dayjs().diff(dayjs(traceData.queueDetails.lastHeartbeat), 'minute') : 'N/A'}
-                            suffix={traceData.queueDetails.lastHeartbeat ? 'min ago' : ''}
+                            title="Processing"
+                            value={traceData.queueDetails.assignedTime ? dayjs().diff(dayjs(traceData.queueDetails.assignedTime), 'minute') : 'N/A'}
+                            suffix={traceData.queueDetails.assignedTime ? 'min' : ''}
                             prefix={<HourglassOutlined />}
                             valueStyle={{ color: isTaskStale() ? '#ff4d4f' : undefined }}
                           />
@@ -587,11 +620,28 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                             // Parse the result field which contains the actual response
                             let result: any = {}
                             if (vaultContent.result && typeof vaultContent.result === 'string') {
-                              result = JSON.parse(vaultContent.result)
+                              try {
+                                result = JSON.parse(vaultContent.result)
+                              } catch (e) {
+                                // If parsing fails, treat result as a plain string
+                                result = { command_output: vaultContent.result }
+                              }
+                            } else if (vaultContent.result && typeof vaultContent.result === 'object') {
+                              result = vaultContent.result
                             }
                             
-                            // Extract command_output
-                            const commandOutput = result.command_output || ''
+                            // Extract command_output - handle various possible structures
+                            let commandOutput = result.command_output || result.output || result.message || ''
+                            
+                            // If still no output, check if the entire result is a string
+                            if (!commandOutput && typeof result === 'string') {
+                              commandOutput = result
+                            }
+                            
+                            // If still no output, try to display the entire vault content as JSON
+                            if (!commandOutput && Object.keys(result).length > 0) {
+                              commandOutput = JSON.stringify(result, null, 2)
+                            }
                             
                             // Display command output in a pre-formatted text area
                             return commandOutput ? (
@@ -616,8 +666,34 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                               <Empty description="No console output available" />
                             )
                           } catch (error) {
-                            console.error('Failed to parse response console output:', error)
-                            return <Empty description="Failed to parse console output" />
+                            console.error('Failed to parse response console output:', error, traceData.responseVaultContent)
+                            // Try to display raw vault content as fallback
+                            try {
+                              const rawContent = typeof traceData.responseVaultContent.vaultContent === 'string' 
+                                ? traceData.responseVaultContent.vaultContent 
+                                : JSON.stringify(traceData.responseVaultContent.vaultContent, null, 2)
+                              return (
+                                <div 
+                                  ref={consoleOutputRef}
+                                  style={{ 
+                                  backgroundColor: theme === 'dark' ? '#1f1f1f' : '#f5f5f5',
+                                  border: `1px solid ${theme === 'dark' ? '#303030' : '#d9d9d9'}`,
+                                  borderRadius: '4px',
+                                  padding: '12px',
+                                  fontFamily: 'monospace',
+                                  fontSize: '12px',
+                                  lineHeight: '1.5',
+                                  whiteSpace: 'pre-wrap',
+                                  wordBreak: 'break-word',
+                                  maxHeight: '400px',
+                                  overflowY: 'auto'
+                                }}>
+                                  {rawContent}
+                                </div>
+                              )
+                            } catch (fallbackError) {
+                              return <Empty description="Failed to parse console output" />
+                            }
                           }
                         })()
                       ) : (
@@ -680,9 +756,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                     {dayjs(traceData.queueDetails.assignedTime).format('YYYY-MM-DD HH:mm:ss')}
                   </Descriptions.Item>
                 )}
-                {traceData.queueDetails.lastHeartbeat && (
-                  <Descriptions.Item label="Last Heartbeat">
-                    {dayjs(traceData.queueDetails.lastHeartbeat).format('YYYY-MM-DD HH:mm:ss')}
+                {traceData.queueDetails.lastRetryAt && (
+                  <Descriptions.Item label="Last Retry">
+                    {dayjs(traceData.queueDetails.lastRetryAt).format('YYYY-MM-DD HH:mm:ss')}
                   </Descriptions.Item>
                 )}
                 <Descriptions.Item label="Total Duration">

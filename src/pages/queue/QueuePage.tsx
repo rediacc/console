@@ -163,6 +163,7 @@ const QueuePage: React.FC = () => {
           'PENDING': { color: 'default', icon: <ClockCircleOutlined /> },
           'ACTIVE': { color: 'processing', icon: <PlayCircleOutlined /> },
           'STALE': { color: 'warning', icon: <WarningOutlined /> },
+          'STALE_PENDING': { color: 'orange', icon: <WarningOutlined /> },
           'COMPLETED': { color: 'success', icon: <CheckCircleOutlined /> },
           'FAILED': { color: 'error', icon: <ExclamationCircleOutlined /> },
           'CANCELLED': { color: 'error', icon: <CloseCircleOutlined /> },
@@ -174,8 +175,16 @@ const QueuePage: React.FC = () => {
         const statusText = healthStatus === 'ACTIVE' && record.status ? 
           `${record.status} (${healthStatus})` : healthStatus
         
+        let tooltipText = undefined
+        if (record.minutesSinceAssigned) {
+          tooltipText = `${record.minutesSinceAssigned} minutes since assigned`
+        } else if (healthStatus === 'STALE_PENDING') {
+          const hoursOld = Math.floor(record.ageInMinutes / 60)
+          tooltipText = `Pending for ${hoursOld} hours - may need attention`
+        }
+        
         return (
-          <Tooltip title={record.minutesSinceHeartbeat ? `${record.minutesSinceHeartbeat} minutes since last heartbeat` : undefined}>
+          <Tooltip title={tooltipText}>
             <Tag color={config.color} icon={config.icon}>
               {statusText}
             </Tag>
@@ -282,7 +291,16 @@ const QueuePage: React.FC = () => {
         const icon = retryCount >= 2 && record.permanentlyFailed ? <ExclamationCircleOutlined /> : undefined
         
         return (
-          <Tooltip title={record.lastFailureReason || 'No failures'}>
+          <Tooltip title={
+            <div>
+              {record.lastFailureReason || 'No failures'}
+              {record.lastRetryAt && (
+                <div style={{ marginTop: 4, fontSize: '12px' }}>
+                  Last retry: {new Date(record.lastRetryAt).toLocaleString()}
+                </div>
+              )}
+            </div>
+          }>
             <Tag color={color} icon={icon}>
               {retryCount}/2
             </Tag>
@@ -297,6 +315,34 @@ const QueuePage: React.FC = () => {
       key: 'createdBy',
       width: 150,
       render: (createdBy: string | undefined) => createdBy || <Text type="secondary">-</Text>,
+    },
+    {
+      title: 'Age',
+      dataIndex: 'ageInMinutes',
+      key: 'age',
+      width: 100,
+      render: (ageInMinutes: number, record: any) => {
+        const hours = Math.floor(ageInMinutes / 60)
+        const minutes = ageInMinutes % 60
+        
+        let ageText = ''
+        if (hours > 0) {
+          ageText = `${hours}h ${minutes}m`
+        } else {
+          ageText = `${minutes}m`
+        }
+        
+        // Color coding based on age and status
+        let color = undefined
+        if (record.status === 'PENDING' && hours >= 6) {
+          color = 'orange' // Warning for old pending items
+        } else if (record.status === 'PENDING' && hours >= 12) {
+          color = 'red' // Critical for very old pending items
+        }
+        
+        return <Text style={{ color }}>{ageText}</Text>
+      },
+      sorter: (a: any, b: any) => a.ageInMinutes - b.ageInMinutes,
     },
     {
       title: 'Created',

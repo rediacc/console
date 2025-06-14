@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { Modal, Row, Col, Card, Input, Space, Form, Slider, Empty, Typography, Tag, Button, Select, Tooltip, InputNumber, Alert } from 'antd'
-import { ExclamationCircleOutlined } from '@ant-design/icons'
+import { ExclamationCircleOutlined, WarningOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import type { QueueFunction } from '@/api/queries/queue'
 import { useLocalizedFunctions } from '@/services/functionsService'
@@ -348,8 +348,8 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                         tooltip={{
                           formatter: (value?: number) => {
                             const labels = {
-                              1: t('functions:priorityHigh'),
-                              2: t('functions:priorityAboveNormal'),
+                              1: t('functions:priorityHighest'),
+                              2: t('functions:priorityHigh'),
                               3: t('functions:priorityNormal'),
                               4: t('functions:priorityBelowNormal'),
                               5: t('functions:priorityLow')
@@ -370,21 +370,42 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                           icon={functionPriority === 1 ? <ExclamationCircleOutlined /> : undefined}
                         >
                           {t('functions:currentPriority')}: {
-                            functionPriority === 1 ? t('functions:priorityHigh') :
-                            functionPriority === 2 ? t('functions:priorityAboveNormal') :
+                            functionPriority === 1 ? t('functions:priorityHighest') :
+                            functionPriority === 2 ? t('functions:priorityHigh') :
                             functionPriority === 3 ? t('functions:priorityNormal') :
                             functionPriority === 4 ? t('functions:priorityBelowNormal') :
                             t('functions:priorityLow')
                           } ({functionPriority})
                         </Tag>
                       </div>
-                      {(functionPriority === 1 || functionPriority === 2) && (
+                      {functionPriority && (
                         <Alert
-                          message={t('functions:priorityHighWarning')}
-                          description={t('functions:priorityHighWarningDescription')}
-                          type="warning"
+                          message={
+                            functionPriority === 1 ? t('functions:priorityHighestWarning') :
+                            functionPriority === 2 ? t('functions:priorityHighWarning') :
+                            functionPriority === 3 ? t('functions:priorityNormalWarning') :
+                            functionPriority === 4 ? t('functions:priorityLowWarning') :
+                            t('functions:priorityLowestWarning')
+                          }
+                          description={
+                            functionPriority === 1 ? t('functions:priorityHighestDescription') :
+                            functionPriority === 2 ? t('functions:priorityHighDescription') :
+                            functionPriority === 3 ? t('functions:priorityNormalDescription') :
+                            functionPriority === 4 ? t('functions:priorityLowDescription') :
+                            t('functions:priorityLowestDescription')
+                          }
+                          type={
+                            functionPriority === 1 ? 'error' :
+                            functionPriority === 2 ? 'warning' :
+                            functionPriority === 3 ? 'info' :
+                            'success'
+                          }
                           showIcon
-                          icon={<ExclamationCircleOutlined />}
+                          icon={
+                            functionPriority === 1 ? <ExclamationCircleOutlined /> :
+                            functionPriority === 2 ? <WarningOutlined /> :
+                            undefined
+                          }
                           style={{ marginTop: 16 }}
                         />
                       )}

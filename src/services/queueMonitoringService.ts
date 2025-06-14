@@ -207,9 +207,9 @@ class QueueMonitoringService {
         }
       }
 
-      // Check for stale tasks (no heartbeat for more than 5 minutes during processing)
-      if (currentStatus === 'PROCESSING' && queueDetails.minutesSinceHeartbeat > 5) {
-        showMessage('error', `Queue task ${task.taskId} appears to be stale (no heartbeat for ${queueDetails.minutesSinceHeartbeat} minutes)`)
+      // Check for stale tasks (no assignment update for more than 5 minutes during processing)
+      if (currentStatus === 'PROCESSING' && queueDetails.minutesSinceAssigned && queueDetails.minutesSinceAssigned > 5) {
+        showMessage('error', `Queue task ${task.taskId} appears to be stale (no progress for ${queueDetails.minutesSinceAssigned} minutes)`)
         // Continue monitoring but less frequently
         task.checkInterval = this.CHECK_INTERVAL * 2 // Check every 2 minutes for stale tasks
         this.monitoredTasks.set(task.taskId, task)
