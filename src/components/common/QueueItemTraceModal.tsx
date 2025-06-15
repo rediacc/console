@@ -72,7 +72,16 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
           if (vaultContent.result && typeof vaultContent.result === 'string') {
             try {
               const result = JSON.parse(vaultContent.result)
-              finalOutput = result.command_output || result.output || result.message || ''
+              // Extract command output from the cleaned response structure
+              finalOutput = result.command_output || ''
+              
+              // If no command output but we have a message, show it
+              if (!finalOutput && result.message) {
+                finalOutput = `[${result.status}] ${result.message}`
+                if (result.exit_code !== undefined) {
+                  finalOutput += ` (exit code: ${result.exit_code})`
+                }
+              }
             } catch (e) {
               finalOutput = vaultContent.result
             }
@@ -98,13 +107,29 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
           if (vaultContent.result && typeof vaultContent.result === 'string') {
             try {
               const result = JSON.parse(vaultContent.result)
-              initialOutput = result.command_output || result.output || result.message || ''
+              // Extract command output from the cleaned response structure
+              initialOutput = result.command_output || ''
+              
+              // If no command output but we have a message, show it
+              if (!initialOutput && result.message) {
+                initialOutput = `[${result.status}] ${result.message}`
+                if (result.exit_code !== undefined) {
+                  initialOutput += ` (exit code: ${result.exit_code})`
+                }
+              }
             } catch (e) {
               initialOutput = vaultContent.result
             }
           } else if (vaultContent.result && typeof vaultContent.result === 'object') {
             const result = vaultContent.result
-            initialOutput = result.command_output || result.output || result.message || ''
+            // Same logic for object format
+            initialOutput = result.command_output || ''
+            if (!initialOutput && result.message) {
+              initialOutput = `[${result.status}] ${result.message}`
+              if (result.exit_code !== undefined) {
+                initialOutput += ` (exit code: ${result.exit_code})`
+              }
+            }
           }
           if (initialOutput) {
             setAccumulatedOutput(initialOutput)
@@ -680,13 +705,10 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                       {traceData.responseVaultContent && traceData.responseVaultContent.hasContent ? (
                         (() => {
                           try {
-                            // Parse the vault content for progress info
+                            // Parse the vault content
                             const vaultContent = typeof traceData.responseVaultContent.vaultContent === 'string' 
                               ? JSON.parse(traceData.responseVaultContent.vaultContent) 
                               : traceData.responseVaultContent.vaultContent || {}
-                            
-                            // Check for progress information in intermediate updates
-                            const progressInfo = vaultContent.progress
                             
                             // Use accumulated output instead of parsing each time
                             // Convert escape sequences to actual newlines
