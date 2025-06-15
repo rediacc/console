@@ -689,25 +689,15 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                             const progressInfo = vaultContent.progress
                             
                             // Use accumulated output instead of parsing each time
+                            // Convert escape sequences to actual newlines
                             const commandOutput = accumulatedOutput
+                              .replace(/\\r\\n/g, '\n')  // Replace \r\n with newline
+                              .replace(/\\n/g, '\n')     // Replace \n with newline
+                              .replace(/\\r/g, '\r')     // Replace \r with carriage return
                             
                             // Display command output in a pre-formatted text area
                             return (
                               <div>
-                                {progressInfo && progressInfo.percentage !== undefined && progressInfo.percentage > 0 && (
-                                  <div style={{ marginBottom: '12px' }}>
-                                    <Progress 
-                                      percent={progressInfo.percentage} 
-                                      status="active"
-                                      format={(percent) => {
-                                        if (progressInfo.rate || progressInfo.eta) {
-                                          return `${percent}% - ${progressInfo.rate || ''} - ETA: ${progressInfo.eta || ''}`
-                                        }
-                                        return `${percent}%`
-                                      }}
-                                    />
-                                  </div>
-                                )}
                                 {commandOutput ? (
                               <div 
                                 ref={consoleOutputRef}
