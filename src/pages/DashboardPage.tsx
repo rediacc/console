@@ -269,7 +269,7 @@ const DashboardPage = () => {
                     <Col span={6}>
                       <Statistic
                         title="Pending"
-                        value={dashboard.queueStats.pending_count || dashboard.queueStats.PendingCount || 0}
+                        value={dashboard.queueStats.pending_count || 0}
                         valueStyle={{ color: token.colorWarning }}
                         prefix={<ClockCircleOutlined />}
                       />
@@ -277,7 +277,7 @@ const DashboardPage = () => {
                     <Col span={6}>
                       <Statistic
                         title="Processing"
-                        value={dashboard.queueStats.active_count || dashboard.queueStats.ActiveCount || 0}
+                        value={dashboard.queueStats.active_count || 0}
                         valueStyle={{ color: token.colorInfo }}
                         prefix={<SyncOutlined spin />}
                       />
@@ -285,7 +285,7 @@ const DashboardPage = () => {
                     <Col span={6}>
                       <Statistic
                         title="Completed"
-                        value={dashboard.queueStats.completed_count || dashboard.queueStats.CompletedCount || 0}
+                        value={dashboard.queueStats.completed_count || 0}
                         valueStyle={{ color: token.colorSuccess }}
                         prefix={<CheckCircleOutlined />}
                       />
@@ -293,7 +293,7 @@ const DashboardPage = () => {
                     <Col span={6}>
                       <Statistic
                         title="Failed"
-                        value={dashboard.queueStats.failed_count || dashboard.queueStats.FailedCount || 0}
+                        value={dashboard.queueStats.failed_count || 0}
                         valueStyle={{ color: token.colorError }}
                         prefix={<ExclamationCircleOutlined />}
                       />
@@ -301,20 +301,20 @@ const DashboardPage = () => {
                   </Row>
 
                   {/* Queue Alerts */}
-                  {((dashboard.queueStats.has_stale_items || dashboard.queueStats.HasStaleItems) === 1 || 
-                    (dashboard.queueStats.has_old_pending_items || dashboard.queueStats.HasOldPendingItems) === 1) && (
+                  {(dashboard.queueStats.has_stale_items === 1 || 
+                    dashboard.queueStats.has_old_pending_items === 1) && (
                     <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                      {(dashboard.queueStats.has_stale_items || dashboard.queueStats.HasStaleItems) === 1 && (
+                      {dashboard.queueStats.has_stale_items === 1 && (
                         <Alert
-                          message={`${dashboard.queueStats.stale_count || dashboard.queueStats.StaleCount || 0} stale items`}
+                          message={`${dashboard.queueStats.stale_count || 0} stale items`}
                           type="warning"
                           showIcon
                           icon={<WarningOutlined />}
                         />
                       )}
-                      {(dashboard.queueStats.has_old_pending_items || dashboard.queueStats.HasOldPendingItems) === 1 && (
+                      {dashboard.queueStats.has_old_pending_items === 1 && (
                         <Alert
-                          message={`Oldest: ${Math.floor((dashboard.queueStats.oldest_pending_age_minutes || dashboard.queueStats.OldestPendingAgeMinutes || 0) / 60)}h`}
+                          message={`Oldest: ${Math.floor((dashboard.queueStats.oldest_pending_age_minutes || 0) / 60)}h`}
                           type="info"
                           showIcon
                           icon={<FieldTimeOutlined />}
@@ -454,19 +454,19 @@ const DashboardPage = () => {
                   <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Text type="secondary">Created</Text>
-                      <Text strong style={{ fontSize: 18 }}>{dashboard.queueStats.created_today || dashboard.queueStats.CreatedToday || 0}</Text>
+                      <Text strong style={{ fontSize: 18 }}>{dashboard.queueStats.created_today || 0}</Text>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Text type="secondary">Completed</Text>
-                      <Text strong style={{ fontSize: 18, color: token.colorSuccess }}>{dashboard.queueStats.completed_today || dashboard.queueStats.CompletedToday || 0}</Text>
+                      <Text strong style={{ fontSize: 18, color: token.colorSuccess }}>{dashboard.queueStats.completed_today || 0}</Text>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Text type="secondary">Cancelled</Text>
-                      <Text strong style={{ fontSize: 18, color: token.colorError }}>{dashboard.queueStats.cancelled_today || dashboard.queueStats.CancelledToday || 0}</Text>
+                      <Text strong style={{ fontSize: 18, color: token.colorError }}>{dashboard.queueStats.cancelled_today || 0}</Text>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Text type="secondary">Failed</Text>
-                      <Text strong style={{ fontSize: 18, color: token.colorError }}>{dashboard.queueStats.failed_today || dashboard.queueStats.FailedToday || 0}</Text>
+                      <Text strong style={{ fontSize: 18, color: token.colorError }}>{dashboard.queueStats.failed_today || 0}</Text>
                     </div>
                   </Space>
                 </div>
@@ -476,7 +476,7 @@ const DashboardPage = () => {
               <Col xs={24} lg={16}>
                 <Space direction="vertical" size="large" style={{ width: '100%' }}>
                   {/* Team Issues */}
-                  {(dashboard.queueStats.team_issues || dashboard.queueStats.TeamIssues) && 
+                  {dashboard.queueStats.team_issues && 
                    Array.isArray(dashboard.queueStats.team_issues || dashboard.queueStats.TeamIssues) && 
                    (dashboard.queueStats.team_issues || dashboard.queueStats.TeamIssues).length > 0 && (
                     <div>
@@ -490,15 +490,15 @@ const DashboardPage = () => {
                           <List.Item style={{ paddingLeft: 0, paddingRight: 0 }}>
                             <div style={{ width: '100%' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                <Text strong>{team.team_name || team.TeamName}</Text>
+                                <Text strong>{team.team_name}</Text>
                                 <Space size="small">
-                                  {(team.stale_items || team.StaleItems || 0) > 0 && (
+                                  {(team.stale_items || 0) > 0 && (
                                     <Tag color="warning">
-                                      <WarningOutlined /> {team.stale_items || team.StaleItems} stale
+                                      <WarningOutlined /> {team.stale_items} stale
                                     </Tag>
                                   )}
-                                  <Tag color="blue">{team.pending_items || team.PendingItems || 0} pending</Tag>
-                                  <Tag color="processing">{team.active_items || team.ActiveItems || 0} active</Tag>
+                                  <Tag color="blue">{team.pending_items || 0} pending</Tag>
+                                  <Tag color="processing">{team.active_items || 0} active</Tag>
                                 </Space>
                               </div>
                             </div>

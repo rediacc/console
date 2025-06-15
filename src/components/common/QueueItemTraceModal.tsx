@@ -694,12 +694,17 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                             // Display command output in a pre-formatted text area
                             return (
                               <div>
-                                {progressInfo && progressInfo.percentage !== undefined && (
+                                {progressInfo && progressInfo.percentage !== undefined && progressInfo.percentage > 0 && (
                                   <div style={{ marginBottom: '12px' }}>
                                     <Progress 
                                       percent={progressInfo.percentage} 
                                       status="active"
-                                      format={(percent) => `${percent}% - ${progressInfo.rate || ''} - ETA: ${progressInfo.eta || ''}`}
+                                      format={(percent) => {
+                                        if (progressInfo.rate || progressInfo.eta) {
+                                          return `${percent}% - ${progressInfo.rate || ''} - ETA: ${progressInfo.eta || ''}`
+                                        }
+                                        return `${percent}%`
+                                      }}
                                     />
                                   </div>
                                 )}

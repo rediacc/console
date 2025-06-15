@@ -61,14 +61,32 @@ class QueueDataService {
       }
     }
 
+    // Add REPO_CREDENTIALS after MACHINES if repository is required
+    if (requirements.repository && context.repositoryName && context.repositoryVault) {
+      try {
+        const repoVault = typeof context.repositoryVault === 'string' 
+          ? JSON.parse(context.repositoryVault) 
+          : context.repositoryVault
+        
+        if (repoVault.credential) {
+          queueVaultData.contextData.REPO_CREDENTIALS = {
+            [context.repositoryName]: repoVault.credential
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to parse repository vault for credentials:', e)
+      }
+    }
+
+
     const dataExtractors = [
       [requirements.company, 'company', () => this.extractCompanyData(context.companyVault)],
       [requirements.repository && context.repositoryName, 'repository', () => 
-        this.extractRepositoryData(context.repositoryVault, context.repositoryName, context.companyVault)],
+        this.extractRepositoryData(context.repositoryVault, context.repositoryName!, context.companyVault)],
       [requirements.storage && context.storageName, 'storage', () => 
-        this.extractStorageData(context.storageVault, context.storageName)],
+        this.extractStorageData(context.storageVault, context.storageName!)],
       [requirements.bridge && context.bridgeName, 'bridge', () => 
-        this.extractBridgeData(context.bridgeVault, context.bridgeName, context.companyVault)],
+        this.extractBridgeData(context.bridgeVault, context.bridgeName!, context.companyVault)],
       [requirements.plugin, 'plugins', () => this.extractPluginData(context.companyVault)]
     ] as const
 

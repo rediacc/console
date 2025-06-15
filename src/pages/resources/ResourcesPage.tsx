@@ -174,9 +174,9 @@ const ResourcesPage: React.FC = () => {
 
 
 
-  // Repository hooks - only fetch when repository tab is active
+  // Repository hooks - fetch repositories when we have selected teams (needed for machine functions too)
   const { data: repositories = [], isLoading: repositoriesLoading } = useRepositories(
-    selectedTeams.length > 0 && teamResourcesTab === 'repositories' ? selectedTeams : undefined
+    selectedTeams.length > 0 ? selectedTeams : undefined
   )
   const createRepositoryMutation = useCreateRepository()
   const updateRepositoryNameMutation = useUpdateRepositoryName()
@@ -393,20 +393,8 @@ const ResourcesPage: React.FC = () => {
         machineName = currentResource.machineName;
         bridgeName = currentResource.bridgeName;
         
-        // Special handling for "new" function
-        if (functionData.function.name === 'new') {
-          const repoName = functionData.params.repo;
-          if (!repoName) {
-            showMessage('error', 'Repository name is required for new function');
-            return;
-          }
-          
-          await createRepositoryMutation.mutateAsync({
-            teamName: currentResource.teamName,
-            repositoryName: repoName,
-            repositoryVault: '{}'
-          });
-        }
+        // Note: "new" function no longer creates repositories
+        // Repositories should be created through the Repositories tab
       } else {
         if (!functionData.selectedMachine) return;
         
@@ -446,7 +434,14 @@ const ResourcesPage: React.FC = () => {
       if (resourceType === 'machine') {
         queueVaultParams.repositoryName = functionData.params.repo;
         queueVaultParams.machineVault = currentResource.vaultContent || '{}';
-        queueVaultParams.repositoryVault = '{}';
+        
+        // Find the repository vault data if repo is specified
+        if (functionData.params.repo) {
+          const repository = repositories.find(r => r.repositoryName === functionData.params.repo);
+          queueVaultParams.repositoryVault = repository?.vaultContent || '{}';
+        } else {
+          queueVaultParams.repositoryVault = '{}';
+        }
       } else if (resourceType === 'repository') {
         queueVaultParams.repositoryName = currentResource.repositoryName;
       } else if (resourceType === 'storage') {

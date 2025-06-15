@@ -590,7 +590,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           subtitle={createFunctionSubtitle()}
           allowedCategories={functionCategories}
           loading={isSubmitting}
-          showMachineSelection={resourceType === 'repository'}
+          showMachineSelection={resourceType === 'repository' || resourceType === 'storage'}
           teamName={existingData?.teamName}
           machines={dropdownData?.machinesByTeam?.find(t => t.teamName === existingData?.teamName)?.machines || []}
           hiddenParams={hiddenParams}

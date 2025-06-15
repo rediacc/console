@@ -27,8 +27,8 @@ export function useQueueVaultBuilder() {
       
       if (vaultData) {
         companyVaultData = {
-          vault: vaultData.vaultContent || vaultData.VaultContent || '{}',
-          vaultVersion: vaultData.vaultVersion || vaultData.VaultVersion || 1
+          vault: vaultData.vaultContent || '{}',
+          vaultVersion: vaultData.vaultVersion || 1
         }
       } else {
         // No company vault data found
