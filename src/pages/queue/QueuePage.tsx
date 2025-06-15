@@ -49,25 +49,25 @@ const QueuePage: React.FC = () => {
   
   // Dynamic page sizes for tables with minimum size for small screens
   const activePageSize = useDynamicPageSize(activeTableRef, {
-    containerOffset: 280, // Account for filters, stats cards, tabs
+    containerOffset: 300, // Account for filters, stats cards, tabs
     minRows: 8, // Minimum for small screens
     maxRows: 50
   })
   
   const completedPageSize = useDynamicPageSize(completedTableRef, {
-    containerOffset: 280,
+    containerOffset: 300,
     minRows: 8,
     maxRows: 50
   })
   
   const cancelledPageSize = useDynamicPageSize(cancelledTableRef, {
-    containerOffset: 280,
+    containerOffset: 300,
     minRows: 8,
     maxRows: 50
   })
   
   const failedPageSize = useDynamicPageSize(failedTableRef, {
-    containerOffset: 280,
+    containerOffset: 300,
     minRows: 8,
     maxRows: 50
   })

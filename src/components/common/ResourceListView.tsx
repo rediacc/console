@@ -46,7 +46,7 @@ function ResourceListView<T = any>({
   
   // Use dynamic page size if enabled
   const dynamicPageSize = useDynamicPageSize(tableContainerRef, {
-    containerOffset: 100, // Account for card header and search bar
+    containerOffset: 120, // Account for card header and search bar
     minRows: 5,
     maxRows: 50
   })

@@ -224,21 +224,21 @@ const ResourcesPage: React.FC = () => {
   
   // Dynamic page sizes for tables
   const repositoryPageSize = useDynamicPageSize(repositoryTableRef, {
-    containerOffset: 200, // Account for tab headers, pagination, and padding
+    containerOffset: 220, // Account for tab headers, pagination, and padding
     minRows: 5,
     maxRows: 50,
     rowHeight: 55 // Typical row height with padding
   })
   
   const storagePageSize = useDynamicPageSize(storageTableRef, {
-    containerOffset: 200,
+    containerOffset: 220,
     minRows: 5,
     maxRows: 50,
     rowHeight: 55
   })
   
   const schedulePageSize = useDynamicPageSize(scheduleTableRef, {
-    containerOffset: 200,
+    containerOffset: 220,
     minRows: 5,
     maxRows: 50,
     rowHeight: 55

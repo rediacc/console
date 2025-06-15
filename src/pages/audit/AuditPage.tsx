@@ -42,7 +42,7 @@ const AuditPage = () => {
   });
 
   const pageSize = useDynamicPageSize(tableRef, {
-    containerOffset: 180, // Account for table header, pagination, and internal padding
+    containerOffset: 200, // Account for table header, pagination, and internal padding
     minRows: 10,
     maxRows: 100,
     rowHeight: 55

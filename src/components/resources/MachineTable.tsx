@@ -100,7 +100,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   
   // Dynamic page size
   const dynamicPageSize = useDynamicPageSize(tableContainerRef, {
-    containerOffset: 150, // Account for filters, tabs, and other UI elements
+    containerOffset: 170, // Account for filters, tabs, and other UI elements
     minRows: 5,
     maxRows: 50
   });
