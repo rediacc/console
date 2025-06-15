@@ -733,8 +733,8 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                                 lineHeight: '1.5',
                                 whiteSpace: 'pre-wrap',
                                 wordBreak: 'break-word',
-                                maxHeight: '400px',
-                                overflowY: 'auto'
+                                height: '400px',
+                                overflowY: 'scroll'
                               }}>
                                 {commandOutput}
                               </div>
@@ -751,22 +751,24 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                                 ? traceData.responseVaultContent.vaultContent 
                                 : JSON.stringify(traceData.responseVaultContent.vaultContent, null, 2)
                               return (
-                                <div 
-                                  ref={consoleOutputRef}
-                                  style={{ 
-                                  backgroundColor: theme === 'dark' ? '#1f1f1f' : '#f5f5f5',
-                                  border: `1px solid ${theme === 'dark' ? '#303030' : '#d9d9d9'}`,
-                                  borderRadius: '4px',
-                                  padding: '12px',
-                                  fontFamily: 'monospace',
-                                  fontSize: '12px',
-                                  lineHeight: '1.5',
-                                  whiteSpace: 'pre-wrap',
-                                  wordBreak: 'break-word',
-                                  maxHeight: '400px',
-                                  overflowY: 'auto'
-                                }}>
+                                <div>
+                                  <div 
+                                    ref={consoleOutputRef}
+                                    style={{ 
+                                    backgroundColor: theme === 'dark' ? '#1f1f1f' : '#f5f5f5',
+                                    border: `1px solid ${theme === 'dark' ? '#303030' : '#d9d9d9'}`,
+                                    borderRadius: '4px',
+                                    padding: '12px',
+                                    fontFamily: 'monospace',
+                                    fontSize: '12px',
+                                    lineHeight: '1.5',
+                                    whiteSpace: 'pre-wrap',
+                                    wordBreak: 'break-word',
+                                    height: '400px',
+                                    overflowY: 'scroll'
+                                  }}>
                                   {rawContent}
+                                  </div>
                                 </div>
                               )
                             } catch (fallbackError) {
