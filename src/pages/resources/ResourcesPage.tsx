@@ -555,7 +555,7 @@ const ResourcesPage: React.FC = () => {
             onClick={() => {
               setAuditTraceModal({
                 open: true,
-                entityType: 'Repository',
+                entityType: 'Repo',
                 entityIdentifier: record.repositoryName,
                 entityName: record.repositoryName
               });
