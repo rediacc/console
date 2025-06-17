@@ -257,7 +257,7 @@ async function buildHelloQueueVault(
   teamVault: string,
   buildQueueVault: any
 ): Promise<string> {
-  const DEFAULT_PRIORITY = 3
+  const DEFAULT_PRIORITY = 4
   const DEFAULT_DESCRIPTION = 'Hello function call'
   const DEFAULT_ADDED_VIA = 'hello-service'
   const DEFAULT_VAULT = '{}'
@@ -282,7 +282,7 @@ async function createHelloQueueItem(
   queueVault: string,
   createQueueItemMutation: any
 ): Promise<any> {
-  const DEFAULT_PRIORITY = 3
+  const DEFAULT_PRIORITY = 4
   
   return createQueueItemMutation.mutateAsync({
     teamName: params.teamName,
@@ -311,7 +311,7 @@ export class HelloService {
         machineName: params.machineName,
         bridgeName: params.bridgeName,
         queueVault,
-        priority: params.priority || 3
+        priority: params.priority || 4
       })
 
       return {

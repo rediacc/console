@@ -61,6 +61,15 @@
       },
       "params": {}
     },
+    "ping": {
+      "name": "ping",
+      "category": "machine",
+      "requirements": {
+        "machine": true,
+        "team": true
+      },
+      "params": {}
+    },
     "uninstall": {
       "name": "uninstall",
       "category": "machine",

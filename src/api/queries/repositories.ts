@@ -7,6 +7,8 @@ export interface Repository {
   teamName: string
   vaultVersion: number
   vaultContent?: string
+  parentRepoName?: string    // Parent repository name
+  grandParentId?: number     // Top-most parent repository ID
 }
 
 // Get repositories for a team or multiple teams
@@ -19,7 +21,9 @@ export const useRepositories = createResourceQuery<Repository>({
     repositoryName: 'repoName',
     teamName: 'teamName',
     vaultVersion: 'vaultVersion',
-    vaultContent: 'vaultContent'
+    vaultContent: 'vaultContent',
+    parentRepoName: 'parentRepoName',
+    grandParentId: 'grandParentId'
   }),
   enabledCheck: (teamFilter) => !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0)
 })
@@ -29,6 +33,7 @@ export const useCreateRepository = createMutation<{
   teamName: string
   repositoryName: string
   repositoryVault?: string
+  parentRepoName?: string  // Optional parent repository name
 }>({
   endpoint: '/CreateRepository',
   method: 'post',
@@ -39,6 +44,7 @@ export const useCreateRepository = createMutation<{
     teamName: data.teamName,
     repoName: data.repositoryName, // Map repositoryName to repoName for API
     repoVault: data.repositoryVault || '{}', // Map repositoryVault to repoVault for API
+    parentRepoName: data.parentRepoName  // Pass through parent repository name
   })
 })
 

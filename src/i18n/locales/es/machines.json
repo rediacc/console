@@ -66,7 +66,7 @@
   "runTest": "Ejecutar Prueba",
   "testing": "Probando...",
   "testingMachine": "Probando {{machineName}}...",
-  "connectivityTestDescription": "Esta prueba enviará una función 'hello' a cada máquina secuencialmente para verificar la conectividad.",
+  "connectivityTestDescription": "Esta prueba enviará una función 'ping' a cada máquina secuencialmente para verificar la conectividad.",
   "connectionSuccessful": "Conexión exitosa",
   "connectionFailed": "Conexión fallida",
   "testTimeout": "Tiempo de espera agotado - no se recibió respuesta",
@@ -81,7 +81,6 @@
   "pending": "Pendiente",
   "message": "Mensaje",
   "runFunction": "Ejecutar Función",
-  "testConnection": "Probar Conexión",
   "connectionTestQueued": "Prueba de conexión en cola exitosamente",
   "connectionTestFailed": "Error al poner en cola la prueba de conexión",
   "testingConnection": "Probando conexión..."

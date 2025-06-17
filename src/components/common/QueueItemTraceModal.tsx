@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Spin, Row, Col, Tabs, Switch, Collapse, Steps, Progress, Statistic, Alert, Divider, Badge, Tooltip } from 'antd'
 import { ReloadOutlined, HistoryOutlined, FileTextOutlined, BellOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, RightOutlined, UserOutlined, RetweetOutlined, WarningOutlined, RocketOutlined, TeamOutlined, DashboardOutlined, ThunderboltOutlined, HourglassOutlined, ExclamationCircleOutlined, CrownOutlined, CodeOutlined } from '@ant-design/icons'
-import { useQueueItemTrace } from '@/api/queries/queue'
+import { useQueueItemTrace, useRetryFailedQueueItem } from '@/api/queries/queue'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { SimpleJsonEditor } from './SimpleJsonEditor'
@@ -41,6 +41,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
   const [accumulatedOutput, setAccumulatedOutput] = useState<string>('') // Store accumulated console output
   const [lastOutputStatus, setLastOutputStatus] = useState<string>('') // Track the last status to detect completion
   const { data: traceData, isLoading: isTraceLoading, refetch: refetchTrace } = useQueueItemTrace(taskId, visible)
+  const { mutate: retryFailedItem, isPending: isRetrying } = useRetryFailedQueueItem()
   const { theme } = useTheme()
   const consoleOutputRef = useRef<HTMLDivElement>(null)
 
@@ -158,6 +159,17 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
 
   const handleRefreshTrace = async () => {
     await refetchTrace()
+  }
+
+  const handleRetryFailedItem = () => {
+    if (!taskId) return
+    
+    retryFailedItem(taskId, {
+      onSuccess: () => {
+        // Refetch trace data to show updated status
+        refetchTrace()
+      }
+    })
   }
 
   const handleToggleMonitoring = () => {
@@ -386,6 +398,22 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
               <Text type="secondary">Background Monitoring</Text>
             </Space>
           </div>
+        ),
+        // Show Retry button only for failed tasks that haven't reached max retries
+        traceData?.queueDetails && 
+        normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED' && 
+        (normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0) < 2 && 
+        !normalizeProperty(traceData.queueDetails, 'permanentlyFailed', 'PermanentlyFailed') && (
+          <Button 
+            key="retry"
+            type="primary"
+            danger
+            icon={<RetweetOutlined />} 
+            onClick={handleRetryFailedItem}
+            loading={isRetrying}
+          >
+            Retry Again
+          </Button>
         ),
         <Button 
           key="refresh" 

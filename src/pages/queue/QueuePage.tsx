@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react'
-import { Typography, Button, Space, Modal, Select, Card, Tag, Badge, Tabs, Row, Col, Statistic, Tooltip, DatePicker, Checkbox, Dropdown } from 'antd'
-import { ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, WarningOutlined, GlobalOutlined, ClockCircleOutlined, ReloadOutlined, ExportOutlined, DownOutlined, HistoryOutlined } from '@ant-design/icons'
+import { Typography, Button, Space, Modal, Select, Card, Tag, Badge, Tabs, Row, Col, Statistic, Tooltip, DatePicker, Checkbox, Dropdown, Input } from 'antd'
+import { ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, WarningOutlined, GlobalOutlined, ClockCircleOutlined, ReloadOutlined, ExportOutlined, DownOutlined, HistoryOutlined, SearchOutlined } from '@ant-design/icons'
 import { useQueueItems, useCancelQueueItem, QueueFilters } from '@/api/queries/queue'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import ResourceListView from '@/components/common/ResourceListView'
@@ -23,8 +23,15 @@ const QueuePage: React.FC = () => {
   })
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null] | null>(null)
   const [statusFilter, setStatusFilter] = useState<string[]>([])
+  const [taskIdFilter, setTaskIdFilter] = useState<string>('')
   const [traceModalVisible, setTraceModalVisible] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  
+  // GUID validation regex
+  const isValidGuid = (value: string) => {
+    const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    return guidRegex.test(value)
+  }
   
   // Refs for table containers
   const activeTableRef = useRef<HTMLDivElement>(null)
@@ -38,8 +45,9 @@ const QueuePage: React.FC = () => {
     teamName: viewTeam,
     dateFrom: dateRange?.[0]?.startOf('day').format('YYYY-MM-DD HH:mm:ss'),
     dateTo: dateRange?.[1]?.endOf('day').format('YYYY-MM-DD HH:mm:ss'),
-    status: statusFilter.join(',')
-  }), [filters, viewTeam, dateRange, statusFilter])
+    status: statusFilter.join(','),
+    ...(taskIdFilter.trim() && isValidGuid(taskIdFilter.trim()) ? { taskId: taskIdFilter.trim() } : {})
+  }), [filters, viewTeam, dateRange, statusFilter, taskIdFilter])
   
   const { data: queueData, isLoading, refetch, isRefetching } = useQueueItems(queryFilters)
   const { data: dropdownData } = useDropdownData()
@@ -486,6 +494,25 @@ const QueuePage: React.FC = () => {
         </Row>
 
         <Row gutter={[16, 16]} style={{ marginTop: 16 }} align="middle">
+          <Col xs={24} sm={12} md={6}>
+            <div style={{ marginBottom: 8 }}>
+              <Text type="secondary">Task ID</Text>
+            </div>
+            <Input
+              placeholder="Filter by Task ID (GUID format)"
+              value={taskIdFilter}
+              onChange={(e) => setTaskIdFilter(e.target.value)}
+              prefix={<SearchOutlined />}
+              allowClear
+              status={taskIdFilter && !isValidGuid(taskIdFilter) ? 'error' : undefined}
+            />
+            {taskIdFilter && !isValidGuid(taskIdFilter) && (
+              <Text type="danger" style={{ fontSize: '12px' }}>
+                Invalid GUID format
+              </Text>
+            )}
+          </Col>
+
           <Col xs={24} sm={12} md={6}>
             <div style={{ marginBottom: 8 }}>
               <Text type="secondary">Options</Text>

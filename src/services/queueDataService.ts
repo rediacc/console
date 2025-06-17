@@ -115,8 +115,8 @@ class QueueDataService {
     ]
 
     return fieldMappings.reduce((target, { targetKey, sources }) => {
-      const value = sources.find(s => machineVault[s] !== undefined)
-      if (value !== undefined) target[targetKey] = machineVault[value]
+      const sourceKey = sources.find(s => machineVault[s] !== undefined)
+      if (sourceKey !== undefined) target[targetKey] = machineVault[sourceKey]
       return target
     }, {} as any)
   }

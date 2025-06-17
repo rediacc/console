@@ -40,7 +40,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
-import { useHelloFunction } from '@/services/helloService';
+import { usePingFunction } from '@/services/pingService';
 import { showMessage } from '@/utils/messages';
 
 const { Option } = Select;
@@ -74,7 +74,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const { t } = useTranslation(['machines', 'common', 'functions']);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
   const isExpertMode = uiMode === 'expert';
-  const { executeHelloForMachineAndWait } = useHelloFunction();
+  const { executePingForMachineAndWait } = usePingFunction();
   
   // Ref for table container
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -314,13 +314,13 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                   },
                   {
                     key: 'test',
-                    label: t('machines:testConnection'),
+                    label: t('machines:connectivityTest'),
                     icon: <WifiOutlined />,
                     onClick: async () => {
                       showMessage('info', t('machines:testingConnection'));
-                      const result = await executeHelloForMachineAndWait(record, {
-                        priority: 3,
-                        description: 'Quick connection test',
+                      const result = await executePingForMachineAndWait(record, {
+                        priority: 4,
+                        description: 'Connectivity test',
                         addedVia: 'machine-table',
                         timeout: 15000 // 15 seconds timeout for quick test
                       });

@@ -306,6 +306,26 @@ export const useDeleteQueueItem = () => {
   })
 }
 
+// Retry failed queue item
+export const useRetryFailedQueueItem = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (taskId: string) => {
+      const response = await apiClient.post('/RetryFailedQueueItem', { taskId })
+      return response
+    },
+    onSuccess: (_, taskId) => {
+      queryClient.invalidateQueries({ queryKey: ['queue-items'] })
+      queryClient.invalidateQueries({ queryKey: ['queue-item-trace', taskId] })
+      showMessage('success', `Queue item ${taskId} queued for retry`)
+    },
+    onError: (error: any) => {
+      showMessage('error', error.message || 'Failed to retry queue item')
+    },
+  })
+}
+
 // Get queue item trace
 export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true) => {
   return useQuery({

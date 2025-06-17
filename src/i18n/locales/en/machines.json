@@ -66,7 +66,7 @@
   "runTest": "Run Test",
   "testing": "Testing...",
   "testingMachine": "Testing {{machineName}}...",
-  "connectivityTestDescription": "This test will send a 'hello' function to each machine sequentially to verify connectivity.",
+  "connectivityTestDescription": "This test will send a 'ping' function to each machine sequentially to verify connectivity.",
   "connectionSuccessful": "Connection successful",
   "connectionFailed": "Connection failed",
   "testTimeout": "Test timeout - no response received",
@@ -81,7 +81,6 @@
   "pending": "Pending",
   "message": "Message",
   "runFunction": "Run Function",
-  "testConnection": "Test Connection",
   "connectionTestQueued": "Connection test queued successfully",
   "connectionTestFailed": "Failed to queue connection test",
   "testingConnection": "Testing connection..."

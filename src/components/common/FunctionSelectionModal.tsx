@@ -49,7 +49,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   
   const [selectedFunction, setSelectedFunction] = useState<QueueFunction | null>(null)
   const [functionParams, setFunctionParams] = useState<Record<string, any>>({})
-  const [functionPriority, setFunctionPriority] = useState(5)
+  const [functionPriority, setFunctionPriority] = useState(4) // Fixed to normal priority
   const [functionDescription, setFunctionDescription] = useState('')
   const [functionSearchTerm, setFunctionSearchTerm] = useState('')
   const [selectedMachine, setSelectedMachine] = useState<string>('')
@@ -150,7 +150,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
     // Reset form
     setSelectedFunction(null)
     setFunctionParams({})
-    setFunctionPriority(5)
+    setFunctionPriority(4)
     setFunctionDescription('')
     setFunctionSearchTerm('')
     setSelectedMachine('')
@@ -160,7 +160,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
     // Reset form
     setSelectedFunction(null)
     setFunctionParams({})
-    setFunctionPriority(5)
+    setFunctionPriority(4)
     setFunctionDescription('')
     setFunctionSearchTerm('')
     setSelectedMachine('')
@@ -354,7 +354,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                       )
                     })}
                   
-                  {/* Priority */}
+                  {/* Priority - Enabled with default priority (4) */}
                   <Form.Item label={t('functions:priority')} help={t('functions:priorityHelp')}>
                     <div>
                       <Slider

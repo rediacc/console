@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/context/ThemeContext'
 import { showMessage } from '@/utils/messages'
 import type { Machine } from '@/types'
-import { useHelloFunction } from '@/services/helloService'
+import { usePingFunction } from '@/services/pingService'
 import './ConnectivityTestModal.css'
 
 const { Text, Title } = Typography
@@ -42,7 +42,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
   const [progress, setProgress] = useState(0)
   const [currentMachineIndex, setCurrentMachineIndex] = useState(-1)
   
-  const { executeHelloForMachine, waitForQueueItemCompletion } = useHelloFunction()
+  const { executePingForMachine, waitForQueueItemCompletion } = usePingFunction()
 
   // Initialize test results when modal opens
   useEffect(() => {
@@ -80,10 +80,10 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
     ))
 
     try {
-      // Execute hello function using the shared service
-      // The hello service will automatically fetch the team vault data
-      const result = await executeHelloForMachine(machine, {
-        priority: 1, // High priority for connectivity tests
+      // Execute ping function using the shared service
+      // The ping service will automatically fetch the team vault data
+      const result = await executePingForMachine(machine, {
+        priority: 4, // Normal priority for connectivity tests
         description: 'Connectivity test',
         addedVia: 'connectivity-test'
       })
