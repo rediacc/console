@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react'
-import { Typography, Button, Space, Modal, Select, Card, Tag, Badge, Tabs, Row, Col, Statistic, Tooltip, DatePicker, Checkbox, Dropdown, Input } from 'antd'
-import { ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, WarningOutlined, GlobalOutlined, ClockCircleOutlined, ReloadOutlined, ExportOutlined, DownOutlined, HistoryOutlined, SearchOutlined } from '@ant-design/icons'
+import { Typography, Button, Space, Modal, Select, Card, Tag, Badge, Tabs, Row, Col, Statistic, Tooltip, DatePicker, Checkbox, Dropdown, Input, Alert } from 'antd'
+import { ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, WarningOutlined, GlobalOutlined, ClockCircleOutlined, ReloadOutlined, ExportOutlined, DownOutlined, HistoryOutlined, SearchOutlined, InfoCircleOutlined } from '@ant-design/icons'
 import { useQueueItems, useCancelQueueItem, QueueFilters } from '@/api/queries/queue'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import ResourceListView from '@/components/common/ResourceListView'
@@ -8,11 +8,13 @@ import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import { showMessage } from '@/utils/messages'
 import dayjs from 'dayjs'
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize'
+import { useTranslation } from 'react-i18next'
 
 const { Title, Text } = Typography
 const { RangePicker } = DatePicker
 
 const QueuePage: React.FC = () => {
+  const { t } = useTranslation(['queue'])
   const [viewTeam, setViewTeam] = useState<string>('') // Team for viewing queue items
   const [filters, setFilters] = useState<QueueFilters>({
     teamName: '',
@@ -172,6 +174,7 @@ const QueuePage: React.FC = () => {
           'ACTIVE': { color: 'processing', icon: <PlayCircleOutlined /> },
           'STALE': { color: 'warning', icon: <WarningOutlined /> },
           'STALE_PENDING': { color: 'orange', icon: <WarningOutlined /> },
+          'CANCELLING': { color: 'warning', icon: <PlayCircleOutlined spin /> },
           'COMPLETED': { color: 'success', icon: <CheckCircleOutlined /> },
           'FAILED': { color: 'error', icon: <ExclamationCircleOutlined /> },
           'CANCELLED': { color: 'error', icon: <CloseCircleOutlined /> },
@@ -374,7 +377,7 @@ const QueuePage: React.FC = () => {
           >
             Trace
           </Button>
-          {record.canBeCancelled && record.healthStatus !== 'CANCELLED' && (
+          {record.canBeCancelled && record.healthStatus !== 'CANCELLED' && record.healthStatus !== 'CANCELLING' && (
             <Button
               size="small"
               danger
@@ -465,6 +468,7 @@ const QueuePage: React.FC = () => {
               <Select.Option value="PENDING">Pending</Select.Option>
               <Select.Option value="ACTIVE">Active</Select.Option>
               <Select.Option value="STALE">Stale</Select.Option>
+              <Select.Option value="CANCELLING">Cancelling</Select.Option>
               <Select.Option value="COMPLETED">Completed</Select.Option>
               <Select.Option value="FAILED">Failed</Select.Option>
               <Select.Option value="CANCELLED">Cancelled</Select.Option>
@@ -632,6 +636,16 @@ const QueuePage: React.FC = () => {
             <Col xs={24} sm={12} md={8} lg={4} xl={3}>
               <Card>
                 <Statistic
+                  title="Cancelling"
+                  value={(queueData?.statistics as any)?.cancellingCount || 0}
+                  valueStyle={{ color: '#faad14' }}
+                  prefix={<PlayCircleOutlined spin />}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={4} xl={3}>
+              <Card>
+                <Statistic
                   title="Cancelled"
                   value={(queueData?.statistics as any)?.cancelledCount || 0}
                   valueStyle={{ color: '#ff4d4f' }}
@@ -664,14 +678,24 @@ const QueuePage: React.FC = () => {
           >
             <Tabs.TabPane 
               tab={
-                <Space>
-                  <span style={{ marginRight: 8 }}>Active Queue</span>
-                  <Badge count={queueData?.items?.filter((item: any) => !['COMPLETED', 'CANCELLED'].includes(item.healthStatus)).length || 0} color="gold" />
-                </Space>
+                <Tooltip title={t('queue:tabs.active.tooltip')}>
+                  <Space>
+                    <span style={{ marginRight: 8 }}>{t('queue:tabs.active.title')}</span>
+                    <Badge count={queueData?.items?.filter((item: any) => !['COMPLETED', 'CANCELLED', 'FAILED'].includes(item.healthStatus)).length || 0} color="gold" />
+                  </Space>
+                </Tooltip>
               } 
               key="active"
             >
               <div ref={activeTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Alert
+                  message={t('queue:tabs.active.description')}
+                  type="info"
+                  showIcon
+                  icon={<InfoCircleOutlined />}
+                  style={{ marginBottom: 16 }}
+                  closable
+                />
                 <ResourceListView
                   loading={isLoading || isRefetching}
                   data={queueData?.items?.filter((item: any) => !['COMPLETED', 'CANCELLED', 'FAILED'].includes(item.healthStatus)) || []}
@@ -685,7 +709,7 @@ const QueuePage: React.FC = () => {
                     flexDirection: 'column',
                   }}
                   tableStyle={{ 
-                    height: 'calc(100vh - 450px)', // Adjust based on header/filter/stats height
+                    height: 'calc(100vh - 520px)', // Adjusted for Alert component
                     minHeight: '400px' // Minimum height for small screens
                   }}
                   pagination={{
@@ -700,14 +724,24 @@ const QueuePage: React.FC = () => {
             
             <Tabs.TabPane 
               tab={
-                <Space>
-                  <span style={{ marginRight: 8 }}>Completed</span>
-                  <Badge count={(queueData?.statistics as any)?.completedCount || 0} showZero color="#52c41a" />
-                </Space>
+                <Tooltip title={t('queue:tabs.completed.tooltip')}>
+                  <Space>
+                    <span style={{ marginRight: 8 }}>{t('queue:tabs.completed.title')}</span>
+                    <Badge count={(queueData?.statistics as any)?.completedCount || 0} showZero color="#52c41a" />
+                  </Space>
+                </Tooltip>
               } 
               key="completed"
             >
               <div ref={completedTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Alert
+                  message={t('queue:tabs.completed.description')}
+                  type="success"
+                  showIcon
+                  icon={<CheckCircleOutlined />}
+                  style={{ marginBottom: 16 }}
+                  closable
+                />
                 <ResourceListView
                   loading={isLoading || isRefetching}
                   data={queueData?.items?.filter((item: any) => item.healthStatus === 'COMPLETED') || []}
@@ -721,7 +755,7 @@ const QueuePage: React.FC = () => {
                     flexDirection: 'column',
                   }}
                   tableStyle={{ 
-                    height: 'calc(100vh - 450px)',
+                    height: 'calc(100vh - 520px)',
                     minHeight: '400px'
                   }}
                   pagination={{
@@ -736,14 +770,24 @@ const QueuePage: React.FC = () => {
             
             <Tabs.TabPane 
               tab={
-                <Space>
-                  <span style={{ marginRight: 8 }}>Cancelled</span>
-                  <Badge count={(queueData?.statistics as any)?.cancelledCount || 0} showZero color="#ff4d4f" />
-                </Space>
+                <Tooltip title={t('queue:tabs.cancelled.tooltip')}>
+                  <Space>
+                    <span style={{ marginRight: 8 }}>{t('queue:tabs.cancelled.title')}</span>
+                    <Badge count={(queueData?.statistics as any)?.cancelledCount || 0} showZero color="#ff4d4f" />
+                  </Space>
+                </Tooltip>
               } 
               key="cancelled"
             >
               <div ref={cancelledTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Alert
+                  message={t('queue:tabs.cancelled.description')}
+                  type="warning"
+                  showIcon
+                  icon={<CloseCircleOutlined />}
+                  style={{ marginBottom: 16 }}
+                  closable
+                />
                 <ResourceListView
                   loading={isLoading || isRefetching}
                   data={queueData?.items?.filter((item: any) => item.healthStatus === 'CANCELLED') || []}
@@ -757,7 +801,7 @@ const QueuePage: React.FC = () => {
                     flexDirection: 'column',
                   }}
                   tableStyle={{ 
-                    height: 'calc(100vh - 450px)',
+                    height: 'calc(100vh - 520px)',
                     minHeight: '400px'
                   }}
                   pagination={{
@@ -772,14 +816,24 @@ const QueuePage: React.FC = () => {
             
             <Tabs.TabPane 
               tab={
-                <Space>
-                  <span style={{ marginRight: 8 }}>Failed</span>
-                  <Badge count={(queueData?.statistics as any)?.failedCount || 0} showZero color="#ff4d4f" />
-                </Space>
+                <Tooltip title={t('queue:tabs.failed.tooltip')}>
+                  <Space>
+                    <span style={{ marginRight: 8 }}>{t('queue:tabs.failed.title')}</span>
+                    <Badge count={(queueData?.statistics as any)?.failedCount || 0} showZero color="#ff4d4f" />
+                  </Space>
+                </Tooltip>
               } 
               key="failed"
             >
               <div ref={failedTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Alert
+                  message={t('queue:tabs.failed.description')}
+                  type="error"
+                  showIcon
+                  icon={<ExclamationCircleOutlined />}
+                  style={{ marginBottom: 16 }}
+                  closable
+                />
                 <ResourceListView
                   loading={isLoading || isRefetching}
                   data={queueData?.items?.filter((item: any) => item.healthStatus === 'FAILED') || []}
@@ -793,7 +847,7 @@ const QueuePage: React.FC = () => {
                     flexDirection: 'column',
                   }}
                   tableStyle={{ 
-                    height: 'calc(100vh - 450px)',
+                    height: 'calc(100vh - 520px)',
                     minHeight: '400px'
                   }}
                   pagination={{

@@ -124,9 +124,65 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
     }, {} as Record<string, QueueFunction[]>)
   }, [filteredFunctions])
 
+  // Check if all required parameters are filled
+  const areRequiredParamsFilled = useMemo(() => {
+    if (!selectedFunction) return false
+    
+    return Object.entries(selectedFunction.params)
+      .filter(([paramName]) => !hiddenParams.includes(paramName))
+      .every(([paramName, paramInfo]) => {
+        if (!paramInfo.required) return true
+        
+        const paramValue = functionParams[paramName]
+        
+        // For size parameters, check the value part
+        if (paramInfo.format === 'size' && paramInfo.units) {
+          const valueParam = functionParams[`${paramName}_value`]
+          return valueParam !== undefined && valueParam !== null && valueParam !== ''
+        }
+        
+        // For other parameters, check the main value
+        return paramValue !== undefined && paramValue !== null && paramValue !== ''
+      })
+  }, [selectedFunction, functionParams, hiddenParams])
+
   const handleSubmit = () => {
     if (!selectedFunction) return
     if (showMachineSelection && !selectedMachine) return
+    
+    // Validate required parameters
+    const missingParams: string[] = []
+    Object.entries(selectedFunction.params)
+      .filter(([paramName]) => !hiddenParams.includes(paramName))
+      .forEach(([paramName, paramInfo]) => {
+        if (paramInfo.required) {
+          const paramValue = functionParams[paramName]
+          
+          // Check if parameter has a value
+          if (paramValue === undefined || paramValue === null || paramValue === '') {
+            missingParams.push(paramInfo.label || paramName)
+          }
+          
+          // For size parameters, also check if the value part is filled
+          if (paramInfo.format === 'size' && paramInfo.units) {
+            const valueParam = functionParams[`${paramName}_value`]
+            if (!valueParam || valueParam === '') {
+              if (!missingParams.includes(paramInfo.label || paramName)) {
+                missingParams.push(paramInfo.label || paramName)
+              }
+            }
+          }
+        }
+      })
+    
+    // If there are missing parameters, show error and return
+    if (missingParams.length > 0) {
+      Modal.error({
+        title: t('functions:validationError'),
+        content: t('functions:missingRequiredParams', { params: missingParams.join(', ') })
+      })
+      return
+    }
     
     // Clean up the params - remove the helper _value and _unit fields
     const cleanedParams = Object.entries(functionParams).reduce((acc, [key, value]) => {
@@ -186,7 +242,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
           key="submit"
           type="primary"
           onClick={handleSubmit}
-          disabled={!selectedFunction || (showMachineSelection && !selectedMachine)}
+          disabled={!selectedFunction || (showMachineSelection && !selectedMachine) || !areRequiredParamsFilled}
           loading={loading}
           style={{ background: '#556b2f', borderColor: '#556b2f' }}
         >

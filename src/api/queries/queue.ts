@@ -13,7 +13,7 @@ export interface QueueItem {
   vaultVersion: number
   vaultContentResponse?: string
   vaultVersionResponse?: number
-  status: 'PENDING' | 'ASSIGNED' | 'PROCESSING' | 'COMPLETED' | 'CANCELLED' | 'FAILED'
+  status: 'PENDING' | 'ASSIGNED' | 'PROCESSING' | 'CANCELLING' | 'COMPLETED' | 'CANCELLED' | 'FAILED'
   priority?: number // Only for Premium/Elite plans, 1-5 where 1 is highest
   priorityLabel?: string // 'Highest', 'High', 'Normal', 'Low', 'Lowest'
   createdTime: string
@@ -21,7 +21,7 @@ export interface QueueItem {
   assignedTime?: string
   lastAssigned?: string
   minutesSinceAssigned?: number
-  healthStatus: 'PENDING' | 'ACTIVE' | 'STALE' | 'STALE_PENDING' | 'COMPLETED' | 'CANCELLED' | 'FAILED' | 'UNKNOWN'
+  healthStatus: 'PENDING' | 'ACTIVE' | 'STALE' | 'STALE_PENDING' | 'CANCELLING' | 'COMPLETED' | 'CANCELLED' | 'FAILED' | 'UNKNOWN'
   canBeCancelled: boolean
   hasResponse: boolean
   retryCount?: number
@@ -36,6 +36,7 @@ export interface QueueStatistics {
   pendingCount: number
   assignedCount: number
   processingCount: number
+  cancellingCount: number
   completedCount: number
   cancelledCount: number
   failedCount: number
@@ -278,7 +279,7 @@ export const useCancelQueueItem = () => {
     onSuccess: (_, taskId) => {
       queryClient.invalidateQueries({ queryKey: ['queue-items'] })
       queryClient.invalidateQueries({ queryKey: ['queue-items-bridge'] })
-      showMessage('success', `Queue item ${taskId} cancelled`)
+      showMessage('success', `Queue item ${taskId} cancellation initiated`)
     },
     onError: (error: any) => {
       showMessage('error', error.message || 'Failed to cancel queue item')
@@ -396,6 +397,11 @@ export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true
       // Stop polling for completed or cancelled tasks
       if (status === 'COMPLETED' || status === 'CANCELLED') {
         return false
+      }
+      
+      // Continue polling for CANCELLING status (it will transition to CANCELLED)
+      if (status === 'CANCELLING') {
+        return enabled && taskId ? 1000 : false
       }
       
       // Stop polling for permanently failed tasks (retry count >= 3)

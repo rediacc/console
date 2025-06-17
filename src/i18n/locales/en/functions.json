@@ -25,6 +25,8 @@
   "priorityLowestDescription": "Slowest processing speed. Use for batch operations or tasks with no time constraints.",
   "description": "Description (optional)",
   "descriptionPlaceholder": "Add a custom description for this queue item",
+  "validationError": "Validation Error",
+  "missingRequiredParams": "Please fill in all required parameters: {{params}}",
   "categories": {
     "machine": {
       "name": "Machine Functions",
@@ -88,7 +90,7 @@
       "params": {
         "repo": {
           "label": "Repository",
-          "help": "Repository name (no numbers)"
+          "help": "Repository name"
         },
         "size": {
           "label": "Size",
@@ -240,13 +242,21 @@
           "label": "Repository",
           "help": "Repository name(s), comma-separated"
         },
+        "dest": {
+          "label": "Destination Filename",
+          "help": "Name for the backup file"
+        },
         "to": {
           "label": "Destination",
           "help": "Destination machine/storage"
         },
+        "state": {
+          "label": "Required State",
+          "help": "Validate repository is online or offline before pushing"
+        },
         "option": {
           "label": "Options",
-          "help": "Options (e.g., no-suffix, override)"
+          "help": "Options (e.g., override)"
         }
       }
     },
@@ -281,6 +291,10 @@
           "help": "Plugin name"
         }
       }
+    },
+    "ping": {
+      "name": "ping",
+      "description": "Test network connectivity to the machine"
     }
   }
 }

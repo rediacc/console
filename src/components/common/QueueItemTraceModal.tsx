@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Spin, Row, Col, Tabs, Switch, Collapse, Steps, Progress, Statistic, Alert, Divider, Badge, Tooltip } from 'antd'
 import { ReloadOutlined, HistoryOutlined, FileTextOutlined, BellOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, RightOutlined, UserOutlined, RetweetOutlined, WarningOutlined, RocketOutlined, TeamOutlined, DashboardOutlined, ThunderboltOutlined, HourglassOutlined, ExclamationCircleOutlined, CrownOutlined, CodeOutlined } from '@ant-design/icons'
-import { useQueueItemTrace, useRetryFailedQueueItem } from '@/api/queries/queue'
+import { useQueueItemTrace, useRetryFailedQueueItem, useCancelQueueItem } from '@/api/queries/queue'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { SimpleJsonEditor } from './SimpleJsonEditor'
@@ -42,6 +42,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
   const [lastOutputStatus, setLastOutputStatus] = useState<string>('') // Track the last status to detect completion
   const { data: traceData, isLoading: isTraceLoading, refetch: refetchTrace } = useQueueItemTrace(taskId, visible)
   const { mutate: retryFailedItem, isPending: isRetrying } = useRetryFailedQueueItem()
+  const { mutate: cancelQueueItem, isPending: isCancelling } = useCancelQueueItem()
   const { theme } = useTheme()
   const consoleOutputRef = useRef<HTMLDivElement>(null)
 
@@ -172,6 +173,17 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
     })
   }
 
+  const handleCancelQueueItem = () => {
+    if (!taskId) return
+    
+    cancelQueueItem(taskId, {
+      onSuccess: () => {
+        // Refetch trace data to show updated status
+        refetchTrace()
+      }
+    })
+  }
+
   const handleToggleMonitoring = () => {
     if (!taskId || !traceData?.queueDetails) return
 
@@ -181,8 +193,8 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
     
     const lastFailureReason = normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason')
     
-    // Don't allow monitoring completed, cancelled, or permanently failed tasks
-    if (status === 'COMPLETED' || status === 'CANCELLED' || 
+    // Don't allow monitoring completed, cancelled, cancelling, or permanently failed tasks
+    if (status === 'COMPLETED' || status === 'CANCELLED' || status === 'CANCELLING' ||
         (status === 'FAILED' && (permanentlyFailed || retryCount >= 2)) ||
         (status === 'PENDING' && retryCount >= 2 && lastFailureReason)) {
       showMessage('warning', 'Cannot monitor completed, cancelled, or permanently failed tasks')
@@ -244,6 +256,8 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
         return { status: 'Failed', color: 'error', icon: <CloseCircleOutlined /> }
       case 'CANCELLED':
         return { status: 'Cancelled', color: 'error', icon: <CloseCircleOutlined /> }
+      case 'CANCELLING':
+        return { status: 'Cancelling', color: 'warning', icon: <SyncOutlined spin /> }
       case 'PROCESSING':
         return { status: 'Processing', color: 'processing', icon: <SyncOutlined spin /> }
       case 'ASSIGNED':
@@ -260,7 +274,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
     const lastRetryAt = normalizeProperty(traceData.queueDetails, 'lastRetryAt', 'LastRetryAt')
     const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
     
-    if (!lastAssigned || status === 'COMPLETED' || status === 'CANCELLED' || status === 'FAILED' || status === 'PENDING') {
+    if (!lastAssigned || status === 'COMPLETED' || status === 'CANCELLED' || status === 'CANCELLING' || status === 'FAILED' || status === 'PENDING') {
       return false
     }
     
@@ -339,6 +353,8 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
       case 'FAILED':
       case 'CANCELLED':
         return -1
+      case 'CANCELLING':
+        return 2  // Show as processing (with cancelling description)
       case 'PROCESSING':
         return 2
       case 'ASSIGNED':
@@ -376,7 +392,8 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
       onCancel={handleClose}
       width={1200}
       footer={[
-        traceData?.queueDetails && (
+        // Monitor switch - always show on the left if there's queue details
+        traceData?.queueDetails ? (
           <div key="monitor-switch" style={{ float: 'left', marginRight: 'auto' }}>
             <Space>
               <BellOutlined />
@@ -387,6 +404,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   !traceData?.queueDetails ||
                   normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' ||
                   normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED' ||
+                  normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLING' ||
                   (normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED' && 
                    ((normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0) >= 2 ||
                     normalizeProperty(traceData.queueDetails, 'permanentlyFailed', 'PermanentlyFailed'))) ||
@@ -398,12 +416,28 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
               <Text type="secondary">Background Monitoring</Text>
             </Space>
           </div>
-        ),
+        ) : null,
+        // Show Cancel button for PENDING, ASSIGNED, or PROCESSING tasks that can be cancelled
+        (traceData?.queueDetails && 
+        traceData.queueDetails.canBeCancelled &&
+        (normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' || 
+         normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'ASSIGNED' ||
+         normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PROCESSING')) ? (
+          <Button 
+            key="cancel"
+            danger
+            icon={<CloseCircleOutlined />} 
+            onClick={handleCancelQueueItem}
+            loading={isCancelling}
+          >
+            Cancel
+          </Button>
+        ) : null,
         // Show Retry button only for failed tasks that haven't reached max retries
-        traceData?.queueDetails && 
+        (traceData?.queueDetails && 
         normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED' && 
         (normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0) < 2 && 
-        !normalizeProperty(traceData.queueDetails, 'permanentlyFailed', 'PermanentlyFailed') && (
+        !normalizeProperty(traceData.queueDetails, 'permanentlyFailed', 'PermanentlyFailed')) ? (
           <Button 
             key="retry"
             type="primary"
@@ -414,7 +448,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
           >
             Retry Again
           </Button>
-        ),
+        ) : null,
         <Button 
           key="refresh" 
           icon={<ReloadOutlined />} 
@@ -426,7 +460,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
         <Button key="close" onClick={handleClose}>
           Close
         </Button>
-      ]}
+      ].filter(Boolean)}
     >
       {isTraceLoading ? (
         <div className="queue-trace-loading">
@@ -458,8 +492,21 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             />
           )}
 
+          {/* Cancelling Status Alert */}
+          {traceData.queueDetails && normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLING' && (
+            <Alert
+              message="Task Being Cancelled"
+              description="The task is being cancelled. The bridge will stop execution gracefully."
+              type="warning"
+              showIcon
+              icon={<SyncOutlined spin />}
+              style={{ marginBottom: 16 }}
+            />
+          )}
+
           {/* Failure Reason Alert */}
-          {traceData.queueDetails && normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason') && (
+          {traceData.queueDetails && normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason') && 
+           normalizeProperty(traceData.queueDetails, 'status', 'Status') !== 'CANCELLING' && (
             <Alert
               message={
                 normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' && 
@@ -536,13 +583,17 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                 >
                   <Step title="Created" description={traceData.queueDetails.createdTime ? dayjs(traceData.queueDetails.createdTime).format('HH:mm:ss') : ''} />
                   <Step title="Assigned" description={traceData.queueDetails.assignedTime ? dayjs(traceData.queueDetails.assignedTime).format('HH:mm:ss') : 'Waiting'} />
-                  <Step title="Processing" description={normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PROCESSING' ? 'In Progress' : ''} />
+                  <Step title="Processing" description={
+                    normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PROCESSING' ? 'In Progress' : 
+                    normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLING' ? 'Cancelling...' : ''
+                  } />
                   <Step 
                     title="Completed" 
                     description={
                       normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' ? 'Done' :
                       normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED' ? 'Failed' :
-                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED' ? 'Cancelled' : ''
+                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED' ? 'Cancelled' :
+                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLING' ? 'Cancelling' : ''
                     }
                   />
                 </Steps>
@@ -608,6 +659,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   traceData.queueDetails.canBeCancelled && 
                   normalizeProperty(traceData.queueDetails, 'status', 'Status') !== 'COMPLETED' &&
                   normalizeProperty(traceData.queueDetails, 'status', 'Status') !== 'CANCELLED' &&
+                  normalizeProperty(traceData.queueDetails, 'status', 'Status') !== 'CANCELLING' &&
                   normalizeProperty(traceData.queueDetails, 'status', 'Status') !== 'FAILED' && (
                     <Tooltip title="This task can be cancelled">
                       <Badge status="processing" text="Cancellable" />
@@ -833,6 +885,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   <Tag color={
                     normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' ? 'success' :
                     normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED' ? 'error' :
+                    normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLING' ? 'warning' :
                     normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED' ? 'error' :
                     normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PROCESSING' ? 'processing' :
                     normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'ASSIGNED' ? 'blue' :
@@ -923,6 +976,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   else if (action === 'QUEUE_ITEM_PROCESSING' || action === 'QUEUE_ITEM_RESPONSE_UPDATED') color = 'orange'
                   else if (action === 'QUEUE_ITEM_COMPLETED') color = 'green'
                   else if (action === 'QUEUE_ITEM_CANCELLED') color = 'red'
+                  else if (action === 'QUEUE_ITEM_CANCELLING') color = 'warning'
                   else if (action === 'QUEUE_ITEM_FAILED') color = 'red'
                   else if (action === 'QUEUE_ITEM_RETRY') color = 'orange'
                   else if (action.includes('ERROR') || action.includes('FAILED')) color = 'red'

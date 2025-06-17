@@ -159,6 +159,11 @@ class QueueMonitoringService {
           showMessage('warning', `Queue task ${task.taskId} was cancelled (${task.teamName} - ${task.machineName})`)
           this.removeTask(task.taskId)
           return // Stop processing this task
+        } else if (currentStatus === 'CANCELLING' && oldStatus !== 'CANCELLING') {
+          showMessage('info', `Queue task ${task.taskId} is being cancelled (${task.teamName} - ${task.machineName})`)
+          // Continue monitoring until it transitions to CANCELLED
+          this.monitoredTasks.set(task.taskId, task)
+          this.saveToStorage()
         } else if (currentStatus === 'FAILED') {
           // Note: In the middleware, FAILED status with retryCount < 2 gets reset to PENDING immediately
           // So we might not see FAILED status for long, but handle it just in case

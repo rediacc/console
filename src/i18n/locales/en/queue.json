@@ -16,5 +16,27 @@
   "statusRunning": "Running",
   "statusCompleted": "Completed",
   "statusFailed": "Failed",
-  "statusCancelled": "Cancelled"
+  "statusCancelled": "Cancelled",
+  "tabs": {
+    "active": {
+      "title": "Active Queue",
+      "tooltip": "Shows all pending, assigned, processing, and cancelling tasks. Includes tasks waiting to be picked up and those currently being executed.",
+      "description": "This section displays all active tasks including pending items waiting for assignment, tasks being processed by machines, and tasks in the process of being cancelled."
+    },
+    "completed": {
+      "title": "Completed",
+      "tooltip": "Shows all successfully completed tasks",
+      "description": "This section displays all tasks that have been successfully completed without errors."
+    },
+    "cancelled": {
+      "title": "Cancelled",
+      "tooltip": "Shows all cancelled tasks that were stopped by user request",
+      "description": "This section displays all tasks that were cancelled by user request. These tasks were stopped before completion."
+    },
+    "failed": {
+      "title": "Failed",
+      "tooltip": "Shows all failed tasks that encountered errors during execution",
+      "description": "This section displays all tasks that failed due to errors during execution. Tasks may be retried up to 2 times before being permanently marked as failed."
+    }
+  }
 }

@@ -16,5 +16,27 @@
   "statusRunning": "En Ejecución",
   "statusCompleted": "Completado",
   "statusFailed": "Fallido",
-  "statusCancelled": "Cancelado"
+  "statusCancelled": "Cancelado",
+  "tabs": {
+    "active": {
+      "title": "Cola Activa",
+      "tooltip": "Muestra todas las tareas pendientes, asignadas, en proceso y cancelándose. Incluye tareas esperando ser recogidas y las que se están ejecutando actualmente.",
+      "description": "Esta sección muestra todas las tareas activas incluyendo elementos pendientes esperando asignación, tareas siendo procesadas por máquinas y tareas en proceso de cancelación."
+    },
+    "completed": {
+      "title": "Completadas",
+      "tooltip": "Muestra todas las tareas completadas exitosamente",
+      "description": "Esta sección muestra todas las tareas que se han completado exitosamente sin errores."
+    },
+    "cancelled": {
+      "title": "Canceladas",
+      "tooltip": "Muestra todas las tareas canceladas que fueron detenidas por solicitud del usuario",
+      "description": "Esta sección muestra todas las tareas que fueron canceladas por solicitud del usuario. Estas tareas se detuvieron antes de completarse."
+    },
+    "failed": {
+      "title": "Fallidas",
+      "tooltip": "Muestra todas las tareas fallidas que encontraron errores durante la ejecución",
+      "description": "Esta sección muestra todas las tareas que fallaron debido a errores durante la ejecución. Las tareas pueden reintentarse hasta 2 veces antes de marcarse permanentemente como fallidas."
+    }
+  }
 }

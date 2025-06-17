@@ -300,8 +300,18 @@
           "type": "string",
           "required": true
         },
+        "dest": {
+          "type": "string",
+          "required": true,
+          "placeholder": "backup-filename"
+        },
         "to": {
           "type": "string"
+        },
+        "state": {
+          "type": "string",
+          "options": ["online", "offline"],
+          "ui": "dropdown"
         },
         "option": {
           "type": "string"

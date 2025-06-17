@@ -25,6 +25,8 @@
   "priorityLowestDescription": "Velocidad de procesamiento más lenta. Use para operaciones por lotes o tareas sin restricciones de tiempo.",
   "description": "Descripción (opcional)",
   "descriptionPlaceholder": "Agregar una descripción personalizada para este elemento de la cola",
+  "validationError": "Error de Validación",
+  "missingRequiredParams": "Por favor complete todos los parámetros requeridos: {{params}}",
   "categories": {
     "machine": {
       "name": "Funciones del Sistema",
@@ -71,7 +73,7 @@
       "description": "Crear un nuevo repositorio",
       "params": {
         "repo": {
-          "help": "Nombre del repositorio (sin números)"
+          "help": "Nombre del repositorio"
         },
         "size": {
           "help": "Tamaño del repositorio (ej., 10G)"
@@ -202,11 +204,17 @@
         "repo": {
           "help": "Nombre(s) del repositorio, separados por comas"
         },
+        "dest": {
+          "help": "Nombre del archivo de respaldo"
+        },
         "to": {
           "help": "Máquina/almacenamiento de destino"
         },
+        "state": {
+          "help": "Validar que el repositorio esté online u offline antes de enviar"
+        },
         "option": {
-          "help": "Opciones (ej., no-suffix, override)"
+          "help": "Opciones (ej., override)"
         }
       }
     },
@@ -236,6 +244,10 @@
           "help": "Nombre del plugin"
         }
       }
+    },
+    "ping": {
+      "name": "ping",
+      "description": "Probar la conectividad de red con la máquina"
     }
   }
 }
