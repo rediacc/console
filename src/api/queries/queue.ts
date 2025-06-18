@@ -409,6 +409,19 @@ export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true
         return false
       }
       
+      // Stop polling for tasks with specific permanent failure messages
+      if ((status === 'FAILED' || status === 'PENDING') && lastFailureReason) {
+        // Check for bridge reported failure or other permanent failures
+        const permanentFailureMessages = [
+          'Bridge reported failure',
+          'Task permanently failed',
+          'Fatal error'
+        ]
+        if (permanentFailureMessages.some(msg => lastFailureReason.includes(msg))) {
+          return false
+        }
+      }
+      
       // Stop polling for PENDING tasks that have reached max retries (3)
       // These are tasks that failed 3 times and are stuck in PENDING status
       if (status === 'PENDING' && retryCount >= 3 && lastFailureReason) {

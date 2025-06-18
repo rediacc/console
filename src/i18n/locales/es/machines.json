@@ -50,6 +50,9 @@
   "configure": "Configurar",
   "trace": "Rastrear",
   "machine": "Máquina",
+  "placeholders": {
+    "selectMachine": "Seleccionar una máquina"
+  },
   "selectMachine": "Seleccionar Máquina",
   "priority": "Prioridad",
   "priorityLow": "Baja",

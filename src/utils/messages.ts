@@ -1,6 +1,7 @@
 import toast from 'react-hot-toast'
 import { store } from '@/store/store'
 import { addNotification } from '@/store/notifications/notificationSlice'
+import i18n from '@/i18n/config'
 
 export type MessageType = 'success' | 'error' | 'warning' | 'info'
 
@@ -102,4 +103,14 @@ function addToNotificationCenter(type: MessageType, content: string): void {
     title: getNotificationTitle(type),
     message: content
   }))
+}
+
+// Export a function that supports i18n translations
+export const showTranslatedMessage = (
+  type: MessageType, 
+  i18nKey: string, 
+  options?: Record<string, string | number>
+) => {
+  const content = i18n.t(i18nKey, options)
+  showMessage(type, content)
 }

@@ -1,4 +1,4 @@
-import { showMessage } from '@/utils/messages'
+import { showTranslatedMessage } from '@/utils/messages'
 import apiClient from '@/api/client'
 
 interface MonitoredTask {
@@ -20,7 +20,7 @@ class QueueMonitoringService {
   private readonly CHECK_INTERVAL_MS = 60000 // 1 minute
   private readonly STALE_TASK_THRESHOLD_MS = 24 * 60 * 60 * 1000 // 24 hours
   private readonly STALE_PROCESSING_MINUTES = 5 // 5 minutes without progress
-  private readonly MAX_RETRY_COUNT = 2 // Maximum retry attempts
+  private readonly MAX_RETRY_COUNT = 3 // Maximum retry attempts (aligned with API polling)
   
   private readonly STORAGE_KEY = 'queue_monitored_tasks'
 
@@ -152,15 +152,27 @@ class QueueMonitoringService {
 
         // Notify user of status change
         if (currentStatus === 'COMPLETED') {
-          showMessage('success', `Queue task ${task.taskId} completed successfully! (${task.teamName} - ${task.machineName})`)
+          showTranslatedMessage('success', 'queue:monitoring.completed', { 
+            taskId: task.taskId, 
+            teamName: task.teamName, 
+            machineName: task.machineName 
+          })
           this.removeTask(task.taskId)
           return // Stop processing this task
         } else if (currentStatus === 'CANCELLED') {
-          showMessage('warning', `Queue task ${task.taskId} was cancelled (${task.teamName} - ${task.machineName})`)
+          showTranslatedMessage('warning', 'queue:monitoring.cancelled', { 
+            taskId: task.taskId, 
+            teamName: task.teamName, 
+            machineName: task.machineName 
+          })
           this.removeTask(task.taskId)
           return // Stop processing this task
         } else if (currentStatus === 'CANCELLING' && oldStatus !== 'CANCELLING') {
-          showMessage('info', `Queue task ${task.taskId} is being cancelled (${task.teamName} - ${task.machineName})`)
+          showTranslatedMessage('info', 'queue:monitoring.cancelling', { 
+            taskId: task.taskId, 
+            teamName: task.teamName, 
+            machineName: task.machineName 
+          })
           // Continue monitoring until it transitions to CANCELLED
           this.monitoredTasks.set(task.taskId, task)
           this.saveToStorage()
@@ -168,24 +180,57 @@ class QueueMonitoringService {
           // Note: In the middleware, FAILED status with retryCount < 2 gets reset to PENDING immediately
           // So we might not see FAILED status for long, but handle it just in case
           const retryCount = this.getRetryCount(queueDetails)
+          const lastFailureReason = this.getLastFailureReason(queueDetails)
+          
+          // Check for permanent failure messages
+          if (this.isPermanentFailure(lastFailureReason)) {
+            showTranslatedMessage('error', 'queue:monitoring.permanentlyFailedWithReason', { 
+              taskId: task.taskId,
+              reason: lastFailureReason || '',
+              teamName: task.teamName, 
+              machineName: task.machineName 
+            })
+            this.removeTask(task.taskId)
+            return // Stop processing this task
+          }
+          
           if (retryCount >= this.MAX_RETRY_COUNT) {
-            showMessage('error', `Queue task ${task.taskId} permanently failed after ${this.MAX_RETRY_COUNT} attempts (${task.teamName} - ${task.machineName})`)
+            showTranslatedMessage('error', 'queue:monitoring.permanentlyFailed', { 
+              taskId: task.taskId,
+              attempts: this.MAX_RETRY_COUNT,
+              teamName: task.teamName, 
+              machineName: task.machineName 
+            })
             this.removeTask(task.taskId)
             return // Stop processing this task
           } else {
             // This should be rare as middleware immediately resets to PENDING
-            showMessage('warning', `Queue task ${task.taskId} failed - waiting for retry (attempt ${retryCount} of ${this.MAX_RETRY_COUNT}) (${task.teamName} - ${task.machineName})`)
+            showTranslatedMessage('warning', 'queue:monitoring.failedWaitingRetry', { 
+              taskId: task.taskId,
+              attempt: retryCount,
+              maxAttempts: this.MAX_RETRY_COUNT,
+              teamName: task.teamName, 
+              machineName: task.machineName 
+            })
             // Continue monitoring as it should become PENDING soon
             this.monitoredTasks.set(task.taskId, task)
             this.saveToStorage()
           }
         } else if (currentStatus === 'PROCESSING' && oldStatus !== 'PROCESSING') {
-          showMessage('info', `Queue task ${task.taskId} started processing (${task.teamName} - ${task.machineName})`)
+          showTranslatedMessage('info', 'queue:monitoring.startedProcessing', { 
+            taskId: task.taskId, 
+            teamName: task.teamName, 
+            machineName: task.machineName 
+          })
           // Update the task with new status
           this.monitoredTasks.set(task.taskId, task)
           this.saveToStorage()
         } else if (currentStatus === 'ASSIGNED' && oldStatus === 'PENDING') {
-          showMessage('info', `Queue task ${task.taskId} assigned to machine (${task.teamName} - ${task.machineName})`)
+          showTranslatedMessage('info', 'queue:monitoring.assigned', { 
+            taskId: task.taskId, 
+            teamName: task.teamName, 
+            machineName: task.machineName 
+          })
           // Update the task with new status
           this.monitoredTasks.set(task.taskId, task)
           this.saveToStorage()
@@ -194,28 +239,76 @@ class QueueMonitoringService {
           const retryCount = this.getRetryCount(queueDetails)
           const lastFailureReason = this.getLastFailureReason(queueDetails)
           
-          // Check if we've reached max retries
-          if (retryCount >= this.MAX_RETRY_COUNT && lastFailureReason) {
-            showMessage('error', `Queue task ${task.taskId} permanently failed after ${this.MAX_RETRY_COUNT} attempts (${task.teamName} - ${task.machineName})`)
+          // Check for permanent failure messages
+          if (this.isPermanentFailure(lastFailureReason)) {
+            showTranslatedMessage('error', 'queue:monitoring.permanentlyFailedWithReason', { 
+              taskId: task.taskId,
+              reason: lastFailureReason || '',
+              teamName: task.teamName, 
+              machineName: task.machineName 
+            })
             this.removeTask(task.taskId)
             return
           }
           
-          showMessage('info', `Queue task ${task.taskId} queued for retry (attempt ${retryCount} of ${this.MAX_RETRY_COUNT}) (${task.teamName} - ${task.machineName})`)
+          // Check if we've reached max retries
+          if (retryCount >= this.MAX_RETRY_COUNT && lastFailureReason) {
+            showTranslatedMessage('error', 'queue:monitoring.permanentlyFailed', { 
+              taskId: task.taskId,
+              attempts: this.MAX_RETRY_COUNT,
+              teamName: task.teamName, 
+              machineName: task.machineName 
+            })
+            this.removeTask(task.taskId)
+            return
+          }
+          
+          showTranslatedMessage('info', 'queue:monitoring.queuedForRetry', { 
+            taskId: task.taskId,
+            attempt: retryCount,
+            maxAttempts: this.MAX_RETRY_COUNT,
+            teamName: task.teamName, 
+            machineName: task.machineName 
+          })
           // Update the task with new status
           this.monitoredTasks.set(task.taskId, task)
           this.saveToStorage()
-        } else if (currentStatus === 'PENDING' && this.getRetryCount(queueDetails) >= this.MAX_RETRY_COUNT && this.getLastFailureReason(queueDetails)) {
+        } else if (currentStatus === 'PENDING') {
+          const retryCount = this.getRetryCount(queueDetails)
+          const lastFailureReason = this.getLastFailureReason(queueDetails)
+          
+          // Check for permanent failure messages
+          if (this.isPermanentFailure(lastFailureReason)) {
+            showTranslatedMessage('error', 'queue:monitoring.permanentlyFailedWithReason', { 
+              taskId: task.taskId,
+              reason: lastFailureReason || '',
+              teamName: task.teamName, 
+              machineName: task.machineName 
+            })
+            this.removeTask(task.taskId)
+            return
+          }
+          
           // Task is stuck in PENDING with max retries - treat as permanently failed
-          showMessage('error', `Queue task ${task.taskId} permanently failed after ${this.MAX_RETRY_COUNT + 1} attempts (${task.teamName} - ${task.machineName})`)
-          this.removeTask(task.taskId)
-          return
+          if (retryCount >= this.MAX_RETRY_COUNT && lastFailureReason) {
+            showTranslatedMessage('error', 'queue:monitoring.permanentlyFailed', { 
+              taskId: task.taskId,
+              attempts: this.MAX_RETRY_COUNT,
+              teamName: task.teamName, 
+              machineName: task.machineName 
+            })
+            this.removeTask(task.taskId)
+            return
+          }
         }
       }
 
       // Check for stale tasks (no assignment update for more than 5 minutes during processing)
       if (currentStatus === 'PROCESSING' && queueDetails.minutesSinceAssigned && queueDetails.minutesSinceAssigned > this.STALE_PROCESSING_MINUTES) {
-        showMessage('error', `Queue task ${task.taskId} appears to be stale (no progress for ${queueDetails.minutesSinceAssigned} minutes)`)
+        showTranslatedMessage('error', 'queue:monitoring.staleTask', { 
+          taskId: task.taskId,
+          minutes: queueDetails.minutesSinceAssigned
+        })
         // Continue monitoring but less frequently
         task.checkInterval = this.CHECK_INTERVAL_MS * 2 // Double the check interval for stale tasks
         this.monitoredTasks.set(task.taskId, task)
@@ -227,7 +320,9 @@ class QueueMonitoringService {
       
       // If we get a 404, the task might have been deleted
       if (error.response?.status === 404) {
-        showMessage('error', `Queue task ${task.taskId} no longer exists`)
+        showTranslatedMessage('error', 'queue:monitoring.taskNotFound', { 
+          taskId: task.taskId
+        })
         this.removeTask(task.taskId)
       }
     }
@@ -254,6 +349,18 @@ class QueueMonitoringService {
 
   private getLastFailureReason(queueDetails: any): string | undefined {
     return queueDetails.lastFailureReason || queueDetails.LastFailureReason
+  }
+
+  private isPermanentFailure(failureReason: string | undefined): boolean {
+    if (!failureReason) return false
+    
+    const permanentFailureMessages = [
+      'Bridge reported failure',
+      'Task permanently failed',
+      'Fatal error'
+    ]
+    
+    return permanentFailureMessages.some(msg => failureReason.includes(msg))
   }
 
   // Clear old tasks (older than 24 hours)

@@ -42,6 +42,7 @@ import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { usePingFunction } from '@/services/pingService';
 import { showMessage } from '@/utils/messages';
+import { MachineRepositoryList } from './MachineRepositoryList';
 
 const { Option } = Select;
 const { Search } = Input;
@@ -558,6 +559,10 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               pageSize: dynamicPageSize,
               showSizeChanger: false,
               showTotal: (total, range) => t('common:table.showingRecords', { start: range[0], end: range[1], total }),
+            }}
+            expandable={{
+              expandedRowRender: (record) => <MachineRepositoryList machine={record} />,
+              rowExpandable: () => true,
             }}
             sticky
           />

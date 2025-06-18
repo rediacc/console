@@ -38,5 +38,21 @@
       "tooltip": "Muestra todas las tareas fallidas que encontraron errores durante la ejecución",
       "description": "Esta sección muestra todas las tareas que fallaron debido a errores durante la ejecución. Las tareas pueden reintentarse hasta 2 veces antes de marcarse permanentemente como fallidas."
     }
+  },
+  "monitoring": {
+    "completed": "Tarea de cola {{taskId}} completada exitosamente ({{teamName}} - {{machineName}})",
+    "cancelled": "Tarea de cola {{taskId}} fue cancelada ({{teamName}} - {{machineName}})",
+    "cancelling": "Tarea de cola {{taskId}} está siendo cancelada ({{teamName}} - {{machineName}})",
+    "permanentlyFailed": "Tarea de cola {{taskId}} falló permanentemente después de {{attempts}} intentos ({{teamName}} - {{machineName}})",
+    "permanentlyFailedWithReason": "Tarea de cola {{taskId}} falló permanentemente: {{reason}} ({{teamName}} - {{machineName}})",
+    "failedWaitingRetry": "Tarea de cola {{taskId}} falló - esperando reintento (intento {{attempt}} de {{maxAttempts}}) ({{teamName}} - {{machineName}})",
+    "startedProcessing": "Tarea de cola {{taskId}} comenzó a procesarse ({{teamName}} - {{machineName}})",
+    "assigned": "Tarea de cola {{taskId}} asignada a máquina ({{teamName}} - {{machineName}})",
+    "queuedForRetry": "Tarea de cola {{taskId}} en cola para reintento (intento {{attempt}} de {{maxAttempts}}) ({{teamName}} - {{machineName}})",
+    "staleTask": "Tarea de cola {{taskId}} parece estar obsoleta (sin progreso por {{minutes}} minutos)",
+    "startedMonitoring": "Se comenzó a monitorear la tarea de cola {{taskId}} ({{teamName}} - {{machineName}})",
+    "stoppedMonitoring": "Se detuvo el monitoreo de la tarea de cola {{taskId}}",
+    "monitoringAlready": "Ya se está monitoreando la tarea de cola {{taskId}}",
+    "taskNotFound": "La tarea de cola {{taskId}} ya no existe"
   }
 }

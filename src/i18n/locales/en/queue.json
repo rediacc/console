@@ -38,5 +38,21 @@
       "tooltip": "Shows all failed tasks that encountered errors during execution",
       "description": "This section displays all tasks that failed due to errors during execution. Tasks may be retried up to 2 times before being permanently marked as failed."
     }
+  },
+  "monitoring": {
+    "completed": "Queue task {{taskId}} completed successfully ({{teamName}} - {{machineName}})",
+    "cancelled": "Queue task {{taskId}} was cancelled ({{teamName}} - {{machineName}})",
+    "cancelling": "Queue task {{taskId}} is being cancelled ({{teamName}} - {{machineName}})",
+    "permanentlyFailed": "Queue task {{taskId}} permanently failed after {{attempts}} attempts ({{teamName}} - {{machineName}})",
+    "permanentlyFailedWithReason": "Queue task {{taskId}} permanently failed: {{reason}} ({{teamName}} - {{machineName}})",
+    "failedWaitingRetry": "Queue task {{taskId}} failed - waiting for retry (attempt {{attempt}} of {{maxAttempts}}) ({{teamName}} - {{machineName}})",
+    "startedProcessing": "Queue task {{taskId}} started processing ({{teamName}} - {{machineName}})",
+    "assigned": "Queue task {{taskId}} assigned to machine ({{teamName}} - {{machineName}})",
+    "queuedForRetry": "Queue task {{taskId}} queued for retry (attempt {{attempt}} of {{maxAttempts}}) ({{teamName}} - {{machineName}})",
+    "staleTask": "Queue task {{taskId}} appears to be stale (no progress for {{minutes}} minutes)",
+    "startedMonitoring": "Started monitoring queue task {{taskId}} ({{teamName}} - {{machineName}})",
+    "stoppedMonitoring": "Stopped monitoring queue task {{taskId}}",
+    "monitoringAlready": "Already monitoring queue task {{taskId}}",
+    "taskNotFound": "Queue task {{taskId}} no longer exists"
   }
 }

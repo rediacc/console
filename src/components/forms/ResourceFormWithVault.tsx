@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react'
-import { Divider, Alert, Button, Space, Upload, message, Form, Input, Select } from 'antd'
+import { Divider, Alert, Button, Space, Upload, message, Form, Input, Select, InputNumber } from 'antd'
 import { UploadOutlined, DownloadOutlined } from '@ant-design/icons'
 import { UseFormReturn, Controller } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -12,13 +12,15 @@ export interface ResourceFormWithVaultRef {
 interface FormFieldConfig {
   name: string
   label: string
-  type?: 'text' | 'select' | 'password' | 'email' | 'number'
+  type?: 'text' | 'select' | 'password' | 'email' | 'number' | 'size'
   placeholder?: string
   required?: boolean
   options?: Array<{ value: string; label: string }>
   rules?: any[]
   hidden?: boolean
   disabled?: boolean
+  helperText?: string
+  sizeUnits?: string[] // For size type: ['G', 'T'] or ['percentage', 'G', 'T']
 }
 
 interface ResourceFormWithVaultProps<T = any> {
@@ -145,6 +147,87 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
             />
           )
 
+        case 'size':
+          const units = field.sizeUnits || ['G', 'T']
+          const defaultUnit = units[0] === 'percentage' ? '%' : units[0]
+          
+          return (
+            <Controller
+              name={field.name as any}
+              control={control}
+              render={({ field: controllerField }) => {
+                // Parse the current value (e.g., "100G" -> {value: 100, unit: "G"})
+                const currentValue = controllerField.value || ''
+                let parsedValue: number | undefined = undefined
+                let parsedUnit = defaultUnit
+                
+                if (currentValue) {
+                  const match = currentValue.match(/^(\d+)([%GT]?)$/)
+                  if (match) {
+                    parsedValue = parseInt(match[1], 10)
+                    parsedUnit = match[2] || defaultUnit
+                  }
+                }
+                
+                return (
+                  <Space.Compact style={{ width: '100%' }}>
+                    <InputNumber
+                      style={{ width: '65%' }}
+                      value={parsedValue}
+                      onChange={(value) => {
+                        // Ensure only numbers are accepted
+                        if (value === null || value === undefined) {
+                          controllerField.onChange('')
+                        } else {
+                          const numValue = typeof value === 'string' ? parseInt(value, 10) : value
+                          if (!isNaN(numValue) && numValue > 0) {
+                            controllerField.onChange(`${numValue}${parsedUnit}`)
+                          }
+                        }
+                      }}
+                      onKeyPress={(e) => {
+                        // Only allow numbers
+                        const charCode = e.which || e.keyCode
+                        if (charCode < 48 || charCode > 57) {
+                          e.preventDefault()
+                        }
+                      }}
+                      parser={(value) => {
+                        // Remove any non-numeric characters
+                        const parsed = value?.replace(/[^\d]/g, '')
+                        return parsed ? parseInt(parsed, 10) : 0
+                      }}
+                      formatter={(value) => {
+                        // Format as integer
+                        return value ? `${value}` : ''
+                      }}
+                      placeholder={units.includes('percentage') ? '95' : '100'}
+                      min={1}
+                      max={units.includes('percentage') ? 100 : undefined}
+                      disabled={field.disabled}
+                      keyboard={true}
+                      step={1}
+                      precision={0}
+                    />
+                    <Select
+                      style={{ width: '35%' }}
+                      value={parsedUnit}
+                      onChange={(unit) => {
+                        const newValue = parsedValue ? `${parsedValue}${unit}` : ''
+                        controllerField.onChange(newValue)
+                      }}
+                      options={units.map(unit => ({
+                        value: unit === 'percentage' ? '%' : unit,
+                        label: unit === 'percentage' ? '%' : unit === 'G' ? 'GB' : 'TB'
+                      }))}
+                      disabled={field.disabled}
+                    />
+                  </Space.Compact>
+                )
+              }}
+            />
+          )
+
         default:
           return (
             <Controller
@@ -190,7 +273,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
                 label={field.label}
                 required={field.required}
                 validateStatus={error ? 'error' : undefined}
-                help={error?.message as string}
+                help={error?.message as string || field.helperText}
               >
                 {renderField(field)}
               </Form.Item>

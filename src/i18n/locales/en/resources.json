@@ -74,9 +74,24 @@
     "functionsFor": "Functions for {{name}}",
     "selectRepository": "Select repository",
     "noRepositoriesFound": "No repositories found",
+    "size": "Size",
+    "sizeHelperText": "e.g., 10G, 100G, 1T",
+    "createSuccess": "Repository created successfully",
+    "repoCreatedButQueueFailed": "Repository credentials created, but failed to queue physical creation",
+    "queueItemCreated": "Repository creation queued successfully",
+    "deleteSuccess": "Repository deleted successfully",
+    "deleteError": "Failed to delete repository",
     "placeholders": {
-      "enterRepositoryName": "Enter repository name"
-    }
+      "enterRepositoryName": "Enter repository name",
+      "enterSize": "Enter size (e.g., 10G)"
+    },
+    "fetchingRepositories": "Fetching repositories...",
+    "status": "Status",
+    "exists": "Exists",
+    "notFound": "Not Found",
+    "mounted": "Mounted",
+    "lastModified": "Last Modified",
+    "noCredentialsFound": "No credentials found for repository '{{name}}'"
   },
   "storage": {
     "storageName": "Storage Name",
@@ -88,6 +103,8 @@
     "noStorage": "No storage found in this team",
     "storageFunctions": "Storage Functions",
     "queueItemCreated": "Queue item created successfully",
+    "deleteSuccess": "Storage deleted successfully",
+    "deleteError": "Failed to delete storage",
     "placeholders": {
       "enterStorageName": "Enter storage name"
     }
@@ -99,6 +116,8 @@
     "deleteSchedule": "Delete Schedule",
     "confirmDelete": "Are you sure you want to delete schedule \"{{scheduleName}}\"?",
     "noSchedules": "No schedules found in this team",
+    "deleteSuccess": "Schedule deleted successfully",
+    "deleteError": "Failed to delete schedule",
     "placeholders": {
       "enterScheduleName": "Enter schedule name"
     }

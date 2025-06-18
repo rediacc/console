@@ -4,11 +4,11 @@ import { minifyJSON } from '@/utils/json'
 
 export interface Repository {
   repositoryName: string
+  repositoryGuid: string     // Repository GUID/Credential
   teamName: string
   vaultVersion: number
   vaultContent?: string
-  parentRepoName?: string    // Parent repository name
-  grandParentId?: number     // Top-most parent repository ID
+  grandGuid?: string         // Top-most parent repository GUID
 }
 
 // Get repositories for a team or multiple teams
@@ -19,11 +19,11 @@ export const useRepositories = createResourceQuery<Repository>({
   filter: filters.hasName('repoName'),
   mapper: createFieldMapper<Repository>({
     repositoryName: 'repoName',
+    repositoryGuid: 'repoGuid',
     teamName: 'teamName',
     vaultVersion: 'vaultVersion',
     vaultContent: 'vaultContent',
-    parentRepoName: 'parentRepoName',
-    grandParentId: 'grandParentId'
+    grandGuid: 'grandGuid'
   }),
   enabledCheck: (teamFilter) => !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0)
 })

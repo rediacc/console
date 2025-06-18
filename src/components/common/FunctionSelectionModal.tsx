@@ -339,24 +339,57 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                 style={{ width: '65%' }}
                                 value={functionParams[`${paramName}_value`] || ''}
                                 onChange={(value) => {
-                                  setFunctionParams({
-                                    ...functionParams,
-                                    [`${paramName}_value`]: value,
-                                    [paramName]: `${value || ''}${functionParams[`${paramName}_unit`] || (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0])}`
-                                  })
+                                  // Ensure only numbers are accepted
+                                  if (value === null || value === undefined) {
+                                    setFunctionParams({
+                                      ...functionParams,
+                                      [`${paramName}_value`]: '',
+                                      [paramName]: ''
+                                    })
+                                  } else {
+                                    const numValue = typeof value === 'string' ? parseInt(value, 10) : value
+                                    if (!isNaN(numValue) && numValue > 0) {
+                                      const unit = functionParams[`${paramName}_unit`] || (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0])
+                                      setFunctionParams({
+                                        ...functionParams,
+                                        [`${paramName}_value`]: numValue,
+                                        [paramName]: `${numValue}${unit}`
+                                      })
+                                    }
+                                  }
+                                }}
+                                onKeyPress={(e) => {
+                                  // Only allow numbers
+                                  const charCode = e.which || e.keyCode
+                                  if (charCode < 48 || charCode > 57) {
+                                    e.preventDefault()
+                                  }
+                                }}
+                                parser={(value) => {
+                                  // Remove any non-numeric characters
+                                  const parsed = value?.replace(/[^\d]/g, '')
+                                  return parsed ? parseInt(parsed, 10) : 0
+                                }}
+                                formatter={(value) => {
+                                  // Format as integer
+                                  return value ? `${value}` : ''
                                 }}
                                 placeholder={paramInfo.units.includes('percentage') ? '95' : '100'}
                                 min={1}
                                 max={paramInfo.units.includes('percentage') ? 100 : undefined}
+                                keyboard={true}
+                                step={1}
+                                precision={0}
                               />
                               <Select
                                 style={{ width: '35%' }}
                                 value={functionParams[`${paramName}_unit`] || (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0])}
                                 onChange={(unit) => {
+                                  const currentValue = functionParams[`${paramName}_value`]
                                   setFunctionParams({
                                     ...functionParams,
                                     [`${paramName}_unit`]: unit,
-                                    [paramName]: `${functionParams[`${paramName}_value`] || ''}${unit}`
+                                    [paramName]: currentValue ? `${currentValue}${unit}` : ''
                                   })
                                 }}
                                 options={paramInfo.units.map(unit => ({

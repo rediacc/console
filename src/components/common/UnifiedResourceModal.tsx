@@ -181,6 +181,10 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         bridgeName: uiMode === 'simple' ? 'Global Bridges' : '',
         machineVault: '{}',
       },
+      repository: {
+        machineName: '',
+        size: '',
+      },
       team: { teamName: '', teamVault: '{}' },
       region: { regionName: '', regionVault: '{}' },
       bridge: { regionName: '', bridgeName: '', bridgeVault: '{}' },
@@ -194,8 +198,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     defaultValues: getDefaultValues(),
   })
 
-  // Watch form values for dependent fields (machines only)
+  // Watch form values for dependent fields
   const selectedRegion = resourceType === 'machine' ? form.watch('regionName') : null
+  const selectedTeam = resourceType === 'repository' ? form.watch('teamName') : null
 
   // Get filtered bridges based on selected region
   const filteredBridges = React.useMemo(() => {
@@ -223,6 +228,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   // Set default values when modal opens
   useEffect(() => {
     if (open && mode === 'create') {
+      // Reset form to default values first
+      form.reset(getDefaultValues())
+      
       // Set team if preselected
       if (teamFilter) {
         if (Array.isArray(teamFilter) && teamFilter.length === 1) {
@@ -326,6 +334,33 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       fields.push(createRegionField(), createBridgeField(), nameField)
     } else if (resourceType === 'bridge') {
       fields.push(createRegionField(), nameField)
+    } else if (resourceType === 'repository') {
+      // Repository creation needs machine selection and size
+      fields.push(nameField)
+      
+      // Get machines for the selected team
+      const selectedTeamName = form.watch('teamName') || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
+      const teamMachines = dropdownData?.machinesByTeam?.find(t => t.teamName === selectedTeamName)?.machines || []
+      
+      fields.push({
+        name: 'machineName',
+        label: t('machines:machine'),
+        placeholder: t('machines:placeholders.selectMachine'),
+        required: true,
+        type: 'select' as const,
+        options: teamMachines.map((m: any) => ({ value: m.value, label: m.label })),
+        disabled: !selectedTeamName || teamMachines.length === 0
+      })
+      
+      fields.push({
+        name: 'size',
+        label: t('repositories.size'),
+        placeholder: t('repositories.placeholders.enterSize'),
+        required: true,
+        type: 'size' as const,
+        sizeUnits: ['G', 'T'],
+        helperText: t('repositories.sizeHelperText', { defaultValue: 'e.g., 10G, 100G, 1T' })
+      })
     } else if (!['team', 'region'].includes(resourceType)) {
       fields.push(nameField)
     } else {

@@ -1,10 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { Card, Tabs, Button, Space, Modal, Tag, Typography, Table, Row, Col, Empty, Spin, Dropdown } from 'antd'
+import React, { useState, useRef } from 'react'
+import { Card, Tabs, Button, Space, Modal, Tag, Typography, Table, Row, Col, Empty, Spin } from 'antd'
 import { 
   PlusOutlined, 
   EditOutlined, 
-  DeleteOutlined, 
-  SettingOutlined,
+  DeleteOutlined,
   CloudOutlined,
   InboxOutlined,
   DesktopOutlined,
@@ -34,8 +33,7 @@ import {
   useUpdateMachineBridge,
   useUpdateMachineVault,
   useDeleteMachine,
-  useMachines,
-  type Machine
+  useMachines
 } from '@/api/queries/machines'
 
 // Repository queries
@@ -73,11 +71,12 @@ import { useDropdownData } from '@/api/queries/useDropdownData'
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize'
 import { type QueueFunction } from '@/api/queries/queue'
 import { useCreateQueueItem } from '@/api/queries/queue'
-import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 import TeamSelector from '@/components/common/TeamSelector'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
+import { type Machine } from '@/types'
+import apiClient from '@/api/client'
 
-const { Title, Text } = Typography
+const { Title } = Typography
 
 const ResourcesPage: React.FC = () => {
   const { t } = useTranslation(['resources', 'machines', 'common'])
@@ -136,9 +135,21 @@ const ResourcesPage: React.FC = () => {
       schedule: deleteScheduleMutation
     }
     
+    // Get the correct translation namespace and key
+    const getTranslationKey = (key: string) => {
+      if (resourceType === 'machine') {
+        return `machines:${key}`
+      }
+      const resourceKey = resourceType === 'repository' ? 'repositories' : `${resourceType}s`
+      return `resources:${resourceKey}.${key}`
+    }
+    
     Modal.confirm({
-      title: t(`${resourceType}s:confirmDelete`),
-      content: t(`${resourceType}s:deleteWarning`, { name: resourceName }),
+      title: t(getTranslationKey(resourceType === 'machine' ? 'confirmDelete' : `delete${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)}`)),
+      content: t(getTranslationKey(resourceType === 'machine' ? 'deleteWarning' : 'confirmDelete'), { 
+        name: resourceName,
+        [`${resourceType}Name`]: resourceName 
+      }),
       okText: t('common:actions.delete'),
       okType: 'danger',
       cancelText: t('common:actions.cancel'),
@@ -148,9 +159,9 @@ const ResourcesPage: React.FC = () => {
             teamName: resource.teamName,
             [`${resourceType}Name`]: resourceName,
           })
-          showMessage('success', t(`${resourceType}s:deleteSuccess`))
+          showMessage('success', t(getTranslationKey('deleteSuccess')))
         } catch (error) {
-          showMessage('error', t(`${resourceType}s:deleteError`))
+          showMessage('error', t(getTranslationKey('deleteError')))
         }
       },
     })
@@ -166,10 +177,10 @@ const ResourcesPage: React.FC = () => {
   const { data: teams, isLoading: teamsLoading } = useTeams()
   const teamsList: Team[] = teams || []
   
-  // Machine hooks - fetch machines for connectivity test
+  // Machine hooks - fetch machines for connectivity test and repository creation
   const { data: machines = [] } = useMachines(
-    selectedTeams.length > 0 && teamResourcesTab === 'machines' ? selectedTeams : undefined,
-    teamResourcesTab === 'machines'
+    selectedTeams.length > 0 && (teamResourcesTab === 'machines' || teamResourcesTab === 'repositories') ? selectedTeams : undefined,
+    teamResourcesTab === 'machines' || teamResourcesTab === 'repositories'
   )
 
 
@@ -301,7 +312,95 @@ const ResourcesPage: React.FC = () => {
       }
       
       if (mode === 'create') {
-        await mutations[resourceType as keyof typeof mutations].create.mutateAsync(data)
+        // For repository creation, we need to handle the two-step process
+        if (resourceType === 'repository' && data.machineName && data.size) {
+          // Step 1: Create the repository credentials
+          const { machineName, size, ...repoData } = data
+          const createResult = await mutations.repository.create.mutateAsync(repoData)
+          
+          // Step 2: Queue the "new" function to create the repository on the machine
+          try {
+            // Find the machine details
+            const teamData = dropdownData?.machinesByTeam?.find(
+              t => t.teamName === data.teamName
+            )
+            const machine = teamData?.machines?.find(
+              m => m.value === machineName
+            )
+            
+            if (!machine) {
+              showMessage('error', 'Selected machine not found')
+              closeUnifiedModal()
+              return
+            }
+            
+            // Find team vault data
+            const team = teamsList.find(t => t.teamName === data.teamName)
+            
+            // Find the full machine data to get vault content
+            const fullMachine = machines.find(m => m.machineName === machineName && m.teamName === data.teamName)
+            
+            // Wait a bit for the repository to be fully created and indexed
+            await new Promise(resolve => setTimeout(resolve, 500))
+            
+            // Fetch the created repository to get its vault with credentials
+            const repoResponse = await apiClient.get('/GetTeamRepositories', {
+              teamName: data.teamName
+            })
+            
+            // The repository data is in the second table (index 1)
+            const createdRepo = repoResponse.tables[1]?.data?.find(
+              (r: any) => r.repoName === data.repositoryName
+            )
+            
+            const repositoryVault = createdRepo?.vaultContent || data.repositoryVault || '{}'
+            const repositoryGuid = createdRepo?.repoGuid || ''
+            
+            if (!repositoryGuid) {
+              console.error('Repository GUID not found for:', data.repositoryName)
+              showMessage('error', 'Failed to get repository GUID')
+              closeUnifiedModal()
+              return
+            }
+            
+            // Build queue vault for the "new" function
+            const queueVault = await buildQueueVault({
+              teamName: data.teamName,
+              machineName: machine.value,
+              bridgeName: machine.bridgeName,
+              functionName: 'new',
+              params: {
+                repo: repositoryGuid,  // Use repository GUID
+                size: size
+              },
+              priority: 3,
+              description: `Create repository ${data.repositoryName} with size ${size}`,
+              addedVia: 'repository-creation',
+              teamVault: team?.vaultContent || '{}',
+              machineVault: fullMachine?.vaultContent || '{}',
+              repositoryVault: repositoryVault,
+              repositoryGuid: repositoryGuid
+            })
+            
+            const response = await createQueueItemMutation.mutateAsync({
+              teamName: data.teamName,
+              machineName: machine.value,
+              bridgeName: machine.bridgeName,
+              queueVault,
+              priority: 3
+            })
+            
+            showMessage('success', t('repositories.createSuccess'))
+            
+            if (response?.taskId) {
+              setQueueTraceModal({ visible: true, taskId: response.taskId })
+            }
+          } catch (error) {
+            showMessage('warning', t('repositories.repoCreatedButQueueFailed'))
+          }
+        } else {
+          await mutations[resourceType as keyof typeof mutations].create.mutateAsync(data)
+        }
       } else {
         const resourceName = `${resourceType}Name`
         const currentName = currentResource[resourceName]
@@ -332,7 +431,7 @@ const ResourcesPage: React.FC = () => {
           await updateMachineBridgeMutation.mutateAsync({
             teamName: currentResource.teamName,
             machineName: newName || currentName,
-            bridgeName: data.bridgeName,
+            newBridgeName: data.bridgeName,
           })
         }
       }
@@ -432,18 +531,19 @@ const ResourcesPage: React.FC = () => {
       
       // Add resource-specific field and vault
       if (resourceType === 'machine') {
-        queueVaultParams.repositoryName = functionData.params.repo;
         queueVaultParams.machineVault = currentResource.vaultContent || '{}';
         
         // Find the repository vault data if repo is specified
         if (functionData.params.repo) {
-          const repository = repositories.find(r => r.repositoryName === functionData.params.repo);
+          const repository = repositories.find(r => r.repositoryGuid === functionData.params.repo);
+          queueVaultParams.repositoryGuid = repository?.repositoryGuid || functionData.params.repo;
           queueVaultParams.repositoryVault = repository?.vaultContent || '{}';
         } else {
           queueVaultParams.repositoryVault = '{}';
         }
       } else if (resourceType === 'repository') {
-        queueVaultParams.repositoryName = currentResource.repositoryName;
+        queueVaultParams.repositoryGuid = currentResource.repositoryGuid;
+        queueVaultParams.repositoryVault = currentResource.vaultContent || '{}';
       } else if (resourceType === 'storage') {
         queueVaultParams.storageName = currentResource.storageName;
       }
@@ -517,7 +617,7 @@ const ResourcesPage: React.FC = () => {
     {
       title: t('common:table.actions'),
       key: 'actions',
-      width: 350,
+      width: 250,
       render: (_: any, record: Repository) => (
         <Space>
           <Button
@@ -530,23 +630,6 @@ const ResourcesPage: React.FC = () => {
             }}
           >
             {t('common:actions.edit')}
-          </Button>
-          <Button
-            type="primary"
-            size="small"
-            icon={<FunctionOutlined />}
-            onClick={() => {
-              setCurrentResource(record);
-              // Use a special state to show function selection
-              setUnifiedModalState({
-                open: true,
-                resourceType: 'repository',
-                mode: 'create',
-                data: record
-              });
-            }}
-          >
-            Run
           </Button>
           <Button
             type="primary"
@@ -1153,12 +1236,15 @@ const ResourcesPage: React.FC = () => {
           []
         }
         hiddenParams={
-          unifiedModalState.resourceType === 'repository' ? ['repo'] : 
+          unifiedModalState.resourceType === 'repository' ? ['repo', 'grand'] : 
           unifiedModalState.resourceType === 'storage' ? ['storage'] : 
           []
         }
         defaultParams={
-          unifiedModalState.resourceType === 'repository' && currentResource ? { repo: currentResource.repositoryName } : 
+          unifiedModalState.resourceType === 'repository' && currentResource ? { 
+            repo: currentResource.repositoryGuid,
+            grand: currentResource.grandGuid || ''
+          } : 
           unifiedModalState.resourceType === 'storage' && currentResource ? { storage: currentResource.storageName } : 
           {}
         }

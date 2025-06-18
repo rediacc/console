@@ -116,6 +116,10 @@
         },
         "from": {
           "type": "string"
+        },
+        "grand": {
+          "type": "string",
+          "required": true
         }
       }
     },
@@ -134,6 +138,10 @@
         },
         "from": {
           "type": "string"
+        },
+        "grand": {
+          "type": "string",
+          "required": true
         }
       }
     },
@@ -271,10 +279,11 @@
     },
     "list": {
       "name": "list",
-      "category": "repository",
+      "category": "machine",
       "requirements": {
         "machine": true,
-        "team": true
+        "team": true,
+        "company": true
       },
       "params": {
         "kind": {
@@ -315,6 +324,10 @@
         },
         "option": {
           "type": "string"
+        },
+        "grand": {
+          "type": "string",
+          "required": true
         }
       }
     },

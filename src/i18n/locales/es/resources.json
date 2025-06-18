@@ -74,9 +74,24 @@
     "functionsFor": "Funciones para {{name}}",
     "selectRepository": "Seleccionar repositorio",
     "noRepositoriesFound": "No se encontraron repositorios",
+    "size": "Tamaño",
+    "sizeHelperText": "ej., 10G, 100G, 1T",
+    "createSuccess": "Repositorio creado exitosamente",
+    "repoCreatedButQueueFailed": "Credenciales del repositorio creadas, pero falló la creación física",
+    "queueItemCreated": "Creación del repositorio en cola exitosamente",
+    "deleteSuccess": "Repositorio eliminado exitosamente",
+    "deleteError": "Error al eliminar el repositorio",
     "placeholders": {
-      "enterRepositoryName": "Ingrese el nombre del repositorio"
-    }
+      "enterRepositoryName": "Ingrese el nombre del repositorio",
+      "enterSize": "Ingrese el tamaño (ej., 10G)"
+    },
+    "fetchingRepositories": "Obteniendo repositorios...",
+    "status": "Estado",
+    "exists": "Existe",
+    "notFound": "No Encontrado",
+    "mounted": "Montado",
+    "lastModified": "Última Modificación",
+    "noCredentialsFound": "No se encontraron credenciales para el repositorio '{{name}}'"
   },
   "storage": {
     "storageName": "Nombre del Almacenamiento",
@@ -88,6 +103,8 @@
     "noStorage": "No se encontró almacenamiento en este equipo",
     "storageFunctions": "Funciones de Almacenamiento",
     "queueItemCreated": "Elemento de cola creado exitosamente",
+    "deleteSuccess": "Almacenamiento eliminado exitosamente",
+    "deleteError": "Error al eliminar el almacenamiento",
     "placeholders": {
       "enterStorageName": "Ingrese el nombre del almacenamiento"
     }
@@ -99,6 +116,8 @@
     "deleteSchedule": "Eliminar Horario",
     "confirmDelete": "¿Está seguro de que desea eliminar el horario \"{{scheduleName}}\"?",
     "noSchedules": "No se encontraron horarios en este equipo",
+    "deleteSuccess": "Horario eliminado exitosamente",
+    "deleteError": "Error al eliminar el horario",
     "placeholders": {
       "enterScheduleName": "Ingrese el nombre del horario"
     }

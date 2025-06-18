@@ -7,7 +7,7 @@ export interface QueueRequestContext {
   teamName: string
   machineName: string
   bridgeName?: string
-  repositoryName?: string
+  repositoryGuid?: string
   storageName?: string
   functionName: string
   params: Record<string, any>
@@ -21,6 +21,8 @@ export interface QueueRequestContext {
   bridgeVault?: any
   companyVault?: any
   storageVault?: any
+  // For functions that need all repository credentials
+  allRepositoryCredentials?: Record<string, string>
 }
 
 export interface FunctionRequirements {
@@ -62,7 +64,7 @@ class QueueDataService {
     }
 
     // Add REPO_CREDENTIALS after MACHINES if repository is required
-    if (requirements.repository && context.repositoryName && context.repositoryVault) {
+    if (requirements.repository && context.repositoryGuid && context.repositoryVault) {
       try {
         const repoVault = typeof context.repositoryVault === 'string' 
           ? JSON.parse(context.repositoryVault) 
@@ -70,7 +72,7 @@ class QueueDataService {
         
         if (repoVault.credential) {
           queueVaultData.contextData.REPO_CREDENTIALS = {
-            [context.repositoryName]: repoVault.credential
+            [context.repositoryGuid]: repoVault.credential
           }
         }
       } catch (e) {
@@ -78,11 +80,17 @@ class QueueDataService {
       }
     }
 
+    // For functions like 'list' that need all REPO_CREDENTIALS
+    // Repository credentials are passed separately, not from company vault
+    if (context.functionName === 'list' && context.allRepositoryCredentials) {
+      queueVaultData.contextData.REPO_CREDENTIALS = context.allRepositoryCredentials
+    }
+
 
     const dataExtractors = [
       [requirements.company, 'company', () => this.extractCompanyData(context.companyVault)],
-      [requirements.repository && context.repositoryName, 'repository', () => 
-        this.extractRepositoryData(context.repositoryVault, context.repositoryName!, context.companyVault)],
+      [requirements.repository && context.repositoryGuid, 'repository', () => 
+        this.extractRepositoryData(context.repositoryVault, context.repositoryGuid!, context.companyVault)],
       [requirements.storage && context.storageName, 'storage', () => 
         this.extractStorageData(context.storageVault, context.storageName!)],
       [requirements.bridge && context.bridgeName, 'bridge', () => 
@@ -99,8 +107,8 @@ class QueueDataService {
 
   private extractCompanyData(companyVault: any): any {
     if (!companyVault) return {}
-    const { UNIVERSAL_USER_ID, UNIVERSAL_USER_NAME, DOCKER_JSON_CONF, LOG_FILE } = companyVault
-    return { UNIVERSAL_USER_ID, UNIVERSAL_USER_NAME, DOCKER_JSON_CONF, LOG_FILE }
+    const { UNIVERSAL_USER_ID, UNIVERSAL_USER_NAME, DOCKER_JSON_CONF, LOG_FILE, REPO_CREDENTIALS } = companyVault
+    return { UNIVERSAL_USER_ID, UNIVERSAL_USER_NAME, DOCKER_JSON_CONF, LOG_FILE, REPO_CREDENTIALS }
   }
 
 
@@ -121,9 +129,9 @@ class QueueDataService {
     }, {} as any)
   }
 
-  private extractRepositoryData(repositoryVault: any, repositoryName: string, _companyVault: any): any {
+  private extractRepositoryData(repositoryVault: any, repositoryGuid: string, _companyVault: any): any {
     return {
-      name: repositoryName,
+      guid: repositoryGuid,
       ...(repositoryVault && { size: repositoryVault.size, credential: repositoryVault.credential })
     }
   }

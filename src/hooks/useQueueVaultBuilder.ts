@@ -16,6 +16,7 @@ export function useQueueVaultBuilder() {
       repositoryVault?: any
       bridgeVault?: any
       storageVault?: any
+      allRepositoryCredentials?: Record<string, string>
     }
   ): Promise<string> => {
     // Fetch company vault directly from API to ensure we have the latest data
@@ -62,7 +63,8 @@ export function useQueueVaultBuilder() {
     // Build complete context with vault data
     const fullContext: QueueRequestContext = {
       ...context,
-      ...vaults
+      ...vaults,
+      allRepositoryCredentials: context.allRepositoryCredentials
     }
 
     // Use the service to build the vault
