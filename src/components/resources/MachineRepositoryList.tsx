@@ -115,12 +115,26 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           try {
             const vaultData = JSON.parse(repo.vaultContent)
             if (vaultData.credential) {
-              allRepositoryCredentials[repo.repositoryName] = vaultData.credential
+              // Use repositoryGuid as the key instead of repositoryName
+              allRepositoryCredentials[repo.repositoryGuid] = vaultData.credential
             }
           } catch (e) {
             // Silently skip repositories with invalid vault data
+            console.warn('[MachineRepositoryList] Failed to parse repository vault:', {
+              repositoryName: repo.repositoryName,
+              repositoryGuid: repo.repositoryGuid,
+              error: e
+            })
           }
         }
+      })
+      
+      console.log('[MachineRepositoryList] Built repository credentials:', {
+        repositories: teamRepositories.map(r => ({ 
+          name: r.repositoryName, 
+          guid: r.repositoryGuid 
+        })),
+        credentialKeys: Object.keys(allRepositoryCredentials)
       })
       
       // Build queue vault for the list function
@@ -177,6 +191,12 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       
       // Find the repository vault data
       const repositoryData = teamRepositories.find(r => r.repositoryName === selectedRepository.name)
+      
+      console.log('[MachineRepositoryList] Selected repository for function:', {
+        selectedRepositoryName: selectedRepository.name,
+        foundRepositoryData: repositoryData,
+        repositoryGuid: repositoryData?.repositoryGuid
+      })
       
       if (!repositoryData || !repositoryData.vaultContent) {
         showMessage('error', t('resources:repositories.noCredentialsFound', { name: selectedRepository.name }))
@@ -348,7 +368,19 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         teamName={machine.teamName}
         hiddenParams={['repo', 'grand']}
         defaultParams={{ 
-          repo: teamRepositories.find(r => r.repositoryName === selectedRepository?.name)?.repositoryGuid || '',
+          repo: (() => {
+            const repo = teamRepositories.find(r => r.repositoryName === selectedRepository?.name);
+            console.log('[MachineRepositoryList] Setting default params:', {
+              selectedRepositoryName: selectedRepository?.name,
+              foundRepo: repo,
+              repositoryGuid: repo?.repositoryGuid,
+              allRepositories: teamRepositories.map(r => ({ 
+                name: r.repositoryName, 
+                guid: r.repositoryGuid 
+              }))
+            });
+            return repo?.repositoryGuid || '';
+          })(),
           grand: teamRepositories.find(r => r.repositoryName === selectedRepository?.name)?.grandGuid || ''
         }}
       />

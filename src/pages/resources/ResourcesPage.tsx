@@ -155,10 +155,28 @@ const ResourcesPage: React.FC = () => {
       cancelText: t('common:actions.cancel'),
       onOk: async () => {
         try {
-          await mutations[resourceType as keyof typeof mutations].mutateAsync({
-            teamName: resource.teamName,
-            [`${resourceType}Name`]: resourceName,
-          })
+          const mutation = mutations[resourceType as keyof typeof mutations]
+          if (resourceType === 'machine') {
+            await mutation.mutateAsync({
+              teamName: resource.teamName,
+              machineName: resourceName,
+            } as any)
+          } else if (resourceType === 'repository') {
+            await mutation.mutateAsync({
+              teamName: resource.teamName,
+              repositoryName: resourceName,
+            } as any)
+          } else if (resourceType === 'storage') {
+            await mutation.mutateAsync({
+              teamName: resource.teamName,
+              storageName: resourceName,
+            } as any)
+          } else if (resourceType === 'schedule') {
+            await mutation.mutateAsync({
+              teamName: resource.teamName,
+              scheduleName: resourceName,
+            } as any)
+          }
           showMessage('success', t(getTranslationKey('deleteSuccess')))
         } catch (error) {
           showMessage('error', t(getTranslationKey('deleteError')))
@@ -316,7 +334,7 @@ const ResourcesPage: React.FC = () => {
         if (resourceType === 'repository' && data.machineName && data.size) {
           // Step 1: Create the repository credentials
           const { machineName, size, ...repoData } = data
-          const createResult = await mutations.repository.create.mutateAsync(repoData)
+          await mutations.repository.create.mutateAsync(repoData)
           
           // Step 2: Queue the "new" function to create the repository on the machine
           try {
@@ -356,6 +374,13 @@ const ResourcesPage: React.FC = () => {
             const repositoryVault = createdRepo?.vaultContent || data.repositoryVault || '{}'
             const repositoryGuid = createdRepo?.repoGuid || ''
             
+            console.log('[ResourcesPage] Repository creation - fetched repo details:', {
+              repositoryName: data.repositoryName,
+              createdRepo,
+              repositoryGuid,
+              allRepos: repoResponse.tables[1]?.data
+            })
+            
             if (!repositoryGuid) {
               console.error('Repository GUID not found for:', data.repositoryName)
               showMessage('error', 'Failed to get repository GUID')
@@ -370,7 +395,7 @@ const ResourcesPage: React.FC = () => {
               bridgeName: machine.bridgeName,
               functionName: 'new',
               params: {
-                repo: repositoryGuid,  // Use repository GUID
+                repo: repositoryGuid,  // Use repository GUID as value
                 size: size
               },
               priority: 3,
@@ -408,22 +433,67 @@ const ResourcesPage: React.FC = () => {
         
         // Update name if changed
         if (newName !== currentName) {
-          await mutations[resourceType as keyof typeof mutations].updateName.mutateAsync({
-            teamName: currentResource.teamName,
-            [`current${resourceName.charAt(0).toUpperCase() + resourceName.slice(1)}`]: currentName,
-            [`new${resourceName.charAt(0).toUpperCase() + resourceName.slice(1)}`]: newName,
-          })
+          const mutation = mutations[resourceType as keyof typeof mutations].updateName
+          if (resourceType === 'machine') {
+            await mutation.mutateAsync({
+              teamName: currentResource.teamName,
+              currentMachineName: currentName,
+              newMachineName: newName,
+            } as any)
+          } else if (resourceType === 'repository') {
+            await mutation.mutateAsync({
+              teamName: currentResource.teamName,
+              currentRepositoryName: currentName,
+              newRepositoryName: newName,
+            } as any)
+          } else if (resourceType === 'storage') {
+            await mutation.mutateAsync({
+              teamName: currentResource.teamName,
+              currentStorageName: currentName,
+              newStorageName: newName,
+            } as any)
+          } else if (resourceType === 'schedule') {
+            await mutation.mutateAsync({
+              teamName: currentResource.teamName,
+              currentScheduleName: currentName,
+              newScheduleName: newName,
+            } as any)
+          }
         }
         
         // Update vault if changed
         const vaultData = data[`${resourceType}Vault`]
         if (vaultData && vaultData !== currentResource.vaultContent) {
-          await mutations[resourceType as keyof typeof mutations].updateVault.mutateAsync({
-            teamName: currentResource.teamName,
-            [resourceName]: newName || currentName,
-            [`${resourceType}Vault`]: vaultData,
-            vaultVersion: currentResource.vaultVersion + 1,
-          })
+          const vaultMutation = mutations[resourceType as keyof typeof mutations].updateVault
+          if (resourceType === 'machine') {
+            await vaultMutation.mutateAsync({
+              teamName: currentResource.teamName,
+              machineName: newName || currentName,
+              machineVault: vaultData,
+              vaultVersion: currentResource.vaultVersion + 1,
+            } as any)
+          } else if (resourceType === 'repository') {
+            await vaultMutation.mutateAsync({
+              teamName: currentResource.teamName,
+              repositoryName: newName || currentName,
+              repositoryVault: vaultData,
+              vaultVersion: currentResource.vaultVersion + 1,
+            } as any)
+          } else if (resourceType === 'storage') {
+            await vaultMutation.mutateAsync({
+              teamName: currentResource.teamName,
+              storageName: newName || currentName,
+              storageVault: vaultData,
+              vaultVersion: currentResource.vaultVersion + 1,
+            } as any)
+          } else if (resourceType === 'schedule') {
+            await vaultMutation.mutateAsync({
+              teamName: currentResource.teamName,
+              scheduleName: newName || currentName,
+              scheduleVault: vaultData,
+              vaultVersion: currentResource.vaultVersion + 1,
+            } as any)
+          }
         }
         
         // Handle machine-specific bridge update
@@ -455,12 +525,36 @@ const ResourcesPage: React.FC = () => {
         schedule: updateScheduleVaultMutation
       }
       
-      await mutations[resourceType as keyof typeof mutations].mutateAsync({
-        teamName: currentResource.teamName,
-        [`${resourceType}Name`]: currentResource[`${resourceType}Name`],
-        [`${resourceType}Vault`]: vault,
-        vaultVersion: version,
-      })
+      const mutation = mutations[resourceType as keyof typeof mutations]
+      if (resourceType === 'machine') {
+        await mutation.mutateAsync({
+          teamName: currentResource.teamName,
+          machineName: currentResource.machineName,
+          machineVault: vault,
+          vaultVersion: version,
+        } as any)
+      } else if (resourceType === 'repository') {
+        await mutation.mutateAsync({
+          teamName: currentResource.teamName,
+          repositoryName: currentResource.repositoryName,
+          repositoryVault: vault,
+          vaultVersion: version,
+        } as any)
+      } else if (resourceType === 'storage') {
+        await mutation.mutateAsync({
+          teamName: currentResource.teamName,
+          storageName: currentResource.storageName,
+          storageVault: vault,
+          vaultVersion: version,
+        } as any)
+      } else if (resourceType === 'schedule') {
+        await mutation.mutateAsync({
+          teamName: currentResource.teamName,
+          scheduleName: currentResource.scheduleName,
+          scheduleVault: vault,
+          vaultVersion: version,
+        } as any)
+      }
     } catch (error) {
       // Error handled by mutation
     }
@@ -482,6 +576,13 @@ const ResourcesPage: React.FC = () => {
     }
   ) => {
     if (!currentResource) return;
+    
+    console.log('[ResourcesPage] handleResourceFunctionSelected called:', {
+      resourceType,
+      functionData,
+      currentResource,
+      repositories: repositories?.map(r => ({ name: r.repositoryName, guid: r.repositoryGuid }))
+    });
     
     try {
       // Determine machine details
@@ -536,6 +637,11 @@ const ResourcesPage: React.FC = () => {
         // Find the repository vault data if repo is specified
         if (functionData.params.repo) {
           const repository = repositories.find(r => r.repositoryGuid === functionData.params.repo);
+          console.log('[ResourcesPage] Looking up repository for machine function:', {
+            repoParam: functionData.params.repo,
+            foundRepository: repository,
+            repositoryGuid: repository?.repositoryGuid || functionData.params.repo
+          });
           queueVaultParams.repositoryGuid = repository?.repositoryGuid || functionData.params.repo;
           queueVaultParams.repositoryVault = repository?.vaultContent || '{}';
         } else {
