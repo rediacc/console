@@ -51,12 +51,11 @@ export const createTeamSchema = withVault(resourceSchemas.team, 'teamVault')
 export const createRegionSchema = withVault(resourceSchemas.region, 'regionVault')
 export const createBridgeSchema = withVault(resourceSchemas.bridge, 'bridgeVault')
 export const createMachineSchema = withVault(resourceSchemas.machine, 'machineVault')
-// Special schema for repository creation with machine selection
+// Special schema for repository creation with optional machine selection
 export const createRepositorySchema = withVault({
   ...resourceSchemas.repository,
-  machineName: z.string().min(1, 'Machine is required'),
+  machineName: z.string().min(1, 'Machine is required').optional(),
   size: z.string()
-    .min(1, 'Size is required')
     .regex(/^\d+[GT]$/, 'Invalid size format')
     .refine((val) => {
       const match = val.match(/^(\d+)([GT])$/)
@@ -64,6 +63,7 @@ export const createRepositorySchema = withVault({
       const num = parseInt(match[1])
       return num > 0
     }, 'Size must be greater than 0')
+    .optional()
 }, 'repositoryVault')
 export const createStorageSchema = withVault(resourceSchemas.storage, 'storageVault')
 export const createScheduleSchema = withVault(resourceSchemas.schedule, 'scheduleVault')

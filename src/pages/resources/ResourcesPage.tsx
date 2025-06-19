@@ -115,6 +115,17 @@ const ResourcesPage: React.FC = () => {
     }
   }
 
+  // Helper to get resource translation key
+  const getResourceTranslationKey = () => {
+    switch(teamResourcesTab) {
+      case 'machines': return 'machines'
+      case 'repositories': return 'repositories'
+      case 'storage': return 'storage'
+      case 'schedules': return 'schedules'
+      default: return teamResourcesTab
+    }
+  }
+
   // State for current editing/creating resource
   const [currentResource, setCurrentResource] = useState<any>(null)
   
@@ -331,10 +342,12 @@ const ResourcesPage: React.FC = () => {
       
       if (mode === 'create') {
         // For repository creation, we need to handle the two-step process
-        if (resourceType === 'repository' && data.machineName && data.size) {
-          // Step 1: Create the repository credentials
-          const { machineName, size, ...repoData } = data
-          await mutations.repository.create.mutateAsync(repoData)
+        if (resourceType === 'repository') {
+          // Check if we have machine and size for full repository creation
+          if (data.machineName && data.size) {
+            // Step 1: Create the repository credentials
+            const { machineName, size, ...repoData } = data
+            await mutations.repository.create.mutateAsync(repoData)
           
           // Step 2: Queue the "new" function to create the repository on the machine
           try {
@@ -420,8 +433,16 @@ const ResourcesPage: React.FC = () => {
           } catch (error) {
             showMessage('warning', t('repositories.repoCreatedButQueueFailed'))
           }
+          } else {
+            // Create repository credentials only (no machine provisioning)
+            await mutations.repository.create.mutateAsync(data)
+            showMessage('success', t('repositories.createSuccess'))
+            closeUnifiedModal()
+          }
         } else {
           await mutations[resourceType as keyof typeof mutations].create.mutateAsync(data)
+          showMessage('success', t(`${getResourceTranslationKey()}.createSuccess`))
+          closeUnifiedModal()
         }
       } else {
         const resourceName = `${resourceType}Name`
@@ -1203,28 +1224,29 @@ const ResourcesPage: React.FC = () => {
                       gap: 8,
                       flexShrink: 0
                     }}>
-                      {teamResourcesTab !== 'repositories' && (
-                        <Button 
-                          type="primary" 
-                          icon={<PlusOutlined />}
-                          onClick={() => {
-                            switch(teamResourcesTab) {
-                              case 'machines':
-                                openUnifiedModal('machine', 'create')
-                                break
-                              case 'storage':
-                                openUnifiedModal('storage', 'create')
-                                break
-                              case 'schedules':
-                                openUnifiedModal('schedule', 'create')
-                                break
-                            }
-                          }}
-                          style={{ background: '#556b2f', borderColor: '#556b2f' }}
-                        >
-                          {getCreateButtonText()}
-                        </Button>
-                      )}
+                      <Button 
+                        type="primary" 
+                        icon={<PlusOutlined />}
+                        onClick={() => {
+                          switch(teamResourcesTab) {
+                            case 'machines':
+                              openUnifiedModal('machine', 'create')
+                              break
+                            case 'repositories':
+                              openUnifiedModal('repository', 'create')
+                              break
+                            case 'storage':
+                              openUnifiedModal('storage', 'create')
+                              break
+                            case 'schedules':
+                              openUnifiedModal('schedule', 'create')
+                              break
+                          }
+                        }}
+                        style={{ background: '#556b2f', borderColor: '#556b2f' }}
+                      >
+                        {getCreateButtonText()}
+                      </Button>
                       {teamResourcesTab === 'machines' && (
                         <Button 
                           icon={<WifiOutlined />}
