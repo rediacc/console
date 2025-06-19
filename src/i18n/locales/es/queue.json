@@ -54,5 +54,17 @@
     "stoppedMonitoring": "Se detuvo el monitoreo de la tarea de cola {{taskId}}",
     "monitoringAlready": "Ya se está monitoreando la tarea de cola {{taskId}}",
     "taskNotFound": "La tarea de cola {{taskId}} ya no existe"
+  },
+  "queueManager": {
+    "title": "Administrador de Cola",
+    "buttonLabel": "Máxima Prioridad",
+    "tooltip": "Administrador de cola de máxima prioridad",
+    "description": "Los elementos de cola de máxima prioridad (prioridad 1) se envían con un retraso de 5 segundos para evitar limitaciones del servidor.",
+    "emptyState": "No hay elementos de máxima prioridad en la cola",
+    "itemQueued": "Tarea de máxima prioridad en cola. Posición: {{position}}",
+    "cancelledTask": "Se canceló la tarea pendiente existente para {{machineName}}",
+    "alreadyHasPriority1": "Ya tiene una tarea de máxima prioridad ejecutándose en el puente {{bridgeName}}. Por favor espere a que se complete.",
+    "taskCancelled": "Tarea cancelada: Ya hay una tarea de prioridad 1 en este puente",
+    "clearCompleted": "Limpiar Completadas"
   }
 }

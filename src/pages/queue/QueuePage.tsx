@@ -19,7 +19,7 @@ const QueuePage: React.FC = () => {
   const [filters, setFilters] = useState<QueueFilters>({
     teamName: '',
     includeCompleted: true,
-    includeCancelled: true,
+    includeCancelled: false,  // Don't show cancelled tasks by default
     staleThresholdMinutes: 10,
     maxRecords: 1000
   })

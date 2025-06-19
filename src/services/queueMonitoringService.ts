@@ -1,5 +1,6 @@
 import { showTranslatedMessage } from '@/utils/messages'
 import apiClient from '@/api/client'
+import queueManagerService from '@/services/queueManagerService'
 
 interface MonitoredTask {
   taskId: string
@@ -17,7 +18,7 @@ class QueueMonitoringService {
   private intervalId: NodeJS.Timeout | null = null
   
   // Time constants
-  private readonly CHECK_INTERVAL_MS = 60000 // 1 minute
+  private readonly CHECK_INTERVAL_MS = 5000 // 5 seconds for more responsive updates
   private readonly STALE_TASK_THRESHOLD_MS = 24 * 60 * 60 * 1000 // 24 hours
   private readonly STALE_PROCESSING_MINUTES = 5 // 5 minutes without progress
   private readonly MAX_RETRY_COUNT = 3 // Maximum retry attempts (aligned with API polling)
@@ -106,6 +107,13 @@ class QueueMonitoringService {
 
     this.monitoredTasks.set(taskId, task)
     this.saveToStorage()
+    
+    console.log(`Added task ${taskId} to monitoring with status ${currentStatus}`)
+    
+    // Trigger an immediate check for this new task
+    setTimeout(() => {
+      this.checkTask(task)
+    }, 1000) // Check after 1 second to allow backend to update
   }
 
   removeTask(taskId: string) {
@@ -123,12 +131,15 @@ class QueueMonitoringService {
       task => now - task.lastCheckTime >= task.checkInterval
     )
 
+    console.log(`Checking ${tasksToCheck.length} tasks out of ${this.monitoredTasks.size} total monitored tasks`)
+
     for (const task of tasksToCheck) {
       await this.checkTask(task)
     }
   }
 
   private async checkTask(task: MonitoredTask) {
+    console.log(`Checking task ${task.taskId} - current status: ${task.lastStatus}`)
     try {
       // Update last check time
       task.lastCheckTime = Date.now()
@@ -144,6 +155,31 @@ class QueueMonitoringService {
       }
 
       const currentStatus = queueDetails.status || queueDetails.Status
+      
+      // Check for permanent failure flag
+      if (queueDetails.permanentlyFailed) {
+        // Update the queue manager service
+        queueManagerService.updateTaskStatus(task.taskId, 'failed')
+        
+        const lastFailureReason = this.getLastFailureReason(queueDetails)
+        if (lastFailureReason) {
+          showTranslatedMessage('error', 'queue:monitoring.permanentlyFailedWithReason', { 
+            taskId: task.taskId,
+            reason: lastFailureReason,
+            teamName: task.teamName, 
+            machineName: task.machineName 
+          })
+        } else {
+          showTranslatedMessage('error', 'queue:monitoring.permanentlyFailed', { 
+            taskId: task.taskId,
+            attempts: this.MAX_RETRY_COUNT,
+            teamName: task.teamName, 
+            machineName: task.machineName 
+          })
+        }
+        this.removeTask(task.taskId)
+        return // Stop processing this task
+      }
 
       // Check if status has changed
       if (currentStatus !== task.lastStatus) {
@@ -152,6 +188,10 @@ class QueueMonitoringService {
 
         // Notify user of status change
         if (currentStatus === 'COMPLETED') {
+          console.log(`Task ${task.taskId} completed - calling updateTaskStatus`)
+          // Update the queue manager service
+          queueManagerService.updateTaskStatus(task.taskId, 'completed')
+          
           showTranslatedMessage('success', 'queue:monitoring.completed', { 
             taskId: task.taskId, 
             teamName: task.teamName, 
@@ -160,6 +200,9 @@ class QueueMonitoringService {
           this.removeTask(task.taskId)
           return // Stop processing this task
         } else if (currentStatus === 'CANCELLED') {
+          // Update the queue manager service
+          queueManagerService.updateTaskStatus(task.taskId, 'cancelled')
+          
           showTranslatedMessage('warning', 'queue:monitoring.cancelled', { 
             taskId: task.taskId, 
             teamName: task.teamName, 
@@ -184,6 +227,9 @@ class QueueMonitoringService {
           
           // Check for permanent failure messages
           if (this.isPermanentFailure(lastFailureReason)) {
+            // Update the queue manager service
+            queueManagerService.updateTaskStatus(task.taskId, 'failed')
+            
             showTranslatedMessage('error', 'queue:monitoring.permanentlyFailedWithReason', { 
               taskId: task.taskId,
               reason: lastFailureReason || '',
@@ -195,6 +241,9 @@ class QueueMonitoringService {
           }
           
           if (retryCount >= this.MAX_RETRY_COUNT) {
+            // Update the queue manager service
+            queueManagerService.updateTaskStatus(task.taskId, 'failed')
+            
             showTranslatedMessage('error', 'queue:monitoring.permanentlyFailed', { 
               taskId: task.taskId,
               attempts: this.MAX_RETRY_COUNT,
@@ -380,6 +429,21 @@ class QueueMonitoringService {
 
 // Export singleton instance
 export const queueMonitoringService = QueueMonitoringService.getInstance()
+
+// Expose debug methods on window for debugging
+if (typeof window !== 'undefined') {
+  (window as any).queueMonitoringDebug = {
+    getTasks: () => Array.from(queueMonitoringService['monitoredTasks'].entries()),
+    checkTask: (taskId: string) => {
+      const task = queueMonitoringService['monitoredTasks'].get(taskId)
+      if (task) {
+        queueMonitoringService['checkTask'](task)
+      } else {
+        console.log('Task not found in monitoring')
+      }
+    }
+  }
+}
 
 // Export type for use in components
 export type { MonitoredTask }

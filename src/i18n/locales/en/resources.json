@@ -79,6 +79,8 @@
     "createSuccess": "Repository created successfully",
     "repoCreatedButQueueFailed": "Repository credentials created, but failed to queue physical creation",
     "queueItemCreated": "Repository creation queued successfully",
+    "highestPriorityQueued": "Highest priority repository function queued for submission",
+    "failedToCreateQueueItem": "Failed to create queue item",
     "deleteSuccess": "Repository deleted successfully",
     "deleteError": "Failed to delete repository",
     "placeholders": {
@@ -90,8 +92,16 @@
     "exists": "Exists",
     "notFound": "Not Found",
     "mounted": "Mounted",
+    "mountPath": "Mount Path",
     "lastModified": "Last Modified",
-    "noCredentialsFound": "No credentials found for repository '{{name}}'"
+    "noCredentialsFound": "No credentials found for repository '{{name}}'",
+    "taskSubmitted": "Repository list task submitted, monitoring progress...",
+    "failedToSubmit": "Failed to submit repository list request",
+    "taskCancelled": "Repository list task was cancelled",
+    "requestQueued": "Repository list request queued. Please check the Queue Manager for status.",
+    "waitingInQueue": "Waiting in queue...",
+    "queuePosition": "Queue position",
+    "checkQueueManager": "Check the Queue Manager for status"
   },
   "storage": {
     "storageName": "Storage Name",

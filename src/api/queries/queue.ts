@@ -132,11 +132,11 @@ export const useQueueItemsByBridge = (bridgeName: string, teamName?: string) => 
     teamName: teamName || '',
     bridgeName,
     includeCompleted: true,
-    includeCancelled: true
+    includeCancelled: false  // Don't show cancelled tasks by default
   })
 }
 
-// Create queue item
+// Create queue item (direct API call - use useManagedQueueItem for high-priority items)
 export const useCreateQueueItem = () => {
   const queryClient = useQueryClient()
   

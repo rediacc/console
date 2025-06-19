@@ -195,13 +195,6 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
     // Merge visible params with default params
     const allParams = { ...defaultParams, ...cleanedParams }
     
-    console.log('[FunctionSelectionModal] Submitting function with params:', {
-      functionName: selectedFunction.name,
-      cleanedParams,
-      defaultParams,
-      allParams,
-      repositories: repositories?.map(r => ({ name: r.repositoryName, guid: r.repositoryGuid }))
-    })
     
     onSubmit({
       function: selectedFunction,
@@ -423,11 +416,6 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                             <Select
                               value={functionParams[paramName] || ''}
                               onChange={(value) => {
-                                console.log('[FunctionSelectionModal] Repository selected:', {
-                                  paramName,
-                                  selectedValue: value,
-                                  repository: repositories?.find(r => r.repositoryGuid === value)
-                                })
                                 setFunctionParams({
                                   ...functionParams,
                                   [paramName]: value

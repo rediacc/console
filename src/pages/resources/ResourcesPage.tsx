@@ -70,7 +70,7 @@ import { useDropdownData } from '@/api/queries/useDropdownData'
 // Validation schemas now handled in UnifiedResourceModal
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize'
 import { type QueueFunction } from '@/api/queries/queue'
-import { useCreateQueueItem } from '@/api/queries/queue'
+import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import TeamSelector from '@/components/common/TeamSelector'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import { type Machine } from '@/types'
@@ -230,8 +230,8 @@ const ResourcesPage: React.FC = () => {
   const deleteScheduleMutation = useDeleteSchedule()
   const updateScheduleVaultMutation = useUpdateScheduleVault()
   
-  // Queue mutation
-  const createQueueItemMutation = useCreateQueueItem()
+  // Queue mutation - using managed version for high-priority handling
+  const createQueueItemMutation = useManagedQueueItem()
   const { buildQueueVault } = useQueueVaultBuilder()
   
   // Queue trace modal state
@@ -374,15 +374,8 @@ const ResourcesPage: React.FC = () => {
             const repositoryVault = createdRepo?.vaultContent || data.repositoryVault || '{}'
             const repositoryGuid = createdRepo?.repoGuid || ''
             
-            console.log('[ResourcesPage] Repository creation - fetched repo details:', {
-              repositoryName: data.repositoryName,
-              createdRepo,
-              repositoryGuid,
-              allRepos: repoResponse.tables[1]?.data
-            })
             
             if (!repositoryGuid) {
-              console.error('Repository GUID not found for:', data.repositoryName)
               showMessage('error', 'Failed to get repository GUID')
               closeUnifiedModal()
               return
@@ -417,8 +410,12 @@ const ResourcesPage: React.FC = () => {
             
             showMessage('success', t('repositories.createSuccess'))
             
+            // Check if response has taskId (immediate submission) or queueId (queued)
             if (response?.taskId) {
               setQueueTraceModal({ visible: true, taskId: response.taskId })
+            } else if (response?.isQueued) {
+              // Item was queued, don't open trace modal yet
+              showMessage('info', 'Repository creation queued for submission')
             }
           } catch (error) {
             showMessage('warning', t('repositories.repoCreatedButQueueFailed'))
@@ -577,12 +574,6 @@ const ResourcesPage: React.FC = () => {
   ) => {
     if (!currentResource) return;
     
-    console.log('[ResourcesPage] handleResourceFunctionSelected called:', {
-      resourceType,
-      functionData,
-      currentResource,
-      repositories: repositories?.map(r => ({ name: r.repositoryName, guid: r.repositoryGuid }))
-    });
     
     try {
       // Determine machine details
@@ -637,11 +628,6 @@ const ResourcesPage: React.FC = () => {
         // Find the repository vault data if repo is specified
         if (functionData.params.repo) {
           const repository = repositories.find(r => r.repositoryGuid === functionData.params.repo);
-          console.log('[ResourcesPage] Looking up repository for machine function:', {
-            repoParam: functionData.params.repo,
-            foundRepository: repository,
-            repositoryGuid: repository?.repositoryGuid || functionData.params.repo
-          });
           queueVaultParams.repositoryGuid = repository?.repositoryGuid || functionData.params.repo;
           queueVaultParams.repositoryVault = repository?.vaultContent || '{}';
         } else {
@@ -669,6 +655,9 @@ const ResourcesPage: React.FC = () => {
       if (response?.taskId) {
         showMessage('success', t(`${resourceType}s:queueItemCreated`));
         setQueueTraceModal({ visible: true, taskId: response.taskId });
+      } else if (response?.isQueued) {
+        // Item was queued for highest priority management
+        showMessage('info', `Highest priority ${resourceType} function queued for submission`);
       }
     } catch (error) {
       // Error is handled by the mutation

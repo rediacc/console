@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import { useCreateQueueItem } from '@/api/queries/queue'
+import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import type { Machine } from '@/types'
 import apiClient from '@/api/client'
 import { useTeams } from '@/api/queries/teams'
@@ -143,9 +144,9 @@ function createTimeoutResult(): QueueItemCompletionResult {
  * Custom hook that provides a standardized way to call the hello function
  * This encapsulates the logic for building the queue vault and creating queue items
  */
-export function useHelloFunction() {
+export function useHelloFunction(options?: { useManaged?: boolean }) {
   const { buildQueueVault } = useQueueVaultBuilder()
-  const createQueueItemMutation = useCreateQueueItem()
+  const createQueueItemMutation = options?.useManaged ? useManagedQueueItem() : useCreateQueueItem()
   const { data: teams } = useTeams()
 
   const executeHello = useCallback(async (params: HelloFunctionParams): Promise<HelloFunctionResult> => {
@@ -156,7 +157,7 @@ export function useHelloFunction() {
 
       return {
         taskId: response?.taskId,
-        success: !!response?.taskId
+        success: !!response?.taskId || !!response?.isQueued
       }
     } catch (error: any) {
       return {

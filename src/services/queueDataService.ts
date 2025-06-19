@@ -47,12 +47,6 @@ class QueueDataService {
   async buildQueueVault(context: QueueRequestContext): Promise<string> {
     const requirements = this.getFunctionRequirements(context.functionName)
     
-    console.log('[QueueDataService] Building queue vault:', {
-      functionName: context.functionName,
-      params: context.params,
-      repositoryGuid: context.repositoryGuid,
-      requirements
-    })
     
     const queueVaultData: any = {
       function: context.functionName,
@@ -77,11 +71,6 @@ class QueueDataService {
           ? JSON.parse(context.repositoryVault) 
           : context.repositoryVault
         
-        console.log('[QueueDataService] Processing repository credentials:', {
-          repositoryGuid: context.repositoryGuid,
-          hasCredential: !!repoVault.credential,
-          repoVault
-        })
         
         if (repoVault.credential) {
           queueVaultData.contextData.REPO_CREDENTIALS = {
@@ -89,7 +78,6 @@ class QueueDataService {
           }
         }
       } catch (e) {
-        console.warn('Failed to parse repository vault for credentials:', e)
       }
     }
 
@@ -115,11 +103,6 @@ class QueueDataService {
       if (condition) queueVaultData.contextData[key] = extractor()
     })
 
-    console.log('[QueueDataService] Final queue vault data:', {
-      functionName: context.functionName,
-      params: queueVaultData.params,
-      repoCredentials: queueVaultData.contextData.REPO_CREDENTIALS
-    })
 
     return minifyJSON(JSON.stringify(queueVaultData))
   }

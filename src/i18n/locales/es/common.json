@@ -43,6 +43,13 @@
     "actions": "Acciones",
     "showingRecords": "Mostrando registros {{start}}-{{end}} de {{total}}"
   },
+  "status": {
+    "label": "Estado",
+    "initializing": "Inicializando...",
+    "waitingForExecution": "Esperando ejecución",
+    "processing": "Procesando",
+    "running": "Ejecutando"
+  },
   "language": {
     "select": "Seleccionar Idioma",
     "en": "Inglés",

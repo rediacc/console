@@ -79,6 +79,8 @@
     "createSuccess": "Repositorio creado exitosamente",
     "repoCreatedButQueueFailed": "Credenciales del repositorio creadas, pero falló la creación física",
     "queueItemCreated": "Creación del repositorio en cola exitosamente",
+    "highestPriorityQueued": "Función de repositorio de máxima prioridad en cola para envío",
+    "failedToCreateQueueItem": "Error al crear elemento de cola",
     "deleteSuccess": "Repositorio eliminado exitosamente",
     "deleteError": "Error al eliminar el repositorio",
     "placeholders": {
@@ -90,8 +92,16 @@
     "exists": "Existe",
     "notFound": "No Encontrado",
     "mounted": "Montado",
+    "mountPath": "Ruta de Montaje",
     "lastModified": "Última Modificación",
-    "noCredentialsFound": "No se encontraron credenciales para el repositorio '{{name}}'"
+    "noCredentialsFound": "No se encontraron credenciales para el repositorio '{{name}}'",
+    "taskSubmitted": "Tarea de lista de repositorios enviada, monitoreando el progreso...",
+    "failedToSubmit": "Error al enviar la solicitud de lista de repositorios",
+    "taskCancelled": "La tarea de lista de repositorios fue cancelada",
+    "requestQueued": "Solicitud de lista de repositorios en cola. Por favor, verifique el Administrador de Cola para el estado.",
+    "waitingInQueue": "Esperando en cola...",
+    "queuePosition": "Posición en la cola",
+    "checkQueueManager": "Verifique el Administrador de Cola para el estado"
   },
   "storage": {
     "storageName": "Nombre del Almacenamiento",

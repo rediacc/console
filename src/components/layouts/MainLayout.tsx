@@ -35,6 +35,7 @@ import apiClient from '@/api/client'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
 import LanguageSelector from '@/components/common/LanguageSelector'
 import NotificationBell from '@/components/common/NotificationBell'
+import QueueManagerStatus from '@/components/common/QueueManagerStatus'
 import { useTheme } from '@/context/ThemeContext'
 import logoBlack from '@/assets/logo_black.png'
 import logoWhite from '@/assets/logo_white.png'
@@ -418,6 +419,7 @@ const MainLayout: React.FC = () => {
             )}
           </Space>
           <Space size={16} align="center">
+            {uiMode === 'expert' && <QueueManagerStatus />}
             <LanguageSelector />
             <ThemeToggle />
             <NotificationBell />

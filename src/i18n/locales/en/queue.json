@@ -54,5 +54,17 @@
     "stoppedMonitoring": "Stopped monitoring queue task {{taskId}}",
     "monitoringAlready": "Already monitoring queue task {{taskId}}",
     "taskNotFound": "Queue task {{taskId}} no longer exists"
+  },
+  "queueManager": {
+    "title": "Queue Manager",
+    "buttonLabel": "Highest Priority",
+    "tooltip": "Highest priority queue manager",
+    "description": "Highest priority queue items (priority 1) are submitted with a 5-second delay to avoid server limitations.",
+    "emptyState": "No highest priority items in queue",
+    "itemQueued": "Highest priority task queued. Position: {{position}}",
+    "cancelledTask": "Cancelled existing pending task for {{machineName}}",
+    "alreadyHasPriority1": "You already have a highest priority task running on bridge {{bridgeName}}. Please wait for it to complete.",
+    "taskCancelled": "Task cancelled: Already have a priority 1 task on this bridge",
+    "clearCompleted": "Clear Completed"
   }
 }
