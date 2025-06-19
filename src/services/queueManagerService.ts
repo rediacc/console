@@ -53,9 +53,11 @@ class QueueManagerService {
           task.priority === this.HIGHEST_PRIORITY &&
           ['pending', 'assigned', 'processing'].includes(task.status)) {
         console.log('Found active priority 1 task:', {
+          key: key,
           taskId: task.taskId,
           status: task.status,
           bridgeName: task.bridgeName,
+          machineName: task.machineName,
           timestamp: new Date(task.timestamp).toISOString(),
           age: Math.floor((Date.now() - task.timestamp) / 1000) + ' seconds'
         })
@@ -101,17 +103,23 @@ class QueueManagerService {
    * Track an active task
    */
   private trackActiveTask(task: ActiveTask) {
-    const key = `${task.bridgeName}-${task.machineName}`
+    // Track by bridge only, since the restriction is per user per bridge
+    const key = task.bridgeName
     this.activeTasks.set(key, task)
-    console.log(`Tracked active task: key=${key}, taskId=${task.taskId}, bridgeName=${task.bridgeName}`)
+    console.log(`Tracked active task: key=${key}, taskId=${task.taskId}, bridgeName=${task.bridgeName}, machineName=${task.machineName}`)
   }
 
   /**
    * Remove an active task
    */
   private removeActiveTask(bridgeName: string, machineName: string) {
-    const key = `${bridgeName}-${machineName}`
-    this.activeTasks.delete(key)
+    // Remove by bridge only, since the restriction is per user per bridge
+    const key = bridgeName
+    console.log(`Removing active task: key=${key}, machineName=${machineName}`)
+    const deleted = this.activeTasks.delete(key)
+    if (!deleted) {
+      console.log(`Active task not found for removal: ${key}`)
+    }
   }
 
   /**
@@ -148,6 +156,15 @@ class QueueManagerService {
       // For highest priority items, add to queue for managed submission
       this.queue.push(queuedItem)
       this.notifyListeners()
+      
+      console.log('Added task to queue:', {
+        id: queuedItem.id,
+        bridgeName: data.bridgeName,
+        machineName: data.machineName,
+        queueLength: this.queue.length,
+        activeTasks: Array.from(this.activeTasks.keys())
+      })
+      
       showMessage('info', `Highest priority task queued. Position: ${this.queue.length}`)
       
       // Ensure processing is running
@@ -244,6 +261,8 @@ class QueueManagerService {
     // Find the next pending item (skip cancelled)
     const pendingItem = this.queue.find(item => item.status === 'pending')
     
+    console.log(`Processing queue - found pending item: ${pendingItem?.id || 'none'}`)
+    
     if (!pendingItem) {
       // Clean up old submitted/failed/cancelled items after 5 minutes
       const fiveMinutesAgo = Date.now() - 5 * 60 * 1000
@@ -275,6 +294,11 @@ class QueueManagerService {
     // Check again if there's still no priority 1 task on this bridge (exclude current item)
     if (pendingItem.data.priority === this.HIGHEST_PRIORITY && 
         this.hasActivePriority1Task(pendingItem.data.bridgeName, pendingItem.id)) {
+      console.log('Cancelling pending task:', {
+        taskId: pendingItem.id,
+        bridgeName: pendingItem.data.bridgeName,
+        machineName: pendingItem.data.machineName
+      })
       pendingItem.status = 'cancelled'
       this.notifyListeners()
       showMessage('info', 'Task cancelled: Already have a priority 1 task on this bridge')
@@ -482,15 +506,9 @@ class QueueManagerService {
    */
   clearActiveTasks(bridgeName?: string) {
     if (bridgeName) {
-      // Clear tasks for specific bridge
-      const keysToRemove: string[] = []
-      for (const [key, task] of this.activeTasks) {
-        if (task.bridgeName === bridgeName) {
-          keysToRemove.push(key)
-        }
-      }
-      keysToRemove.forEach(key => this.activeTasks.delete(key))
-      console.log(`Cleared ${keysToRemove.length} active tasks for bridge ${bridgeName}`)
+      // Clear task for specific bridge (key is now just the bridge name)
+      const deleted = this.activeTasks.delete(bridgeName)
+      console.log(`Cleared active task for bridge ${bridgeName}: ${deleted}`)
     } else {
       // Clear all active tasks
       const count = this.activeTasks.size
@@ -574,9 +592,9 @@ class QueueManagerService {
    */
   private async syncActiveTasksStatus() {
     const now = Date.now()
-    const tasksToRemove: string[] = []
+    const bridgesToRemove: string[] = []
 
-    for (const [key, task] of this.activeTasks) {
+    for (const [bridgeName, task] of this.activeTasks) {
       // For priority 1 tasks older than 30 seconds, check if they're still active
       if (task.priority === this.HIGHEST_PRIORITY && 
           now - task.timestamp > 30 * 1000) {
@@ -593,13 +611,13 @@ class QueueManagerService {
             
             // If task is completed, failed, or cancelled, remove it
             if (['COMPLETED', 'FAILED', 'CANCELLED'].includes(status) || queueDetails.permanentlyFailed) {
-              tasksToRemove.push(key)
-              console.log(`Removing stale active task ${task.taskId} with status ${status}`)
+              bridgesToRemove.push(bridgeName)
+              console.log(`Removing stale active task ${task.taskId} with status ${status} for bridge ${bridgeName}`)
             }
           } else {
             // If we can't find the task, it's probably old - remove it
-            tasksToRemove.push(key)
-            console.log(`Removing stale active task ${task.taskId} - not found in backend`)
+            bridgesToRemove.push(bridgeName)
+            console.log(`Removing stale active task ${task.taskId} - not found in backend for bridge ${bridgeName}`)
           }
         } catch (error) {
           console.error(`Error checking task ${task.taskId}:`, error)
@@ -608,12 +626,12 @@ class QueueManagerService {
       }
     }
 
-    // Remove stale tasks
-    tasksToRemove.forEach(key => {
-      this.activeTasks.delete(key)
+    // Remove stale tasks (key is now just the bridge name)
+    bridgesToRemove.forEach(bridgeName => {
+      this.activeTasks.delete(bridgeName)
     })
 
-    if (tasksToRemove.length > 0) {
+    if (bridgesToRemove.length > 0) {
       this.notifyListeners()
     }
   }
