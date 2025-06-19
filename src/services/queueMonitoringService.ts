@@ -6,6 +6,8 @@ interface MonitoredTask {
   taskId: string
   teamName: string
   machineName: string
+  bridgeName?: string // Add bridge name for priority 1 task tracking
+  priority?: number // Add priority to identify priority 1 tasks
   lastStatus: string
   startTime: number
   checkInterval: number // milliseconds
@@ -84,7 +86,7 @@ class QueueMonitoringService {
     }
   }
 
-  addTask(taskId: string, teamName: string, machineName: string, currentStatus: string, retryCount?: number, lastFailureReason?: string) {
+  addTask(taskId: string, teamName: string, machineName: string, currentStatus: string, retryCount?: number, lastFailureReason?: string, bridgeName?: string, priority?: number) {
     const terminalStatuses = ['COMPLETED', 'CANCELLED', 'FAILED']
     if (terminalStatuses.includes(currentStatus)) {
       return
@@ -99,6 +101,8 @@ class QueueMonitoringService {
       taskId,
       teamName,
       machineName,
+      bridgeName,
+      priority,
       lastStatus: currentStatus,
       startTime: Date.now(),
       checkInterval: this.CHECK_INTERVAL_MS,
@@ -108,7 +112,7 @@ class QueueMonitoringService {
     this.monitoredTasks.set(taskId, task)
     this.saveToStorage()
     
-    console.log(`Added task ${taskId} to monitoring with status ${currentStatus}`)
+    console.log(`Added task ${taskId} to monitoring with status ${currentStatus}, bridge: ${bridgeName}, priority: ${priority}`)
     
     // Trigger an immediate check for this new task
     setTimeout(() => {

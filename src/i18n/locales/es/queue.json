@@ -59,7 +59,7 @@
     "title": "Administrador de Cola",
     "buttonLabel": "Máxima Prioridad",
     "tooltip": "Administrador de cola de máxima prioridad",
-    "description": "Los elementos de cola de máxima prioridad (prioridad 1) se envían con un retraso de 5 segundos para evitar limitaciones del servidor.",
+    "description": "Los elementos de cola de máxima prioridad (prioridad 1) se gestionan para garantizar que solo se ejecute una tarea por puente a la vez.",
     "emptyState": "No hay elementos de máxima prioridad en la cola",
     "itemQueued": "Tarea de máxima prioridad en cola. Posición: {{position}}",
     "cancelledTask": "Se canceló la tarea pendiente existente para {{machineName}}",

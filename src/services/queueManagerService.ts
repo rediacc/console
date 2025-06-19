@@ -27,20 +27,18 @@ interface ActiveTask {
 
 class QueueManagerService {
   private queue: QueuedItem[] = []
-  private activeTasks: Map<string, ActiveTask> = new Map() // key: bridgeName-machineName
+  private activeTasks: Map<string, ActiveTask> = new Map() // key: bridgeName
+  private taskIdToBridge: Map<string, string> = new Map() // taskId -> bridgeName mapping for priority 1 tasks
   private isProcessing = false
   private processingInterval: ReturnType<typeof setInterval> | null = null
   private readonly MAX_RETRIES = 3
-  private readonly SUBMISSION_DELAY = 5000 // 5 seconds between submissions
+  private readonly SUBMISSION_DELAY = 100 // 100ms between queue checks
   private readonly HIGHEST_PRIORITY = 1 // Only priority 1 items are queued
   private listeners: ((queue: QueuedItem[]) => void)[] = []
 
   constructor() {
     // Start processing queue when service is initialized
     this.startProcessing()
-    
-    // Start periodic sync to ensure active tasks are up to date
-    this.startPeriodicSync()
   }
 
   /**
@@ -48,21 +46,17 @@ class QueueManagerService {
    */
   private hasActivePriority1Task(bridgeName: string, excludeItemId?: string): boolean {
     // Check in active tasks
-    for (const [key, task] of this.activeTasks) {
-      if (task.bridgeName === bridgeName && 
-          task.priority === this.HIGHEST_PRIORITY &&
-          ['pending', 'assigned', 'processing'].includes(task.status)) {
-        console.log('Found active priority 1 task:', {
-          key: key,
-          taskId: task.taskId,
-          status: task.status,
-          bridgeName: task.bridgeName,
-          machineName: task.machineName,
-          timestamp: new Date(task.timestamp).toISOString(),
-          age: Math.floor((Date.now() - task.timestamp) / 1000) + ' seconds'
-        })
-        return true
-      }
+    const activeTask = this.activeTasks.get(bridgeName)
+    if (activeTask && activeTask.priority === this.HIGHEST_PRIORITY) {
+      console.log('Found active priority 1 task:', {
+        bridgeName: bridgeName,
+        taskId: activeTask.taskId,
+        status: activeTask.status,
+        machineName: activeTask.machineName,
+        timestamp: new Date(activeTask.timestamp).toISOString(),
+        age: Math.floor((Date.now() - activeTask.timestamp) / 1000) + ' seconds'
+      })
+      return true
     }
 
     // Check in queue (only pending and submitting items, not submitted)
@@ -106,19 +100,48 @@ class QueueManagerService {
     // Track by bridge only, since the restriction is per user per bridge
     const key = task.bridgeName
     this.activeTasks.set(key, task)
+    
+    // Also track taskId -> bridge mapping for priority 1 tasks
+    if (task.priority === this.HIGHEST_PRIORITY) {
+      this.taskIdToBridge.set(task.taskId, task.bridgeName)
+    }
+    
     console.log(`Tracked active task: key=${key}, taskId=${task.taskId}, bridgeName=${task.bridgeName}, machineName=${task.machineName}`)
   }
 
   /**
-   * Remove an active task
+   * Remove an active task by bridge name
    */
-  private removeActiveTask(bridgeName: string, machineName: string) {
-    // Remove by bridge only, since the restriction is per user per bridge
-    const key = bridgeName
-    console.log(`Removing active task: key=${key}, machineName=${machineName}`)
-    const deleted = this.activeTasks.delete(key)
+  private removeActiveTaskByBridge(bridgeName: string) {
+    console.log(`Removing active task for bridge: ${bridgeName}`)
+    const deleted = this.activeTasks.delete(bridgeName)
     if (!deleted) {
-      console.log(`Active task not found for removal: ${key}`)
+      console.log(`No active task found for bridge: ${bridgeName}`)
+    }
+    return deleted
+  }
+
+  /**
+   * Start monitoring a task
+   */
+  private async startMonitoringTask(taskId: string, data: QueuedItem['data']) {
+    try {
+      // Import monitoring service dynamically to avoid circular dependency
+      const { queueMonitoringService } = await import('@/services/queueMonitoringService')
+      
+      console.log(`Starting monitoring for priority ${data.priority} task ${taskId}`)
+      queueMonitoringService.addTask(
+        taskId,
+        data.teamName,
+        data.machineName,
+        'PENDING',
+        undefined, // retryCount
+        undefined, // lastFailureReason
+        data.bridgeName,
+        data.priority
+      )
+    } catch (error) {
+      console.error('Failed to start monitoring for task:', error)
     }
   }
 
@@ -264,23 +287,11 @@ class QueueManagerService {
     console.log(`Processing queue - found pending item: ${pendingItem?.id || 'none'}`)
     
     if (!pendingItem) {
-      // Clean up old submitted/failed/cancelled items after 5 minutes
-      const fiveMinutesAgo = Date.now() - 5 * 60 * 1000
+      // Clean up completed items from queue
       this.queue = this.queue.filter(item => 
         item.status === 'pending' || 
-        item.status === 'submitting' || 
-        item.timestamp > fiveMinutesAgo
+        item.status === 'submitting'
       )
-      
-      // Also clean up old active tasks
-      const twoMinutesAgo = Date.now() - 2 * 60 * 1000
-      for (const [key, task] of this.activeTasks) {
-        if (task.priority === 1 && task.timestamp < twoMinutesAgo) {
-          this.activeTasks.delete(key)
-        } else if (task.priority !== 1 && task.timestamp < fiveMinutesAgo) {
-          this.activeTasks.delete(key)
-        }
-      }
       
       // Stop processing if queue is empty
       if (this.queue.length === 0) {
@@ -329,10 +340,8 @@ class QueueManagerService {
         }
         this.trackActiveTask(activeTask)
         
-        // Trigger a sync after a short delay to ensure monitoring catches up
-        setTimeout(() => {
-          this.syncActiveTasksStatus()
-        }, 5000)
+        // Start monitoring this task
+        this.startMonitoringTask(pendingItem.taskId, pendingItem.data)
       }
       
       // Mark as submitted
@@ -429,50 +438,74 @@ class QueueManagerService {
   }
 
   /**
-   * Update task status from backend
+   * Update task status from backend - THIS IS THE CRITICAL METHOD
    */
   updateTaskStatus(taskId: string, status: 'completed' | 'failed' | 'cancelled') {
-    console.log(`updateTaskStatus called: taskId=${taskId}, status=${status}`)
+    console.log(`\n=== updateTaskStatus called ===`)
+    console.log(`TaskId: ${taskId}, Status: ${status}`)
     
-    // Update in queue
-    const queueItem = this.queue.find(item => item.taskId === taskId)
-    if (queueItem) {
-      console.log('Found queue item to update:', queueItem.id)
-      if (status === 'completed' || status === 'failed' || status === 'cancelled') {
-        // Remove from active tasks
-        this.removeActiveTask(
-          queueItem.data.bridgeName,
-          queueItem.data.machineName
-        )
-      }
-    }
-
-    // Update in active tasks
-    let found = false
-    for (const [key, task] of this.activeTasks) {
-      if (task.taskId === taskId) {
-        found = true
-        console.log(`Found active task to remove: key=${key}, taskId=${taskId}`)
+    let bridgeCleared: string | null = null
+    
+    // First check if we have a taskId -> bridge mapping
+    const mappedBridge = this.taskIdToBridge.get(taskId)
+    if (mappedBridge) {
+      console.log(`Found bridge mapping for taskId ${taskId}: ${mappedBridge}`)
+      
+      // Verify this task is still active
+      const activeTask = this.activeTasks.get(mappedBridge)
+      if (activeTask && activeTask.taskId === taskId) {
         if (status === 'completed' || status === 'failed' || status === 'cancelled') {
-          this.activeTasks.delete(key)
-          console.log(`Removed active task: ${key}`)
-        } else {
-          task.status = status as any
+          this.activeTasks.delete(mappedBridge)
+          this.taskIdToBridge.delete(taskId)
+          bridgeCleared = mappedBridge
+          console.log(`✓ Removed active priority 1 task for bridge: ${mappedBridge} (via taskId mapping)`)
         }
-        break
       }
     }
     
-    if (!found) {
-      console.log(`Task ${taskId} not found in active tasks`)
-      // Log current active tasks
-      console.log('Current active tasks:', Array.from(this.activeTasks.entries()).map(([k, v]) => ({
-        key: k,
-        taskId: v.taskId,
-        status: v.status
-      })))
+    // If not found via mapping, search all active tasks
+    if (!bridgeCleared) {
+      for (const [bridgeName, task] of this.activeTasks) {
+        if (task.taskId === taskId && task.priority === this.HIGHEST_PRIORITY) {
+          if (status === 'completed' || status === 'failed' || status === 'cancelled') {
+            this.activeTasks.delete(bridgeName)
+            this.taskIdToBridge.delete(taskId)
+            bridgeCleared = bridgeName
+            console.log(`✓ Removed active priority 1 task for bridge: ${bridgeName} (via search)`)
+            break
+          }
+        }
+      }
     }
-
+    
+    // Also check queue items
+    if (!bridgeCleared) {
+      const queueItem = this.queue.find(item => item.taskId === taskId)
+      if (queueItem && queueItem.data.priority === this.HIGHEST_PRIORITY) {
+        const bridgeName = queueItem.data.bridgeName
+        
+        // Remove from active tasks if it exists there
+        if (this.activeTasks.has(bridgeName)) {
+          const activeTask = this.activeTasks.get(bridgeName)
+          if (activeTask && activeTask.taskId === taskId) {
+            this.activeTasks.delete(bridgeName)
+            this.taskIdToBridge.delete(taskId)
+            bridgeCleared = bridgeName
+            console.log(`✓ Removed active priority 1 task for bridge via queue: ${bridgeName}`)
+          }
+        }
+        
+        // Update queue item status
+        if (status === 'completed' || status === 'failed' || status === 'cancelled') {
+          queueItem.status = 'submitted'
+        }
+      }
+    }
+    
+    console.log(`Task update complete. Bridge cleared: ${bridgeCleared || 'none'}`)
+    console.log(`Current active tasks: ${this.activeTasks.size}, TaskId mappings: ${this.taskIdToBridge.size}`)
+    console.log(`=== End updateTaskStatus ===\n`)
+    
     this.notifyListeners()
   }
 
@@ -502,20 +535,56 @@ class QueueManagerService {
   }
 
   /**
-   * Clear all active tasks for a specific bridge
+   * Clear active task for a specific bridge (recovery mechanism)
    */
-  clearActiveTasks(bridgeName?: string) {
-    if (bridgeName) {
-      // Clear task for specific bridge (key is now just the bridge name)
-      const deleted = this.activeTasks.delete(bridgeName)
-      console.log(`Cleared active task for bridge ${bridgeName}: ${deleted}`)
-    } else {
-      // Clear all active tasks
-      const count = this.activeTasks.size
-      this.activeTasks.clear()
-      console.log(`Cleared all ${count} active tasks`)
+  clearBridgeTask(bridgeName: string): boolean {
+    const task = this.activeTasks.get(bridgeName)
+    if (task) {
+      console.log(`Manually clearing active task for bridge ${bridgeName}, taskId: ${task.taskId}`)
+      this.activeTasks.delete(bridgeName)
+      
+      // Also remove from taskId mapping
+      if (task.priority === this.HIGHEST_PRIORITY) {
+        this.taskIdToBridge.delete(task.taskId)
+      }
+      
+      this.notifyListeners()
+      return true
     }
-    this.notifyListeners()
+    return false
+  }
+
+  /**
+   * Clear all stuck priority 1 tasks (recovery mechanism)
+   */
+  clearAllStuckTasks(): number {
+    let clearedCount = 0
+    const stuckTasks: string[] = []
+    
+    // Find all priority 1 tasks
+    for (const [bridgeName, task] of this.activeTasks) {
+      if (task.priority === this.HIGHEST_PRIORITY) {
+        stuckTasks.push(bridgeName)
+      }
+    }
+    
+    // Clear them
+    for (const bridgeName of stuckTasks) {
+      const task = this.activeTasks.get(bridgeName)
+      if (task) {
+        console.log(`Clearing stuck task: bridge=${bridgeName}, taskId=${task.taskId}, age=${Math.floor((Date.now() - task.timestamp) / 1000)}s`)
+        this.activeTasks.delete(bridgeName)
+        this.taskIdToBridge.delete(task.taskId)
+        clearedCount++
+      }
+    }
+    
+    if (clearedCount > 0) {
+      this.notifyListeners()
+      console.log(`Cleared ${clearedCount} stuck priority 1 tasks`)
+    }
+    
+    return clearedCount
   }
 
   /**
@@ -528,6 +597,10 @@ class QueueManagerService {
         ...v,
         age: Math.floor((Date.now() - v.timestamp) / 1000) + ' seconds'
       })),
+      taskIdMappings: Array.from(this.taskIdToBridge.entries()).map(([taskId, bridge]) => ({
+        taskId,
+        bridge
+      })),
       queuedTasks: this.queue.filter(item => 
         item.data.priority === this.HIGHEST_PRIORITY &&
         ['pending', 'submitting'].includes(item.status)
@@ -535,18 +608,12 @@ class QueueManagerService {
         id: item.id,
         status: item.status,
         bridgeName: item.data.bridgeName,
-        machineName: item.data.machineName
+        machineName: item.data.machineName,
+        taskId: item.taskId
       }))
     }
   }
 
-  /**
-   * Force sync active tasks (public method for debugging)
-   */
-  async forceSync() {
-    console.log('Force syncing active tasks...')
-    await this.syncActiveTasksStatus()
-  }
 
   /**
    * Get active priority 1 tasks count per bridge
@@ -574,80 +641,26 @@ class QueueManagerService {
     return counts
   }
 
-  /**
-   * Start periodic sync to check task status
-   */
-  private startPeriodicSync() {
-    // Run sync immediately
-    this.syncActiveTasksStatus()
-    
-    // Check every 10 seconds for stale active tasks
-    setInterval(() => {
-      this.syncActiveTasksStatus()
-    }, 10000)
-  }
-
-  /**
-   * Sync active tasks status with actual completion
-   */
-  private async syncActiveTasksStatus() {
-    const now = Date.now()
-    const bridgesToRemove: string[] = []
-
-    for (const [bridgeName, task] of this.activeTasks) {
-      // For priority 1 tasks older than 30 seconds, check if they're still active
-      if (task.priority === this.HIGHEST_PRIORITY && 
-          now - task.timestamp > 30 * 1000) {
-        
-        try {
-          // Import apiClient dynamically to avoid circular dependency
-          const { default: apiClient } = await import('@/api/client')
-          const response = await apiClient.get('/GetQueueItemTrace', { taskId: task.taskId })
-          
-          // Check the status from the first table
-          const queueDetails = response.tables?.[1]?.data?.[0]
-          if (queueDetails) {
-            const status = queueDetails.status || queueDetails.Status
-            
-            // If task is completed, failed, or cancelled, remove it
-            if (['COMPLETED', 'FAILED', 'CANCELLED'].includes(status) || queueDetails.permanentlyFailed) {
-              bridgesToRemove.push(bridgeName)
-              console.log(`Removing stale active task ${task.taskId} with status ${status} for bridge ${bridgeName}`)
-            }
-          } else {
-            // If we can't find the task, it's probably old - remove it
-            bridgesToRemove.push(bridgeName)
-            console.log(`Removing stale active task ${task.taskId} - not found in backend for bridge ${bridgeName}`)
-          }
-        } catch (error) {
-          console.error(`Error checking task ${task.taskId}:`, error)
-          // If there's an error checking, keep the task for now
-        }
-      }
-    }
-
-    // Remove stale tasks (key is now just the bridge name)
-    bridgesToRemove.forEach(bridgeName => {
-      this.activeTasks.delete(bridgeName)
-    })
-
-    if (bridgesToRemove.length > 0) {
-      this.notifyListeners()
-    }
-  }
 }
 
 // Create singleton instance
 const queueManagerService = new QueueManagerService()
 
-// Expose debug methods on window for debugging
+// Expose simple debug info on window
 if (typeof window !== 'undefined') {
-  (window as any).queueManagerDebug = {
-    getInfo: () => queueManagerService.getDebugInfo(),
-    clearActiveTasks: (bridgeName?: string) => queueManagerService.clearActiveTasks(bridgeName),
-    updateTaskStatus: (taskId: string, status: 'completed' | 'failed' | 'cancelled') => 
-      queueManagerService.updateTaskStatus(taskId, status),
-    forceSync: () => queueManagerService.forceSync()
+  (window as any).queueInfo = () => {
+    const info = queueManagerService.getDebugInfo()
+    console.log('=== Queue Manager Status ===')
+    console.log('Active Priority 1 Tasks:', info.activeTasks)
+    console.log('TaskId Mappings:', info.taskIdMappings)
+    console.log('Queued Tasks:', info.queuedTasks)
+    return info
+  }
+  
+  ;(window as any).clearStuckTasks = () => {
+    const count = queueManagerService.clearAllStuckTasks()
+    console.log(`Cleared ${count} stuck priority 1 tasks`)
+    return count
   }
 }
 

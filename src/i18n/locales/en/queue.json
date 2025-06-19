@@ -59,7 +59,7 @@
     "title": "Queue Manager",
     "buttonLabel": "Highest Priority",
     "tooltip": "Highest priority queue manager",
-    "description": "Highest priority queue items (priority 1) are submitted with a 5-second delay to avoid server limitations.",
+    "description": "Highest priority queue items (priority 1) are managed to ensure only one task runs per bridge at a time.",
     "emptyState": "No highest priority items in queue",
     "itemQueued": "Highest priority task queued. Position: {{position}}",
     "cancelledTask": "Cancelled existing pending task for {{machineName}}",

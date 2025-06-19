@@ -81,12 +81,16 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         setIsQueued(false)
         showMessage('info', t('resources:repositories.taskSubmitted'))
         
-        // Start monitoring the task
+        // Start monitoring the task with bridge info for priority 1 tasks
         queueMonitoringService.addTask(
           item.taskId,
           machine.teamName,
           machine.machineName,
-          'PENDING' // Initial status when task is created
+          'PENDING', // Initial status when task is created
+          undefined, // retryCount
+          undefined, // lastFailureReason
+          machine.bridgeName, // bridgeName for priority 1 tracking
+          1 // priority 1 for repository list tasks
         )
       } else if (item?.status === 'failed') {
         setError(t('resources:repositories.failedToSubmit'))
@@ -259,12 +263,16 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         // Start monitoring the task
         showMessage('info', 'Repository list request submitted. Monitoring task...')
         
-        // Start monitoring the task
+        // Start monitoring the task with bridge info for priority 1 tasks
         queueMonitoringService.addTask(
           response.taskId,
           machine.teamName,
           machine.machineName,
-          'PENDING' // Initial status when task is created
+          'PENDING', // Initial status when task is created
+          undefined, // retryCount
+          undefined, // lastFailureReason
+          machine.bridgeName, // bridgeName for priority 1 tracking
+          1 // priority 1 for repository list tasks
         )
       } else if (response?.isQueued && response?.queueId) {
         // Item was queued for highest priority management
