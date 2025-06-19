@@ -86,5 +86,9 @@
   "runFunction": "Ejecutar Función",
   "connectionTestQueued": "Prueba de conexión en cola exitosamente",
   "connectionTestFailed": "Error al poner en cola la prueba de conexión",
-  "testingConnection": "Probando conexión..."
+  "testingConnection": "Probando conexión...",
+  "remote": "Remoto",
+  "remoteOperations": "Operaciones Remotas",
+  "createRepo": "Crear Repo",
+  "runAction": "Ejecutar Acción"
 }

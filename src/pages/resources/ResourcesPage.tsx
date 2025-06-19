@@ -1001,6 +1001,18 @@ const ResourcesPage: React.FC = () => {
             })
           }}
           onDeleteMachine={handleDeleteMachine}
+          onCreateRepository={(machine) => {
+            // Set the team filter to the machine's team
+            if (machine.teamName !== selectedTeams[0]) {
+              setSelectedTeams([machine.teamName])
+            }
+            // Open the repository creation modal with prefilled machine
+            openUnifiedModal('repository', 'create', { 
+              machineName: machine.machineName,
+              teamName: machine.teamName,
+              prefilledMachine: true 
+            })
+          }}
           enabled={teamResourcesTab === 'machines'}
           className="full-height-machine-table"
         />
@@ -1191,29 +1203,28 @@ const ResourcesPage: React.FC = () => {
                       gap: 8,
                       flexShrink: 0
                     }}>
-                      <Button 
-                        type="primary" 
-                        icon={<PlusOutlined />}
-                        onClick={() => {
-                          switch(teamResourcesTab) {
-                            case 'machines':
-                              openUnifiedModal('machine', 'create')
-                              break
-                            case 'repositories':
-                              openUnifiedModal('repository', 'create')
-                              break
-                            case 'storage':
-                              openUnifiedModal('storage', 'create')
-                              break
-                            case 'schedules':
-                              openUnifiedModal('schedule', 'create')
-                              break
-                          }
-                        }}
-                        style={{ background: '#556b2f', borderColor: '#556b2f' }}
-                      >
-                        {getCreateButtonText()}
-                      </Button>
+                      {teamResourcesTab !== 'repositories' && (
+                        <Button 
+                          type="primary" 
+                          icon={<PlusOutlined />}
+                          onClick={() => {
+                            switch(teamResourcesTab) {
+                              case 'machines':
+                                openUnifiedModal('machine', 'create')
+                                break
+                              case 'storage':
+                                openUnifiedModal('storage', 'create')
+                                break
+                              case 'schedules':
+                                openUnifiedModal('schedule', 'create')
+                                break
+                            }
+                          }}
+                          style={{ background: '#556b2f', borderColor: '#556b2f' }}
+                        >
+                          {getCreateButtonText()}
+                        </Button>
+                      )}
                       {teamResourcesTab === 'machines' && (
                         <Button 
                           icon={<WifiOutlined />}

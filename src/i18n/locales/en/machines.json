@@ -86,5 +86,9 @@
   "runFunction": "Run Function",
   "connectionTestQueued": "Connection test queued successfully",
   "connectionTestFailed": "Failed to queue connection test",
-  "testingConnection": "Testing connection..."
+  "testingConnection": "Testing connection...",
+  "remote": "Remote",
+  "remoteOperations": "Remote Operations",
+  "createRepo": "Create Repo",
+  "runAction": "Run Action"
 }

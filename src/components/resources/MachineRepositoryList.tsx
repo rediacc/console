@@ -417,7 +417,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             icon={<FunctionOutlined />}
             onClick={() => handleRunFunction(record)}
           >
-            {t('machines:run')}
+            {t('machines:remote')}
           </Button>
         ) : null
       ),

@@ -231,13 +231,20 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       // Reset form to default values first
       form.reset(getDefaultValues())
       
-      // Set team if preselected
-      if (teamFilter) {
+      // Set team if preselected or from existing data
+      if (existingData?.teamName) {
+        form.setValue('teamName', existingData.teamName)
+      } else if (teamFilter) {
         if (Array.isArray(teamFilter) && teamFilter.length === 1) {
           form.setValue('teamName', teamFilter[0])
         } else if (!Array.isArray(teamFilter)) {
           form.setValue('teamName', teamFilter)
         }
+      }
+
+      // For repositories, set prefilled machine
+      if (resourceType === 'repository' && existingData?.machineName) {
+        form.setValue('machineName', existingData.machineName)
       }
 
       // For machines, set default region and bridge
@@ -255,7 +262,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         }
       }
     }
-  }, [open, mode, teamFilter, resourceType, form, dropdownData])
+  }, [open, mode, teamFilter, resourceType, form, dropdownData, existingData])
 
   // Reset form values when modal opens in edit mode
   useEffect(() => {
@@ -338,19 +345,25 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       // Repository creation needs machine selection and size
       fields.push(nameField)
       
+      // Check if machine is prefilled
+      const isPrefilledMachine = existingData?.prefilledMachine
+      
       // Get machines for the selected team
-      const selectedTeamName = form.watch('teamName') || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
+      const selectedTeamName = form.watch('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
       const teamMachines = dropdownData?.machinesByTeam?.find(t => t.teamName === selectedTeamName)?.machines || []
       
-      fields.push({
-        name: 'machineName',
-        label: t('machines:machine'),
-        placeholder: t('machines:placeholders.selectMachine'),
-        required: true,
-        type: 'select' as const,
-        options: teamMachines.map((m: any) => ({ value: m.value, label: m.label })),
-        disabled: !selectedTeamName || teamMachines.length === 0
-      })
+      // Only show machine selection if not prefilled
+      if (!isPrefilledMachine) {
+        fields.push({
+          name: 'machineName',
+          label: t('machines:machine'),
+          placeholder: t('machines:placeholders.selectMachine'),
+          required: true,
+          type: 'select' as const,
+          options: teamMachines.map((m: any) => ({ value: m.value, label: m.label })),
+          disabled: !selectedTeamName || teamMachines.length === 0
+        })
+      }
       
       fields.push({
         name: 'size',
@@ -403,6 +416,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       const createKey = RESOURCE_CONFIG[resourceType as keyof typeof RESOURCE_CONFIG]?.createKey
       const createText = createKey ? t(createKey) : ''
       
+      // Special case for repository creation from machine
+      if (resourceType === 'repository' && existingData?.machineName) {
+        return `${createText} for ${existingData.machineName}`
+      }
+      
       if (isTeamPreselected || uiMode === 'simple') {
         const team = uiMode === 'simple' ? 'Private Team' : (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter)
         return `${createText} in ${team}`
@@ -423,6 +441,12 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         })
       })
     }
+    
+    // For repository creation from machine, ensure machine name is included
+    if (resourceType === 'repository' && existingData?.machineName && existingData?.prefilledMachine) {
+      data.machineName = existingData.machineName
+    }
+    
     await onSubmit(data)
   }
 
@@ -430,6 +454,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   const showFunctions = (resourceType === 'machine' || resourceType === 'repository' || resourceType === 'storage') && 
     mode === 'create' && 
     existingData &&
+    !existingData.prefilledMachine && // Don't show functions when creating repo from machine
     onFunctionSubmit &&
     functionCategories.length > 0
 
@@ -461,7 +486,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   }
 
   // If we're showing functions directly, don't show the main modal
-  if (mode === 'create' && existingData && showFunctions && showFunctionModal) {
+  if (mode === 'create' && existingData && showFunctions && showFunctionModal && !existingData.prefilledMachine) {
     return (
       <>
         {/* Function Selection Modal */}

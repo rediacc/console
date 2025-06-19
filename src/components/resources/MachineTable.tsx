@@ -31,7 +31,8 @@ import {
   FilterOutlined,
   FunctionOutlined,
   HistoryOutlined,
-  WifiOutlined
+  WifiOutlined,
+  InboxOutlined
 } from '@ant-design/icons';
 import { useMachines } from '@/api/queries/machines';
 import { useDropdownData } from '@/api/queries/useDropdownData';
@@ -57,6 +58,7 @@ interface MachineTableProps {
   onVaultMachine?: (machine: Machine) => void;
   onFunctionsMachine?: (machine: Machine) => void;
   onDeleteMachine?: (machine: Machine) => void;
+  onCreateRepository?: (machine: Machine) => void;
   enabled?: boolean;
 }
 
@@ -70,9 +72,10 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   onVaultMachine,
   onFunctionsMachine,
   onDeleteMachine,
+  onCreateRepository,
   enabled = true,
 }) => {
-  const { t } = useTranslation(['machines', 'common', 'functions']);
+  const { t } = useTranslation(['machines', 'common', 'functions', 'resources']);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
   const isExpertMode = uiMode === 'expert';
   const { executePingForMachineAndWait } = usePingFunction();
@@ -87,6 +90,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const [selectedRegion, setSelectedRegion] = useState<string | undefined>(undefined);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [groupBy, setGroupBy] = useState<'bridge' | 'team' | 'region'>('bridge');
+  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
+  const [expansionTimestamps, setExpansionTimestamps] = useState<Record<string, number>>({});
   const [auditTraceModal, setAuditTraceModal] = useState<{
     open: boolean
     entityType: string | null
@@ -128,7 +133,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
   // Filter machines based on selections
   const filteredMachines = useMemo(() => {
-    return machines.filter((machine) => {
+    const filtered = machines.filter((machine) => {
       const matchesSearch = search === '' || 
         machine.machineName.toLowerCase().includes(search.toLowerCase());
       const matchesBridge = !selectedBridge || machine.bridgeName === selectedBridge;
@@ -137,6 +142,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       
       return matchesSearch && matchesBridge && matchesTeam && matchesRegion;
     });
+    return filtered;
   }, [machines, search, selectedBridge, selectedTeam, selectedRegion]);
 
   // Group machines for grid view
@@ -308,8 +314,14 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               menu={{
                 items: [
                   {
+                    key: 'createRepo',
+                    label: t('machines:createRepo'),
+                    icon: <InboxOutlined />,
+                    onClick: () => onCreateRepository && onCreateRepository(record)
+                  },
+                  {
                     key: 'functions',
-                    label: t('machines:runFunction'),
+                    label: t('machines:runAction'),
                     icon: <FunctionOutlined />,
                     onClick: () => onFunctionsMachine && onFunctionsMachine(record)
                   },
@@ -341,7 +353,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                 size="small"
                 icon={<FunctionOutlined />}
               >
-                Run
+                {t('machines:remote')}
               </Button>
             </Dropdown>
             <Button
@@ -374,7 +386,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     }
 
     return baseColumns;
-  }, [isExpertMode, uiMode, showActions, t, handleDelete, dropdownData, onEditMachine, onVaultMachine, onFunctionsMachine]);
+  }, [isExpertMode, uiMode, showActions, t, handleDelete, dropdownData, onEditMachine, onVaultMachine, onFunctionsMachine, onCreateRepository, executePingForMachineAndWait]);
 
   // Render filters section
   const renderFilters = () => {
@@ -561,8 +573,23 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               showTotal: (total, range) => t('common:table.showingRecords', { start: range[0], end: range[1], total }),
             }}
             expandable={{
-              expandedRowRender: (record) => <MachineRepositoryList machine={record} />,
+              expandedRowRender: (record) => <MachineRepositoryList machine={record} key={`${record.machineName}-${expansionTimestamps[record.machineName] || 0}`} />,
               rowExpandable: () => true,
+              expandedRowKeys,
+              onExpandedRowsChange: (keys) => {
+                const newKeys = keys as string[];
+                setExpandedRowKeys(newKeys);
+                
+                // Track expansion timestamp for newly expanded rows
+                const newTimestamps = { ...expansionTimestamps };
+                newKeys.forEach(key => {
+                  if (!expandedRowKeys.includes(key)) {
+                    // This is a newly expanded row
+                    newTimestamps[key] = Date.now();
+                  }
+                });
+                setExpansionTimestamps(newTimestamps);
+              }
             }}
             sticky
           />
