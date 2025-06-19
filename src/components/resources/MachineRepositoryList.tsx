@@ -34,9 +34,10 @@ interface Repository {
 
 interface MachineRepositoryListProps {
   machine: Machine
+  onActionComplete?: () => void
 }
 
-export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine }) => {
+export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete }) => {
   const { t } = useTranslation(['resources', 'common', 'machines'])
   const [repositories, setRepositories] = useState<Repository[]>([])
   const [loading, setLoading] = useState(true)
@@ -532,7 +533,11 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       <QueueItemTraceModal
         taskId={queueTraceModal.taskId}
         visible={queueTraceModal.visible}
-        onClose={() => setQueueTraceModal({ visible: false, taskId: null })}
+        onClose={() => {
+          setQueueTraceModal({ visible: false, taskId: null })
+          // Refresh repositories when modal is closed
+          fetchRepositories()
+        }}
       />
     </div>
   )

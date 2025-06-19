@@ -129,6 +129,10 @@ const ResourcesPage: React.FC = () => {
   // State for current editing/creating resource
   const [currentResource, setCurrentResource] = useState<any>(null)
   
+  // State for machine table expanded rows and refresh keys
+  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
+  const [refreshKeys, setRefreshKeys] = useState<Record<string, number>>({})
+  
   // Machine mutations
   const createMachineMutation = useCreateMachine()
   const updateMachineNameMutation = useUpdateMachineName()
@@ -1020,6 +1024,11 @@ const ResourcesPage: React.FC = () => {
               mode: 'create',
               data: machine
             })
+            // Mark this machine for refresh when action completes
+            setRefreshKeys(prev => ({
+              ...prev,
+              [machine.machineName]: Date.now()
+            }))
           }}
           onDeleteMachine={handleDeleteMachine}
           onCreateRepository={(machine) => {
@@ -1036,6 +1045,9 @@ const ResourcesPage: React.FC = () => {
           }}
           enabled={teamResourcesTab === 'machines'}
           className="full-height-machine-table"
+          expandedRowKeys={expandedRowKeys}
+          onExpandedRowsChange={setExpandedRowKeys}
+          refreshKeys={refreshKeys}
         />
       ),
     },
@@ -1382,7 +1394,17 @@ const ResourcesPage: React.FC = () => {
       <QueueItemTraceModal
         taskId={queueTraceModal.taskId}
         visible={queueTraceModal.visible}
-        onClose={() => setQueueTraceModal({ visible: false, taskId: null })}
+        onClose={() => {
+          setQueueTraceModal({ visible: false, taskId: null })
+          // Trigger a refresh for all expanded machines
+          setRefreshKeys(prev => {
+            const newKeys = { ...prev }
+            expandedRowKeys.forEach(key => {
+              newKeys[key] = Date.now()
+            })
+            return newKeys
+          })
+        }}
       />
 
       {/* Connectivity Test Modal */}

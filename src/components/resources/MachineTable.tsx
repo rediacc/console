@@ -60,6 +60,9 @@ interface MachineTableProps {
   onDeleteMachine?: (machine: Machine) => void;
   onCreateRepository?: (machine: Machine) => void;
   enabled?: boolean;
+  expandedRowKeys?: string[];
+  onExpandedRowsChange?: (keys: string[]) => void;
+  refreshKeys?: Record<string, number>;
 }
 
 export const MachineTable: React.FC<MachineTableProps> = ({
@@ -74,6 +77,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   onDeleteMachine,
   onCreateRepository,
   enabled = true,
+  expandedRowKeys: externalExpandedRowKeys,
+  onExpandedRowsChange: externalOnExpandedRowsChange,
+  refreshKeys: externalRefreshKeys,
 }) => {
   const { t } = useTranslation(['machines', 'common', 'functions', 'resources']);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
@@ -90,8 +96,17 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const [selectedRegion, setSelectedRegion] = useState<string | undefined>(undefined);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [groupBy, setGroupBy] = useState<'bridge' | 'team' | 'region'>('bridge');
-  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
+  const [internalExpandedRowKeys, setInternalExpandedRowKeys] = useState<string[]>([]);
   const [expansionTimestamps, setExpansionTimestamps] = useState<Record<string, number>>({});
+  const [internalRefreshKeys, setInternalRefreshKeys] = useState<Record<string, number>>({});
+  
+  // Use external or internal state
+  const expandedRowKeys = externalExpandedRowKeys !== undefined ? externalExpandedRowKeys : internalExpandedRowKeys;
+  const setExpandedRowKeys = externalOnExpandedRowsChange || setInternalExpandedRowKeys;
+  const refreshKeys = externalRefreshKeys !== undefined ? externalRefreshKeys : internalRefreshKeys;
+  const setRefreshKeys = externalRefreshKeys !== undefined 
+    ? () => {} // If external, parent manages refresh keys
+    : setInternalRefreshKeys;
   const [auditTraceModal, setAuditTraceModal] = useState<{
     open: boolean
     entityType: string | null
@@ -323,7 +338,18 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                     key: 'functions',
                     label: t('machines:runAction'),
                     icon: <FunctionOutlined />,
-                    onClick: () => onFunctionsMachine && onFunctionsMachine(record)
+                    onClick: () => {
+                      if (onFunctionsMachine) {
+                        onFunctionsMachine(record)
+                        // Mark this machine for refresh when action completes
+                        if (externalRefreshKeys === undefined) {
+                          setInternalRefreshKeys(prev => ({
+                            ...prev,
+                            [record.machineName]: Date.now()
+                          }))
+                        }
+                      }
+                    }
                   },
                   {
                     key: 'test',
@@ -573,7 +599,21 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               showTotal: (total, range) => t('common:table.showingRecords', { start: range[0], end: range[1], total }),
             }}
             expandable={{
-              expandedRowRender: (record) => <MachineRepositoryList machine={record} key={`${record.machineName}-${expansionTimestamps[record.machineName] || 0}`} />,
+              expandedRowRender: (record) => (
+                <MachineRepositoryList 
+                  machine={record} 
+                  key={`${record.machineName}-${expansionTimestamps[record.machineName] || 0}-${refreshKeys[record.machineName] || 0}`}
+                  onActionComplete={() => {
+                    // Refresh this specific machine's repository list
+                    if (externalRefreshKeys === undefined) {
+                      setInternalRefreshKeys(prev => ({
+                        ...prev,
+                        [record.machineName]: Date.now()
+                      }))
+                    }
+                  }}
+                />
+              ),
               rowExpandable: () => true,
               expandedRowKeys,
               onExpandedRowsChange: (keys) => {
