@@ -90,5 +90,5 @@
   "remote": "Remoto",
   "remoteOperations": "Operaciones Remotas",
   "createRepo": "Crear Repo",
-  "runAction": "Ejecutar Acción"
+  "runAction": "Ejecutar en el Servidor"
 }

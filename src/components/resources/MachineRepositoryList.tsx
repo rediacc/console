@@ -22,7 +22,6 @@ const { Text } = Typography
 
 interface Repository {
   name: string
-  repo_exists: boolean
   size: number
   size_human: string
   modified: number
@@ -386,15 +385,9 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       render: (_: any, record: Repository) => (
         <Space direction="vertical" size={0}>
           <Space>
-            {record.repo_exists ? (
-              <Tag icon={<CheckCircleOutlined />} color="success">
-                {t('resources:repositories.exists')}
-              </Tag>
-            ) : (
-              <Tag icon={<CloseCircleOutlined />} color="error">
-                {t('resources:repositories.notFound')}
-              </Tag>
-            )}
+            <Tag icon={<CheckCircleOutlined />} color="success">
+              {t('resources:repositories.exists')}
+            </Tag>
             {record.mounted && (
               <Tag color="blue">{t('resources:repositories.mounted')}</Tag>
             )}
@@ -419,16 +412,14 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       key: 'actions',
       width: 100,
       render: (_: any, record: Repository) => (
-        record.repo_exists ? (
-          <Button
-            type="primary"
-            size="small"
-            icon={<FunctionOutlined />}
-            onClick={() => handleRunFunction(record)}
-          >
-            {t('machines:remote')}
-          </Button>
-        ) : null
+        <Button
+          type="primary"
+          size="small"
+          icon={<FunctionOutlined />}
+          onClick={() => handleRunFunction(record)}
+        >
+          {t('machines:remote')}
+        </Button>
       ),
     },
   ]
