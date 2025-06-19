@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { Table, Spin, Alert, Tag, Space, Typography, Button } from 'antd'
-import { InboxOutlined, CheckCircleOutlined, CloseCircleOutlined, FunctionOutlined } from '@ant-design/icons'
+import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown } from 'antd'
+import { InboxOutlined, CheckCircleOutlined, CloseCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { type QueueFunction, useCreateQueueItem } from '@/api/queries/queue'
 import { useQueueItemTrace } from '@/api/queries/queue'
@@ -29,6 +29,12 @@ interface Repository {
   mounted: boolean
   mount_path: string
   image_path: string
+  accessible: boolean
+  has_rediaccfile: boolean
+  docker_running: boolean
+  container_count: number
+  has_services: boolean
+  service_count: number
 }
 
 interface MachineRepositoryListProps {
@@ -37,7 +43,7 @@ interface MachineRepositoryListProps {
 }
 
 export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete }) => {
-  const { t } = useTranslation(['resources', 'common', 'machines'])
+  const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
   const [repositories, setRepositories] = useState<Repository[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -46,6 +52,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const [isQueued, setIsQueued] = useState(false)
   const [selectedRepository, setSelectedRepository] = useState<Repository | null>(null)
   const [functionModalOpen, setFunctionModalOpen] = useState(false)
+  const [selectedFunction, setSelectedFunction] = useState<string | null>(null)
   const [queueTraceModal, setQueueTraceModal] = useState<{
     visible: boolean
     taskId: string | null
@@ -291,9 +298,61 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     }
   }
 
-  const handleRunFunction = (repository: Repository) => {
+  const handleRunFunction = (repository: Repository, functionName?: string) => {
     setSelectedRepository(repository)
+    setSelectedFunction(functionName || null)
     setFunctionModalOpen(true)
+  }
+
+  const handleQuickAction = async (repository: Repository, functionName: string, priority: number = 4) => {
+    try {
+      // Find team vault data
+      const team = teams?.find(t => t.teamName === machine.teamName)
+      
+      // Find the repository vault data
+      const repositoryData = teamRepositories.find(r => r.repositoryName === repository.name)
+      
+      if (!repositoryData || !repositoryData.vaultContent) {
+        showMessage('error', t('resources:repositories.noCredentialsFound', { name: repository.name }))
+        return
+      }
+      
+      // Build queue vault
+      const queueVault = await buildQueueVault({
+        teamName: machine.teamName,
+        machineName: machine.machineName,
+        bridgeName: machine.bridgeName,
+        functionName: functionName,
+        params: {
+          repo: repositoryData.repositoryGuid,
+          grand: repositoryData.grandGuid || ''
+        },
+        priority: priority,
+        description: `${functionName} ${repository.name}`,
+        addedVia: 'machine-repository-list-quick',
+        teamVault: team?.vaultContent || '{}',
+        machineVault: machine.vaultContent || '{}',
+        repositoryGuid: repositoryData.repositoryGuid,
+        repositoryVault: repositoryData.vaultContent
+      })
+      
+      const response = await managedQueueMutation.mutateAsync({
+        teamName: machine.teamName,
+        machineName: machine.machineName,
+        bridgeName: machine.bridgeName,
+        queueVault,
+        priority: priority
+      })
+      
+      if (response?.taskId) {
+        showMessage('success', t('resources:repositories.queueItemCreated'))
+        setQueueTraceModal({ visible: true, taskId: response.taskId })
+      } else if (response?.isQueued) {
+        showMessage('info', t('resources:repositories.highestPriorityQueued'))
+      }
+    } catch (error) {
+      showMessage('error', t('resources:repositories.failedToCreateQueueItem'))
+    }
   }
 
   const handleFunctionSubmit = async (functionData: {
@@ -381,17 +440,37 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     {
       title: t('resources:repositories.status'),
       key: 'status',
-      width: 250,
+      width: 300,
       render: (_: any, record: Repository) => (
         <Space direction="vertical" size={0}>
-          <Space>
+          <Space wrap>
             <Tag icon={<CheckCircleOutlined />} color="success">
               {t('resources:repositories.exists')}
             </Tag>
             {record.mounted && (
               <Tag color="blue">{t('resources:repositories.mounted')}</Tag>
             )}
+            {record.accessible && (
+              <Tag color="green">{t('resources:repositories.accessible')}</Tag>
+            )}
+            {record.has_rediaccfile && (
+              <Tag color="purple">{t('resources:repositories.hasRediaccfile')}</Tag>
+            )}
           </Space>
+          {(record.docker_running || record.has_services) && (
+            <Space wrap>
+              {record.docker_running && (
+                <Tag color="cyan">
+                  Docker ({record.container_count} {t('resources:repositories.containers')})
+                </Tag>
+              )}
+              {record.has_services && (
+                <Tag color="orange">
+                  {record.service_count} {t('resources:repositories.services')}
+                </Tag>
+              )}
+            </Space>
+          )}
           {record.mounted && record.mount_path && (
             <Text type="secondary" style={{ fontSize: '12px' }}>
               {t('resources:repositories.mountPath')}: {record.mount_path}
@@ -410,17 +489,99 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     {
       title: t('common:table.actions'),
       key: 'actions',
-      width: 100,
-      render: (_: any, record: Repository) => (
-        <Button
-          type="primary"
-          size="small"
-          icon={<FunctionOutlined />}
-          onClick={() => handleRunFunction(record)}
-        >
-          {t('machines:remote')}
-        </Button>
-      ),
+      width: 120,
+      render: (_: any, record: Repository) => {
+        // Build smart menu items based on repository state
+        const menuItems = []
+        
+        // Mount - if the repository is not mounted
+        if (!record.mounted) {
+          menuItems.push({
+            key: 'mount',
+            label: t('functions:functions.mount.name'),
+            icon: <PlayCircleOutlined />,
+            onClick: () => handleQuickAction(record, 'mount')
+          })
+        }
+        
+        // Unmount - if mounted, accessible, and container_count is 0
+        if (record.mounted && record.accessible && record.container_count === 0) {
+          menuItems.push({
+            key: 'unmount',
+            label: t('functions:functions.unmount.name'),
+            icon: <StopOutlined />,
+            onClick: () => handleQuickAction(record, 'unmount')
+          })
+        }
+        
+        // Up - if mounted, accessible, has_services, docker_running and container_count is 0
+        if (record.mounted && record.accessible && record.has_services && record.docker_running && record.container_count === 0) {
+          menuItems.push({
+            key: 'up',
+            label: t('functions:functions.up.name'),
+            icon: <PlayCircleOutlined style={{ color: '#52c41a' }} />,
+            onClick: () => handleQuickAction(record, 'up')
+          })
+        }
+        
+        // Down - if mounted, accessible, has_services, docker_running and container_count is not 0
+        if (record.mounted && record.accessible && record.has_services && record.docker_running && record.container_count > 0) {
+          menuItems.push({
+            key: 'down',
+            label: t('functions:functions.down.name'),
+            icon: <StopOutlined style={{ color: '#ff4d4f' }} />,
+            onClick: () => handleQuickAction(record, 'down')
+          })
+        }
+        
+        // Resize - when not mounted
+        if (!record.mounted) {
+          menuItems.push({
+            key: 'resize',
+            label: t('functions:functions.resize.name'),
+            icon: <ExpandOutlined />,
+            onClick: () => handleRunFunction(record, 'resize')
+          })
+        }
+        
+        // Push - always available
+        menuItems.push({
+          key: 'push',
+          label: t('functions:functions.push.name'),
+          icon: <CloudUploadOutlined />,
+          onClick: () => handleRunFunction(record, 'push')
+        })
+        
+        // Always add divider and advanced option at the end
+        if (menuItems.length > 0) {
+          menuItems.push({
+            type: 'divider'
+          })
+        }
+        
+        menuItems.push({
+          key: 'advanced',
+          label: t('machines:advanced'),
+          icon: <FunctionOutlined />,
+          onClick: () => handleRunFunction(record)
+        })
+        
+        return (
+          <Dropdown
+            menu={{ items: menuItems }}
+            trigger={['click']}
+          >
+            <Button
+              type="primary"
+              size="small"
+              icon={<FunctionOutlined />}
+              loading={managedQueueMutation.isPending}
+            >
+              {t('machines:remote')}
+            </Button>
+          </Dropdown>
+        )
+      },
     },
   ]
 
@@ -492,6 +653,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         onCancel={() => {
           setFunctionModalOpen(false)
           setSelectedRepository(null)
+          setSelectedFunction(null)
         }}
         onSubmit={handleFunctionSubmit}
         title={t('machines:runFunction')}
@@ -518,6 +680,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           })(),
           grand: teamRepositories.find(r => r.repositoryName === selectedRepository?.name)?.grandGuid || ''
         }}
+        preselectedFunction={selectedFunction}
       />
       
       {/* Queue Item Trace Modal */}
