@@ -5,6 +5,7 @@ import functionDefinitions from '@/data/functions.json';
 export interface FunctionDefinition {
   name: string;
   category: string;
+  showInMenu?: boolean;
   requirements?: FunctionRequirements;
   params?: Record<string, FunctionParam>;
 }
@@ -58,6 +59,7 @@ export function useLocalizedFunctions() {
     return {
       ...funcDef,
       description: t(`functions.${functionName}.description`),
+      showInMenu: funcDef.showInMenu !== false, // Default to true if not specified
       requirements: funcDef.requirements || {},
       params: funcDef.params ? Object.fromEntries(
         Object.entries(funcDef.params).map(([paramName, paramDef]) => [

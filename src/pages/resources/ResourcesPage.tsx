@@ -90,6 +90,7 @@ const ResourcesPage: React.FC = () => {
     resourceType: ResourceType
     mode: 'create' | 'edit' | 'vault'
     data?: any
+    preselectedFunction?: string
   }>({ open: false, resourceType: 'machine', mode: 'create' })
   
   // Refs for table containers
@@ -1016,13 +1017,14 @@ const ResourcesPage: React.FC = () => {
             setCurrentResource(machine)
             openUnifiedModal('machine', 'vault', machine)
           }}
-          onFunctionsMachine={(machine) => {
+          onFunctionsMachine={(machine, functionName) => {
             setCurrentResource(machine)
             setUnifiedModalState({
               open: true,
               resourceType: 'machine',
               mode: 'create',
-              data: machine
+              data: machine,
+              preselectedFunction: functionName
             })
             // Mark this machine for refresh when action completes
             setRefreshKeys(prev => ({
@@ -1388,6 +1390,7 @@ const ResourcesPage: React.FC = () => {
           unifiedModalState.resourceType === 'storage' && currentResource ? { storage: currentResource.storageName } : 
           {}
         }
+        preselectedFunction={unifiedModalState.preselectedFunction}
       />
 
       {/* Queue Item Trace Modal */}

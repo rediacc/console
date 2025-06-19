@@ -2,6 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react'
 import { Modal, Row, Col, Card, Input, Space, Form, Slider, Empty, Typography, Tag, Button, Select, Tooltip, InputNumber, Alert } from 'antd'
 import { ExclamationCircleOutlined, WarningOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
+import { useSelector } from 'react-redux'
+import { RootState } from '@/store/store'
 import type { QueueFunction } from '@/api/queries/queue'
 import { useLocalizedFunctions } from '@/services/functionsService'
 import { useRepositories } from '@/api/queries/repositories'
@@ -28,6 +30,7 @@ interface FunctionSelectionModalProps {
   machines?: Array<{ value: string; label: string; bridgeName: string }>
   hiddenParams?: string[] // Parameters to hide from the form
   defaultParams?: Record<string, any> // Default values for hidden parameters
+  preselectedFunction?: string // Preselected function name
 }
 
 const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
@@ -42,10 +45,13 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   teamName,
   machines = [],
   hiddenParams = [],
-  defaultParams = {}
+  defaultParams = {},
+  preselectedFunction
 }) => {
   const { t } = useTranslation(['functions', 'common', 'machines'])
   const { functions: localizedFunctions, categories } = useLocalizedFunctions()
+  const uiMode = useSelector((state: RootState) => state.ui.uiMode)
+  const isSimpleMode = uiMode === 'simple'
   
   const [selectedFunction, setSelectedFunction] = useState<QueueFunction | null>(null)
   const [functionParams, setFunctionParams] = useState<Record<string, any>>({})
@@ -90,6 +96,13 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
       setFunctionParams(initialParams)
     }
   }, [selectedFunction])
+
+  // Handle preselected function
+  useEffect(() => {
+    if (preselectedFunction && localizedFunctions[preselectedFunction] && open) {
+      setSelectedFunction(localizedFunctions[preselectedFunction] as QueueFunction)
+    }
+  }, [preselectedFunction, localizedFunctions, open])
 
   // Filter functions based on allowed categories and search term
   const filteredFunctions = useMemo(() => {
@@ -252,8 +265,9 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
       ]}
     >
       <Row gutter={24}>
-        <Col span={10}>
-          <Card title={t('functions:availableFunctions')} size="small">
+        {!preselectedFunction && !isSimpleMode && (
+          <Col span={10}>
+            <Card title={t('functions:availableFunctions')} size="small">
             <Search
               placeholder={t('functions:searchFunctions')}
               value={functionSearchTerm}
@@ -287,10 +301,11 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                 </div>
               ))}
             </div>
-          </Card>
-        </Col>
+            </Card>
+          </Col>
+        )}
         
-        <Col span={14}>
+        <Col span={preselectedFunction || isSimpleMode ? 24 : 14}>
           {selectedFunction ? (
             <Space direction="vertical" size={16} style={{ width: '100%' }}>
               <Card title={`${t('functions:configure')}: ${selectedFunction.name}`} size="small">
@@ -446,9 +461,10 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                       )
                     })}
                   
-                  {/* Priority - Enabled with default priority (4) */}
-                  <Form.Item label={t('functions:priority')} help={t('functions:priorityHelp')}>
-                    <div>
+                  {/* Priority - Hidden when function is preselected or in simple mode */}
+                  {!preselectedFunction && !isSimpleMode && (
+                    <Form.Item label={t('functions:priority')} help={t('functions:priorityHelp')}>
+                      <div>
                       <Slider
                         min={1}
                         max={5}
@@ -522,9 +538,10 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                           }
                           style={{ marginTop: 16 }}
                         />
-                      )}
-                    </div>
-                  </Form.Item>
+                        )}
+                      </div>
+                    </Form.Item>
+                  )}
                   
                   {/* Description */}
                   <Form.Item label={t('functions:description')}>

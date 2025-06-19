@@ -44,6 +44,7 @@ export interface UnifiedResourceModalProps {
   functionCategories?: string[]
   hiddenParams?: string[]
   defaultParams?: Record<string, any>
+  preselectedFunction?: string
 }
 
 const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
@@ -61,6 +62,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   functionCategories = [],
   hiddenParams = [],
   defaultParams = {},
+  preselectedFunction,
 }) => {
   const { t } = useTranslation(['resources', 'machines', 'common'])
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
@@ -511,6 +513,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           machines={dropdownData?.machinesByTeam?.find(t => t.teamName === existingData?.teamName)?.machines || []}
           hiddenParams={hiddenParams}
           defaultParams={defaultParams}
+          preselectedFunction={preselectedFunction}
         />
       </>
     )
@@ -656,6 +659,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           machines={dropdownData?.machinesByTeam?.find(t => t.teamName === existingData?.teamName)?.machines || []}
           hiddenParams={hiddenParams}
           defaultParams={defaultParams}
+          preselectedFunction={preselectedFunction}
         />
       )}
     </>

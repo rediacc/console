@@ -44,6 +44,7 @@ import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { usePingFunction } from '@/services/pingService';
 import { showMessage } from '@/utils/messages';
 import { MachineRepositoryList } from './MachineRepositoryList';
+import { useLocalizedFunctions } from '@/services/functionsService';
 
 const { Option } = Select;
 const { Search } = Input;
@@ -189,6 +190,13 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
 
 
+
+  // Get machine functions
+  const { getFunctionsByCategory } = useLocalizedFunctions();
+  const machineFunctions = useMemo(() => 
+    getFunctionsByCategory('machine').filter(func => func.showInMenu !== false), 
+    [getFunctionsByCategory]
+  );
 
   // Machine columns
   const columns: ColumnsType<Machine> = React.useMemo(() => {
@@ -338,18 +346,48 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                     key: 'functions',
                     label: t('machines:runAction'),
                     icon: <FunctionOutlined />,
-                    onClick: () => {
-                      if (onFunctionsMachine) {
-                        onFunctionsMachine(record)
-                        // Mark this machine for refresh when action completes
-                        if (externalRefreshKeys === undefined) {
-                          setInternalRefreshKeys(prev => ({
-                            ...prev,
-                            [record.machineName]: Date.now()
-                          }))
+                    children: [
+                      ...machineFunctions.map((func) => ({
+                        key: `function-${func.name}`,
+                        label: (
+                          <span title={func.description}>
+                            {func.name}
+                          </span>
+                        ),
+                        onClick: () => {
+                          if (onFunctionsMachine) {
+                            onFunctionsMachine(record, func.name);
+                            // Mark this machine for refresh when action completes
+                            if (externalRefreshKeys === undefined) {
+                              setInternalRefreshKeys(prev => ({
+                                ...prev,
+                                [record.machineName]: Date.now()
+                              }))
+                            }
+                          }
+                        }
+                      })),
+                      {
+                        type: 'divider'
+                      },
+                      {
+                        key: 'advanced',
+                        label: t('machines:advanced'),
+                        icon: <FunctionOutlined />,
+                        onClick: () => {
+                          if (onFunctionsMachine) {
+                            onFunctionsMachine(record);
+                            // Mark this machine for refresh when action completes
+                            if (externalRefreshKeys === undefined) {
+                              setInternalRefreshKeys(prev => ({
+                                ...prev,
+                                [record.machineName]: Date.now()
+                              }))
+                            }
+                          }
                         }
                       }
-                    }
+                    ]
                   },
                   {
                     key: 'test',
@@ -412,7 +450,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     }
 
     return baseColumns;
-  }, [isExpertMode, uiMode, showActions, t, handleDelete, dropdownData, onEditMachine, onVaultMachine, onFunctionsMachine, onCreateRepository, executePingForMachineAndWait]);
+  }, [isExpertMode, uiMode, showActions, t, handleDelete, dropdownData, onEditMachine, onVaultMachine, onFunctionsMachine, onCreateRepository, executePingForMachineAndWait, machineFunctions]);
 
   // Render filters section
   const renderFilters = () => {

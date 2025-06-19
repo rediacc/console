@@ -1,4 +1,5 @@
 import { showMessage } from '@/utils/messages'
+import { queueMonitoringService } from '@/services/queueMonitoringService'
 
 interface QueuedItem {
   id: string
@@ -126,9 +127,6 @@ class QueueManagerService {
    */
   private async startMonitoringTask(taskId: string, data: QueuedItem['data']) {
     try {
-      // Import monitoring service dynamically to avoid circular dependency
-      const { queueMonitoringService } = await import('@/services/queueMonitoringService')
-      
       console.log(`Starting monitoring for priority ${data.priority} task ${taskId}`)
       queueMonitoringService.addTask(
         taskId,
