@@ -43,6 +43,10 @@
     "network": {
       "name": "Network Functions",
       "description": "Network and socket mapping operations"
+    },
+    "container": {
+      "name": "Container Functions",
+      "description": "Docker container management operations"
     }
   },
   "functions": {
@@ -295,6 +299,116 @@
     "ping": {
       "name": "ping",
       "description": "Test network connectivity to the machine"
+    },
+    "service_list": {
+      "name": "service_list",
+      "description": "List systemd services for a repository"
+    },
+    "container_list": {
+      "name": "container_list",
+      "description": "List Docker containers for a repository"
+    },
+    "container_start": {
+      "name": "container_start",
+      "description": "Start a Docker container",
+      "params": {
+        "container": {
+          "label": "Container",
+          "help": "Container name or ID"
+        }
+      }
+    },
+    "container_stop": {
+      "name": "container_stop",
+      "description": "Stop a running Docker container",
+      "params": {
+        "container": {
+          "label": "Container",
+          "help": "Container name or ID"
+        }
+      }
+    },
+    "container_restart": {
+      "name": "container_restart",
+      "description": "Restart a Docker container",
+      "params": {
+        "container": {
+          "label": "Container",
+          "help": "Container name or ID"
+        }
+      }
+    },
+    "container_remove": {
+      "name": "container_remove",
+      "description": "Remove a Docker container",
+      "params": {
+        "container": {
+          "label": "Container",
+          "help": "Container name or ID"
+        },
+        "force": {
+          "label": "Force Remove",
+          "help": "Force removal of running container"
+        }
+      }
+    },
+    "container_logs": {
+      "name": "container_logs",
+      "description": "View Docker container logs",
+      "params": {
+        "container": {
+          "label": "Container",
+          "help": "Container name or ID"
+        },
+        "lines": {
+          "label": "Lines",
+          "help": "Number of lines to show (default: 100)"
+        },
+        "follow": {
+          "label": "Follow Logs",
+          "help": "Follow log output in real-time"
+        }
+      }
+    },
+    "container_inspect": {
+      "name": "container_inspect",
+      "description": "Inspect Docker container details",
+      "params": {
+        "container": {
+          "label": "Container",
+          "help": "Container name or ID"
+        }
+      }
+    },
+    "container_stats": {
+      "name": "container_stats",
+      "description": "Display Docker container resource usage statistics",
+      "params": {
+        "container": {
+          "label": "Container",
+          "help": "Container name or ID (optional - shows all if empty)"
+        }
+      }
+    },
+    "container_pause": {
+      "name": "container_pause",
+      "description": "Pause a running Docker container",
+      "params": {
+        "container": {
+          "label": "Container",
+          "help": "Container name or ID"
+        }
+      }
+    },
+    "container_unpause": {
+      "name": "container_unpause",
+      "description": "Unpause a paused Docker container",
+      "params": {
+        "container": {
+          "label": "Container",
+          "help": "Container name or ID"
+        }
+      }
     }
   }
 }

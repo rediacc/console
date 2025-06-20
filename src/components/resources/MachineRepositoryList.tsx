@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown } from 'antd'
-import { InboxOutlined, CheckCircleOutlined, CloseCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined } from '@ant-design/icons'
+import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Empty } from 'antd'
+import { InboxOutlined, CheckCircleOutlined, CloseCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, PlusOutlined, MinusOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { type QueueFunction, useCreateQueueItem } from '@/api/queries/queue'
 import { useQueueItemTrace } from '@/api/queries/queue'
@@ -42,8 +42,50 @@ interface MachineRepositoryListProps {
   onActionComplete?: () => void
 }
 
+// Component to monitor a task and update state when complete
+const TaskMonitor: React.FC<{
+  taskId: string | null
+  onComplete: (data: any) => void
+  onError: (error: string) => void
+}> = ({ taskId, onComplete, onError }) => {
+  const { data: traceData } = useQueueItemTrace(taskId, !!taskId)
+  
+  useEffect(() => {
+    if (!traceData) return
+    
+    if (traceData?.queueDetails?.status === 'COMPLETED') {
+      if (traceData?.responseVaultContent?.vaultContent) {
+        try {
+          const vaultContent = JSON.parse(traceData.responseVaultContent.vaultContent)
+          if (vaultContent.result) {
+            const result = JSON.parse(vaultContent.result)
+            if (result.stdout) {
+              const parsedResult = JSON.parse(result.stdout)
+              onComplete(parsedResult)
+            } else if (result.command_output) {
+              // Some functions return command_output instead of stdout
+              const parsedResult = JSON.parse(result.command_output)
+              onComplete(parsedResult)
+            }
+          }
+        } catch (error) {
+          console.error('Failed to parse response:', error)
+          onError('Failed to parse response')
+        }
+      } else {
+        onError('No response data received')
+      }
+    } else if (traceData?.queueDetails?.status === 'FAILED' || traceData?.queueDetails?.status === 'CANCELED') {
+      onError(traceData?.responseVaultContent?.error || 'Task failed')
+    }
+  }, [traceData, onComplete, onError])
+  
+  return null
+}
+
 export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete }) => {
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
+  const { Text } = Typography
   const [repositories, setRepositories] = useState<Repository[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -57,6 +99,13 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     visible: boolean
     taskId: string | null
   }>({ visible: false, taskId: null })
+  const [expandedRows, setExpandedRows] = useState<string[]>([])
+  const [servicesData, setServicesData] = useState<Record<string, any>>({})
+  const [containersData, setContainersData] = useState<Record<string, any>>({})
+  const [loadingServices, setLoadingServices] = useState<Record<string, boolean>>({})
+  const [loadingContainers, setLoadingContainers] = useState<Record<string, boolean>>({})
+  const [servicesTaskIds, setServicesTaskIds] = useState<Record<string, string>>({})
+  const [containersTaskIds, setContainersTaskIds] = useState<Record<string, string>>({})
   
   // Use direct queue item creation for list operations (not managed)
   const createQueueItemMutation = useCreateQueueItem()
@@ -355,6 +404,175 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     }
   }
 
+  const fetchServicesData = async (repository: Repository) => {
+    setLoadingServices(prev => ({ ...prev, [repository.name]: true }))
+    try {
+      // Find team vault data
+      const team = teams?.find(t => t.teamName === machine.teamName)
+      
+      // Find the repository vault data
+      const repositoryData = teamRepositories.find(r => r.repositoryName === repository.name)
+      
+      if (!repositoryData || !repositoryData.vaultContent) {
+        showMessage('error', t('resources:repositories.noCredentialsFound', { name: repository.name }))
+        setLoadingServices(prev => ({ ...prev, [repository.name]: false }))
+        return
+      }
+      
+      // Build queue vault for service_list
+      const queueVault = await buildQueueVault({
+        teamName: machine.teamName,
+        machineName: machine.machineName,
+        bridgeName: machine.bridgeName,
+        functionName: 'service_list',
+        params: {
+          repo: repositoryData.repositoryGuid
+        },
+        priority: 4,
+        description: `List services for ${repository.name}`,
+        addedVia: 'machine-repository-list-services',
+        teamVault: team?.vaultContent || '{}',
+        machineVault: machine.vaultContent || '{}',
+        repositoryGuid: repositoryData.repositoryGuid,
+        repositoryVault: repositoryData.vaultContent
+      })
+      
+      const response = await managedQueueMutation.mutateAsync({
+        teamName: machine.teamName,
+        machineName: machine.machineName,
+        bridgeName: machine.bridgeName,
+        queueVault,
+        priority: 4
+      })
+      
+      if (response?.taskId) {
+        setServicesTaskIds(prev => ({ ...prev, [repository.name]: response.taskId }))
+      }
+    } catch (error) {
+      console.error('Failed to fetch services:', error)
+      showMessage('error', t('resources:repositories.errorLoadingServices'))
+      setLoadingServices(prev => ({ ...prev, [repository.name]: false }))
+    }
+  }
+
+  const fetchContainersData = async (repository: Repository) => {
+    setLoadingContainers(prev => ({ ...prev, [repository.name]: true }))
+    try {
+      // Find team vault data
+      const team = teams?.find(t => t.teamName === machine.teamName)
+      
+      // Find the repository vault data
+      const repositoryData = teamRepositories.find(r => r.repositoryName === repository.name)
+      
+      if (!repositoryData || !repositoryData.vaultContent) {
+        showMessage('error', t('resources:repositories.noCredentialsFound', { name: repository.name }))
+        setLoadingContainers(prev => ({ ...prev, [repository.name]: false }))
+        return
+      }
+      
+      // Build queue vault for container_list
+      const queueVault = await buildQueueVault({
+        teamName: machine.teamName,
+        machineName: machine.machineName,
+        bridgeName: machine.bridgeName,
+        functionName: 'container_list',
+        params: {
+          repo: repositoryData.repositoryGuid
+        },
+        priority: 4,
+        description: `List containers for ${repository.name}`,
+        addedVia: 'machine-repository-list-containers',
+        teamVault: team?.vaultContent || '{}',
+        machineVault: machine.vaultContent || '{}',
+        repositoryGuid: repositoryData.repositoryGuid,
+        repositoryVault: repositoryData.vaultContent
+      })
+      
+      const response = await managedQueueMutation.mutateAsync({
+        teamName: machine.teamName,
+        machineName: machine.machineName,
+        bridgeName: machine.bridgeName,
+        queueVault,
+        priority: 4
+      })
+      
+      if (response?.taskId) {
+        setContainersTaskIds(prev => ({ ...prev, [repository.name]: response.taskId }))
+      }
+    } catch (error) {
+      console.error('Failed to fetch containers:', error)
+      showMessage('error', t('resources:repositories.errorLoadingContainers'))
+      setLoadingContainers(prev => ({ ...prev, [repository.name]: false }))
+    }
+  }
+
+  const handleContainerAction = async (repository: Repository, container: any, action: string) => {
+    try {
+      // Find team vault data
+      const team = teams?.find(t => t.teamName === machine.teamName)
+      
+      // Find the repository vault data
+      const repositoryData = teamRepositories.find(r => r.repositoryName === repository.name)
+      
+      if (!repositoryData || !repositoryData.vaultContent) {
+        showMessage('error', t('resources:repositories.noCredentialsFound', { name: repository.name }))
+        return
+      }
+      
+      // Build params based on action
+      const params: Record<string, any> = {
+        repo: repositoryData.repositoryGuid,
+        container: container.id || container.name
+      }
+      
+      // Add action-specific params
+      if (action === 'container_remove') {
+        params.force = 'false' // Default to safe remove
+      } else if (action === 'container_logs') {
+        params.lines = '100'
+        params.follow = 'false'
+      }
+      
+      // Build queue vault
+      const queueVault = await buildQueueVault({
+        teamName: machine.teamName,
+        machineName: machine.machineName,
+        bridgeName: machine.bridgeName,
+        functionName: action,
+        params,
+        priority: 4,
+        description: `${action} ${container.name}`,
+        addedVia: 'machine-repository-list-container-action',
+        teamVault: team?.vaultContent || '{}',
+        machineVault: machine.vaultContent || '{}',
+        repositoryGuid: repositoryData.repositoryGuid,
+        repositoryVault: repositoryData.vaultContent
+      })
+      
+      const response = await managedQueueMutation.mutateAsync({
+        teamName: machine.teamName,
+        machineName: machine.machineName,
+        bridgeName: machine.bridgeName,
+        queueVault,
+        priority: 4
+      })
+      
+      if (response?.taskId) {
+        showMessage('success', t('resources:repositories.queueItemCreated'))
+        setQueueTraceModal({ visible: true, taskId: response.taskId })
+        
+        // Refresh containers data after action
+        setTimeout(() => {
+          fetchContainersData(repository)
+        }, 2000)
+      } else if (response?.isQueued) {
+        showMessage('info', t('resources:repositories.highestPriorityQueued'))
+      }
+    } catch (error) {
+      showMessage('error', t('resources:repositories.failedToCreateQueueItem'))
+    }
+  }
+
   const handleFunctionSubmit = async (functionData: {
     function: QueueFunction
     params: Record<string, any>
@@ -418,7 +636,270 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     }
   }
 
+  const renderExpandedRow = (record: Repository) => {
+    const services = servicesData[record.name]
+    const containers = containersData[record.name]
+    const isLoadingServices = loadingServices[record.name]
+    const isLoadingContainers = loadingContainers[record.name]
+    
+    // Services columns
+    const serviceColumns = [
+      {
+        title: t('resources:repositories.serviceName'),
+        dataIndex: 'name',
+        key: 'name',
+        render: (name: string) => <Tag color="blue">{name}</Tag>,
+      },
+      {
+        title: t('resources:repositories.activeState'),
+        dataIndex: 'active_state',
+        key: 'active_state',
+        render: (state: string) => (
+          <Tag color={state === 'active' ? 'success' : state === 'failed' ? 'error' : 'default'}>
+            {state}
+          </Tag>
+        ),
+      },
+      {
+        title: t('resources:repositories.memory'),
+        dataIndex: 'memory_human',
+        key: 'memory_human',
+        render: (memory: string) => memory || '-',
+      },
+      {
+        title: t('resources:repositories.pid'),
+        dataIndex: 'main_pid',
+        key: 'main_pid',
+        render: (pid: number) => pid > 0 ? pid : '-',
+      },
+      {
+        title: t('resources:repositories.restarts'),
+        dataIndex: 'restart_count',
+        key: 'restart_count',
+        render: (count: number) => <Tag>{count}</Tag>,
+      },
+    ]
+    
+    // Container columns
+    const containerColumns = [
+      {
+        title: t('resources:repositories.containerName'),
+        dataIndex: 'name',
+        key: 'name',
+        render: (name: string) => <Tag color="cyan">{name}</Tag>,
+      },
+      {
+        title: t('resources:repositories.containerImage'),
+        dataIndex: 'image',
+        key: 'image',
+        ellipsis: true,
+      },
+      {
+        title: t('resources:repositories.containerStatus'),
+        dataIndex: 'state',
+        key: 'state',
+        render: (state: string, record: any) => (
+          <Space>
+            <Tag color={state === 'running' ? 'success' : 'default'}>
+              {state}
+            </Tag>
+            {record.status && <Text type="secondary" style={{ fontSize: 12 }}>{record.status}</Text>}
+          </Space>
+        ),
+      },
+      {
+        title: t('resources:repositories.containerCPU'),
+        dataIndex: 'cpu_percent',
+        key: 'cpu_percent',
+        render: (cpu: string) => cpu || '-',
+      },
+      {
+        title: t('resources:repositories.containerMemory'),
+        dataIndex: 'memory_usage',
+        key: 'memory_usage',
+        render: (memory: string) => memory || '-',
+      },
+      {
+        title: t('common:table.actions'),
+        key: 'actions',
+        width: 120,
+        render: (_: any, container: any) => {
+          const menuItems = []
+          
+          if (container.state === 'running') {
+            // Running container actions
+            menuItems.push({
+              key: 'stop',
+              label: t('functions:functions.container_stop.name'),
+              icon: <StopOutlined />,
+              onClick: () => handleContainerAction(record, container, 'container_stop')
+            })
+            menuItems.push({
+              key: 'restart',
+              label: t('functions:functions.container_restart.name'),
+              icon: <ReloadOutlined />,
+              onClick: () => handleContainerAction(record, container, 'container_restart')
+            })
+            menuItems.push({
+              key: 'pause',
+              label: t('functions:functions.container_pause.name'),
+              icon: <PauseCircleOutlined />,
+              onClick: () => handleContainerAction(record, container, 'container_pause')
+            })
+          } else if (container.state === 'paused') {
+            // Paused container actions
+            menuItems.push({
+              key: 'unpause',
+              label: t('functions:functions.container_unpause.name'),
+              icon: <PlayCircleOutlined />,
+              onClick: () => handleContainerAction(record, container, 'container_unpause')
+            })
+          } else {
+            // Stopped container actions
+            menuItems.push({
+              key: 'start',
+              label: t('functions:functions.container_start.name'),
+              icon: <PlayCircleOutlined />,
+              onClick: () => handleContainerAction(record, container, 'container_start')
+            })
+            menuItems.push({
+              key: 'remove',
+              label: t('functions:functions.container_remove.name'),
+              icon: <DeleteOutlined />,
+              onClick: () => handleContainerAction(record, container, 'container_remove')
+            })
+          }
+          
+          // Always available actions
+          menuItems.push({ type: 'divider' })
+          menuItems.push({
+            key: 'logs',
+            label: t('functions:functions.container_logs.name'),
+            icon: <FileTextOutlined />,
+            onClick: () => handleContainerAction(record, container, 'container_logs')
+          })
+          menuItems.push({
+            key: 'inspect',
+            label: t('functions:functions.container_inspect.name'),
+            icon: <LineChartOutlined />,
+            onClick: () => handleContainerAction(record, container, 'container_inspect')
+          })
+          menuItems.push({
+            key: 'stats',
+            label: t('functions:functions.container_stats.name'),
+            icon: <LineChartOutlined />,
+            onClick: () => handleContainerAction(record, container, 'container_stats')
+          })
+          
+          return (
+            <Dropdown
+              menu={{ items: menuItems }}
+              trigger={['click']}
+            >
+              <Button
+                type="primary"
+                size="small"
+                icon={<FunctionOutlined />}
+                loading={managedQueueMutation.isPending}
+              >
+                {t('machines:remote')}
+              </Button>
+            </Dropdown>
+          )
+        },
+      },
+    ]
+    
+    return (
+      <div style={{ padding: '16px' }}>
+        <Typography.Title level={5}>{t('resources:repositories.servicesAndContainers')}</Typography.Title>
+        
+        {/* Services Table */}
+        <div style={{ marginBottom: 24 }}>
+          <Typography.Title level={5} style={{ marginBottom: 16 }}>
+            {t('resources:repositories.servicesList')}
+          </Typography.Title>
+          {isLoadingServices ? (
+            <div style={{ textAlign: 'center', padding: 20 }}>
+              <Spin tip={t('resources:repositories.loadingServices')} />
+            </div>
+          ) : services?.error ? (
+            <Alert message={t('resources:repositories.errorLoadingServices')} description={services.error} type="error" />
+          ) : services?.services && services.services.length > 0 ? (
+            <Table
+              columns={serviceColumns}
+              dataSource={services.services}
+              rowKey="name"
+              size="small"
+              pagination={false}
+            />
+          ) : (
+            <Empty description={t('resources:repositories.noServices')} />
+          )}
+        </div>
+        
+        {/* Containers Table */}
+        <div>
+          <Typography.Title level={5} style={{ marginBottom: 16 }}>
+            {t('resources:repositories.containersList')}
+          </Typography.Title>
+          {isLoadingContainers ? (
+            <div style={{ textAlign: 'center', padding: 20 }}>
+              <Spin tip={t('resources:repositories.loadingContainers')} />
+            </div>
+          ) : containers?.error ? (
+            <Alert message={t('resources:repositories.errorLoadingContainers')} description={containers.error} type="error" />
+          ) : containers?.containers && containers.containers.length > 0 ? (
+            <Table
+              columns={containerColumns}
+              dataSource={containers.containers}
+              rowKey="id"
+              size="small"
+              pagination={false}
+            />
+          ) : (
+            <Empty description={t('resources:repositories.noContainers')} />
+          )}
+        </div>
+      </div>
+    )
+  }
+
   const columns: ColumnsType<Repository> = [
+    {
+      title: '',
+      key: 'expand',
+      width: 50,
+      render: (_: any, record: Repository) => {
+        // Only show expand button if repository has services or containers
+        if (!record.mounted || (!record.has_services && record.container_count === 0)) {
+          return null
+        }
+        
+        const isExpanded = expandedRows.includes(record.name)
+        return (
+          <Button
+            type="text"
+            size="small"
+            icon={isExpanded ? <MinusOutlined /> : <PlusOutlined />}
+            onClick={() => {
+              if (isExpanded) {
+                setExpandedRows(expandedRows.filter(key => key !== record.name))
+              } else {
+                setExpandedRows([...expandedRows, record.name])
+                // Always fetch fresh services and containers data when expanding
+                if (record.has_services) {
+                  fetchServicesData(record)
+                }
+                if (record.docker_running && record.accessible) {
+                  fetchContainersData(record)
+                }
+              }
+            }}
+          />
+        )
+      },
+    },
     {
       title: t('resources:repositories.repositoryName'),
       dataIndex: 'name',
@@ -642,10 +1123,69 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         rowKey="name"
         size="small"
         pagination={false}
+        expandable={{
+          expandedRowRender: renderExpandedRow,
+          expandedRowKeys: expandedRows,
+          onExpandedRowsChange: (keys) => setExpandedRows(keys as string[]),
+          rowExpandable: (record) => record.mounted && (record.has_services || record.container_count > 0),
+          expandIcon: () => null, // Hide default expand icon since we have custom button
+        }}
         locale={{
           emptyText: t('resources:repositories.noRepositories')
         }}
       />
+      
+      {/* Task Monitors for Services */}
+      {Object.entries(servicesTaskIds).map(([repoName, taskId]) => (
+        <TaskMonitor
+          key={`service-${repoName}`}
+          taskId={taskId}
+          onComplete={(data) => {
+            setServicesData(prev => ({ ...prev, [repoName]: data }))
+            setLoadingServices(prev => ({ ...prev, [repoName]: false }))
+            setServicesTaskIds(prev => {
+              const newIds = { ...prev }
+              delete newIds[repoName]
+              return newIds
+            })
+          }}
+          onError={(error) => {
+            setServicesData(prev => ({ ...prev, [repoName]: { error } }))
+            setLoadingServices(prev => ({ ...prev, [repoName]: false }))
+            setServicesTaskIds(prev => {
+              const newIds = { ...prev }
+              delete newIds[repoName]
+              return newIds
+            })
+          }}
+        />
+      ))}
+      
+      {/* Task Monitors for Containers */}
+      {Object.entries(containersTaskIds).map(([repoName, taskId]) => (
+        <TaskMonitor
+          key={`container-${repoName}`}
+          taskId={taskId}
+          onComplete={(data) => {
+            setContainersData(prev => ({ ...prev, [repoName]: data }))
+            setLoadingContainers(prev => ({ ...prev, [repoName]: false }))
+            setContainersTaskIds(prev => {
+              const newIds = { ...prev }
+              delete newIds[repoName]
+              return newIds
+            })
+          }}
+          onError={(error) => {
+            setContainersData(prev => ({ ...prev, [repoName]: { error } }))
+            setLoadingContainers(prev => ({ ...prev, [repoName]: false }))
+            setContainersTaskIds(prev => {
+              const newIds = { ...prev }
+              delete newIds[repoName]
+              return newIds
+            })
+          }}
+        />
+      ))}
       
       {/* Function Selection Modal */}
       <FunctionSelectionModal

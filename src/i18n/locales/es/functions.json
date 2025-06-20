@@ -43,6 +43,10 @@
     "network": {
       "name": "Funciones de Red",
       "description": "Operaciones de red y mapeo de sockets"
+    },
+    "container": {
+      "name": "Funciones de Contenedor",
+      "description": "Operaciones de gestión de contenedores Docker"
     }
   },
   "functions": { 
@@ -248,6 +252,116 @@
     "ping": {
       "name": "ping",
       "description": "Probar la conectividad de red con la máquina"
+    },
+    "service_list": {
+      "name": "service_list",
+      "description": "Listar servicios systemd para un repositorio"
+    },
+    "container_list": {
+      "name": "container_list",
+      "description": "Listar contenedores Docker para un repositorio"
+    },
+    "container_start": {
+      "name": "container_start",
+      "description": "Iniciar un contenedor Docker",
+      "params": {
+        "container": {
+          "label": "Contenedor",
+          "help": "Nombre o ID del contenedor"
+        }
+      }
+    },
+    "container_stop": {
+      "name": "container_stop",
+      "description": "Detener un contenedor Docker en ejecución",
+      "params": {
+        "container": {
+          "label": "Contenedor",
+          "help": "Nombre o ID del contenedor"
+        }
+      }
+    },
+    "container_restart": {
+      "name": "container_restart",
+      "description": "Reiniciar un contenedor Docker",
+      "params": {
+        "container": {
+          "label": "Contenedor",
+          "help": "Nombre o ID del contenedor"
+        }
+      }
+    },
+    "container_remove": {
+      "name": "container_remove",
+      "description": "Eliminar un contenedor Docker",
+      "params": {
+        "container": {
+          "label": "Contenedor",
+          "help": "Nombre o ID del contenedor"
+        },
+        "force": {
+          "label": "Forzar Eliminación",
+          "help": "Forzar eliminación de contenedor en ejecución"
+        }
+      }
+    },
+    "container_logs": {
+      "name": "container_logs",
+      "description": "Ver registros del contenedor Docker",
+      "params": {
+        "container": {
+          "label": "Contenedor",
+          "help": "Nombre o ID del contenedor"
+        },
+        "lines": {
+          "label": "Líneas",
+          "help": "Número de líneas a mostrar (predeterminado: 100)"
+        },
+        "follow": {
+          "label": "Seguir Registros",
+          "help": "Seguir salida de registros en tiempo real"
+        }
+      }
+    },
+    "container_inspect": {
+      "name": "container_inspect",
+      "description": "Inspeccionar detalles del contenedor Docker",
+      "params": {
+        "container": {
+          "label": "Contenedor",
+          "help": "Nombre o ID del contenedor"
+        }
+      }
+    },
+    "container_stats": {
+      "name": "container_stats",
+      "description": "Mostrar estadísticas de uso de recursos del contenedor Docker",
+      "params": {
+        "container": {
+          "label": "Contenedor",
+          "help": "Nombre o ID del contenedor (opcional - muestra todos si está vacío)"
+        }
+      }
+    },
+    "container_pause": {
+      "name": "container_pause",
+      "description": "Pausar un contenedor Docker en ejecución",
+      "params": {
+        "container": {
+          "label": "Contenedor",
+          "help": "Nombre o ID del contenedor"
+        }
+      }
+    },
+    "container_unpause": {
+      "name": "container_unpause",
+      "description": "Reanudar un contenedor Docker pausado",
+      "params": {
+        "container": {
+          "label": "Contenedor",
+          "help": "Nombre o ID del contenedor"
+        }
+      }
     }
   }
 }

@@ -3,7 +3,8 @@
     "machine",
     "repository",
     "backup",
-    "network"
+    "network",
+    "container"
   ],
   "functions": {
     "setup": {
@@ -377,6 +378,234 @@
           "required": true
         },
         "plugin": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    "service_list": {
+      "name": "service_list",
+      "category": "repository",
+      "showInMenu": false,
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
+      "params": {
+        "repo": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    "container_list": {
+      "name": "container_list",
+      "category": "repository",
+      "showInMenu": false,
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
+      "params": {
+        "repo": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    "container_start": {
+      "name": "container_start",
+      "category": "container",
+      "showInMenu": false,
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
+      "params": {
+        "repo": {
+          "type": "string",
+          "required": true
+        },
+        "container": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    "container_stop": {
+      "name": "container_stop",
+      "category": "container",
+      "showInMenu": false,
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
+      "params": {
+        "repo": {
+          "type": "string",
+          "required": true
+        },
+        "container": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    "container_restart": {
+      "name": "container_restart",
+      "category": "container",
+      "showInMenu": false,
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
+      "params": {
+        "repo": {
+          "type": "string",
+          "required": true
+        },
+        "container": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    "container_remove": {
+      "name": "container_remove",
+      "category": "container",
+      "showInMenu": false,
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
+      "params": {
+        "repo": {
+          "type": "string",
+          "required": true
+        },
+        "container": {
+          "type": "string",
+          "required": true
+        },
+        "force": {
+          "type": "string",
+          "default": "false",
+          "options": ["true", "false"],
+          "ui": "dropdown"
+        }
+      }
+    },
+    "container_logs": {
+      "name": "container_logs",
+      "category": "container",
+      "showInMenu": false,
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
+      "params": {
+        "repo": {
+          "type": "string",
+          "required": true
+        },
+        "container": {
+          "type": "string",
+          "required": true
+        },
+        "lines": {
+          "type": "string",
+          "default": "100"
+        },
+        "follow": {
+          "type": "string",
+          "default": "false",
+          "options": ["true", "false"],
+          "ui": "dropdown"
+        }
+      }
+    },
+    "container_inspect": {
+      "name": "container_inspect",
+      "category": "container",
+      "showInMenu": false,
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
+      "params": {
+        "repo": {
+          "type": "string",
+          "required": true
+        },
+        "container": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    "container_stats": {
+      "name": "container_stats",
+      "category": "container",
+      "showInMenu": false,
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
+      "params": {
+        "repo": {
+          "type": "string",
+          "required": true
+        },
+        "container": {
+          "type": "string",
+          "required": false
+        }
+      }
+    },
+    "container_pause": {
+      "name": "container_pause",
+      "category": "container",
+      "showInMenu": false,
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
+      "params": {
+        "repo": {
+          "type": "string",
+          "required": true
+        },
+        "container": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    "container_unpause": {
+      "name": "container_unpause",
+      "category": "container",
+      "showInMenu": false,
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
+      "params": {
+        "repo": {
+          "type": "string",
+          "required": true
+        },
+        "container": {
           "type": "string",
           "required": true
         }
