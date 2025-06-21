@@ -1312,6 +1312,9 @@ const ResourcesPage: React.FC = () => {
                         case 'machines':
                           openUnifiedModal('machine', 'create')
                           break
+                        case 'repositories':
+                          openUnifiedModal('repository', 'create')
+                          break
                         case 'storage':
                           openUnifiedModal('storage', 'create')
                           break

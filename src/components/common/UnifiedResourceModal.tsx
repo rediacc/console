@@ -334,7 +334,45 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       return [nameField]
     }
 
-    if (uiMode === 'simple') return [nameField]
+    if (uiMode === 'simple') {
+      const simpleFields = [nameField]
+      
+      // For repository creation, we need to include size field and potentially machine selection
+      if (resourceType === 'repository') {
+        // Check if machine is prefilled
+        const isPrefilledMachine = existingData?.prefilledMachine
+        
+        // Get machines for the team (use existingData teamName if available)
+        const teamName = existingData?.teamName || 'Private Team'
+        const teamMachines = dropdownData?.machinesByTeam?.find(t => t.teamName === teamName)?.machines || []
+        
+        // Only show machine selection if not prefilled
+        if (!isPrefilledMachine) {
+          simpleFields.push({
+            name: 'machineName',
+            label: t('machines:machine'),
+            placeholder: t('machines:placeholders.selectMachine'),
+            required: false,
+            type: 'select' as const,
+            options: teamMachines.map((m: any) => ({ value: m.value, label: m.label })),
+            helperText: t('repositories.machineHelperText', { defaultValue: 'Optional: Select a machine to provision storage' })
+          })
+        }
+        
+        // Size field for repository provisioning
+        simpleFields.push({
+          name: 'size',
+          label: t('repositories.size'),
+          placeholder: t('repositories.placeholders.enterSize'),
+          required: false,
+          type: 'size' as const,
+          sizeUnits: ['G', 'T'],
+          helperText: t('repositories.sizeHelperText', { defaultValue: 'Optional: Specify size if provisioning storage (e.g., 10G, 100G, 1T)' })
+        })
+      }
+      
+      return simpleFields
+    }
 
     const fields = []
     if (!isTeamPreselected) fields.push(createTeamField())
@@ -436,18 +474,34 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   // Handle form submission
   const handleSubmit = async (data: any) => {
     if (uiMode === 'simple' && mode === 'create') {
-      Object.assign(data, {
-        teamName: 'Private Team',
-        ...(resourceType === 'machine' && {
-          regionName: 'Default Region',
-          bridgeName: 'Global Bridges'
-        })
-      })
+      // Only set defaults if not already provided
+      const defaults: any = {}
+      
+      // Preserve teamName from existingData if available (e.g., when creating repo from machine)
+      if (!data.teamName) {
+        if (existingData?.teamName) {
+          defaults.teamName = existingData.teamName
+        } else {
+          defaults.teamName = 'Private Team'
+        }
+      }
+      
+      // Set machine-specific defaults
+      if (resourceType === 'machine') {
+        defaults.regionName = 'Default Region'
+        defaults.bridgeName = 'Global Bridges'
+      }
+      
+      Object.assign(data, defaults)
     }
     
     // For repository creation from machine, ensure machine name is included
     if (resourceType === 'repository' && existingData?.machineName && existingData?.prefilledMachine) {
       data.machineName = existingData.machineName
+      // Also ensure teamName is preserved
+      if (existingData?.teamName && !data.teamName) {
+        data.teamName = existingData.teamName
+      }
     }
     
     await onSubmit(data)
