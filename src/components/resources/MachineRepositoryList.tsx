@@ -13,6 +13,7 @@ import { useTeams } from '@/api/queries/teams'
 import { useRepositories } from '@/api/queries/repositories'
 import { queueMonitoringService } from '@/services/queueMonitoringService'
 import queueManagerService from '@/services/queueManagerService'
+import { repositoryDataService } from '@/services/repositoryDataService'
 import type { ColumnsType } from 'antd/es/table'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
@@ -231,6 +232,74 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               });
               
               setRepositories(mappedRepositories)
+              
+              // Process services data if included in response
+              if (commandOutput.services && Array.isArray(commandOutput.services)) {
+                const servicesMap: Record<string, any> = {}
+                
+                // Initialize empty services array for all repositories
+                mappedRepositories.forEach((repo: Repository) => {
+                  servicesMap[repo.name] = { services: [] }
+                })
+                
+                // Add services to their respective repositories
+                commandOutput.services.forEach((service: any) => {
+                  // Find the repository name for this service
+                  const repoGuid = service.repository
+                  const matchingRepo = teamRepositories.find(r => r.repositoryGuid === repoGuid)
+                  if (matchingRepo) {
+                    const repoName = matchingRepo.repositoryName
+                    if (servicesMap[repoName]) {
+                      servicesMap[repoName].services.push(service)
+                    }
+                  }
+                })
+                
+                console.log('Services data processed:', servicesMap)
+                
+                // Update all services data at once
+                setServicesData(servicesMap)
+                // Clear loading states for all repositories
+                const loadingStates: Record<string, boolean> = {}
+                mappedRepositories.forEach((repo: Repository) => {
+                  loadingStates[repo.name] = false
+                })
+                setLoadingServices(loadingStates)
+              }
+              
+              // Process containers data if included in response
+              if (commandOutput.containers && Array.isArray(commandOutput.containers)) {
+                const containersMap: Record<string, any> = {}
+                
+                // Initialize empty containers array for all repositories
+                mappedRepositories.forEach((repo: Repository) => {
+                  containersMap[repo.name] = { containers: [] }
+                })
+                
+                // Add containers to their respective repositories
+                commandOutput.containers.forEach((container: any) => {
+                  // Find the repository name for this container
+                  const repoGuid = container.repository
+                  const matchingRepo = teamRepositories.find(r => r.repositoryGuid === repoGuid)
+                  if (matchingRepo) {
+                    const repoName = matchingRepo.repositoryName
+                    if (containersMap[repoName]) {
+                      containersMap[repoName].containers.push(container)
+                    }
+                  }
+                })
+                
+                console.log('Containers data processed:', containersMap)
+                
+                // Update all containers data at once
+                setContainersData(containersMap)
+                // Clear loading states for all repositories
+                const loadingStates: Record<string, boolean> = {}
+                mappedRepositories.forEach((repo: Repository) => {
+                  loadingStates[repo.name] = false
+                })
+                setLoadingContainers(loadingStates)
+              }
             } else {
               setRepositories([])
             }
@@ -812,7 +881,25 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     
     return (
       <div style={{ padding: '16px' }}>
-        <Typography.Title level={5}>{t('resources:repositories.servicesAndContainers')}</Typography.Title>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <Typography.Title level={5} style={{ margin: 0 }}>{t('resources:repositories.servicesAndContainers')}</Typography.Title>
+          <Button
+            type="text"
+            size="small"
+            icon={<ReloadOutlined />}
+            onClick={() => {
+              // Refresh both services and containers data
+              if (record.has_services) {
+                fetchServicesData(record)
+              }
+              if (record.docker_running && record.accessible) {
+                fetchContainersData(record)
+              }
+            }}
+          >
+            {t('common:refresh')}
+          </Button>
+        </div>
         
         {/* Services Table */}
         <div style={{ marginBottom: 24 }}>
@@ -887,11 +974,11 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 setExpandedRows(expandedRows.filter(key => key !== record.name))
               } else {
                 setExpandedRows([...expandedRows, record.name])
-                // Always fetch fresh services and containers data when expanding
-                if (record.has_services) {
+                // Only fetch if we don't already have the data from the initial list call
+                if (record.has_services && !servicesData[record.name]) {
                   fetchServicesData(record)
                 }
-                if (record.docker_running && record.accessible) {
+                if (record.docker_running && record.accessible && !containersData[record.name]) {
                   fetchContainersData(record)
                 }
               }
