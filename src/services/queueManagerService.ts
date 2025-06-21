@@ -49,14 +49,8 @@ class QueueManagerService {
     // Check in active tasks
     const activeTask = this.activeTasks.get(bridgeName)
     if (activeTask && activeTask.priority === this.HIGHEST_PRIORITY) {
-      console.log('Found active priority 1 task:', {
-        bridgeName: bridgeName,
-        taskId: activeTask.taskId,
-        status: activeTask.status,
-        machineName: activeTask.machineName,
-        timestamp: new Date(activeTask.timestamp).toISOString(),
-        age: Math.floor((Date.now() - activeTask.timestamp) / 1000) + ' seconds'
-      })
+      // Found active priority 1 task
+      // bridgeName, taskId, status, machineName, timestamp, age
       return true
     }
 
@@ -69,11 +63,8 @@ class QueueManagerService {
     )
     
     if (queuedTask) {
-      console.log('Found queued priority 1 task:', {
-        id: queuedTask.id,
-        status: queuedTask.status,
-        bridgeName: queuedTask.data.bridgeName
-      })
+      // Found queued priority 1 task
+      // id, status, bridgeName
       return true
     }
     
@@ -107,17 +98,17 @@ class QueueManagerService {
       this.taskIdToBridge.set(task.taskId, task.bridgeName)
     }
     
-    console.log(`Tracked active task: key=${key}, taskId=${task.taskId}, bridgeName=${task.bridgeName}, machineName=${task.machineName}`)
+    // Tracked active task: key, taskId, bridgeName, machineName
   }
 
   /**
    * Remove an active task by bridge name
    */
   private removeActiveTaskByBridge(bridgeName: string) {
-    console.log(`Removing active task for bridge: ${bridgeName}`)
+    // Removing active task for bridge
     const deleted = this.activeTasks.delete(bridgeName)
     if (!deleted) {
-      console.log(`No active task found for bridge: ${bridgeName}`)
+      // No active task found for bridge
     }
     return deleted
   }
@@ -127,7 +118,7 @@ class QueueManagerService {
    */
   private async startMonitoringTask(taskId: string, data: QueuedItem['data']) {
     try {
-      console.log(`Starting monitoring for priority ${data.priority} task ${taskId}`)
+      // Starting monitoring for priority task
       queueMonitoringService.addTask(
         taskId,
         data.teamName,
@@ -139,7 +130,7 @@ class QueueManagerService {
         data.priority
       )
     } catch (error) {
-      console.error('Failed to start monitoring for task:', error)
+      // Failed to start monitoring for task
     }
   }
 
@@ -178,13 +169,8 @@ class QueueManagerService {
       this.queue.push(queuedItem)
       this.notifyListeners()
       
-      console.log('Added task to queue:', {
-        id: queuedItem.id,
-        bridgeName: data.bridgeName,
-        machineName: data.machineName,
-        queueLength: this.queue.length,
-        activeTasks: Array.from(this.activeTasks.keys())
-      })
+      // Added task to queue
+      // id, bridgeName, machineName, queueLength, activeTasks
       
       showMessage('info', `Highest priority task queued. Position: ${this.queue.length}`)
       
@@ -282,7 +268,7 @@ class QueueManagerService {
     // Find the next pending item (skip cancelled)
     const pendingItem = this.queue.find(item => item.status === 'pending')
     
-    console.log(`Processing queue - found pending item: ${pendingItem?.id || 'none'}`)
+    // Processing queue - found pending item
     
     if (!pendingItem) {
       // Clean up completed items from queue
@@ -303,11 +289,8 @@ class QueueManagerService {
     // Check again if there's still no priority 1 task on this bridge (exclude current item)
     if (pendingItem.data.priority === this.HIGHEST_PRIORITY && 
         this.hasActivePriority1Task(pendingItem.data.bridgeName, pendingItem.id)) {
-      console.log('Cancelling pending task:', {
-        taskId: pendingItem.id,
-        bridgeName: pendingItem.data.bridgeName,
-        machineName: pendingItem.data.machineName
-      })
+      // Cancelling pending task
+      // taskId, bridgeName, machineName
       pendingItem.status = 'cancelled'
       this.notifyListeners()
       showMessage('info', 'Task cancelled: Already have a priority 1 task on this bridge')
@@ -439,15 +422,15 @@ class QueueManagerService {
    * Update task status from backend - THIS IS THE CRITICAL METHOD
    */
   updateTaskStatus(taskId: string, status: 'completed' | 'failed' | 'cancelled') {
-    console.log(`\n=== updateTaskStatus called ===`)
-    console.log(`TaskId: ${taskId}, Status: ${status}`)
+    // updateTaskStatus called
+    // TaskId, Status
     
     let bridgeCleared: string | null = null
     
     // First check if we have a taskId -> bridge mapping
     const mappedBridge = this.taskIdToBridge.get(taskId)
     if (mappedBridge) {
-      console.log(`Found bridge mapping for taskId ${taskId}: ${mappedBridge}`)
+      // Found bridge mapping for taskId
       
       // Verify this task is still active
       const activeTask = this.activeTasks.get(mappedBridge)
@@ -456,7 +439,7 @@ class QueueManagerService {
           this.activeTasks.delete(mappedBridge)
           this.taskIdToBridge.delete(taskId)
           bridgeCleared = mappedBridge
-          console.log(`✓ Removed active priority 1 task for bridge: ${mappedBridge} (via taskId mapping)`)
+          // Removed active priority 1 task for bridge (via taskId mapping)
         }
       }
     }
@@ -469,7 +452,7 @@ class QueueManagerService {
             this.activeTasks.delete(bridgeName)
             this.taskIdToBridge.delete(taskId)
             bridgeCleared = bridgeName
-            console.log(`✓ Removed active priority 1 task for bridge: ${bridgeName} (via search)`)
+            // Removed active priority 1 task for bridge (via search)
             break
           }
         }
@@ -489,7 +472,7 @@ class QueueManagerService {
             this.activeTasks.delete(bridgeName)
             this.taskIdToBridge.delete(taskId)
             bridgeCleared = bridgeName
-            console.log(`✓ Removed active priority 1 task for bridge via queue: ${bridgeName}`)
+            // Removed active priority 1 task for bridge via queue
           }
         }
         
@@ -500,9 +483,8 @@ class QueueManagerService {
       }
     }
     
-    console.log(`Task update complete. Bridge cleared: ${bridgeCleared || 'none'}`)
-    console.log(`Current active tasks: ${this.activeTasks.size}, TaskId mappings: ${this.taskIdToBridge.size}`)
-    console.log(`=== End updateTaskStatus ===\n`)
+    // Task update complete
+    // Bridge cleared, Current active tasks, TaskId mappings
     
     this.notifyListeners()
   }
@@ -538,7 +520,7 @@ class QueueManagerService {
   clearBridgeTask(bridgeName: string): boolean {
     const task = this.activeTasks.get(bridgeName)
     if (task) {
-      console.log(`Manually clearing active task for bridge ${bridgeName}, taskId: ${task.taskId}`)
+      // Manually clearing active task for bridge, taskId
       this.activeTasks.delete(bridgeName)
       
       // Also remove from taskId mapping
@@ -570,7 +552,7 @@ class QueueManagerService {
     for (const bridgeName of stuckTasks) {
       const task = this.activeTasks.get(bridgeName)
       if (task) {
-        console.log(`Clearing stuck task: bridge=${bridgeName}, taskId=${task.taskId}, age=${Math.floor((Date.now() - task.timestamp) / 1000)}s`)
+        // Clearing stuck task: bridge, taskId, age
         this.activeTasks.delete(bridgeName)
         this.taskIdToBridge.delete(task.taskId)
         clearedCount++
@@ -579,7 +561,7 @@ class QueueManagerService {
     
     if (clearedCount > 0) {
       this.notifyListeners()
-      console.log(`Cleared ${clearedCount} stuck priority 1 tasks`)
+      // Cleared stuck priority 1 tasks
     }
     
     return clearedCount
@@ -648,16 +630,14 @@ const queueManagerService = new QueueManagerService()
 if (typeof window !== 'undefined') {
   (window as any).queueInfo = () => {
     const info = queueManagerService.getDebugInfo()
-    console.log('=== Queue Manager Status ===')
-    console.log('Active Priority 1 Tasks:', info.activeTasks)
-    console.log('TaskId Mappings:', info.taskIdMappings)
-    console.log('Queued Tasks:', info.queuedTasks)
+    // Queue Manager Status
+    // Active Priority 1 Tasks, TaskId Mappings, Queued Tasks
     return info
   }
   
   ;(window as any).clearStuckTasks = () => {
     const count = queueManagerService.clearAllStuckTasks()
-    console.log(`Cleared ${count} stuck priority 1 tasks`)
+    // Cleared stuck priority 1 tasks
     return count
   }
 }

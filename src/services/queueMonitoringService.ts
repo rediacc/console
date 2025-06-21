@@ -52,7 +52,7 @@ class QueueMonitoringService {
         })
       }
     } catch (error) {
-      console.error('Failed to load monitored tasks from storage:', error)
+      // Failed to load monitored tasks from storage
     }
   }
 
@@ -61,7 +61,7 @@ class QueueMonitoringService {
       const tasks = Array.from(this.monitoredTasks.values())
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(tasks))
     } catch (error) {
-      console.error('Failed to save monitored tasks to storage:', error)
+      // Failed to save monitored tasks to storage
     }
   }
 
@@ -112,7 +112,7 @@ class QueueMonitoringService {
     this.monitoredTasks.set(taskId, task)
     this.saveToStorage()
     
-    console.log(`Added task ${taskId} to monitoring with status ${currentStatus}, bridge: ${bridgeName}, priority: ${priority}`)
+    // Added task to monitoring with status, bridge, priority
     
     // Trigger an immediate check for this new task
     setTimeout(() => {
@@ -135,7 +135,7 @@ class QueueMonitoringService {
       task => now - task.lastCheckTime >= task.checkInterval
     )
 
-    console.log(`Checking ${tasksToCheck.length} tasks out of ${this.monitoredTasks.size} total monitored tasks`)
+    // Checking tasks out of total monitored tasks
 
     for (const task of tasksToCheck) {
       await this.checkTask(task)
@@ -143,7 +143,7 @@ class QueueMonitoringService {
   }
 
   private async checkTask(task: MonitoredTask) {
-    console.log(`Checking task ${task.taskId} - current status: ${task.lastStatus}`)
+    // Checking task - current status
     try {
       // Update last check time
       task.lastCheckTime = Date.now()
@@ -192,7 +192,7 @@ class QueueMonitoringService {
 
         // Notify user of status change
         if (currentStatus === 'COMPLETED') {
-          console.log(`Task ${task.taskId} completed - calling updateTaskStatus`)
+          // Task completed - calling updateTaskStatus
           // Update the queue manager service
           queueManagerService.updateTaskStatus(task.taskId, 'completed')
           
@@ -369,7 +369,7 @@ class QueueMonitoringService {
       }
 
     } catch (error: any) {
-      console.error(`Failed to check queue task ${task.taskId}:`, error)
+      // Failed to check queue task
       
       // If we get a 404, the task might have been deleted
       if (error.response?.status === 404) {
@@ -443,7 +443,7 @@ if (typeof window !== 'undefined') {
       if (task) {
         queueMonitoringService['checkTask'](task)
       } else {
-        console.log('Task not found in monitoring')
+        // Task not found in monitoring
       }
     }
   }

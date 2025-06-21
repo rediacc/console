@@ -70,7 +70,7 @@ const TaskMonitor: React.FC<{
             }
           }
         } catch (error) {
-          console.error('Failed to parse response:', error)
+          // Failed to parse response: error
           onError('Failed to parse response')
         }
       } else {
@@ -86,8 +86,8 @@ const TaskMonitor: React.FC<{
 
 export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete }) => {
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
-  const { Text } = Typography
   const [repositories, setRepositories] = useState<Repository[]>([])
+  const [systemContainers, setSystemContainers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [taskId, setTaskId] = useState<string | null>(null)
@@ -170,21 +170,21 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   useEffect(() => {
     // Log task status for debugging
     if (traceData?.queueDetails?.status) {
-      console.log('Task status:', traceData.queueDetails.status)
+      // Task status: traceData.queueDetails.status
     }
     
     // Check if task is completed
     if (traceData?.queueDetails?.status === 'COMPLETED') {
       // Ensure the queue manager is updated
       if (taskId) {
-        console.log('Task completed, updating queue manager')
+        // Task completed, updating queue manager
         queueManagerService.updateTaskStatus(taskId, 'completed')
       }
       
       // Check if we have response vault content
       if (!traceData?.responseVaultContent?.vaultContent) {
-        console.error('Task completed but no response vault content received')
-        console.error('Full trace data:', traceData)
+        // Task completed but no response vault content received
+        // Full trace data: traceData
         setError('Task completed but no response data received. Check console for details.')
         setLoading(false)
         return
@@ -193,17 +193,17 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       try {
         // Parse the response vault content
         const vaultContent = JSON.parse(traceData.responseVaultContent.vaultContent)
-        console.log('Parsed vault content:', vaultContent)
+        // Parsed vault content: vaultContent
         
         // The result is nested in the response
         if (vaultContent.result) {
           const result = JSON.parse(vaultContent.result)
-          console.log('Parsed result:', result)
+          // Parsed result: result
           
           // Parse the command output which contains the repositories
           if (result.command_output) {
             const commandOutput = JSON.parse(result.command_output)
-            console.log('Command output:', commandOutput)
+            // Command output: commandOutput
             
             if (commandOutput.repositories && Array.isArray(commandOutput.repositories)) {
               // Map repository GUIDs back to names if needed
@@ -233,6 +233,13 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               
               setRepositories(mappedRepositories)
               
+              // Process system containers if included in response
+              if (commandOutput.system_containers && Array.isArray(commandOutput.system_containers)) {
+                setSystemContainers(commandOutput.system_containers)
+              } else {
+                setSystemContainers([])
+              }
+              
               // Process services data if included in response
               if (commandOutput.services && Array.isArray(commandOutput.services)) {
                 const servicesMap: Record<string, any> = {}
@@ -255,7 +262,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                   }
                 })
                 
-                console.log('Services data processed:', servicesMap)
+                // Services data processed: servicesMap
                 
                 // Update all services data at once
                 setServicesData(servicesMap)
@@ -289,7 +296,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                   }
                 })
                 
-                console.log('Containers data processed:', containersMap)
+                // Containers data processed: containersMap
                 
                 // Update all containers data at once
                 setContainersData(containersMap)
@@ -304,24 +311,24 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               setRepositories([])
             }
           } else {
-            console.error('No command_output in result')
+            // No command_output in result
             setRepositories([])
             setError('No repository data in response')
           }
         } else {
-          console.error('No result in vault content')
+          // No result in vault content
           setError('Invalid response format - missing result')
         }
         setLoading(false)
       } catch (err) {
-        console.error('Error parsing response:', err)
+        // Error parsing response: err
         setError('Failed to parse repository data: ' + (err as Error).message)
         setLoading(false)
       }
     } else if (traceData?.queueDetails?.status === 'FAILED' || traceData?.queueDetails?.permanentlyFailed) {
       // Ensure the queue manager is updated
       if (taskId) {
-        console.log('Task failed, updating queue manager')
+        // Task failed, updating queue manager
         queueManagerService.updateTaskStatus(taskId, 'failed')
       }
       
@@ -380,10 +387,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         priority: 1
       })
       
-      console.log('Queue item response:', response)
+      // Queue item response: response
       
       if (response?.taskId) {
-        console.log('Task ID received:', response.taskId)
+        // Task ID received: response.taskId
         setTaskId(response.taskId)
         // Start monitoring the task
         showMessage('info', 'Repository list request submitted. Monitoring task...')
@@ -406,7 +413,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         setIsQueued(true)
         // Keep loading state while we wait for task ID
       } else {
-        console.error('No taskId in response:', response)
+        // No taskId in response: response
         setError('Failed to create queue item')
         setLoading(false)
       }
@@ -518,7 +525,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         setServicesTaskIds(prev => ({ ...prev, [repository.name]: response.taskId }))
       }
     } catch (error) {
-      console.error('Failed to fetch services:', error)
+      // Failed to fetch services: error
       showMessage('error', t('resources:repositories.errorLoadingServices'))
       setLoadingServices(prev => ({ ...prev, [repository.name]: false }))
     }
@@ -569,7 +576,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         setContainersTaskIds(prev => ({ ...prev, [repository.name]: response.taskId }))
       }
     } catch (error) {
-      console.error('Failed to fetch containers:', error)
+      // Failed to fetch containers: error
       showMessage('error', t('resources:repositories.errorLoadingContainers'))
       setLoadingContainers(prev => ({ ...prev, [repository.name]: false }))
     }
@@ -642,6 +649,63 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     }
   }
 
+  const handleSystemContainerAction = async (container: any, action: string) => {
+    try {
+      // Find team vault data
+      const team = teams?.find(t => t.teamName === machine.teamName)
+      
+      // Build params based on action
+      const params: Record<string, any> = {
+        container: container.id || container.name,
+        system: 'true' // Indicate this is a system container
+      }
+      
+      // Add action-specific params
+      if (action === 'container_remove') {
+        params.force = 'false' // Default to safe remove
+      } else if (action === 'container_logs') {
+        params.lines = '100'
+        params.follow = 'false'
+      }
+      
+      // Build queue vault for system container action
+      const queueVault = await buildQueueVault({
+        teamName: machine.teamName,
+        machineName: machine.machineName,
+        bridgeName: machine.bridgeName,
+        functionName: action,
+        params,
+        priority: 4,
+        description: `${action} system container ${container.name}`,
+        addedVia: 'machine-repository-list-system-container-action',
+        teamVault: team?.vaultContent || '{}',
+        machineVault: machine.vaultContent || '{}'
+      })
+      
+      const response = await managedQueueMutation.mutateAsync({
+        teamName: machine.teamName,
+        machineName: machine.machineName,
+        bridgeName: machine.bridgeName,
+        queueVault,
+        priority: 4
+      })
+      
+      if (response?.taskId) {
+        showMessage('success', t('resources:repositories.queueItemCreated'))
+        setQueueTraceModal({ visible: true, taskId: response.taskId })
+        
+        // Refresh repositories data after action to get updated system containers
+        setTimeout(() => {
+          fetchRepositories()
+        }, 2000)
+      } else if (response?.isQueued) {
+        showMessage('info', t('resources:repositories.highestPriorityQueued'))
+      }
+    } catch (error) {
+      showMessage('error', t('resources:repositories.failedToCreateQueueItem'))
+    }
+  }
+
   const handleFunctionSubmit = async (functionData: {
     function: QueueFunction
     params: Record<string, any>
@@ -705,68 +769,72 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     }
   }
 
-  const renderExpandedRow = (record: Repository) => {
-    const services = servicesData[record.name]
-    const containers = containersData[record.name]
-    const isLoadingServices = loadingServices[record.name]
-    const isLoadingContainers = loadingContainers[record.name]
-    
-    // Services columns
-    const serviceColumns = [
-      {
-        title: t('resources:repositories.serviceName'),
-        dataIndex: 'name',
-        key: 'name',
-        render: (name: string) => <Tag color="blue">{name}</Tag>,
-      },
-      {
-        title: t('resources:repositories.activeState'),
-        dataIndex: 'active_state',
-        key: 'active_state',
-        render: (state: string) => (
-          <Tag color={state === 'active' ? 'success' : state === 'failed' ? 'error' : 'default'}>
-            {state}
-          </Tag>
-        ),
-      },
-      {
-        title: t('resources:repositories.memory'),
-        dataIndex: 'memory_human',
-        key: 'memory_human',
-        render: (memory: string) => memory || '-',
-      },
-      {
-        title: t('resources:repositories.pid'),
-        dataIndex: 'main_pid',
-        key: 'main_pid',
-        render: (pid: number) => pid > 0 ? pid : '-',
-      },
-      {
-        title: t('resources:repositories.restarts'),
-        dataIndex: 'restart_count',
-        key: 'restart_count',
-        render: (count: number) => <Tag>{count}</Tag>,
-      },
-    ]
+  // Services columns
+  const serviceColumns: ColumnsType<any> = [
+    {
+      title: t('resources:repositories.serviceName'),
+      dataIndex: 'name',
+      key: 'name',
+      width: 200,
+      ellipsis: true,
+      render: (name: string) => <Tag color="blue">{name}</Tag>,
+    },
+    {
+      title: t('resources:repositories.activeState'),
+      dataIndex: 'active_state',
+      key: 'active_state',
+      width: 120,
+      render: (state: string) => (
+        <Tag color={state === 'active' ? 'success' : state === 'failed' ? 'error' : 'default'}>
+          {state}
+        </Tag>
+      ),
+    },
+    {
+      title: t('resources:repositories.memory'),
+      dataIndex: 'memory_human',
+      key: 'memory_human',
+      width: 100,
+      render: (memory: string) => memory || '-',
+    },
+    {
+      title: t('resources:repositories.pid'),
+      dataIndex: 'main_pid',
+      key: 'main_pid',
+      width: 80,
+      render: (pid: number) => pid > 0 ? pid : '-',
+    },
+    {
+      title: t('resources:repositories.restarts'),
+      dataIndex: 'restart_count',
+      key: 'restart_count',
+      width: 100,
+      render: (count: number) => <Tag>{count}</Tag>,
+    },
+  ]
     
     // Container columns
-    const containerColumns = [
+    const containerColumns: ColumnsType<any> = [
       {
         title: t('resources:repositories.containerName'),
         dataIndex: 'name',
         key: 'name',
+        width: 200,
+        ellipsis: true,
         render: (name: string) => <Tag color="cyan">{name}</Tag>,
       },
       {
         title: t('resources:repositories.containerImage'),
         dataIndex: 'image',
         key: 'image',
+        width: 250,
         ellipsis: true,
       },
       {
         title: t('resources:repositories.containerStatus'),
         dataIndex: 'state',
         key: 'state',
+        width: 200,
         render: (state: string, record: any) => (
           <Space>
             <Tag color={state === 'running' ? 'success' : 'default'}>
@@ -780,18 +848,21 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         title: t('resources:repositories.containerCPU'),
         dataIndex: 'cpu_percent',
         key: 'cpu_percent',
+        width: 100,
         render: (cpu: string) => cpu || '-',
       },
       {
         title: t('resources:repositories.containerMemory'),
         dataIndex: 'memory_usage',
         key: 'memory_usage',
+        width: 120,
         render: (memory: string) => memory || '-',
       },
       {
         title: t('common:table.actions'),
         key: 'actions',
         width: 120,
+        fixed: 'right',
         render: (_: any, container: any) => {
           const menuItems = []
           
@@ -879,6 +950,12 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       },
     ]
     
+  const renderExpandedRow = (record: Repository) => {
+    const services = servicesData[record.name]
+    const containers = containersData[record.name]
+    const isLoadingServices = loadingServices[record.name]
+    const isLoadingContainers = loadingContainers[record.name]
+    
     return (
       <div style={{ padding: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -919,6 +996,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               rowKey="name"
               size="small"
               pagination={false}
+              scroll={{ x: 'max-content' }}
             />
           ) : (
             <Empty description={t('resources:repositories.noServices')} />
@@ -943,6 +1021,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               rowKey="id"
               size="small"
               pagination={false}
+              scroll={{ x: 'max-content' }}
             />
           ) : (
             <Empty description={t('resources:repositories.noContainers')} />
@@ -952,11 +1031,59 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     )
   }
 
+  // System container columns
+  const systemContainerColumns: ColumnsType<any> = [
+    {
+      title: t('resources:repositories.containerName'),
+      dataIndex: 'name',
+      key: 'name',
+      width: 200,
+      ellipsis: true,
+      render: (name: string) => <Tag color="purple">{name}</Tag>,
+    },
+    {
+      title: t('resources:repositories.containerImage'),
+      dataIndex: 'image',
+      key: 'image',
+      width: 250,
+      ellipsis: true,
+    },
+    {
+      title: t('resources:repositories.containerStatus'),
+      dataIndex: 'state',
+      key: 'state',
+      width: 200,
+      render: (state: string, record: any) => (
+        <Space>
+          <Tag color={state === 'running' ? 'success' : 'default'}>
+            {state}
+          </Tag>
+          {record.status && <Text type="secondary" style={{ fontSize: 12 }}>{record.status}</Text>}
+        </Space>
+      ),
+    },
+    {
+      title: t('resources:repositories.containerCPU'),
+      dataIndex: 'cpu_percent',
+      key: 'cpu_percent',
+      width: 100,
+      render: (cpu: string) => cpu || '-',
+    },
+    {
+      title: t('resources:repositories.containerMemory'),
+      dataIndex: 'memory_usage',
+      key: 'memory_usage',
+      width: 120,
+      render: (memory: string) => memory || '-',
+    },
+  ]
+
   const columns: ColumnsType<Repository> = [
     {
       title: '',
       key: 'expand',
       width: 50,
+      fixed: 'left',
       render: (_: any, record: Repository) => {
         // Only show expand button if repository has services or containers
         if (!record.mounted || (!record.has_services && record.container_count === 0)) {
@@ -991,6 +1118,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       title: t('resources:repositories.repositoryName'),
       dataIndex: 'name',
       key: 'name',
+      width: 200,
+      ellipsis: true,
       render: (name: string) => (
         <Space>
           <InboxOutlined style={{ color: '#556b2f' }} />
@@ -1008,7 +1137,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     {
       title: t('resources:repositories.status'),
       key: 'status',
-      width: 300,
+      width: 400,
       render: (_: any, record: Repository) => (
         <Space direction="vertical" size={0}>
           <Space wrap>
@@ -1058,6 +1187,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       title: t('common:table.actions'),
       key: 'actions',
       width: 120,
+      fixed: 'right',
       render: (_: any, record: Repository) => {
         // Build smart menu items based on repository state
         const menuItems = []
@@ -1203,13 +1333,39 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   }
 
   return (
-    <div style={{ padding: '0 20px 20px 20px' }}>
+    <div style={{ padding: '0 20px 20px 20px', overflowX: 'auto' }}>
+      {/* System Containers Section */}
+      {systemContainers.length > 0 && (
+        <>
+          <Typography.Title level={5} style={{ marginBottom: 16, marginTop: 20 }}>
+            {t('resources:repositories.systemContainers')}
+          </Typography.Title>
+          <div style={{ marginBottom: 32 }}>
+            <Table
+              columns={systemContainerColumns}
+              dataSource={systemContainers}
+              rowKey="id"
+              size="small"
+              pagination={false}
+              scroll={{ x: 'max-content' }}
+            />
+          </div>
+        </>
+      )}
+      
+      {/* Repositories Label */}
+      <Typography.Title level={5} style={{ marginBottom: 16, marginTop: systemContainers.length > 0 ? 0 : 20 }}>
+        {t('resources:repositories.repositories')}
+      </Typography.Title>
+      
+      {/* Repository Table */}
       <Table
         columns={columns}
         dataSource={repositories}
         rowKey="name"
         size="small"
         pagination={false}
+        scroll={{ x: 'max-content' }}
         expandable={{
           expandedRowRender: renderExpandedRow,
           expandedRowKeys: expandedRows,

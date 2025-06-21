@@ -128,7 +128,9 @@
     "requestQueued": "Solicitud de lista de repositorios en cola. Por favor, verifique el Administrador de Cola para el estado.",
     "waitingInQueue": "Esperando en cola...",
     "queuePosition": "Posición en la cola",
-    "checkQueueManager": "Verifique el Administrador de Cola para el estado"
+    "checkQueueManager": "Verifique el Administrador de Cola para el estado",
+    "systemContainers": "Contenedores del Sistema",
+    "repositories": "Repositorios"
   },
   "storage": {
     "storageName": "Nombre del Almacenamiento",

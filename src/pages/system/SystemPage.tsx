@@ -320,7 +320,7 @@ const SystemPage: React.FC = () => {
 
   const handleUpdateUserVault = async (vault: string, version: number) => {
     // TODO: Implement user vault update when API is available
-    console.log('User vault update:', { vault, version })
+    // User vault update: vault, version
     setUserVaultModalOpen(false)
   }
 
@@ -441,7 +441,7 @@ const SystemPage: React.FC = () => {
         showMessage('success', tSystem('dangerZone.exportVaults.success'))
       }
     } catch (error) {
-      console.error('Failed to export vaults:', error)
+      // Failed to export vaults
       showMessage('error', tSystem('dangerZone.exportVaults.error'))
     }
   }
@@ -499,7 +499,7 @@ const SystemPage: React.FC = () => {
               version: vault.version || 1
             })
           } catch (error) {
-            console.error(`Failed to process vault ${vault.vaultName}:`, error)
+            // Failed to process vault
             showMessage('error', `Failed to process vault ${vault.vaultName}`)
           }
         }
@@ -531,7 +531,7 @@ const SystemPage: React.FC = () => {
       setCountdown(60)
       setSuccessModalOpen(true)
     } catch (error) {
-      console.error('Failed to update master password:', error)
+      // Failed to update master password
       // Don't show error toast here as the mutation already handles it
     }
   }
