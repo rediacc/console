@@ -296,6 +296,10 @@
         "LOG_FILE": {
           "label": "Log File Path",
           "description": "Path to the system log file"
+        },
+        "PLUGINS": {
+          "label": "Plugins",
+          "description": "Plugin configurations with container images and activation status"
         }
       }
     }
@@ -326,5 +330,28 @@
     "empty": "No notifications",
     "markAllRead": "Mark all as read",
     "clearAll": "Clear all"
+  },
+  "nestedObjectEditor": {
+    "Image": "Image",
+    "Active": "Active",
+    "Add": "Add",
+    "Delete this entry?": "Delete this entry?",
+    "Yes": "Yes",
+    "No": "No",
+    "Object": "Object",
+    "Array": "Array",
+    "True": "True",
+    "False": "False",
+    "Enter key name": "Enter key name",
+    "Show JSON": "Show JSON",
+    "Hide JSON": "Hide JSON",
+    "No entries": "No entries",
+    "Raw JSON Editor": "Raw JSON Editor",
+    "JSON Error": "JSON Error",
+    "Uniform Structure": "Uniform Structure",
+    "Fields": "Fields",
+    "Container Images Detected": "Container Images Detected",
+    "Plugin Configuration Detected": "Plugin Configuration Detected",
+    "Uniform Structure Detected": "Uniform Structure Detected"
   }
 }

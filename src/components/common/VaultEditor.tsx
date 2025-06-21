@@ -24,6 +24,7 @@ import {
   BulbOutlined,
 } from '@ant-design/icons'
 import { SimpleJsonEditor } from './SimpleJsonEditor'
+import { NestedObjectEditor } from './NestedObjectEditor'
 import type { UploadFile } from 'antd/es/upload/interface'
 import { useTranslation } from 'react-i18next'
 import vaultDefinitions from '../../data/vaults.json'
@@ -725,22 +726,43 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     }
 
     if (field.type === 'object') {
-      const { validator, getValueFromEvent, getValueProps } = getJsonFieldProps(false)
-      return (
-        <Form.Item
-          name={fieldName}
-          label={<FieldLabel label={fieldLabel} description={fieldDescription} />}
-          rules={[...rules, { validator }]}
-          getValueFromEvent={getValueFromEvent}
-          getValueProps={getValueProps}
-        >
-          <Input.TextArea
-            {...commonProps}
-            rows={4}
-            placeholder={field.example ? `${t('vaultEditor.example')} ${JSON.stringify(field.example, null, 2)}` : t('vaultEditor.enterJsonObject')}
-          />
-        </Form.Item>
-      )
+      // Check if this object has specific structure definition
+      const hasStructure = field.properties || (field.additionalProperties && typeof field.additionalProperties === 'object')
+      
+      if (hasStructure) {
+        // Use NestedObjectEditor for complex objects with defined structure
+        return (
+          <Form.Item
+            name={fieldName}
+            label={<FieldLabel label={fieldLabel} description={fieldDescription} />}
+            rules={rules}
+          >
+            <NestedObjectEditor
+              fieldDefinition={field}
+              title={fieldLabel}
+              description={fieldDescription}
+            />
+          </Form.Item>
+        )
+      } else {
+        // Use JSON editor for generic objects
+        const { validator, getValueFromEvent, getValueProps } = getJsonFieldProps(false)
+        return (
+          <Form.Item
+            name={fieldName}
+            label={<FieldLabel label={fieldLabel} description={fieldDescription} />}
+            rules={[...rules, { validator }]}
+            getValueFromEvent={getValueFromEvent}
+            getValueProps={getValueProps}
+          >
+            <Input.TextArea
+              {...commonProps}
+              rows={4}
+              placeholder={field.example ? `${t('vaultEditor.example')} ${JSON.stringify(field.example, null, 2)}` : t('vaultEditor.enterJsonObject')}
+            />
+          </Form.Item>
+        )
+      }
     }
 
     if (field.type === 'array') {

@@ -294,6 +294,10 @@
         "LOG_FILE": {
           "label": "Ruta del Archivo de Registro",
           "description": "Ruta al archivo de registro del sistema"
+        },
+        "PLUGINS": {
+          "label": "Plugins",
+          "description": "Configuraciones de plugins con imágenes de contenedor y estado de activación"
         }
       }
     }
@@ -324,5 +328,28 @@
     "empty": "Sin notificaciones",
     "markAllRead": "Marcar todo como leído",
     "clearAll": "Limpiar todo"
+  },
+  "nestedObjectEditor": {
+    "Image": "Imagen",
+    "Active": "Activo",
+    "Add": "Agregar",
+    "Delete this entry?": "¿Eliminar esta entrada?",
+    "Yes": "Sí",
+    "No": "No",
+    "Object": "Objeto",
+    "Array": "Arreglo",
+    "True": "Verdadero",
+    "False": "Falso",
+    "Enter key name": "Ingrese el nombre de la clave",
+    "Show JSON": "Mostrar JSON",
+    "Hide JSON": "Ocultar JSON",
+    "No entries": "Sin entradas",
+    "Raw JSON Editor": "Editor JSON Directo",
+    "JSON Error": "Error JSON",
+    "Uniform Structure": "Estructura Uniforme",
+    "Fields": "Campos",
+    "Container Images Detected": "Imágenes de Contenedor Detectadas",
+    "Plugin Configuration Detected": "Configuración de Plugin Detectada",
+    "Uniform Structure Detected": "Estructura Uniforme Detectada"
   }
 }

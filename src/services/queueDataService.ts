@@ -87,6 +87,11 @@ class QueueDataService {
       queueVaultData.contextData.REPO_CREDENTIALS = context.allRepositoryCredentials
     }
 
+    // For 'mount' and 'unmount' functions that need PLUGINS
+    if ((context.functionName === 'mount' || context.functionName === 'unmount') && context.companyVault?.PLUGINS) {
+      queueVaultData.contextData.PLUGINS = context.companyVault.PLUGINS
+    }
+
 
     const dataExtractors = [
       [requirements.company, 'company', () => this.extractCompanyData(context.companyVault)],
@@ -109,8 +114,8 @@ class QueueDataService {
 
   private extractCompanyData(companyVault: any): any {
     if (!companyVault) return {}
-    const { UNIVERSAL_USER_ID, UNIVERSAL_USER_NAME, DOCKER_JSON_CONF, LOG_FILE, REPO_CREDENTIALS } = companyVault
-    return { UNIVERSAL_USER_ID, UNIVERSAL_USER_NAME, DOCKER_JSON_CONF, LOG_FILE, REPO_CREDENTIALS }
+    const { UNIVERSAL_USER_ID, UNIVERSAL_USER_NAME, DOCKER_JSON_CONF, LOG_FILE, REPO_CREDENTIALS, PLUGINS } = companyVault
+    return { UNIVERSAL_USER_ID, UNIVERSAL_USER_NAME, DOCKER_JSON_CONF, LOG_FILE, REPO_CREDENTIALS, PLUGINS }
   }
 
 
