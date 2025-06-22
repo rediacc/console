@@ -278,24 +278,6 @@
         }
       }
     },
-    "map_socket": {
-      "name": "map_socket",
-      "description": "Map socket from remote machine",
-      "params": {
-        "machine": {
-          "label": "Machine",
-          "help": "Machine name"
-        },
-        "repo": {
-          "label": "Repository",
-          "help": "Repository name"
-        },
-        "plugin": {
-          "label": "Plugin",
-          "help": "Plugin name"
-        }
-      }
-    },
     "ping": {
       "name": "ping",
       "description": "Test network connectivity to the machine"

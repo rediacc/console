@@ -358,31 +358,6 @@
         }
       }
     },
-    "map_socket": {
-      "name": "map_socket",
-      "category": "network",
-      "requirements": {
-        "machine": true,
-        "team": true,
-        "repository": true,
-        "plugin": true,
-        "bridge": true
-      },
-      "params": {
-        "machine": {
-          "type": "string",
-          "required": true
-        },
-        "repo": {
-          "type": "string",
-          "required": true
-        },
-        "plugin": {
-          "type": "string",
-          "required": true
-        }
-      }
-    },
     "service_list": {
       "name": "service_list",
       "category": "repository",

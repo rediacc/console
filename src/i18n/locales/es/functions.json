@@ -234,21 +234,6 @@
         }
       }
     },
-    "map_socket": {
-      "name": "map_socket",
-      "description": "Mapear socket desde máquina remota",
-      "params": {
-        "machine": {
-          "help": "Nombre de la máquina"
-        },
-        "repo": {
-          "help": "Nombre del repositorio"
-        },
-        "plugin": {
-          "help": "Nombre del plugin"
-        }
-      }
-    },
     "ping": {
       "name": "ping",
       "description": "Probar la conectividad de red con la máquina"
