@@ -184,7 +184,7 @@ class QueueDataService {
    * Add company vault data to general settings
    */
   private addCompanyVaultToGeneralSettings(generalSettings: any, companyVault: any): void {
-    this.copySimpleFields(generalSettings, companyVault, ['UNIVERSAL_USER_ID', 'UNIVERSAL_USER_NAME'])
+    this.copySimpleFields(generalSettings, companyVault, ['UNIVERSAL_USER_ID', 'UNIVERSAL_USER_NAME', 'DOCKER_JSON_CONF'])
     this.copySSHKeys(generalSettings, companyVault)
   }
 

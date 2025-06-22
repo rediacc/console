@@ -130,7 +130,13 @@
     "queuePosition": "Queue position",
     "checkQueueManager": "Check the Queue Manager for status",
     "systemContainers": "System Containers",
-    "repositories": "Repositories"
+    "repositories": "Repositories",
+    "systemInfo": "System Information",
+    "rootDisk": "Root Disk",
+    "diskSpace": "Disk Space",
+    "datastore": "Datastore",
+    "available": "Available",
+    "used": "Used"
   },
   "storage": {
     "storageName": "Storage Name",

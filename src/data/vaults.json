@@ -8,32 +8,32 @@
         "ip": {
           "type": "string",
           "format": "ipv4",
-          "example": "192.168.1.100"
+          "example": "IP address of the machine. Example: 192.168.1.100"
         },
         "user": {
           "type": "string",
-          "example": "ubuntu"
+          "example": "Username for SSH access. Example: ubuntu"
         },
         "datastore": {
           "type": "string",
-          "example": "/mnt/datastore"
+          "example": "Path where data is stored. Example: /mnt/datastore"
         },
         "port": {
           "type": "number",
-          "example": 22
+          "example": "SSH port number. Example: 22"
         },
         "host_entry": {
           "type": "string",
-          "example": "192.168.1.100 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC..."
+          "example": "SSH known host entry. Example: 192.168.1.100 ssh-rsa AAAAB3NzaC1yc2E..."
         },
         "ssh_key_configured": {
           "type": "boolean",
-          "example": false
+          "example": "Whether SSH key is set up. Example: false"
         },
         "ssh_password": {
           "type": "string",
           "sensitive": true,
-          "example": "SecurePassword123!"
+          "example": "SSH password (sensitive). Example: MyPassword123"
         }
       }
     },
@@ -47,7 +47,7 @@
           "pattern": "^[A-Za-z0-9!@#$%^&*()_+{}|:<>,.?/]{32}$",
           "minLength": 16,
           "maxLength": 256,
-          "example": "Kj8#mP2$vL9@nQ4&xR7!wE3*tY6^aS1+"
+          "example": "Repository access token (32 chars). Example: ABC123DEF456GHI789JKL012MNO345PQ"
         }
       }
     },
@@ -119,12 +119,12 @@
             "yandex",
             "zoho"
           ],
-          "example": "s3",
+          "example": "Storage provider name. Example: s3",
           "description": "Storage provider type"
         },
         "description": {
           "type": "string",
-          "example": "Primary backup storage for production data",
+          "example": "Storage description. Example: My backup storage",
           "description": "Optional description of this storage configuration"
         },
         "noVersioning": {
@@ -133,7 +133,7 @@
         },
         "parameters": {
           "type": "string",
-          "example": "--transfers 4 --checkers 8",
+          "example": "Extra rclone flags. Example: --transfers 4",
           "description": "Additional rclone parameters"
         }
       }
@@ -145,7 +145,7 @@
       "fields": {
         "cron": {
           "type": "string",
-          "example": "0 2 * * *"
+          "example": "Schedule in cron format. Example: 0 2 * * * (daily at 2 AM)"
         },
         "task": {
           "type": "object",
@@ -164,7 +164,7 @@
         },
         "timezone": {
           "type": "string",
-          "example": "America/New_York"
+          "example": "Time zone name. Example: America/New_York"
         },
         "notifications": {
           "type": "object",
@@ -205,18 +205,18 @@
         "code": {
           "type": "string",
           "pattern": "^[a-z]{2}-[a-z]+-[0-9]$",
-          "example": "us-east-1"
+          "example": "Region code. Example: us-east-1"
         },
         "location": {
           "type": "object",
           "properties": {
             "country": {
               "type": "string",
-              "example": "US"
+              "example": "Country code. Example: US"
             },
             "city": {
               "type": "string",
-              "example": "Virginia"
+              "example": "City name. Example: New York"
             },
             "latitude": {
               "type": "number"
@@ -237,12 +237,12 @@
           "type": "string",
           "sensitive": true,
           "format": "base64",
-          "example": "LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0K..."
+          "example": "Base64 encoded private key. Example: LS0tLS1CRUdJTi0tLS0t"
         },
         "SSH_PUBLIC_KEY": {
           "type": "string",
           "pattern": "^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/=]+ .+$",
-          "example": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... team-devops"
+          "example": "Public SSH key. Example: ssh-rsa AAAAB3NzaC1yc2E... mykey"
         }
       }
     },
@@ -255,29 +255,29 @@
           "type": "string",
           "sensitive": true,
           "format": "base64",
-          "example": "LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0K..."
+          "example": "Base64 encoded private key. Example: LS0tLS1CRUdJTi0tLS0t"
         },
         "SSH_PUBLIC_KEY": {
           "type": "string",
           "pattern": "^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/=]+ .+$",
-          "example": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... user@example.com"
+          "example": "Public SSH key. Example: ssh-rsa AAAAB3NzaC1yc2E... user@email.com"
         }
       }
     },
     "COMPANY": {
       "descriptionKey": "fields.COMPANY.description",
-      "required": ["UNIVERSAL_USER_ID", "UNIVERSAL_USER_NAME"],
-      "optional": ["DOCKER_JSON_CONF", "SSH_PRIVATE_KEY", "SSH_PUBLIC_KEY", "LOG_FILE", "PLUGINS"],
+      "required": ["UNIVERSAL_USER_ID", "UNIVERSAL_USER_NAME", "DOCKER_JSON_CONF"],
+      "optional": ["SSH_PRIVATE_KEY", "SSH_PUBLIC_KEY", "LOG_FILE", "PLUGINS"],
       "fields": {
         "UNIVERSAL_USER_ID": {
           "type": "string",
           "pattern": "^[0-9]+$",
-          "example": "7322"
+          "example": "Numeric user ID. Example: 1000"
         },
         "UNIVERSAL_USER_NAME": {
           "type": "string",
           "pattern": "^[a-z_][a-z0-9_-]*$",
-          "example": "rediacc"
+          "example": "Unix username. Example: myuser"
         },
         "DOCKER_JSON_CONF": {
           "type": "object",
@@ -287,14 +287,14 @@
               "items": {
                 "type": "string"
               },
-              "example": ["http://192.168.111.1:5000"]
+              "example": ["Registry URLs. Example: http://192.168.1.10:5000"]
             },
             "registry-mirrors": {
               "type": "array",
               "items": {
                 "type": "string"
               },
-              "example": ["http://192.168.111.1:5000"]
+              "example": ["Registry URLs. Example: http://192.168.1.10:5000"]
             },
             "runtimes": {
               "type": "object",
@@ -319,12 +319,12 @@
           "type": "string",
           "sensitive": true,
           "format": "base64",
-          "example": "LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0K..."
+          "example": "Base64 encoded private key. Example: LS0tLS1CRUdJTi0tLS0t"
         },
         "SSH_PUBLIC_KEY": {
           "type": "string",
           "pattern": "^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/=]+ .+$",
-          "example": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... rediacc1"
+          "example": "Company SSH key. Example: ssh-rsa AAAAB3NzaC1yc2E... company-key"
         },
         "PLUGINS": {
           "type": "object",
@@ -336,7 +336,7 @@
                 "type": "string",
                 "pattern": "^[a-z0-9.-]+(:[0-9]+)?/[a-z0-9._-]+(/[a-z0-9._-]+)*:[a-z0-9._-]+$",
                 "description": "Container image path with tag",
-                "example": "192.168.111.1:5000/rediacc/plugin-terminal:latest"
+                "example": "Docker image path. Example: myregistry.com:5000/myplugin:v1.0"
               },
               "active": {
                 "type": "boolean",
@@ -347,13 +347,13 @@
             "required": ["image", "active"]
           },
           "example": {
-            "Terminal": {
-              "image": "192.168.111.1:5000/rediacc/plugin-terminal:latest",
+            "MyPlugin": {
+              "image": "Plugin docker image. Example: registry.com:5000/myplugin:v1.0",
               "active": true
             },
-            "Browser": {
-              "image": "192.168.111.1:5000/rediacc/plugin-browser:latest",
-              "active": true
+            "AnotherPlugin": {
+              "image": "Another plugin image. Example: registry.com:5000/plugin2:v2.0",
+              "active": false
             }
           }
         }

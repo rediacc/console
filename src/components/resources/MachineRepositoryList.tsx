@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Empty } from 'antd'
-import { InboxOutlined, CheckCircleOutlined, CloseCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, PlusOutlined, MinusOutlined } from '@ant-design/icons'
+import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Empty, Card, Row, Col, Statistic, Progress } from 'antd'
+import { InboxOutlined, CheckCircleOutlined, CloseCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, PlusOutlined, MinusOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { type QueueFunction, useCreateQueueItem } from '@/api/queries/queue'
 import { useQueueItemTrace } from '@/api/queries/queue'
@@ -36,6 +36,39 @@ interface Repository {
   container_count: number
   has_services: boolean
   service_count: number
+  disk_space?: {
+    total: string
+    used: string
+    available: string
+    use_percent: string
+  }
+}
+
+interface SystemInfo {
+  hostname: string
+  kernel: string
+  os_name: string
+  uptime: string
+  cpu_count: number
+  cpu_model: string
+  memory: {
+    total: string
+    used: string
+    available: string
+  }
+  disk: {
+    total: string
+    used: string
+    available: string
+    use_percent: string
+  }
+  datastore: {
+    path: string
+    total: string
+    used: string
+    available: string
+    use_percent: string
+  }
 }
 
 interface MachineRepositoryListProps {
@@ -88,6 +121,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
   const [repositories, setRepositories] = useState<Repository[]>([])
   const [systemContainers, setSystemContainers] = useState<any[]>([])
+  const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [taskId, setTaskId] = useState<string | null>(null)
@@ -204,6 +238,11 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           if (result.command_output) {
             const commandOutput = JSON.parse(result.command_output)
             // Command output: commandOutput
+            
+            // Process system information if available
+            if (commandOutput.system) {
+              setSystemInfo(commandOutput.system)
+            }
             
             if (commandOutput.repositories && Array.isArray(commandOutput.repositories)) {
               // Map repository GUIDs back to names if needed
@@ -1135,6 +1174,27 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       render: (size: string) => <Text>{size}</Text>,
     },
     {
+      title: t('resources:repositories.diskSpace'),
+      key: 'disk_space',
+      width: 250,
+      render: (_: any, record: Repository) => {
+        if (!record.disk_space || !record.mounted) return '-'
+        return (
+          <Space direction="vertical" size={0}>
+            <Text type="secondary" style={{ fontSize: '12px' }}>
+              {t('resources:repositories.used')}: {record.disk_space.used} / {record.disk_space.total}
+            </Text>
+            <Progress 
+              percent={parseInt(record.disk_space.use_percent)} 
+              size="small" 
+              status={parseInt(record.disk_space.use_percent) > 90 ? 'exception' : 'normal'}
+              format={(percent) => `${percent}%`}
+            />
+          </Space>
+        )
+      },
+    },
+    {
       title: t('resources:repositories.status'),
       key: 'status',
       width: 400,
@@ -1334,6 +1394,93 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
   return (
     <div style={{ padding: '0 20px 20px 20px', overflowX: 'auto' }}>
+      {/* System Information Section */}
+      {systemInfo && (
+        <Card style={{ marginBottom: 20, marginTop: 20 }}>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={12} md={8}>
+              <Card size="small" bordered={false}>
+                <Statistic
+                  title={t('resources:repositories.systemInfo')}
+                  value={systemInfo.hostname}
+                  prefix={<DesktopOutlined />}
+                />
+                <Space direction="vertical" size={0} style={{ marginTop: 8 }}>
+                  <Text type="secondary">{systemInfo.os_name}</Text>
+                  <Text type="secondary">Kernel: {systemInfo.kernel}</Text>
+                  <Text type="secondary">CPUs: {systemInfo.cpu_count} x {systemInfo.cpu_model}</Text>
+                </Space>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Card size="small" bordered={false}>
+                <Statistic
+                  title={t('resources:repositories.memory')}
+                  value={systemInfo.memory.used}
+                  suffix={`/ ${systemInfo.memory.total}`}
+                  prefix={<DatabaseOutlined />}
+                />
+                <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
+                  {t('resources:repositories.available')}: {systemInfo.memory.available}
+                </Text>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Card size="small" bordered={false}>
+                <Statistic
+                  title={t('resources:repositories.uptime')}
+                  value={systemInfo.uptime}
+                  prefix={<ClockCircleOutlined />}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Card size="small" bordered={false}>
+                <Statistic
+                  title={t('resources:repositories.rootDisk')}
+                  value={systemInfo.disk.used}
+                  suffix={`/ ${systemInfo.disk.total}`}
+                  prefix={<HddOutlined />}
+                />
+                <Progress 
+                  percent={parseInt(systemInfo.disk.use_percent)} 
+                  size="small" 
+                  status={parseInt(systemInfo.disk.use_percent) > 90 ? 'exception' : 'normal'}
+                  style={{ marginTop: 8 }}
+                />
+                <Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
+                  {t('resources:repositories.available')}: {systemInfo.disk.available}
+                </Text>
+              </Card>
+            </Col>
+            {systemInfo.datastore.path && (
+              <Col xs={24} sm={12} md={8}>
+                <Card size="small" bordered={false}>
+                  <Statistic
+                    title={t('resources:repositories.datastore')}
+                    value={systemInfo.datastore.used}
+                    suffix={`/ ${systemInfo.datastore.total}`}
+                    prefix={<DatabaseOutlined />}
+                  />
+                  <Progress 
+                    percent={parseInt(systemInfo.datastore.use_percent)} 
+                    size="small" 
+                    status={parseInt(systemInfo.datastore.use_percent) > 90 ? 'exception' : 'normal'}
+                    style={{ marginTop: 8 }}
+                  />
+                  <Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
+                    {systemInfo.datastore.path}
+                  </Text>
+                  <Text type="secondary" style={{ display: 'block' }}>
+                    {t('resources:repositories.available')}: {systemInfo.datastore.available}
+                  </Text>
+                </Card>
+              </Col>
+            )}
+          </Row>
+        </Card>
+      )}
+      
       {/* System Containers Section */}
       {systemContainers.length > 0 && (
         <>

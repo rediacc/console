@@ -130,7 +130,13 @@
     "queuePosition": "Posición en la cola",
     "checkQueueManager": "Verifique el Administrador de Cola para el estado",
     "systemContainers": "Contenedores del Sistema",
-    "repositories": "Repositorios"
+    "repositories": "Repositorios",
+    "systemInfo": "Información del Sistema",
+    "rootDisk": "Disco Raíz",
+    "diskSpace": "Espacio en Disco",
+    "datastore": "Almacén de Datos",
+    "available": "Disponible",
+    "used": "Usado"
   },
   "storage": {
     "storageName": "Nombre del Almacenamiento",
