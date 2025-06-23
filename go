@@ -9,7 +9,7 @@ ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Load environment variables if .env exists in parent directory
 if [ -f "$ROOT_DIR/../.env" ]; then
     source "$ROOT_DIR/../.env"
-    export VITE_MIDDLEWARE_PORT=$SYSTEM_MIDDLEWARE_PORT
+    export VITE_HTTP_PORT=$SYSTEM_HTTP_PORT
 fi
 
 # Function to run development server

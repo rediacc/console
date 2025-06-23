@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => ({
     },
     proxy: {
       '/api': {
-        target: `http://localhost:${process.env.VITE_MIDDLEWARE_PORT || '8080'}`,
+        target: `http://localhost:${process.env.VITE_HTTP_PORT || '7322'}`,
         changeOrigin: true,
       },
     },
