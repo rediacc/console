@@ -68,7 +68,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
     }
 
     try {
-      const vaultJson = JSON.stringify(vaultData, null, 2)
+      const vaultJson = JSON.stringify(vaultData)
       await onSave(vaultJson, vaultVersion)
       onCancel()
     } catch (error) {

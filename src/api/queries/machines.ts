@@ -31,10 +31,16 @@ export const useCreateMachine = createMutation<{
   invalidateKeys: ['machines', 'teams', 'bridges', 'dropdown-data'],
   successMessage: (vars) => `Machine "${vars.machineName}" created successfully`,
   errorMessage: 'Failed to create machine',
-  transformData: (data) => ({
-    ...data,
-    machineVault: data.machineVault || '{}'
-  })
+  transformData: (data) => {
+    // Extract only the fields expected by the API
+    const { teamName, bridgeName, machineName, machineVault } = data as any
+    return {
+      teamName,
+      bridgeName,
+      machineName,
+      machineVault: machineVault || '{}'
+    }
+  }
 })
 
 // Update machine name

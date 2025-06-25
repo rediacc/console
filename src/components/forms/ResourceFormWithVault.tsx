@@ -23,7 +23,7 @@ interface FormFieldConfig {
   sizeUnits?: string[] // For size type: ['G', 'T'] or ['percentage', 'G', 'T']
 }
 
-interface ResourceFormWithVaultProps<T = any> {
+interface ResourceFormWithVaultProps<T extends Record<string, any> = any> {
   form: UseFormReturn<T>
   fields: FormFieldConfig[]
   onSubmit: (data: T) => void | Promise<void>
@@ -68,7 +68,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
 
     // Set initial vault data in form
     useEffect(() => {
-      setValue(vaultFieldName as any, JSON.stringify(vaultData, null, 2))
+      setValue(vaultFieldName as any, JSON.stringify(vaultData))
     }, [vaultData, setValue, vaultFieldName])
 
     const handleFormSubmit = async (formData: any) => {
@@ -82,7 +82,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
         // Update the vault field with the latest vault data
         const dataWithVault = {
           ...formData,
-          [vaultFieldName]: JSON.stringify(vaultData, null, 2)
+          [vaultFieldName]: JSON.stringify(vaultData)
         }
         await onSubmit(dataWithVault)
       } catch (error) {
@@ -90,7 +90,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
       }
     }
 
-    const handleVaultChange = (data: Record<string, any>, hasChanges: boolean) => {
+    const handleVaultChange = (data: Record<string, any>) => {
       setVaultData(data)
     }
 
@@ -107,8 +107,6 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     }))
 
     const renderField = (field: FormFieldConfig) => {
-      const error = errors[field.name as keyof typeof errors]
-
       switch (field.type) {
         case 'select':
           return (
@@ -185,10 +183,10 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
                           }
                         }
                       }}
-                      onKeyPress={(e) => {
+                      onKeyDown={(e) => {
                         // Only allow numbers
-                        const charCode = e.which || e.keyCode
-                        if (charCode < 48 || charCode > 57) {
+                        const key = e.key
+                        if (!/[0-9]/.test(key) && key !== 'Backspace' && key !== 'Delete' && key !== 'Tab' && key !== 'Enter' && key !== 'ArrowLeft' && key !== 'ArrowRight') {
                           e.preventDefault()
                         }
                       }}
@@ -265,7 +263,10 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
           {fields.map((field) => {
             if (field.hidden) return null
 
-            const error = errors[field.name as keyof typeof errors]
+            const fieldName = field.name
+            const error = errors && typeof errors === 'object' && fieldName in errors 
+              ? (errors as Record<string, any>)[fieldName] 
+              : undefined
 
             return (
               <Form.Item
