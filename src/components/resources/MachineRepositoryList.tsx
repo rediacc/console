@@ -1399,81 +1399,123 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         <Card style={{ marginBottom: 20, marginTop: 20 }}>
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12} md={8}>
-              <Card size="small" bordered={false}>
-                <Statistic
-                  title={t('resources:repositories.systemInfo')}
-                  value={systemInfo.hostname}
-                  prefix={<DesktopOutlined />}
-                />
-                <Space direction="vertical" size={0} style={{ marginTop: 8 }}>
-                  <Text type="secondary">{systemInfo.os_name}</Text>
-                  <Text type="secondary">Kernel: {systemInfo.kernel}</Text>
-                  <Text type="secondary">CPUs: {systemInfo.cpu_count} x {systemInfo.cpu_model}</Text>
-                </Space>
+              <Card size="small" bordered={false} style={{ background: 'transparent', height: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, height: '100%' }}>
+                  <div style={{ fontSize: 24, lineHeight: 1, paddingTop: 16 }}>
+                    <DesktopOutlined />
+                  </div>
+                  <div style={{ flex: 1, paddingTop: 16 }}>
+                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+                      {t('resources:repositories.systemInfo')}
+                    </Text>
+                    <Text strong style={{ fontSize: 16, display: 'block' }}>{systemInfo.hostname}</Text>
+                    <Space direction="vertical" size={0} style={{ marginTop: 4 }}>
+                      <Text type="secondary" style={{ fontSize: 11 }}>{systemInfo.os_name}</Text>
+                      <Text type="secondary" style={{ fontSize: 11 }}>Kernel: {systemInfo.kernel}</Text>
+                      <Text type="secondary" style={{ fontSize: 11 }}>CPUs: {systemInfo.cpu_count} x {systemInfo.cpu_model}</Text>
+                    </Space>
+                  </div>
+                </div>
               </Card>
             </Col>
             <Col xs={24} sm={12} md={8}>
-              <Card size="small" bordered={false}>
-                <Statistic
-                  title={t('resources:repositories.memory')}
-                  value={systemInfo.memory.used}
-                  suffix={`/ ${systemInfo.memory.total}`}
-                  prefix={<DatabaseOutlined />}
-                />
-                <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-                  {t('resources:repositories.available')}: {systemInfo.memory.available}
-                </Text>
+              <Card size="small" bordered={false} style={{ background: 'transparent', height: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, height: '100%' }}>
+                  <div style={{ fontSize: 24, lineHeight: 1, paddingTop: 16 }}>
+                    <DatabaseOutlined />
+                  </div>
+                  <div style={{ flex: 1, paddingTop: 16 }}>
+                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+                      {t('resources:repositories.memory')}
+                    </Text>
+                    <Text strong style={{ fontSize: 16 }}>
+                      {systemInfo.memory.used}
+                      <Text type="secondary" style={{ fontSize: 14, fontWeight: 'normal' }}> / {systemInfo.memory.total}</Text>
+                    </Text>
+                    <Text type="secondary" style={{ display: 'block', fontSize: 11, marginTop: 4 }}>
+                      {t('resources:repositories.available')}: {systemInfo.memory.available}
+                    </Text>
+                  </div>
+                </div>
               </Card>
             </Col>
             <Col xs={24} sm={12} md={8}>
-              <Card size="small" bordered={false}>
-                <Statistic
-                  title={t('resources:repositories.uptime')}
-                  value={systemInfo.uptime}
-                  prefix={<ClockCircleOutlined />}
-                />
+              <Card size="small" bordered={false} style={{ background: 'transparent', height: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, height: '100%' }}>
+                  <div style={{ fontSize: 24, lineHeight: 1, paddingTop: 16 }}>
+                    <ClockCircleOutlined />
+                  </div>
+                  <div style={{ flex: 1, paddingTop: 16 }}>
+                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+                      {t('resources:repositories.uptime')}
+                    </Text>
+                    <Text strong style={{ fontSize: 16 }}>{systemInfo.uptime}</Text>
+                  </div>
+                </div>
               </Card>
             </Col>
             <Col xs={24} sm={12} md={8}>
-              <Card size="small" bordered={false}>
-                <Statistic
-                  title={t('resources:repositories.rootDisk')}
-                  value={systemInfo.disk.used}
-                  suffix={`/ ${systemInfo.disk.total}`}
-                  prefix={<HddOutlined />}
-                />
-                <Progress 
-                  percent={parseInt(systemInfo.disk.use_percent)} 
-                  size="small" 
-                  status={parseInt(systemInfo.disk.use_percent) > 90 ? 'exception' : 'normal'}
-                  style={{ marginTop: 8 }}
-                />
-                <Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
-                  {t('resources:repositories.available')}: {systemInfo.disk.available}
-                </Text>
+              <Card size="small" bordered={false} style={{ background: 'transparent', height: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, height: '100%' }}>
+                  <div style={{ fontSize: 24, lineHeight: 1, paddingTop: 16 }}>
+                    <HddOutlined />
+                  </div>
+                  <div style={{ flex: 1, paddingTop: 16 }}>
+                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+                      {t('resources:repositories.rootDisk')}
+                    </Text>
+                    <Text strong style={{ fontSize: 16 }}>
+                      {systemInfo.disk.used}
+                      <Text type="secondary" style={{ fontSize: 14, fontWeight: 'normal' }}> / {systemInfo.disk.total}</Text>
+                    </Text>
+                    <Text type="secondary" style={{ display: 'block', fontSize: 11, marginTop: 2 }}>
+                      {t('resources:repositories.available')}: {systemInfo.disk.available}
+                    </Text>
+                  </div>
+                  <div style={{ width: 80, paddingTop: 16 }}>
+                    <Progress 
+                      percent={parseInt(systemInfo.disk.use_percent)} 
+                      size="small" 
+                      status={parseInt(systemInfo.disk.use_percent) > 90 ? 'exception' : 'normal'}
+                      strokeWidth={4}
+                      format={(percent) => `${percent}%`}
+                    />
+                  </div>
+                </div>
               </Card>
             </Col>
             {systemInfo.datastore.path && (
               <Col xs={24} sm={12} md={8}>
-                <Card size="small" bordered={false}>
-                  <Statistic
-                    title={t('resources:repositories.datastore')}
-                    value={systemInfo.datastore.used}
-                    suffix={`/ ${systemInfo.datastore.total}`}
-                    prefix={<DatabaseOutlined />}
-                  />
-                  <Progress 
-                    percent={parseInt(systemInfo.datastore.use_percent)} 
-                    size="small" 
-                    status={parseInt(systemInfo.datastore.use_percent) > 90 ? 'exception' : 'normal'}
-                    style={{ marginTop: 8 }}
-                  />
-                  <Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
-                    {systemInfo.datastore.path}
-                  </Text>
-                  <Text type="secondary" style={{ display: 'block' }}>
-                    {t('resources:repositories.available')}: {systemInfo.datastore.available}
-                  </Text>
+                <Card size="small" bordered={false} style={{ background: 'transparent', height: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, height: '100%' }}>
+                    <div style={{ fontSize: 24, lineHeight: 1, paddingTop: 16 }}>
+                      <DatabaseOutlined />
+                    </div>
+                    <div style={{ flex: 1, paddingTop: 16 }}>
+                      <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+                        {t('resources:repositories.datastore')}
+                      </Text>
+                      <Text strong style={{ fontSize: 16 }}>
+                        {systemInfo.datastore.used}
+                        <Text type="secondary" style={{ fontSize: 14, fontWeight: 'normal' }}> / {systemInfo.datastore.total}</Text>
+                      </Text>
+                      <Text type="secondary" style={{ display: 'block', fontSize: 11, marginTop: 2, wordBreak: 'break-all' }}>
+                        {systemInfo.datastore.path}
+                      </Text>
+                      <Text type="secondary" style={{ display: 'block', fontSize: 11 }}>
+                        {t('resources:repositories.available')}: {systemInfo.datastore.available}
+                      </Text>
+                    </div>
+                    <div style={{ width: 80, paddingTop: 16 }}>
+                      <Progress 
+                        percent={parseInt(systemInfo.datastore.use_percent)} 
+                        size="small" 
+                        status={parseInt(systemInfo.datastore.use_percent) > 90 ? 'exception' : 'normal'}
+                        strokeWidth={4}
+                        format={(percent) => `${percent}%`}
+                      />
+                    </div>
+                  </div>
                 </Card>
               </Col>
             )}
