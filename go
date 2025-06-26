@@ -227,40 +227,45 @@ function show_help() {
   echo ""
 }
 
-# Check command line argument
-case "$1" in
-  dev)
-    dev
-    ;;
-  build)
-    build
-    ;;
-  preview)
-    preview
-    ;;
-  lint)
-    lint
-    ;;
-  test)
-    test
-    ;;
-  clean)
-    clean
-    ;;
-  release)
-    release
-    ;;
-  setup)
-    setup
-    ;;
-  status)
-    status
-    ;;
-  help|--help|-h)
-    show_help
-    ;;
-  *)
-    show_help
-    exit 1
-    ;;
-esac
+# Main function to handle commands
+main() {
+    case "$1" in
+      dev)
+        dev
+        ;;
+      build)
+        build
+        ;;
+      preview)
+        preview
+        ;;
+      lint)
+        lint
+        ;;
+      test)
+        test
+        ;;
+      clean)
+        clean
+        ;;
+      release)
+        release
+        ;;
+      setup)
+        setup
+        ;;
+      status)
+        status
+        ;;
+      help|--help|-h)
+        show_help
+        ;;
+      *)
+        show_help
+        exit 1
+        ;;
+    esac
+}
+
+# Execute main function if run directly
+[[ "${BASH_SOURCE[0]}" == "${0}" ]] && main "$@"
