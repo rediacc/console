@@ -8,7 +8,7 @@ import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import { Machine } from '@/types'
 import { useTeams } from '@/api/queries/teams'
-import { useRepositories } from '@/api/queries/repositories'
+import { useRepositories, useCreateRepository, useDeleteRepository } from '@/api/queries/repositories'
 import { queueMonitoringService } from '@/services/queueMonitoringService'
 import queueManagerService from '@/services/queueManagerService'
 import type { ColumnsType } from 'antd/es/table'
@@ -104,12 +104,15 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     visible: boolean
     repository: Repository | null
   }>({ visible: false, repository: null })
+  const [createdRepositoryName, setCreatedRepositoryName] = useState<string | null>(null)
   
   // Keep managed queue for function execution
   const managedQueueMutation = useManagedQueueItem()
   const { buildQueueVault } = useQueueVaultBuilder()
   const { data: teams } = useTeams()
-  const { data: teamRepositories = [], isLoading: repositoriesLoading } = useRepositories(machine.teamName)
+  const { data: teamRepositories = [], isLoading: repositoriesLoading, refetch: refetchRepositories } = useRepositories(machine.teamName)
+  const createRepositoryMutation = useCreateRepository()
+  const deleteRepositoryMutation = useDeleteRepository()
   
   // Use queue trace to monitor the task
   const { data: traceData } = useQueueItemTrace(taskId, !!taskId)
@@ -618,20 +621,74 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         return
       }
       
+      let finalParams = { ...functionData.params }
+      let repositoryGuid = repositoryData.repositoryGuid
+      let repositoryVault = repositoryData.vaultContent
+      
+      // Special handling for push function
+      if (functionData.function.name === 'push' && functionData.params.dest) {
+        try {
+          // Create a new repository with the destination filename
+          await createRepositoryMutation.mutateAsync({
+            teamName: machine.teamName,
+            repositoryName: functionData.params.dest,
+            parentRepoName: selectedRepository.name
+          })
+          
+          // Store the created repository name for potential cleanup
+          setCreatedRepositoryName(functionData.params.dest)
+          
+          // Immediately refresh the repositories list to get the new repository
+          const { data: updatedRepos } = await refetchRepositories()
+          
+          // Find the newly created repository to get its GUID
+          const newRepo = updatedRepos?.find(r => r.repositoryName === functionData.params.dest)
+          
+          if (newRepo && newRepo.repositoryGuid) {
+            // Use the new repository's GUID as the dest parameter
+            finalParams.dest = newRepo.repositoryGuid
+            // Keep the original repository GUID for the source
+            finalParams.repo = repositoryData.repositoryGuid
+            // Set the grand GUID from the parent repository
+            finalParams.grand = repositoryData.grandGuid || repositoryData.repositoryGuid || ''
+          } else {
+            // If we can't find the new repository, clean up and error
+            throw new Error('Could not find newly created repository')
+          }
+          
+        } catch (createError) {
+          // If we already created the repository but failed to get its GUID, clean it up
+          if (createdRepositoryName) {
+            try {
+              await deleteRepositoryMutation.mutateAsync({
+                teamName: machine.teamName,
+                repositoryName: createdRepositoryName
+              })
+            } catch (deleteError) {
+              console.error('Failed to cleanup repository after error:', deleteError)
+            }
+          }
+          showMessage('error', t('resources:repositories.failedToCreateRepository'))
+          setFunctionModalOpen(false)
+          setSelectedRepository(null)
+          return
+        }
+      }
+      
       // Build queue vault
       const queueVault = await buildQueueVault({
         teamName: machine.teamName,
         machineName: machine.machineName,
         bridgeName: machine.bridgeName,
         functionName: functionData.function.name,
-        params: functionData.params,
+        params: finalParams,
         priority: functionData.priority,
         description: functionData.description,
         addedVia: 'machine-repository-list',
         teamVault: team?.vaultContent || '{}',
         machineVault: machine.vaultContent || '{}',
-        repositoryGuid: repositoryData.repositoryGuid,
-        repositoryVault: repositoryData.vaultContent
+        repositoryGuid,
+        repositoryVault
       })
       
       const response = await managedQueueMutation.mutateAsync({
@@ -1483,7 +1540,26 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         visible={queueTraceModal.visible}
         onClose={() => {
           setQueueTraceModal({ visible: false, taskId: null })
-          // Modal closed
+          setCreatedRepositoryName(null) // Clear the created repository name
+          // Trigger refresh when modal closes
+          if (onActionComplete) {
+            onActionComplete()
+          }
+        }}
+        onTaskStatusChange={async (status, taskId) => {
+          // If push task failed and we created a repository, delete it
+          if (status === 'FAILED' && createdRepositoryName) {
+            try {
+              await deleteRepositoryMutation.mutateAsync({
+                teamName: machine.teamName,
+                repositoryName: createdRepositoryName
+              })
+              showMessage('info', t('resources:repositories.cleanedUpFailedPush'))
+            } catch (deleteError) {
+              console.error('Failed to cleanup repository after failed push:', deleteError)
+            }
+            setCreatedRepositoryName(null)
+          }
         }}
       />
       

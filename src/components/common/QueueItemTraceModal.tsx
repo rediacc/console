@@ -49,9 +49,10 @@ interface QueueItemTraceModalProps {
   taskId: string | null
   visible: boolean
   onClose: () => void
+  onTaskStatusChange?: (status: string, taskId: string) => void
 }
 
-const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visible, onClose }) => {
+const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visible, onClose, onTaskStatusChange }) => {
   const { t } = useTranslation(['queue', 'common'])
   const [lastTraceFetchTime, setLastTraceFetchTime] = useState<dayjs.Dayjs | null>(null)
   const [isMonitoring, setIsMonitoring] = useState(false)
@@ -176,6 +177,16 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
       setLastOutputStatus('')
     }
   }, [taskId, visible])
+  
+  // Monitor status changes and notify parent component
+  useEffect(() => {
+    if (traceData?.queueDetails && taskId && onTaskStatusChange) {
+      const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
+      if (status === 'FAILED' || status === 'COMPLETED' || status === 'CANCELLED') {
+        onTaskStatusChange(status, taskId)
+      }
+    }
+  }, [traceData?.queueDetails, taskId, onTaskStatusChange])
 
   const handleRefreshTrace = async () => {
     await refetchTrace()

@@ -81,6 +81,8 @@
     "queueItemCreated": "Creación del repositorio en cola exitosamente",
     "highestPriorityQueued": "Función de repositorio de máxima prioridad en cola para envío",
     "failedToCreateQueueItem": "Error al crear elemento de cola",
+    "failedToCreateRepository": "Error al crear repositorio de destino",
+    "cleanedUpFailedPush": "Repositorio limpiado después de fallo en push",
     "deleteSuccess": "Repositorio eliminado exitosamente",
     "deleteError": "Error al eliminar el repositorio",
     "placeholders": {

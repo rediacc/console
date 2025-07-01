@@ -81,6 +81,8 @@
     "queueItemCreated": "Repository creation queued successfully",
     "highestPriorityQueued": "Highest priority repository function queued for submission",
     "failedToCreateQueueItem": "Failed to create queue item",
+    "failedToCreateRepository": "Failed to create destination repository",
+    "cleanedUpFailedPush": "Cleaned up repository after failed push",
     "deleteSuccess": "Repository deleted successfully",
     "deleteError": "Failed to delete repository",
     "placeholders": {
