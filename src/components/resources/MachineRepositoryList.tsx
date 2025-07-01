@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Empty, Card, Row, Col, Statistic, Progress } from 'antd'
-import { InboxOutlined, CheckCircleOutlined, CloseCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, PlusOutlined, MinusOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined } from '@ant-design/icons'
+import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Empty, Card, Row, Col, Progress } from 'antd'
+import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, PlusOutlined, MinusOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { type QueueFunction, useCreateQueueItem } from '@/api/queries/queue'
+import { type QueueFunction } from '@/api/queries/queue'
 import { useQueueItemTrace } from '@/api/queries/queue'
-import { useQuery } from '@tanstack/react-query'
-import apiClient from '@/api/client'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import { Machine } from '@/types'
@@ -13,7 +11,6 @@ import { useTeams } from '@/api/queries/teams'
 import { useRepositories } from '@/api/queries/repositories'
 import { queueMonitoringService } from '@/services/queueMonitoringService'
 import queueManagerService from '@/services/queueManagerService'
-import { repositoryDataService } from '@/services/repositoryDataService'
 import type { ColumnsType } from 'antd/es/table'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
@@ -80,46 +77,6 @@ interface MachineRepositoryListProps {
   onActionComplete?: () => void
 }
 
-// Component to monitor a task and update state when complete
-const TaskMonitor: React.FC<{
-  taskId: string | null
-  onComplete: (data: any) => void
-  onError: (error: string) => void
-}> = ({ taskId, onComplete, onError }) => {
-  const { data: traceData } = useQueueItemTrace(taskId, !!taskId)
-  
-  useEffect(() => {
-    if (!traceData) return
-    
-    if (traceData?.queueDetails?.status === 'COMPLETED') {
-      if (traceData?.responseVaultContent?.vaultContent) {
-        try {
-          const vaultContent = JSON.parse(traceData.responseVaultContent.vaultContent)
-          if (vaultContent.result) {
-            const result = JSON.parse(vaultContent.result)
-            if (result.stdout) {
-              const parsedResult = JSON.parse(result.stdout)
-              onComplete(parsedResult)
-            } else if (result.command_output) {
-              // Some functions return command_output instead of stdout
-              const parsedResult = JSON.parse(result.command_output)
-              onComplete(parsedResult)
-            }
-          }
-        } catch (error) {
-          // Failed to parse response: error
-          onError('Failed to parse response')
-        }
-      } else {
-        onError('No response data received')
-      }
-    } else if (traceData?.queueDetails?.status === 'FAILED' || traceData?.queueDetails?.status === 'CANCELED') {
-      onError(traceData?.responseVaultContent?.error || 'Task failed')
-    }
-  }, [traceData, onComplete, onError])
-  
-  return null
-}
 
 export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete }) => {
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
@@ -128,7 +85,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const [repositories, setRepositories] = useState<Repository[]>([])
   const [systemContainers, setSystemContainers] = useState<any[]>([])
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [taskId, setTaskId] = useState<string | null>(null)
   const [queueId, setQueueId] = useState<string | null>(null)
@@ -143,17 +100,11 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const [expandedRows, setExpandedRows] = useState<string[]>([])
   const [servicesData, setServicesData] = useState<Record<string, any>>({})
   const [containersData, setContainersData] = useState<Record<string, any>>({})
-  const [loadingServices, setLoadingServices] = useState<Record<string, boolean>>({})
-  const [loadingContainers, setLoadingContainers] = useState<Record<string, boolean>>({})
-  const [servicesTaskIds, setServicesTaskIds] = useState<Record<string, string>>({})
-  const [containersTaskIds, setContainersTaskIds] = useState<Record<string, string>>({})
   const [localCommandModal, setLocalCommandModal] = useState<{
     visible: boolean
     repository: Repository | null
   }>({ visible: false, repository: null })
   
-  // Use direct queue item creation for list operations (not managed)
-  const createQueueItemMutation = useCreateQueueItem()
   // Keep managed queue for function execution
   const managedQueueMutation = useManagedQueueItem()
   const { buildQueueVault } = useQueueVaultBuilder()
@@ -164,16 +115,18 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const { data: traceData } = useQueueItemTrace(taskId, !!taskId)
 
   useEffect(() => {
-    // Check if we have vaultStatus data from the machine
+    // Use cached vaultStatus data from the machine object
     if (!repositoriesLoading && machine) {
       if (machine.vaultStatus) {
         // Check if vaultStatus is just an error message (not JSON)
         if (machine.vaultStatus.trim().startsWith('jq:') || 
             machine.vaultStatus.trim().startsWith('error:') ||
             !machine.vaultStatus.trim().startsWith('{')) {
-          // Fall through to fetchRepositories
+          // Invalid vaultStatus data
+          setError('Invalid repository data')
+          setLoading(false)
         } else {
-          // Use existing vaultStatus data instead of creating a new queue item
+          // Use existing vaultStatus data
           try {
             const vaultStatusData = JSON.parse(machine.vaultStatus)
             
@@ -183,7 +136,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             let cleanedResult = vaultStatusData.result;
             
             // First, try to find where the JSON ends by looking for the last valid JSON closing
-            // The result should end with "containers":[]]} or similar
             const jsonEndMatch = cleanedResult.match(/(\}[\s\n]*$)/);
             if (jsonEndMatch) {
               const lastBraceIndex = cleanedResult.lastIndexOf('}');
@@ -283,19 +235,20 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               }
               
               setLoading(false)
-              return // Exit early, we used cached data
             }
           }
           } catch (err) {
-            // Fall through to fetchRepositories if parsing fails
+            setError('Failed to parse repository data')
+            setLoading(false)
           }
         }
+      } else {
+        // No vaultStatus data available
+        setRepositories([])
+        setLoading(false)
       }
-      
-      // If no vaultStatus or parsing failed, fetch fresh data
-      fetchRepositories()
     }
-  }, [machine, repositoriesLoading])
+  }, [machine, repositoriesLoading, teamRepositories])
 
   // Fetch current token when modal might be opened
   useEffect(() => {
@@ -320,7 +273,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         setIsQueued(false)
         showMessage('info', t('resources:repositories.taskSubmitted'))
         
-        // Start monitoring the task with bridge info for priority 1 tasks
+        // Start monitoring the task
         queueMonitoringService.addTask(
           item.taskId,
           machine.teamName,
@@ -328,8 +281,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           'PENDING', // Initial status when task is created
           undefined, // retryCount
           undefined, // lastFailureReason
-          machine.bridgeName, // bridgeName for priority 1 tracking
-          1 // priority 1 for repository list tasks
+          machine.bridgeName,
+          4 // regular priority for repository list tasks
         )
       } else if (item?.status === 'failed') {
         setError(t('resources:repositories.failedToSubmit'))
@@ -453,12 +406,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 
                 // Update all services data at once
                 setServicesData(servicesMap)
-                // Clear loading states for all repositories
-                const loadingStates: Record<string, boolean> = {}
-                mappedRepositories.forEach((repo: Repository) => {
-                  loadingStates[repo.name] = false
-                })
-                setLoadingServices(loadingStates)
               }
               
               // Process containers data if included in response
@@ -487,12 +434,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 
                 // Update all containers data at once
                 setContainersData(containersMap)
-                // Clear loading states for all repositories
-                const loadingStates: Record<string, boolean> = {}
-                mappedRepositories.forEach((repo: Repository) => {
-                  loadingStates[repo.name] = false
-                })
-                setLoadingContainers(loadingStates)
               }
             } else {
               setRepositories([])
@@ -524,89 +465,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     }
   }, [traceData])
 
-  const fetchRepositories = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      
-      // Find team vault data
-      const team = teams?.find(t => t.teamName === machine.teamName)
-      
-      // Collect all repository credentials from team repositories
-      const allRepositoryCredentials: Record<string, string> = {}
-      teamRepositories.forEach(repo => {
-        if (repo.vaultContent) {
-          try {
-            const vaultData = JSON.parse(repo.vaultContent)
-            if (vaultData.credential) {
-              // Use repositoryGuid as the key instead of repositoryName
-              allRepositoryCredentials[repo.repositoryGuid] = vaultData.credential
-            }
-          } catch (e) {
-            // Silently skip repositories with invalid vault data
-            // Silently skip repositories with invalid vault data
-          }
-        }
-      })
-      
-      
-      // Build queue vault for the list function
-      const queueVault = await buildQueueVault({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
-        functionName: 'list',
-        params: {},
-        priority: 1, // Highest priority for UI tasks
-        description: `List repositories on ${machine.machineName}`,
-        addedVia: 'machine-repository-list',
-        teamVault: team?.vaultContent || '{}',
-        machineVault: machine.vaultContent || '{}',
-        allRepositoryCredentials
-      })
-      
-      // Use managed queue for priority 1 tasks so they appear in Queue Manager
-      const response = await managedQueueMutation.mutateAsync({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
-        queueVault,
-        priority: 1
-      })
-      
-      // Queue item response: response
-      
-      if (response?.taskId) {
-        // Task ID received: response.taskId
-        setTaskId(response.taskId)
-        // Start monitoring the task
-        showMessage('info', 'Repository list request submitted. Monitoring task...')
-        
-        // Start monitoring the task with bridge info for priority 1 tasks
-        queueMonitoringService.addTask(
-          response.taskId,
-          machine.teamName,
-          machine.machineName,
-          'PENDING', // Initial status when task is created
-          undefined, // retryCount
-          undefined, // lastFailureReason
-          machine.bridgeName, // bridgeName for priority 1 tracking
-          1 // priority 1 for repository list tasks
-        )
-      } else if (response?.isQueued && response?.queueId) {
-        // Item was queued for highest priority management
-        showMessage('info', t('resources:repositories.requestQueued'))
-        setQueueId(response.queueId)
-        setIsQueued(true)
-        // Keep loading state while we wait for task ID
-      } else {
-        // No taskId in response: response
-        setError('Failed to create queue item')
-        setLoading(false)
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch repositories')
-      setLoading(false)
+  const handleRefresh = () => {
+    // Trigger parent component to refresh machine data
+    if (onActionComplete) {
+      onActionComplete()
     }
   }
 
@@ -667,107 +529,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     }
   }
 
-  const fetchServicesData = async (repository: Repository) => {
-    setLoadingServices(prev => ({ ...prev, [repository.name]: true }))
-    try {
-      // Find team vault data
-      const team = teams?.find(t => t.teamName === machine.teamName)
-      
-      // Find the repository vault data
-      const repositoryData = teamRepositories.find(r => r.repositoryName === repository.name)
-      
-      if (!repositoryData || !repositoryData.vaultContent) {
-        showMessage('error', t('resources:repositories.noCredentialsFound', { name: repository.name }))
-        setLoadingServices(prev => ({ ...prev, [repository.name]: false }))
-        return
-      }
-      
-      // Build queue vault for service_list
-      const queueVault = await buildQueueVault({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
-        functionName: 'service_list',
-        params: {
-          repo: repositoryData.repositoryGuid
-        },
-        priority: 4,
-        description: `List services for ${repository.name}`,
-        addedVia: 'machine-repository-list-services',
-        teamVault: team?.vaultContent || '{}',
-        machineVault: machine.vaultContent || '{}',
-        repositoryGuid: repositoryData.repositoryGuid,
-        repositoryVault: repositoryData.vaultContent
-      })
-      
-      const response = await managedQueueMutation.mutateAsync({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
-        queueVault,
-        priority: 4
-      })
-      
-      if (response?.taskId) {
-        setServicesTaskIds(prev => ({ ...prev, [repository.name]: response.taskId }))
-      }
-    } catch (error) {
-      // Failed to fetch services: error
-      showMessage('error', t('resources:repositories.errorLoadingServices'))
-      setLoadingServices(prev => ({ ...prev, [repository.name]: false }))
-    }
-  }
-
-  const fetchContainersData = async (repository: Repository) => {
-    setLoadingContainers(prev => ({ ...prev, [repository.name]: true }))
-    try {
-      // Find team vault data
-      const team = teams?.find(t => t.teamName === machine.teamName)
-      
-      // Find the repository vault data
-      const repositoryData = teamRepositories.find(r => r.repositoryName === repository.name)
-      
-      if (!repositoryData || !repositoryData.vaultContent) {
-        showMessage('error', t('resources:repositories.noCredentialsFound', { name: repository.name }))
-        setLoadingContainers(prev => ({ ...prev, [repository.name]: false }))
-        return
-      }
-      
-      // Build queue vault for container_list
-      const queueVault = await buildQueueVault({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
-        functionName: 'container_list',
-        params: {
-          repo: repositoryData.repositoryGuid
-        },
-        priority: 4,
-        description: `List containers for ${repository.name}`,
-        addedVia: 'machine-repository-list-containers',
-        teamVault: team?.vaultContent || '{}',
-        machineVault: machine.vaultContent || '{}',
-        repositoryGuid: repositoryData.repositoryGuid,
-        repositoryVault: repositoryData.vaultContent
-      })
-      
-      const response = await managedQueueMutation.mutateAsync({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
-        queueVault,
-        priority: 4
-      })
-      
-      if (response?.taskId) {
-        setContainersTaskIds(prev => ({ ...prev, [repository.name]: response.taskId }))
-      }
-    } catch (error) {
-      // Failed to fetch containers: error
-      showMessage('error', t('resources:repositories.errorLoadingContainers'))
-      setLoadingContainers(prev => ({ ...prev, [repository.name]: false }))
-    }
-  }
 
   const handleContainerAction = async (repository: Repository, container: any, action: string) => {
     try {
@@ -824,10 +585,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         showMessage('success', t('resources:repositories.queueItemCreated'))
         setQueueTraceModal({ visible: true, taskId: response.taskId })
         
-        // Refresh containers data after action
-        setTimeout(() => {
-          fetchContainersData(repository)
-        }, 2000)
+        // Container action completed
       } else if (response?.isQueued) {
         showMessage('info', t('resources:repositories.highestPriorityQueued'))
       }
@@ -836,62 +594,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     }
   }
 
-  const handleSystemContainerAction = async (container: any, action: string) => {
-    try {
-      // Find team vault data
-      const team = teams?.find(t => t.teamName === machine.teamName)
-      
-      // Build params based on action
-      const params: Record<string, any> = {
-        container: container.id || container.name,
-        system: 'true' // Indicate this is a system container
-      }
-      
-      // Add action-specific params
-      if (action === 'container_remove') {
-        params.force = 'false' // Default to safe remove
-      } else if (action === 'container_logs') {
-        params.lines = '100'
-        params.follow = 'false'
-      }
-      
-      // Build queue vault for system container action
-      const queueVault = await buildQueueVault({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
-        functionName: action,
-        params,
-        priority: 4,
-        description: `${action} system container ${container.name}`,
-        addedVia: 'machine-repository-list-system-container-action',
-        teamVault: team?.vaultContent || '{}',
-        machineVault: machine.vaultContent || '{}'
-      })
-      
-      const response = await managedQueueMutation.mutateAsync({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
-        queueVault,
-        priority: 4
-      })
-      
-      if (response?.taskId) {
-        showMessage('success', t('resources:repositories.queueItemCreated'))
-        setQueueTraceModal({ visible: true, taskId: response.taskId })
-        
-        // Refresh repositories data after action to get updated system containers
-        setTimeout(() => {
-          fetchRepositories()
-        }, 2000)
-      } else if (response?.isQueued) {
-        showMessage('info', t('resources:repositories.highestPriorityQueued'))
-      }
-    } catch (error) {
-      showMessage('error', t('resources:repositories.failedToCreateQueueItem'))
-    }
-  }
 
   const handleFunctionSubmit = async (functionData: {
     function: QueueFunction
@@ -1000,7 +702,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     },
   ]
     
-    // Container columns
+    // Container columns (without actions column which will be added in renderExpandedRow)
     const containerColumns: ColumnsType<any> = [
       {
         title: t('resources:repositories.containerName'),
@@ -1045,6 +747,15 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         width: 120,
         render: (memory: string) => memory || '-',
       },
+    ]
+    
+  const renderExpandedRow = (record: Repository) => {
+    const services = servicesData[record.name]
+    const containers = containersData[record.name]
+    
+    // Container columns with repository context
+    const containerColumnsWithRepo: ColumnsType<any> = [
+      ...containerColumns.slice(0, -1), // All columns except actions
       {
         title: t('common:table.actions'),
         key: 'actions',
@@ -1098,7 +809,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           }
           
           // Always available actions
-          menuItems.push({ type: 'divider' })
+          menuItems.push({ type: 'divider' as const })
           menuItems.push({
             key: 'logs',
             label: t('functions:functions.container_logs.name'),
@@ -1137,12 +848,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       },
     ]
     
-  const renderExpandedRow = (record: Repository) => {
-    const services = servicesData[record.name]
-    const containers = containersData[record.name]
-    const isLoadingServices = loadingServices[record.name]
-    const isLoadingContainers = loadingContainers[record.name]
-    
     return (
       <div style={{ padding: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -1152,13 +857,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             size="small"
             icon={<ReloadOutlined />}
             onClick={() => {
-              // Refresh both services and containers data
-              if (record.has_services) {
-                fetchServicesData(record)
-              }
-              if (record.docker_running && record.accessible) {
-                fetchContainersData(record)
-              }
+              // Refresh button removed - data comes from machine vaultStatus
+              showMessage('info', t('resources:repositories.refreshNotAvailable'))
             }}
           >
             {t('common:refresh')}
@@ -1170,11 +870,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           <Typography.Title level={5} style={{ marginBottom: 16 }}>
             {t('resources:repositories.servicesList')}
           </Typography.Title>
-          {isLoadingServices ? (
-            <div style={{ textAlign: 'center', padding: 20 }}>
-              <Spin tip={t('resources:repositories.loadingServices')} />
-            </div>
-          ) : services?.error ? (
+          {services?.error ? (
             <Alert message={t('resources:repositories.errorLoadingServices')} description={services.error} type="error" />
           ) : services?.services && services.services.length > 0 ? (
             <Table
@@ -1195,15 +891,11 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           <Typography.Title level={5} style={{ marginBottom: 16 }}>
             {t('resources:repositories.containersList')}
           </Typography.Title>
-          {isLoadingContainers ? (
-            <div style={{ textAlign: 'center', padding: 20 }}>
-              <Spin tip={t('resources:repositories.loadingContainers')} />
-            </div>
-          ) : containers?.error ? (
+          {containers?.error ? (
             <Alert message={t('resources:repositories.errorLoadingContainers')} description={containers.error} type="error" />
           ) : containers?.containers && containers.containers.length > 0 ? (
             <Table
-              columns={containerColumns}
+              columns={containerColumnsWithRepo}
               dataSource={containers.containers}
               rowKey="id"
               size="small"
@@ -1288,13 +980,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 setExpandedRows(expandedRows.filter(key => key !== record.name))
               } else {
                 setExpandedRows([...expandedRows, record.name])
-                // Only fetch if we don't already have the data from the initial list call
-                if (record.has_services && !servicesData[record.name]) {
-                  fetchServicesData(record)
-                }
-                if (record.docker_running && record.accessible && !containersData[record.name]) {
-                  fetchContainersData(record)
-                }
               }
             }}
           />
@@ -1461,7 +1146,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         // Always add divider and advanced option at the end
         if (menuItems.length > 0) {
           menuItems.push({
-            type: 'divider'
+            type: 'divider' as const
           })
         }
         
@@ -1542,7 +1227,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           type="error"
           showIcon
           action={
-            <Button size="small" onClick={fetchRepositories}>
+            <Button size="small" onClick={handleRefresh}>
               {t('common:actions.retry')}
             </Button>
           }
@@ -1567,7 +1252,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           <Button
             size="small"
             icon={<ReloadOutlined />}
-            onClick={fetchRepositories}
+            onClick={handleRefresh}
             loading={loading}
           >
             {t('common:actions.refresh')}
@@ -1748,57 +1433,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         </>
       )}
       
-      {/* Task Monitors for Services */}
-      {Object.entries(servicesTaskIds).map(([repoName, taskId]) => (
-        <TaskMonitor
-          key={`service-${repoName}`}
-          taskId={taskId}
-          onComplete={(data) => {
-            setServicesData(prev => ({ ...prev, [repoName]: data }))
-            setLoadingServices(prev => ({ ...prev, [repoName]: false }))
-            setServicesTaskIds(prev => {
-              const newIds = { ...prev }
-              delete newIds[repoName]
-              return newIds
-            })
-          }}
-          onError={(error) => {
-            setServicesData(prev => ({ ...prev, [repoName]: { error } }))
-            setLoadingServices(prev => ({ ...prev, [repoName]: false }))
-            setServicesTaskIds(prev => {
-              const newIds = { ...prev }
-              delete newIds[repoName]
-              return newIds
-            })
-          }}
-        />
-      ))}
-      
-      {/* Task Monitors for Containers */}
-      {Object.entries(containersTaskIds).map(([repoName, taskId]) => (
-        <TaskMonitor
-          key={`container-${repoName}`}
-          taskId={taskId}
-          onComplete={(data) => {
-            setContainersData(prev => ({ ...prev, [repoName]: data }))
-            setLoadingContainers(prev => ({ ...prev, [repoName]: false }))
-            setContainersTaskIds(prev => {
-              const newIds = { ...prev }
-              delete newIds[repoName]
-              return newIds
-            })
-          }}
-          onError={(error) => {
-            setContainersData(prev => ({ ...prev, [repoName]: { error } }))
-            setLoadingContainers(prev => ({ ...prev, [repoName]: false }))
-            setContainersTaskIds(prev => {
-              const newIds = { ...prev }
-              delete newIds[repoName]
-              return newIds
-            })
-          }}
-        />
-      ))}
       
       {/* Function Selection Modal */}
       <FunctionSelectionModal
@@ -1833,7 +1467,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           })(),
           grand: teamRepositories.find(r => r.repositoryName === selectedRepository?.name)?.grandGuid || ''
         }}
-        preselectedFunction={selectedFunction}
+        preselectedFunction={selectedFunction || undefined}
       />
       
       {/* Queue Item Trace Modal */}
@@ -1842,8 +1476,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         visible={queueTraceModal.visible}
         onClose={() => {
           setQueueTraceModal({ visible: false, taskId: null })
-          // Refresh repositories when modal is closed
-          fetchRepositories()
+          // Modal closed
         }}
       />
       
