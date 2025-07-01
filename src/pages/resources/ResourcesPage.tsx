@@ -255,7 +255,8 @@ const ResourcesPage: React.FC = () => {
   const [queueTraceModal, setQueueTraceModal] = useState<{
     visible: boolean
     taskId: string | null
-  }>({ visible: false, taskId: null })
+    machineName?: string | null
+  }>({ visible: false, taskId: null, machineName: null })
   
   // Connectivity test modal state
   const [connectivityTestModal, setConnectivityTestModal] = useState(false)
@@ -431,7 +432,7 @@ const ResourcesPage: React.FC = () => {
             
             // Check if response has taskId (immediate submission) or queueId (queued)
             if (response?.taskId) {
-              setQueueTraceModal({ visible: true, taskId: response.taskId })
+              setQueueTraceModal({ visible: true, taskId: response.taskId, machineName: machine.value })
             } else if (response?.isQueued) {
               // Item was queued, don't open trace modal yet
               showMessage('info', 'Repository creation queued for submission')
@@ -444,6 +445,8 @@ const ResourcesPage: React.FC = () => {
             await mutations.repository.create.mutateAsync(data)
             showMessage('success', t('repositories.createSuccess'))
             closeUnifiedModal()
+            // Refresh machines to show the new repository
+            refetchMachines()
           }
         } else {
           await mutations[resourceType as keyof typeof mutations].create.mutateAsync(data)
@@ -681,7 +684,7 @@ const ResourcesPage: React.FC = () => {
       
       if (response?.taskId) {
         showMessage('success', t(`${resourceType}s:queueItemCreated`));
-        setQueueTraceModal({ visible: true, taskId: response.taskId });
+        setQueueTraceModal({ visible: true, taskId: response.taskId, machineName: machineName });
       } else if (response?.isQueued) {
         // Item was queued for highest priority management
         showMessage('info', `Highest priority ${resourceType} function queued for submission`);
@@ -1451,15 +1454,25 @@ const ResourcesPage: React.FC = () => {
         taskId={queueTraceModal.taskId}
         visible={queueTraceModal.visible}
         onClose={() => {
-          setQueueTraceModal({ visible: false, taskId: null })
-          // Trigger a refresh for all expanded machines
-          setRefreshKeys(prev => {
-            const newKeys = { ...prev }
-            expandedRowKeys.forEach(key => {
-              newKeys[key] = Date.now()
+          setQueueTraceModal({ visible: false, taskId: null, machineName: null })
+          // If we know the specific machine, refresh its data
+          if (queueTraceModal.machineName) {
+            setRefreshKeys(prev => ({
+              ...prev,
+              [queueTraceModal.machineName]: Date.now()
+            }))
+          } else {
+            // Otherwise refresh all expanded machines
+            setRefreshKeys(prev => {
+              const newKeys = { ...prev }
+              expandedRowKeys.forEach(key => {
+                newKeys[key] = Date.now()
+              })
+              return newKeys
             })
-            return newKeys
-          })
+          }
+          // Refresh machines data to update repository lists
+          refetchMachines()
         }}
       />
 
