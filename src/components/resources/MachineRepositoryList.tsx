@@ -1467,7 +1467,14 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           })(),
           grand: teamRepositories.find(r => r.repositoryName === selectedRepository?.name)?.grandGuid || ''
         }}
+        initialParams={
+          selectedFunction === 'push' && selectedRepository ? {
+            dest: `${selectedRepository.name}-${selectedRepository.mounted ? 'online' : 'offline'}-${new Date().toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '-')}`,
+            state: selectedRepository.mounted ? 'online' : 'offline'
+          } : {}
+        }
         preselectedFunction={selectedFunction || undefined}
+        currentMachineName={machine.machineName}
       />
       
       {/* Queue Item Trace Modal */}

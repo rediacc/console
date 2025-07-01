@@ -33,6 +33,8 @@ interface FunctionSelectionModalProps {
   hiddenParams?: string[] // Parameters to hide from the form
   defaultParams?: Record<string, any> // Default values for hidden parameters
   preselectedFunction?: string // Preselected function name
+  initialParams?: Record<string, any> // Initial values for visible parameters
+  currentMachineName?: string // Current machine name for context
 }
 
 const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
@@ -48,7 +50,9 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   machines = [],
   hiddenParams = [],
   defaultParams = {},
-  preselectedFunction
+  preselectedFunction,
+  initialParams = {},
+  currentMachineName
 }) => {
   const { t } = useTranslation(['functions', 'common', 'machines'])
   const { functions: localizedFunctions, categories } = useLocalizedFunctions()
@@ -61,6 +65,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   const [functionDescription, setFunctionDescription] = useState('')
   const [functionSearchTerm, setFunctionSearchTerm] = useState('')
   const [selectedMachine, setSelectedMachine] = useState<string>('')
+  const [previousFunctionName, setPreviousFunctionName] = useState<string | null>(null)
 
   // Fetch repositories for the current team
   const { data: repositories } = useRepositories(teamName)
@@ -72,44 +77,61 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   // Initialize parameters when function is selected
   useEffect(() => {
     if (selectedFunction) {
-      // Only initialize if we don't already have params (to avoid clearing user selections)
+      const functionChanged = previousFunctionName !== selectedFunction.name
+      
+      // Initialize params if function changed or no params exist
       setFunctionParams(prevParams => {
-        // If we already have some params, don't reinitialize
-        if (Object.keys(prevParams).length > 0) {
+        // If we already have params and function hasn't changed, don't reinitialize
+        if (Object.keys(prevParams).length > 0 && !functionChanged) {
           return prevParams
         }
         
-        const initialParams: Record<string, any> = {}
+        const defaultInitialParams: Record<string, any> = {}
         
         Object.entries(selectedFunction.params).forEach(([paramName, paramInfo]) => {
-          if (paramInfo.format === 'size' && paramInfo.units) {
+          // Check if we have an initial value from props
+          if (initialParams[paramName] !== undefined && !hiddenParams.includes(paramName)) {
+            defaultInitialParams[paramName] = initialParams[paramName]
+            // For size parameters, also set the unit and value fields
+            if (paramInfo.format === 'size' && paramInfo.units) {
+              const match = String(initialParams[paramName]).match(/^(\d+)([%GT]?)$/)
+              if (match) {
+                const [, value, unit] = match
+                defaultInitialParams[`${paramName}_value`] = parseInt(value)
+                defaultInitialParams[`${paramName}_unit`] = unit || (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0])
+              }
+            }
+          } else if (paramInfo.format === 'size' && paramInfo.units) {
             // Initialize with default values for size parameters
             if (paramInfo.default) {
               const match = paramInfo.default.match(/^(\d+)([%GT]?)$/)
               if (match) {
                 const [, value, unit] = match
-                initialParams[`${paramName}_value`] = parseInt(value)
-                initialParams[`${paramName}_unit`] = unit || (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0])
-                initialParams[paramName] = paramInfo.default
+                defaultInitialParams[`${paramName}_value`] = parseInt(value)
+                defaultInitialParams[`${paramName}_unit`] = unit || (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0])
+                defaultInitialParams[paramName] = paramInfo.default
               }
             } else {
               // Set default unit
               const defaultUnit = paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0]
-              initialParams[`${paramName}_unit`] = defaultUnit
+              defaultInitialParams[`${paramName}_unit`] = defaultUnit
             }
           } else if (paramInfo.options && paramInfo.options.length > 0) {
             // Initialize dropdown parameters with default value
-            initialParams[paramName] = paramInfo.default || paramInfo.options[0]
+            defaultInitialParams[paramName] = paramInfo.default || paramInfo.options[0]
           } else if (paramInfo.default) {
             // Initialize other parameters with default value
-            initialParams[paramName] = paramInfo.default
+            defaultInitialParams[paramName] = paramInfo.default
           }
         })
         
-        return initialParams
+        return defaultInitialParams
       })
+      
+      // Update previous function name
+      setPreviousFunctionName(selectedFunction.name)
     }
-  }, [selectedFunction])
+  }, [selectedFunction, initialParams, hiddenParams, previousFunctionName])
 
   // Handle preselected function
   useEffect(() => {
@@ -126,9 +148,37 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
       setFunctionDescription('')
       setFunctionSearchTerm('')
       setSelectedMachine('')
+      setPreviousFunctionName(null)
       // Don't reset selectedFunction here as it might be preselected
+    } else if (open && preselectedFunction) {
+      // When modal opens with a preselected function, force reinitialization
+      setFunctionParams({})
+      setPreviousFunctionName(null)
     }
-  }, [open])
+  }, [open, preselectedFunction])
+
+  // Re-apply initial params when they change and modal is open
+  useEffect(() => {
+    if (open && selectedFunction && Object.keys(initialParams).length > 0) {
+      setFunctionParams(prevParams => {
+        const newParams = { ...prevParams }
+        
+        // Apply each initial param
+        Object.entries(initialParams).forEach(([paramName, value]) => {
+          if (!hiddenParams.includes(paramName)) {
+            newParams[paramName] = value
+            
+            // For the state parameter in push function, ensure it's set
+            if (paramName === 'state' && selectedFunction.name === 'push') {
+              newParams[paramName] = value
+            }
+          }
+        })
+        
+        return newParams
+      })
+    }
+  }, [open, initialParams, selectedFunction, hiddenParams])
 
   // Filter functions based on allowed categories and search term
   const filteredFunctions = useMemo(() => {
@@ -250,6 +300,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
     setFunctionDescription('')
     setFunctionSearchTerm('')
     setSelectedMachine('')
+    setPreviousFunctionName(null)
   }
 
   const handleCancel = () => {
@@ -260,6 +311,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
     setFunctionDescription('')
     setFunctionSearchTerm('')
     setSelectedMachine('')
+    setPreviousFunctionName(null)
     onCancel()
   }
 
@@ -498,7 +550,9 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                 functionParams['destinationType'] === 'machine'
                                   ? machinesData?.map(machine => ({
                                       value: machine.machineName,
-                                      label: machine.machineName
+                                      label: machine.machineName === currentMachineName 
+                                        ? `${machine.machineName} (${t('machines:currentMachine')})`
+                                        : machine.machineName
                                     })) || []
                                   : storageData?.map(storage => ({
                                       value: storage.storageName,

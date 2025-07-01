@@ -95,6 +95,7 @@
   "advanced": "Advanced",
   "lastUpdated": "Last Updated",
   "statusUnknown": "Unknown",
+  "currentMachine": "Current Machine",
   "justNow": "Just now",
   "minutesAgo": "{{count}} minute ago",
   "minutesAgo_plural": "{{count}} minutes ago",

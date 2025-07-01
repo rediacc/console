@@ -94,6 +94,7 @@
   "advanced": "Avanzado",
   "lastUpdated": "Última Actualización",
   "statusUnknown": "Desconocido",
+  "currentMachine": "Máquina Actual",
   "justNow": "Justo ahora",
   "minutesAgo": "hace {{count}} minuto",
   "minutesAgo_plural": "hace {{count}} minutos",
