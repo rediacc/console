@@ -10,7 +10,8 @@ import {
   ScheduleOutlined,
   FunctionOutlined,
   WifiOutlined,
-  HistoryOutlined
+  HistoryOutlined,
+  ReloadOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
@@ -212,7 +213,7 @@ const ResourcesPage: React.FC = () => {
   const teamsList: Team[] = teams || []
   
   // Machine hooks - fetch machines for connectivity test and repository creation
-  const { data: machines = [] } = useMachines(
+  const { data: machines = [], refetch: refetchMachines } = useMachines(
     selectedTeams.length > 0 && (teamResourcesTab === 'machines' || teamResourcesTab === 'repositories') ? selectedTeams : undefined,
     teamResourcesTab === 'machines' || teamResourcesTab === 'repositories'
   )
@@ -220,7 +221,7 @@ const ResourcesPage: React.FC = () => {
 
 
   // Repository hooks - fetch repositories when we have selected teams (needed for machine functions too)
-  const { data: repositories = [], isLoading: repositoriesLoading } = useRepositories(
+  const { data: repositories = [], isLoading: repositoriesLoading, refetch: refetchRepositories } = useRepositories(
     selectedTeams.length > 0 ? selectedTeams : undefined
   )
   const createRepositoryMutation = useCreateRepository()
@@ -229,7 +230,7 @@ const ResourcesPage: React.FC = () => {
   const updateRepositoryVaultMutation = useUpdateRepositoryVault()
 
   // Storage hooks - only fetch when storage tab is active
-  const { data: storages = [], isLoading: storagesLoading } = useStorage(
+  const { data: storages = [], isLoading: storagesLoading, refetch: refetchStorage } = useStorage(
     selectedTeams.length > 0 && teamResourcesTab === 'storage' ? selectedTeams : undefined
   )
   const createStorageMutation = useCreateStorage()
@@ -238,7 +239,7 @@ const ResourcesPage: React.FC = () => {
   const updateStorageVaultMutation = useUpdateStorageVault()
 
   // Schedule hooks - only fetch when schedules tab is active
-  const { data: schedules = [], isLoading: schedulesLoading } = useSchedules(
+  const { data: schedules = [], isLoading: schedulesLoading, refetch: refetchSchedules } = useSchedules(
     selectedTeams.length > 0 && teamResourcesTab === 'schedules' ? selectedTeams : undefined
   )
   const createScheduleMutation = useCreateSchedule()
@@ -1270,6 +1271,32 @@ const ResourcesPage: React.FC = () => {
                           Connectivity Test
                         </Button>
                       )}
+                      <Button 
+                        icon={<ReloadOutlined />}
+                        onClick={() => {
+                          switch(teamResourcesTab) {
+                            case 'machines':
+                              refetchMachines()
+                              // Also update refresh keys for expanded rows
+                              setRefreshKeys(prev => ({
+                                ...prev,
+                                _global: Date.now()
+                              }))
+                              break
+                            case 'repositories':
+                              refetchRepositories()
+                              break
+                            case 'storage':
+                              refetchStorage()
+                              break
+                            case 'schedules':
+                              refetchSchedules()
+                              break
+                          }
+                        }}
+                      >
+                        Refresh
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -1333,6 +1360,29 @@ const ResourcesPage: React.FC = () => {
                       Connectivity Test
                     </Button>
                   )}
+                  <Button 
+                    icon={<ReloadOutlined />}
+                    onClick={() => {
+                      switch(teamResourcesTab) {
+                        case 'machines':
+                          refetchMachines()
+                          // Also update refresh keys for expanded rows
+                          setRefreshKeys(prev => ({
+                            ...prev,
+                            _global: Date.now()
+                          }))
+                          break
+                        case 'repositories':
+                          refetchRepositories()
+                          break
+                        case 'storage':
+                          refetchStorage()
+                          break
+                      }
+                    }}
+                  >
+                    Refresh
+                  </Button>
                 </Space>
               </div>
               

@@ -24,6 +24,9 @@
     "viewTrace": "View Trace",
     "close": "Close"
   },
+  "close": "Close",
+  "copiedToClipboard": "Copied to clipboard",
+  "copyFailed": "Failed to copy to clipboard",
   "export": "Export",
   "exportCSV": "Export as CSV",
   "exportJSON": "Export as JSON",
@@ -74,6 +77,8 @@
     "important": "Important",
     "cancel": "Cancel"
   },
+  "yes": "Yes",
+  "no": "No",
   "dashboard": {
     "availablePlans": "Available Plans",
     "upgradeOptions": "Upgrade Options",
@@ -130,6 +135,14 @@
     "sshPasswordRequiredWhenNoKey": "SSH password is required for initial key setup",
     "providerFields": "{{provider}} Configuration",
     "providerRequiredFields": "Required fields for {{provider}}",
+    "testConnection": {
+      "button": "Test Connection",
+      "missingFields": "Please fill in IP address, username, and password before testing",
+      "initiated": "SSH connection test has been initiated. Please check the queue for results.",
+      "success": "SSH connection successful",
+      "failed": "SSH connection failed",
+      "testing": "Testing connection..."
+    },
     "fields": {
       "MACHINE": {
         "description": "Machine configuration for SSH access and storage",

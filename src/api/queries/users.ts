@@ -18,6 +18,17 @@ export interface PermissionGroup {
   permissionCount: number
 }
 
+export interface UserRequest {
+  requestId: string
+  userEmail: string
+  sessionName: string
+  ipAddress: string
+  userAgent: string
+  createdAt: string
+  lastActivity: string
+  isActive: boolean
+}
+
 // Get all users
 export const useUsers = () => {
   return useQuery({
@@ -136,4 +147,27 @@ export const useUpdateUserPassword = createMutation<{ userEmail: string; newPass
       userNewPass: passwordHash,
     }
   }
+})
+
+// Get active user requests/sessions
+export const useUserRequests = () => {
+  return useQuery({
+    queryKey: ['user-requests'],
+    queryFn: async () => {
+      const response = await apiClient.get('/GetUserRequests')
+      return response.tables[1]?.data || []
+    },
+    staleTime: 10 * 1000, // 10 seconds - refresh more frequently for active sessions
+    refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
+  })
+}
+
+// Delete/terminate a user request/session
+export const useDeleteUserRequest = createMutation<{ requestId: string }>({
+  endpoint: '/DeleteUserRequest',
+  method: 'delete',
+  invalidateKeys: ['user-requests'],
+  successMessage: (vars) => `User session terminated successfully`,
+  errorMessage: 'Failed to terminate user session',
+  transformData: (data) => ({ requestId: data.requestId })
 })

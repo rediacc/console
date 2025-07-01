@@ -8,6 +8,7 @@ import { SimpleJsonEditor } from './SimpleJsonEditor'
 import { queueMonitoringService } from '@/services/queueMonitoringService'
 import { showMessage } from '@/utils/messages'
 import { useTheme } from '@/context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 import './QueueItemTraceModal.css'
 
 dayjs.extend(relativeTime)
@@ -27,6 +28,23 @@ const normalizeProperty = <T extends Record<string, any>>(obj: T, ...propertyNam
   return null
 }
 
+// Helper function to format duration in seconds to human readable format
+const formatDuration = (seconds: number): string => {
+  if (seconds < 60) {
+    return `${seconds}s`
+  }
+  return `${Math.floor(seconds / 60)}m`
+}
+
+// Helper function to format duration for display with full text
+const formatDurationFull = (seconds: number): string => {
+  if (seconds < 60) {
+    return `${seconds} seconds`
+  }
+  const minutes = Math.floor(seconds / 60)
+  return `${minutes} minute${minutes !== 1 ? 's' : ''}`
+}
+
 interface QueueItemTraceModalProps {
   taskId: string | null
   visible: boolean
@@ -34,6 +52,7 @@ interface QueueItemTraceModalProps {
 }
 
 const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visible, onClose }) => {
+  const { t } = useTranslation(['queue', 'common'])
   const [lastTraceFetchTime, setLastTraceFetchTime] = useState<dayjs.Dayjs | null>(null)
   const [isMonitoring, setIsMonitoring] = useState(false)
   const [activeKeys, setActiveKeys] = useState<string[]>(['overview']) // Start with overview panel open
@@ -504,6 +523,44 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             />
           )}
 
+          {/* Final Status Alert - Shows when task is completed, failed, or cancelled */}
+          {traceData.queueDetails && (
+            normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' ||
+            normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED' ||
+            (normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED' && 
+             (normalizeProperty(traceData.queueDetails, 'permanentlyFailed', 'PermanentlyFailed') ||
+              (normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0) >= 2))
+          ) && (
+            <Alert
+              message={
+                normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' 
+                  ? t('queue:taskStatus.completedTitle')
+                  : normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED'
+                  ? t('queue:taskStatus.cancelledTitle')
+                  : t('queue:taskStatus.failedTitle')
+              }
+              description={
+                normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' 
+                  ? `The task finished successfully after ${formatDurationFull(traceData.queueDetails.totalDurationSeconds)}.`
+                  : normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED'
+                  ? t('queue:taskStatus.cancelledDescription')
+                  : t('queue:taskStatus.failedDescription', { retries: normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0 })
+              }
+              type={
+                normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' 
+                  ? "success" 
+                  : "error"
+              }
+              showIcon
+              icon={
+                normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' 
+                  ? <CheckCircleOutlined />
+                  : <CloseCircleOutlined />
+              }
+              style={{ marginBottom: 16 }}
+            />
+          )}
+
           {/* Failure Reason Alert */}
           {traceData.queueDetails && normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason') && 
            normalizeProperty(traceData.queueDetails, 'status', 'Status') !== 'CANCELLING' && (
@@ -605,7 +662,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                       <Text type="secondary">Duration</Text>
                       <div>
                         <Text strong style={{ fontSize: '18px' }}>
-                          {Math.floor(traceData.queueDetails.totalDurationSeconds / 60)}m
+                          {formatDuration(traceData.queueDetails.totalDurationSeconds)}
                         </Text>
                       </div>
                     </div>
@@ -738,23 +795,23 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                       <Row gutter={[16, 16]}>
                         <Col span={8}>
                           <Statistic
-                            title="Total Duration"
-                            value={Math.floor(traceData.queueDetails.totalDurationSeconds / 60)}
-                            suffix="min"
+                            title={t('queue:statistics.totalDuration')}
+                            value={traceData.queueDetails.totalDurationSeconds < 60 ? traceData.queueDetails.totalDurationSeconds : Math.floor(traceData.queueDetails.totalDurationSeconds / 60)}
+                            suffix={traceData.queueDetails.totalDurationSeconds < 60 ? "sec" : "min"}
                             prefix={<ClockCircleOutlined />}
                           />
                         </Col>
                         <Col span={8}>
                           <Statistic
-                            title="Processing"
-                            value={traceData.queueDetails.processingDurationSeconds ? Math.floor(traceData.queueDetails.processingDurationSeconds / 60) : 0}
-                            suffix="min"
+                            title={t('queue:statistics.processing')}
+                            value={traceData.queueDetails.processingDurationSeconds ? (traceData.queueDetails.processingDurationSeconds < 60 ? traceData.queueDetails.processingDurationSeconds : Math.floor(traceData.queueDetails.processingDurationSeconds / 60)) : 0}
+                            suffix={traceData.queueDetails.processingDurationSeconds && traceData.queueDetails.processingDurationSeconds < 60 ? "sec" : "min"}
                             prefix={<SyncOutlined />}
                           />
                         </Col>
                         <Col span={8}>
                           <Statistic
-                            title="Processing"
+                            title={t('queue:statistics.timeSinceAssigned')}
                             value={traceData.queueDetails.assignedTime ? dayjs().diff(dayjs(traceData.queueDetails.assignedTime), 'minute') : 'N/A'}
                             suffix={traceData.queueDetails.assignedTime ? 'min' : ''}
                             prefix={<HourglassOutlined />}
@@ -923,11 +980,11 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   </Descriptions.Item>
                 )}
                 <Descriptions.Item label="Total Duration">
-                  {Math.floor(traceData.queueDetails.totalDurationSeconds / 60)} minutes
+                  {formatDurationFull(traceData.queueDetails.totalDurationSeconds)}
                 </Descriptions.Item>
                 {traceData.queueDetails.processingDurationSeconds && (
                   <Descriptions.Item label="Processing Duration">
-                    {Math.floor(traceData.queueDetails.processingDurationSeconds / 60)} minutes
+                    {formatDurationFull(traceData.queueDetails.processingDurationSeconds)}
                   </Descriptions.Item>
                 )}
                 <Descriptions.Item label="Created By">

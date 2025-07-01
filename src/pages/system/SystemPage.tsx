@@ -42,6 +42,7 @@ import ResourceFormWithVault, { ResourceFormWithVaultRef } from '@/components/fo
 import VaultEditorModal from '@/components/common/VaultEditorModal'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
 import UnifiedResourceModal, { ResourceType } from '@/components/common/UnifiedResourceModal'
+import UserSessionsTab from '@/components/system/UserSessionsTab'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import { 
   useUpdateCompanyVault, 
@@ -1540,10 +1541,21 @@ const SystemPage: React.FC = () => {
     ),
   }
 
+  const userSessionsTab = {
+    key: 'sessions',
+    label: (
+      <span>
+        <DesktopOutlined />
+        User Sessions
+      </span>
+    ),
+    children: <UserSessionsTab />,
+  }
+
   // Compose tabs based on UI mode
   const tabItems = uiMode === 'simple' 
     ? [usersTab, teamsTab]
-    : [usersTab, teamsTab, permissionsTab]
+    : [usersTab, teamsTab, permissionsTab, userSessionsTab]
 
   return (
     <>

@@ -250,9 +250,13 @@
           "label": "Destination Filename",
           "help": "Name for the backup file"
         },
+        "destinationType": {
+          "label": "Destination Type",
+          "help": "Select whether to push to a machine or storage"
+        },
         "to": {
           "label": "Destination",
-          "help": "Destination machine/storage"
+          "help": "Select the destination machine or storage"
         },
         "state": {
           "label": "Required State",
@@ -281,14 +285,6 @@
     "ping": {
       "name": "ping",
       "description": "Test network connectivity to the machine"
-    },
-    "service_list": {
-      "name": "service_list",
-      "description": "List systemd services for a repository"
-    },
-    "container_list": {
-      "name": "container_list",
-      "description": "List Docker containers for a repository"
     },
     "container_start": {
       "name": "container_start",

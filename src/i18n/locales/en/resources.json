@@ -152,7 +152,9 @@
     "deleteError": "Failed to delete storage",
     "placeholders": {
       "enterStorageName": "Enter storage name"
-    }
+    },
+    "selectStorage": "Select storage",
+    "noStorageFound": "No storage found"
   },
   "schedules": {
     "scheduleName": "Schedule Name",
@@ -210,5 +212,38 @@
     "exportCSV": "Export as CSV",
     "exportJSON": "Export as JSON",
     "exportSuccess": "Audit history exported as {{format}}"
+  },
+  "local": "Local",
+  "localCommandBuilder": {
+    "title": "Local Command Builder",
+    "description": "Build CLI commands for machine {{machine}} and repository {{repository}}",
+    "syncTab": "Sync (rediacc-cli-sync)",
+    "terminalTab": "Terminal (rediacc-cli-term)",
+    "action": "Action",
+    "upload": "Upload (Local → Remote)",
+    "download": "Download (Remote → Local)",
+    "localPath": "Local Path",
+    "localPathHelp": "Path to the local folder for sync operations",
+    "options": "Options",
+    "mirror": "Mirror",
+    "mirrorHelp": "Delete files not present at source",
+    "verify": "Verify",
+    "verifyHelp": "Use checksums to verify all transfers",
+    "confirm": "Confirm",
+    "confirmHelp": "Preview changes and ask for confirmation",
+    "devMode": "Dev Mode",
+    "devModeHelp": "Relaxes SSH host key checking",
+    "command": "Command (Optional)",
+    "commandHelp": "Leave empty for interactive terminal. Example: docker ps",
+    "useDocker": "Run with Docker",
+    "useDockerHelp": "Run the command using the rediacc/cli Docker image",
+    "generatedCommand": "Generated Command",
+    "copyCommand": "Copy Command",
+    "operatingSystem": "Operating System",
+    "unixLinuxMac": "Unix/Linux/Mac",
+    "windows": "Windows",
+    "useLoginAuth": "Use login authentication instead of token",
+    "useLoginAuthHelp": "Login with {{email}} (you'll be prompted for password)",
+    "apiUrl": "API URL"
   }
 }

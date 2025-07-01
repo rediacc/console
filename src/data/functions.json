@@ -74,6 +74,16 @@
       },
       "params": {}
     },
+    "ssh_test": {
+      "name": "ssh_test",
+      "category": "machine",
+      "showInMenu": false,
+      "requirements": {
+        "machine": true,
+        "team": true
+      },
+      "params": {}
+    },
     "uninstall": {
       "name": "uninstall",
       "category": "machine",
@@ -321,8 +331,17 @@
           "required": true,
           "placeholder": "backup-filename"
         },
+        "destinationType": {
+          "type": "string",
+          "required": true,
+          "options": ["machine", "storage"],
+          "ui": "dropdown",
+          "default": "machine"
+        },
         "to": {
-          "type": "string"
+          "type": "string",
+          "required": true,
+          "ui": "destination-dropdown"
         },
         "state": {
           "type": "string",

@@ -35,6 +35,9 @@ interface ResourceFormWithVaultProps<T extends Record<string, any> = any> {
   hideImportExport?: boolean
   onImportExportRef?: (handlers: { handleImport: (file: any) => boolean; handleExport: () => void }) => void
   initialVaultData?: Record<string, any>
+  teamName?: string // For SSH test connection
+  bridgeName?: string // For SSH test connection
+  onTestConnectionStateChange?: (success: boolean) => void // Callback for test connection state
 }
 
 const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormWithVaultProps<any>>(
@@ -50,6 +53,9 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     hideImportExport = false,
     onImportExportRef,
     initialVaultData = {},
+    teamName,
+    bridgeName,
+    onTestConnectionStateChange,
   }, ref) {
     const { t } = useTranslation('common')
     const [vaultData, setVaultData] = useState<Record<string, any>>(initialVaultData)
@@ -292,6 +298,9 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
             initialData={initialVaultData}
             onChange={handleVaultChange}
             onValidate={handleVaultValidate}
+            teamName={teamName}
+            bridgeName={bridgeName}
+            onTestConnectionStateChange={onTestConnectionStateChange}
             onImportExport={(handlers) => {
               importExportHandlers.current = handlers
               // Pass handlers to parent if callback is provided

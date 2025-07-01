@@ -66,5 +66,18 @@
     "alreadyHasPriority1": "You already have a highest priority task running on bridge {{bridgeName}}. Please wait for it to complete.",
     "taskCancelled": "Task cancelled: Already have a priority 1 task on this bridge",
     "clearCompleted": "Clear Completed"
+  },
+  "taskStatus": {
+    "completedTitle": "Task Completed Successfully",
+    "completedDescription": "The task finished successfully after {{minutes}} minutes.",
+    "cancelledTitle": "Task Cancelled",
+    "cancelledDescription": "The task was cancelled and will not be processed.",
+    "failedTitle": "Task Failed Permanently",
+    "failedDescription": "The task has failed permanently after {{retries}} retries."
+  },
+  "statistics": {
+    "totalDuration": "Total Duration",
+    "processing": "Processing",
+    "timeSinceAssigned": "Time Since Assigned"
   }
 }

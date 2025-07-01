@@ -72,7 +72,7 @@ export const useManagedQueueItem = () => {
       if (response.isQueued) {
         // Don't show success message for queued items, it was already shown by the service
       } else if (response.taskId) {
-        showMessage('success', `Queue item created with ID: ${response.taskId}`)
+        // Success message removed - queue item created silently
       }
     },
     onError: (error: any) => {

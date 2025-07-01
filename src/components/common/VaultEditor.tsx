@@ -14,6 +14,7 @@ import {
   message,
   Divider,
   Typography,
+  Button,
 } from 'antd'
 import {
   InfoCircleOutlined,
@@ -22,6 +23,7 @@ import {
   ExclamationCircleOutlined,
   QuestionCircleOutlined,
   BulbOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons'
 import { SimpleJsonEditor } from './SimpleJsonEditor'
 import { NestedObjectEditor } from './NestedObjectEditor'
@@ -32,6 +34,9 @@ import storageProviders from '../../data/storageProviders.json'
 import { useAppSelector } from '@/store/store'
 import FieldGenerator from './FieldGenerator'
 import { useTheme } from '@/context/ThemeContext'
+import { useCreateQueueItem, useQueueItemTrace } from '@/api/queries/queue'
+import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
+import { useTeams } from '@/api/queries/teams'
 
 const { Text } = Typography
 
@@ -42,6 +47,9 @@ interface VaultEditorProps {
   onValidate?: (isValid: boolean, errors?: string[]) => void
   onImportExport?: (handlers: { handleImport: (file: any) => boolean; handleExport: () => void }) => void
   onFieldMovement?: (movedToExtra: string[], movedFromExtra: string[]) => void
+  teamName?: string // For SSH test connection
+  bridgeName?: string // For SSH test connection
+  onTestConnectionStateChange?: (success: boolean) => void // Callback for test connection state
 }
 
 interface FieldDefinition {
@@ -100,6 +108,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   onValidate,
   onImportExport,
   onFieldMovement,
+  teamName = 'Default Team',
+  bridgeName = 'Default Bridge',
+  onTestConnectionStateChange,
 }) => {
   const { t } = useTranslation(['common', 'storageProviders'])
   const [form] = Form.useForm()
@@ -112,9 +123,24 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   const [sshKeyConfigured, setSshKeyConfigured] = useState(false)
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null)
   const [lastInitializedData, setLastInitializedData] = useState<string>('')
+  const [testTaskId, setTestTaskId] = useState<string | null>(null)
+  const [isTestingConnection, setIsTestingConnection] = useState(false)
+  const [testConnectionSuccess, setTestConnectionSuccess] = useState(false)
   
   const uiMode = useAppSelector((state) => state.ui.uiMode)
   const { theme } = useTheme()
+  
+  // Queue vault builder
+  const { buildQueueVault } = useQueueVaultBuilder()
+  
+  // Create queue item mutation for SSH test
+  const { mutate: createQueueItem, isPending: isCreatingQueueItem } = useCreateQueueItem()
+  
+  // Poll for SSH test results
+  const { data: testTraceData } = useQueueItemTrace(testTaskId, isTestingConnection)
+  
+  // Get teams data for SSH keys
+  const { data: teams } = useTeams()
 
   // Get entity definition from JSON
   const entityDef = useMemo(() => {
@@ -262,6 +288,83 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   useEffect(() => {
     setImportedData(initialData)
   }, [initialData])
+
+  // Monitor SSH test results
+  useEffect(() => {
+    if (testTraceData?.queueDetails && testTraceData?.responseVaultContent?.vaultContent) {
+      const status = testTraceData.queueDetails.status || testTraceData.queueDetails.Status
+      
+      if (status === 'COMPLETED') {
+        try {
+          // Parse the response vault content
+          const responseVault = typeof testTraceData.responseVaultContent.vaultContent === 'string' 
+            ? JSON.parse(testTraceData.responseVaultContent.vaultContent)
+            : testTraceData.responseVaultContent.vaultContent
+          
+          // Extract the result
+          const result = responseVault.result ? JSON.parse(responseVault.result) : null
+          
+          if (result) {
+            if (result.status === 'success') {
+              message.success(t('vaultEditor.testConnection.success'))
+              
+              // Update form fields with test results
+              if (result.ssh_key_configured !== undefined) {
+                form.setFieldValue('ssh_key_configured', result.ssh_key_configured)
+                setSshKeyConfigured(result.ssh_key_configured)
+              }
+              
+              if (result.host_entry) {
+                form.setFieldValue('host_entry', result.host_entry)
+              }
+              
+              // Clear SSH password after successful test
+              form.setFieldValue('ssh_password', '')
+              
+              // Mark test connection as successful
+              setTestConnectionSuccess(true)
+              
+              // Notify parent component
+              if (onTestConnectionStateChange) {
+                onTestConnectionStateChange(true)
+              }
+              
+              // Trigger form change to update the vault data
+              handleFormChange({ 
+                ssh_key_configured: result.ssh_key_configured,
+                host_entry: result.host_entry,
+                ssh_password: '' // Clear password in vault data too
+              })
+            } else {
+              message.error(result.message || t('vaultEditor.testConnection.failed'))
+              setTestConnectionSuccess(false)
+              if (onTestConnectionStateChange) {
+                onTestConnectionStateChange(false)
+              }
+            }
+          }
+        } catch (error) {
+          message.error(t('vaultEditor.testConnection.failed'))
+          setTestConnectionSuccess(false)
+          if (onTestConnectionStateChange) {
+            onTestConnectionStateChange(false)
+          }
+        } finally {
+          // Reset testing state
+          setIsTestingConnection(false)
+          setTestTaskId(null)
+        }
+      } else if (status === 'FAILED' || status === 'CANCELLED') {
+        message.error(t('vaultEditor.testConnection.failed'))
+        setIsTestingConnection(false)
+        setTestTaskId(null)
+        setTestConnectionSuccess(false)
+        if (onTestConnectionStateChange) {
+          onTestConnectionStateChange(false)
+        }
+      }
+    }
+  }, [testTraceData, form, t])
 
   // Calculate extra fields not in schema
   useEffect(() => {
@@ -588,7 +691,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           handleFormChange()
         }, 0)
       } catch (error) {
-        console.error(t('vaultEditor.failedToParseJson'), error)
+        // Failed to parse JSON file
       }
     }
     reader.readAsText(file as any)
@@ -910,11 +1013,112 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               }
               key="required"
             >
-              {requiredFields.map((fieldName) => {
-                const field = fields[fieldName as keyof typeof fields]
-                if (!field) return null
-                return renderField(fieldName, field as FieldDefinition, true)
-              })}
+              {requiredFields
+                .filter(fieldName => !(entityType === 'MACHINE' && fieldName === 'datastore'))
+                .map((fieldName) => {
+                  const field = fields[fieldName as keyof typeof fields]
+                  if (!field) return null
+                  return renderField(fieldName, field as FieldDefinition, true)
+                })}
+              
+              {/* Test Connection button for MACHINE entity */}
+              {entityType === 'MACHINE' && (
+                <Form.Item 
+                  wrapperCol={{ offset: 6, span: 18 }}
+                  style={{ marginTop: 16 }}
+                >
+                  <Space>
+                    <Button
+                      type="primary"
+                      loading={isCreatingQueueItem || isTestingConnection}
+                      onClick={async () => {
+                      // Get current form values
+                      const values = form.getFieldsValue()
+                      const { ip, user, ssh_password, port, datastore } = values
+                      
+                      // Validate required fields
+                      if (!ip || !user || (!ssh_password && !sshKeyConfigured)) {
+                        message.error(t('vaultEditor.testConnection.missingFields'))
+                        return
+                      }
+                      
+                      try {
+                        // Build machine vault with test credentials
+                        const testMachineVault = JSON.stringify({
+                          ip: ip,
+                          user: user,
+                          ssh_password: ssh_password || '',
+                          port: port || 22,
+                          datastore: datastore || ''
+                        })
+                        
+                        // Get team vault data which contains SSH keys
+                        const teamData = teams?.find(team => team.teamName === teamName)
+                        const teamVaultData = teamData?.vaultContent || '{}'
+                        
+                        // Build queue vault using the proper service
+                        const queueVault = await buildQueueVault({
+                          teamName,
+                          machineName: '', // Empty string for bridge-only queue item
+                          bridgeName,
+                          functionName: 'ssh_test',
+                          params: {},
+                          priority: 1,
+                          description: 'SSH connection test',
+                          addedVia: 'vault-editor',
+                          machineVault: testMachineVault,
+                          teamVault: teamVaultData // Pass actual team vault with SSH keys
+                        })
+                        
+                        // Create queue item
+                        createQueueItem({
+                          teamName,
+                          bridgeName,
+                          machineName: '', // Send empty string for bridge-only queue items
+                          queueVault: queueVault.substring(0, 100) + '...', // Log first 100 chars
+                          priority: 1
+                        });
+                        
+                        createQueueItem({
+                          teamName,
+                          bridgeName,
+                          machineName: '', // Send empty string for bridge-only queue items
+                          queueVault,
+                          priority: 1 // Highest priority for immediate execution
+                        }, {
+                          onSuccess: (response) => {
+                            // Extract taskId from the response
+                            if (response && response.taskId) {
+                              // Set the task ID and enable polling
+                              setTestTaskId(response.taskId)
+                              setIsTestingConnection(true)
+                              message.info(t('vaultEditor.testConnection.testing'))
+                            } else {
+                              message.error(t('vaultEditor.testConnection.failed'))
+                            }
+                          },
+                          onError: (error) => {
+                            message.error(t('vaultEditor.testConnection.failed'))
+                          }
+                        })
+                      } catch (error) {
+                        message.error(t('vaultEditor.testConnection.failed'))
+                      }
+                    }}
+                  >
+                    {t('vaultEditor.testConnection.button')}
+                    </Button>
+                    {testConnectionSuccess && (
+                      <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 20 }} />
+                    )}
+                  </Space>
+                </Form.Item>
+              )}
+              
+              {/* Datastore Path field after Test Connection button */}
+              {entityType === 'MACHINE' && fields['datastore'] && (
+                renderField('datastore', fields['datastore'] as FieldDefinition, true)
+              )}
             </Collapse.Panel>
           )}
 

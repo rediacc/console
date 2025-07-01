@@ -6,4 +6,6 @@ export interface Machine {
   queueCount: number
   vaultVersion: number
   vaultContent?: string
+  vaultStatus?: string
+  vaultStatusTime?: string
 }

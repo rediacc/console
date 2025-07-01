@@ -15,7 +15,9 @@ export const useMachines = createResourceQuery<Machine>({
     regionName: 'regionName',
     queueCount: 'queueCount',
     vaultVersion: 'vaultVersion',
-    vaultContent: 'vaultContent'
+    vaultContent: 'vaultContent',
+    vaultStatus: 'vaultStatus',
+    vaultStatusTime: 'vaultStatusTime'
   })
 })
 
@@ -93,3 +95,4 @@ export const useDeleteMachine = createResourceMutation<{
   'machineName',
   ['teams', 'bridges']
 )
+

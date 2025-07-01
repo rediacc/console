@@ -134,5 +134,34 @@
         "partialSuccess": "Se actualizaron {{updated}} bóvedas exitosamente, pero {{failed}} fallaron. Revise los registros para más detalles."
       }
     }
+  },
+  "userSessions": {
+    "title": "Sesiones de Usuario",
+    "totalSessions": "Total de Sesiones",
+    "activeSessions": "Sesiones Activas",
+    "uniqueUsers": "Usuarios Únicos",
+    "averageDuration": "Duración Promedio",
+    "minutes": "minutos",
+    "searchPlaceholder": "Buscar por correo, IP o nombre de sesión...",
+    "totalCount": "Total: {{count}} sesiones",
+    "currentSession": "Tú",
+    "active": "Activa",
+    "inactive": "Inactiva",
+    "terminate": "Terminar",
+    "confirmTerminate": "Terminar Sesión",
+    "confirmTerminateSelf": "Esta es tu sesión actual. Terminarla cerrará tu sesión. ¿Estás seguro?",
+    "confirmTerminateOther": "¿Estás seguro de que quieres terminar la sesión de {{email}}?",
+    "selfTerminateWarning": "Tu sesión será terminada. Necesitarás iniciar sesión nuevamente.",
+    "columns": {
+      "user": "Usuario",
+      "sessionName": "Sesión",
+      "ipAddress": "Dirección IP",
+      "userAgent": "Agente de Usuario",
+      "status": "Estado",
+      "createdAt": "Hora de Inicio",
+      "lastActivity": "Última Actividad",
+      "duration": "Duración",
+      "actions": "Acciones"
+    }
   }
 }

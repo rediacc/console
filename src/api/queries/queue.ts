@@ -143,7 +143,7 @@ export const useCreateQueueItem = () => {
   return useMutation({
     mutationFn: async (data: {
       teamName: string
-      machineName: string
+      machineName?: string // Made optional for bridge-only queue items
       bridgeName: string
       queueVault: string
       priority?: number // Optional priority (1-5), defaults to 3

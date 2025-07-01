@@ -45,6 +45,7 @@ import { usePingFunction } from '@/services/pingService';
 import { showMessage } from '@/utils/messages';
 import { MachineRepositoryList } from './MachineRepositoryList';
 import { useLocalizedFunctions } from '@/services/functionsService';
+import { getLocalizedRelativeTime, formatTimestamp } from '@/utils/timeUtils';
 
 const { Option } = Select;
 const { Search } = Input;
@@ -302,6 +303,29 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       render: (count: number) => (
         <Badge count={count} showZero style={{ backgroundColor: count > 0 ? '#52c41a' : '#d9d9d9' }} />
       ),
+    });
+
+    // Last updated column
+    baseColumns.push({
+      title: t('machines:lastUpdated'),
+      dataIndex: 'vaultStatusTime',
+      key: 'vaultStatusTime',
+      width: 180,
+      render: (time: string) => {
+        const relativeTime = getLocalizedRelativeTime(time, t);
+        const formattedTime = formatTimestamp(time);
+        
+        return (
+          <span title={formattedTime}>
+            {relativeTime}
+          </span>
+        );
+      },
+      sorter: (a: Machine, b: Machine) => {
+        const timeA = a.vaultStatusTime ? new Date(a.vaultStatusTime).getTime() : 0;
+        const timeB = b.vaultStatusTime ? new Date(b.vaultStatusTime).getTime() : 0;
+        return timeA - timeB;
+      },
     });
 
     // Vault version in expert mode
@@ -598,6 +622,11 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                             <div style={{ fontSize: '12px', color: '#666' }}>
                               {t('machines:queueItems')}: {machine.queueCount}
                             </div>
+                            {machine.vaultStatusTime && (
+                              <div style={{ fontSize: '11px', color: '#999', marginTop: 4 }}>
+                                {t('machines:lastUpdated')}: {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
+                              </div>
+                            )}
                             {isExpertMode && (
                               <div style={{ fontSize: '12px', color: '#666' }}>
                                 {t('machines:vaultVersion')}: {machine.vaultVersion}

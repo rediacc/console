@@ -5,7 +5,7 @@ import functionsData from '@/data/functions.json'
 
 export interface QueueRequestContext {
   teamName: string
-  machineName: string
+  machineName?: string | null  // Made optional for bridge-only queue items
   bridgeName?: string
   repositoryGuid?: string
   storageName?: string
@@ -47,10 +47,9 @@ class QueueDataService {
   async buildQueueVault(context: QueueRequestContext): Promise<string> {
     const requirements = this.getFunctionRequirements(context.functionName)
     
-    
     const queueVaultData: any = {
       function: context.functionName,
-      machine: context.machineName,
+      machine: context.machineName || '', // Use empty string if no machine name
       team: context.teamName,
       params: context.params,
       contextData: {
@@ -62,6 +61,16 @@ class QueueDataService {
       queueVaultData.contextData.MACHINES = {
         [context.machineName]: this.extractMachineForGeneralSettings(context.machineVault)
       }
+    } else if (context.functionName === 'ssh_test' && context.machineVault && !context.machineName) {
+      // For ssh_test with bridge-only tasks (no machine name), include SSH details directly in vault data
+      const machineData = this.extractMachineForGeneralSettings(context.machineVault)
+      // Add ssh_password if present in the machine vault
+      const parsedVault = typeof context.machineVault === 'string' ? JSON.parse(context.machineVault) : context.machineVault
+      if (parsedVault.ssh_password) {
+        machineData.ssh_password = parsedVault.ssh_password
+      }
+      // Include the SSH connection info directly in the root vault data for bridge-only tasks
+      Object.assign(queueVaultData, machineData)
     }
 
     // Add REPO_CREDENTIALS after MACHINES if repository is required

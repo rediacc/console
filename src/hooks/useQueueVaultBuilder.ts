@@ -36,7 +36,6 @@ export function useQueueVaultBuilder() {
         throw new Error('Company vault not found')
       }
     } catch (error) {
-      console.error('Failed to fetch company vault:', error)
       throw new Error('Unable to fetch company vault configuration. Please ensure company vault is properly configured.')
     }
     // Parse vault content (it's stored as JSON string in the API response)
@@ -45,7 +44,6 @@ export function useQueueVaultBuilder() {
       try {
         return JSON.parse(vaultContent)
       } catch (e) {
-        console.warn('Failed to parse vault content:', vaultContent, e)
         return {}
       }
     }

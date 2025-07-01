@@ -134,5 +134,34 @@
         "partialSuccess": "Updated {{updated}} vaults successfully, but {{failed}} failed. Check logs for details."
       }
     }
+  },
+  "userSessions": {
+    "title": "User Sessions",
+    "totalSessions": "Total Sessions",
+    "activeSessions": "Active Sessions",
+    "uniqueUsers": "Unique Users",
+    "averageDuration": "Average Duration",
+    "minutes": "minutes",
+    "searchPlaceholder": "Search by email, IP, or session name...",
+    "totalCount": "Total: {{count}} sessions",
+    "currentSession": "You",
+    "active": "Active",
+    "inactive": "Inactive",
+    "terminate": "Terminate",
+    "confirmTerminate": "Terminate Session",
+    "confirmTerminateSelf": "This is your current session. Terminating it will log you out. Are you sure?",
+    "confirmTerminateOther": "Are you sure you want to terminate the session for {{email}}?",
+    "selfTerminateWarning": "Your session will be terminated. You will need to log in again.",
+    "columns": {
+      "user": "User",
+      "sessionName": "Session",
+      "ipAddress": "IP Address",
+      "userAgent": "User Agent",
+      "status": "Status",
+      "createdAt": "Login Time",
+      "lastActivity": "Last Activity",
+      "duration": "Duration",
+      "actions": "Actions"
+    }
   }
 }

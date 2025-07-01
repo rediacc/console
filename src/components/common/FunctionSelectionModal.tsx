@@ -7,6 +7,8 @@ import { RootState } from '@/store/store'
 import type { QueueFunction } from '@/api/queries/queue'
 import { useLocalizedFunctions } from '@/services/functionsService'
 import { useRepositories } from '@/api/queries/repositories'
+import { useMachines } from '@/api/queries/machines'
+import { useStorage } from '@/api/queries/storage'
 
 const { Search } = Input
 const { Text, Paragraph } = Typography
@@ -62,38 +64,50 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
 
   // Fetch repositories for the current team
   const { data: repositories } = useRepositories(teamName)
+  
+  // Fetch machines and storage for destination dropdown
+  const { data: machinesData } = useMachines(teamName)
+  const { data: storageData } = useStorage(teamName)
 
   // Initialize parameters when function is selected
   useEffect(() => {
     if (selectedFunction) {
-      const initialParams: Record<string, any> = {}
-      
-      Object.entries(selectedFunction.params).forEach(([paramName, paramInfo]) => {
-        if (paramInfo.format === 'size' && paramInfo.units) {
-          // Initialize with default values for size parameters
-          if (paramInfo.default) {
-            const match = paramInfo.default.match(/^(\d+)([%GT]?)$/)
-            if (match) {
-              const [, value, unit] = match
-              initialParams[`${paramName}_value`] = parseInt(value)
-              initialParams[`${paramName}_unit`] = unit || (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0])
-              initialParams[paramName] = paramInfo.default
-            }
-          } else {
-            // Set default unit
-            const defaultUnit = paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0]
-            initialParams[`${paramName}_unit`] = defaultUnit
-          }
-        } else if (paramInfo.options && paramInfo.options.length > 0) {
-          // Initialize dropdown parameters with default value
-          initialParams[paramName] = paramInfo.default || paramInfo.options[0]
-        } else if (paramInfo.default) {
-          // Initialize other parameters with default value
-          initialParams[paramName] = paramInfo.default
+      // Only initialize if we don't already have params (to avoid clearing user selections)
+      setFunctionParams(prevParams => {
+        // If we already have some params, don't reinitialize
+        if (Object.keys(prevParams).length > 0) {
+          return prevParams
         }
+        
+        const initialParams: Record<string, any> = {}
+        
+        Object.entries(selectedFunction.params).forEach(([paramName, paramInfo]) => {
+          if (paramInfo.format === 'size' && paramInfo.units) {
+            // Initialize with default values for size parameters
+            if (paramInfo.default) {
+              const match = paramInfo.default.match(/^(\d+)([%GT]?)$/)
+              if (match) {
+                const [, value, unit] = match
+                initialParams[`${paramName}_value`] = parseInt(value)
+                initialParams[`${paramName}_unit`] = unit || (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0])
+                initialParams[paramName] = paramInfo.default
+              }
+            } else {
+              // Set default unit
+              const defaultUnit = paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0]
+              initialParams[`${paramName}_unit`] = defaultUnit
+            }
+          } else if (paramInfo.options && paramInfo.options.length > 0) {
+            // Initialize dropdown parameters with default value
+            initialParams[paramName] = paramInfo.default || paramInfo.options[0]
+          } else if (paramInfo.default) {
+            // Initialize other parameters with default value
+            initialParams[paramName] = paramInfo.default
+          }
+        })
+        
+        return initialParams
       })
-      
-      setFunctionParams(initialParams)
     }
   }, [selectedFunction])
 
@@ -103,6 +117,18 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
       setSelectedFunction(localizedFunctions[preselectedFunction] as QueueFunction)
     }
   }, [preselectedFunction, localizedFunctions, open])
+  
+  // Reset params when modal opens/closes to ensure clean state
+  useEffect(() => {
+    if (!open) {
+      // Reset all state when modal closes
+      setFunctionParams({})
+      setFunctionDescription('')
+      setFunctionSearchTerm('')
+      setSelectedMachine('')
+      // Don't reset selectedFunction here as it might be preselected
+    }
+  }, [open])
 
   // Filter functions based on allowed categories and search term
   const filteredFunctions = useMemo(() => {
@@ -417,10 +443,17 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                           ) : paramInfo.options && paramInfo.options.length > 0 ? (
                             <Select
                               value={functionParams[paramName] || paramInfo.default || ''}
-                              onChange={(value) => setFunctionParams({
-                                ...functionParams,
-                                [paramName]: value
-                              })}
+                              onChange={(value) => {
+                                const newParams = {
+                                  ...functionParams,
+                                  [paramName]: value
+                                }
+                                // If this is destinationType parameter and it changes, clear the 'to' field
+                                if (paramName === 'destinationType' && value !== functionParams[paramName]) {
+                                  newParams['to'] = ''
+                                }
+                                setFunctionParams(newParams)
+                              }}
                               placeholder={paramInfo.help || ''}
                               options={paramInfo.options.map(option => ({
                                 value: option,
@@ -446,6 +479,42 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                               filterOption={(input, option) =>
                                 (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                               }
+                            />
+                          ) : paramInfo.ui === 'destination-dropdown' ? (
+                            <Select
+                              value={functionParams[paramName] || ''}
+                              onChange={(value) => {
+                                setFunctionParams({
+                                  ...functionParams,
+                                  [paramName]: value
+                                })
+                              }}
+                              placeholder={
+                                functionParams['destinationType'] === 'machine' 
+                                  ? t('machines:selectMachine')
+                                  : t('resources:storage.selectStorage')
+                              }
+                              options={
+                                functionParams['destinationType'] === 'machine'
+                                  ? machinesData?.map(machine => ({
+                                      value: machine.machineName,
+                                      label: machine.machineName
+                                    })) || []
+                                  : storageData?.map(storage => ({
+                                      value: storage.storageName,
+                                      label: storage.storageName
+                                    })) || []
+                              }
+                              notFoundContent={
+                                functionParams['destinationType'] === 'machine'
+                                  ? t('machines:noMachinesFound')
+                                  : t('resources:storage.noStorageFound')
+                              }
+                              showSearch
+                              filterOption={(input, option) =>
+                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                              }
+                              disabled={!functionParams['destinationType']}
                             />
                           ) : (
                             <Input

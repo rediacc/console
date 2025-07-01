@@ -17,7 +17,11 @@ import { repositoryDataService } from '@/services/repositoryDataService'
 import type { ColumnsType } from 'antd/es/table'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
+import { LocalCommandModal } from './LocalCommandModal'
 import { showMessage } from '@/utils/messages'
+import { tokenService } from '@/services/tokenService'
+import { useAppSelector } from '@/store/store'
+import { getLocalizedRelativeTime } from '@/utils/timeUtils'
 
 const { Text } = Typography
 
@@ -119,6 +123,8 @@ const TaskMonitor: React.FC<{
 
 export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete }) => {
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
+  const userEmail = useAppSelector((state) => state.auth.user?.email || '')
+  const [currentToken, setCurrentToken] = useState<string>('')
   const [repositories, setRepositories] = useState<Repository[]>([])
   const [systemContainers, setSystemContainers] = useState<any[]>([])
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null)
@@ -141,6 +147,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const [loadingContainers, setLoadingContainers] = useState<Record<string, boolean>>({})
   const [servicesTaskIds, setServicesTaskIds] = useState<Record<string, string>>({})
   const [containersTaskIds, setContainersTaskIds] = useState<Record<string, string>>({})
+  const [localCommandModal, setLocalCommandModal] = useState<{
+    visible: boolean
+    repository: Repository | null
+  }>({ visible: false, repository: null })
   
   // Use direct queue item creation for list operations (not managed)
   const createQueueItemMutation = useCreateQueueItem()
@@ -154,11 +164,149 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const { data: traceData } = useQueueItemTrace(taskId, !!taskId)
 
   useEffect(() => {
-    // Only fetch when repositories are loaded
+    // Check if we have vaultStatus data from the machine
     if (!repositoriesLoading && machine) {
+      if (machine.vaultStatus) {
+        // Check if vaultStatus is just an error message (not JSON)
+        if (machine.vaultStatus.trim().startsWith('jq:') || 
+            machine.vaultStatus.trim().startsWith('error:') ||
+            !machine.vaultStatus.trim().startsWith('{')) {
+          // Fall through to fetchRepositories
+        } else {
+          // Use existing vaultStatus data instead of creating a new queue item
+          try {
+            const vaultStatusData = JSON.parse(machine.vaultStatus)
+            
+            if (vaultStatusData.status === 'completed' && vaultStatusData.result) {
+            
+            // Clean the result string - remove trailing newlines and any jq errors
+            let cleanedResult = vaultStatusData.result;
+            
+            // First, try to find where the JSON ends by looking for the last valid JSON closing
+            // The result should end with "containers":[]]} or similar
+            const jsonEndMatch = cleanedResult.match(/(\}[\s\n]*$)/);
+            if (jsonEndMatch) {
+              const lastBraceIndex = cleanedResult.lastIndexOf('}');
+              // Check if there's content after the last closing brace that looks like an error
+              if (lastBraceIndex < cleanedResult.length - 10) { // Allow some whitespace
+                cleanedResult = cleanedResult.substring(0, lastBraceIndex + 1);
+              }
+            }
+            
+            // Also handle the case where there might be a newline followed by jq errors
+            const newlineIndex = cleanedResult.indexOf('\njq:');
+            if (newlineIndex > 0) {
+              cleanedResult = cleanedResult.substring(0, newlineIndex);
+            }
+            
+            // Trim any trailing whitespace/newlines
+            cleanedResult = cleanedResult.trim();
+            
+            const result = JSON.parse(cleanedResult)
+            if (result) {
+              // Process system information if available
+              if (result.system) {
+                setSystemInfo(result.system)
+              }
+              
+              if (result.repositories && Array.isArray(result.repositories)) {
+                // Map repository GUIDs back to names if needed
+                const mappedRepositories = result.repositories.map((repo: Repository) => {
+                  // Check if the name looks like a GUID
+                  const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(repo.name);
+                  
+                  if (isGuid) {
+                    // Find the matching repository by GUID
+                    const matchingRepo = teamRepositories.find(r => r.repositoryGuid === repo.name);
+                    if (matchingRepo) {
+                      return {
+                        ...repo,
+                        name: matchingRepo.repositoryName
+                      };
+                    }
+                  }
+                  
+                  return repo;
+                });
+                
+                setRepositories(mappedRepositories)
+                
+                // Process containers and services if included
+                if (result.containers && Array.isArray(result.containers)) {
+                  // Group containers by repository
+                  const containersMap: Record<string, any> = {}
+                  
+                  result.containers.forEach((container: any) => {
+                    // Extract repository GUID from labels
+                    const repoGuid = container.labels?.['com.redisolar.repository-guid']
+                    if (!repoGuid) return
+                    
+                    // Find the repository by GUID
+                    const matchingRepo = teamRepositories.find(r => r.repositoryGuid === repoGuid)
+                    if (matchingRepo) {
+                      const repoName = matchingRepo.repositoryName
+                      if (!containersMap[repoName]) {
+                        containersMap[repoName] = {
+                          containers: [],
+                          error: null
+                        }
+                      }
+                      containersMap[repoName].containers.push(container)
+                    }
+                  })
+                  
+                  setContainersData(containersMap)
+                }
+                
+                if (result.services && Array.isArray(result.services)) {
+                  // Group services by repository
+                  const servicesMap: Record<string, any> = {}
+                  
+                  mappedRepositories.forEach((repo: Repository) => {
+                    if (repo.has_services) {
+                      const repoServices = result.services.filter((service: any) => 
+                        service.unit_file && service.unit_file.includes(`@${repo.name}.service`)
+                      )
+                      if (repoServices.length > 0) {
+                        servicesMap[repo.name] = {
+                          services: repoServices,
+                          error: null
+                        }
+                      }
+                    }
+                  })
+                  
+                  setServicesData(servicesMap)
+                }
+              } else {
+                setRepositories([])
+              }
+              
+              setLoading(false)
+              return // Exit early, we used cached data
+            }
+          }
+          } catch (err) {
+            // Fall through to fetchRepositories if parsing fails
+          }
+        }
+      }
+      
+      // If no vaultStatus or parsing failed, fetch fresh data
       fetchRepositories()
     }
   }, [machine, repositoriesLoading])
+
+  // Fetch current token when modal might be opened
+  useEffect(() => {
+    const fetchToken = async () => {
+      const token = await tokenService.getToken()
+      if (token) {
+        setCurrentToken(token)
+      }
+    }
+    fetchToken()
+  }, [])
 
   // Monitor queued item for task ID
   useEffect(() => {
@@ -1246,7 +1394,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     {
       title: t('common:table.actions'),
       key: 'actions',
-      width: 120,
+      width: 180,
       fixed: 'right',
       render: (_: any, record: Repository) => {
         // Build smart menu items based on repository state
@@ -1325,19 +1473,30 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         })
         
         return (
-          <Dropdown
-            menu={{ items: menuItems }}
-            trigger={['click']}
-          >
-            <Button
-              type="primary"
-              size="small"
-              icon={<FunctionOutlined />}
-              loading={managedQueueMutation.isPending}
+          <Space size="small">
+            {record.mounted && (
+              <Button
+                size="small"
+                icon={<DesktopOutlined />}
+                onClick={() => setLocalCommandModal({ visible: true, repository: record })}
+              >
+                {t('resources:local')}
+              </Button>
+            )}
+            <Dropdown
+              menu={{ items: menuItems }}
+              trigger={['click']}
             >
-              {t('machines:remote')}
-            </Button>
-          </Dropdown>
+              <Button
+                type="primary"
+                size="small"
+                icon={<FunctionOutlined />}
+                loading={managedQueueMutation.isPending}
+              >
+                {t('machines:remote')}
+              </Button>
+            </Dropdown>
+          </Space>
         )
       },
     },
@@ -1394,9 +1553,74 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
   return (
     <div style={{ padding: '0 20px 20px 20px', overflowX: 'auto' }}>
+      {/* Repositories Label with Refresh Button */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: 20 }}>
+        <Typography.Title level={5} style={{ marginBottom: 0 }}>
+          {t('resources:repositories.repositories')}
+        </Typography.Title>
+        <Space>
+          {machine.vaultStatusTime && !loading && (
+            <Text type="secondary" style={{ fontSize: '12px' }} title={`Raw: ${machine.vaultStatusTime}, Local: ${new Date(machine.vaultStatusTime).toLocaleString()}`}>
+              {t('machines:lastUpdated')}: {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
+            </Text>
+          )}
+          <Button
+            size="small"
+            icon={<ReloadOutlined />}
+            onClick={fetchRepositories}
+            loading={loading}
+          >
+            {t('common:actions.refresh')}
+          </Button>
+        </Space>
+      </div>
+      
+      {/* Repository Table */}
+      <Table
+        columns={columns}
+        dataSource={repositories}
+        rowKey="name"
+        size="small"
+        pagination={false}
+        scroll={{ x: 'max-content' }}
+        expandable={{
+          expandedRowRender: renderExpandedRow,
+          expandedRowKeys: expandedRows,
+          onExpandedRowsChange: (keys) => setExpandedRows(keys as string[]),
+          rowExpandable: (record) => record.mounted && (record.has_services || record.container_count > 0),
+          expandIcon: () => null, // Hide default expand icon since we have custom button
+        }}
+        locale={{
+          emptyText: t('resources:repositories.noRepositories')
+        }}
+      />
+      
+      {/* System Containers Section */}
+      {systemContainers.length > 0 && (
+        <>
+          <Typography.Title level={5} style={{ marginBottom: 16, marginTop: 32 }}>
+            {t('resources:repositories.systemContainers')}
+          </Typography.Title>
+          <div style={{ marginBottom: 32 }}>
+            <Table
+              columns={systemContainerColumns}
+              dataSource={systemContainers}
+              rowKey="id"
+              size="small"
+              pagination={false}
+              scroll={{ x: 'max-content' }}
+            />
+          </div>
+        </>
+      )}
+      
       {/* System Information Section */}
       {systemInfo && (
-        <Card style={{ marginBottom: 20, marginTop: 20 }}>
+        <>
+          <Typography.Title level={5} style={{ marginBottom: 16, marginTop: systemContainers.length > 0 ? 0 : 32 }}>
+            {t('resources:repositories.systemInfo')}
+          </Typography.Title>
+          <Card style={{ marginBottom: 20 }}>
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12} md={8}>
               <Card size="small" bordered={false} style={{ background: 'transparent', height: '100%' }}>
@@ -1521,51 +1745,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             )}
           </Row>
         </Card>
-      )}
-      
-      {/* System Containers Section */}
-      {systemContainers.length > 0 && (
-        <>
-          <Typography.Title level={5} style={{ marginBottom: 16, marginTop: 20 }}>
-            {t('resources:repositories.systemContainers')}
-          </Typography.Title>
-          <div style={{ marginBottom: 32 }}>
-            <Table
-              columns={systemContainerColumns}
-              dataSource={systemContainers}
-              rowKey="id"
-              size="small"
-              pagination={false}
-              scroll={{ x: 'max-content' }}
-            />
-          </div>
         </>
       )}
-      
-      {/* Repositories Label */}
-      <Typography.Title level={5} style={{ marginBottom: 16, marginTop: systemContainers.length > 0 ? 0 : 20 }}>
-        {t('resources:repositories.repositories')}
-      </Typography.Title>
-      
-      {/* Repository Table */}
-      <Table
-        columns={columns}
-        dataSource={repositories}
-        rowKey="name"
-        size="small"
-        pagination={false}
-        scroll={{ x: 'max-content' }}
-        expandable={{
-          expandedRowRender: renderExpandedRow,
-          expandedRowKeys: expandedRows,
-          onExpandedRowsChange: (keys) => setExpandedRows(keys as string[]),
-          rowExpandable: (record) => record.mounted && (record.has_services || record.container_count > 0),
-          expandIcon: () => null, // Hide default expand icon since we have custom button
-        }}
-        locale={{
-          emptyText: t('resources:repositories.noRepositories')
-        }}
-      />
       
       {/* Task Monitors for Services */}
       {Object.entries(servicesTaskIds).map(([repoName, taskId]) => (
@@ -1665,6 +1846,18 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           fetchRepositories()
         }}
       />
+      
+      {/* Local Command Modal */}
+      {localCommandModal.repository && (
+        <LocalCommandModal
+          visible={localCommandModal.visible}
+          onClose={() => setLocalCommandModal({ visible: false, repository: null })}
+          machine={machine.machineName}
+          repository={localCommandModal.repository.name}
+          token={currentToken}
+          userEmail={userEmail}
+        />
+      )}
     </div>
   )
 }

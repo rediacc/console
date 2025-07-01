@@ -54,6 +54,7 @@
   },
   "trace": "Trace",
   "selectMachine": "Select Machine",
+  "noMachinesFound": "No machines found",
   "priority": "Priority",
   "priorityLow": "Low",
   "priorityNormal": "Normal",
@@ -91,5 +92,14 @@
   "remoteOperations": "Remote Operations",
   "createRepo": "Create Repo",
   "runAction": "Run on Server",
-  "advanced": "Advanced"
+  "advanced": "Advanced",
+  "lastUpdated": "Last Updated",
+  "statusUnknown": "Unknown",
+  "justNow": "Just now",
+  "minutesAgo": "{{count}} minute ago",
+  "minutesAgo_plural": "{{count}} minutes ago",
+  "hoursAgo": "{{count}} hour ago",
+  "hoursAgo_plural": "{{count}} hours ago",
+  "daysAgo": "{{count}} day ago",
+  "daysAgo_plural": "{{count}} days ago"
 }

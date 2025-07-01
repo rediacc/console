@@ -238,14 +238,6 @@
       "name": "ping",
       "description": "Probar la conectividad de red con la máquina"
     },
-    "service_list": {
-      "name": "service_list",
-      "description": "Listar servicios systemd para un repositorio"
-    },
-    "container_list": {
-      "name": "container_list",
-      "description": "Listar contenedores Docker para un repositorio"
-    },
     "container_start": {
       "name": "container_start",
       "description": "Iniciar un contenedor Docker",

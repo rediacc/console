@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react'
-import { Modal, Button, Space, Typography, Upload } from 'antd'
+import { Modal, Button, Space, Typography, Upload, message } from 'antd'
 import { UploadOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -80,6 +80,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   // State for sub-modals
   const [showVaultModal, setShowVaultModal] = useState(false)
   const [showFunctionModal, setShowFunctionModal] = useState(false)
+  
+  // State for test connection (for machines)
+  const [testConnectionSuccess, setTestConnectionSuccess] = useState(false)
   
   // Import/Export handlers ref
   const importExportHandlers = useRef<{ handleImport: (file: any) => boolean; handleExport: () => void } | null>(null)
@@ -473,6 +476,15 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
 
   // Handle form submission
   const handleSubmit = async (data: any) => {
+    // Validate machine creation - check if SSH password is present
+    if (mode === 'create' && resourceType === 'machine') {
+      const vaultData = data.machineVault ? JSON.parse(data.machineVault) : {}
+      if (vaultData.ssh_password) {
+        message.error(t('machines:validation.sshPasswordNotAllowed'))
+        return
+      }
+    }
+    
     if (uiMode === 'simple' && mode === 'create') {
       // Only set defaults if not already provided
       const defaults: any = {}
@@ -633,6 +645,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             key="submit"
             type="primary"
             loading={isSubmitting}
+            disabled={mode === 'create' && resourceType === 'machine' && !testConnectionSuccess}
             onClick={() => formRef.current?.submit()}
             style={{ background: '#556b2f', borderColor: '#556b2f' }}
           >
@@ -664,6 +677,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           onImportExportRef={(handlers) => {
             importExportHandlers.current = handlers
           }}
+          teamName={form.watch('teamName') || (existingData?.teamName) || (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) || 'Private Team'}
+          bridgeName={form.watch('bridgeName') || 'Global Bridges'}
+          onTestConnectionStateChange={setTestConnectionSuccess}
           defaultsContent={
             <Space direction="vertical" size={0}>
               <Text>{t('general.team')}: Private Team</Text>

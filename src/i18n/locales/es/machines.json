@@ -91,5 +91,14 @@
   "remoteOperations": "Operaciones Remotas",
   "createRepo": "Crear Repo",
   "runAction": "Ejecutar en el Servidor",
-  "advanced": "Avanzado"
+  "advanced": "Avanzado",
+  "lastUpdated": "Última Actualización",
+  "statusUnknown": "Desconocido",
+  "justNow": "Justo ahora",
+  "minutesAgo": "hace {{count}} minuto",
+  "minutesAgo_plural": "hace {{count}} minutos",
+  "hoursAgo": "hace {{count}} hora",
+  "hoursAgo_plural": "hace {{count}} horas",
+  "daysAgo": "hace {{count}} día",
+  "daysAgo_plural": "hace {{count}} días"
 }

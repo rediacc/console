@@ -20,8 +20,13 @@
     "refresh": "Actualizar",
     "fullscreen": "Pantalla Completa",
     "exitFullscreen": "Salir de Pantalla Completa",
-    "addToQueue": "Agregar a la Cola"
+    "addToQueue": "Agregar a la Cola",
+    "viewTrace": "Ver Traza",
+    "close": "Cerrar"
   },
+  "close": "Cerrar",
+  "copiedToClipboard": "Copiado al portapapeles",
+  "copyFailed": "Error al copiar al portapapeles",
   "export": "Exportar",
   "exportCSV": "Exportar como CSV",
   "exportJSON": "Exportar como JSON",
@@ -72,6 +77,8 @@
     "important": "Importante",
     "cancel": "Cancelar"
   },
+  "yes": "Sí",
+  "no": "No",
   "dashboard": {
     "availablePlans": "Planes Disponibles",
     "upgradeOptions": "Opciones de Actualización",
