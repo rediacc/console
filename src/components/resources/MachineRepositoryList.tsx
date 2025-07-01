@@ -494,6 +494,15 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         return
       }
       
+      // Find the grand repository vault if grandGuid exists
+      let grandRepositoryVault = repositoryData.vaultContent
+      if (repositoryData.grandGuid) {
+        const grandRepository = teamRepositories.find(r => r.repositoryGuid === repositoryData.grandGuid)
+        if (grandRepository && grandRepository.vaultContent) {
+          grandRepositoryVault = grandRepository.vaultContent
+        }
+      }
+      
       // Build queue vault
       const queueVault = await buildQueueVault({
         teamName: machine.teamName,
@@ -510,7 +519,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         teamVault: team?.vaultContent || '{}',
         machineVault: machine.vaultContent || '{}',
         repositoryGuid: repositoryData.repositoryGuid,
-        repositoryVault: repositoryData.vaultContent
+        repositoryVault: grandRepositoryVault
       })
       
       const response = await managedQueueMutation.mutateAsync({
@@ -546,6 +555,15 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         return
       }
       
+      // Find the grand repository vault if grandGuid exists
+      let grandRepositoryVault = repositoryData.vaultContent
+      if (repositoryData.grandGuid) {
+        const grandRepository = teamRepositories.find(r => r.repositoryGuid === repositoryData.grandGuid)
+        if (grandRepository && grandRepository.vaultContent) {
+          grandRepositoryVault = grandRepository.vaultContent
+        }
+      }
+      
       // Build params based on action
       const params: Record<string, any> = {
         repo: repositoryData.repositoryGuid,
@@ -573,7 +591,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         teamVault: team?.vaultContent || '{}',
         machineVault: machine.vaultContent || '{}',
         repositoryGuid: repositoryData.repositoryGuid,
-        repositoryVault: repositoryData.vaultContent
+        repositoryVault: grandRepositoryVault
       })
       
       const response = await managedQueueMutation.mutateAsync({
@@ -621,9 +639,18 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         return
       }
       
+      // Find the grand repository vault if grandGuid exists
+      let grandRepositoryVault = repositoryData.vaultContent
+      if (repositoryData.grandGuid) {
+        const grandRepository = teamRepositories.find(r => r.repositoryGuid === repositoryData.grandGuid)
+        if (grandRepository && grandRepository.vaultContent) {
+          grandRepositoryVault = grandRepository.vaultContent
+        }
+      }
+      
       let finalParams = { ...functionData.params }
       let repositoryGuid = repositoryData.repositoryGuid
-      let repositoryVault = repositoryData.vaultContent
+      let repositoryVault = grandRepositoryVault
       
       // Special handling for push function
       if (functionData.function.name === 'push' && functionData.params.dest) {
