@@ -123,6 +123,15 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
             // Initialize other parameters with default value
             defaultInitialParams[paramName] = paramInfo.default
           }
+          
+          // Special handling for destination-dropdown: set current machine as default
+          if (paramInfo.ui === 'destination-dropdown' && currentMachineName && functionChanged) {
+            // Check if there's a destinationType parameter with value 'machine'
+            const destinationTypeParam = selectedFunction.params['destinationType']
+            if (destinationTypeParam && (defaultInitialParams['destinationType'] === 'machine' || destinationTypeParam.default === 'machine')) {
+              defaultInitialParams[paramName] = currentMachineName
+            }
+          }
         })
         
         return defaultInitialParams
@@ -131,7 +140,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
       // Update previous function name
       setPreviousFunctionName(selectedFunction.name)
     }
-  }, [selectedFunction, initialParams, hiddenParams, previousFunctionName])
+  }, [selectedFunction, initialParams, hiddenParams, previousFunctionName, currentMachineName])
 
   // Handle preselected function
   useEffect(() => {
