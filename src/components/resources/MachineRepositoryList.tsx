@@ -1601,12 +1601,32 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         title={t('machines:runFunction')}
         subtitle={
           selectedRepository && (
-            <Space>
-              <Text>{t('resources:repositories.repository')}:</Text>
-              <Tag color="#8FBC8F">{selectedRepository.name}</Tag>
-              <Text>•</Text>
-              <Text>{t('machines:machine')}:</Text>
-              <Tag color="#556b2f">{machine.machineName}</Tag>
+            <Space direction="vertical" size="small" style={{ width: '100%' }}>
+              <Space>
+                <Text>{t('resources:repositories.repository')}:</Text>
+                <Tag color="#8FBC8F">{selectedRepository.name}</Tag>
+                <Text>•</Text>
+                <Text>{t('machines:machine')}:</Text>
+                <Tag color="#556b2f">{machine.machineName}</Tag>
+              </Space>
+              {selectedFunction === 'push' && (() => {
+                const currentRepoData = teamRepositories.find(r => r.repositoryName === selectedRepository.name);
+                if (currentRepoData?.grandGuid) {
+                  const grandRepo = teamRepositories.find(r => r.repositoryGuid === currentRepoData.grandGuid);
+                  if (grandRepo) {
+                    return (
+                      <Space>
+                        <Text type="secondary">Original Repository:</Text>
+                        <Tag color="blue">{grandRepo.repositoryName}</Tag>
+                        <Text type="secondary">→</Text>
+                        <Text type="secondary">Current:</Text>
+                        <Tag color="#8FBC8F">{selectedRepository.name}</Tag>
+                      </Space>
+                    );
+                  }
+                }
+                return null;
+              })()}
             </Space>
           )
         }
@@ -1623,13 +1643,41 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           grand: teamRepositories.find(r => r.repositoryName === selectedRepository?.name)?.grandGuid || ''
         }}
         initialParams={
-          selectedFunction === 'push' && selectedRepository ? {
-            dest: `${selectedRepository.name}-${selectedRepository.mounted ? 'online' : 'offline'}-${new Date().toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '-')}`,
-            state: selectedRepository.mounted ? 'online' : 'offline'
-          } : {}
+          selectedFunction === 'push' && selectedRepository ? (() => {
+            // Find the current repository data
+            const currentRepoData = teamRepositories.find(r => r.repositoryName === selectedRepository.name);
+            
+            // Find the grand repository if it exists
+            let baseRepoName = selectedRepository.name;
+            if (currentRepoData?.grandGuid) {
+              const grandRepo = teamRepositories.find(r => r.repositoryGuid === currentRepoData.grandGuid);
+              if (grandRepo) {
+                baseRepoName = grandRepo.repositoryName;
+              }
+            }
+            
+            // Generate destination with the base name
+            return {
+              dest: `${baseRepoName}-${selectedRepository.mounted ? 'online' : 'offline'}-${new Date().toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '-')}`,
+              state: selectedRepository.mounted ? 'online' : 'offline'
+            };
+          })() : {}
         }
         preselectedFunction={selectedFunction || undefined}
         currentMachineName={machine.machineName}
+        additionalContext={
+          selectedFunction === 'push' && selectedRepository ? {
+            sourceRepository: selectedRepository.name,
+            grandRepository: (() => {
+              const currentRepoData = teamRepositories.find(r => r.repositoryName === selectedRepository.name);
+              if (currentRepoData?.grandGuid) {
+                const grandRepo = teamRepositories.find(r => r.repositoryGuid === currentRepoData.grandGuid);
+                return grandRepo?.repositoryName || null;
+              }
+              return null;
+            })()
+          } : undefined
+        }
       />
       
       {/* Queue Item Trace Modal */}

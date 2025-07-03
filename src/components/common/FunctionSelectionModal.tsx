@@ -35,6 +35,10 @@ interface FunctionSelectionModalProps {
   preselectedFunction?: string // Preselected function name
   initialParams?: Record<string, any> // Initial values for visible parameters
   currentMachineName?: string // Current machine name for context
+  additionalContext?: {
+    sourceRepository?: string
+    grandRepository?: string | null
+  } // Additional context information to display
 }
 
 const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
@@ -52,7 +56,8 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   defaultParams = {},
   preselectedFunction,
   initialParams = {},
-  currentMachineName
+  currentMachineName,
+  additionalContext
 }) => {
   const { t } = useTranslation(['functions', 'common', 'machines'])
   const { functions: localizedFunctions, categories } = useLocalizedFunctions()
@@ -401,6 +406,82 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                 </Paragraph>
                 
                 <Form layout="horizontal" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }}>
+                  {/* Show additional info for push function */}
+                  {selectedFunction.name === 'push' && functionParams.dest && (
+                    <Alert
+                      type="info"
+                      showIcon
+                      style={{ marginBottom: 16 }}
+                      message="Push Operation Details"
+                      description={
+                        <Space direction="vertical" size="small">
+                          <div>
+                            <Text strong>Destination Filename: </Text>
+                            <Text code>{functionParams.dest}</Text>
+                          </div>
+                          {additionalContext?.grandRepository && (
+                            <div>
+                              <Text strong>Repository Lineage: </Text>
+                              <Space>
+                                <Tag color="blue">{additionalContext.grandRepository}</Tag>
+                                <Text type="secondary">→</Text>
+                                <Tag color="#8FBC8F">{additionalContext.sourceRepository}</Tag>
+                                <Text type="secondary">→</Text>
+                                <Tag color="green">{functionParams.dest}</Tag>
+                              </Space>
+                            </div>
+                          )}
+                          {!additionalContext?.grandRepository && additionalContext?.sourceRepository && (
+                            <div>
+                              <Text strong>Source Repository: </Text>
+                              <Tag color="#8FBC8F">{additionalContext.sourceRepository}</Tag>
+                              <Text type="secondary"> (Original)</Text>
+                            </div>
+                          )}
+                          <div>
+                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                              {functionParams.state === 'online' 
+                                ? 'The repository will be pushed in online state (mounted).' 
+                                : 'The repository will be pushed in offline state (unmounted).'}
+                            </Text>
+                          </div>
+                          {functionParams.state === 'online' && (
+                            <Alert
+                              type="warning"
+                              showIcon
+                              style={{ marginTop: 8 }}
+                              message="Online Push Warning"
+                              description={
+                                <Space direction="vertical" size="small">
+                                  <Text type="secondary" style={{ fontSize: '12px' }}>
+                                    Pushing a mounted repository while services are running may cause data inconsistencies.
+                                  </Text>
+                                  <Text type="secondary" style={{ fontSize: '12px' }}>
+                                    <strong>Potential issues:</strong>
+                                  </Text>
+                                  <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
+                                    <li style={{ fontSize: '12px' }}>
+                                      <Text type="secondary">Database services may have open transactions that could be interrupted</Text>
+                                    </li>
+                                    <li style={{ fontSize: '12px' }}>
+                                      <Text type="secondary">Applications actively writing files may result in partial or corrupted data</Text>
+                                    </li>
+                                    <li style={{ fontSize: '12px' }}>
+                                      <Text type="secondary">File locks and temporary files may be included in the snapshot</Text>
+                                    </li>
+                                  </ul>
+                                  <Text type="secondary" style={{ fontSize: '12px' }}>
+                                    <strong>Recommendation:</strong> Online pushes are convenient for regular backups without service interruption. 
+                                    However, periodically perform offline pushes (unmount first) to ensure you have fully consistent backups for critical recovery scenarios.
+                                  </Text>
+                                </Space>
+                              }
+                            />
+                          )}
+                        </Space>
+                      }
+                    />
+                  )}
                   {/* Machine Selection */}
                   {showMachineSelection && (
                     <Form.Item
