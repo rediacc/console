@@ -228,6 +228,10 @@
         "repo": {
           "type": "string",
           "required": true
+        },
+        "grand": {
+          "type": "string",
+          "required": true
         }
       }
     },
