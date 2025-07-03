@@ -191,22 +191,45 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                   // Group containers by repository
                   const containersMap: Record<string, any> = {}
                   
+                  // Initialize empty containers for all repositories
+                  mappedRepositories.forEach((repo: Repository) => {
+                    containersMap[repo.name] = { containers: [], error: null }
+                  })
+                  
                   result.containers.forEach((container: any) => {
-                    // Extract repository GUID from labels
-                    const repoGuid = container.labels?.['com.redisolar.repository-guid']
-                    if (!repoGuid) return
-                    
-                    // Find the repository by GUID
-                    const matchingRepo = teamRepositories.find(r => r.repositoryGuid === repoGuid)
-                    if (matchingRepo) {
-                      const repoName = matchingRepo.repositoryName
-                      if (!containersMap[repoName]) {
-                        containersMap[repoName] = {
-                          containers: [],
-                          error: null
+                    // Check if container has a repository field (newer format)
+                    if (container.repository) {
+                      const repoGuid = container.repository
+                      // Find the mapped repository that corresponds to this GUID
+                      const mappedRepo = mappedRepositories.find((repo: Repository) => {
+                        // Find the original repository with this GUID
+                        const originalRepo = result.repositories.find((r: any) => r.name === repoGuid)
+                        if (!originalRepo) return false
+                        // Match by mount path or other unique properties
+                        return repo.mount_path === originalRepo.mount_path || 
+                               repo.image_path === originalRepo.image_path
+                      })
+                      if (mappedRepo) {
+                        containersMap[mappedRepo.name].containers.push(container)
+                      }
+                    }
+                    // Fallback to checking labels
+                    else {
+                      // Extract repository GUID from labels
+                      const repoGuid = container.labels?.['com.redisolar.repository-guid'] || 
+                                      container.labels?.['com.rediacc.repository-guid']
+                      if (repoGuid) {
+                        // Find the mapped repository
+                        const mappedRepo = mappedRepositories.find((repo: Repository) => {
+                          const originalRepo = result.repositories.find((r: any) => r.name === repoGuid)
+                          if (!originalRepo) return false
+                          return repo.mount_path === originalRepo.mount_path || 
+                                 repo.image_path === originalRepo.image_path
+                        })
+                        if (mappedRepo) {
+                          containersMap[mappedRepo.name].containers.push(container)
                         }
                       }
-                      containersMap[repoName].containers.push(container)
                     }
                   })
                   
@@ -217,15 +240,45 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                   // Group services by repository
                   const servicesMap: Record<string, any> = {}
                   
+                  // Initialize empty services for all repositories
                   mappedRepositories.forEach((repo: Repository) => {
-                    if (repo.has_services) {
-                      const repoServices = result.services.filter((service: any) => 
-                        service.unit_file && service.unit_file.includes(`@${repo.name}.service`)
-                      )
-                      if (repoServices.length > 0) {
-                        servicesMap[repo.name] = {
-                          services: repoServices,
-                          error: null
+                    servicesMap[repo.name] = { services: [], error: null }
+                  })
+                  
+                  // Add services to their respective repositories
+                  result.services.forEach((service: any) => {
+                    // Check if service has a repository field (newer format)
+                    if (service.repository) {
+                      const repoGuid = service.repository
+                      // Find the mapped repository that corresponds to this GUID
+                      const mappedRepo = mappedRepositories.find((repo: Repository) => {
+                        // Find the original repository with this GUID
+                        const originalRepo = result.repositories.find((r: any) => r.name === repoGuid)
+                        if (!originalRepo) return false
+                        // Match by mount path or other unique properties
+                        return repo.mount_path === originalRepo.mount_path || 
+                               repo.image_path === originalRepo.image_path
+                      })
+                      if (mappedRepo) {
+                        servicesMap[mappedRepo.name].services.push(service)
+                      }
+                    }
+                    // Fallback to old format checking service_name or unit_file
+                    else if (service.service_name || service.unit_file) {
+                      const serviceName = service.service_name || service.unit_file || ''
+                      // Try to extract GUID from service name
+                      const guidMatch = serviceName.match(/rediacc_([0-9a-f-]{36})_/)
+                      if (guidMatch) {
+                        const repoGuid = guidMatch[1]
+                        // Find the mapped repository
+                        const mappedRepo = mappedRepositories.find((repo: Repository) => {
+                          const originalRepo = result.repositories.find((r: any) => r.name === repoGuid)
+                          if (!originalRepo) return false
+                          return repo.mount_path === originalRepo.mount_path || 
+                                 repo.image_path === originalRepo.image_path
+                        })
+                        if (mappedRepo) {
+                          servicesMap[mappedRepo.name].services.push(service)
                         }
                       }
                     }
@@ -396,12 +449,21 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 commandOutput.services.forEach((service: any) => {
                   // Find the repository name for this service
                   const repoGuid = service.repository
-                  const matchingRepo = teamRepositories.find(r => r.repositoryGuid === repoGuid)
-                  if (matchingRepo) {
-                    const repoName = matchingRepo.repositoryName
-                    if (servicesMap[repoName]) {
-                      servicesMap[repoName].services.push(service)
-                    }
+                  
+                  // Try to find the mapped repository by matching the GUID
+                  const mappedRepo = mappedRepositories.find((repo: Repository) => {
+                    // Check if this repository's original name was the GUID we're looking for
+                    const originalRepo = commandOutput.repositories.find((r: any) => r.name === repoGuid)
+                    if (!originalRepo) return false
+                    
+                    // Match by comparing properties that should be the same
+                    return repo.mount_path === originalRepo.mount_path || 
+                           repo.image_path === originalRepo.image_path ||
+                           (repo.size === originalRepo.size && repo.modified === originalRepo.modified)
+                  })
+                  
+                  if (mappedRepo && servicesMap[mappedRepo.name]) {
+                    servicesMap[mappedRepo.name].services.push(service)
                   }
                 })
                 
@@ -424,12 +486,21 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 commandOutput.containers.forEach((container: any) => {
                   // Find the repository name for this container
                   const repoGuid = container.repository
-                  const matchingRepo = teamRepositories.find(r => r.repositoryGuid === repoGuid)
-                  if (matchingRepo) {
-                    const repoName = matchingRepo.repositoryName
-                    if (containersMap[repoName]) {
-                      containersMap[repoName].containers.push(container)
-                    }
+                  
+                  // Try to find the mapped repository by matching the GUID
+                  const mappedRepo = mappedRepositories.find((repo: Repository) => {
+                    // Check if this repository's original name was the GUID we're looking for
+                    const originalRepo = commandOutput.repositories.find((r: any) => r.name === repoGuid)
+                    if (!originalRepo) return false
+                    
+                    // Match by comparing properties that should be the same
+                    return repo.mount_path === originalRepo.mount_path || 
+                           repo.image_path === originalRepo.image_path ||
+                           (repo.size === originalRepo.size && repo.modified === originalRepo.modified)
+                  })
+                  
+                  if (mappedRepo && containersMap[mappedRepo.name]) {
+                    containersMap[mappedRepo.name].containers.push(container)
                   }
                 })
                 
