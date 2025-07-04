@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Empty, Card, Row, Col, Progress } from 'antd'
-import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, PlusOutlined, MinusOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined } from '@ant-design/icons'
+import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, PlusOutlined, MinusOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { type QueueFunction } from '@/api/queries/queue'
 import { useQueueItemTrace } from '@/api/queries/queue'
@@ -1240,28 +1240,14 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         // Build smart menu items based on repository state
         const menuItems = []
         
-        // Mount - if the repository is not mounted
+        // Mount and Up - if the repository is not mounted
         if (!record.mounted) {
           menuItems.push({
             key: 'mount',
             label: t('functions:functions.mount.name'),
-            icon: <PlayCircleOutlined />,
+            icon: <ApiOutlined />,
             onClick: () => handleQuickAction(record, 'mount')
           })
-        }
-        
-        // Unmount - if mounted, accessible, and container_count is 0
-        if (record.mounted && record.accessible && record.container_count === 0) {
-          menuItems.push({
-            key: 'unmount',
-            label: t('functions:functions.unmount.name'),
-            icon: <StopOutlined />,
-            onClick: () => handleQuickAction(record, 'unmount')
-          })
-        }
-        
-        // Up - if mounted, accessible, has_services, docker_running and container_count is 0
-        if (record.mounted && record.accessible && record.has_services && record.docker_running && record.container_count === 0) {
           menuItems.push({
             key: 'up',
             label: t('functions:functions.up.name'),
@@ -1270,13 +1256,39 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           })
         }
         
-        // Down - if mounted, accessible, has_services, docker_running and container_count is not 0
+        // Unmount - if mounted, accessible, and container_count is 0
+        if (record.mounted && record.accessible && record.container_count === 0) {
+          menuItems.push({
+            key: 'unmount',
+            label: t('functions:functions.unmount.name'),
+            icon: <DisconnectOutlined />,
+            onClick: () => handleQuickAction(record, 'unmount')
+          })
+        }
+        
+        // Up - if mounted, has Rediaccfile, and no containers running
+        if (record.mounted && record.has_rediaccfile && record.container_count === 0) {
+          menuItems.push({
+            key: 'up',
+            label: t('functions:functions.up.name'),
+            icon: <PlayCircleOutlined style={{ color: '#52c41a' }} />,
+            onClick: () => handleQuickAction(record, 'up')
+          })
+        }
+        
+        // Down and Unmount - if mounted, accessible, has_services, docker_running and container_count is not 0
         if (record.mounted && record.accessible && record.has_services && record.docker_running && record.container_count > 0) {
           menuItems.push({
             key: 'down',
             label: t('functions:functions.down.name'),
             icon: <StopOutlined style={{ color: '#ff4d4f' }} />,
             onClick: () => handleQuickAction(record, 'down')
+          })
+          menuItems.push({
+            key: 'unmount',
+            label: t('functions:functions.unmount.name'),
+            icon: <DisconnectOutlined />,
+            onClick: () => handleQuickAction(record, 'unmount')
           })
         }
         

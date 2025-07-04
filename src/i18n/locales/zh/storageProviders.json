@@ -1,0 +1,1603 @@
+{
+  "storageProviders": {
+    "s3": {
+      "name": "Amazon S3 兼容",
+      "description": "S3兼容对象存储（AWS、Linode、DigitalOcean、Vultr等）",
+      "helpText": "Amazon S3和兼容的对象存储服务。支持AWS S3、Linode对象存储、DigitalOcean Spaces、Vultr对象存储、MinIO等多种服务。",
+      "fields": {
+        "provider": {
+          "label": "提供商",
+          "placeholder": "选择S3提供商",
+          "helpText": "选择您的S3兼容存储提供商"
+        },
+        "access_key_id": {
+          "label": "访问密钥ID",
+          "placeholder": "AKIAIOSFODNN7EXAMPLE",
+          "helpText": "您的访问密钥ID用于身份验证。从您的提供商控制台获取"
+        },
+        "secret_access_key": {
+          "label": "访问密钥密码",
+          "placeholder": "输入您的访问密钥密码",
+          "helpText": "您的访问密钥密码。请妥善保管，切勿分享"
+        },
+        "endpoint": {
+          "label": "端点",
+          "placeholder": "s3.amazonaws.com",
+          "helpText": "S3 API端点URL。AWS S3留空。其他提供商必填"
+        },
+        "region": {
+          "label": "区域",
+          "placeholder": "us-east-1",
+          "helpText": "您的存储桶所在的AWS区域"
+        },
+        "bucket": {
+          "label": "存储桶",
+          "placeholder": "my-backup-bucket",
+          "helpText": "S3存储桶名称。必须全局唯一并遵循命名规则"
+        },
+        "folder": {
+          "label": "文件夹",
+          "placeholder": "rediacc",
+          "helpText": "存储桶内的可选文件夹路径"
+        },
+        "env_auth": {
+          "label": "使用环境认证",
+          "helpText": "使用AWS环境变量或IAM角色进行身份验证"
+        },
+        "location_constraint": {
+          "label": "位置约束",
+          "placeholder": "EU",
+          "helpText": "创建新存储桶时的位置约束"
+        },
+        "acl": {
+          "label": "访问控制列表",
+          "helpText": "上传对象的默认ACL。建议使用私有"
+        }
+      },
+      "tips": [
+        "对于AWS S3，创建具有编程访问权限的IAM用户",
+        "使用存储桶策略控制访问权限",
+        "启用版本控制以保护重要数据",
+        "考虑使用生命周期规则来管理存储成本"
+      ]
+    },
+    "b2": {
+      "name": "Backblaze B2",
+      "description": "Backblaze B2云存储",
+      "helpText": "Backblaze B2是一个经济实惠的云备份服务。使用应用程序密钥进行身份验证。",
+      "fields": {
+        "account": {
+          "label": "账户ID或应用程序密钥ID",
+          "placeholder": "000000000000000000000000",
+          "helpText": "您的B2账户ID或应用程序密钥ID"
+        },
+        "key": {
+          "label": "应用程序密钥",
+          "placeholder": "输入您的应用程序密钥",
+          "helpText": "来自B2控制台的应用程序密钥。使用应用程序密钥而不是主密钥"
+        },
+        "hard_delete": {
+          "label": "硬删除",
+          "helpText": "永久删除文件而不是隐藏它们。谨慎使用"
+        },
+        "endpoint": {
+          "label": "自定义端点",
+          "placeholder": "s3.us-west-000.backblazeb2.com",
+          "helpText": "B2的自定义S3兼容端点"
+        }
+      },
+      "tips": [
+        "创建具有有限权限的应用程序密钥以提高安全性",
+        "B2提供10GB免费存储和每天1GB下载",
+        "隐藏文件仍计入存储配额",
+        "考虑生命周期规则自动删除旧版本"
+      ]
+    },
+    "drive": {
+      "name": "Google Drive",
+      "description": "Google Drive云存储",
+      "helpText": "Google Drive个人云存储。需要OAuth身份验证或服务账户。",
+      "fields": {
+        "client_id": {
+          "label": "OAuth客户端ID",
+          "placeholder": "123456789012-abcdef.apps.googleusercontent.com",
+          "helpText": "来自Google Cloud Console的OAuth 2.0客户端ID"
+        },
+        "client_secret": {
+          "label": "OAuth客户端密钥",
+          "placeholder": "输入您的客户端密钥",
+          "helpText": "OAuth 2.0客户端密钥。请妥善保管"
+        },
+        "token": {
+          "label": "OAuth令牌",
+          "helpText": "通过身份验证流程获得的OAuth2令牌"
+        },
+        "scope": {
+          "label": "访问范围",
+          "helpText": "Google Drive访问的权限范围。'drive'提供完全访问权限"
+        },
+        "root_folder_id": {
+          "label": "根文件夹ID",
+          "placeholder": "0AOa0a0a0a0a0Uk9PVA",
+          "helpText": "要使用的根文件夹ID。留空使用drive根目录"
+        },
+        "service_account_file": {
+          "label": "服务账户文件",
+          "placeholder": "Base64编码的JSON文件",
+          "helpText": "服务账户JSON文件内容（base64编码）用于服务器端身份验证"
+        },
+        "team_drive": {
+          "label": "团队云端硬盘ID",
+          "placeholder": "输入团队云端硬盘ID",
+          "helpText": "要使用的团队云端硬盘（共享云端硬盘）ID"
+        },
+        "impersonate": {
+          "label": "模拟用户",
+          "placeholder": "user@domain.com",
+          "helpText": "使用服务账户时要模拟的用户电子邮件"
+        }
+      },
+      "tips": [
+        "为服务器端应用程序使用服务账户",
+        "团队云端硬盘的权限与个人云端硬盘不同",
+        "Google有每日上传/下载配额",
+        "大文件上传后可能需要时间才能显示"
+      ]
+    },
+    "onedrive": {
+      "name": "Microsoft OneDrive",
+      "description": "Microsoft OneDrive云存储",
+      "helpText": "Microsoft OneDrive个人和商业云存储。使用OAuth身份验证。",
+      "fields": {
+        "token": {
+          "label": "OAuth令牌",
+          "helpText": "通过Microsoft身份验证获得的OAuth2令牌"
+        },
+        "drive_id": {
+          "label": "驱动器ID",
+          "placeholder": "b!Ei1XXXXXXXXXX",
+          "helpText": "要使用的特定驱动器ID。留空使用默认值"
+        },
+        "drive_type": {
+          "label": "驱动器类型",
+          "helpText": "OneDrive账户类型 - 个人、商业或文档库"
+        },
+        "folder": {
+          "label": "文件夹路径",
+          "placeholder": "backups",
+          "helpText": "OneDrive内用作根目录的文件夹路径"
+        }
+      },
+      "tips": [
+        "令牌每90天过期，需要刷新",
+        "商业账户可能有不同的API限制",
+        "大文件上传会自动分块",
+        "文件名中的某些特殊字符可能会导致问题"
+      ]
+    },
+    "mega": {
+      "name": "Mega",
+      "description": "Mega云存储",
+      "helpText": "MEGA提供客户端加密的云存储。有严格的登录频率限制。",
+      "fields": {
+        "user": {
+          "label": "电子邮件",
+          "placeholder": "user@example.com",
+          "helpText": "您的MEGA账户电子邮件地址"
+        },
+        "pass": {
+          "label": "密码",
+          "placeholder": "输入您的密码",
+          "helpText": "您的MEGA账户密码（将被加密）"
+        },
+        "hard_delete": {
+          "label": "硬删除",
+          "helpText": "永久删除文件而不是移到垃圾箱"
+        },
+        "use_https": {
+          "label": "使用HTTPS",
+          "helpText": "为传输使用HTTPS（推荐）"
+        }
+      },
+      "tips": [
+        "MEGA有严格的频率限制 - 避免频繁登录",
+        "所有文件都是客户端加密的",
+        "免费账户有20GB存储空间",
+        "考虑使用应用密码以提高安全性"
+      ]
+    },
+    "box": {
+      "name": "Box",
+      "description": "Box云存储",
+      "helpText": "Box企业云存储和协作平台。使用OAuth 2.0身份验证。",
+      "fields": {
+        "client_id": {
+          "label": "OAuth客户端ID",
+          "placeholder": "输入您的客户端ID",
+          "helpText": "来自Box应用设置的OAuth 2.0客户端ID"
+        },
+        "client_secret": {
+          "label": "OAuth客户端密钥",
+          "placeholder": "输入您的客户端密钥",
+          "helpText": "OAuth 2.0客户端密钥。请妥善保管"
+        },
+        "token": {
+          "label": "OAuth令牌",
+          "helpText": "通过Box身份验证获得的OAuth2令牌"
+        },
+        "root_folder_id": {
+          "label": "根文件夹ID",
+          "placeholder": "0",
+          "helpText": "根文件夹的ID。'0'表示您的Box根目录"
+        }
+      },
+      "tips": [
+        "Box上传文件大小限制为15GB",
+        "企业账户可能有额外功能",
+        "为服务器端应用程序使用应用令牌",
+        "Box有严格的API速率限制"
+      ]
+    },
+    "dropbox": {
+      "name": "Dropbox",
+      "description": "Dropbox云存储",
+      "helpText": "Dropbox个人和商业云存储。文件不区分大小写。",
+      "fields": {
+        "client_id": {
+          "label": "OAuth客户端ID",
+          "placeholder": "输入您的应用密钥",
+          "helpText": "来自Dropbox App Console的应用密钥"
+        },
+        "client_secret": {
+          "label": "OAuth客户端密钥",
+          "placeholder": "输入您的应用密钥",
+          "helpText": "来自Dropbox App Console的应用密钥"
+        },
+        "token": {
+          "label": "OAuth令牌",
+          "helpText": "通过Dropbox身份验证获得的OAuth2令牌"
+        }
+      },
+      "tips": [
+        "Dropbox不区分大小写 - 避免使用相似的文件名",
+        "上传最大文件大小为150GB",
+        "批量操作更高效",
+        "考虑使用Dropbox Business获取团队功能"
+      ]
+    },
+    "azureblob": {
+      "name": "Azure Blob存储",
+      "description": "Microsoft Azure Blob存储",
+      "helpText": "用于非结构化数据的Azure Blob存储。支持多种身份验证方法。",
+      "fields": {
+        "account": {
+          "label": "存储账户名称",
+          "placeholder": "myaccount",
+          "helpText": "您的Azure存储账户名称"
+        },
+        "key": {
+          "label": "存储账户密钥",
+          "placeholder": "输入您的账户密钥",
+          "helpText": "来自Azure门户的主密钥或辅助密钥"
+        },
+        "sas_url": {
+          "label": "SAS URL",
+          "placeholder": "如果使用，输入SAS URL",
+          "helpText": "用于有限访问的共享访问签名URL"
+        },
+        "endpoint": {
+          "label": "端点",
+          "placeholder": "https://myaccount.blob.core.windows.net",
+          "helpText": "Azure存储的自定义端点"
+        }
+      },
+      "tips": [
+        "使用SAS令牌进行临时访问",
+        "选择适当的存储层以优化成本",
+        "启用软删除以保护数据",
+        "考虑为Azure资源使用托管身份"
+      ]
+    },
+    "gcs": {
+      "name": "Google Cloud Storage",
+      "description": "Google Cloud Storage",
+      "helpText": "用于对象和blob的Google Cloud Storage。与Google Drive不同。",
+      "fields": {
+        "service_account_file": {
+          "label": "服务账户文件",
+          "placeholder": "Base64编码的JSON文件",
+          "helpText": "服务账户JSON密钥文件（base64编码）"
+        },
+        "project_number": {
+          "label": "项目编号",
+          "placeholder": "123456789012",
+          "helpText": "GCP项目编号（不是项目ID）"
+        },
+        "bucket_policy_only": {
+          "label": "仅存储桶策略",
+          "helpText": "使用统一的存储桶级访问控制"
+        },
+        "location": {
+          "label": "默认位置",
+          "placeholder": "US",
+          "helpText": "新存储桶的默认位置"
+        },
+        "storage_class": {
+          "label": "存储类别",
+          "helpText": "对象的默认存储类别"
+        }
+      },
+      "tips": [
+        "使用服务账户进行身份验证",
+        "根据访问频率选择存储类别",
+        "为重要数据启用版本控制",
+        "设置生命周期策略以管理成本"
+      ]
+    },
+    "swift": {
+      "name": "OpenStack Swift",
+      "description": "OpenStack Swift对象存储",
+      "helpText": "OpenStack Swift对象存储，被Rackspace、OVH等使用。",
+      "fields": {
+        "user": {
+          "label": "用户名",
+          "placeholder": "输入您的用户名",
+          "helpText": "OpenStack用户名"
+        },
+        "key": {
+          "label": "API密钥/密码",
+          "placeholder": "输入您的API密钥",
+          "helpText": "用于身份验证的API密钥或密码"
+        },
+        "auth": {
+          "label": "认证URL",
+          "placeholder": "https://auth.cloud.com/v3",
+          "helpText": "身份验证端点URL"
+        },
+        "tenant": {
+          "label": "租户名称",
+          "placeholder": "输入租户名称",
+          "helpText": "租户/项目名称"
+        },
+        "tenant_id": {
+          "label": "租户ID",
+          "placeholder": "输入租户ID",
+          "helpText": "租户/项目ID"
+        },
+        "domain": {
+          "label": "域",
+          "placeholder": "Default",
+          "helpText": "用户域名"
+        },
+        "region": {
+          "label": "区域",
+          "placeholder": "输入区域",
+          "helpText": "区域名称"
+        },
+        "storage_url": {
+          "label": "存储URL",
+          "placeholder": "输入存储URL",
+          "helpText": "存储URL（可选）"
+        },
+        "auth_version": {
+          "label": "认证版本",
+          "helpText": "身份验证协议版本"
+        }
+      },
+      "tips": [
+        "向您的提供商确认正确的认证URL",
+        "建议新部署使用v3认证",
+        "某些提供商需要特定的租户设置",
+        "大对象支持可能因提供商而异"
+      ]
+    },
+    "sftp": {
+      "name": "SFTP",
+      "description": "SSH文件传输协议",
+      "helpText": "通过SSH进行安全文件传输。支持密码和基于密钥的身份验证。",
+      "fields": {
+        "host": {
+          "label": "主机",
+          "placeholder": "example.com",
+          "helpText": "SFTP服务器主机名或IP地址"
+        },
+        "user": {
+          "label": "用户名",
+          "placeholder": "username",
+          "helpText": "SSH/SFTP用户名"
+        },
+        "port": {
+          "label": "端口",
+          "placeholder": "22",
+          "helpText": "SFTP端口（默认为22）"
+        },
+        "pass": {
+          "label": "密码",
+          "placeholder": "输入密码",
+          "helpText": "用于密码身份验证的密码"
+        },
+        "key_file": {
+          "label": "私钥文件",
+          "placeholder": "/path/to/key",
+          "helpText": "SSH私钥文件路径"
+        },
+        "key_file_pass": {
+          "label": "密钥口令",
+          "placeholder": "输入口令",
+          "helpText": "加密私钥的口令"
+        },
+        "pubkey_file": {
+          "label": "公钥文件",
+          "placeholder": "/path/to/key.pub",
+          "helpText": "SSH公钥文件路径"
+        },
+        "known_hosts_file": {
+          "label": "已知主机文件",
+          "placeholder": "~/.ssh/known_hosts",
+          "helpText": "用于服务器验证的已知主机文件路径"
+        }
+      },
+      "tips": [
+        "使用基于密钥的身份验证以提高安全性",
+        "在首次连接时验证服务器指纹",
+        "保持您的私钥安全并加密",
+        "考虑使用SSH代理进行密钥管理"
+      ]
+    },
+    "ftp": {
+      "name": "FTP",
+      "description": "文件传输协议",
+      "helpText": "传统文件传输协议。考虑使用FTPS以提高安全性。",
+      "fields": {
+        "host": {
+          "label": "主机",
+          "placeholder": "ftp.example.com",
+          "helpText": "FTP服务器主机名或IP地址"
+        },
+        "user": {
+          "label": "用户名",
+          "placeholder": "username",
+          "helpText": "FTP用户名"
+        },
+        "pass": {
+          "label": "密码",
+          "placeholder": "输入密码",
+          "helpText": "FTP密码"
+        },
+        "port": {
+          "label": "端口",
+          "placeholder": "21",
+          "helpText": "FTP端口（默认为21）"
+        },
+        "tls": {
+          "label": "使用FTPS",
+          "helpText": "使用FTP over TLS/SSL进行加密"
+        },
+        "explicit_tls": {
+          "label": "显式TLS",
+          "helpText": "使用显式FTPS（推荐优于隐式）"
+        }
+      },
+      "tips": [
+        "FTP不安全 - 尽可能使用FTPS或SFTP",
+        "某些防火墙可能会阻止FTP被动模式",
+        "检查您的服务器是否支持FTPS",
+        "考虑SFTP作为更安全的替代方案"
+      ]
+    },
+    "webdav": {
+      "name": "WebDAV",
+      "description": "WebDAV协议",
+      "helpText": "基于Web的分布式创作和版本控制。被Nextcloud、ownCloud等使用。",
+      "fields": {
+        "url": {
+          "label": "WebDAV URL",
+          "placeholder": "https://webdav.example.com",
+          "helpText": "完整的WebDAV端点URL"
+        },
+        "user": {
+          "label": "用户名",
+          "placeholder": "输入用户名",
+          "helpText": "WebDAV用户名"
+        },
+        "pass": {
+          "label": "密码",
+          "placeholder": "输入密码",
+          "helpText": "WebDAV密码"
+        },
+        "vendor": {
+          "label": "供应商",
+          "helpText": "WebDAV供应商用于特定兼容性"
+        }
+      },
+      "tips": [
+        "不同的供应商可能有特定的怪癖",
+        "Nextcloud/ownCloud有专门的供应商支持",
+        "使用HTTPS进行安全连接",
+        "某些服务器有文件大小限制"
+      ]
+    },
+    "local": {
+      "name": "本地文件系统",
+      "description": "本地文件系统存储",
+      "helpText": "直接访问本地或挂载的文件系统。",
+      "fields": {
+        "path": {
+          "label": "路径",
+          "placeholder": "/mnt/backup",
+          "helpText": "本地目录的绝对路径"
+        },
+        "nounc": {
+          "label": "禁用UNC",
+          "helpText": "在Windows上禁用UNC（\\\\server\\share）路径"
+        }
+      },
+      "tips": [
+        "确保路径存在并具有适当的权限",
+        "使用绝对路径，而不是相对路径",
+        "网络共享应先挂载",
+        "考虑大文件的文件系统限制"
+      ]
+    },
+    "pcloud": {
+      "name": "pCloud",
+      "description": "具有OAuth身份验证的云存储服务",
+      "helpText": "pCloud提供安全的云存储，具有客户端加密选项。有欧盟和美国区域。",
+      "fields": {
+        "client_id": {
+          "label": "OAuth客户端ID",
+          "placeholder": "输入客户端ID",
+          "helpText": "pCloud的OAuth 2.0客户端ID"
+        },
+        "client_secret": {
+          "label": "OAuth客户端密钥",
+          "placeholder": "输入客户端密钥",
+          "helpText": "OAuth 2.0客户端密钥"
+        },
+        "token": {
+          "label": "OAuth令牌",
+          "helpText": "通过身份验证获得的OAuth2令牌"
+        },
+        "hostname": {
+          "label": "主机名",
+          "placeholder": "api.pcloud.com",
+          "helpText": "API主机名（欧盟使用eapi.pcloud.com）"
+        },
+        "root_folder_id": {
+          "label": "根文件夹ID",
+          "placeholder": "输入文件夹ID",
+          "helpText": "起始文件夹ID（可选）"
+        }
+      },
+      "tips": [
+        "根据您的位置选择欧盟或美国区域",
+        "加密文件夹提供客户端加密",
+        "有终身计划可用",
+        "移动和桌面同步客户端可用"
+      ]
+    },
+    "yandex": {
+      "name": "Yandex Disk",
+      "description": "Yandex云存储服务",
+      "helpText": "Yandex Disk是在俄罗斯和东欧流行的云存储服务。使用OAuth身份验证。",
+      "fields": {
+        "client_id": {
+          "label": "OAuth客户端ID",
+          "placeholder": "输入客户端ID",
+          "helpText": "来自Yandex的OAuth 2.0客户端ID"
+        },
+        "client_secret": {
+          "label": "OAuth客户端密钥",
+          "placeholder": "输入客户端密钥",
+          "helpText": "OAuth 2.0客户端密钥"
+        },
+        "token": {
+          "label": "OAuth令牌",
+          "helpText": "通过Yandex身份验证获得的OAuth2令牌"
+        }
+      },
+      "tips": [
+        "免费层包括10GB存储",
+        "支持从移动设备自动上传照片",
+        "为所有主要平台提供桌面同步客户端",
+        "可用的Office文档协作"
+      ]
+    },
+    "googlephotos": {
+      "name": "Google相册",
+      "description": "Google相册存储服务",
+      "helpText": "Google相册备份和同步服务。注意：仅限于照片和视频操作。",
+      "fields": {
+        "client_id": {
+          "label": "OAuth客户端ID",
+          "placeholder": "123456789012-abcdef.apps.googleusercontent.com",
+          "helpText": "来自Google Cloud Console的OAuth 2.0客户端ID"
+        },
+        "client_secret": {
+          "label": "OAuth客户端密钥",
+          "placeholder": "输入您的客户端密钥",
+          "helpText": "OAuth 2.0客户端密钥"
+        },
+        "token": {
+          "label": "OAuth令牌",
+          "helpText": "具有photos.readonly范围的OAuth2令牌"
+        },
+        "read_only": {
+          "label": "只读",
+          "helpText": "Google相册API对大多数操作是只读的"
+        }
+      },
+      "tips": [
+        "Google相册API的写入功能有限",
+        "最适合从Google相册备份照片",
+        "原始质量计入Google Drive存储",
+        "可以保留相册和元数据"
+      ]
+    },
+    "proton": {
+      "name": "Proton Drive",
+      "description": "注重隐私的加密云存储",
+      "helpText": "Proton Drive提供来自ProtonMail制造商的端到端加密云存储。",
+      "fields": {
+        "username": {
+          "label": "用户名",
+          "placeholder": "user@proton.me",
+          "helpText": "您的Proton账户电子邮件"
+        },
+        "password": {
+          "label": "密码",
+          "placeholder": "输入您的密码",
+          "helpText": "您的Proton账户密码"
+        },
+        "2fa": {
+          "label": "双因素代码",
+          "placeholder": "如果启用，输入2FA代码",
+          "helpText": "双因素身份验证代码（如果启用）"
+        }
+      },
+      "tips": [
+        "所有文件都是端到端加密的",
+        "Proton隐私生态系统的一部分",
+        "免费层包括1GB存储",
+        "支持带加密的文件共享"
+      ]
+    },
+    "storj": {
+      "name": "Storj",
+      "description": "去中心化云存储",
+      "helpText": "Storj是一个去中心化云存储网络，在全球网络上加密和分发文件。",
+      "fields": {
+        "access_grant": {
+          "label": "访问授权",
+          "placeholder": "输入您的访问授权",
+          "helpText": "来自Storj的序列化访问授权"
+        },
+        "satellite_address": {
+          "label": "卫星地址",
+          "placeholder": "us1.storj.io:7777",
+          "helpText": "卫星地址（可选，默认为us1.storj.io:7777）"
+        },
+        "api_key": {
+          "label": "API密钥",
+          "placeholder": "输入API密钥",
+          "helpText": "来自卫星Web界面的API密钥"
+        },
+        "passphrase": {
+          "label": "加密口令",
+          "placeholder": "输入加密口令",
+          "helpText": "您数据的加密口令"
+        }
+      },
+      "tips": [
+        "去中心化存储提供高耐久性",
+        "所有数据都是客户端加密的",
+        "只为您使用的付费",
+        "适合归档和备份用例"
+      ]
+    },
+    "smb": {
+      "name": "SMB / CIFS",
+      "description": "Windows网络共享",
+      "helpText": "用于访问Windows共享和NAS设备的服务器消息块（SMB）协议。",
+      "fields": {
+        "host": {
+          "label": "主机",
+          "placeholder": "server.local 或 192.168.1.100",
+          "helpText": "SMB服务器主机名或IP地址"
+        },
+        "user": {
+          "label": "用户名",
+          "placeholder": "DOMAIN\\username 或 username",
+          "helpText": "用户名（可能包括域）"
+        },
+        "pass": {
+          "label": "密码",
+          "placeholder": "输入密码",
+          "helpText": "SMB身份验证密码"
+        },
+        "domain": {
+          "label": "域",
+          "placeholder": "WORKGROUP",
+          "helpText": "SMB域（默认WORKGROUP）"
+        },
+        "port": {
+          "label": "端口",
+          "placeholder": "445",
+          "helpText": "SMB端口（通常为445）"
+        }
+      },
+      "tips": [
+        "建议使用SMB3以提高安全性",
+        "确保启用网络发现",
+        "可能需要防火墙配置",
+        "如果主机名失败，请使用IP地址测试"
+      ]
+    },
+    "oracle": {
+      "name": "Oracle对象存储",
+      "description": "Oracle云基础设施对象存储",
+      "helpText": "Oracle云基础设施（OCI）对象存储是用于存储大量非结构化数据的区域服务。",
+      "fields": {
+        "namespace": {
+          "label": "对象存储命名空间",
+          "placeholder": "输入命名空间",
+          "helpText": "对象存储命名空间（在OCI控制台中找到）"
+        },
+        "compartment": {
+          "label": "隔间OCID",
+          "placeholder": "ocid1.compartment.oc1...",
+          "helpText": "存储桶所在的隔间OCID"
+        },
+        "region": {
+          "label": "区域",
+          "placeholder": "us-ashburn-1",
+          "helpText": "OCI区域标识符"
+        },
+        "user": {
+          "label": "用户OCID",
+          "placeholder": "ocid1.user.oc1...",
+          "helpText": "用于身份验证的用户OCID"
+        },
+        "key_file": {
+          "label": "API密钥文件",
+          "placeholder": "Base64编码的PEM文件",
+          "helpText": "PEM格式的RSA私钥（base64编码）"
+        },
+        "fingerprint": {
+          "label": "密钥指纹",
+          "placeholder": "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99",
+          "helpText": "API签名密钥的指纹"
+        },
+        "tenancy": {
+          "label": "租户OCID",
+          "placeholder": "ocid1.tenancy.oc1...",
+          "helpText": "租户OCID"
+        }
+      },
+      "tips": [
+        "在OCI控制台用户设置中生成API密钥",
+        "使用隔间组织资源",
+        "存储类别可用于成本优化",
+        "支持S3兼容API作为替代方案"
+      ]
+    },
+    "sharefile": {
+      "name": "Citrix ShareFile",
+      "description": "企业文件共享和存储",
+      "helpText": "Citrix ShareFile是具有安全文件共享的企业内容协作平台。",
+      "fields": {
+        "upload_endpoint": {
+          "label": "上传端点",
+          "placeholder": "https://company.sf-api.com",
+          "helpText": "ShareFile上传端点URL"
+        },
+        "root_folder_id": {
+          "label": "根文件夹ID",
+          "placeholder": "输入根文件夹ID",
+          "helpText": "根文件夹的ID"
+        },
+        "token": {
+          "label": "OAuth令牌",
+          "helpText": "用于ShareFile访问的OAuth2令牌"
+        }
+      },
+      "tips": [
+        "专为企业使用而设计",
+        "支持大文件传输",
+        "具有审计跟踪和合规功能",
+        "所有平台都有移动应用"
+      ]
+    },
+    "jottacloud": {
+      "name": "Jottacloud",
+      "description": "挪威云存储服务",
+      "helpText": "Jottacloud是在北欧国家流行的云存储服务，注重隐私。",
+      "fields": {
+        "user": {
+          "label": "用户名",
+          "placeholder": "username",
+          "helpText": "Jottacloud用户名"
+        },
+        "pass": {
+          "label": "密码",
+          "placeholder": "输入密码",
+          "helpText": "Jottacloud密码"
+        },
+        "device": {
+          "label": "设备名称",
+          "placeholder": "Jotta",
+          "helpText": "设备名称（通常是Jotta）"
+        },
+        "mountpoint": {
+          "label": "挂载点",
+          "placeholder": "Archive",
+          "helpText": "要使用的挂载点（Archive、Sync或Backup）"
+        }
+      },
+      "tips": [
+        "个人计划上的无限存储",
+        "数据存储在挪威（欧盟隐私法）",
+        "支持文件版本控制",
+        "适合照片和视频备份"
+      ]
+    },
+    "koofr": {
+      "name": "Koofr",
+      "description": "欧洲云存储服务",
+      "helpText": "Koofr是一个欧洲云存储服务，也可以连接到其他云存储账户。",
+      "fields": {
+        "user": {
+          "label": "电子邮件",
+          "placeholder": "user@example.com",
+          "helpText": "您的Koofr账户电子邮件"
+        },
+        "pass": {
+          "label": "密码",
+          "placeholder": "输入密码",
+          "helpText": "您的Koofr密码"
+        },
+        "provider": {
+          "label": "提供商",
+          "helpText": "Koofr提供商（koofr、digistorage或其他）"
+        }
+      },
+      "tips": [
+        "可以连接多个云账户",
+        "数据存储在欧盟（符合GDPR）",
+        "支持WebDAV访问",
+        "有桌面和移动应用"
+      ]
+    },
+    "mailru": {
+      "name": "Mail.ru Cloud",
+      "description": "Mail.ru云存储服务",
+      "helpText": "Mail.ru Cloud（现在是VK Cloud的一部分）是在俄罗斯流行的云存储服务。",
+      "fields": {
+        "user": {
+          "label": "用户名",
+          "placeholder": "user@mail.ru",
+          "helpText": "您的Mail.ru电子邮件地址"
+        },
+        "pass": {
+          "label": "密码",
+          "placeholder": "输入密码",
+          "helpText": "您的Mail.ru密码"
+        },
+        "speedup_enable": {
+          "label": "启用加速",
+          "helpText": "启用加速（并行上传）功能"
+        }
+      },
+      "tips": [
+        "免费层包括8GB存储",
+        "在俄语国家流行",
+        "支持大文件上传",
+        "有移动和桌面同步应用"
+      ]
+    },
+    "hidrive": {
+      "name": "HiDrive",
+      "description": "STRATO HiDrive云存储",
+      "helpText": "HiDrive是STRATO的云存储服务，在德国流行。",
+      "fields": {
+        "user": {
+          "label": "用户名",
+          "placeholder": "username",
+          "helpText": "HiDrive用户名"
+        },
+        "pass": {
+          "label": "密码",
+          "placeholder": "输入密码",
+          "helpText": "HiDrive密码"
+        },
+        "protocol": {
+          "label": "协议",
+          "helpText": "要使用的协议（webdav或smb）"
+        },
+        "root": {
+          "label": "根路径",
+          "placeholder": "/",
+          "helpText": "要使用的根路径"
+        }
+      },
+      "tips": [
+        "在德国和欧洲流行",
+        "支持WebDAV和SMB协议",
+        "符合GDPR的数据存储",
+        "包括协作功能"
+      ]
+    },
+    "pikpak": {
+      "name": "PikPak",
+      "description": "带离线下载的云存储",
+      "helpText": "PikPak是一个支持离线下载和媒体流的云存储服务。",
+      "fields": {
+        "user": {
+          "label": "用户名",
+          "placeholder": "user@example.com",
+          "helpText": "PikPak账户电子邮件"
+        },
+        "pass": {
+          "label": "密码",
+          "placeholder": "输入密码",
+          "helpText": "PikPak账户密码"
+        }
+      },
+      "tips": [
+        "支持离线下载",
+        "内置媒体播放器",
+        "适合将种子下载到云端",
+        "有带流媒体功能的移动应用"
+      ]
+    },
+    "premiumizeme": {
+      "name": "Premiumize.me",
+      "description": "云存储和下载服务",
+      "helpText": "Premiumize.me是一个提供云存储和下载功能的多主机服务。",
+      "fields": {
+        "api_key": {
+          "label": "API密钥",
+          "placeholder": "输入您的API密钥",
+          "helpText": "来自Premiumize.me账户设置的API密钥"
+        }
+      },
+      "tips": [
+        "将云存储与下载服务相结合",
+        "支持许多文件托管站点",
+        "包括VPN服务",
+        "适合媒体流"
+      ]
+    },
+    "putio": {
+      "name": "Put.io",
+      "description": "带种子支持的云存储",
+      "helpText": "Put.io是一个可以获取和流式传输种子的云存储服务。",
+      "fields": {
+        "token": {
+          "label": "OAuth令牌",
+          "placeholder": "输入OAuth令牌",
+          "helpText": "来自Put.io账户设置的OAuth令牌"
+        }
+      },
+      "tips": [
+        "专门处理种子",
+        "自动视频转换",
+        "内置媒体播放器",
+        "良好的自动化API"
+      ]
+    },
+    "internetarchive": {
+      "name": "Internet Archive",
+      "description": "Internet Archive存储",
+      "helpText": "Internet Archive是一个非营利数字图书馆，提供对数字化材料集合的免费访问。",
+      "fields": {
+        "access_key_id": {
+          "label": "访问密钥",
+          "placeholder": "输入访问密钥",
+          "helpText": "来自Internet Archive的类S3访问密钥"
+        },
+        "secret_access_key": {
+          "label": "密钥",
+          "placeholder": "输入密钥",
+          "helpText": "类S3密钥"
+        },
+        "endpoint": {
+          "label": "端点",
+          "placeholder": "https://s3.us.archive.org",
+          "helpText": "Internet Archive S3端点"
+        },
+        "front_endpoint": {
+          "label": "前端端点",
+          "placeholder": "https://archive.org",
+          "helpText": "用于公共访问的前端URL"
+        }
+      },
+      "tips": [
+        "公共领域内容的免费存储",
+        "私人项目需要特殊访问权限",
+        "最适合归档和保存",
+        "支持元数据和集合"
+      ]
+    },
+    "qingstor": {
+      "name": "QingStor",
+      "description": "QingStor对象存储",
+      "helpText": "QingStor是QingCloud的对象存储服务，在中国流行。",
+      "fields": {
+        "access_key_id": {
+          "label": "访问密钥ID",
+          "placeholder": "输入访问密钥ID",
+          "helpText": "来自QingCloud控制台的访问密钥ID"
+        },
+        "secret_access_key": {
+          "label": "访问密钥密码",
+          "placeholder": "输入访问密钥密码",
+          "helpText": "访问密钥密码"
+        },
+        "endpoint": {
+          "label": "端点",
+          "placeholder": "https://qingstor.com",
+          "helpText": "QingStor端点URL"
+        },
+        "zone": {
+          "label": "区域",
+          "placeholder": "pek3a",
+          "helpText": "QingStor区域（例如：pek3a、sh1a）"
+        }
+      },
+      "tips": [
+        "在中国市场流行",
+        "S3兼容API",
+        "多个可用区",
+        "在亚洲表现良好"
+      ]
+    },
+    "quatrix": {
+      "name": "Quatrix",
+      "description": "Quatrix安全文件传输",
+      "helpText": "Quatrix是专为商业用途设计的安全文件传输和存储平台。",
+      "fields": {
+        "api_key": {
+          "label": "API密钥",
+          "placeholder": "输入API密钥",
+          "helpText": "来自Quatrix账户的API密钥"
+        },
+        "host": {
+          "label": "主机",
+          "placeholder": "https://your-domain.quatrix.com",
+          "helpText": "您的Quatrix主机URL"
+        }
+      },
+      "tips": [
+        "以企业为中心的安全性",
+        "支持大文件传输",
+        "内置加密",
+        "审计跟踪功能"
+      ]
+    },
+    "seafile": {
+      "name": "Seafile",
+      "description": "开源云存储",
+      "helpText": "Seafile是一个开源文件同步和共享平台，具有文件加密和团队协作功能。",
+      "fields": {
+        "url": {
+          "label": "服务器URL",
+          "placeholder": "https://seafile.example.com",
+          "helpText": "Seafile服务器URL"
+        },
+        "user": {
+          "label": "用户名",
+          "placeholder": "user@example.com",
+          "helpText": "Seafile用户名或电子邮件"
+        },
+        "pass": {
+          "label": "密码",
+          "placeholder": "输入密码",
+          "helpText": "Seafile密码"
+        },
+        "library": {
+          "label": "资料库ID",
+          "placeholder": "输入资料库ID",
+          "helpText": "Seafile资料库ID"
+        },
+        "auth_token": {
+          "label": "认证令牌",
+          "placeholder": "输入认证令牌",
+          "helpText": "身份验证令牌（可选）"
+        }
+      },
+      "tips": [
+        "可自托管选项",
+        "文件版本控制和快照",
+        "端到端加密支持",
+        "适合团队协作"
+      ]
+    },
+    "sugarsync": {
+      "name": "SugarSync",
+      "description": "SugarSync云存储",
+      "helpText": "SugarSync是一个允许同步现有文件夹结构的云存储服务。",
+      "fields": {
+        "app_id": {
+          "label": "应用ID",
+          "placeholder": "输入应用ID",
+          "helpText": "来自SugarSync的应用程序ID"
+        },
+        "access_key_id": {
+          "label": "访问密钥",
+          "placeholder": "输入访问密钥",
+          "helpText": "用于身份验证的访问密钥"
+        },
+        "private_access_key": {
+          "label": "私有访问密钥",
+          "placeholder": "输入私有密钥",
+          "helpText": "私有访问密钥"
+        },
+        "refresh_token": {
+          "label": "刷新令牌",
+          "placeholder": "输入刷新令牌",
+          "helpText": "OAuth刷新令牌"
+        }
+      },
+      "tips": [
+        "同步计算机上的任何文件夹",
+        "无需将文件移到特殊文件夹",
+        "支持选择性同步",
+        "适合备份现有结构"
+      ]
+    },
+    "ulozto": {
+      "name": "Uloz.to",
+      "description": "Uloz.to文件托管",
+      "helpText": "Uloz.to是在捷克共和国和斯洛伐克流行的文件托管服务。",
+      "fields": {
+        "app_token": {
+          "label": "应用令牌",
+          "placeholder": "输入应用令牌",
+          "helpText": "来自Uloz.to的应用程序令牌"
+        },
+        "username": {
+          "label": "用户名",
+          "placeholder": "输入用户名",
+          "helpText": "Uloz.to用户名"
+        },
+        "password": {
+          "label": "密码",
+          "placeholder": "输入密码",
+          "helpText": "Uloz.to密码"
+        }
+      },
+      "tips": [
+        "在捷克和斯洛伐克市场流行",
+        "支持大文件上传",
+        "免费和高级层",
+        "文件共享功能"
+      ]
+    },
+    "uptobox": {
+      "name": "Uptobox",
+      "description": "Uptobox文件托管",
+      "helpText": "Uptobox是具有种子支持和流媒体功能的文件托管服务。",
+      "fields": {
+        "api_key": {
+          "label": "API密钥",
+          "placeholder": "输入API密钥",
+          "helpText": "来自Uptobox账户的API密钥"
+        }
+      },
+      "tips": [
+        "高级账户速度更快",
+        "支持从URL远程上传",
+        "内置视频播放器",
+        "适合媒体存储"
+      ]
+    },
+    "zoho": {
+      "name": "Zoho WorkDrive",
+      "description": "Zoho WorkDrive存储",
+      "helpText": "Zoho WorkDrive是具有高级管理控制的团队内容协作平台。",
+      "fields": {
+        "client_id": {
+          "label": "OAuth客户端ID",
+          "placeholder": "输入客户端ID",
+          "helpText": "来自Zoho的OAuth客户端ID"
+        },
+        "client_secret": {
+          "label": "OAuth客户端密钥",
+          "placeholder": "输入客户端密钥",
+          "helpText": "OAuth客户端密钥"
+        },
+        "token": {
+          "label": "OAuth令牌",
+          "helpText": "来自Zoho身份验证的OAuth2令牌"
+        },
+        "region": {
+          "label": "区域",
+          "placeholder": "com",
+          "helpText": "Zoho区域（com、eu、in、jp、com.cn、com.au）"
+        }
+      },
+      "tips": [
+        "Zoho生产力套件的一部分",
+        "团队文件夹和工作区",
+        "高级权限控制",
+        "与Zoho应用集成"
+      ]
+    },
+    "opendrive": {
+      "name": "OpenDrive",
+      "description": "OpenDrive云存储",
+      "helpText": "OpenDrive提供云存储、在线备份和FTP替代服务。",
+      "fields": {
+        "username": {
+          "label": "用户名",
+          "placeholder": "输入用户名",
+          "helpText": "OpenDrive用户名"
+        },
+        "password": {
+          "label": "密码",
+          "placeholder": "输入密码",
+          "helpText": "OpenDrive密码"
+        }
+      },
+      "tips": [
+        "可用的无限存储计划",
+        "内置文档查看器",
+        "任务管理功能",
+        "笔记功能"
+      ]
+    },
+    "fichier": {
+      "name": "1Fichier",
+      "description": "1Fichier文件托管",
+      "helpText": "1Fichier是提供免费和高级存储的法国文件托管服务。",
+      "fields": {
+        "api_key": {
+          "label": "API密钥",
+          "placeholder": "输入API密钥",
+          "helpText": "来自1Fichier账户的API密钥"
+        },
+        "shared_folder": {
+          "label": "共享文件夹ID",
+          "placeholder": "输入文件夹ID",
+          "helpText": "共享文件夹ID（可选）"
+        }
+      },
+      "tips": [
+        "高级版无文件大小限制",
+        "FTP访问可用",
+        "CDN支持快速下载",
+        "私人文件夹选项"
+      ]
+    },
+    "gofile": {
+      "name": "GoFile",
+      "description": "GoFile匿名文件共享",
+      "helpText": "GoFile是一个支持匿名上传的免费文件共享和存储平台。",
+      "fields": {
+        "account_id": {
+          "label": "账户ID",
+          "placeholder": "输入账户ID",
+          "helpText": "GoFile账户ID（可选）"
+        },
+        "root_folder_id": {
+          "label": "根文件夹ID",
+          "placeholder": "输入根文件夹ID",
+          "helpText": "上传的根文件夹ID"
+        }
+      },
+      "tips": [
+        "基本使用无需注册",
+        "无限带宽",
+        "免费用户文件存储时间有限",
+        "高级账户获得永久存储"
+      ]
+    },
+    "linkbox": {
+      "name": "Linkbox",
+      "description": "Linkbox云存储",
+      "helpText": "Linkbox提供注重易用性和共享功能的云存储。",
+      "fields": {
+        "token": {
+          "label": "API令牌",
+          "placeholder": "输入API令牌",
+          "helpText": "来自Linkbox设置的API令牌"
+        }
+      },
+      "tips": [
+        "简单的共享选项",
+        "直接下载链接",
+        "移动应用可用",
+        "价格实惠的层级"
+      ]
+    },
+    "pixeldrain": {
+      "name": "Pixeldrain",
+      "description": "Pixeldrain文件共享",
+      "helpText": "Pixeldrain是一个注重简单性和易用性的文件共享平台。",
+      "fields": {
+        "api_key": {
+          "label": "API密钥",
+          "placeholder": "输入API密钥",
+          "helpText": "来自Pixeldrain账户的API密钥"
+        },
+        "root_folder_id": {
+          "label": "根文件夹ID",
+          "placeholder": "输入文件夹ID",
+          "helpText": "根文件夹ID（可选）"
+        }
+      },
+      "tips": [
+        "上传无需注册",
+        "文件可在浏览器中查看",
+        "为开发者提供API",
+        "适合临时文件共享"
+      ]
+    },
+    "sia": {
+      "name": "Sia",
+      "description": "Sia去中心化存储",
+      "helpText": "Sia是一个去中心化云存储平台，在去中心化网络上加密和分发文件。",
+      "fields": {
+        "api_url": {
+          "label": "API URL",
+          "placeholder": "http://127.0.0.1:9980",
+          "helpText": "Sia守护程序API URL"
+        },
+        "api_password": {
+          "label": "API密码",
+          "placeholder": "输入API密码",
+          "helpText": "Sia守护程序API密码"
+        }
+      },
+      "tips": [
+        "完全去中心化存储",
+        "成本低于传统云",
+        "需要运行Sia守护程序",
+        "用Siacoin加密货币支付"
+      ]
+    },
+    "filefabric": {
+      "name": "FileFabric",
+      "description": "企业文件结构",
+      "helpText": "FileFabric为企业提供多云数据管理平台。",
+      "fields": {
+        "url": {
+          "label": "URL",
+          "placeholder": "https://yourcompany.filefabric.com",
+          "helpText": "FileFabric实例URL"
+        },
+        "permanent_token": {
+          "label": "永久令牌",
+          "placeholder": "输入永久令牌",
+          "helpText": "永久身份验证令牌"
+        },
+        "root_folder_id": {
+          "label": "根文件夹ID",
+          "placeholder": "输入文件夹ID",
+          "helpText": "根文件夹ID（可选）"
+        }
+      },
+      "tips": [
+        "多云网关解决方案",
+        "可本地部署",
+        "企业安全功能",
+        "合规和治理工具"
+      ]
+    },
+    "filescom": {
+      "name": "Files.com",
+      "description": "Files.com云FTP",
+      "helpText": "Files.com是具有高级自动化和安全功能的云FTP/SFTP服务。",
+      "fields": {
+        "site": {
+          "label": "站点子域",
+          "placeholder": "mycompany",
+          "helpText": "您的Files.com子域"
+        },
+        "username": {
+          "label": "用户名",
+          "placeholder": "输入用户名",
+          "helpText": "Files.com用户名"
+        },
+        "password": {
+          "label": "密码",
+          "placeholder": "输入密码",
+          "helpText": "Files.com密码"
+        },
+        "api_key": {
+          "label": "API密钥",
+          "placeholder": "输入API密钥",
+          "helpText": "API密钥（密码的替代方案）"
+        }
+      },
+      "tips": [
+        "企业级安全性",
+        "自动化工作流程",
+        "详细的审计日志",
+        "符合HIPAA和SOC2"
+      ]
+    },
+    "hdfs": {
+      "name": "HDFS",
+      "description": "Hadoop分布式文件系统",
+      "helpText": "HDFS是设计用于在商品硬件上运行的分布式文件系统，是Apache Hadoop的一部分。",
+      "fields": {
+        "namenode": {
+          "label": "Namenode URL",
+          "placeholder": "http://namenode:9870",
+          "helpText": "HDFS namenode URL"
+        },
+        "username": {
+          "label": "用户名",
+          "placeholder": "hadoop",
+          "helpText": "HDFS用户名"
+        },
+        "service_principal_name": {
+          "label": "服务主体",
+          "placeholder": "hdfs/namenode.example.com@EXAMPLE.COM",
+          "helpText": "Kerberos服务主体名称"
+        },
+        "data_transfer_protection": {
+          "label": "数据传输保护",
+          "helpText": "数据传输保护级别"
+        }
+      },
+      "tips": [
+        "专为大数据工作负载设计",
+        "高吞吐量访问",
+        "通过复制实现容错",
+        "最适合大文件"
+      ]
+    },
+    "http": {
+      "name": "HTTP",
+      "description": "HTTP/HTTPS远程",
+      "helpText": "通过HTTP/HTTPS协议访问文件。对Web服务器的只读访问。",
+      "fields": {
+        "url": {
+          "label": "URL",
+          "placeholder": "https://example.com/path/",
+          "helpText": "HTTP服务器的基本URL"
+        },
+        "headers": {
+          "label": "HTTP头",
+          "placeholder": "Header: value",
+          "helpText": "额外的HTTP头（每行一个）"
+        },
+        "no_slash": {
+          "label": "无斜杠",
+          "helpText": "不要在URL末尾添加斜杠"
+        },
+        "no_head": {
+          "label": "无HEAD",
+          "helpText": "不使用HEAD请求"
+        }
+      },
+      "tips": [
+        "只读访问",
+        "适合访问公共文件",
+        "可以解析目录列表",
+        "支持基本身份验证"
+      ]
+    },
+    "netstorage": {
+      "name": "Akamai NetStorage",
+      "description": "Akamai NetStorage CDN",
+      "helpText": "Akamai NetStorage是为媒体交付优化的全球分布式云存储解决方案。",
+      "fields": {
+        "host": {
+          "label": "主机",
+          "placeholder": "xxxxx.akamaihd.net",
+          "helpText": "NetStorage主机"
+        },
+        "account": {
+          "label": "账户",
+          "placeholder": "输入账户",
+          "helpText": "NetStorage账户名称"
+        },
+        "secret": {
+          "label": "密钥",
+          "placeholder": "输入密钥",
+          "helpText": "NetStorage密钥/密码"
+        }
+      },
+      "tips": [
+        "为CDN交付优化",
+        "全球边缘位置",
+        "媒体流支持",
+        "企业级性能"
+      ]
+    },
+    "cloudflare-r2": {
+      "name": "Cloudflare R2",
+      "description": "Cloudflare R2对象存储",
+      "helpText": "Cloudflare R2是没有出口费用的S3兼容对象存储。",
+      "fields": {
+        "account_id": {
+          "label": "账户ID",
+          "placeholder": "输入账户ID",
+          "helpText": "Cloudflare账户ID"
+        },
+        "access_key_id": {
+          "label": "访问密钥ID",
+          "placeholder": "输入访问密钥",
+          "helpText": "R2访问密钥ID"
+        },
+        "secret_access_key": {
+          "label": "访问密钥密码",
+          "placeholder": "输入密钥",
+          "helpText": "R2访问密钥密码"
+        },
+        "endpoint": {
+          "label": "端点",
+          "placeholder": "https://ACCOUNT_ID.r2.cloudflarestorage.com",
+          "helpText": "R2端点URL"
+        }
+      },
+      "tips": [
+        "无出口费用",
+        "S3兼容API",
+        "自动复制",
+        "与Cloudflare CDN集成"
+      ]
+    },
+    "wasabi": {
+      "name": "Wasabi",
+      "description": "Wasabi热云存储",
+      "helpText": "Wasabi提供快速的云对象存储，没有出口费用和可预测的定价。",
+      "fields": {
+        "access_key_id": {
+          "label": "访问密钥ID",
+          "placeholder": "输入访问密钥",
+          "helpText": "Wasabi访问密钥ID"
+        },
+        "secret_access_key": {
+          "label": "访问密钥密码",
+          "placeholder": "输入密钥",
+          "helpText": "Wasabi访问密钥密码"
+        },
+        "region": {
+          "label": "区域",
+          "placeholder": "us-east-1",
+          "helpText": "Wasabi区域"
+        },
+        "endpoint": {
+          "label": "端点",
+          "placeholder": "s3.wasabisys.com",
+          "helpText": "Wasabi端点URL"
+        }
+      },
+      "tips": [
+        "无出口费用",
+        "比AWS S3便宜80%",
+        "无API请求费用",
+        "11个9的耐久性"
+      ]
+    }
+  },
+  "common": {
+    "additionalProviders": "其他可用提供商：iCloud Drive、Amazon Cloud Drive（已弃用）、Citrix Files和更多专业提供商。",
+    "noVersioning": {
+      "label": "禁用版本控制",
+      "helpText": "禁用此存储的文件版本控制以节省空间"
+    },
+    "parameters": {
+      "label": "附加参数",
+      "placeholder": "--transfers 4 --checkers 8",
+      "helpText": "用于高级配置的额外rclone参数"
+    },
+    "authentication": {
+      "oauth": "此提供商使用OAuth身份验证。您需要授权访问。",
+      "apiKey": "此提供商使用API密钥身份验证。从提供商的控制台生成密钥。",
+      "password": "此提供商使用密码身份验证。考虑使用特定于应用程序的密码。",
+      "serviceAccount": "此提供商支持服务账户身份验证用于服务器应用程序。"
+    },
+    "errors": {
+      "invalidCredentials": "凭据无效。请检查您的身份验证详细信息。",
+      "connectionFailed": "连接失败。请检查您的网络和提供商设置。",
+      "permissionDenied": "权限被拒绝。检查您的访问权限和身份验证。",
+      "quotaExceeded": "超出存储配额。请释放空间或升级您的计划。"
+    }
+  }
+}

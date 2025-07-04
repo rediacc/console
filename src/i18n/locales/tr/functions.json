@@ -1,0 +1,392 @@
+{
+  "availableFunctions": "Mevcut Fonksiyonlar",
+  "selectFunction": "Fonksiyon Seç",
+  "searchFunctions": "Fonksiyon ara...",
+  "configure": "Yapılandır",
+  "selectFunctionToConfigure": "Yapılandırmak için bir fonksiyon seçin",
+  "priority": "Öncelik",
+  "priorityHelp": "Görevler önce önceliğe, sonra yaşa göre işlenir",
+  "priorityHighest": "En Yüksek",
+  "priorityHigh": "Yüksek",
+  "priorityAboveNormal": "Normalin Üstü",
+  "priorityNormal": "Normalin Üstü",
+  "priorityBelowNormal": "Normal",
+  "priorityLow": "Düşük",
+  "currentPriority": "Mevcut",
+  "priorityHighestWarning": "En Yüksek Öncelik (1)",
+  "priorityHighestDescription": "En yüksek öncelikli bir görev göndermek, mevcut en yüksek öncelikli görevlerinizi otomatik olarak iptal edecektir. Yalnızca acil kritik görevler için kullanın.",
+  "priorityHighWarning": "Yüksek Öncelik (2)",
+  "priorityHighDescription": "Birden fazla eş zamanlı yüksek öncelikli göreve izin verir. Daha hızlı işlenmesi gereken önemli görevler için kullanın.",
+  "priorityNormalWarning": "Normalin Üstü Öncelik (3)",
+  "priorityNormalDescription": "Standart işleme hızından daha hızlı. Normalden daha hızlı işlenmesi gereken görevler için kullanın.",
+  "priorityLowWarning": "Normal Öncelik (4)",
+  "priorityLowDescription": "Standart işleme hızı. Çoğu işlem ve günlük görevler için önerilir.",
+  "priorityLowestWarning": "En Düşük Öncelik (5)",
+  "priorityLowestDescription": "En yavaş işleme hızı. Toplu işlemler veya zaman kısıtlaması olmayan görevler için kullanın.",
+  "description": "Açıklama (isteğe bağlı)",
+  "descriptionPlaceholder": "Bu kuyruk öğesi için özel bir açıklama ekleyin",
+  "validationError": "Doğrulama Hatası",
+  "missingRequiredParams": "Lütfen tüm gerekli parametreleri doldurun: {{params}}",
+  "categories": {
+    "machine": {
+      "name": "Makine Fonksiyonları",
+      "description": "Temel sistem kurulum ve bakım fonksiyonları"
+    },
+    "repository": {
+      "name": "Depo Fonksiyonları",
+      "description": "Depo yönetimi ve işlemleri"
+    },
+    "backup": {
+      "name": "Yedekleme Fonksiyonları",
+      "description": "Yedekleme ve geri yükleme işlemleri"
+    },
+    "network": {
+      "name": "Ağ Fonksiyonları",
+      "description": "Ağ ve soket eşleme işlemleri"
+    },
+    "container": {
+      "name": "Konteyner Fonksiyonları",
+      "description": "Docker konteyner yönetim işlemleri"
+    }
+  },
+  "functions": {
+    "setup": {
+      "name": "kurulum",
+      "description": "İşletim sistemini gerekli araçlar ve yapılandırmalarla kur",
+      "params": {
+        "datastore_size": {
+          "label": "Veri Deposu Boyutu",
+          "help": "Veri deposu boyutu (örn., 95%, 100G)"
+        },
+        "source": {
+          "label": "Kaynak",
+          "help": "Paket kaynağı"
+        },
+        "rclone_source": {
+          "label": "Rclone Kurulum Kaynağı",
+          "help": "Rclone nasıl kurulacak (install-script = resmi script, package-manager = apt/dnf, manual = atla)"
+        },
+        "docker_source": {
+          "label": "Docker Kurulum Kaynağı",
+          "help": "Docker nasıl kurulacak (docker-repo = resmi depo, package-manager = OS paketleri, snap = snap mağazası, manual = atla)"
+        },
+        "install_amd_driver": {
+          "label": "AMD GPU Sürücüsü Kur",
+          "help": "AMD GPU sürücülerini kur (auto = önce GPU tespit et, true = her zaman kur, false = atla)"
+        },
+        "install_nvidia_driver": {
+          "label": "NVIDIA GPU Sürücüsü Kur",
+          "help": "NVIDIA GPU sürücülerini kur (auto = önce GPU tespit et, true = her zaman kur, false = atla)"
+        }
+      }
+    },
+    "hello": {
+      "name": "merhaba",
+      "description": "Ana bilgisayar adından merhaba yazdıran basit test fonksiyonu"
+    },
+    "uninstall": {
+      "name": "kaldır",
+      "description": "Sistem bileşenlerini temizle ve kaldır"
+    },
+    "new": {
+      "name": "yeni",
+      "description": "Yeni bir depo oluştur",
+      "params": {
+        "repo": {
+          "label": "Depo",
+          "help": "Depo adı"
+        },
+        "size": {
+          "label": "Boyut",
+          "help": "Depo boyutu (örn., 10G)"
+        }
+      }
+    },
+    "mount": {
+      "name": "bağla",
+      "description": "Depo dosya sistemlerini bağla",
+      "params": {
+        "repo": {
+          "label": "Depo",
+          "help": "Depo ad(lar)ı, virgülle ayrılmış"
+        },
+        "from": {
+          "label": "Kaynak Makine",
+          "help": "Bağlanacak uzak makine"
+        }
+      }
+    },
+    "unmount": {
+      "name": "ayır",
+      "description": "Depo dosya sistemlerini ayır",
+      "params": {
+        "repo": {
+          "label": "Depo",
+          "help": "Depo ad(lar)ı, virgülle ayrılmış"
+        },
+        "from": {
+          "label": "Kaynak Makine",
+          "help": "Ayrılacak uzak makine"
+        }
+      }
+    },
+    "up": {
+      "name": "başlat",
+      "description": "Rediaccfile kullanarak depo servislerini başlat",
+      "params": {
+        "repo": {
+          "label": "Depo",
+          "help": "Depo ad(lar)ı, virgülle ayrılmış"
+        },
+        "option": {
+          "label": "Seçenekler",
+          "help": "Seçenekler (örn., prep-only)"
+        }
+      }
+    },
+    "down": {
+      "name": "durdur",
+      "description": "Depo servislerini durdur",
+      "params": {
+        "repo": {
+          "label": "Depo",
+          "help": "Depo ad(lar)ı, virgülle ayrılmış"
+        }
+      }
+    },
+    "resize": {
+      "name": "yeniden boyutlandır",
+      "description": "Depo depolama alanını yeniden boyutlandır",
+      "params": {
+        "repo": {
+          "label": "Depo",
+          "help": "Depo adı"
+        },
+        "size": {
+          "label": "Yeni Boyut",
+          "help": "Yeni boyut (örn., 20G)"
+        }
+      }
+    },
+    "rm": {
+      "name": "sil",
+      "description": "Depoyu sil",
+      "params": {
+        "repo": {
+          "label": "Depo",
+          "help": "Depo adı"
+        }
+      }
+    },
+    "plugin": {
+      "name": "eklenti etkinleştir",
+      "description": "Depo eklentilerini etkinleştir",
+      "params": {
+        "repo": {
+          "label": "Depo",
+          "help": "Depo ad(lar)ı, virgülle ayrılmış"
+        },
+        "plugin": {
+          "label": "Eklenti",
+          "help": "Eklenti ad(lar)ı, virgülle ayrılmış"
+        }
+      }
+    },
+    "plugout": {
+      "name": "eklenti devre dışı bırak",
+      "description": "Depo eklentilerini devre dışı bırak",
+      "params": {
+        "repo": {
+          "label": "Depo",
+          "help": "Depo ad(lar)ı, virgülle ayrılmış"
+        },
+        "plugin": {
+          "label": "Eklenti",
+          "help": "Eklenti ad(lar)ı, virgülle ayrılmış"
+        }
+      }
+    },
+    "ownership": {
+      "name": "sahiplik",
+      "description": "Depo sahipliğini değiştir",
+      "params": {
+        "repo": {
+          "label": "Depo",
+          "help": "Depo adı"
+        },
+        "from": {
+          "label": "Mevcut Sahip",
+          "help": "Mevcut sahip"
+        },
+        "to": {
+          "label": "Yeni Sahip",
+          "help": "Yeni sahip (varsayılan: evrensel kullanıcı)"
+        }
+      }
+    },
+    "list": {
+      "name": "listele",
+      "description": "Depoları listele",
+      "params": {
+        "kind": {
+          "label": "Tür",
+          "help": "Listelenecek tür"
+        },
+        "format": {
+          "label": "Format",
+          "help": "Çıktı formatı (json)"
+        }
+      }
+    },
+    "push": {
+      "name": "gönder",
+      "description": "Depoyu uzak depolamaya gönder",
+      "params": {
+        "repo": {
+          "label": "Depo",
+          "help": "Depo ad(lar)ı, virgülle ayrılmış"
+        },
+        "dest": {
+          "label": "Hedef Dosya Adı",
+          "help": "Yedek dosyası için isim"
+        },
+        "destinationType": {
+          "label": "Hedef Türü",
+          "help": "Makineye mi yoksa depolamaya mı gönderileceğini seçin"
+        },
+        "to": {
+          "label": "Hedef",
+          "help": "Hedef makine veya depolamayı seçin"
+        },
+        "state": {
+          "label": "Gerekli Durum",
+          "help": "Göndermeden önce deponun çevrimiçi veya çevrimdışı olduğunu doğrula"
+        },
+        "option": {
+          "label": "Seçenekler",
+          "help": "Seçenekler (örn., override)"
+        }
+      }
+    },
+    "pull": {
+      "name": "çek",
+      "description": "Depoyu uzak depolamadan çek",
+      "params": {
+        "from": {
+          "label": "Kaynak",
+          "help": "Kaynak makine/depolama"
+        },
+        "repo": {
+          "label": "Depo",
+          "help": "Depo ad(lar)ı, virgülle ayrılmış"
+        }
+      }
+    },
+    "ping": {
+      "name": "ping",
+      "description": "Makineye ağ bağlantısını test et"
+    },
+    "container_start": {
+      "name": "konteyner_başlat",
+      "description": "Docker konteynerini başlat",
+      "params": {
+        "container": {
+          "label": "Konteyner",
+          "help": "Konteyner adı veya ID"
+        }
+      }
+    },
+    "container_stop": {
+      "name": "konteyner_durdur",
+      "description": "Çalışan Docker konteynerini durdur",
+      "params": {
+        "container": {
+          "label": "Konteyner",
+          "help": "Konteyner adı veya ID"
+        }
+      }
+    },
+    "container_restart": {
+      "name": "konteyner_yeniden_başlat",
+      "description": "Docker konteynerini yeniden başlat",
+      "params": {
+        "container": {
+          "label": "Konteyner",
+          "help": "Konteyner adı veya ID"
+        }
+      }
+    },
+    "container_remove": {
+      "name": "konteyner_kaldır",
+      "description": "Docker konteynerini kaldır",
+      "params": {
+        "container": {
+          "label": "Konteyner",
+          "help": "Konteyner adı veya ID"
+        },
+        "force": {
+          "label": "Zorla Kaldır",
+          "help": "Çalışan konteyneri zorla kaldır"
+        }
+      }
+    },
+    "container_logs": {
+      "name": "konteyner_günlükleri",
+      "description": "Docker konteyner günlüklerini görüntüle",
+      "params": {
+        "container": {
+          "label": "Konteyner",
+          "help": "Konteyner adı veya ID"
+        },
+        "lines": {
+          "label": "Satırlar",
+          "help": "Gösterilecek satır sayısı (varsayılan: 100)"
+        },
+        "follow": {
+          "label": "Günlükleri Takip Et",
+          "help": "Günlük çıktısını gerçek zamanlı takip et"
+        }
+      }
+    },
+    "container_inspect": {
+      "name": "konteyner_incele",
+      "description": "Docker konteyner detaylarını incele",
+      "params": {
+        "container": {
+          "label": "Konteyner",
+          "help": "Konteyner adı veya ID"
+        }
+      }
+    },
+    "container_stats": {
+      "name": "konteyner_istatistikleri",
+      "description": "Docker konteyner kaynak kullanım istatistiklerini göster",
+      "params": {
+        "container": {
+          "label": "Konteyner",
+          "help": "Konteyner adı veya ID (isteğe bağlı - boş ise tümünü gösterir)"
+        }
+      }
+    },
+    "container_pause": {
+      "name": "konteyner_duraklat",
+      "description": "Çalışan Docker konteynerini duraklat",
+      "params": {
+        "container": {
+          "label": "Konteyner",
+          "help": "Konteyner adı veya ID"
+        }
+      }
+    },
+    "container_unpause": {
+      "name": "konteyner_devam_ettir",
+      "description": "Duraklatılmış Docker konteynerini devam ettir",
+      "params": {
+        "container": {
+          "label": "Konteyner",
+          "help": "Konteyner adı veya ID"
+        }
+      }
+    }
+  }
+}

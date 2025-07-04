@@ -402,15 +402,22 @@ const ResourcesPage: React.FC = () => {
             }
             
             // Build queue vault for the "new" function
+            const params: any = {
+              repo: repositoryGuid,  // Use repository GUID as value
+              size: size
+            }
+            
+            // Add template parameter if provided
+            if (data.tmpl) {
+              params.tmpl = data.tmpl
+            }
+            
             const queueVault = await buildQueueVault({
               teamName: data.teamName,
               machineName: machine.value,
               bridgeName: machine.bridgeName,
               functionName: 'new',
-              params: {
-                repo: repositoryGuid,  // Use repository GUID as value
-                size: size
-              },
+              params: params,
               priority: 3,
               description: `Create repository ${data.repositoryName} with size ${size}`,
               addedVia: 'repository-creation',
@@ -449,9 +456,73 @@ const ResourcesPage: React.FC = () => {
             refetchMachines()
           }
         } else {
-          await mutations[resourceType as keyof typeof mutations].create.mutateAsync(data)
-          showMessage('success', t(`${getResourceTranslationKey()}.createSuccess`))
-          closeUnifiedModal()
+          // Handle machine creation with optional auto-setup
+          if (resourceType === 'machine') {
+            const { autoSetup, ...machineData } = data
+            
+            // Create the machine
+            await mutations.machine.create.mutateAsync(machineData)
+            showMessage('success', t('machines:createSuccess'))
+            
+            // If auto-setup is enabled, queue the setup function
+            if (autoSetup) {
+              try {
+                // Find team vault data
+                const team = teamsList.find(t => t.teamName === data.teamName)
+                
+                // Wait a bit for the machine to be fully created and indexed
+                await new Promise(resolve => setTimeout(resolve, 500))
+                
+                // Build queue vault for the "setup" function
+                const queueVault = await buildQueueVault({
+                  teamName: data.teamName,
+                  machineName: data.machineName,
+                  bridgeName: data.bridgeName,
+                  functionName: 'setup',
+                  params: {
+                    datastore_size: '95%',
+                    source: 'apt-repo',
+                    rclone_source: 'install-script',
+                    docker_source: 'docker-repo',
+                    install_amd_driver: 'auto',
+                    install_nvidia_driver: 'auto'
+                  },
+                  priority: 3,
+                  description: `Auto-setup for machine ${data.machineName}`,
+                  addedVia: 'machine-creation-auto-setup',
+                  teamVault: team?.vaultContent || '{}',
+                  machineVault: data.machineVault || '{}'
+                })
+                
+                const response = await createQueueItemMutation.mutateAsync({
+                  teamName: data.teamName,
+                  machineName: data.machineName,
+                  bridgeName: data.bridgeName,
+                  queueVault,
+                  priority: 3
+                })
+                
+                // Check if response has taskId (immediate submission) or queueId (queued)
+                if (response?.taskId) {
+                  showMessage('info', t('machines:setupQueued'))
+                  setQueueTraceModal({ visible: true, taskId: response.taskId, machineName: data.machineName })
+                } else if (response?.isQueued) {
+                  showMessage('info', t('machines:setupQueuedForSubmission'))
+                }
+              } catch (error) {
+                showMessage('warning', t('machines:machineCreatedButSetupFailed'))
+              }
+            }
+            
+            closeUnifiedModal()
+            // Refresh machines
+            refetchMachines()
+          } else {
+            // Handle other resource types
+            await mutations[resourceType as keyof typeof mutations].create.mutateAsync(data)
+            showMessage('success', t(`${getResourceTranslationKey()}.createSuccess`))
+            closeUnifiedModal()
+          }
         }
       } else {
         const resourceName = `${resourceType}Name`

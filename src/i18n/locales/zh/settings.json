@@ -1,0 +1,15 @@
+{
+  "title": "设置",
+  "company": {
+    "title": "公司设置",
+    "description": "配置您的公司保险库设置以管理组织范围的配置。",
+    "configureVault": "配置保险库",
+    "modalTitle": "配置公司保险库"
+  },
+  "personal": {
+    "title": "个人设置",
+    "description": "配置您的个人保险库设置以自定义您的体验。",
+    "configureVault": "配置保险库",
+    "modalTitle": "配置用户保险库"
+  }
+}

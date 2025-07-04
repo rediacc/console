@@ -1,0 +1,83 @@
+{
+  "title": "队列管理",
+  "filters": "筛选器",
+  "team": "团队",
+  "selectTeam": "选择团队以查看队列项",
+  "machine": "机器",
+  "selectMachine": "所有机器",
+  "status": "状态",
+  "selectStatus": "所有状态",
+  "dateRange": "日期范围",
+  "options": "选项",
+  "includeCompleted": "包含已完成",
+  "includeCancelled": "包含已取消",
+  "onlyStale": "仅过期项",
+  "statusPending": "待处理",
+  "statusRunning": "运行中",
+  "statusCompleted": "已完成",
+  "statusFailed": "失败",
+  "statusCancelled": "已取消",
+  "tabs": {
+    "active": {
+      "title": "活动队列",
+      "tooltip": "显示所有待处理、已分配、处理中和取消中的任务。包括等待分配的任务和当前正在执行的任务。",
+      "description": "此部分显示所有活动任务，包括等待分配的待处理项、机器正在处理的任务以及正在取消的任务。"
+    },
+    "completed": {
+      "title": "已完成",
+      "tooltip": "显示所有成功完成的任务",
+      "description": "此部分显示所有无错误成功完成的任务。"
+    },
+    "cancelled": {
+      "title": "已取消",
+      "tooltip": "显示所有因用户请求而停止的已取消任务",
+      "description": "此部分显示所有因用户请求而取消的任务。这些任务在完成前被停止。"
+    },
+    "failed": {
+      "title": "失败",
+      "tooltip": "显示所有在执行过程中遇到错误的失败任务",
+      "description": "此部分显示所有因执行过程中的错误而失败的任务。任务在被永久标记为失败之前最多可重试2次。"
+    }
+  },
+  "monitoring": {
+    "completed": "队列任务 {{taskId}} 成功完成 ({{teamName}} - {{machineName}})",
+    "cancelled": "队列任务 {{taskId}} 已取消 ({{teamName}} - {{machineName}})",
+    "cancelling": "队列任务 {{taskId}} 正在取消 ({{teamName}} - {{machineName}})",
+    "permanentlyFailed": "队列任务 {{taskId}} 在 {{attempts}} 次尝试后永久失败 ({{teamName}} - {{machineName}})",
+    "permanentlyFailedWithReason": "队列任务 {{taskId}} 永久失败：{{reason}} ({{teamName}} - {{machineName}})",
+    "failedWaitingRetry": "队列任务 {{taskId}} 失败 - 等待重试（第 {{attempt}} 次尝试，共 {{maxAttempts}} 次）({{teamName}} - {{machineName}})",
+    "startedProcessing": "队列任务 {{taskId}} 开始处理 ({{teamName}} - {{machineName}})",
+    "assigned": "队列任务 {{taskId}} 已分配给机器 ({{teamName}} - {{machineName}})",
+    "queuedForRetry": "队列任务 {{taskId}} 已排队重试（第 {{attempt}} 次尝试，共 {{maxAttempts}} 次）({{teamName}} - {{machineName}})",
+    "staleTask": "队列任务 {{taskId}} 似乎已过期（{{minutes}} 分钟无进展）",
+    "startedMonitoring": "开始监控队列任务 {{taskId}} ({{teamName}} - {{machineName}})",
+    "stoppedMonitoring": "停止监控队列任务 {{taskId}}",
+    "monitoringAlready": "已在监控队列任务 {{taskId}}",
+    "taskNotFound": "队列任务 {{taskId}} 不再存在"
+  },
+  "queueManager": {
+    "title": "队列管理器",
+    "buttonLabel": "最高优先级",
+    "tooltip": "最高优先级队列管理器",
+    "description": "最高优先级队列项（优先级1）被管理以确保每个桥接一次只运行一个任务。",
+    "emptyState": "队列中没有最高优先级项",
+    "itemQueued": "最高优先级任务已排队。位置：{{position}}",
+    "cancelledTask": "已取消 {{machineName}} 的现有待处理任务",
+    "alreadyHasPriority1": "您已在桥接 {{bridgeName}} 上运行最高优先级任务。请等待其完成。",
+    "taskCancelled": "任务已取消：此桥接上已有优先级1任务",
+    "clearCompleted": "清除已完成"
+  },
+  "taskStatus": {
+    "completedTitle": "任务成功完成",
+    "completedDescription": "任务在 {{minutes}} 分钟后成功完成。",
+    "cancelledTitle": "任务已取消",
+    "cancelledDescription": "任务已取消，将不会被处理。",
+    "failedTitle": "任务永久失败",
+    "failedDescription": "任务在 {{retries}} 次重试后永久失败。"
+  },
+  "statistics": {
+    "totalDuration": "总持续时间",
+    "processing": "处理中",
+    "timeSinceAssigned": "分配后时间"
+  }
+}

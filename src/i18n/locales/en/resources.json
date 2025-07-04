@@ -247,5 +247,24 @@
     "useLoginAuth": "Use login authentication instead of token",
     "useLoginAuthHelp": "Login with {{email}} (you'll be prompted for password)",
     "apiUrl": "API URL"
+  },
+  "templates": {
+    "selectTemplate": "Select Template",
+    "templateDetails": "Template Details",
+    "overview": "Overview",
+    "files": "Files",
+    "filesCount": "files",
+    "rootFiles": "Root Files",
+    "loading": "Loading templates...",
+    "loadingDetails": "Loading template details...",
+    "noReadme": "No README file found",
+    "useTemplate": "Use Template",
+    "viewDetails": "View Details",
+    "selectOptional": "Select a template (optional) to pre-populate your repository with files",
+    "clearSelection": "Clear Selection",
+    "noTemplate": "No Template",
+    "startEmpty": "Start with an empty repository",
+    "default": "Default",
+    "failedToLoadTemplate": "Failed to load template data"
   }
 }

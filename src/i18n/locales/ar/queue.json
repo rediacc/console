@@ -1,0 +1,83 @@
+{
+  "title": "إدارة قائمة الانتظار",
+  "filters": "المرشحات",
+  "team": "الفريق",
+  "selectTeam": "اختر فريقًا لعرض عناصر قائمة الانتظار",
+  "machine": "الجهاز",
+  "selectMachine": "جميع الأجهزة",
+  "status": "الحالة",
+  "selectStatus": "جميع الحالات",
+  "dateRange": "نطاق التاريخ",
+  "options": "الخيارات",
+  "includeCompleted": "تضمين المكتملة",
+  "includeCancelled": "تضمين الملغاة",
+  "onlyStale": "القديمة فقط",
+  "statusPending": "معلق",
+  "statusRunning": "قيد التشغيل",
+  "statusCompleted": "مكتمل",
+  "statusFailed": "فشل",
+  "statusCancelled": "ملغى",
+  "tabs": {
+    "active": {
+      "title": "قائمة الانتظار النشطة",
+      "tooltip": "عرض جميع المهام المعلقة والمخصصة وقيد المعالجة وقيد الإلغاء. يتضمن المهام التي تنتظر التخصيص والمهام التي يتم تنفيذها حاليًا.",
+      "description": "يعرض هذا القسم جميع المهام النشطة بما في ذلك العناصر المعلقة التي تنتظر التخصيص، والمهام قيد المعالجة بواسطة الأجهزة، والمهام قيد الإلغاء."
+    },
+    "completed": {
+      "title": "مكتمل",
+      "tooltip": "عرض جميع المهام المكتملة بنجاح",
+      "description": "يعرض هذا القسم جميع المهام التي اكتملت بنجاح دون أخطاء."
+    },
+    "cancelled": {
+      "title": "ملغى",
+      "tooltip": "عرض جميع المهام الملغاة التي تم إيقافها بطلب من المستخدم",
+      "description": "يعرض هذا القسم جميع المهام التي تم إلغاؤها بطلب من المستخدم. تم إيقاف هذه المهام قبل اكتمالها."
+    },
+    "failed": {
+      "title": "فشل",
+      "tooltip": "عرض جميع المهام الفاشلة التي واجهت أخطاء أثناء التنفيذ",
+      "description": "يعرض هذا القسم جميع المهام التي فشلت بسبب أخطاء أثناء التنفيذ. يمكن إعادة محاولة المهام حتى مرتين قبل تمييزها كفاشلة بشكل دائم."
+    }
+  },
+  "monitoring": {
+    "completed": "اكتملت مهمة قائمة الانتظار {{taskId}} بنجاح ({{teamName}} - {{machineName}})",
+    "cancelled": "تم إلغاء مهمة قائمة الانتظار {{taskId}} ({{teamName}} - {{machineName}})",
+    "cancelling": "جارٍ إلغاء مهمة قائمة الانتظار {{taskId}} ({{teamName}} - {{machineName}})",
+    "permanentlyFailed": "فشلت مهمة قائمة الانتظار {{taskId}} بشكل دائم بعد {{attempts}} محاولات ({{teamName}} - {{machineName}})",
+    "permanentlyFailedWithReason": "فشلت مهمة قائمة الانتظار {{taskId}} بشكل دائم: {{reason}} ({{teamName}} - {{machineName}})",
+    "failedWaitingRetry": "فشلت مهمة قائمة الانتظار {{taskId}} - في انتظار إعادة المحاولة (المحاولة {{attempt}} من {{maxAttempts}}) ({{teamName}} - {{machineName}})",
+    "startedProcessing": "بدأت معالجة مهمة قائمة الانتظار {{taskId}} ({{teamName}} - {{machineName}})",
+    "assigned": "تم تخصيص مهمة قائمة الانتظار {{taskId}} للجهاز ({{teamName}} - {{machineName}})",
+    "queuedForRetry": "تمت إضافة مهمة قائمة الانتظار {{taskId}} لإعادة المحاولة (المحاولة {{attempt}} من {{maxAttempts}}) ({{teamName}} - {{machineName}})",
+    "staleTask": "يبدو أن مهمة قائمة الانتظار {{taskId}} قديمة (لا يوجد تقدم منذ {{minutes}} دقيقة)",
+    "startedMonitoring": "بدأت مراقبة مهمة قائمة الانتظار {{taskId}} ({{teamName}} - {{machineName}})",
+    "stoppedMonitoring": "توقفت مراقبة مهمة قائمة الانتظار {{taskId}}",
+    "monitoringAlready": "مهمة قائمة الانتظار {{taskId}} قيد المراقبة بالفعل",
+    "taskNotFound": "مهمة قائمة الانتظار {{taskId}} لم تعد موجودة"
+  },
+  "queueManager": {
+    "title": "مدير قائمة الانتظار",
+    "buttonLabel": "الأولوية القصوى",
+    "tooltip": "مدير قائمة الانتظار ذات الأولوية القصوى",
+    "description": "تُدار عناصر قائمة الانتظار ذات الأولوية القصوى (الأولوية 1) لضمان تشغيل مهمة واحدة فقط في كل مرة لكل جسر.",
+    "emptyState": "لا توجد عناصر ذات أولوية قصوى في قائمة الانتظار",
+    "itemQueued": "تمت إضافة مهمة ذات أولوية قصوى إلى قائمة الانتظار. الموضع: {{position}}",
+    "cancelledTask": "تم إلغاء المهمة المعلقة الحالية لـ {{machineName}}",
+    "alreadyHasPriority1": "لديك بالفعل مهمة ذات أولوية قصوى قيد التشغيل على الجسر {{bridgeName}}. يرجى الانتظار حتى اكتمالها.",
+    "taskCancelled": "تم إلغاء المهمة: يوجد بالفعل مهمة ذات أولوية 1 على هذا الجسر",
+    "clearCompleted": "مسح المكتملة"
+  },
+  "taskStatus": {
+    "completedTitle": "اكتملت المهمة بنجاح",
+    "completedDescription": "اكتملت المهمة بنجاح بعد {{minutes}} دقيقة.",
+    "cancelledTitle": "تم إلغاء المهمة",
+    "cancelledDescription": "تم إلغاء المهمة ولن تتم معالجتها.",
+    "failedTitle": "فشلت المهمة بشكل دائم",
+    "failedDescription": "فشلت المهمة بشكل دائم بعد {{retries}} محاولات."
+  },
+  "statistics": {
+    "totalDuration": "المدة الإجمالية",
+    "processing": "قيد المعالجة",
+    "timeSinceAssigned": "الوقت منذ التخصيص"
+  }
+}

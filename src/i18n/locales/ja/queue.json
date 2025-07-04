@@ -1,0 +1,83 @@
+{
+  "title": "キュー管理",
+  "filters": "フィルター",
+  "team": "チーム",
+  "selectTeam": "チームを選択してキューアイテムを表示",
+  "machine": "マシン",
+  "selectMachine": "すべてのマシン",
+  "status": "ステータス",
+  "selectStatus": "すべてのステータス",
+  "dateRange": "日付範囲",
+  "options": "オプション",
+  "includeCompleted": "完了を含む",
+  "includeCancelled": "キャンセルを含む",
+  "onlyStale": "期限切れのみ",
+  "statusPending": "保留中",
+  "statusRunning": "実行中",
+  "statusCompleted": "完了",
+  "statusFailed": "失敗",
+  "statusCancelled": "キャンセル済み",
+  "tabs": {
+    "active": {
+      "title": "アクティブキュー",
+      "tooltip": "すべての保留中、割り当て済み、処理中、キャンセル中のタスクを表示します。割り当て待ちのタスクと現在実行中のタスクを含みます。",
+      "description": "このセクションには、割り当て待ちの保留アイテム、マシンで処理中のタスク、キャンセル中のタスクを含むすべてのアクティブタスクが表示されます。"
+    },
+    "completed": {
+      "title": "完了",
+      "tooltip": "正常に完了したすべてのタスクを表示",
+      "description": "このセクションには、エラーなしで正常に完了したすべてのタスクが表示されます。"
+    },
+    "cancelled": {
+      "title": "キャンセル済み",
+      "tooltip": "ユーザーのリクエストにより停止されたすべてのキャンセル済みタスクを表示",
+      "description": "このセクションには、ユーザーのリクエストによりキャンセルされたすべてのタスクが表示されます。これらのタスクは完了前に停止されました。"
+    },
+    "failed": {
+      "title": "失敗",
+      "tooltip": "実行中にエラーが発生したすべての失敗タスクを表示",
+      "description": "このセクションには、実行中のエラーにより失敗したすべてのタスクが表示されます。タスクは恒久的に失敗とマークされる前に最大2回再試行できます。"
+    }
+  },
+  "monitoring": {
+    "completed": "キュータスク {{taskId}} が正常に完了しました ({{teamName}} - {{machineName}})",
+    "cancelled": "キュータスク {{taskId}} がキャンセルされました ({{teamName}} - {{machineName}})",
+    "cancelling": "キュータスク {{taskId}} をキャンセル中 ({{teamName}} - {{machineName}})",
+    "permanentlyFailed": "キュータスク {{taskId}} が{{attempts}}回の試行後に恒久的に失敗しました ({{teamName}} - {{machineName}})",
+    "permanentlyFailedWithReason": "キュータスク {{taskId}} が恒久的に失敗しました：{{reason}} ({{teamName}} - {{machineName}})",
+    "failedWaitingRetry": "キュータスク {{taskId}} が失敗 - 再試行待ち（{{attempt}}回目/{{maxAttempts}}回中）({{teamName}} - {{machineName}})",
+    "startedProcessing": "キュータスク {{taskId}} の処理を開始しました ({{teamName}} - {{machineName}})",
+    "assigned": "キュータスク {{taskId}} がマシンに割り当てられました ({{teamName}} - {{machineName}})",
+    "queuedForRetry": "キュータスク {{taskId}} が再試行のためにキューに入れられました（{{attempt}}回目/{{maxAttempts}}回中）({{teamName}} - {{machineName}})",
+    "staleTask": "キュータスク {{taskId}} は期限切れのようです（{{minutes}}分間進捗なし）",
+    "startedMonitoring": "キュータスク {{taskId}} の監視を開始しました ({{teamName}} - {{machineName}})",
+    "stoppedMonitoring": "キュータスク {{taskId}} の監視を停止しました",
+    "monitoringAlready": "キュータスク {{taskId}} は既に監視中です",
+    "taskNotFound": "キュータスク {{taskId}} はもう存在しません"
+  },
+  "queueManager": {
+    "title": "キューマネージャー",
+    "buttonLabel": "最高優先度",
+    "tooltip": "最高優先度キューマネージャー",
+    "description": "最高優先度キューアイテム（優先度1）は、各ブリッジで一度に1つのタスクのみが実行されるように管理されています。",
+    "emptyState": "キューに最高優先度アイテムはありません",
+    "itemQueued": "最高優先度タスクがキューに入れられました。位置：{{position}}",
+    "cancelledTask": "{{machineName}}の既存の保留中タスクをキャンセルしました",
+    "alreadyHasPriority1": "ブリッジ{{bridgeName}}で既に最高優先度タスクを実行しています。完了をお待ちください。",
+    "taskCancelled": "タスクがキャンセルされました：このブリッジには既に優先度1のタスクがあります",
+    "clearCompleted": "完了をクリア"
+  },
+  "taskStatus": {
+    "completedTitle": "タスクが正常に完了しました",
+    "completedDescription": "タスクは{{minutes}}分後に正常に完了しました。",
+    "cancelledTitle": "タスクがキャンセルされました",
+    "cancelledDescription": "タスクはキャンセルされ、処理されません。",
+    "failedTitle": "タスクが恒久的に失敗しました",
+    "failedDescription": "タスクは{{retries}}回の再試行後に恒久的に失敗しました。"
+  },
+  "statistics": {
+    "totalDuration": "合計時間",
+    "processing": "処理中",
+    "timeSinceAssigned": "割り当て後の時間"
+  }
+}

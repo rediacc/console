@@ -1,0 +1,376 @@
+{
+  "navigation": {
+    "dashboard": "Dashboard",
+    "architecture": "Architektur",
+    "resources": "Ressourcen",
+    "queue": "Warteschlange",
+    "system": "System",
+    "audit": "Audit",
+    "logout": "Abmelden"
+  },
+  "actions": {
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "search": "Suchen",
+    "reset": "Zurücksetzen",
+    "cancel": "Abbrechen",
+    "create": "Erstellen",
+    "save": "Speichern",
+    "retry": "Wiederholen",
+    "refresh": "Aktualisieren",
+    "fullscreen": "Vollbild",
+    "exitFullscreen": "Vollbild beenden",
+    "addToQueue": "Zur Warteschlange hinzufügen",
+    "viewTrace": "Verfolgung anzeigen",
+    "close": "Schließen"
+  },
+  "close": "Schließen",
+  "copiedToClipboard": "In Zwischenablage kopiert",
+  "copyFailed": "Kopieren in Zwischenablage fehlgeschlagen",
+  "export": "Exportieren",
+  "exportCSV": "Als CSV exportieren",
+  "exportJSON": "Als JSON exportieren",
+  "refresh": "Aktualisieren",
+  "today": "Heute",
+  "yesterday": "Gestern",
+  "last7Days": "Letzte 7 Tage",
+  "last30Days": "Letzte 30 Tage",
+  "thisMonth": "Dieser Monat",
+  "lastMonth": "Letzter Monat",
+  "messages": {
+    "success": "Erfolg",
+    "required": "Dieses Feld ist erforderlich",
+    "invalidEmail": "Ungültige E-Mail-Adresse",
+    "loading": "Lädt...",
+    "error": "Fehler"
+  },
+  "table": {
+    "actions": "Aktionen",
+    "showingRecords": "Zeige Einträge {{start}}-{{end}} von {{total}}"
+  },
+  "status": {
+    "label": "Status",
+    "initializing": "Initialisierung...",
+    "waitingForExecution": "Wartet auf Ausführung",
+    "processing": "Verarbeitung",
+    "running": "Läuft"
+  },
+  "language": {
+    "select": "Sprache auswählen",
+    "en": "Englisch",
+    "es": "Spanisch",
+    "fr": "Französisch",
+    "de": "Deutsch",
+    "zh": "Chinesisch",
+    "ja": "Japanisch",
+    "ar": "Arabisch",
+    "tr": "Türkisch"
+  },
+  "theme": {
+    "light": "Hell",
+    "dark": "Dunkel"
+  },
+  "uiMode": {
+    "simple": "Einfach",
+    "expert": "Experte",
+    "switching": "Wechsle zu {{mode}} Modus..."
+  },
+  "general": {
+    "versionFormat": "v{{version}}",
+    "loading": "Lädt...",
+    "showingRecords": "Zeige Einträge {{start}}-{{end}} von {{total}}",
+    "defaultsApplied": "Standardwerte angewendet",
+    "important": "Wichtig",
+    "cancel": "Abbrechen"
+  },
+  "yes": "Ja",
+  "no": "Nein",
+  "dashboard": {
+    "availablePlans": "Verfügbare Pläne",
+    "upgradeOptions": "Upgrade-Optionen",
+    "currentPlan": "Aktueller Plan",
+    "comparePlansDescription": "Vergleichen Sie Funktionen und Preise über verschiedene Abonnementstufen",
+    "elitePlanDescription": "Sie haben unseren höchsten Tarif mit allen freigeschalteten Funktionen"
+  },
+  "vaultEditor": {
+    "vaultConfiguration": "Tresor-Konfiguration",
+    "vaultVersion": "Tresor-Version:",
+    "versionAutoIncrement": "Version wird beim Speichern automatisch erhöht",
+    "importJson": "JSON importieren",
+    "exportJson": "JSON exportieren",
+    "unsavedChanges": "Ungespeicherte Änderungen",
+    "versionWillIncrement": "Version wird auf {{version}} erhöht",
+    "saveVaultConfiguration": "Tresor-Konfiguration speichern",
+    "validationErrors": "Validierungsfehler:",
+    "pleaseFixErrors": "Bitte beheben Sie Validierungsfehler vor dem Speichern",
+    "noChangesToSave": "Keine Änderungen zum Speichern",
+    "unknownEntityType": "Unbekannter Entitätstyp",
+    "unknownEntityDescription": "Entitätstyp \"{{type}}\" ist nicht in den Tresor-Definitionen definiert.",
+    "requiredFields": "Erforderliche Felder",
+    "optionalFields": "Optionale Felder",
+    "extraFields": "Zusätzliche Felder (Nicht im Schema)",
+    "extraFieldsTooltip": "Diese Felder wurden importiert, sind aber nicht im Schema definiert",
+    "extraFieldsWarning": "Warnung",
+    "extraFieldsWarningDescription": "Diese Felder sind nicht im Schema definiert und werden unter 'extraFields' in der JSON-Struktur gespeichert.",
+    "rawJsonEditor": "Roh-JSON-Editor (Expertenmodus)",
+    "rawJsonTooltip": "Direkte JSON-Bearbeitung - Mit Vorsicht verwenden!",
+    "expertModeOnly": "Nur Expertenmodus",
+    "expertModeDescription": "Die direkte JSON-Bearbeitung kann die Systemfunktionalität beeinträchtigen, wenn sie nicht korrekt durchgeführt wird. Ändern Sie nur, wenn Sie das Tresor-Schema und die Auswirkungen verstehen.",
+    "jsonError": "JSON-Fehler",
+    "formatJson": "JSON formatieren",
+    "resetToFormValues": "Auf Formularwerte zurücksetzen",
+    "isRequired": "{{field}} ist erforderlich",
+    "invalidFormat": "Ungültiges Format. {{description}}",
+    "minLength": "Mindestlänge ist {{length}}",
+    "maxLength": "Maximallänge ist {{length}}",
+    "minValue": "Mindestwert ist {{value}}",
+    "maxValue": "Maximalwert ist {{value}}",
+    "mustBeValidJson": "Muss gültiges JSON sein",
+    "mustBeArray": "Muss ein Array sein",
+    "mustBeValidJsonArray": "Muss ein gültiges JSON-Array sein",
+    "enterJsonObject": "JSON-Objekt eingeben",
+    "enterJsonArray": "JSON-Array eingeben",
+    "portPlaceholder": "Portnummer (1-65535)",
+    "example": "Beispiel:",
+    "advanced": "Erweitert",
+    "failedToSerialize": "Daten konnten nicht in JSON serialisiert werden",
+    "invalidJsonFormat": "Ungültiges JSON-Format",
+    "failedToParseJson": "JSON-Parsing fehlgeschlagen:",
+    "fieldsMovedToExtra": "{{count}} Feld(er) nach extraFields verschoben: {{fields}}",
+    "fieldsMovedFromExtra": "{{count}} Feld(er) aus extraFields wiederhergestellt: {{fields}}",
+    "sshPasswordRequiredWhenNoKey": "SSH-Passwort ist für die anfängliche Schlüsseleinrichtung erforderlich",
+    "providerFields": "{{provider}} Konfiguration",
+    "providerRequiredFields": "Erforderliche Felder für {{provider}}",
+    "testConnection": {
+      "button": "Verbindung testen",
+      "missingFields": "Bitte füllen Sie IP-Adresse, Benutzername und Passwort aus, bevor Sie testen",
+      "initiated": "SSH-Verbindungstest wurde initiiert. Bitte überprüfen Sie die Warteschlange für Ergebnisse.",
+      "success": "SSH-Verbindung erfolgreich",
+      "failed": "SSH-Verbindung fehlgeschlagen",
+      "testing": "Teste Verbindung..."
+    },
+    "fields": {
+      "MACHINE": {
+        "description": "Maschinenkonfiguration für SSH-Zugriff und Speicher",
+        "ip": {
+          "label": "IP-Adresse",
+          "description": "IP-Adresse der Maschine"
+        },
+        "user": {
+          "label": "Benutzername",
+          "description": "SSH-Benutzername für Verbindung"
+        },
+        "datastore": {
+          "label": "Datenspeicher-Pfad",
+          "description": "Pfad zum Datenspeicher-Verzeichnis auf der Maschine"
+        },
+        "port": {
+          "label": "SSH-Port",
+          "description": "SSH-Portnummer"
+        },
+        "host_entry": {
+          "label": "Host-Eintrag",
+          "description": "SSH bekannter Host-Eintrag für Sicherheitsüberprüfung"
+        },
+        "ssh_key_configured": {
+          "label": "SSH-Schlüssel bereits konfiguriert",
+          "description": "Aktivieren Sie dies, wenn der öffentliche SSH-Schlüssel bereits auf der Zielmaschine installiert ist"
+        },
+        "ssh_password": {
+          "label": "SSH-Passwort (Temporär)",
+          "description": "Temporäres Passwort nur für die anfängliche SSH-Schlüsseleinrichtung. Leer lassen, wenn SSH-Schlüssel bereits konfiguriert ist. Dieses Passwort wird einmal verwendet, um den öffentlichen Schlüssel zu kopieren und sollte danach aus Sicherheitsgründen entfernt werden."
+        }
+      },
+      "REPOSITORY": {
+        "description": "Repository-Konfiguration für Backup-Speicher",
+        "name": {
+          "label": "Repository-Name",
+          "description": "Repository-Namensidentifikator"
+        },
+        "credential": {
+          "label": "Zugangspasswort",
+          "description": "Repository-Zugangspasswort (32 Zeichen, alphanumerisch + Sonderzeichen)"
+        },
+        "encryption": {
+          "label": "Verschlüsselung aktivieren",
+          "description": "Verschlüsselung für Repository aktivieren"
+        },
+        "retention": {
+          "label": "Aufbewahrungsrichtlinie",
+          "description": "Einstellungen für Aufbewahrungsrichtlinie"
+        },
+        "schedule": {
+          "label": "Backup-Zeitplan",
+          "description": "Cron-Ausdruck für automatisierte Backups"
+        }
+      },
+      "STORAGE": {
+        "entityDescription": "Speicherkonfiguration für Backup-Ziele",
+        "name": {
+          "label": "Speichername",
+          "description": "Eindeutiger Name für diese Speicherkonfiguration"
+        },
+        "provider": {
+          "label": "Speicheranbieter",
+          "description": "Wählen Sie den Speicheranbietertyp"
+        },
+        "description": {
+          "label": "Beschreibung",
+          "description": "Optionale Beschreibung dieser Speicherkonfiguration"
+        },
+        "noVersioning": {
+          "label": "Versionierung deaktivieren",
+          "description": "Versionskontrolle für diesen Speicher deaktivieren"
+        },
+        "parameters": {
+          "label": "Zusätzliche Parameter",
+          "description": "Zusätzliche rclone-Parameter für erweiterte Konfiguration"
+        }
+      },
+      "SCHEDULE": {
+        "description": "Zeitplankonfiguration für automatisierte Aufgaben",
+        "cron": {
+          "label": "Cron-Ausdruck",
+          "description": "Cron-Ausdruck, der den Zeitplan definiert"
+        },
+        "timezone": {
+          "label": "Zeitzone",
+          "description": "Zeitzone für Zeitplanausführung"
+        },
+        "enabled": {
+          "label": "Zeitplan aktivieren",
+          "description": "Ob dieser Zeitplan aktiv ist"
+        }
+      },
+      "BRIDGE": {
+        "description": "Brückenkonfiguration für Netzwerkkonnektivität",
+        "ip": {
+          "label": "IP-Adresse",
+          "description": "IP-Adresse des Brückenservers"
+        }
+      },
+      "REGION": {
+        "description": "Regionskonfiguration für geografische Verteilung",
+        "name": {
+          "label": "Regionsname",
+          "description": "Name der geografischen Region"
+        },
+        "code": {
+          "label": "Regionscode",
+          "description": "Kurzer Code für die Region"
+        }
+      },
+      "TEAM": {
+        "description": "Teamkonfiguration für Organisationsstruktur",
+        "name": {
+          "label": "Teamname",
+          "description": "Name des Teams"
+        },
+        "teamDescription": {
+          "label": "Teambeschreibung",
+          "description": "Beschreibung des Teamzwecks und der Verantwortlichkeiten"
+        },
+        "SSH_PRIVATE_KEY": {
+          "label": "SSH Privater Schlüssel",
+          "description": "Base64-kodierter SSH privater Schlüssel für Teamoperationen"
+        },
+        "SSH_PUBLIC_KEY": {
+          "label": "SSH Öffentlicher Schlüssel",
+          "description": "SSH öffentlicher Schlüssel für Teamoperationen"
+        }
+      },
+      "USER": {
+        "description": "Benutzerkonfiguration für persönliche Einstellungen",
+        "SSH_PRIVATE_KEY": {
+          "label": "SSH Privater Schlüssel",
+          "description": "Base64-kodierter SSH privater Schlüssel für Benutzeroperationen"
+        },
+        "SSH_PUBLIC_KEY": {
+          "label": "SSH Öffentlicher Schlüssel",
+          "description": "SSH öffentlicher Schlüssel für Benutzeroperationen"
+        }
+      },
+      "COMPANY": {
+        "description": "Unternehmenskonfiguration für organisationsweite Einstellungen",
+        "UNIVERSAL_USER_ID": {
+          "label": "Universelle Benutzer-ID",
+          "description": "Universelle Benutzer-ID für Systemoperationen"
+        },
+        "UNIVERSAL_USER_NAME": {
+          "label": "Universeller Benutzername",
+          "description": "Universeller Benutzername für Systemoperationen"
+        },
+        "DOCKER_JSON_CONF": {
+          "label": "Docker-Konfiguration",
+          "description": "Docker-Registry-Authentifizierungskonfiguration"
+        },
+        "SSH_PRIVATE_KEY": {
+          "label": "SSH Privater Schlüssel",
+          "description": "Base64-kodierter SSH privater Schlüssel für Unternehmensoperationen"
+        },
+        "SSH_PUBLIC_KEY": {
+          "label": "SSH Öffentlicher Schlüssel",
+          "description": "SSH öffentlicher Schlüssel für Unternehmensoperationen"
+        },
+        "LOG_FILE": {
+          "label": "Protokolldatei-Pfad",
+          "description": "Pfad zur Systemprotokolldatei"
+        },
+        "PLUGINS": {
+          "label": "Plugins",
+          "description": "Plugin-Konfigurationen mit Container-Images und Aktivierungsstatus"
+        }
+      }
+    }
+  },
+  "fieldGenerator": {
+    "title": {
+      "ssh_keys": "SSH-Schlüsselpaar generieren",
+      "repository_credential": "Repository-Anmeldedaten generieren"
+    },
+    "tooltip": "Wert generieren",
+    "generate": "Generieren",
+    "regenerate": "Neu generieren",
+    "apply": "Anwenden",
+    "cancel": "Abbrechen",
+    "copy": "Kopieren",
+    "copied": "Kopiert!",
+    "keyType": "Schlüsseltyp",
+    "keySize": "Schlüsselgröße",
+    "moreSecure": "sicherer",
+    "comingSoon": "demnächst",
+    "generationSuccess": "Erfolgreich generiert",
+    "generationError": "Generierung fehlgeschlagen. Bitte erneut versuchen.",
+    "applied": "Werte erfolgreich angewendet",
+    "copyError": "Kopieren in Zwischenablage fehlgeschlagen"
+  },
+  "notifications": {
+    "title": "Benachrichtigungen",
+    "empty": "Keine Benachrichtigungen",
+    "markAllRead": "Alle als gelesen markieren",
+    "clearAll": "Alle löschen"
+  },
+  "nestedObjectEditor": {
+    "Image": "Bild",
+    "Active": "Aktiv",
+    "Add": "Hinzufügen",
+    "Delete this entry?": "Diesen Eintrag löschen?",
+    "Yes": "Ja",
+    "No": "Nein",
+    "Object": "Objekt",
+    "Array": "Array",
+    "True": "Wahr",
+    "False": "Falsch",
+    "Enter key name": "Schlüsselnamen eingeben",
+    "Show JSON": "JSON anzeigen",
+    "Hide JSON": "JSON ausblenden",
+    "No entries": "Keine Einträge",
+    "Raw JSON Editor": "Roh-JSON-Editor",
+    "JSON Error": "JSON-Fehler",
+    "Uniform Structure": "Einheitliche Struktur",
+    "Fields": "Felder",
+    "Container Images Detected": "Container-Images erkannt",
+    "Plugin Configuration Detected": "Plugin-Konfiguration erkannt",
+    "Uniform Structure Detected": "Einheitliche Struktur erkannt"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "title": "Einstellungen",
+  "company": {
+    "title": "Unternehmenseinstellungen",
+    "description": "Konfigurieren Sie Ihre Unternehmens-Tresor-Einstellungen, um organisationsweite Konfigurationen zu verwalten.",
+    "configureVault": "Tresor konfigurieren",
+    "modalTitle": "Unternehmens-Tresor konfigurieren"
+  },
+  "personal": {
+    "title": "Persönliche Einstellungen",
+    "description": "Konfigurieren Sie Ihre persönlichen Tresor-Einstellungen, um Ihre Erfahrung anzupassen.",
+    "configureVault": "Tresor konfigurieren",
+    "modalTitle": "Benutzer-Tresor konfigurieren"
+  }
+}

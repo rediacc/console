@@ -1,0 +1,15 @@
+{
+  "title": "設定",
+  "company": {
+    "title": "会社設定",
+    "description": "組織全体の設定を管理するための会社保険庫設定を構成します。",
+    "configureVault": "保険庫を設定",
+    "modalTitle": "会社保険庫を設定"
+  },
+  "personal": {
+    "title": "個人設定",
+    "description": "体験をカスタマイズするための個人保険庫設定を構成します。",
+    "configureVault": "保険庫を設定",
+    "modalTitle": "ユーザー保険庫を設定"
+  }
+}

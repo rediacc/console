@@ -245,5 +245,24 @@
     "useLoginAuth": "Usar autenticación de inicio de sesión en lugar de token",
     "useLoginAuthHelp": "Iniciar sesión con {{email}} (se le pedirá la contraseña)",
     "apiUrl": "URL de API"
+  },
+  "templates": {
+    "selectTemplate": "Seleccionar Plantilla",
+    "templateDetails": "Detalles de la Plantilla",
+    "overview": "Resumen",
+    "files": "Archivos",
+    "filesCount": "archivos",
+    "rootFiles": "Archivos Raíz",
+    "loading": "Cargando plantillas...",
+    "loadingDetails": "Cargando detalles de la plantilla...",
+    "noReadme": "No se encontró archivo README",
+    "useTemplate": "Usar Plantilla",
+    "viewDetails": "Ver Detalles",
+    "selectOptional": "Seleccione una plantilla (opcional) para pre-poblar su repositorio con archivos",
+    "clearSelection": "Limpiar Selección",
+    "noTemplate": "Sin Plantilla",
+    "startEmpty": "Comenzar con un repositorio vacío",
+    "default": "Predeterminado",
+    "failedToLoadTemplate": "Error al cargar los datos de la plantilla"
   }
 }

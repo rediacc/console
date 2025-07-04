@@ -1,0 +1,83 @@
+{
+  "title": "Gestion de la file d'attente",
+  "filters": "Filtres",
+  "team": "Équipe",
+  "selectTeam": "Sélectionnez une équipe pour voir les éléments de la file d'attente",
+  "machine": "Machine",
+  "selectMachine": "Toutes les machines",
+  "status": "Statut",
+  "selectStatus": "Tous les statuts",
+  "dateRange": "Plage de dates",
+  "options": "Options",
+  "includeCompleted": "Inclure les terminés",
+  "includeCancelled": "Inclure les annulés",
+  "onlyStale": "Seulement les éléments périmés",
+  "statusPending": "En attente",
+  "statusRunning": "En cours",
+  "statusCompleted": "Terminé",
+  "statusFailed": "Échoué",
+  "statusCancelled": "Annulé",
+  "tabs": {
+    "active": {
+      "title": "File d'attente active",
+      "tooltip": "Affiche toutes les tâches en attente, assignées, en cours de traitement et en cours d'annulation. Inclut les tâches en attente d'affectation et celles actuellement exécutées.",
+      "description": "Cette section affiche toutes les tâches actives, y compris les éléments en attente d'affectation, les tâches traitées par les machines et les tâches en cours d'annulation."
+    },
+    "completed": {
+      "title": "Terminées",
+      "tooltip": "Affiche toutes les tâches terminées avec succès",
+      "description": "Cette section affiche toutes les tâches qui ont été terminées avec succès sans erreurs."
+    },
+    "cancelled": {
+      "title": "Annulées",
+      "tooltip": "Affiche toutes les tâches annulées qui ont été arrêtées par demande de l'utilisateur",
+      "description": "Cette section affiche toutes les tâches qui ont été annulées par demande de l'utilisateur. Ces tâches ont été arrêtées avant leur achèvement."
+    },
+    "failed": {
+      "title": "Échouées",
+      "tooltip": "Affiche toutes les tâches échouées qui ont rencontré des erreurs lors de l'exécution",
+      "description": "Cette section affiche toutes les tâches qui ont échoué en raison d'erreurs lors de l'exécution. Les tâches peuvent être réessayées jusqu'à 2 fois avant d'être définitivement marquées comme échouées."
+    }
+  },
+  "monitoring": {
+    "completed": "Tâche de file d'attente {{taskId}} terminée avec succès ({{teamName}} - {{machineName}})",
+    "cancelled": "Tâche de file d'attente {{taskId}} annulée ({{teamName}} - {{machineName}})",
+    "cancelling": "Tâche de file d'attente {{taskId}} en cours d'annulation ({{teamName}} - {{machineName}})",
+    "permanentlyFailed": "Tâche de file d'attente {{taskId}} définitivement échouée après {{attempts}} tentatives ({{teamName}} - {{machineName}})",
+    "permanentlyFailedWithReason": "Tâche de file d'attente {{taskId}} définitivement échouée : {{reason}} ({{teamName}} - {{machineName}})",
+    "failedWaitingRetry": "Tâche de file d'attente {{taskId}} échouée - en attente de nouvelle tentative (tentative {{attempt}} sur {{maxAttempts}}) ({{teamName}} - {{machineName}})",
+    "startedProcessing": "Tâche de file d'attente {{taskId}} a commencé le traitement ({{teamName}} - {{machineName}})",
+    "assigned": "Tâche de file d'attente {{taskId}} assignée à la machine ({{teamName}} - {{machineName}})",
+    "queuedForRetry": "Tâche de file d'attente {{taskId}} mise en file d'attente pour nouvelle tentative (tentative {{attempt}} sur {{maxAttempts}}) ({{teamName}} - {{machineName}})",
+    "staleTask": "Tâche de file d'attente {{taskId}} semble être périmée (aucun progrès depuis {{minutes}} minutes)",
+    "startedMonitoring": "Surveillance démarrée pour la tâche de file d'attente {{taskId}} ({{teamName}} - {{machineName}})",
+    "stoppedMonitoring": "Surveillance arrêtée pour la tâche de file d'attente {{taskId}}",
+    "monitoringAlready": "Déjà en surveillance de la tâche de file d'attente {{taskId}}",
+    "taskNotFound": "La tâche de file d'attente {{taskId}} n'existe plus"
+  },
+  "queueManager": {
+    "title": "Gestionnaire de file d'attente",
+    "buttonLabel": "Priorité la plus élevée",
+    "tooltip": "Gestionnaire de file d'attente de priorité la plus élevée",
+    "description": "Les éléments de file d'attente de priorité la plus élevée (priorité 1) sont gérés pour garantir qu'une seule tâche s'exécute par pont à la fois.",
+    "emptyState": "Aucun élément de priorité la plus élevée dans la file d'attente",
+    "itemQueued": "Tâche de priorité la plus élevée mise en file d'attente. Position : {{position}}",
+    "cancelledTask": "Tâche en attente annulée pour {{machineName}}",
+    "alreadyHasPriority1": "Vous avez déjà une tâche de priorité la plus élevée en cours d'exécution sur le pont {{bridgeName}}. Veuillez attendre qu'elle se termine.",
+    "taskCancelled": "Tâche annulée : Une tâche de priorité 1 existe déjà sur ce pont",
+    "clearCompleted": "Effacer les terminées"
+  },
+  "taskStatus": {
+    "completedTitle": "Tâche terminée avec succès",
+    "completedDescription": "La tâche s'est terminée avec succès après {{minutes}} minutes.",
+    "cancelledTitle": "Tâche annulée",
+    "cancelledDescription": "La tâche a été annulée et ne sera pas traitée.",
+    "failedTitle": "Tâche définitivement échouée",
+    "failedDescription": "La tâche a échoué définitivement après {{retries}} tentatives."
+  },
+  "statistics": {
+    "totalDuration": "Durée totale",
+    "processing": "Traitement",
+    "timeSinceAssigned": "Temps depuis l'affectation"
+  }
+}

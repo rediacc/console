@@ -38,6 +38,7 @@ interface ResourceFormWithVaultProps<T extends Record<string, any> = any> {
   teamName?: string // For SSH test connection
   bridgeName?: string // For SSH test connection
   onTestConnectionStateChange?: (success: boolean) => void // Callback for test connection state
+  beforeVaultContent?: React.ReactNode // Custom content to render before vault configuration
 }
 
 const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormWithVaultProps<any>>(
@@ -56,6 +57,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     teamName,
     bridgeName,
     onTestConnectionStateChange,
+    beforeVaultContent,
   }, ref) {
     const { t } = useTranslation('common')
     const [vaultData, setVaultData] = useState<Record<string, any>>(initialVaultData)
@@ -287,6 +289,9 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
             )
           })}
         </Form>
+
+        {/* Custom content before vault configuration */}
+        {beforeVaultContent}
 
         {/* Divider */}
         <Divider style={{ margin: '8px 0' }}>{t('vaultEditor.vaultConfiguration')}</Divider>

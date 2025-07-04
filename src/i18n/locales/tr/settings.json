@@ -1,0 +1,15 @@
+{
+  "title": "Ayarlar",
+  "company": {
+    "title": "Şirket Ayarları",
+    "description": "Organizasyon genelindeki yapılandırmaları yönetmek için şirket kasa ayarlarınızı yapılandırın.",
+    "configureVault": "Kasayı Yapılandır",
+    "modalTitle": "Şirket Kasasını Yapılandır"
+  },
+  "personal": {
+    "title": "Kişisel Ayarlar",
+    "description": "Deneyiminizi özelleştirmek için kişisel kasa ayarlarınızı yapılandırın.",
+    "configureVault": "Kasayı Yapılandır",
+    "modalTitle": "Kullanıcı Kasasını Yapılandır"
+  }
+}

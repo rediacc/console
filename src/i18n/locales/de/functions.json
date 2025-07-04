@@ -1,0 +1,392 @@
+{
+  "availableFunctions": "Verfügbare Funktionen",
+  "selectFunction": "Funktion auswählen",
+  "searchFunctions": "Funktionen suchen...",
+  "configure": "Konfigurieren",
+  "selectFunctionToConfigure": "Wählen Sie eine Funktion zum Konfigurieren",
+  "priority": "Priorität",
+  "priorityHelp": "Aufgaben werden zuerst nach Priorität, dann nach Alter verarbeitet",
+  "priorityHighest": "Höchste",
+  "priorityHigh": "Hoch",
+  "priorityAboveNormal": "Über Normal",
+  "priorityNormal": "Über Normal",
+  "priorityBelowNormal": "Normal",
+  "priorityLow": "Niedrig",
+  "currentPriority": "Aktuell",
+  "priorityHighestWarning": "Höchste Priorität (1)",
+  "priorityHighestDescription": "Das Einreichen einer Aufgabe mit höchster Priorität wird automatisch alle vorhandenen Aufgaben mit höchster Priorität, die Sie haben, abbrechen. Verwenden Sie dies nur für dringende kritische Aufgaben, die sofortige Aufmerksamkeit erfordern.",
+  "priorityHighWarning": "Hohe Priorität (2)",
+  "priorityHighDescription": "Ermöglicht mehrere gleichzeitige Aufgaben mit hoher Priorität. Verwenden Sie dies für wichtige Aufgaben, die eine schnellere Verarbeitung benötigen.",
+  "priorityNormalWarning": "Über normale Priorität (3)",
+  "priorityNormalDescription": "Schneller als die Standardverarbeitungsgeschwindigkeit. Verwenden Sie dies für Aufgaben, die eine schnellere Verarbeitung als normal benötigen.",
+  "priorityLowWarning": "Normale Priorität (4)",
+  "priorityLowDescription": "Standardverarbeitungsgeschwindigkeit. Empfohlen für die meisten Vorgänge und täglichen Aufgaben.",
+  "priorityLowestWarning": "Niedrigste Priorität (5)",
+  "priorityLowestDescription": "Langsamste Verarbeitungsgeschwindigkeit. Verwenden Sie dies für Stapelvorgänge oder Aufgaben ohne Zeitbeschränkungen.",
+  "description": "Beschreibung (optional)",
+  "descriptionPlaceholder": "Fügen Sie eine benutzerdefinierte Beschreibung für dieses Warteschlangenelement hinzu",
+  "validationError": "Validierungsfehler",
+  "missingRequiredParams": "Bitte füllen Sie alle erforderlichen Parameter aus: {{params}}",
+  "categories": {
+    "machine": {
+      "name": "Maschinenfunktionen",
+      "description": "Kern-Systemeinrichtungs- und Wartungsfunktionen"
+    },
+    "repository": {
+      "name": "Repository-Funktionen",
+      "description": "Repository-Verwaltung und -Operationen"
+    },
+    "backup": {
+      "name": "Backup-Funktionen",
+      "description": "Backup- und Wiederherstellungsoperationen"
+    },
+    "network": {
+      "name": "Netzwerkfunktionen",
+      "description": "Netzwerk- und Socket-Mapping-Operationen"
+    },
+    "container": {
+      "name": "Container-Funktionen",
+      "description": "Docker-Container-Verwaltungsoperationen"
+    }
+  },
+  "functions": {
+    "setup": {
+      "name": "einrichten",
+      "description": "Betriebssystem mit erforderlichen Tools und Konfigurationen einrichten",
+      "params": {
+        "datastore_size": {
+          "label": "Datenspeichergröße",
+          "help": "Datenspeichergröße (z.B. 95%, 100G)"
+        },
+        "source": {
+          "label": "Quelle",
+          "help": "Paketquelle"
+        },
+        "rclone_source": {
+          "label": "Rclone-Installationsquelle",
+          "help": "Wie rclone installiert werden soll (install-script = offizielles Skript, package-manager = apt/dnf, manual = überspringen)"
+        },
+        "docker_source": {
+          "label": "Docker-Installationsquelle",
+          "help": "Wie Docker installiert werden soll (docker-repo = offizielles Repository, package-manager = OS-Pakete, snap = Snap Store, manual = überspringen)"
+        },
+        "install_amd_driver": {
+          "label": "AMD GPU-Treiber installieren",
+          "help": "AMD GPU-Treiber installieren (auto = GPU zuerst erkennen, true = immer installieren, false = überspringen)"
+        },
+        "install_nvidia_driver": {
+          "label": "NVIDIA GPU-Treiber installieren",
+          "help": "NVIDIA GPU-Treiber installieren (auto = GPU zuerst erkennen, true = immer installieren, false = überspringen)"
+        }
+      }
+    },
+    "hello": {
+      "name": "hallo",
+      "description": "Einfache Testfunktion, die Hallo vom Hostnamen ausgibt"
+    },
+    "uninstall": {
+      "name": "deinstallieren",
+      "description": "Systemkomponenten bereinigen und deinstallieren"
+    },
+    "new": {
+      "name": "neu",
+      "description": "Neues Repository erstellen",
+      "params": {
+        "repo": {
+          "label": "Repository",
+          "help": "Repository-Name"
+        },
+        "size": {
+          "label": "Größe",
+          "help": "Repository-Größe (z.B. 10G)"
+        }
+      }
+    },
+    "mount": {
+      "name": "einbinden",
+      "description": "Repository-Dateisysteme einbinden",
+      "params": {
+        "repo": {
+          "label": "Repository",
+          "help": "Repository-Name(n), kommagetrennt"
+        },
+        "from": {
+          "label": "Von Maschine",
+          "help": "Remote-Maschine zum Einbinden"
+        }
+      }
+    },
+    "unmount": {
+      "name": "aushängen",
+      "description": "Repository-Dateisysteme aushängen",
+      "params": {
+        "repo": {
+          "label": "Repository",
+          "help": "Repository-Name(n), kommagetrennt"
+        },
+        "from": {
+          "label": "Von Maschine",
+          "help": "Remote-Maschine zum Aushängen"
+        }
+      }
+    },
+    "up": {
+      "name": "hochfahren",
+      "description": "Repository-Dienste mit Rediaccfile starten",
+      "params": {
+        "repo": {
+          "label": "Repository",
+          "help": "Repository-Name(n), kommagetrennt"
+        },
+        "option": {
+          "label": "Optionen",
+          "help": "Optionen (z.B. prep-only)"
+        }
+      }
+    },
+    "down": {
+      "name": "herunterfahren",
+      "description": "Repository-Dienste stoppen",
+      "params": {
+        "repo": {
+          "label": "Repository",
+          "help": "Repository-Name(n), kommagetrennt"
+        }
+      }
+    },
+    "resize": {
+      "name": "größe_ändern",
+      "description": "Repository-Speicher in der Größe ändern",
+      "params": {
+        "repo": {
+          "label": "Repository",
+          "help": "Repository-Name"
+        },
+        "size": {
+          "label": "Neue Größe",
+          "help": "Neue Größe (z.B. 20G)"
+        }
+      }
+    },
+    "rm": {
+      "name": "entfernen",
+      "description": "Repository löschen",
+      "params": {
+        "repo": {
+          "label": "Repository",
+          "help": "Repository-Name"
+        }
+      }
+    },
+    "plugin": {
+      "name": "plugin",
+      "description": "Repository-Plugins aktivieren",
+      "params": {
+        "repo": {
+          "label": "Repository",
+          "help": "Repository-Name(n), kommagetrennt"
+        },
+        "plugin": {
+          "label": "Plugin",
+          "help": "Plugin-Name(n), kommagetrennt"
+        }
+      }
+    },
+    "plugout": {
+      "name": "plugout",
+      "description": "Repository-Plugins deaktivieren",
+      "params": {
+        "repo": {
+          "label": "Repository",
+          "help": "Repository-Name(n), kommagetrennt"
+        },
+        "plugin": {
+          "label": "Plugin",
+          "help": "Plugin-Name(n), kommagetrennt"
+        }
+      }
+    },
+    "ownership": {
+      "name": "besitz",
+      "description": "Repository-Besitz ändern",
+      "params": {
+        "repo": {
+          "label": "Repository",
+          "help": "Repository-Name"
+        },
+        "from": {
+          "label": "Aktueller Besitzer",
+          "help": "Aktueller Besitzer"
+        },
+        "to": {
+          "label": "Neuer Besitzer",
+          "help": "Neuer Besitzer (Standard: universeller Benutzer)"
+        }
+      }
+    },
+    "list": {
+      "name": "auflisten",
+      "description": "Repositories auflisten",
+      "params": {
+        "kind": {
+          "label": "Typ",
+          "help": "Aufzulistender Typ"
+        },
+        "format": {
+          "label": "Format",
+          "help": "Ausgabeformat (json)"
+        }
+      }
+    },
+    "push": {
+      "name": "übertragen",
+      "description": "Repository zu Remote-Speicher übertragen",
+      "params": {
+        "repo": {
+          "label": "Repository",
+          "help": "Repository-Name(n), kommagetrennt"
+        },
+        "dest": {
+          "label": "Zieldateiname",
+          "help": "Name für die Backup-Datei"
+        },
+        "destinationType": {
+          "label": "Zieltyp",
+          "help": "Wählen Sie, ob zu einer Maschine oder einem Speicher übertragen werden soll"
+        },
+        "to": {
+          "label": "Ziel",
+          "help": "Wählen Sie die Zielmaschine oder den Speicher"
+        },
+        "state": {
+          "label": "Erforderlicher Status",
+          "help": "Validieren, dass Repository online oder offline ist, bevor übertragen wird"
+        },
+        "option": {
+          "label": "Optionen",
+          "help": "Optionen (z.B. override)"
+        }
+      }
+    },
+    "pull": {
+      "name": "abrufen",
+      "description": "Repository von Remote-Speicher abrufen",
+      "params": {
+        "from": {
+          "label": "Quelle",
+          "help": "Quellmaschine/Speicher"
+        },
+        "repo": {
+          "label": "Repository",
+          "help": "Repository-Name(n), kommagetrennt"
+        }
+      }
+    },
+    "ping": {
+      "name": "ping",
+      "description": "Netzwerkverbindung zur Maschine testen"
+    },
+    "container_start": {
+      "name": "container_starten",
+      "description": "Docker-Container starten",
+      "params": {
+        "container": {
+          "label": "Container",
+          "help": "Container-Name oder ID"
+        }
+      }
+    },
+    "container_stop": {
+      "name": "container_stoppen",
+      "description": "Laufenden Docker-Container stoppen",
+      "params": {
+        "container": {
+          "label": "Container",
+          "help": "Container-Name oder ID"
+        }
+      }
+    },
+    "container_restart": {
+      "name": "container_neustarten",
+      "description": "Docker-Container neu starten",
+      "params": {
+        "container": {
+          "label": "Container",
+          "help": "Container-Name oder ID"
+        }
+      }
+    },
+    "container_remove": {
+      "name": "container_entfernen",
+      "description": "Docker-Container entfernen",
+      "params": {
+        "container": {
+          "label": "Container",
+          "help": "Container-Name oder ID"
+        },
+        "force": {
+          "label": "Entfernen erzwingen",
+          "help": "Erzwungenes Entfernen eines laufenden Containers"
+        }
+      }
+    },
+    "container_logs": {
+      "name": "container_protokolle",
+      "description": "Docker-Container-Protokolle anzeigen",
+      "params": {
+        "container": {
+          "label": "Container",
+          "help": "Container-Name oder ID"
+        },
+        "lines": {
+          "label": "Zeilen",
+          "help": "Anzahl der anzuzeigenden Zeilen (Standard: 100)"
+        },
+        "follow": {
+          "label": "Protokollen folgen",
+          "help": "Protokollausgabe in Echtzeit verfolgen"
+        }
+      }
+    },
+    "container_inspect": {
+      "name": "container_untersuchen",
+      "description": "Docker-Container-Details untersuchen",
+      "params": {
+        "container": {
+          "label": "Container",
+          "help": "Container-Name oder ID"
+        }
+      }
+    },
+    "container_stats": {
+      "name": "container_statistiken",
+      "description": "Docker-Container-Ressourcennutzungsstatistiken anzeigen",
+      "params": {
+        "container": {
+          "label": "Container",
+          "help": "Container-Name oder ID (optional - zeigt alle an, wenn leer)"
+        }
+      }
+    },
+    "container_pause": {
+      "name": "container_pausieren",
+      "description": "Laufenden Docker-Container pausieren",
+      "params": {
+        "container": {
+          "label": "Container",
+          "help": "Container-Name oder ID"
+        }
+      }
+    },
+    "container_unpause": {
+      "name": "container_fortsetzen",
+      "description": "Pausierten Docker-Container fortsetzen",
+      "params": {
+        "container": {
+          "label": "Container",
+          "help": "Container-Name oder ID"
+        }
+      }
+    }
+  }
+}

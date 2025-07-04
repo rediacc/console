@@ -58,7 +58,13 @@
   "language": {
     "select": "Select Language",
     "en": "English",
-    "es": "Spanish"
+    "es": "Spanish",
+    "fr": "French",
+    "de": "German",
+    "zh": "Chinese",
+    "ja": "Japanese",
+    "ar": "Arabic",
+    "tr": "Turkish"
   },
   "theme": {
     "light": "Light",

@@ -8,11 +8,18 @@ const { Option } = Select;
 interface Language {
   code: string;
   name: string;
+  flag: string;
 }
 
 const languages: Language[] = [
-  { code: 'en', name: 'English' },
-  { code: 'es', name: 'Español' },
+  { code: 'en', name: 'English', flag: '🇬🇧' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
+  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+  { code: 'zh', name: '中文', flag: '🇨🇳' },
+  { code: 'ja', name: '日本語', flag: '🇯🇵' },
+  { code: 'ar', name: 'العربية', flag: '🇸🇦' },
+  { code: 'tr', name: 'Türkçe', flag: '🇹🇷' },
 ];
 
 const LanguageSelector: React.FC = () => {
@@ -26,13 +33,13 @@ const LanguageSelector: React.FC = () => {
     <Select
       value={i18n.language}
       onChange={handleChange}
-      style={{ width: 100 }}
+      style={{ width: 140 }}
       suffixIcon={<GlobalOutlined />}
       dropdownMatchSelectWidth={false}
     >
       {languages.map((lang) => (
         <Option key={lang.code} value={lang.code}>
-          {lang.name}
+          <span>{lang.flag} {lang.name}</span>
         </Option>
       ))}
     </Select>

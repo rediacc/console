@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react'
-import { Modal, Button, Space, Typography, Upload, message } from 'antd'
-import { UploadOutlined, DownloadOutlined } from '@ant-design/icons'
+import { Modal, Button, Space, Typography, Upload, message, Collapse, Tag, Checkbox } from 'antd'
+import { UploadOutlined, DownloadOutlined, AppstoreOutlined } from '@ant-design/icons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
@@ -9,6 +9,8 @@ import { RootState } from '@/store/store'
 import ResourceFormWithVault from '@/components/forms/ResourceFormWithVault'
 import VaultEditorModal from '@/components/common/VaultEditorModal'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
+import TemplateSelector from '@/components/common/TemplateSelector'
+import TemplateDetailsModal from '@/components/common/TemplateDetailsModal'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import {
   createMachineSchema,
@@ -83,6 +85,14 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   
   // State for test connection (for machines)
   const [testConnectionSuccess, setTestConnectionSuccess] = useState(false)
+  
+  // State for auto-setup after machine creation
+  const [autoSetupEnabled, setAutoSetupEnabled] = useState(true)
+  
+  // State for template selection (for repositories)
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
+  const [showTemplateDetails, setShowTemplateDetails] = useState(false)
+  const [templateToView, setTemplateToView] = useState<string | null>(null)
   
   // Import/Export handlers ref
   const importExportHandlers = useRef<{ handleImport: (file: any) => boolean; handleExport: () => void } | null>(null)
@@ -235,6 +245,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     if (open && mode === 'create') {
       // Reset form to default values first
       form.reset(getDefaultValues())
+      
+      // Reset template selection for repositories
+      if (resourceType === 'repository') {
+        setSelectedTemplate(null)
+      }
       
       // Set team if preselected or from existing data
       if (existingData?.teamName) {
@@ -516,6 +531,27 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       }
     }
     
+    // Add template parameter for repository creation
+    if (resourceType === 'repository' && mode === 'create' && selectedTemplate) {
+      try {
+        // Fetch the template details
+        const response = await fetch(`${window.location.origin}/config/template_${selectedTemplate}.json`)
+        if (response.ok) {
+          const templateData = await response.json()
+          // Base64 encode the template JSON
+          data.tmpl = btoa(JSON.stringify(templateData))
+        }
+      } catch (error) {
+        console.error('Failed to fetch template data:', error)
+        message.warning(t('resources:templates.failedToLoadTemplate'))
+      }
+    }
+    
+    // Add auto-setup flag for machine creation
+    if (mode === 'create' && resourceType === 'machine') {
+      data.autoSetup = autoSetupEnabled
+    }
+    
     await onSubmit(data)
   }
 
@@ -664,6 +700,18 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           }
         }}
       >
+        {/* Auto-setup checkbox for machine creation */}
+        {resourceType === 'machine' && mode === 'create' && (
+          <div style={{ marginBottom: 16 }}>
+            <Checkbox 
+              checked={autoSetupEnabled} 
+              onChange={(e) => setAutoSetupEnabled(e.target.checked)}
+            >
+              {t('machines:autoSetupAfterCreation')}
+            </Checkbox>
+          </div>
+        )}
+        
         <ResourceFormWithVault
           ref={formRef}
           form={form}
@@ -680,6 +728,37 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           teamName={form.watch('teamName') || (existingData?.teamName) || (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) || 'Private Team'}
           bridgeName={form.watch('bridgeName') || 'Global Bridges'}
           onTestConnectionStateChange={setTestConnectionSuccess}
+          beforeVaultContent={
+            resourceType === 'repository' && mode === 'create' ? (
+              <Collapse 
+                style={{ marginBottom: 16, marginTop: 16 }}
+                items={[
+                  {
+                    key: 'template',
+                    label: (
+                      <Space>
+                        <AppstoreOutlined />
+                        <Text>{t('resources:templates.selectTemplate')}</Text>
+                        {selectedTemplate && (
+                          <Tag color="blue">{selectedTemplate.replace(/^(db_|kick_|route_)/, '')}</Tag>
+                        )}
+                      </Space>
+                    ),
+                    children: (
+                      <TemplateSelector
+                        value={selectedTemplate}
+                        onChange={setSelectedTemplate}
+                        onViewDetails={(templateName) => {
+                          setTemplateToView(templateName)
+                          setShowTemplateDetails(true)
+                        }}
+                      />
+                    )
+                  }
+                ]}
+              />
+            ) : undefined
+          }
           defaultsContent={
             <Space direction="vertical" size={0}>
               <Text>{t('general.team')}: Private Team</Text>
@@ -732,6 +811,21 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           preselectedFunction={preselectedFunction}
         />
       )}
+
+      {/* Template Details Modal */}
+      <TemplateDetailsModal
+        visible={showTemplateDetails}
+        templateName={templateToView}
+        onClose={() => {
+          setShowTemplateDetails(false)
+          setTemplateToView(null)
+        }}
+        onUseTemplate={(templateName) => {
+          setSelectedTemplate(templateName)
+          setShowTemplateDetails(false)
+          setTemplateToView(null)
+        }}
+      />
     </>
   )
 }

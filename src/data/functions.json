@@ -114,6 +114,11 @@
           "required": true,
           "format": "size",
           "units": ["G", "T"]
+        },
+        "tmpl": {
+          "type": "string",
+          "required": false,
+          "description": "Base64 encoded template JSON"
         }
       }
     },

@@ -1,0 +1,376 @@
+{
+  "navigation": {
+    "dashboard": "仪表板",
+    "architecture": "架构",
+    "resources": "资源",
+    "queue": "队列",
+    "system": "系统",
+    "audit": "审计",
+    "logout": "退出"
+  },
+  "actions": {
+    "edit": "编辑",
+    "delete": "删除",
+    "search": "搜索",
+    "reset": "重置",
+    "cancel": "取消",
+    "create": "创建",
+    "save": "保存",
+    "retry": "重试",
+    "refresh": "刷新",
+    "fullscreen": "全屏",
+    "exitFullscreen": "退出全屏",
+    "addToQueue": "添加到队列",
+    "viewTrace": "查看跟踪",
+    "close": "关闭"
+  },
+  "close": "关闭",
+  "copiedToClipboard": "已复制到剪贴板",
+  "copyFailed": "复制到剪贴板失败",
+  "export": "导出",
+  "exportCSV": "导出为CSV",
+  "exportJSON": "导出为JSON",
+  "refresh": "刷新",
+  "today": "今天",
+  "yesterday": "昨天",
+  "last7Days": "最近7天",
+  "last30Days": "最近30天",
+  "thisMonth": "本月",
+  "lastMonth": "上月",
+  "messages": {
+    "success": "成功",
+    "required": "此字段为必填",
+    "invalidEmail": "无效的电子邮箱地址",
+    "loading": "加载中...",
+    "error": "错误"
+  },
+  "table": {
+    "actions": "操作",
+    "showingRecords": "显示第 {{start}}-{{end}} 条记录，共 {{total}} 条"
+  },
+  "status": {
+    "label": "状态",
+    "initializing": "初始化中...",
+    "waitingForExecution": "等待执行",
+    "processing": "处理中",
+    "running": "运行中"
+  },
+  "language": {
+    "select": "选择语言",
+    "en": "英语",
+    "es": "西班牙语",
+    "fr": "法语",
+    "de": "德语",
+    "zh": "中文",
+    "ja": "日语",
+    "ar": "阿拉伯语",
+    "tr": "土耳其语"
+  },
+  "theme": {
+    "light": "浅色",
+    "dark": "深色"
+  },
+  "uiMode": {
+    "simple": "简单",
+    "expert": "专家",
+    "switching": "切换到{{mode}}模式..."
+  },
+  "general": {
+    "versionFormat": "v{{version}}",
+    "loading": "加载中...",
+    "showingRecords": "显示第 {{start}}-{{end}} 条记录，共 {{total}} 条",
+    "defaultsApplied": "已应用默认值",
+    "important": "重要",
+    "cancel": "取消"
+  },
+  "yes": "是",
+  "no": "否",
+  "dashboard": {
+    "availablePlans": "可用计划",
+    "upgradeOptions": "升级选项",
+    "currentPlan": "当前计划",
+    "comparePlansDescription": "比较不同订阅层级的功能和价格",
+    "elitePlanDescription": "您正在使用我们的最高级别计划，所有功能均已解锁"
+  },
+  "vaultEditor": {
+    "vaultConfiguration": "保险库配置",
+    "vaultVersion": "保险库版本：",
+    "versionAutoIncrement": "保存时版本将自动递增",
+    "importJson": "导入JSON",
+    "exportJson": "导出JSON",
+    "unsavedChanges": "未保存的更改",
+    "versionWillIncrement": "版本将递增到 {{version}}",
+    "saveVaultConfiguration": "保存保险库配置",
+    "validationErrors": "验证错误：",
+    "pleaseFixErrors": "请在保存前修复验证错误",
+    "noChangesToSave": "没有要保存的更改",
+    "unknownEntityType": "未知实体类型",
+    "unknownEntityDescription": "实体类型 \"{{type}}\" 未在保险库定义中定义。",
+    "requiredFields": "必填字段",
+    "optionalFields": "可选字段",
+    "extraFields": "额外字段（不在架构中）",
+    "extraFieldsTooltip": "这些字段已导入但未在架构中定义",
+    "extraFieldsWarning": "警告",
+    "extraFieldsWarningDescription": "这些字段未在架构中定义，将存储在JSON结构的'extraFields'下。",
+    "rawJsonEditor": "原始JSON编辑器（专家模式）",
+    "rawJsonTooltip": "直接JSON编辑 - 请谨慎使用！",
+    "expertModeOnly": "仅限专家模式",
+    "expertModeDescription": "如果操作不当，直接JSON编辑可能会破坏系统功能。只有在了解保险库架构和影响的情况下才进行修改。",
+    "jsonError": "JSON错误",
+    "formatJson": "格式化JSON",
+    "resetToFormValues": "重置为表单值",
+    "isRequired": "{{field}} 为必填",
+    "invalidFormat": "格式无效。{{description}}",
+    "minLength": "最小长度为 {{length}}",
+    "maxLength": "最大长度为 {{length}}",
+    "minValue": "最小值为 {{value}}",
+    "maxValue": "最大值为 {{value}}",
+    "mustBeValidJson": "必须为有效的JSON",
+    "mustBeArray": "必须为数组",
+    "mustBeValidJsonArray": "必须为有效的JSON数组",
+    "enterJsonObject": "输入JSON对象",
+    "enterJsonArray": "输入JSON数组",
+    "portPlaceholder": "端口号 (1-65535)",
+    "example": "示例：",
+    "advanced": "高级",
+    "failedToSerialize": "无法将数据序列化为JSON",
+    "invalidJsonFormat": "无效的JSON格式",
+    "failedToParseJson": "JSON解析失败：",
+    "fieldsMovedToExtra": "{{count}} 个字段已移至 extraFields：{{fields}}",
+    "fieldsMovedFromExtra": "{{count}} 个字段已从 extraFields 恢复：{{fields}}",
+    "sshPasswordRequiredWhenNoKey": "初始密钥设置需要SSH密码",
+    "providerFields": "{{provider}} 配置",
+    "providerRequiredFields": "{{provider}} 必填字段",
+    "testConnection": {
+      "button": "测试连接",
+      "missingFields": "请在测试前填写IP地址、用户名和密码",
+      "initiated": "SSH连接测试已启动。请检查队列以查看结果。",
+      "success": "SSH连接成功",
+      "failed": "SSH连接失败",
+      "testing": "测试连接中..."
+    },
+    "fields": {
+      "MACHINE": {
+        "description": "SSH访问和存储的机器配置",
+        "ip": {
+          "label": "IP地址",
+          "description": "机器的IP地址"
+        },
+        "user": {
+          "label": "用户名",
+          "description": "用于连接的SSH用户名"
+        },
+        "datastore": {
+          "label": "数据存储路径",
+          "description": "机器上数据存储目录的路径"
+        },
+        "port": {
+          "label": "SSH端口",
+          "description": "SSH端口号"
+        },
+        "host_entry": {
+          "label": "主机条目",
+          "description": "用于安全验证的SSH已知主机条目"
+        },
+        "ssh_key_configured": {
+          "label": "SSH密钥已配置",
+          "description": "如果SSH公钥已安装在目标机器上，请勾选此选项"
+        },
+        "ssh_password": {
+          "label": "SSH密码（临时）",
+          "description": "仅用于初始SSH密钥设置的临时密码。如果SSH密钥已配置，请留空。此密码用于一次性复制公钥，之后应出于安全考虑删除。"
+        }
+      },
+      "REPOSITORY": {
+        "description": "备份存储的仓库配置",
+        "name": {
+          "label": "仓库名称",
+          "description": "仓库名称标识符"
+        },
+        "credential": {
+          "label": "访问密码",
+          "description": "仓库访问密码（32个字符，字母数字+特殊字符）"
+        },
+        "encryption": {
+          "label": "启用加密",
+          "description": "为仓库启用加密"
+        },
+        "retention": {
+          "label": "保留策略",
+          "description": "保留策略设置"
+        },
+        "schedule": {
+          "label": "备份计划",
+          "description": "自动备份的cron表达式"
+        }
+      },
+      "STORAGE": {
+        "entityDescription": "备份目标的存储配置",
+        "name": {
+          "label": "存储名称",
+          "description": "此存储配置的唯一名称"
+        },
+        "provider": {
+          "label": "存储提供商",
+          "description": "选择存储提供商类型"
+        },
+        "description": {
+          "label": "描述",
+          "description": "此存储配置的可选描述"
+        },
+        "noVersioning": {
+          "label": "禁用版本控制",
+          "description": "禁用此存储的版本控制"
+        },
+        "parameters": {
+          "label": "附加参数",
+          "description": "用于高级配置的附加rclone参数"
+        }
+      },
+      "SCHEDULE": {
+        "description": "自动任务的计划配置",
+        "cron": {
+          "label": "Cron表达式",
+          "description": "定义计划的cron表达式"
+        },
+        "timezone": {
+          "label": "时区",
+          "description": "计划执行的时区"
+        },
+        "enabled": {
+          "label": "启用计划",
+          "description": "此计划是否激活"
+        }
+      },
+      "BRIDGE": {
+        "description": "网络连接的桥接配置",
+        "ip": {
+          "label": "IP地址",
+          "description": "桥接服务器的IP地址"
+        }
+      },
+      "REGION": {
+        "description": "地理分布的区域配置",
+        "name": {
+          "label": "区域名称",
+          "description": "地理区域的名称"
+        },
+        "code": {
+          "label": "区域代码",
+          "description": "区域的短代码"
+        }
+      },
+      "TEAM": {
+        "description": "组织结构的团队配置",
+        "name": {
+          "label": "团队名称",
+          "description": "团队的名称"
+        },
+        "teamDescription": {
+          "label": "团队描述",
+          "description": "团队目的和职责的描述"
+        },
+        "SSH_PRIVATE_KEY": {
+          "label": "SSH私钥",
+          "description": "用于团队操作的Base64编码的SSH私钥"
+        },
+        "SSH_PUBLIC_KEY": {
+          "label": "SSH公钥",
+          "description": "用于团队操作的SSH公钥"
+        }
+      },
+      "USER": {
+        "description": "个人设置的用户配置",
+        "SSH_PRIVATE_KEY": {
+          "label": "SSH私钥",
+          "description": "用于用户操作的Base64编码的SSH私钥"
+        },
+        "SSH_PUBLIC_KEY": {
+          "label": "SSH公钥",
+          "description": "用于用户操作的SSH公钥"
+        }
+      },
+      "COMPANY": {
+        "description": "组织范围设置的公司配置",
+        "UNIVERSAL_USER_ID": {
+          "label": "通用用户ID",
+          "description": "系统操作的通用用户ID"
+        },
+        "UNIVERSAL_USER_NAME": {
+          "label": "通用用户名",
+          "description": "系统操作的通用用户名"
+        },
+        "DOCKER_JSON_CONF": {
+          "label": "Docker配置",
+          "description": "Docker注册表认证配置"
+        },
+        "SSH_PRIVATE_KEY": {
+          "label": "SSH私钥",
+          "description": "用于公司操作的Base64编码的SSH私钥"
+        },
+        "SSH_PUBLIC_KEY": {
+          "label": "SSH公钥",
+          "description": "用于公司操作的SSH公钥"
+        },
+        "LOG_FILE": {
+          "label": "日志文件路径",
+          "description": "系统日志文件的路径"
+        },
+        "PLUGINS": {
+          "label": "插件",
+          "description": "带有容器镜像和激活状态的插件配置"
+        }
+      }
+    }
+  },
+  "fieldGenerator": {
+    "title": {
+      "ssh_keys": "生成SSH密钥对",
+      "repository_credential": "生成仓库凭据"
+    },
+    "tooltip": "生成值",
+    "generate": "生成",
+    "regenerate": "重新生成",
+    "apply": "应用",
+    "cancel": "取消",
+    "copy": "复制",
+    "copied": "已复制！",
+    "keyType": "密钥类型",
+    "keySize": "密钥大小",
+    "moreSecure": "更安全",
+    "comingSoon": "即将推出",
+    "generationSuccess": "生成成功",
+    "generationError": "生成失败。请重试。",
+    "applied": "值应用成功",
+    "copyError": "复制到剪贴板失败"
+  },
+  "notifications": {
+    "title": "通知",
+    "empty": "没有通知",
+    "markAllRead": "全部标为已读",
+    "clearAll": "清除全部"
+  },
+  "nestedObjectEditor": {
+    "Image": "镜像",
+    "Active": "激活",
+    "Add": "添加",
+    "Delete this entry?": "删除此条目？",
+    "Yes": "是",
+    "No": "否",
+    "Object": "对象",
+    "Array": "数组",
+    "True": "真",
+    "False": "假",
+    "Enter key name": "输入键名",
+    "Show JSON": "显示JSON",
+    "Hide JSON": "隐藏JSON",
+    "No entries": "没有条目",
+    "Raw JSON Editor": "原始JSON编辑器",
+    "JSON Error": "JSON错误",
+    "Uniform Structure": "统一结构",
+    "Fields": "字段",
+    "Container Images Detected": "检测到容器镜像",
+    "Plugin Configuration Detected": "检测到插件配置",
+    "Uniform Structure Detected": "检测到统一结构"
+  }
+}

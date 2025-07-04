@@ -1,0 +1,753 @@
+{
+  "storageProviders": {
+    "s3": {
+      "name": "Amazon S3 互換",
+      "description": "S3互換オブジェクトストレージ（AWS、Linode、DigitalOcean、Vultrなど）",
+      "helpText": "Amazon S3および互換オブジェクトストレージサービス。AWS S3、Linodeオブジェクトストレージ、DigitalOcean Spaces、Vultrオブジェクトストレージ、MinIOなど多数のサービスをサポート。",
+      "fields": {
+        "provider": {
+          "label": "プロバイダー",
+          "placeholder": "S3プロバイダーを選択",
+          "helpText": "S3互換ストレージプロバイダーを選択してください"
+        },
+        "access_key_id": {
+          "label": "アクセスキーID",
+          "placeholder": "AKIAIOSFODNN7EXAMPLE",
+          "helpText": "認証用のアクセスキーID。プロバイダーのコンソールから取得してください"
+        },
+        "secret_access_key": {
+          "label": "シークレットアクセスキー",
+          "placeholder": "シークレットアクセスキーを入力",
+          "helpText": "シークレットアクセスキー。安全に保管し、共有しないでください"
+        },
+        "endpoint": {
+          "label": "エンドポイント",
+          "placeholder": "s3.amazonaws.com",
+          "helpText": "S3 APIエンドポイントURL。AWS S3の場合は空白のまま。他のプロバイダーでは必須"
+        },
+        "region": {
+          "label": "リージョン",
+          "placeholder": "us-east-1",
+          "helpText": "バケットがある AWSリージョン"
+        },
+        "bucket": {
+          "label": "バケット",
+          "placeholder": "my-backup-bucket",
+          "helpText": "S3バケット名。グローバルに一意で命名規則に従う必要があります"
+        },
+        "folder": {
+          "label": "フォルダ",
+          "placeholder": "rediacc",
+          "helpText": "バケット内のオプションのフォルダパス"
+        },
+        "env_auth": {
+          "label": "環境認証を使用",
+          "helpText": "AWS環境変数またはIAMロールを使用して認証"
+        },
+        "location_constraint": {
+          "label": "場所制約",
+          "placeholder": "EU",
+          "helpText": "新しいバケットを作成する際の場所制約"
+        },
+        "acl": {
+          "label": "アクセス制御リスト",
+          "helpText": "アップロードされたオブジェクトのデフォルトACL。プライベートを推奨"
+        }
+      },
+      "tips": [
+        "AWS S3の場合、プログラマティックアクセス権限を持つIAMユーザーを作成してください",
+        "バケットポリシーを使用してアクセスを制御してください",
+        "重要なデータを保護するためにバージョニングを有効にしてください",
+        "ストレージコストを管理するためにライフサイクルルールの使用を検討してください"
+      ]
+    },
+    "b2": {
+      "name": "Backblaze B2",
+      "description": "Backblaze B2クラウドストレージ",
+      "helpText": "Backblaze B2は手頃な価格のクラウドバックアップサービスです。アプリケーションキーを使用して認証します。",
+      "fields": {
+        "account": {
+          "label": "アカウントIDまたはアプリケーションキーID",
+          "placeholder": "000000000000000000000000",
+          "helpText": "B2アカウントIDまたはアプリケーションキーID"
+        },
+        "key": {
+          "label": "アプリケーションキー",
+          "placeholder": "アプリケーションキーを入力",
+          "helpText": "B2コンソールからのアプリケーションキー。マスターキーではなくアプリケーションキーを使用してください"
+        },
+        "hard_delete": {
+          "label": "ハード削除",
+          "helpText": "ファイルを非表示にするのではなく永久に削除します。慎重に使用してください"
+        },
+        "endpoint": {
+          "label": "カスタムエンドポイント",
+          "placeholder": "s3.us-west-000.backblazeb2.com",
+          "helpText": "B2用のカスタムS3互換エンドポイント"
+        }
+      },
+      "tips": [
+        "セキュリティを向上させるため、制限された権限を持つアプリケーションキーを作成してください",
+        "B2は10GBの無料ストレージと1日1GBのダウンロードを提供します",
+        "非表示のファイルもストレージクォータにカウントされます",
+        "古いバージョンを自動削除するライフサイクルルールを検討してください"
+      ]
+    },
+    "drive": {
+      "name": "Google Drive",
+      "description": "Google Driveクラウドストレージ",
+      "helpText": "Google Driveパーソナルクラウドストレージ。OAuth認証またはサービスアカウントが必要です。",
+      "fields": {
+        "client_id": {
+          "label": "クライアントID",
+          "placeholder": "123456789012-abc...googleusercontent.com",
+          "helpText": "Google Cloud ConsoleからのOAuth2クライアントID"
+        },
+        "client_secret": {
+          "label": "クライアントシークレット",
+          "placeholder": "クライアントシークレットを入力",
+          "helpText": "OAuth2クライアントシークレット"
+        },
+        "scope": {
+          "label": "スコープ",
+          "placeholder": "drive",
+          "helpText": "リクエストする権限スコープ。フルアクセスには'drive'を使用"
+        },
+        "root_folder_id": {
+          "label": "ルートフォルダID",
+          "placeholder": "フォルダIDを入力（オプション）",
+          "helpText": "特定のフォルダをルートとして使用するためのオプションのフォルダID"
+        },
+        "service_account_file": {
+          "label": "サービスアカウントファイル",
+          "placeholder": "サービスアカウントJSONパス",
+          "helpText": "サービスアカウント認証用のJSONキーファイルへのパス"
+        },
+        "team_drive": {
+          "label": "チームドライブID",
+          "placeholder": "チームドライブIDを入力",
+          "helpText": "共有ドライブ（旧チームドライブ）のID"
+        }
+      },
+      "tips": [
+        "バックアップ専用のフォルダを作成して整理してください",
+        "サービスアカウントは自動化されたバックアップに推奨されます",
+        "APIクォータ制限に注意してください",
+        "重要なバックアップには共有ドライブの使用を検討してください"
+      ]
+    },
+    "dropbox": {
+      "name": "Dropbox",
+      "description": "Dropboxクラウドストレージ",
+      "helpText": "Dropboxパーソナルおよびビジネスアカウント。OAuth2認証またはアプリトークンが必要です。",
+      "fields": {
+        "app_key": {
+          "label": "アプリキー",
+          "placeholder": "アプリキーを入力",
+          "helpText": "DropboxアプリコンソールからのアプリキーまたはクライアントID"
+        },
+        "app_secret": {
+          "label": "アプリシークレット",
+          "placeholder": "アプリシークレットを入力",
+          "helpText": "Dropboxアプリシークレット（OAuth2フローに必要）"
+        },
+        "token": {
+          "label": "アクセストークン",
+          "placeholder": "アクセストークンを入力",
+          "helpText": "永続的なアクセストークン（非推奨ですが、まだサポートされています）"
+        },
+        "auth_url": {
+          "label": "認証URL",
+          "placeholder": "https://www.dropbox.com/oauth2/authorize",
+          "helpText": "OAuth2認証URL（デフォルトは通常問題ありません）"
+        },
+        "token_url": {
+          "label": "トークンURL",
+          "placeholder": "https://api.dropboxapi.com/oauth2/token",
+          "helpText": "OAuth2トークンURL（デフォルトは通常問題ありません）"
+        }
+      },
+      "tips": [
+        "バックアップ専用のアプリフォルダを作成してください",
+        "OAuth2フローは長期的なアクセスに推奨されます",
+        "Dropbox Businessはより良いコラボレーション機能を提供します",
+        "APIレート制限を監視してください"
+      ]
+    },
+    "onedrive": {
+      "name": "Microsoft OneDrive",
+      "description": "Microsoft OneDriveクラウドストレージ",
+      "helpText": "OneDriveパーソナルおよびビジネスアカウント。Microsoft Graph APIを使用します。",
+      "fields": {
+        "client_id": {
+          "label": "クライアントID",
+          "placeholder": "00000000-0000-0000-0000-000000000000",
+          "helpText": "Azure App RegistrationからのアプリケーションID"
+        },
+        "client_secret": {
+          "label": "クライアントシークレット",
+          "placeholder": "クライアントシークレットを入力",
+          "helpText": "アプリケーションクライアントシークレット"
+        },
+        "region": {
+          "label": "リージョン",
+          "placeholder": "グローバル",
+          "helpText": "Microsoft Cloudリージョン（グローバル、中国、ドイツ、米国政府）"
+        },
+        "drive_id": {
+          "label": "ドライブID",
+          "placeholder": "ドライブIDを入力（オプション）",
+          "helpText": "特定のドライブID（SharePointまたは共有ドライブ用）"
+        },
+        "drive_type": {
+          "label": "ドライブタイプ",
+          "placeholder": "personal",
+          "helpText": "ドライブタイプ（personal、business、documentLibrary）"
+        }
+      },
+      "tips": [
+        "ビジネスアカウントはより多くのストレージを提供します",
+        "SharePointドキュメントライブラリと統合できます",
+        "アプリの権限を慎重に設定してください",
+        "リージョンごとのコンプライアンス要件を考慮してください"
+      ]
+    },
+    "box": {
+      "name": "Box",
+      "description": "Boxエンタープライズクラウドストレージ",
+      "helpText": "Boxはエンタープライズコンテンツ管理プラットフォームです。OAuth2またはJWT認証が必要です。",
+      "fields": {
+        "client_id": {
+          "label": "クライアントID",
+          "placeholder": "クライアントIDを入力",
+          "helpText": "BoxアプリからのクライアントID"
+        },
+        "client_secret": {
+          "label": "クライアントシークレット",
+          "placeholder": "クライアントシークレットを入力",
+          "helpText": "Boxアプリからのクライアントシークレット"
+        },
+        "root_folder_id": {
+          "label": "ルートフォルダID",
+          "placeholder": "0",
+          "helpText": "ルートフォルダID（デフォルトは0）"
+        },
+        "box_config_file": {
+          "label": "Box設定ファイル",
+          "placeholder": "/path/to/box_config.json",
+          "helpText": "JWT認証用のBox設定ファイルへのパス"
+        },
+        "access_token": {
+          "label": "アクセストークン",
+          "placeholder": "アクセストークンを入力",
+          "helpText": "事前認証済みアクセストークン（オプション）"
+        }
+      },
+      "tips": [
+        "JWT認証はサーバー間統合に推奨されます",
+        "Boxのエンタープライズ機能を活用してください",
+        "ユーザーコラボレーションにはサービスアカウントを使用してください",
+        "フォルダ構造を事前に計画してください"
+      ]
+    },
+    "azure": {
+      "name": "Azure Blob Storage",
+      "description": "Microsoft Azure Blob Storage",
+      "helpText": "Azure Blob StorageはMicrosoftのクラウドオブジェクトストレージサービスです。",
+      "fields": {
+        "account": {
+          "label": "アカウント名",
+          "placeholder": "mystorageaccount",
+          "helpText": "Azureストレージアカウント名"
+        },
+        "key": {
+          "label": "アカウントキー",
+          "placeholder": "アカウントキーを入力",
+          "helpText": "プライマリまたはセカンダリアクセスキー"
+        },
+        "container": {
+          "label": "コンテナ",
+          "placeholder": "backups",
+          "helpText": "Blobコンテナ名"
+        },
+        "endpoint": {
+          "label": "エンドポイント",
+          "placeholder": "https://mystorageaccount.blob.core.windows.net",
+          "helpText": "カスタムエンドポイントURL（オプション）"
+        },
+        "sas_url": {
+          "label": "SAS URL",
+          "placeholder": "https://...",
+          "helpText": "アカウントキーの代わりにShared Access Signature URL"
+        },
+        "use_emulator": {
+          "label": "エミュレータを使用",
+          "helpText": "ローカルストレージエミュレータを使用"
+        }
+      },
+      "tips": [
+        "バックアップ専用のコンテナを作成してください",
+        "アクセスキーを定期的にローテーションさせてください",
+        "コスト効率のために適切なアクセス層を選択してください",
+        "ライフサイクル管理ポリシーを使用してください"
+      ]
+    },
+    "gcs": {
+      "name": "Google Cloud Storage",
+      "description": "Google Cloud Storage",
+      "helpText": "Google Cloud Platformのオブジェクトストレージサービス。",
+      "fields": {
+        "client_id": {
+          "label": "クライアントID",
+          "placeholder": "クライアントIDを入力",
+          "helpText": "OAuth2クライアントID"
+        },
+        "client_secret": {
+          "label": "クライアントシークレット",
+          "placeholder": "クライアントシークレットを入力",
+          "helpText": "OAuth2クライアントシークレット"
+        },
+        "project_number": {
+          "label": "プロジェクト番号",
+          "placeholder": "123456789012",
+          "helpText": "GCPプロジェクト番号"
+        },
+        "service_account_file": {
+          "label": "サービスアカウントファイル",
+          "placeholder": "/path/to/service-account.json",
+          "helpText": "サービスアカウントJSONキーファイルへのパス"
+        },
+        "object_acl": {
+          "label": "オブジェクトACL",
+          "placeholder": "private",
+          "helpText": "新しいオブジェクトのデフォルトACL"
+        },
+        "bucket_acl": {
+          "label": "バケットACL",
+          "placeholder": "private",
+          "helpText": "新しいバケットのデフォルトACL"
+        },
+        "location": {
+          "label": "ロケーション",
+          "placeholder": "US",
+          "helpText": "バケットのロケーション"
+        },
+        "storage_class": {
+          "label": "ストレージクラス",
+          "placeholder": "STANDARD",
+          "helpText": "ストレージクラス（STANDARD、NEARLINE、COLDLINE、ARCHIVE）"
+        }
+      },
+      "tips": [
+        "サービスアカウント認証が推奨されます",
+        "アクセス頻度に基づいてストレージクラスを選択してください",
+        "オブジェクトのライフサイクル管理を使用してください",
+        "マルチリージョンバケットはレジリエンスを提供します"
+      ]
+    },
+    "swift": {
+      "name": "OpenStack Swift",
+      "description": "OpenStack Swiftオブジェクトストレージ",
+      "helpText": "OpenStack SwiftおよびRackspace Cloud Files、OVHなどの互換サービス。",
+      "fields": {
+        "user": {
+          "label": "ユーザー名",
+          "placeholder": "ユーザー名を入力",
+          "helpText": "Swiftユーザー名"
+        },
+        "key": {
+          "label": "APIキー",
+          "placeholder": "APIキーを入力",
+          "helpText": "Swift APIキーまたはパスワード"
+        },
+        "auth": {
+          "label": "認証URL",
+          "placeholder": "https://auth.example.com/v2.0",
+          "helpText": "Keystone認証URL"
+        },
+        "domain": {
+          "label": "ドメイン",
+          "placeholder": "default",
+          "helpText": "ユーザードメイン（v3認証用）"
+        },
+        "tenant": {
+          "label": "テナント",
+          "placeholder": "テナント名を入力",
+          "helpText": "テナント名またはID"
+        },
+        "tenant_domain": {
+          "label": "テナントドメイン",
+          "placeholder": "default",
+          "helpText": "テナントドメイン（v3認証用）"
+        },
+        "region": {
+          "label": "リージョン",
+          "placeholder": "リージョン名を入力",
+          "helpText": "Swiftリージョン"
+        },
+        "storage_url": {
+          "label": "ストレージURL",
+          "placeholder": "https://storage.example.com/v1/AUTH_xxx",
+          "helpText": "事前認証済みストレージURL"
+        },
+        "auth_version": {
+          "label": "認証バージョン",
+          "placeholder": "0",
+          "helpText": "認証バージョン（0=自動、その他: 1,2,3）"
+        }
+      },
+      "tips": [
+        "大規模オブジェクトセグメンテーションを使用してください",
+        "テンポラリURLをパブリック共有に使用できます",
+        "コンテナメタデータを活用してください",
+        "リージョン間レプリケーションを検討してください"
+      ]
+    },
+    "webdav": {
+      "name": "WebDAV",
+      "description": "WebDAVサーバー",
+      "helpText": "Nextcloud、ownCloud、その他のWebDAVサーバーと互換性があります。",
+      "fields": {
+        "url": {
+          "label": "WebDAV URL",
+          "placeholder": "https://webdav.example.com/remote.php/webdav",
+          "helpText": "WebDAVエンドポイントの完全なURL"
+        },
+        "user": {
+          "label": "ユーザー名",
+          "placeholder": "ユーザー名を入力",
+          "helpText": "WebDAVユーザー名"
+        },
+        "pass": {
+          "label": "パスワード",
+          "placeholder": "パスワードを入力",
+          "helpText": "WebDAVパスワード"
+        },
+        "bearer_token": {
+          "label": "ベアラートークン",
+          "placeholder": "ベアラートークンを入力",
+          "helpText": "ユーザー/パスワードの代わりにベアラートークンを使用"
+        },
+        "vendor": {
+          "label": "ベンダー",
+          "placeholder": "other",
+          "helpText": "WebDAVサーバータイプ（nextcloud、owncloud、sharepoint、other）"
+        }
+      },
+      "tips": [
+        "HTTPSを使用して安全な通信を確保してください",
+        "Nextcloud/ownCloudにはアプリ固有のパスワードを使用してください",
+        "正しいWebDAVエンドポイントを確認してください",
+        "プロキシ設定を考慮する必要があるかもしれません"
+      ]
+    },
+    "ftp": {
+      "name": "FTP/FTPS",
+      "description": "FTPまたはFTPSサーバー",
+      "helpText": "レガシーFTPサーバーとの互換性のためのFTPサポート。可能な場合はFTPSを使用してください。",
+      "fields": {
+        "host": {
+          "label": "FTPホスト",
+          "placeholder": "ftp.example.com",
+          "helpText": "FTPサーバーのホスト名またはIPアドレス"
+        },
+        "user": {
+          "label": "ユーザー名",
+          "placeholder": "ユーザー名を入力",
+          "helpText": "FTPユーザー名"
+        },
+        "pass": {
+          "label": "パスワード",
+          "placeholder": "パスワードを入力",
+          "helpText": "FTPパスワード"
+        },
+        "port": {
+          "label": "ポート",
+          "placeholder": "21",
+          "helpText": "FTPポート（デフォルト: 21）"
+        },
+        "tls": {
+          "label": "FTPSを使用",
+          "helpText": "TLS/SSLを使用した明示的なFTPSを使用"
+        },
+        "explicit_tls": {
+          "label": "明示的TLS",
+          "helpText": "暗黙的ではなく明示的なFTPS over TLSを使用"
+        }
+      },
+      "tips": [
+        "セキュリティのためにFTPSを使用することを強く推奨します",
+        "適切なポートが開いていることを確認してください",
+        "パッシブモードの問題を考慮してください",
+        "可能であればSFTPへのアップグレードを検討してください"
+      ]
+    },
+    "sftp": {
+      "name": "SFTP",
+      "description": "SSHファイル転送プロトコル",
+      "helpText": "SSH経由の安全なファイル転送。パスワードまたはキーベース認証をサポート。",
+      "fields": {
+        "host": {
+          "label": "ホスト",
+          "placeholder": "sftp.example.com",
+          "helpText": "SFTPサーバーのホスト名またはIPアドレス"
+        },
+        "user": {
+          "label": "ユーザー名",
+          "placeholder": "ユーザー名を入力",
+          "helpText": "SSHユーザー名"
+        },
+        "port": {
+          "label": "ポート",
+          "placeholder": "22",
+          "helpText": "SSHポート（デフォルト: 22）"
+        },
+        "pass": {
+          "label": "パスワード",
+          "placeholder": "パスワードを入力",
+          "helpText": "SSHパスワード（キー認証を使用しない場合）"
+        },
+        "key_file": {
+          "label": "秘密鍵ファイル",
+          "placeholder": "~/.ssh/id_rsa",
+          "helpText": "SSH秘密鍵ファイルへのパス"
+        },
+        "key_pem": {
+          "label": "秘密鍵内容",
+          "placeholder": "-----BEGIN RSA PRIVATE KEY-----",
+          "helpText": "生の秘密鍵内容（ファイルの代わり）"
+        },
+        "key_use_agent": {
+          "label": "SSHエージェントを使用",
+          "helpText": "SSHエージェントを使用して認証"
+        },
+        "known_hosts_file": {
+          "label": "known_hostsファイル",
+          "placeholder": "~/.ssh/known_hosts",
+          "helpText": "SSH known_hostsファイルへのパス"
+        }
+      },
+      "tips": [
+        "セキュリティのためにキーベース認証を使用してください",
+        "ホストキー検証を有効にしてください",
+        "デフォルト以外のポートはセキュリティを向上させます",
+        "SSHキーを定期的にローテーションさせてください"
+      ]
+    },
+    "local": {
+      "name": "ローカルファイルシステム",
+      "description": "ローカルストレージ",
+      "helpText": "バックアップをローカルファイルシステムに保存。テストや一時的なバックアップに便利。",
+      "fields": {
+        "nounc": {
+          "label": "UNCパスを無効化",
+          "helpText": "Windows上で長いファイルパスのUNC変換を無効化"
+        }
+      },
+      "tips": [
+        "バックアップ用の専用ディレクトリを作成してください",
+        "ディスク容量を定期的に監視してください",
+        "重要なバックアップにはリモートストレージを検討してください",
+        "適切なファイル権限を設定してください"
+      ]
+    },
+    "mega": {
+      "name": "MEGA",
+      "description": "MEGAクラウドストレージ",
+      "helpText": "MEGAはエンドツーエンド暗号化を提供するクラウドストレージサービスです。",
+      "fields": {
+        "user": {
+          "label": "メールアドレス",
+          "placeholder": "user@example.com",
+          "helpText": "MEGAアカウントのメールアドレス"
+        },
+        "pass": {
+          "label": "パスワード",
+          "placeholder": "パスワードを入力",
+          "helpText": "MEGAアカウントのパスワード"
+        }
+      },
+      "tips": [
+        "MEGAはクライアント側暗号化を提供します",
+        "無料アカウントには帯域幅制限があります",
+        "2要素認証を有効にしてください",
+        "大きなファイルには注意が必要です"
+      ]
+    },
+    "pcloud": {
+      "name": "pCloud",
+      "description": "pCloudクラウドストレージ",
+      "helpText": "pCloudはヨーロッパとアメリカにデータセンターを持つ安全なクラウドストレージサービスです。",
+      "fields": {
+        "client_id": {
+          "label": "クライアントID",
+          "placeholder": "クライアントIDを入力",
+          "helpText": "OAuth2クライアントID"
+        },
+        "client_secret": {
+          "label": "クライアントシークレット",
+          "placeholder": "クライアントシークレットを入力",
+          "helpText": "OAuth2クライアントシークレット"
+        },
+        "hostname": {
+          "label": "ホスト名",
+          "placeholder": "api.pcloud.com",
+          "helpText": "EUの場合はeapi.pcloud.com、USの場合はapi.pcloud.com"
+        }
+      },
+      "tips": [
+        "住んでいる地域に近いデータセンターを選択してください",
+        "Cryptoフォルダを使用してゼロ知識暗号化を実現",
+        "生涯プランも利用可能です",
+        "ファイルバージョニングが利用可能です"
+      ]
+    },
+    "putio": {
+      "name": "Put.io",
+      "description": "Put.ioクラウドストレージ",
+      "helpText": "Put.ioはマルチメディアホスティングとストリーミングに特化したクラウドストレージサービスです。",
+      "fields": {
+        "token": {
+          "label": "アクセストークン",
+          "placeholder": "アクセストークンを入力",
+          "helpText": "Put.io設定からのアクセストークン"
+        }
+      },
+      "tips": [
+        "Put.ioはマルチメディアコンテンツに最適です",
+        "APIレート制限に注意してください",
+        "フォルダ構造を整理してください",
+        "アクセストークンを安全に保管してください"
+      ]
+    },
+    "premiumizeme": {
+      "name": "Premiumize.me",
+      "description": "Premiumize.meクラウドストレージ",
+      "helpText": "Premiumize.meはプレミアムダウンロードサービスとクラウドストレージを組み合わせたサービスです。",
+      "fields": {
+        "api_key": {
+          "label": "APIキー",
+          "placeholder": "APIキーを入力",
+          "helpText": "Premiumize.meアカウント設定からのAPIキー"
+        }
+      },
+      "tips": [
+        "ストレージ容量はプランによって異なります",
+        "APIは強力な検索機能を提供します",
+        "フォルダを整理してください",
+        "APIキーを安全に保管してください"
+      ]
+    },
+    "uptobox": {
+      "name": "Uptobox",
+      "description": "Uptoboxファイルホスティング",
+      "helpText": "Uptoboxはヨーロッパのファイルホスティングおよび共有サービスです。",
+      "fields": {
+        "api_key": {
+          "label": "APIキー",
+          "placeholder": "APIキーを入力",
+          "helpText": "Uptoboxアカウント設定からのAPIキー"
+        }
+      },
+      "tips": [
+        "プレミアムアカウントでAPIアクセスが可能です",
+        "ファイル保持期間に注意してください",
+        "ダウンロード速度制限がある場合があります",
+        "APIレート制限を確認してください"
+      ]
+    },
+    "yandex": {
+      "name": "Yandex Disk",
+      "description": "Yandex Diskクラウドストレージ",
+      "helpText": "Yandex Diskはロシアの大手テクノロジー企業Yandexが提供するクラウドストレージサービスです。",
+      "fields": {
+        "client_id": {
+          "label": "クライアントID",
+          "placeholder": "クライアントIDを入力",
+          "helpText": "Yandex OAuthアプリケーションID"
+        },
+        "client_secret": {
+          "label": "クライアントシークレット",
+          "placeholder": "クライアントシークレットを入力",
+          "helpText": "Yandex OAuthアプリケーションシークレット"
+        }
+      },
+      "tips": [
+        "無料アカウントは10GBのストレージを提供します",
+        "Officeドキュメントのオンライン編集が可能です",
+        "ファイルの自動バックアップ機能があります",
+        "2要素認証を有効にすることをお勧めします"
+      ]
+    },
+    "zoho": {
+      "name": "Zoho WorkDrive",
+      "description": "Zoho WorkDriveビジネスストレージ",
+      "helpText": "Zoho WorkDriveはチーム向けのセキュアなクラウドストレージおよびコラボレーションプラットフォームです。",
+      "fields": {
+        "client_id": {
+          "label": "クライアントID",
+          "placeholder": "クライアントIDを入力",
+          "helpText": "Zoho APIコンソールからのクライアントID"
+        },
+        "client_secret": {
+          "label": "クライアントシークレット",
+          "placeholder": "クライアントシークレットを入力",
+          "helpText": "Zoho APIコンソールからのクライアントシークレット"
+        },
+        "region": {
+          "label": "リージョン",
+          "placeholder": "com",
+          "helpText": "Zohoリージョン（com、eu、in、com.auなど）"
+        }
+      },
+      "tips": [
+        "WorkDriveはビジネスコラボレーション用に設計されています",
+        "高度なファイルバージョニングとコメント機能",
+        "Zohoの他のアプリと統合されています",
+        "リージョン別のデータ保存コンプライアンス"
+      ]
+    },
+    "custom": {
+      "name": "カスタムS3互換",
+      "description": "カスタムS3互換ストレージ",
+      "helpText": "任意のS3互換ストレージサービス用の一般的な設定。",
+      "fields": {
+        "endpoint": {
+          "label": "エンドポイントURL",
+          "placeholder": "https://s3.example.com",
+          "helpText": "S3互換サービスの完全なURL"
+        },
+        "access_key_id": {
+          "label": "アクセスキーID",
+          "placeholder": "アクセスキーIDを入力",
+          "helpText": "S3互換アクセスキーID"
+        },
+        "secret_access_key": {
+          "label": "シークレットアクセスキー",
+          "placeholder": "シークレットアクセスキーを入力",
+          "helpText": "S3互換シークレットアクセスキー"
+        },
+        "region": {
+          "label": "リージョン",
+          "placeholder": "us-east-1",
+          "helpText": "ストレージリージョン（オプション）"
+        },
+        "bucket": {
+          "label": "バケット",
+          "placeholder": "my-bucket",
+          "helpText": "ストレージバケット名"
+        },
+        "path_style": {
+          "label": "パススタイルURLを使用",
+          "helpText": "URLでパススタイルアドレス指定を使用（MinIOなどに必要）"
+        }
+      },
+      "tips": [
+        "プロバイダーから正しいエンドポイントURLを取得してください",
+        "一部のサービスではパススタイルアドレス指定が必要です",
+        "バケット名が正しいことを確認してください",
+        "SSL/TLS証明書の問題に注意してください"
+      ]
+    }
+  }
+}

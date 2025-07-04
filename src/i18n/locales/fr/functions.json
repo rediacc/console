@@ -1,0 +1,392 @@
+{
+  "availableFunctions": "Fonctions disponibles",
+  "selectFunction": "Sélectionner une fonction",
+  "searchFunctions": "Rechercher des fonctions...",
+  "configure": "Configurer",
+  "selectFunctionToConfigure": "Sélectionnez une fonction à configurer",
+  "priority": "Priorité",
+  "priorityHelp": "Les tâches sont traitées par priorité d'abord, puis par ancienneté",
+  "priorityHighest": "La plus élevée",
+  "priorityHigh": "Élevée",
+  "priorityAboveNormal": "Au-dessus de la normale",
+  "priorityNormal": "Au-dessus de la normale",
+  "priorityBelowNormal": "Normale",
+  "priorityLow": "Faible",
+  "currentPriority": "Actuelle",
+  "priorityHighestWarning": "Priorité la plus élevée (1)",
+  "priorityHighestDescription": "La soumission d'une tâche de priorité la plus élevée annulera automatiquement toute tâche de priorité la plus élevée existante que vous avez. À utiliser uniquement pour les tâches critiques urgentes nécessitant une attention immédiate.",
+  "priorityHighWarning": "Priorité élevée (2)",
+  "priorityHighDescription": "Permet plusieurs tâches simultanées de priorité élevée. À utiliser pour les tâches importantes nécessitant un traitement plus rapide.",
+  "priorityNormalWarning": "Priorité au-dessus de la normale (3)",
+  "priorityNormalDescription": "Plus rapide que la vitesse de traitement standard. À utiliser pour les tâches nécessitant un traitement plus rapide que la normale.",
+  "priorityLowWarning": "Priorité normale (4)",
+  "priorityLowDescription": "Vitesse de traitement standard. Recommandé pour la plupart des opérations et des tâches quotidiennes.",
+  "priorityLowestWarning": "Priorité la plus faible (5)",
+  "priorityLowestDescription": "Vitesse de traitement la plus lente. À utiliser pour les opérations par lots ou les tâches sans contraintes de temps.",
+  "description": "Description (facultative)",
+  "descriptionPlaceholder": "Ajouter une description personnalisée pour cet élément de file d'attente",
+  "validationError": "Erreur de validation",
+  "missingRequiredParams": "Veuillez remplir tous les paramètres requis : {{params}}",
+  "categories": {
+    "machine": {
+      "name": "Fonctions de machine",
+      "description": "Fonctions de configuration et de maintenance du système de base"
+    },
+    "repository": {
+      "name": "Fonctions de référentiel",
+      "description": "Gestion et opérations de référentiel"
+    },
+    "backup": {
+      "name": "Fonctions de sauvegarde",
+      "description": "Opérations de sauvegarde et de restauration"
+    },
+    "network": {
+      "name": "Fonctions réseau",
+      "description": "Opérations de réseau et de mappage de socket"
+    },
+    "container": {
+      "name": "Fonctions de conteneur",
+      "description": "Opérations de gestion de conteneur Docker"
+    }
+  },
+  "functions": {
+    "setup": {
+      "name": "configuration",
+      "description": "Configurer le système d'exploitation avec les outils et configurations requis",
+      "params": {
+        "datastore_size": {
+          "label": "Taille du magasin de données",
+          "help": "Taille du magasin de données (ex : 95%, 100G)"
+        },
+        "source": {
+          "label": "Source",
+          "help": "Source du package"
+        },
+        "rclone_source": {
+          "label": "Source d'installation Rclone",
+          "help": "Comment installer rclone (install-script = script officiel, package-manager = apt/dnf, manual = ignorer)"
+        },
+        "docker_source": {
+          "label": "Source d'installation Docker",
+          "help": "Comment installer Docker (docker-repo = dépôt officiel, package-manager = packages OS, snap = snap store, manual = ignorer)"
+        },
+        "install_amd_driver": {
+          "label": "Installer le pilote GPU AMD",
+          "help": "Installer les pilotes GPU AMD (auto = détecter GPU d'abord, true = toujours installer, false = ignorer)"
+        },
+        "install_nvidia_driver": {
+          "label": "Installer le pilote GPU NVIDIA",
+          "help": "Installer les pilotes GPU NVIDIA (auto = détecter GPU d'abord, true = toujours installer, false = ignorer)"
+        }
+      }
+    },
+    "hello": {
+      "name": "bonjour",
+      "description": "Fonction de test simple qui affiche bonjour depuis le nom d'hôte"
+    },
+    "uninstall": {
+      "name": "désinstaller",
+      "description": "Nettoyer et désinstaller les composants système"
+    },
+    "new": {
+      "name": "nouveau",
+      "description": "Créer un nouveau référentiel",
+      "params": {
+        "repo": {
+          "label": "Référentiel",
+          "help": "Nom du référentiel"
+        },
+        "size": {
+          "label": "Taille",
+          "help": "Taille du référentiel (ex : 10G)"
+        }
+      }
+    },
+    "mount": {
+      "name": "monter",
+      "description": "Monter les systèmes de fichiers du référentiel",
+      "params": {
+        "repo": {
+          "label": "Référentiel",
+          "help": "Nom(s) du référentiel, séparés par des virgules"
+        },
+        "from": {
+          "label": "Depuis la machine",
+          "help": "Machine distante depuis laquelle monter"
+        }
+      }
+    },
+    "unmount": {
+      "name": "démonter",
+      "description": "Démonter les systèmes de fichiers du référentiel",
+      "params": {
+        "repo": {
+          "label": "Référentiel",
+          "help": "Nom(s) du référentiel, séparés par des virgules"
+        },
+        "from": {
+          "label": "Depuis la machine",
+          "help": "Machine distante depuis laquelle démonter"
+        }
+      }
+    },
+    "up": {
+      "name": "démarrer",
+      "description": "Démarrer les services du référentiel en utilisant Rediaccfile",
+      "params": {
+        "repo": {
+          "label": "Référentiel",
+          "help": "Nom(s) du référentiel, séparés par des virgules"
+        },
+        "option": {
+          "label": "Options",
+          "help": "Options (ex : prep-only)"
+        }
+      }
+    },
+    "down": {
+      "name": "arrêter",
+      "description": "Arrêter les services du référentiel",
+      "params": {
+        "repo": {
+          "label": "Référentiel",
+          "help": "Nom(s) du référentiel, séparés par des virgules"
+        }
+      }
+    },
+    "resize": {
+      "name": "redimensionner",
+      "description": "Redimensionner le stockage du référentiel",
+      "params": {
+        "repo": {
+          "label": "Référentiel",
+          "help": "Nom du référentiel"
+        },
+        "size": {
+          "label": "Nouvelle taille",
+          "help": "Nouvelle taille (ex : 20G)"
+        }
+      }
+    },
+    "rm": {
+      "name": "supprimer",
+      "description": "Supprimer le référentiel",
+      "params": {
+        "repo": {
+          "label": "Référentiel",
+          "help": "Nom du référentiel"
+        }
+      }
+    },
+    "plugin": {
+      "name": "plugin",
+      "description": "Activer les plugins du référentiel",
+      "params": {
+        "repo": {
+          "label": "Référentiel",
+          "help": "Nom(s) du référentiel, séparés par des virgules"
+        },
+        "plugin": {
+          "label": "Plugin",
+          "help": "Nom(s) du plugin, séparés par des virgules"
+        }
+      }
+    },
+    "plugout": {
+      "name": "plugout",
+      "description": "Désactiver les plugins du référentiel",
+      "params": {
+        "repo": {
+          "label": "Référentiel",
+          "help": "Nom(s) du référentiel, séparés par des virgules"
+        },
+        "plugin": {
+          "label": "Plugin",
+          "help": "Nom(s) du plugin, séparés par des virgules"
+        }
+      }
+    },
+    "ownership": {
+      "name": "propriété",
+      "description": "Changer la propriété du référentiel",
+      "params": {
+        "repo": {
+          "label": "Référentiel",
+          "help": "Nom du référentiel"
+        },
+        "from": {
+          "label": "Propriétaire actuel",
+          "help": "Propriétaire actuel"
+        },
+        "to": {
+          "label": "Nouveau propriétaire",
+          "help": "Nouveau propriétaire (par défaut : utilisateur universel)"
+        }
+      }
+    },
+    "list": {
+      "name": "lister",
+      "description": "Lister les référentiels",
+      "params": {
+        "kind": {
+          "label": "Type",
+          "help": "Type à lister"
+        },
+        "format": {
+          "label": "Format",
+          "help": "Format de sortie (json)"
+        }
+      }
+    },
+    "push": {
+      "name": "pousser",
+      "description": "Pousser le référentiel vers le stockage distant",
+      "params": {
+        "repo": {
+          "label": "Référentiel",
+          "help": "Nom(s) du référentiel, séparés par des virgules"
+        },
+        "dest": {
+          "label": "Nom du fichier de destination",
+          "help": "Nom pour le fichier de sauvegarde"
+        },
+        "destinationType": {
+          "label": "Type de destination",
+          "help": "Sélectionner si pousser vers une machine ou un stockage"
+        },
+        "to": {
+          "label": "Destination",
+          "help": "Sélectionner la machine ou le stockage de destination"
+        },
+        "state": {
+          "label": "État requis",
+          "help": "Valider que le référentiel est en ligne ou hors ligne avant de pousser"
+        },
+        "option": {
+          "label": "Options",
+          "help": "Options (ex : override)"
+        }
+      }
+    },
+    "pull": {
+      "name": "tirer",
+      "description": "Tirer le référentiel depuis le stockage distant",
+      "params": {
+        "from": {
+          "label": "Source",
+          "help": "Machine/stockage source"
+        },
+        "repo": {
+          "label": "Référentiel",
+          "help": "Nom(s) du référentiel, séparés par des virgules"
+        }
+      }
+    },
+    "ping": {
+      "name": "ping",
+      "description": "Tester la connectivité réseau vers la machine"
+    },
+    "container_start": {
+      "name": "conteneur_démarrer",
+      "description": "Démarrer un conteneur Docker",
+      "params": {
+        "container": {
+          "label": "Conteneur",
+          "help": "Nom ou ID du conteneur"
+        }
+      }
+    },
+    "container_stop": {
+      "name": "conteneur_arrêter",
+      "description": "Arrêter un conteneur Docker en cours d'exécution",
+      "params": {
+        "container": {
+          "label": "Conteneur",
+          "help": "Nom ou ID du conteneur"
+        }
+      }
+    },
+    "container_restart": {
+      "name": "conteneur_redémarrer",
+      "description": "Redémarrer un conteneur Docker",
+      "params": {
+        "container": {
+          "label": "Conteneur",
+          "help": "Nom ou ID du conteneur"
+        }
+      }
+    },
+    "container_remove": {
+      "name": "conteneur_supprimer",
+      "description": "Supprimer un conteneur Docker",
+      "params": {
+        "container": {
+          "label": "Conteneur",
+          "help": "Nom ou ID du conteneur"
+        },
+        "force": {
+          "label": "Forcer la suppression",
+          "help": "Forcer la suppression d'un conteneur en cours d'exécution"
+        }
+      }
+    },
+    "container_logs": {
+      "name": "conteneur_journaux",
+      "description": "Afficher les journaux du conteneur Docker",
+      "params": {
+        "container": {
+          "label": "Conteneur",
+          "help": "Nom ou ID du conteneur"
+        },
+        "lines": {
+          "label": "Lignes",
+          "help": "Nombre de lignes à afficher (par défaut : 100)"
+        },
+        "follow": {
+          "label": "Suivre les journaux",
+          "help": "Suivre la sortie des journaux en temps réel"
+        }
+      }
+    },
+    "container_inspect": {
+      "name": "conteneur_inspecter",
+      "description": "Inspecter les détails du conteneur Docker",
+      "params": {
+        "container": {
+          "label": "Conteneur",
+          "help": "Nom ou ID du conteneur"
+        }
+      }
+    },
+    "container_stats": {
+      "name": "conteneur_statistiques",
+      "description": "Afficher les statistiques d'utilisation des ressources du conteneur Docker",
+      "params": {
+        "container": {
+          "label": "Conteneur",
+          "help": "Nom ou ID du conteneur (facultatif - affiche tout si vide)"
+        }
+      }
+    },
+    "container_pause": {
+      "name": "conteneur_pause",
+      "description": "Mettre en pause un conteneur Docker en cours d'exécution",
+      "params": {
+        "container": {
+          "label": "Conteneur",
+          "help": "Nom ou ID du conteneur"
+        }
+      }
+    },
+    "container_unpause": {
+      "name": "conteneur_reprendre",
+      "description": "Reprendre un conteneur Docker en pause",
+      "params": {
+        "container": {
+          "label": "Conteneur",
+          "help": "Nom ou ID du conteneur"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,754 @@
+{
+  "storageProviders": {
+    "s3": {
+      "name": "متوافق مع Amazon S3",
+      "description": "تخزين الكائنات المتوافق مع S3 (AWS، Linode، DigitalOcean، Vultr وغيرها)",
+      "helpText": "Amazon S3 وخدمات تخزين الكائنات المتوافقة. يدعم عدة خدمات بما في ذلك AWS S3، Linode Object Storage، DigitalOcean Spaces، Vultr Object Storage، MinIO والمزيد.",
+      "fields": {
+        "provider": {
+          "label": "المزود",
+          "placeholder": "اختر مزود S3",
+          "helpText": "اختر مزود التخزين المتوافق مع S3"
+        },
+        "access_key_id": {
+          "label": "معرف مفتاح الوصول",
+          "placeholder": "AKIAIOSFODNN7EXAMPLE",
+          "helpText": "معرف مفتاح الوصول للمصادقة. احصل عليه من لوحة تحكم مزودك"
+        },
+        "secret_access_key": {
+          "label": "مفتاح الوصول السري",
+          "placeholder": "أدخل مفتاح الوصول السري",
+          "helpText": "مفتاح الوصول السري. احتفظ به بأمان ولا تشاركه أبداً"
+        },
+        "endpoint": {
+          "label": "نقطة النهاية",
+          "placeholder": "s3.amazonaws.com",
+          "helpText": "عنوان URL لنقطة نهاية S3 API. اتركه فارغاً لـ AWS S3. مطلوب للمزودين الآخرين"
+        },
+        "region": {
+          "label": "المنطقة",
+          "placeholder": "us-east-1",
+          "helpText": "منطقة AWS التي يوجد بها الدلو",
+          "language": "ar"
+        },
+        "bucket": {
+          "label": "الدلو",
+          "placeholder": "my-backup-bucket",
+          "helpText": "اسم دلو S3. يجب أن يكون فريداً عالمياً ويتبع قواعد التسمية"
+        },
+        "folder": {
+          "label": "المجلد",
+          "placeholder": "rediacc",
+          "helpText": "مسار مجلد اختياري داخل الدلو"
+        },
+        "env_auth": {
+          "label": "استخدام مصادقة البيئة",
+          "helpText": "استخدم متغيرات بيئة AWS أو دور IAM للمصادقة"
+        },
+        "location_constraint": {
+          "label": "قيد الموقع",
+          "placeholder": "EU",
+          "helpText": "قيد الموقع عند إنشاء دلاء جديدة"
+        },
+        "acl": {
+          "label": "قائمة التحكم في الوصول",
+          "helpText": "ACL الافتراضية للكائنات المرفوعة. ينصح بالخاصة"
+        }
+      },
+      "tips": [
+        "لـ AWS S3، قم بإنشاء مستخدم IAM مع وصول برمجي",
+        "استخدم سياسات الدلو للتحكم في الوصول",
+        "فعّل إصدار الملفات لحماية البيانات المهمة",
+        "فكر في استخدام قواعد دورة الحياة لإدارة تكلفة التخزين"
+      ]
+    },
+    "b2": {
+      "name": "Backblaze B2",
+      "description": "تخزين Backblaze B2 السحابي",
+      "helpText": "Backblaze B2 هي خدمة نسخ احتياطي سحابية بأسعار معقولة. تستخدم مفاتيح التطبيق للمصادقة.",
+      "fields": {
+        "account": {
+          "label": "معرف الحساب أو معرف مفتاح التطبيق",
+          "placeholder": "000000000000000000000000",
+          "helpText": "معرف حساب B2 أو معرف مفتاح التطبيق"
+        },
+        "key": {
+          "label": "مفتاح التطبيق",
+          "placeholder": "أدخل مفتاح التطبيق",
+          "helpText": "مفتاح التطبيق من لوحة تحكم B2. استخدم مفاتيح التطبيق بدلاً من المفتاح الرئيسي"
+        },
+        "hard_delete": {
+          "label": "الحذف النهائي",
+          "helpText": "حذف الملفات بشكل دائم بدلاً من إخفائها. استخدم بحذر"
+        },
+        "endpoint": {
+          "label": "نقطة نهاية مخصصة",
+          "placeholder": "s3.us-west-000.backblazeb2.com",
+          "helpText": "نقطة نهاية S3 المتوافقة لـ B2"
+        }
+      },
+      "tips": [
+        "قم بإنشاء مفاتيح تطبيق بصلاحيات محدودة لتحسين الأمان",
+        "B2 يوفر 10GB تخزين مجاني و1GB تنزيل يومياً",
+        "الملفات المخفية تحتسب من حصة التخزين",
+        "فكر في قواعد دورة الحياة لحذف الإصدارات القديمة تلقائياً"
+      ]
+    },
+    "drive": {
+      "name": "Google Drive",
+      "description": "تخزين Google Drive السحابي",
+      "helpText": "Google Drive للتخزين السحابي الشخصي. يتطلب مصادقة OAuth أو حساب خدمة.",
+      "fields": {
+        "client_id": {
+          "label": "معرف العميل",
+          "placeholder": "123456789012-abc...googleusercontent.com",
+          "helpText": "معرف عميل OAuth2 من Google Cloud Console"
+        },
+        "client_secret": {
+          "label": "سر العميل",
+          "placeholder": "أدخل سر العميل",
+          "helpText": "سر عميل OAuth2"
+        },
+        "scope": {
+          "label": "النطاق",
+          "placeholder": "drive",
+          "helpText": "نطاقات الأذونات للطلب. استخدم 'drive' للوصول الكامل"
+        },
+        "root_folder_id": {
+          "label": "معرف المجلد الجذر",
+          "placeholder": "أدخل معرف المجلد (اختياري)",
+          "helpText": "معرف مجلد اختياري لاستخدام مجلد محدد كجذر"
+        },
+        "service_account_file": {
+          "label": "ملف حساب الخدمة",
+          "placeholder": "مسار JSON لحساب الخدمة",
+          "helpText": "مسار ملف مفتاح JSON لمصادقة حساب الخدمة"
+        },
+        "team_drive": {
+          "label": "معرف المحرك الجماعي",
+          "placeholder": "أدخل معرف المحرك الجماعي",
+          "helpText": "معرف المحرك المشترك (المحرك الجماعي سابقاً)"
+        }
+      },
+      "tips": [
+        "قم بإنشاء مجلد مخصص للنسخ الاحتياطية للتنظيم",
+        "حسابات الخدمة موصى بها للنسخ الاحتياطي المؤتمت",
+        "كن على دراية بحدود حصص API",
+        "فكر في استخدام المحركات المشتركة للنسخ الاحتياطية المهمة"
+      ]
+    },
+    "dropbox": {
+      "name": "Dropbox",
+      "description": "تخزين Dropbox السحابي",
+      "helpText": "Dropbox للحسابات الشخصية والتجارية. يتطلب مصادقة OAuth2 أو رمز تطبيق.",
+      "fields": {
+        "app_key": {
+          "label": "مفتاح التطبيق",
+          "placeholder": "أدخل مفتاح التطبيق",
+          "helpText": "مفتاح التطبيق أو معرف العميل من لوحة تحكم تطبيق Dropbox"
+        },
+        "app_secret": {
+          "label": "سر التطبيق",
+          "placeholder": "أدخل سر التطبيق",
+          "helpText": "سر تطبيق Dropbox (مطلوب لتدفق OAuth2)"
+        },
+        "token": {
+          "label": "رمز الوصول",
+          "placeholder": "أدخل رمز الوصول",
+          "helpText": "رمز وصول دائم (مهجور لكن لا يزال مدعوماً)"
+        },
+        "auth_url": {
+          "label": "عنوان URL للمصادقة",
+          "placeholder": "https://www.dropbox.com/oauth2/authorize",
+          "helpText": "عنوان URL لمصادقة OAuth2 (عادة الافتراضي جيد)"
+        },
+        "token_url": {
+          "label": "عنوان URL للرمز",
+          "placeholder": "https://api.dropboxapi.com/oauth2/token",
+          "helpText": "عنوان URL لرمز OAuth2 (عادة الافتراضي جيد)"
+        }
+      },
+      "tips": [
+        "قم بإنشاء مجلد تطبيق مخصص للنسخ الاحتياطية",
+        "تدفق OAuth2 موصى به للوصول طويل المدى",
+        "Dropbox Business يوفر ميزات تعاون أفضل",
+        "راقب حدود معدل API"
+      ]
+    },
+    "onedrive": {
+      "name": "Microsoft OneDrive",
+      "description": "تخزين Microsoft OneDrive السحابي",
+      "helpText": "OneDrive للحسابات الشخصية والتجارية. يستخدم Microsoft Graph API.",
+      "fields": {
+        "client_id": {
+          "label": "معرف العميل",
+          "placeholder": "00000000-0000-0000-0000-000000000000",
+          "helpText": "معرف التطبيق من Azure App Registration"
+        },
+        "client_secret": {
+          "label": "سر العميل",
+          "placeholder": "أدخل سر العميل",
+          "helpText": "سر عميل التطبيق"
+        },
+        "region": {
+          "label": "المنطقة",
+          "placeholder": "عالمي",
+          "helpText": "منطقة Microsoft Cloud (عالمي، الصين، ألمانيا، الحكومة الأمريكية)"
+        },
+        "drive_id": {
+          "label": "معرف المحرك",
+          "placeholder": "أدخل معرف المحرك (اختياري)",
+          "helpText": "معرف محرك محدد (لـ SharePoint أو المحركات المشتركة)"
+        },
+        "drive_type": {
+          "label": "نوع المحرك",
+          "placeholder": "personal",
+          "helpText": "نوع المحرك (personal، business، documentLibrary)"
+        }
+      },
+      "tips": [
+        "الحسابات التجارية توفر مساحة تخزين أكبر",
+        "يمكن التكامل مع مكتبات مستندات SharePoint",
+        "قم بتعيين أذونات التطبيق بعناية",
+        "ضع في اعتبارك متطلبات الامتثال الإقليمية"
+      ]
+    },
+    "box": {
+      "name": "Box",
+      "description": "تخزين Box السحابي للمؤسسات",
+      "helpText": "Box هي منصة إدارة المحتوى للمؤسسات. تتطلب مصادقة OAuth2 أو JWT.",
+      "fields": {
+        "client_id": {
+          "label": "معرف العميل",
+          "placeholder": "أدخل معرف العميل",
+          "helpText": "معرف العميل من تطبيق Box"
+        },
+        "client_secret": {
+          "label": "سر العميل",
+          "placeholder": "أدخل سر العميل",
+          "helpText": "سر العميل من تطبيق Box"
+        },
+        "root_folder_id": {
+          "label": "معرف المجلد الجذر",
+          "placeholder": "0",
+          "helpText": "معرف المجلد الجذر (الافتراضي 0)"
+        },
+        "box_config_file": {
+          "label": "ملف تكوين Box",
+          "placeholder": "/path/to/box_config.json",
+          "helpText": "مسار ملف تكوين Box لمصادقة JWT"
+        },
+        "access_token": {
+          "label": "رمز الوصول",
+          "placeholder": "أدخل رمز الوصول",
+          "helpText": "رمز وصول معتمد مسبقاً (اختياري)"
+        }
+      },
+      "tips": [
+        "مصادقة JWT موصى بها للتكامل بين الخوادم",
+        "استفد من ميزات Box للمؤسسات",
+        "استخدم حسابات الخدمة للتعاون بين المستخدمين",
+        "خطط لهيكل المجلدات مسبقاً"
+      ]
+    },
+    "azure": {
+      "name": "Azure Blob Storage",
+      "description": "Microsoft Azure Blob Storage",
+      "helpText": "Azure Blob Storage هي خدمة تخزين الكائنات السحابية من Microsoft.",
+      "fields": {
+        "account": {
+          "label": "اسم الحساب",
+          "placeholder": "mystorageaccount",
+          "helpText": "اسم حساب التخزين في Azure"
+        },
+        "key": {
+          "label": "مفتاح الحساب",
+          "placeholder": "أدخل مفتاح الحساب",
+          "helpText": "مفتاح الوصول الأساسي أو الثانوي"
+        },
+        "container": {
+          "label": "الحاوية",
+          "placeholder": "backups",
+          "helpText": "اسم حاوية Blob"
+        },
+        "endpoint": {
+          "label": "نقطة النهاية",
+          "placeholder": "https://mystorageaccount.blob.core.windows.net",
+          "helpText": "عنوان URL لنقطة النهاية المخصصة (اختياري)"
+        },
+        "sas_url": {
+          "label": "SAS URL",
+          "placeholder": "https://...",
+          "helpText": "عنوان URL لتوقيع الوصول المشترك بدلاً من مفتاح الحساب"
+        },
+        "use_emulator": {
+          "label": "استخدام المحاكي",
+          "helpText": "استخدم محاكي التخزين المحلي"
+        }
+      },
+      "tips": [
+        "قم بإنشاء حاوية مخصصة للنسخ الاحتياطية",
+        "قم بتدوير مفاتيح الوصول بانتظام",
+        "اختر طبقة الوصول المناسبة للفعالية من حيث التكلفة",
+        "استخدم سياسات إدارة دورة الحياة"
+      ]
+    },
+    "gcs": {
+      "name": "Google Cloud Storage",
+      "description": "Google Cloud Storage",
+      "helpText": "خدمة تخزين الكائنات من Google Cloud Platform.",
+      "fields": {
+        "client_id": {
+          "label": "معرف العميل",
+          "placeholder": "أدخل معرف العميل",
+          "helpText": "معرف عميل OAuth2"
+        },
+        "client_secret": {
+          "label": "سر العميل",
+          "placeholder": "أدخل سر العميل",
+          "helpText": "سر عميل OAuth2"
+        },
+        "project_number": {
+          "label": "رقم المشروع",
+          "placeholder": "123456789012",
+          "helpText": "رقم مشروع GCP"
+        },
+        "service_account_file": {
+          "label": "ملف حساب الخدمة",
+          "placeholder": "/path/to/service-account.json",
+          "helpText": "مسار ملف مفتاح JSON لحساب الخدمة"
+        },
+        "object_acl": {
+          "label": "ACL الكائن",
+          "placeholder": "private",
+          "helpText": "ACL الافتراضية للكائنات الجديدة"
+        },
+        "bucket_acl": {
+          "label": "ACL الدلو",
+          "placeholder": "private",
+          "helpText": "ACL الافتراضية للدلاء الجديدة"
+        },
+        "location": {
+          "label": "الموقع",
+          "placeholder": "US",
+          "helpText": "موقع الدلو"
+        },
+        "storage_class": {
+          "label": "فئة التخزين",
+          "placeholder": "STANDARD",
+          "helpText": "فئة التخزين (STANDARD، NEARLINE، COLDLINE، ARCHIVE)"
+        }
+      },
+      "tips": [
+        "مصادقة حساب الخدمة موصى بها",
+        "اختر فئة التخزين بناءً على تكرار الوصول",
+        "استخدم إدارة دورة حياة الكائنات",
+        "الدلاء متعددة المناطق توفر قدرة على التحمل"
+      ]
+    },
+    "swift": {
+      "name": "OpenStack Swift",
+      "description": "تخزين الكائنات OpenStack Swift",
+      "helpText": "OpenStack Swift والخدمات المتوافقة مثل Rackspace Cloud Files، OVH.",
+      "fields": {
+        "user": {
+          "label": "اسم المستخدم",
+          "placeholder": "أدخل اسم المستخدم",
+          "helpText": "اسم مستخدم Swift"
+        },
+        "key": {
+          "label": "مفتاح API",
+          "placeholder": "أدخل مفتاح API",
+          "helpText": "مفتاح Swift API أو كلمة المرور"
+        },
+        "auth": {
+          "label": "عنوان URL للمصادقة",
+          "placeholder": "https://auth.example.com/v2.0",
+          "helpText": "عنوان URL لمصادقة Keystone"
+        },
+        "domain": {
+          "label": "النطاق",
+          "placeholder": "default",
+          "helpText": "نطاق المستخدم (لمصادقة v3)"
+        },
+        "tenant": {
+          "label": "المستأجر",
+          "placeholder": "أدخل اسم المستأجر",
+          "helpText": "اسم المستأجر أو المعرف"
+        },
+        "tenant_domain": {
+          "label": "نطاق المستأجر",
+          "placeholder": "default",
+          "helpText": "نطاق المستأجر (لمصادقة v3)"
+        },
+        "region": {
+          "label": "المنطقة",
+          "placeholder": "أدخل اسم المنطقة",
+          "helpText": "منطقة Swift"
+        },
+        "storage_url": {
+          "label": "عنوان URL للتخزين",
+          "placeholder": "https://storage.example.com/v1/AUTH_xxx",
+          "helpText": "عنوان URL للتخزين المعتمد مسبقاً"
+        },
+        "auth_version": {
+          "label": "إصدار المصادقة",
+          "placeholder": "0",
+          "helpText": "إصدار المصادقة (0=تلقائي، وإلا: 1,2,3)"
+        }
+      },
+      "tips": [
+        "استخدم تجزئة الكائنات الكبيرة",
+        "يمكن استخدام عناوين URL المؤقتة للمشاركة العامة",
+        "استفد من بيانات وصف الحاوية",
+        "فكر في النسخ المتماثل بين المناطق"
+      ]
+    },
+    "webdav": {
+      "name": "WebDAV",
+      "description": "خادم WebDAV",
+      "helpText": "متوافق مع Nextcloud، ownCloud، وخوادم WebDAV الأخرى.",
+      "fields": {
+        "url": {
+          "label": "عنوان WebDAV URL",
+          "placeholder": "https://webdav.example.com/remote.php/webdav",
+          "helpText": "عنوان URL الكامل لنقطة نهاية WebDAV"
+        },
+        "user": {
+          "label": "اسم المستخدم",
+          "placeholder": "أدخل اسم المستخدم",
+          "helpText": "اسم مستخدم WebDAV"
+        },
+        "pass": {
+          "label": "كلمة المرور",
+          "placeholder": "أدخل كلمة المرور",
+          "helpText": "كلمة مرور WebDAV"
+        },
+        "bearer_token": {
+          "label": "رمز الحامل",
+          "placeholder": "أدخل رمز الحامل",
+          "helpText": "استخدم رمز الحامل بدلاً من المستخدم/كلمة المرور"
+        },
+        "vendor": {
+          "label": "البائع",
+          "placeholder": "other",
+          "helpText": "نوع خادم WebDAV (nextcloud، owncloud، sharepoint، other)"
+        }
+      },
+      "tips": [
+        "استخدم HTTPS لضمان الاتصال الآمن",
+        "استخدم كلمات مرور التطبيق لـ Nextcloud/ownCloud",
+        "تحقق من نقطة نهاية WebDAV الصحيحة",
+        "قد تحتاج للنظر في إعدادات البروكسي"
+      ]
+    },
+    "ftp": {
+      "name": "FTP/FTPS",
+      "description": "خادم FTP أو FTPS",
+      "helpText": "دعم FTP للتوافق مع خوادم FTP القديمة. استخدم FTPS عندما يكون ممكناً.",
+      "fields": {
+        "host": {
+          "label": "مضيف FTP",
+          "placeholder": "ftp.example.com",
+          "helpText": "اسم مضيف خادم FTP أو عنوان IP"
+        },
+        "user": {
+          "label": "اسم المستخدم",
+          "placeholder": "أدخل اسم المستخدم",
+          "helpText": "اسم مستخدم FTP"
+        },
+        "pass": {
+          "label": "كلمة المرور",
+          "placeholder": "أدخل كلمة المرور",
+          "helpText": "كلمة مرور FTP"
+        },
+        "port": {
+          "label": "المنفذ",
+          "placeholder": "21",
+          "helpText": "منفذ FTP (الافتراضي: 21)"
+        },
+        "tls": {
+          "label": "استخدام FTPS",
+          "helpText": "استخدم FTPS الصريح مع TLS/SSL"
+        },
+        "explicit_tls": {
+          "label": "TLS الصريح",
+          "helpText": "استخدم FTPS الصريح عبر TLS بدلاً من الضمني"
+        }
+      },
+      "tips": [
+        "ينصح بشدة باستخدام FTPS للأمان",
+        "تأكد من فتح المنافذ المناسبة",
+        "ضع في الاعتبار مشاكل الوضع السلبي",
+        "فكر في الترقية إلى SFTP إذا كان ممكناً"
+      ]
+    },
+    "sftp": {
+      "name": "SFTP",
+      "description": "بروتوكول نقل الملفات عبر SSH",
+      "helpText": "نقل ملفات آمن عبر SSH. يدعم مصادقة كلمة المرور أو المفتاح.",
+      "fields": {
+        "host": {
+          "label": "المضيف",
+          "placeholder": "sftp.example.com",
+          "helpText": "اسم مضيف خادم SFTP أو عنوان IP"
+        },
+        "user": {
+          "label": "اسم المستخدم",
+          "placeholder": "أدخل اسم المستخدم",
+          "helpText": "اسم مستخدم SSH"
+        },
+        "port": {
+          "label": "المنفذ",
+          "placeholder": "22",
+          "helpText": "منفذ SSH (الافتراضي: 22)"
+        },
+        "pass": {
+          "label": "كلمة المرور",
+          "placeholder": "أدخل كلمة المرور",
+          "helpText": "كلمة مرور SSH (إذا لم تستخدم مصادقة بالمفتاح)"
+        },
+        "key_file": {
+          "label": "ملف المفتاح الخاص",
+          "placeholder": "~/.ssh/id_rsa",
+          "helpText": "مسار ملف مفتاح SSH الخاص"
+        },
+        "key_pem": {
+          "label": "محتوى المفتاح الخاص",
+          "placeholder": "-----BEGIN RSA PRIVATE KEY-----",
+          "helpText": "محتوى المفتاح الخاص الخام (بدلاً من الملف)"
+        },
+        "key_use_agent": {
+          "label": "استخدام وكيل SSH",
+          "helpText": "استخدم وكيل SSH للمصادقة"
+        },
+        "known_hosts_file": {
+          "label": "ملف known_hosts",
+          "placeholder": "~/.ssh/known_hosts",
+          "helpText": "مسار ملف SSH known_hosts"
+        }
+      },
+      "tips": [
+        "استخدم مصادقة بالمفتاح لتحسين الأمان",
+        "فعّل التحقق من مفتاح المضيف",
+        "المنافذ غير الافتراضية تحسن الأمان",
+        "قم بتدوير مفاتيح SSH بانتظام"
+      ]
+    },
+    "local": {
+      "name": "نظام الملفات المحلي",
+      "description": "التخزين المحلي",
+      "helpText": "حفظ النسخ الاحتياطية على نظام الملفات المحلي. مفيد للاختبار أو النسخ الاحتياطية المؤقتة.",
+      "fields": {
+        "nounc": {
+          "label": "تعطيل مسارات UNC",
+          "helpText": "تعطيل تحويل UNC لمسارات الملفات الطويلة على Windows"
+        }
+      },
+      "tips": [
+        "قم بإنشاء دليل مخصص للنسخ الاحتياطية",
+        "راقب مساحة القرص بانتظام",
+        "فكر في التخزين البعيد للنسخ الاحتياطية المهمة",
+        "قم بتعيين أذونات الملفات المناسبة"
+      ]
+    },
+    "mega": {
+      "name": "MEGA",
+      "description": "تخزين MEGA السحابي",
+      "helpText": "MEGA هي خدمة تخزين سحابية توفر التشفير من طرف إلى طرف.",
+      "fields": {
+        "user": {
+          "label": "البريد الإلكتروني",
+          "placeholder": "user@example.com",
+          "helpText": "عنوان البريد الإلكتروني لحساب MEGA"
+        },
+        "pass": {
+          "label": "كلمة المرور",
+          "placeholder": "أدخل كلمة المرور",
+          "helpText": "كلمة مرور حساب MEGA"
+        }
+      },
+      "tips": [
+        "MEGA يوفر التشفير من جانب العميل",
+        "الحسابات المجانية لديها قيود على النطاق الترددي",
+        "فعّل المصادقة الثنائية",
+        "كن حذراً مع الملفات الكبيرة"
+      ]
+    },
+    "pcloud": {
+      "name": "pCloud",
+      "description": "تخزين pCloud السحابي",
+      "helpText": "pCloud هي خدمة تخزين سحابية آمنة مع مراكز بيانات في أوروبا والولايات المتحدة.",
+      "fields": {
+        "client_id": {
+          "label": "معرف العميل",
+          "placeholder": "أدخل معرف العميل",
+          "helpText": "معرف عميل OAuth2"
+        },
+        "client_secret": {
+          "label": "سر العميل",
+          "placeholder": "أدخل سر العميل",
+          "helpText": "سر عميل OAuth2"
+        },
+        "hostname": {
+          "label": "اسم المضيف",
+          "placeholder": "api.pcloud.com",
+          "helpText": "eapi.pcloud.com للاتحاد الأوروبي، api.pcloud.com للولايات المتحدة"
+        }
+      },
+      "tips": [
+        "اختر مركز بيانات قريب منك",
+        "مجلد Crypto للتشفير بدون معرفة",
+        "خطط مدى الحياة متاحة",
+        "إصدار الملفات متاح"
+      ]
+    },
+    "putio": {
+      "name": "Put.io",
+      "description": "تخزين Put.io السحابي",
+      "helpText": "Put.io هي خدمة تخزين سحابية متخصصة في استضافة الوسائط المتعددة والبث.",
+      "fields": {
+        "token": {
+          "label": "رمز الوصول",
+          "placeholder": "أدخل رمز الوصول",
+          "helpText": "رمز الوصول من إعدادات Put.io"
+        }
+      },
+      "tips": [
+        "Put.io مثالي لمحتوى الوسائط المتعددة",
+        "كن على دراية بحدود معدل API",
+        "نظم هيكل المجلدات",
+        "احتفظ برمز الوصول بأمان"
+      ]
+    },
+    "premiumizeme": {
+      "name": "Premiumize.me",
+      "description": "تخزين Premiumize.me السحابي",
+      "helpText": "Premiumize.me هي خدمة تجمع بين خدمة التنزيل المميز والتخزين السحابي.",
+      "fields": {
+        "api_key": {
+          "label": "مفتاح API",
+          "placeholder": "أدخل مفتاح API",
+          "helpText": "مفتاح API من إعدادات حساب Premiumize.me"
+        }
+      },
+      "tips": [
+        "سعة التخزين تختلف حسب الخطة",
+        "API يوفر إمكانيات بحث قوية",
+        "نظم المجلدات بعناية",
+        "احتفظ بمفتاح API بأمان"
+      ]
+    },
+    "uptobox": {
+      "name": "Uptobox",
+      "description": "استضافة ملفات Uptobox",
+      "helpText": "Uptobox هي خدمة استضافة ومشاركة ملفات أوروبية.",
+      "fields": {
+        "api_key": {
+          "label": "مفتاح API",
+          "placeholder": "أدخل مفتاح API",
+          "helpText": "مفتاح API من إعدادات حساب Uptobox"
+        }
+      },
+      "tips": [
+        "وصول API متاح للحسابات المميزة",
+        "كن على دراية بمدة الاحتفاظ بالملفات",
+        "قد تنطبق حدود سرعة التنزيل",
+        "تحقق من حدود معدل API"
+      ]
+    },
+    "yandex": {
+      "name": "Yandex Disk",
+      "description": "تخزين Yandex Disk السحابي",
+      "helpText": "Yandex Disk هي خدمة تخزين سحابية من شركة التكنولوجيا الروسية الكبرى Yandex.",
+      "fields": {
+        "client_id": {
+          "label": "معرف العميل",
+          "placeholder": "أدخل معرف العميل",
+          "helpText": "معرف تطبيق Yandex OAuth"
+        },
+        "client_secret": {
+          "label": "سر العميل",
+          "placeholder": "أدخل سر العميل",
+          "helpText": "سر تطبيق Yandex OAuth"
+        }
+      },
+      "tips": [
+        "الحساب المجاني يوفر 10GB من التخزين",
+        "تحرير مستندات Office عبر الإنترنت متاح",
+        "النسخ الاحتياطي التلقائي للملفات متاح",
+        "ينصح بتفعيل المصادقة الثنائية"
+      ]
+    },
+    "zoho": {
+      "name": "Zoho WorkDrive",
+      "description": "تخزين Zoho WorkDrive للأعمال",
+      "helpText": "Zoho WorkDrive هي منصة تخزين سحابية آمنة وتعاون للفرق.",
+      "fields": {
+        "client_id": {
+          "label": "معرف العميل",
+          "placeholder": "أدخل معرف العميل",
+          "helpText": "معرف العميل من Zoho API Console"
+        },
+        "client_secret": {
+          "label": "سر العميل",
+          "placeholder": "أدخل سر العميل",
+          "helpText": "سر العميل من Zoho API Console"
+        },
+        "region": {
+          "label": "المنطقة",
+          "placeholder": "com",
+          "helpText": "منطقة Zoho (com، eu، in، com.au إلخ)"
+        }
+      },
+      "tips": [
+        "WorkDrive مصمم للتعاون في الأعمال",
+        "إصدار متقدم للملفات والتعليقات",
+        "يتكامل مع تطبيقات Zoho الأخرى",
+        "الامتثال لتخزين البيانات في كل منطقة"
+      ]
+    },
+    "custom": {
+      "name": "S3 متوافق مخصص",
+      "description": "تخزين S3 متوافق مخصص",
+      "helpText": "تكوين عام لأي خدمة تخزين متوافقة مع S3.",
+      "fields": {
+        "endpoint": {
+          "label": "عنوان URL لنقطة النهاية",
+          "placeholder": "https://s3.example.com",
+          "helpText": "عنوان URL الكامل لخدمة S3 المتوافقة"
+        },
+        "access_key_id": {
+          "label": "معرف مفتاح الوصول",
+          "placeholder": "أدخل معرف مفتاح الوصول",
+          "helpText": "معرف مفتاح الوصول المتوافق مع S3"
+        },
+        "secret_access_key": {
+          "label": "مفتاح الوصول السري",
+          "placeholder": "أدخل مفتاح الوصول السري",
+          "helpText": "مفتاح الوصول السري المتوافق مع S3"
+        },
+        "region": {
+          "label": "المنطقة",
+          "placeholder": "us-east-1",
+          "helpText": "منطقة التخزين (اختياري)"
+        },
+        "bucket": {
+          "label": "الدلو",
+          "placeholder": "my-bucket",
+          "helpText": "اسم دلو التخزين"
+        },
+        "path_style": {
+          "label": "استخدام URL بنمط المسار",
+          "helpText": "استخدم عنونة نمط المسار في URL (مطلوب لـ MinIO وغيرها)"
+        }
+      },
+      "tips": [
+        "احصل على عنوان URL لنقطة النهاية الصحيح من مزودك",
+        "بعض الخدمات تتطلب عنونة نمط المسار",
+        "تأكد من صحة اسم الدلو",
+        "كن على دراية بمشاكل شهادة SSL/TLS"
+      ]
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "title": "Paramètres",
+  "company": {
+    "title": "Paramètres de l'entreprise",
+    "description": "Configurez les paramètres du coffre-fort de votre entreprise pour gérer les configurations à l'échelle de l'organisation.",
+    "configureVault": "Configurer le coffre-fort",
+    "modalTitle": "Configurer le coffre-fort de l'entreprise"
+  },
+  "personal": {
+    "title": "Paramètres personnels",
+    "description": "Configurez vos paramètres personnels du coffre-fort pour personnaliser votre expérience.",
+    "configureVault": "Configurer le coffre-fort",
+    "modalTitle": "Configurer le coffre-fort utilisateur"
+  }
+}

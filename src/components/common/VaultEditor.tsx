@@ -509,6 +509,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         form.setFieldValue('ssh_password', undefined)
         formData.ssh_password = undefined
       }
+      
+      // No need for setTimeout - the shouldUpdate prop in renderField handles re-validation automatically
     }
     
     // Handle provider changes for STORAGE entity
@@ -548,8 +550,14 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     onChange?.(completeData, hasChanges)
 
     // Then validate
+    // If ssh_key_configured just changed, exclude ssh_password from validation
+    // to allow shouldUpdate to re-render the field with updated rules first
+    const fieldsToValidate = changedValues?.ssh_key_configured !== undefined && (entityType === 'MACHINE' || entityType === 'BRIDGE')
+      ? Object.keys(formData).filter(key => key !== 'ssh_password')
+      : undefined // undefined means validate all fields
+    
     form
-      .validateFields()
+      .validateFields(fieldsToValidate)
       .then(() => {
         onValidate?.(true)
       })
@@ -727,10 +735,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   }
 
   const renderField = (fieldName: string, fieldDef: FieldDefinition, required: boolean, isProviderField: boolean = false) => {
-    // Special handling for ssh_password field - hide if SSH key is configured
-    if ((entityType === 'MACHINE' || entityType === 'BRIDGE') && fieldName === 'ssh_password' && sshKeyConfigured) {
-      return null
-    }
+    // Note: We no longer hide ssh_password field based on state alone
+    // It will be conditionally rendered using Form.Item dependencies
     
     // Merge with common types if applicable
     const field = getFieldDefinition(fieldDef)
@@ -754,21 +760,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       fieldPlaceholder = field.example
     }
     
-    // Special validation for ssh_password - required only if SSH key not configured
-    let effectiveRequired = required
-    if ((entityType === 'MACHINE' || entityType === 'BRIDGE') && fieldName === 'ssh_password') {
-      effectiveRequired = !sshKeyConfigured && required
-    }
-    
-    const rules = buildValidationRules(field, effectiveRequired, fieldLabel)
-    
-    // Add special ssh_password message if needed
-    if ((entityType === 'MACHINE' || entityType === 'BRIDGE') && fieldName === 'ssh_password' && !sshKeyConfigured && required) {
-      rules[0] = { 
-        required: true, 
-        message: t('vaultEditor.sshPasswordRequiredWhenNoKey', { defaultValue: 'SSH password is required when SSH key is not configured' }) 
-      }
-    }
+    // Build validation rules (ssh_password field handles its own dynamic rules)
+    const rules = buildValidationRules(field, required, fieldLabel)
 
     const commonProps = {
       placeholder: fieldPlaceholder,
@@ -933,6 +926,57 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           handleFormChange({ [fieldName]: values[fieldName] })
         }, 0)
       }
+    }
+
+    // Special handling for ssh_password field with dynamic validation
+    if ((entityType === 'MACHINE' || entityType === 'BRIDGE') && fieldName === 'ssh_password') {
+      return (
+        <Form.Item
+          noStyle
+          shouldUpdate={(prevValues, currentValues) => prevValues.ssh_key_configured !== currentValues.ssh_key_configured}
+        >
+          {({ getFieldValue }) => {
+            const sshKeyConfigured = getFieldValue('ssh_key_configured')
+            
+            // Hide the field if SSH key is configured
+            if (sshKeyConfigured) {
+              return null
+            }
+            
+            // Dynamic validation rules based on ssh_key_configured
+            const dynamicRules = required && !sshKeyConfigured ? [
+              { 
+                required: true, 
+                message: t('vaultEditor.sshPasswordRequiredWhenNoKey', { defaultValue: 'SSH password is required when SSH key is not configured' }) 
+              },
+              ...rules.slice(1) // Include any other rules except the first required rule
+            ] : rules.filter(rule => !rule.required) // Remove required rule if not needed
+            
+            return (
+              <Form.Item
+                name={fieldName}
+                label={
+                  <Space>
+                    {fieldLabel}
+                    {fieldDescription && (
+                      <Tooltip title={fieldDescription}>
+                        <InfoCircleOutlined />
+                      </Tooltip>
+                    )}
+                  </Space>
+                }
+                rules={dynamicRules}
+                initialValue={field.default}
+              >
+                <Input
+                  {...commonProps}
+                  type="password"
+                />
+              </Form.Item>
+            )
+          }}
+        </Form.Item>
+      )
     }
 
     // Default to text input

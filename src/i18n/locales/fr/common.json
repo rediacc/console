@@ -1,0 +1,376 @@
+{
+  "navigation": {
+    "dashboard": "Tableau de bord",
+    "architecture": "Architecture",
+    "resources": "Ressources",
+    "queue": "File d'attente",
+    "system": "Système",
+    "audit": "Audit",
+    "logout": "Déconnexion"
+  },
+  "actions": {
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "search": "Rechercher",
+    "reset": "Réinitialiser",
+    "cancel": "Annuler",
+    "create": "Créer",
+    "save": "Enregistrer",
+    "retry": "Réessayer",
+    "refresh": "Actualiser",
+    "fullscreen": "Plein écran",
+    "exitFullscreen": "Quitter le plein écran",
+    "addToQueue": "Ajouter à la file d'attente",
+    "viewTrace": "Voir la trace",
+    "close": "Fermer"
+  },
+  "close": "Fermer",
+  "copiedToClipboard": "Copié dans le presse-papiers",
+  "copyFailed": "Échec de la copie dans le presse-papiers",
+  "export": "Exporter",
+  "exportCSV": "Exporter en CSV",
+  "exportJSON": "Exporter en JSON",
+  "refresh": "Actualiser",
+  "today": "Aujourd'hui",
+  "yesterday": "Hier",
+  "last7Days": "7 derniers jours",
+  "last30Days": "30 derniers jours",
+  "thisMonth": "Ce mois-ci",
+  "lastMonth": "Le mois dernier",
+  "messages": {
+    "success": "Succès",
+    "required": "Ce champ est obligatoire",
+    "invalidEmail": "Adresse courriel invalide",
+    "loading": "Chargement...",
+    "error": "Erreur"
+  },
+  "table": {
+    "actions": "Actions",
+    "showingRecords": "Affichage des enregistrements {{start}}-{{end}} sur {{total}}"
+  },
+  "status": {
+    "label": "Statut",
+    "initializing": "Initialisation...",
+    "waitingForExecution": "En attente d'exécution",
+    "processing": "Traitement",
+    "running": "En cours"
+  },
+  "language": {
+    "select": "Sélectionner la langue",
+    "en": "Anglais",
+    "es": "Espagnol",
+    "fr": "Français",
+    "de": "Allemand",
+    "zh": "Chinois",
+    "ja": "Japonais",
+    "ar": "Arabe",
+    "tr": "Turc"
+  },
+  "theme": {
+    "light": "Clair",
+    "dark": "Sombre"
+  },
+  "uiMode": {
+    "simple": "Simple",
+    "expert": "Expert",
+    "switching": "Passage en mode {{mode}}..."
+  },
+  "general": {
+    "versionFormat": "v{{version}}",
+    "loading": "Chargement...",
+    "showingRecords": "Affichage des enregistrements {{start}}-{{end}} sur {{total}}",
+    "defaultsApplied": "Valeurs par défaut appliquées",
+    "important": "Important",
+    "cancel": "Annuler"
+  },
+  "yes": "Oui",
+  "no": "Non",
+  "dashboard": {
+    "availablePlans": "Plans disponibles",
+    "upgradeOptions": "Options de mise à niveau",
+    "currentPlan": "Plan actuel",
+    "comparePlansDescription": "Comparer les fonctionnalités et les prix des différents niveaux d'abonnement",
+    "elitePlanDescription": "Vous êtes sur notre plan de niveau le plus élevé avec toutes les fonctionnalités débloquées"
+  },
+  "vaultEditor": {
+    "vaultConfiguration": "Configuration du coffre-fort",
+    "vaultVersion": "Version du coffre-fort :",
+    "versionAutoIncrement": "La version s'incrémentera automatiquement lors de l'enregistrement",
+    "importJson": "Importer JSON",
+    "exportJson": "Exporter JSON",
+    "unsavedChanges": "Modifications non enregistrées",
+    "versionWillIncrement": "La version passera à {{version}}",
+    "saveVaultConfiguration": "Enregistrer la configuration du coffre-fort",
+    "validationErrors": "Erreurs de validation :",
+    "pleaseFixErrors": "Veuillez corriger les erreurs de validation avant d'enregistrer",
+    "noChangesToSave": "Aucune modification à enregistrer",
+    "unknownEntityType": "Type d'entité inconnu",
+    "unknownEntityDescription": "Le type d'entité \"{{type}}\" n'est pas défini dans les définitions du coffre-fort.",
+    "requiredFields": "Champs obligatoires",
+    "optionalFields": "Champs facultatifs",
+    "extraFields": "Champs supplémentaires (Non dans le schéma)",
+    "extraFieldsTooltip": "Ces champs ont été importés mais ne sont pas définis dans le schéma",
+    "extraFieldsWarning": "Avertissement",
+    "extraFieldsWarningDescription": "Ces champs ne sont pas définis dans le schéma et seront stockés sous 'extraFields' dans la structure JSON.",
+    "rawJsonEditor": "Éditeur JSON brut (Mode Expert)",
+    "rawJsonTooltip": "Édition JSON directe - À utiliser avec prudence !",
+    "expertModeOnly": "Mode Expert uniquement",
+    "expertModeDescription": "L'édition directe du JSON peut perturber le fonctionnement du système si elle n'est pas effectuée correctement. Ne modifiez que si vous comprenez le schéma du coffre-fort et les implications.",
+    "jsonError": "Erreur JSON",
+    "formatJson": "Formater JSON",
+    "resetToFormValues": "Réinitialiser aux valeurs du formulaire",
+    "isRequired": "{{field}} est obligatoire",
+    "invalidFormat": "Format invalide. {{description}}",
+    "minLength": "La longueur minimale est {{length}}",
+    "maxLength": "La longueur maximale est {{length}}",
+    "minValue": "La valeur minimale est {{value}}",
+    "maxValue": "La valeur maximale est {{value}}",
+    "mustBeValidJson": "Doit être un JSON valide",
+    "mustBeArray": "Doit être un tableau",
+    "mustBeValidJsonArray": "Doit être un tableau JSON valide",
+    "enterJsonObject": "Entrer un objet JSON",
+    "enterJsonArray": "Entrer un tableau JSON",
+    "portPlaceholder": "Numéro de port (1-65535)",
+    "example": "Exemple :",
+    "advanced": "Avancé",
+    "failedToSerialize": "Échec de la sérialisation des données en JSON",
+    "invalidJsonFormat": "Format JSON invalide",
+    "failedToParseJson": "Échec de l'analyse JSON :",
+    "fieldsMovedToExtra": "{{count}} champ(s) déplacé(s) vers extraFields : {{fields}}",
+    "fieldsMovedFromExtra": "{{count}} champ(s) restauré(s) depuis extraFields : {{fields}}",
+    "sshPasswordRequiredWhenNoKey": "Le mot de passe SSH est requis pour la configuration initiale de la clé",
+    "providerFields": "Configuration {{provider}}",
+    "providerRequiredFields": "Champs requis pour {{provider}}",
+    "testConnection": {
+      "button": "Tester la connexion",
+      "missingFields": "Veuillez remplir l'adresse IP, le nom d'utilisateur et le mot de passe avant de tester",
+      "initiated": "Le test de connexion SSH a été lancé. Veuillez vérifier la file d'attente pour les résultats.",
+      "success": "Connexion SSH réussie",
+      "failed": "Échec de la connexion SSH",
+      "testing": "Test de connexion..."
+    },
+    "fields": {
+      "MACHINE": {
+        "description": "Configuration de la machine pour l'accès SSH et le stockage",
+        "ip": {
+          "label": "Adresse IP",
+          "description": "Adresse IP de la machine"
+        },
+        "user": {
+          "label": "Nom d'utilisateur",
+          "description": "Nom d'utilisateur SSH pour la connexion"
+        },
+        "datastore": {
+          "label": "Chemin du magasin de données",
+          "description": "Chemin vers le répertoire du magasin de données sur la machine"
+        },
+        "port": {
+          "label": "Port SSH",
+          "description": "Numéro de port SSH"
+        },
+        "host_entry": {
+          "label": "Entrée d'hôte",
+          "description": "Entrée d'hôte connu SSH pour la vérification de sécurité"
+        },
+        "ssh_key_configured": {
+          "label": "Clé SSH déjà configurée",
+          "description": "Cochez cette case si la clé publique SSH est déjà installée sur la machine cible"
+        },
+        "ssh_password": {
+          "label": "Mot de passe SSH (Temporaire)",
+          "description": "Mot de passe temporaire pour la configuration initiale de la clé SSH uniquement. Laissez vide si la clé SSH est déjà configurée. Ce mot de passe est utilisé une fois pour copier la clé publique et doit être supprimé ensuite pour des raisons de sécurité."
+        }
+      },
+      "REPOSITORY": {
+        "description": "Configuration du référentiel pour le stockage de sauvegarde",
+        "name": {
+          "label": "Nom du référentiel",
+          "description": "Identifiant du nom du référentiel"
+        },
+        "credential": {
+          "label": "Mot de passe d'accès",
+          "description": "Mot de passe d'accès au référentiel (32 caractères, alphanumériques + caractères spéciaux)"
+        },
+        "encryption": {
+          "label": "Activer le chiffrement",
+          "description": "Activer le chiffrement pour le référentiel"
+        },
+        "retention": {
+          "label": "Politique de rétention",
+          "description": "Paramètres de politique de rétention"
+        },
+        "schedule": {
+          "label": "Planification de sauvegarde",
+          "description": "Expression cron pour les sauvegardes automatisées"
+        }
+      },
+      "STORAGE": {
+        "entityDescription": "Configuration du stockage pour les destinations de sauvegarde",
+        "name": {
+          "label": "Nom du stockage",
+          "description": "Nom unique pour cette configuration de stockage"
+        },
+        "provider": {
+          "label": "Fournisseur de stockage",
+          "description": "Sélectionnez le type de fournisseur de stockage"
+        },
+        "description": {
+          "label": "Description",
+          "description": "Description facultative de cette configuration de stockage"
+        },
+        "noVersioning": {
+          "label": "Désactiver la gestion des versions",
+          "description": "Désactiver le contrôle de version pour ce stockage"
+        },
+        "parameters": {
+          "label": "Paramètres supplémentaires",
+          "description": "Paramètres rclone supplémentaires pour la configuration avancée"
+        }
+      },
+      "SCHEDULE": {
+        "description": "Configuration de planification pour les tâches automatisées",
+        "cron": {
+          "label": "Expression Cron",
+          "description": "Expression cron définissant la planification"
+        },
+        "timezone": {
+          "label": "Fuseau horaire",
+          "description": "Fuseau horaire pour l'exécution de la planification"
+        },
+        "enabled": {
+          "label": "Activer la planification",
+          "description": "Indique si cette planification est active"
+        }
+      },
+      "BRIDGE": {
+        "description": "Configuration du pont pour la connectivité réseau",
+        "ip": {
+          "label": "Adresse IP",
+          "description": "Adresse IP du serveur pont"
+        }
+      },
+      "REGION": {
+        "description": "Configuration de la région pour la distribution géographique",
+        "name": {
+          "label": "Nom de la région",
+          "description": "Nom de la région géographique"
+        },
+        "code": {
+          "label": "Code de région",
+          "description": "Code court pour la région"
+        }
+      },
+      "TEAM": {
+        "description": "Configuration de l'équipe pour la structure organisationnelle",
+        "name": {
+          "label": "Nom de l'équipe",
+          "description": "Nom de l'équipe"
+        },
+        "teamDescription": {
+          "label": "Description de l'équipe",
+          "description": "Description de l'objectif et des responsabilités de l'équipe"
+        },
+        "SSH_PRIVATE_KEY": {
+          "label": "Clé privée SSH",
+          "description": "Clé privée SSH encodée en Base64 pour les opérations de l'équipe"
+        },
+        "SSH_PUBLIC_KEY": {
+          "label": "Clé publique SSH",
+          "description": "Clé publique SSH pour les opérations de l'équipe"
+        }
+      },
+      "USER": {
+        "description": "Configuration utilisateur pour les paramètres personnels",
+        "SSH_PRIVATE_KEY": {
+          "label": "Clé privée SSH",
+          "description": "Clé privée SSH encodée en Base64 pour les opérations utilisateur"
+        },
+        "SSH_PUBLIC_KEY": {
+          "label": "Clé publique SSH",
+          "description": "Clé publique SSH pour les opérations utilisateur"
+        }
+      },
+      "COMPANY": {
+        "description": "Configuration de l'entreprise pour les paramètres à l'échelle de l'organisation",
+        "UNIVERSAL_USER_ID": {
+          "label": "ID utilisateur universel",
+          "description": "ID utilisateur universel pour les opérations système"
+        },
+        "UNIVERSAL_USER_NAME": {
+          "label": "Nom d'utilisateur universel",
+          "description": "Nom d'utilisateur universel pour les opérations système"
+        },
+        "DOCKER_JSON_CONF": {
+          "label": "Configuration Docker",
+          "description": "Configuration d'authentification du registre Docker"
+        },
+        "SSH_PRIVATE_KEY": {
+          "label": "Clé privée SSH",
+          "description": "Clé privée SSH encodée en Base64 pour les opérations de l'entreprise"
+        },
+        "SSH_PUBLIC_KEY": {
+          "label": "Clé publique SSH",
+          "description": "Clé publique SSH pour les opérations de l'entreprise"
+        },
+        "LOG_FILE": {
+          "label": "Chemin du fichier journal",
+          "description": "Chemin vers le fichier journal système"
+        },
+        "PLUGINS": {
+          "label": "Plugins",
+          "description": "Configurations de plugins avec images de conteneurs et statut d'activation"
+        }
+      }
+    }
+  },
+  "fieldGenerator": {
+    "title": {
+      "ssh_keys": "Générer une paire de clés SSH",
+      "repository_credential": "Générer des identifiants de référentiel"
+    },
+    "tooltip": "Générer une valeur",
+    "generate": "Générer",
+    "regenerate": "Régénérer",
+    "apply": "Appliquer",
+    "cancel": "Annuler",
+    "copy": "Copier",
+    "copied": "Copié !",
+    "keyType": "Type de clé",
+    "keySize": "Taille de clé",
+    "moreSecure": "plus sécurisé",
+    "comingSoon": "à venir",
+    "generationSuccess": "Généré avec succès",
+    "generationError": "Échec de la génération. Veuillez réessayer.",
+    "applied": "Valeurs appliquées avec succès",
+    "copyError": "Échec de la copie dans le presse-papiers"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "Aucune notification",
+    "markAllRead": "Marquer tout comme lu",
+    "clearAll": "Tout effacer"
+  },
+  "nestedObjectEditor": {
+    "Image": "Image",
+    "Active": "Actif",
+    "Add": "Ajouter",
+    "Delete this entry?": "Supprimer cette entrée ?",
+    "Yes": "Oui",
+    "No": "Non",
+    "Object": "Objet",
+    "Array": "Tableau",
+    "True": "Vrai",
+    "False": "Faux",
+    "Enter key name": "Entrer le nom de la clé",
+    "Show JSON": "Afficher JSON",
+    "Hide JSON": "Masquer JSON",
+    "No entries": "Aucune entrée",
+    "Raw JSON Editor": "Éditeur JSON brut",
+    "JSON Error": "Erreur JSON",
+    "Uniform Structure": "Structure uniforme",
+    "Fields": "Champs",
+    "Container Images Detected": "Images de conteneurs détectées",
+    "Plugin Configuration Detected": "Configuration de plugin détectée",
+    "Uniform Structure Detected": "Structure uniforme détectée"
+  }
+}
