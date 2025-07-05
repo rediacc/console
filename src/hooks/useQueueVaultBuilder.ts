@@ -16,6 +16,8 @@ export function useQueueVaultBuilder() {
       repositoryVault?: any
       bridgeVault?: any
       storageVault?: any
+      destinationMachineVault?: any
+      destinationStorageVault?: any
       allRepositoryCredentials?: Record<string, string>
     }
   ): Promise<string> => {
@@ -36,6 +38,7 @@ export function useQueueVaultBuilder() {
         throw new Error('Company vault not found')
       }
     } catch (error) {
+      console.error('Failed to fetch company vault:', error)
       throw new Error('Unable to fetch company vault configuration. Please ensure company vault is properly configured.')
     }
     // Parse vault content (it's stored as JSON string in the API response)
@@ -55,7 +58,9 @@ export function useQueueVaultBuilder() {
       repositoryVault: context.repositoryVault ? parseVault(context.repositoryVault) : {},
       bridgeVault: context.bridgeVault ? parseVault(context.bridgeVault) : {},
       storageVault: context.storageVault ? parseVault(context.storageVault) : {},
-      companyVault: companyVaultData ? parseVault(companyVaultData.vault) : {}
+      companyVault: companyVaultData ? parseVault(companyVaultData.vault) : {},
+      destinationMachineVault: context.destinationMachineVault ? parseVault(context.destinationMachineVault) : {},
+      destinationStorageVault: context.destinationStorageVault ? parseVault(context.destinationStorageVault) : {}
     }
     
     // Build complete context with vault data

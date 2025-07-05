@@ -82,6 +82,16 @@ import arSettings from './locales/ar/settings.json';
 import arStorageProviders from './locales/ar/storageProviders.json';
 import arFunctions from './locales/ar/functions.json';
 
+import ruAuth from './locales/ru/auth.json';
+import ruCommon from './locales/ru/common.json';
+import ruResources from './locales/ru/resources.json';
+import ruMachines from './locales/ru/machines.json';
+import ruSystem from './locales/ru/system.json';
+import ruQueue from './locales/ru/queue.json';
+import ruSettings from './locales/ru/settings.json';
+import ruStorageProviders from './locales/ru/storageProviders.json';
+import ruFunctions from './locales/ru/functions.json';
+
 export const defaultNS = 'common';
 export const resources = {
   en: {
@@ -171,6 +181,17 @@ export const resources = {
     settings: arSettings,
     storageProviders: arStorageProviders,
     functions: arFunctions,
+  },
+  ru: {
+    common: ruCommon,
+    auth: ruAuth,
+    resources: ruResources,
+    machines: ruMachines,
+    system: ruSystem,
+    queue: ruQueue,
+    settings: ruSettings,
+    storageProviders: ruStorageProviders,
+    functions: ruFunctions,
   },
 } as const;
 

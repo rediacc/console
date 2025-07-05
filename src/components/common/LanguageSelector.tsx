@@ -20,6 +20,7 @@ const languages: Language[] = [
   { code: 'ja', name: '日本語', flag: '🇯🇵' },
   { code: 'ar', name: 'العربية', flag: '🇸🇦' },
   { code: 'tr', name: 'Türkçe', flag: '🇹🇷' },
+  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
 ];
 
 const LanguageSelector: React.FC = () => {

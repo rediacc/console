@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Empty, Card, Row, Col, Progress } from 'antd'
-import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, PlusOutlined, MinusOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined } from '@ant-design/icons'
+import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, CloudDownloadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, PlusOutlined, MinusOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { type QueueFunction } from '@/api/queries/queue'
 import { useQueueItemTrace } from '@/api/queries/queue'
@@ -9,6 +9,8 @@ import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import { Machine } from '@/types'
 import { useTeams } from '@/api/queries/teams'
 import { useRepositories, useCreateRepository, useDeleteRepository } from '@/api/queries/repositories'
+import { useMachines } from '@/api/queries/machines'
+import { useStorage } from '@/api/queries/storage'
 import { queueMonitoringService } from '@/services/queueMonitoringService'
 import queueManagerService from '@/services/queueManagerService'
 import type { ColumnsType } from 'antd/es/table'
@@ -111,6 +113,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const { buildQueueVault } = useQueueVaultBuilder()
   const { data: teams } = useTeams()
   const { data: teamRepositories = [], isLoading: repositoriesLoading, refetch: refetchRepositories } = useRepositories(machine.teamName)
+  const { data: machinesData = [] } = useMachines(machine.teamName)
+  const { data: storageData = [] } = useStorage(machine.teamName)
   const createRepositoryMutation = useCreateRepository()
   const deleteRepositoryMutation = useDeleteRepository()
   
@@ -722,6 +726,28 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       let finalParams = { ...functionData.params }
       let repositoryGuid = repositoryData.repositoryGuid
       let repositoryVault = grandRepositoryVault
+      let destinationMachineVault = undefined
+      let destinationStorageVault = undefined
+      
+      // For push to machine, get destination machine vault data
+      if (functionData.function.name === 'push' && 
+          functionData.params.destinationType === 'machine' && 
+          functionData.params.to) {
+        const destinationMachine = machinesData?.find(m => m.machineName === functionData.params.to)
+        if (destinationMachine && destinationMachine.vaultContent) {
+          destinationMachineVault = destinationMachine.vaultContent
+        }
+      }
+      
+      // For push to storage, get destination storage vault data
+      if (functionData.function.name === 'push' && 
+          functionData.params.destinationType === 'storage' && 
+          functionData.params.to) {
+        const destinationStorage = storageData?.find(s => s.storageName === functionData.params.to)
+        if (destinationStorage && destinationStorage.vaultContent) {
+          destinationStorageVault = destinationStorage.vaultContent
+        }
+      }
       
       // Special handling for push function
       if (functionData.function.name === 'push' && functionData.params.dest) {
@@ -786,7 +812,9 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         teamVault: team?.vaultContent || '{}',
         machineVault: machine.vaultContent || '{}',
         repositoryGuid,
-        repositoryVault
+        repositoryVault,
+        destinationMachineVault,
+        destinationStorageVault
       })
       
       const response = await managedQueueMutation.mutateAsync({
@@ -808,8 +836,9 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         showMessage('info', t('resources:repositories.highestPriorityQueued'))
       }
     } catch (error) {
-      // Error is handled by the mutation
-      showMessage('error', t('resources:repositories.failedToCreateQueueItem'))
+      // Show more specific error message if available
+      const errorMessage = error instanceof Error ? error.message : t('resources:repositories.failedToCreateQueueItem')
+      showMessage('error', errorMessage)
     }
   }
 
@@ -1308,6 +1337,14 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           label: t('functions:functions.push.name'),
           icon: <CloudUploadOutlined />,
           onClick: () => handleRunFunction(record, 'push')
+        })
+        
+        // Pull - always available
+        menuItems.push({
+          key: 'pull',
+          label: t('functions:functions.pull.name'),
+          icon: <CloudDownloadOutlined />,
+          onClick: () => handleRunFunction(record, 'pull')
         })
         
         // Always add divider and advanced option at the end
