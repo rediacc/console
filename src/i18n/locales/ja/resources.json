@@ -138,7 +138,8 @@
     "diskSpace": "ディスク容量",
     "datastore": "データストア",
     "available": "利用可能",
-    "used": "使用済み"
+    "used": "使用済み",
+    "refreshNotAvailable": "更新不可 - データはマシンステータスからキャッシュされています"
   },
   "storage": {
     "storageName": "ストレージ名",

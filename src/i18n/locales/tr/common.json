@@ -22,7 +22,8 @@
     "exitFullscreen": "Tam Ekrandan Çık",
     "addToQueue": "Kuyruğa Ekle",
     "viewTrace": "İzlemeyi Görüntüle",
-    "close": "Kapat"
+    "close": "Kapat",
+    "back": "Geri"
   },
   "close": "Kapat",
   "copiedToClipboard": "Panoya kopyalandı",

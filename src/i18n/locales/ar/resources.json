@@ -138,7 +138,8 @@
     "diskSpace": "مساحة القرص",
     "datastore": "مخزن البيانات",
     "available": "متاح",
-    "used": "مستخدم"
+    "used": "مستخدم",
+    "refreshNotAvailable": "التحديث غير متاح - البيانات مخزنة من حالة الجهاز"
   },
   "storage": {
     "storageName": "اسم التخزين",

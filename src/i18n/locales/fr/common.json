@@ -22,7 +22,8 @@
     "exitFullscreen": "Quitter le plein écran",
     "addToQueue": "Ajouter à la file d'attente",
     "viewTrace": "Voir la trace",
-    "close": "Fermer"
+    "close": "Fermer",
+    "back": "Retour"
   },
   "close": "Fermer",
   "copiedToClipboard": "Copié dans le presse-papiers",

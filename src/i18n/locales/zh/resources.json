@@ -138,7 +138,8 @@
     "diskSpace": "磁盘空间",
     "datastore": "数据存储",
     "available": "可用",
-    "used": "已用"
+    "used": "已用",
+    "refreshNotAvailable": "刷新不可用 - 数据缓存自机器状态"
   },
   "storage": {
     "storageName": "存储名称",

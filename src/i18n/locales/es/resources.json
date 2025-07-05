@@ -138,7 +138,8 @@
     "diskSpace": "Espacio en Disco",
     "datastore": "Almacén de Datos",
     "available": "Disponible",
-    "used": "Usado"
+    "used": "Usado",
+    "refreshNotAvailable": "Actualización no disponible - los datos están en caché del estado de la máquina"
   },
   "storage": {
     "storageName": "Nombre del Almacenamiento",

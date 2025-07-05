@@ -22,7 +22,8 @@
     "exitFullscreen": "Exit Fullscreen",
     "addToQueue": "Add to Queue",
     "viewTrace": "View Trace",
-    "close": "Close"
+    "close": "Close",
+    "back": "Back"
   },
   "close": "Close",
   "copiedToClipboard": "Copied to clipboard",

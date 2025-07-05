@@ -11,7 +11,8 @@ import {
   FunctionOutlined,
   WifiOutlined,
   HistoryOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  ImportOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
@@ -20,6 +21,7 @@ import UnifiedResourceModal, { ResourceType } from '@/components/common/UnifiedR
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import ConnectivityTestModal from '@/components/common/ConnectivityTestModal'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
+import RcloneImportWizard from '@/components/resources/RcloneImportWizard'
 import { showMessage } from '@/utils/messages'
 
 // Team queries
@@ -178,21 +180,25 @@ const ResourcesPage: React.FC = () => {
               teamName: resource.teamName,
               machineName: resourceName,
             } as any)
+            refetchMachines()
           } else if (resourceType === 'repository') {
             await mutation.mutateAsync({
               teamName: resource.teamName,
               repositoryName: resourceName,
             } as any)
+            refetchRepositories()
           } else if (resourceType === 'storage') {
             await mutation.mutateAsync({
               teamName: resource.teamName,
               storageName: resourceName,
             } as any)
+            refetchStorage()
           } else if (resourceType === 'schedule') {
             await mutation.mutateAsync({
               teamName: resource.teamName,
               scheduleName: resourceName,
             } as any)
+            refetchSchedules()
           }
           showMessage('success', t(getTranslationKey('deleteSuccess')))
         } catch (error) {
@@ -268,6 +274,9 @@ const ResourcesPage: React.FC = () => {
     entityIdentifier: string | null
     entityName?: string
   }>({ open: false, entityType: null, entityIdentifier: null })
+  
+  // Rclone import wizard state
+  const [rcloneImportWizardOpen, setRcloneImportWizardOpen] = useState(false)
   
   // Dynamic page sizes for tables
   const repositoryPageSize = useDynamicPageSize(repositoryTableRef, {
@@ -847,16 +856,7 @@ const ResourcesPage: React.FC = () => {
             danger
             size="small"
             icon={<DeleteOutlined />}
-            onClick={() => {
-              Modal.confirm({
-                title: t('repositories.deleteRepository'),
-                content: t('repositories.confirmDelete', { repositoryName: record.repositoryName }),
-                okText: t('general.yes'),
-                okType: 'danger',
-                cancelText: t('general.no'),
-                onOk: () => handleDeleteRepository(record),
-              });
-            }}
+            onClick={() => handleDeleteRepository(record)}
           >
             {t('common:actions.delete')}
           </Button>
@@ -1336,6 +1336,14 @@ const ResourcesPage: React.FC = () => {
                       >
                         {getCreateButtonText()}
                       </Button>
+                      {teamResourcesTab === 'storage' && (
+                        <Button
+                          icon={<ImportOutlined />}
+                          onClick={() => setRcloneImportWizardOpen(true)}
+                        >
+                          {t('resources:storage.import.button')}
+                        </Button>
+                      )}
                       {teamResourcesTab === 'machines' && (
                         <Button 
                           icon={<WifiOutlined />}
@@ -1425,6 +1433,14 @@ const ResourcesPage: React.FC = () => {
                   >
                     {getCreateButtonText()}
                   </Button>
+                  {teamResourcesTab === 'storage' && (
+                    <Button
+                      icon={<ImportOutlined />}
+                      onClick={() => setRcloneImportWizardOpen(true)}
+                    >
+                      {t('resources:storage.import.button')}
+                    </Button>
+                  )}
                   {teamResourcesTab === 'machines' && (
                     <Button 
                       icon={<WifiOutlined />}
@@ -1562,6 +1578,17 @@ const ResourcesPage: React.FC = () => {
         entityType={auditTraceModal.entityType}
         entityIdentifier={auditTraceModal.entityIdentifier}
         entityName={auditTraceModal.entityName}
+      />
+
+      {/* Rclone Import Wizard */}
+      <RcloneImportWizard
+        open={rcloneImportWizardOpen}
+        onClose={() => setRcloneImportWizardOpen(false)}
+        teamName={selectedTeams[0] || ''}
+        onImportComplete={() => {
+          refetchStorage()
+          showMessage('success', t('resources:storage.import.successMessage'))
+        }}
       />
     </>
   )

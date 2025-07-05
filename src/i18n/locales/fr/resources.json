@@ -138,7 +138,8 @@
     "diskSpace": "Espace disque",
     "datastore": "Magasin de données",
     "available": "Disponible",
-    "used": "Utilisé"
+    "used": "Utilisé",
+    "refreshNotAvailable": "Actualisation non disponible - les données sont mises en cache depuis l'état de la machine"
   },
   "storage": {
     "storageName": "Nom du stockage",

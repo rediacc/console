@@ -138,7 +138,8 @@
     "diskSpace": "Disk Space",
     "datastore": "Datastore",
     "available": "Available",
-    "used": "Used"
+    "used": "Used",
+    "refreshNotAvailable": "Refresh not available - data is cached from machine status"
   },
   "storage": {
     "storageName": "Storage Name",
@@ -156,7 +157,39 @@
       "enterStorageName": "Enter storage name"
     },
     "selectStorage": "Select storage",
-    "noStorageFound": "No storage found"
+    "noStorageFound": "No storage found",
+    "provider": "Provider",
+    "import": {
+      "button": "Import from Rclone",
+      "title": "Import Storage from Rclone Config",
+      "instructions": "Import Storage Configuration",
+      "instructionsDetail": "To import your existing rclone configurations, first run the following command on your machine to find your rclone config file:",
+      "uploadPrompt": "Then upload the rclone.conf file below to import your storage configurations.",
+      "dragDropText": "Click to upload or drag and drop your rclone config file",
+      "supportedFormats": "Supports .conf files from rclone",
+      "noConfigsFound": "No storage configurations found in the uploaded file",
+      "parseError": "Failed to parse the rclone config file",
+      "selectStorages": "Select Storage Configurations",
+      "selectDescription": "Select which storage configurations you want to import. Existing storages with the same name will be marked.",
+      "exists": "Exists",
+      "alreadyExists": "A storage with this name already exists in the team",
+      "status": "Status",
+      "pending": "Pending",
+      "success": "Success",
+      "error": "Error",
+      "skipped": "Skipped",
+      "importing": "Importing Storage Configurations...",
+      "importSelected": "Import Selected",
+      "complete": "Import Complete",
+      "completeDescription": "The import process has been completed. See the results below:",
+      "imported": "Successfully imported",
+      "importError": "Failed to import",
+      "unsupportedProvider": "Unsupported provider type: {{type}}",
+      "step1": "Upload Config",
+      "step2": "Select Storage",
+      "step3": "Import Results",
+      "successMessage": "Storage configurations imported successfully"
+    }
   },
   "schedules": {
     "scheduleName": "Schedule Name",

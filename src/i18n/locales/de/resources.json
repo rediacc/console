@@ -138,7 +138,8 @@
     "diskSpace": "Festplattenspeicher",
     "datastore": "Datenspeicher",
     "available": "Verfügbar",
-    "used": "Verwendet"
+    "used": "Verwendet",
+    "refreshNotAvailable": "Aktualisierung nicht verfügbar - Daten werden aus Maschinenstatus zwischengespeichert"
   },
   "storage": {
     "storageName": "Speichername",

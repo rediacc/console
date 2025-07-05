@@ -370,7 +370,16 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   useEffect(() => {
     if (!entityDef) return
 
-    const schemaFields = Object.keys(entityDef.fields || {})
+    let schemaFields = Object.keys(entityDef.fields || {})
+    
+    // For STORAGE entities, also include provider-specific fields
+    if (entityType === 'STORAGE' && importedData.provider) {
+      const provider = storageProviders.providers[importedData.provider as keyof typeof storageProviders.providers]
+      if (provider && provider.fields) {
+        schemaFields = [...schemaFields, ...Object.keys(provider.fields)]
+      }
+    }
+    
     const { extras, movedToExtra, movedFromExtra } = processExtraFields(importedData, schemaFields)
     
     setExtraFields(extras)
@@ -382,7 +391,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 
     // Show toast messages for field movements
     showFieldMovementToasts(movedToExtra, movedFromExtra)
-  }, [importedData, entityDef])
+  }, [importedData, entityDef, entityType])
 
   // Initialize form with data
   useEffect(() => {
@@ -402,6 +411,20 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           formData[key] = field.default
         }
       })
+      
+      // For STORAGE entities, also populate provider-specific fields
+      if (entityType === 'STORAGE' && initialData.provider) {
+        const provider = storageProviders.providers[initialData.provider as keyof typeof storageProviders.providers]
+        if (provider && provider.fields) {
+          Object.entries(provider.fields).forEach(([key, field]) => {
+            if (initialData[key] !== undefined) {
+              formData[key] = initialData[key]
+            } else if ((field as any).default !== undefined) {
+              formData[key] = (field as any).default
+            }
+          })
+        }
+      }
       
       // Reset form first to clear any previous values
       form.resetFields()
@@ -423,7 +446,16 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       }
       
       // Calculate extra fields for this data
-      const schemaFields = Object.keys(entityDef.fields || {})
+      let schemaFields = Object.keys(entityDef.fields || {})
+      
+      // For STORAGE entities, also include provider-specific fields
+      if (entityType === 'STORAGE' && initialData.provider) {
+        const provider = storageProviders.providers[initialData.provider as keyof typeof storageProviders.providers]
+        if (provider && provider.fields) {
+          schemaFields = [...schemaFields, ...Object.keys(provider.fields)]
+        }
+      }
+      
       const extras: Record<string, any> = {}
       
       // Check if initialData has extraFields structure

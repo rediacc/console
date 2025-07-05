@@ -138,7 +138,8 @@
     "diskSpace": "Disk Alanı",
     "datastore": "Veri Deposu",
     "available": "Kullanılabilir",
-    "used": "Kullanılan"
+    "used": "Kullanılan",
+    "refreshNotAvailable": "Yenileme kullanılamıyor - veriler makine durumundan önbelleğe alınmış"
   },
   "storage": {
     "storageName": "Depolama Adı",

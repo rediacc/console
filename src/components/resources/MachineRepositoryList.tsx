@@ -749,8 +749,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         }
       }
       
-      // Special handling for push function
-      if (functionData.function.name === 'push' && functionData.params.dest) {
+      // Special handling for push function - only create repository for machine-to-machine push
+      if (functionData.function.name === 'push' && 
+          functionData.params.dest && 
+          functionData.params.destinationType === 'machine') {
         try {
           // Create a new repository with the destination filename
           await createRepositoryMutation.mutateAsync({
@@ -797,6 +799,12 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           setSelectedRepository(null)
           return
         }
+      } else if (functionData.function.name === 'push' && 
+                 functionData.params.destinationType === 'storage') {
+        // For storage push, we just pass the parameters as-is
+        // No need to create a new repository
+        finalParams.repo = repositoryData.repositoryGuid
+        finalParams.grand = repositoryData.grandGuid || repositoryData.repositoryGuid || ''
       }
       
       // Build queue vault

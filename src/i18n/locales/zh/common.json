@@ -22,7 +22,8 @@
     "exitFullscreen": "退出全屏",
     "addToQueue": "添加到队列",
     "viewTrace": "查看跟踪",
-    "close": "关闭"
+    "close": "关闭",
+    "back": "返回"
   },
   "close": "关闭",
   "copiedToClipboard": "已复制到剪贴板",

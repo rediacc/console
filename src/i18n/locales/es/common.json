@@ -22,7 +22,8 @@
     "exitFullscreen": "Salir de Pantalla Completa",
     "addToQueue": "Agregar a la Cola",
     "viewTrace": "Ver Traza",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "back": "Atrás"
   },
   "close": "Cerrar",
   "copiedToClipboard": "Copiado al portapapeles",

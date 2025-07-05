@@ -22,7 +22,8 @@
     "exitFullscreen": "Vollbild beenden",
     "addToQueue": "Zur Warteschlange hinzufügen",
     "viewTrace": "Verfolgung anzeigen",
-    "close": "Schließen"
+    "close": "Schließen",
+    "back": "Zurück"
   },
   "close": "Schließen",
   "copiedToClipboard": "In Zwischenablage kopiert",
