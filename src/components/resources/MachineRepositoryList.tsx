@@ -556,7 +556,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     setFunctionModalOpen(true)
   }
 
-  const handleQuickAction = async (repository: Repository, functionName: string, priority: number = 4) => {
+  const handleQuickAction = async (repository: Repository, functionName: string, priority: number = 4, option?: string) => {
     try {
       // Find team vault data
       const team = teams?.find(t => t.teamName === machine.teamName)
@@ -578,16 +578,24 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         }
       }
       
+      // Build params with option if provided
+      const params: Record<string, any> = {
+        repo: repositoryData.repositoryGuid,
+        grand: repositoryData.grandGuid || ''
+      }
+      
+      // Add option parameter if provided
+      if (option) {
+        params.option = option
+      }
+      
       // Build queue vault
       const queueVault = await buildQueueVault({
         teamName: machine.teamName,
         machineName: machine.machineName,
         bridgeName: machine.bridgeName,
         functionName: functionName,
-        params: {
-          repo: repositoryData.repositoryGuid,
-          grand: repositoryData.grandGuid || ''
-        },
+        params: params,
         priority: priority,
         description: `${functionName} ${repository.name}`,
         addedVia: 'machine-repository-list-quick',
@@ -1289,7 +1297,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             key: 'up',
             label: t('functions:functions.up.name'),
             icon: <PlayCircleOutlined style={{ color: '#52c41a' }} />,
-            onClick: () => handleQuickAction(record, 'up')
+            onClick: () => handleQuickAction(record, 'up', 4, 'mount')
           })
         }
         
@@ -1322,10 +1330,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             onClick: () => handleQuickAction(record, 'down')
           })
           menuItems.push({
-            key: 'unmount',
-            label: t('functions:functions.unmount.name'),
-            icon: <DisconnectOutlined />,
-            onClick: () => handleQuickAction(record, 'unmount')
+            key: 'down-unmount',
+            label: t('functions:functions.down.name') + ' + ' + t('functions:functions.unmount.name'),
+            icon: <StopOutlined style={{ color: '#ff4d4f' }} />,
+            onClick: () => handleQuickAction(record, 'down', 4, 'mount')
           })
         }
         

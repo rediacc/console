@@ -182,6 +182,9 @@
         },
         "option": {
           "type": "string"
+        },
+        "grand": {
+          "type": "string"
         }
       }
     },
@@ -197,6 +200,12 @@
         "repo": {
           "type": "string",
           "required": true
+        },
+        "option": {
+          "type": "string"
+        },
+        "grand": {
+          "type": "string"
         }
       }
     },
