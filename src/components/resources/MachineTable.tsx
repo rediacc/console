@@ -244,9 +244,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         if (groupBy === 'repository') {
           // Group by individual repositories
           if (machineRepos.length === 0) {
-            const key = 'No Repositories';
-            if (!result[key]) result[key] = [];
-            result[key].push({ machine });
+            // Skip machines without repositories in repository view
           } else {
             machineRepos.forEach(repo => {
               const key = repo.name;
@@ -257,9 +255,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         } else if (groupBy === 'mounted') {
           const mountedRepos = machineRepos.filter(r => r.mounted);
           if (mountedRepos.length === 0) {
-            const key = 'No Mounted Repositories';
-            if (!result[key]) result[key] = [];
-            result[key].push({ machine });
+            // Skip machines without mounted repositories
           } else {
             mountedRepos.forEach(repo => {
               const key = 'Mounted Repositories';
@@ -270,9 +266,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         } else if (groupBy === 'unmounted') {
           const unmountedRepos = machineRepos.filter(r => !r.mounted);
           if (unmountedRepos.length === 0) {
-            const key = 'No Unmounted Repositories';
-            if (!result[key]) result[key] = [];
-            result[key].push({ machine });
+            // Skip machines without unmounted repositories
           } else {
             unmountedRepos.forEach(repo => {
               const key = 'Unmounted Repositories';
@@ -282,38 +276,49 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           }
         } else if (groupBy === 'grand') {
           // Group by grand repository
-          machineRepos.forEach(repo => {
-            if (repo.grandGuid) {
-              const grandRepo = repositories.find(r => r.repositoryGuid === repo.grandGuid);
-              const key = grandRepo ? grandRepo.repositoryName : 'Unknown Grand';
-              if (!result[key]) result[key] = [];
-              result[key].push({ machine, repository: repo });
-            } else {
-              const key = 'No Grand Repository';
-              if (!result[key]) result[key] = [];
-              result[key].push({ machine, repository: repo });
-            }
-          });
+          if (machineRepos.length > 0) {
+            machineRepos.forEach(repo => {
+              if (repo.grandGuid) {
+                const grandRepo = repositories.find(r => r.repositoryGuid === repo.grandGuid);
+                const key = grandRepo ? grandRepo.repositoryName : 'Unknown Grand';
+                if (!result[key]) result[key] = [];
+                result[key].push({ machine, repository: repo });
+              } else {
+                const key = 'No Grand Repository';
+                if (!result[key]) result[key] = [];
+                result[key].push({ machine, repository: repo });
+              }
+            });
+          }
         }
       });
       
       return result;
     } else {
-      // For machine-based grouping (bridge, team, region)
-      return filteredMachines.reduce((acc, machine) => {
-        let key = '';
-        if (groupBy === 'bridge') {
-          key = machine.bridgeName;
-        } else if (groupBy === 'team') {
-          key = machine.teamName;
-        } else if (groupBy === 'region') {
-          key = machine.regionName || 'Unknown';
-        }
+      // For machine-based grouping (bridge, team, region) - show repositories
+      const result: Record<string, Array<{machine: Machine, repository?: any}>> = {};
+      
+      filteredMachines.forEach(machine => {
+        const machineRepos = getMachineRepositories(machine);
         
-        if (!acc[key]) acc[key] = [];
-        acc[key].push({ machine });
-        return acc;
-      }, {} as Record<string, Array<{machine: Machine, repository?: any}>>);
+        if (machineRepos.length > 0) {
+          machineRepos.forEach(repo => {
+            let key = '';
+            if (groupBy === 'bridge') {
+              key = machine.bridgeName;
+            } else if (groupBy === 'team') {
+              key = machine.teamName;
+            } else if (groupBy === 'region') {
+              key = machine.regionName || 'Unknown';
+            }
+            
+            if (!result[key]) result[key] = [];
+            result[key].push({ machine, repository: repo });
+          });
+        }
+      });
+      
+      return result;
     }
   }, [filteredMachines, viewMode, groupBy, repositories]);
 
@@ -674,7 +679,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       <div style={{ marginBottom: 16 }}>
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
           <Space align="center">
-            <span style={{ marginRight: 8, fontWeight: 500 }}>{t('machines:viewMode')}:</span>
+            <span style={{ marginRight: 8, fontWeight: 500 }}>{t('machines:viewBy')}:</span>
             <Segmented
               options={[
                 { label: t('machines:tableView'), value: 'table', icon: <TableOutlined /> },
@@ -769,6 +774,11 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     const renderRepositoryCard = (item: {machine: Machine, repository?: any}) => {
       const { machine, repository } = item;
       
+      // Skip items without repositories when in repository view
+      if (!repository) {
+        return null;
+      }
+      
       return (
         <Col xs={24} sm={12} md={8} lg={6} xl={4} key={`${machine.machineName}-${repository?.name || 'no-repo'}`}>
           <Card
@@ -791,15 +801,13 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               title={
                 <Space direction="vertical" size={0} style={{ width: '100%' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <DesktopOutlined style={{ color: '#556b2f' }} />
-                    <strong style={{ fontSize: 14 }}>{machine.machineName}</strong>
+                    <InboxOutlined style={{ color: '#8B4513' }} />
+                    <strong style={{ fontSize: 14 }}>{repository.name}</strong>
                   </div>
-                  {repository && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                      <InboxOutlined style={{ color: '#8B4513' }} />
-                      <span style={{ fontSize: 13, fontWeight: 500 }}>{repository.name}</span>
-                    </div>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                    <DesktopOutlined style={{ color: '#556b2f' }} />
+                    <span style={{ fontSize: 13 }}>{machine.machineName}</span>
+                  </div>
                 </Space>
               }
               description={
@@ -890,6 +898,17 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       );
     };
 
+    // Check if there are no repositories
+    if (Object.keys(groupedData).length === 0) {
+      return (
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description={t('resources:repositories.noRepositories')}
+          style={{ marginTop: 48 }}
+        />
+      );
+    }
+
     return (
       <Row gutter={[16, 16]}>
         {Object.entries(groupedData).map(([groupKey, items]) => (
@@ -901,7 +920,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                     {groupKey}
                   </Tag>
                   <span style={{ fontSize: '14px', color: '#666' }}>
-                    {items.length} {t('machines:itemCount', { count: items.length })}
+                    {items.length} {items.length === 1 ? t('resources:repositories.repository') : t('resources:repositories.repositories')}
                   </span>
                 </Space>
               }
