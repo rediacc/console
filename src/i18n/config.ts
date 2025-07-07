@@ -11,6 +11,7 @@ import enQueue from './locales/en/queue.json';
 import enSettings from './locales/en/settings.json';
 import enStorageProviders from './locales/en/storageProviders.json';
 import enFunctions from './locales/en/functions.json';
+import enMarketplace from './locales/en/marketplace.json';
 
 import esAuth from './locales/es/auth.json';
 import esCommon from './locales/es/common.json';
@@ -21,6 +22,7 @@ import esQueue from './locales/es/queue.json';
 import esSettings from './locales/es/settings.json';
 import esStorageProviders from './locales/es/storageProviders.json';
 import esFunctions from './locales/es/functions.json';
+import esMarketplace from './locales/es/marketplace.json';
 
 import trAuth from './locales/tr/auth.json';
 import trCommon from './locales/tr/common.json';
@@ -31,6 +33,7 @@ import trQueue from './locales/tr/queue.json';
 import trSettings from './locales/tr/settings.json';
 import trStorageProviders from './locales/tr/storageProviders.json';
 import trFunctions from './locales/tr/functions.json';
+import trMarketplace from './locales/tr/marketplace.json';
 
 import frAuth from './locales/fr/auth.json';
 import frCommon from './locales/fr/common.json';
@@ -41,6 +44,7 @@ import frQueue from './locales/fr/queue.json';
 import frSettings from './locales/fr/settings.json';
 import frStorageProviders from './locales/fr/storageProviders.json';
 import frFunctions from './locales/fr/functions.json';
+import frMarketplace from './locales/fr/marketplace.json';
 
 import deAuth from './locales/de/auth.json';
 import deCommon from './locales/de/common.json';
@@ -51,6 +55,7 @@ import deQueue from './locales/de/queue.json';
 import deSettings from './locales/de/settings.json';
 import deStorageProviders from './locales/de/storageProviders.json';
 import deFunctions from './locales/de/functions.json';
+import deMarketplace from './locales/de/marketplace.json';
 
 import zhAuth from './locales/zh/auth.json';
 import zhCommon from './locales/zh/common.json';
@@ -61,6 +66,7 @@ import zhQueue from './locales/zh/queue.json';
 import zhSettings from './locales/zh/settings.json';
 import zhStorageProviders from './locales/zh/storageProviders.json';
 import zhFunctions from './locales/zh/functions.json';
+import zhMarketplace from './locales/zh/marketplace.json';
 
 import jaAuth from './locales/ja/auth.json';
 import jaCommon from './locales/ja/common.json';
@@ -71,6 +77,7 @@ import jaQueue from './locales/ja/queue.json';
 import jaSettings from './locales/ja/settings.json';
 import jaStorageProviders from './locales/ja/storageProviders.json';
 import jaFunctions from './locales/ja/functions.json';
+import jaMarketplace from './locales/ja/marketplace.json';
 
 import arAuth from './locales/ar/auth.json';
 import arCommon from './locales/ar/common.json';
@@ -81,6 +88,7 @@ import arQueue from './locales/ar/queue.json';
 import arSettings from './locales/ar/settings.json';
 import arStorageProviders from './locales/ar/storageProviders.json';
 import arFunctions from './locales/ar/functions.json';
+import arMarketplace from './locales/ar/marketplace.json';
 
 import ruAuth from './locales/ru/auth.json';
 import ruCommon from './locales/ru/common.json';
@@ -91,6 +99,7 @@ import ruQueue from './locales/ru/queue.json';
 import ruSettings from './locales/ru/settings.json';
 import ruStorageProviders from './locales/ru/storageProviders.json';
 import ruFunctions from './locales/ru/functions.json';
+import ruMarketplace from './locales/ru/marketplace.json';
 
 export const defaultNS = 'common';
 export const resources = {
@@ -104,6 +113,7 @@ export const resources = {
     settings: enSettings,
     storageProviders: enStorageProviders,
     functions: enFunctions,
+    marketplace: enMarketplace,
   },
   es: {
     common: esCommon,
@@ -115,6 +125,7 @@ export const resources = {
     settings: esSettings,
     storageProviders: esStorageProviders,
     functions: esFunctions,
+    marketplace: esMarketplace,
   },
   tr: {
     common: trCommon,
@@ -126,6 +137,7 @@ export const resources = {
     settings: trSettings,
     storageProviders: trStorageProviders,
     functions: trFunctions,
+    marketplace: trMarketplace,
   },
   fr: {
     common: frCommon,
@@ -137,6 +149,7 @@ export const resources = {
     settings: frSettings,
     storageProviders: frStorageProviders,
     functions: frFunctions,
+    marketplace: frMarketplace,
   },
   de: {
     common: deCommon,
@@ -148,6 +161,7 @@ export const resources = {
     settings: deSettings,
     storageProviders: deStorageProviders,
     functions: deFunctions,
+    marketplace: deMarketplace,
   },
   zh: {
     common: zhCommon,
@@ -159,6 +173,7 @@ export const resources = {
     settings: zhSettings,
     storageProviders: zhStorageProviders,
     functions: zhFunctions,
+    marketplace: zhMarketplace,
   },
   ja: {
     common: jaCommon,
@@ -170,6 +185,7 @@ export const resources = {
     settings: jaSettings,
     storageProviders: jaStorageProviders,
     functions: jaFunctions,
+    marketplace: jaMarketplace,
   },
   ar: {
     common: arCommon,
@@ -181,6 +197,7 @@ export const resources = {
     settings: arSettings,
     storageProviders: arStorageProviders,
     functions: arFunctions,
+    marketplace: arMarketplace,
   },
   ru: {
     common: ruCommon,
@@ -192,6 +209,7 @@ export const resources = {
     settings: ruSettings,
     storageProviders: ruStorageProviders,
     functions: ruFunctions,
+    marketplace: ruMarketplace,
   },
 } as const;
 
@@ -203,7 +221,7 @@ i18n
     fallbackLng: 'en',
     lng: 'en',
     debug: false,
-    ns: ['common', 'auth', 'resources', 'machines', 'system', 'queue', 'settings', 'storageProviders', 'functions'],
+    ns: ['common', 'auth', 'resources', 'machines', 'system', 'queue', 'settings', 'storageProviders', 'functions', 'marketplace'],
     defaultNS,
     resources,
     interpolation: {

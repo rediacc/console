@@ -24,6 +24,7 @@ import {
   EnvironmentOutlined,
   AppstoreOutlined,
   HistoryOutlined,
+  ShoppingOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { selectUser, selectCompany } from '@/store/auth/authSelectors'
@@ -35,7 +36,6 @@ import apiClient from '@/api/client'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
 import LanguageSelector from '@/components/common/LanguageSelector'
 import NotificationBell from '@/components/common/NotificationBell'
-import QueueManagerStatus from '@/components/common/QueueManagerStatus'
 import { useTheme } from '@/context/ThemeContext'
 import logoBlack from '@/assets/logo_black.png'
 import logoWhite from '@/assets/logo_white.png'
@@ -83,6 +83,12 @@ const MainLayout: React.FC = () => {
       key: '/resources',
       icon: <AppstoreOutlined />,
       label: t('navigation.resources'),
+      showInSimple: true,
+    },
+    {
+      key: '/marketplace',
+      icon: <ShoppingOutlined />,
+      label: t('navigation.marketplace'),
       showInSimple: true,
     },
     {
@@ -419,7 +425,6 @@ const MainLayout: React.FC = () => {
             )}
           </Space>
           <Space size={16} align="center">
-            {uiMode === 'expert' && <QueueManagerStatus />}
             <LanguageSelector />
             <ThemeToggle />
             <NotificationBell />

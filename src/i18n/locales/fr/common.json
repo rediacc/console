@@ -6,7 +6,8 @@
     "queue": "File d'attente",
     "system": "Système",
     "audit": "Audit",
-    "logout": "Déconnexion"
+    "logout": "Déconnexion",
+    "marketplace": "Marketplace"
   },
   "actions": {
     "edit": "Modifier",

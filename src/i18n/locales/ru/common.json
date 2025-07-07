@@ -6,7 +6,8 @@
     "queue": "Очередь",
     "system": "Система",
     "audit": "Аудит",
-    "logout": "Выйти"
+    "logout": "Выйти",
+    "marketplace": "Marketplace"
   },
   "actions": {
     "edit": "Редактировать",

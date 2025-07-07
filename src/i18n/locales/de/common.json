@@ -6,7 +6,8 @@
     "queue": "Warteschlange",
     "system": "System",
     "audit": "Audit",
-    "logout": "Abmelden"
+    "logout": "Abmelden",
+    "marketplace": "Marketplace"
   },
   "actions": {
     "edit": "Bearbeiten",

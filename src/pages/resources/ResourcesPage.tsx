@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react'
 import { Card, Tabs, Button, Space, Modal, Tag, Typography, Table, Row, Col, Empty, Spin } from 'antd'
+import { useLocation } from 'react-router-dom'
 import { 
   PlusOutlined, 
   EditOutlined, 
@@ -83,6 +84,7 @@ const { Title } = Typography
 
 const ResourcesPage: React.FC = () => {
   const { t } = useTranslation(['resources', 'machines', 'common'])
+  const location = useLocation()
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const [selectedTeams, setSelectedTeams] = useState<string[]>([])
   const [teamResourcesTab, setTeamResourcesTab] = useState('machines')
@@ -320,6 +322,33 @@ const ResourcesPage: React.FC = () => {
       }
     }
   }, [uiMode, teamsList, teamsLoading])
+
+  // Handle navigation from marketplace
+  React.useEffect(() => {
+    if (location.state && (location.state as any).createRepository) {
+      const state = location.state as any
+      
+      // Switch to repositories tab
+      setTeamResourcesTab('repositories')
+      
+      // Set selected team if provided
+      if (state.selectedTeam) {
+        setSelectedTeams([state.selectedTeam])
+      }
+      
+      // Open repository creation modal with pre-selected template
+      setTimeout(() => {
+        openUnifiedModal('repository', 'create', {
+          teamName: state.selectedTeam,
+          machineName: state.selectedMachine,
+          preselectedTemplate: state.selectedTemplate
+        })
+      }, 100)
+      
+      // Clear navigation state
+      window.history.replaceState({}, document.title)
+    }
+  }, [location])
 
   // Handler to open unified modal
   const openUnifiedModal = (resourceType: ResourceType, mode: 'create' | 'edit' | 'vault', data?: any) => {

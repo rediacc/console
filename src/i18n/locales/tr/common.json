@@ -6,7 +6,8 @@
     "queue": "Kuyruk",
     "system": "Sistem",
     "audit": "Denetim",
-    "logout": "Çıkış"
+    "logout": "Çıkış",
+    "marketplace": "Marketplace"
   },
   "actions": {
     "edit": "Düzenle",

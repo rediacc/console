@@ -6,7 +6,8 @@
     "queue": "队列",
     "system": "系统",
     "audit": "审计",
-    "logout": "退出"
+    "logout": "退出",
+    "marketplace": "Marketplace"
   },
   "actions": {
     "edit": "编辑",

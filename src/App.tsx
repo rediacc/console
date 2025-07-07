@@ -16,6 +16,7 @@ import QueuePage from '@/pages/queue/QueuePage'
 import SystemPage from '@/pages/system/SystemPage'
 import ArchitecturePage from '@/pages/architecture/ArchitecturePage'
 import AuditPage from '@/pages/audit/AuditPage'
+import MarketplacePage from '@/pages/marketplace/MarketplacePage'
 
 const AppContent: React.FC = () => {
   const { theme: currentTheme } = useTheme()
@@ -78,6 +79,9 @@ const AppContent: React.FC = () => {
               
               {/* Organization */}
               <Route path="/resources" element={<ResourcesPage />} />
+              
+              {/* Marketplace */}
+              <Route path="/marketplace" element={<MarketplacePage />} />
               
               {/* Queue */}
               <Route path="/queue" element={<QueuePage />} />

@@ -6,7 +6,8 @@
     "queue": "Cola",
     "system": "Sistema",
     "audit": "Auditoría",
-    "logout": "Cerrar Sesión"
+    "logout": "Cerrar Sesión",
+    "marketplace": "Marketplace"
   },
   "actions": {
     "edit": "Editar",

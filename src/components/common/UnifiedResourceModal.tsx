@@ -90,7 +90,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   const [autoSetupEnabled, setAutoSetupEnabled] = useState(true)
   
   // State for template selection (for repositories)
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(existingData?.preselectedTemplate || null)
   const [showTemplateDetails, setShowTemplateDetails] = useState(false)
   const [templateToView, setTemplateToView] = useState<string | null>(null)
   
@@ -246,9 +246,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       // Reset form to default values first
       form.reset(getDefaultValues())
       
-      // Reset template selection for repositories
-      if (resourceType === 'repository') {
+      // Reset template selection for repositories (unless preselected)
+      if (resourceType === 'repository' && !existingData?.preselectedTemplate) {
         setSelectedTemplate(null)
+      } else if (resourceType === 'repository' && existingData?.preselectedTemplate) {
+        setSelectedTemplate(existingData.preselectedTemplate)
       }
       
       // Set team if preselected or from existing data

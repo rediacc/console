@@ -1003,6 +1003,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 <Input
                   {...commonProps}
                   type="password"
+                  autoComplete="new-password"
                 />
               </Form.Item>
             )
@@ -1031,6 +1032,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         <Input
           {...commonProps}
           type={field.sensitive ? 'password' : 'text'}
+          autoComplete={field.sensitive ? 'new-password' : 'off'}
           addonAfter={isGeneratable ? (
             <FieldGenerator
               fieldType={
