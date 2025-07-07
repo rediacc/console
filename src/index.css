@@ -1102,3 +1102,48 @@ body {
   margin: 16px 0 0 0;
   padding: 0;
 }
+
+/* Light mode Radio Group buttons - improved visibility */
+.light-mode-radio-group .ant-radio-button-wrapper {
+  border-color: var(--color-border-primary);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-primary);
+  transition: all 0.3s;
+}
+
+.light-mode-radio-group .ant-radio-button-wrapper:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: var(--color-bg-hover);
+}
+
+.light-mode-radio-group .ant-radio-button-wrapper-checked {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-bg-primary);
+  font-weight: 500;
+}
+
+.light-mode-radio-group .ant-radio-button-wrapper-checked:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  color: var(--color-bg-primary);
+}
+
+/* Add subtle shadow for better depth perception in light mode */
+.light-mode-radio-group {
+  box-shadow: var(--shadow-sm);
+}
+
+.light-mode-radio-group .ant-radio-button-wrapper-checked {
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+/* Icon colors in Radio buttons */
+.light-mode-radio-group .ant-radio-button-wrapper .anticon {
+  transition: color 0.3s;
+}
+
+.light-mode-radio-group .ant-radio-button-wrapper-checked .anticon {
+  color: var(--color-bg-primary);
+}

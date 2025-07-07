@@ -418,11 +418,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           name: 'machineName',
           label: t('machines:machine'),
           placeholder: t('machines:placeholders.selectMachine'),
-          required: false,
+          required: true,
           type: 'select' as const,
           options: teamMachines.map((m: any) => ({ value: m.value, label: m.label })),
           disabled: !selectedTeamName || teamMachines.length === 0,
-          helperText: t('repositories.machineHelperText', { defaultValue: 'Optional: Select a machine to provision storage' })
+          helperText: t('repositories.machineHelperText', { defaultValue: 'Select a machine to provision storage' })
         })
       }
       
@@ -430,10 +430,10 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         name: 'size',
         label: t('repositories.size'),
         placeholder: t('repositories.placeholders.enterSize'),
-        required: false,
+        required: true,
         type: 'size' as const,
         sizeUnits: ['G', 'T'],
-        helperText: t('repositories.sizeHelperText', { defaultValue: 'Optional: Specify size if provisioning storage (e.g., 10G, 100G, 1T)' })
+        helperText: t('repositories.sizeHelperText', { defaultValue: 'Specify size for storage provisioning (e.g., 10G, 100G, 1T)' })
       })
     } else if (!['team', 'region'].includes(resourceType)) {
       fields.push(nameField)

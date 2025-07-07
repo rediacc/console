@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react'
-import { Modal, Tabs, Typography, Space, Tag, Button, Descriptions, Alert, Spin, Row, Col, Card, Divider } from 'antd'
+import { Modal, Tabs, Typography, Space, Tag, Button, Alert, Spin, Row, Col, Card, Divider, List } from 'antd'
 import {
   RocketOutlined,
   FileTextOutlined,
   CodeOutlined,
   SafetyOutlined,
-  ThunderboltOutlined,
   DatabaseOutlined,
   GlobalOutlined,
   CloudOutlined,
   AppstoreOutlined,
   DeploymentUnitOutlined,
   CheckCircleOutlined,
-  WarningOutlined
+  FileOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
@@ -28,14 +27,6 @@ interface Template {
   category?: string
   tags?: string[]
   difficulty?: 'beginner' | 'intermediate' | 'advanced'
-  popularity?: number
-  isNew?: boolean
-  isFeatured?: boolean
-  prerequisites?: {
-    minCpu?: number
-    minMemory?: string
-    minStorage?: string
-  }
   iconUrl?: string
 }
 
@@ -54,27 +45,25 @@ interface MarketplacePreviewProps {
   template: Template | null
   onClose: () => void
   onDeploy: (template: Template) => void
-  selectedTeam?: string | null
-  selectedMachine?: string | null
 }
 
 const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
   visible,
   template,
   onClose,
-  onDeploy,
-  selectedTeam,
-  selectedMachine
+  onDeploy
 }) => {
   const { t } = useTranslation(['marketplace', 'resources'])
   const [loading, setLoading] = useState(false)
   const [templateDetails, setTemplateDetails] = useState<TemplateDetails | null>(null)
   const [activeTab, setActiveTab] = useState('overview')
+  const [selectedFileIndex, setSelectedFileIndex] = useState(0)
 
   useEffect(() => {
     if (visible && template) {
       fetchTemplateDetails()
       setActiveTab('overview')
+      setSelectedFileIndex(0)
     }
   }, [visible, template])
 
@@ -128,7 +117,7 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
     }
   }
 
-  const canDeploy = selectedTeam && selectedMachine
+  const canDeploy = true // Team selection happens in deployment modal
 
   const renderFileContent = (file: { name: string; content: string }) => {
     const language = file.name.endsWith('.yaml') || file.name.endsWith('.yml') ? 'yaml' :
@@ -200,14 +189,9 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
             <Title level={4} style={{ margin: 0 }}>
               {getTemplateTitle(template.name)}
             </Title>
-            <Space wrap>
-              {template.isFeatured && <Tag color="gold">{t('featured')}</Tag>}
-              {template.isNew && <Tag color="blue">{t('new')}</Tag>}
-              <Tag>{t(`category.${template.category}`)}</Tag>
-              <Tag color={getDifficultyColor(template.difficulty)}>
-                {t(`difficulty${template.difficulty?.charAt(0).toUpperCase()}${template.difficulty?.slice(1)}`)}
-              </Tag>
-            </Space>
+            <Tag color={getDifficultyColor(template.difficulty)}>
+              {t(`difficulty${template.difficulty?.charAt(0).toUpperCase()}${template.difficulty?.slice(1)}`)}
+            </Tag>
           </div>
         </Space>
       }
@@ -215,7 +199,7 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
       onCancel={onClose}
       width="90vw"
       style={{ top: 20 }}
-      bodyStyle={{ height: 'calc(90vh - 180px)', overflow: 'auto' }}
+      bodyStyle={{ height: 'calc(90vh - 180px)', padding: '12px' }}
       footer={[
         <Button key="close" onClick={onClose}>
           {t('close')}
@@ -225,57 +209,28 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
           type="primary"
           icon={<RocketOutlined />}
           onClick={() => onDeploy(template)}
-          disabled={!canDeploy}
         >
-          {canDeploy ? t('deployNow') : t('selectTeamAndMachine')}
+          {t('deployNow')}
         </Button>
       ]}
     >
-      {!canDeploy && (
-        <Alert
-          message={t('deploymentRequirements')}
-          description={t('selectTeamAndMachineDesc')}
-          type="warning"
-          showIcon
-          icon={<WarningOutlined />}
-          style={{ marginBottom: 16 }}
-        />
-      )}
-
       <Tabs activeKey={activeTab} onChange={setActiveTab}>
         <TabPane tab={<span><FileTextOutlined /> {t('overview')}</span>} key="overview">
-          <Row gutter={[24, 24]}>
-            <Col xs={24} md={16}>
-              <Card title={t('description')}>
-                <ReactMarkdown>{template.readme}</ReactMarkdown>
-              </Card>
-            </Col>
-            <Col xs={24} md={8}>
-              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                <Card title={t('requirements')}>
-                  <Descriptions column={1} size="small">
-                    <Descriptions.Item label={t('minCpu')}>
-                      <Space>
-                        <ThunderboltOutlined />
-                        {template.prerequisites?.minCpu || 1} vCPU
-                      </Space>
-                    </Descriptions.Item>
-                    <Descriptions.Item label={t('minMemory')}>
-                      <Space>
-                        <DatabaseOutlined />
-                        {template.prerequisites?.minMemory || '1G'}
-                      </Space>
-                    </Descriptions.Item>
-                    <Descriptions.Item label={t('minStorage')}>
-                      <Space>
-                        <CloudOutlined />
-                        {template.prerequisites?.minStorage || '10G'}
-                      </Space>
-                    </Descriptions.Item>
-                  </Descriptions>
+          <div style={{ height: 'calc(90vh - 340px)', overflow: 'auto' }}>
+            <Row gutter={[24, 24]}>
+              <Col xs={24} md={16}>
+                <Card 
+                  title={t('description')}
+                  bodyStyle={{ maxHeight: 'calc(90vh - 420px)', overflow: 'auto' }}
+                >
+                  <ReactMarkdown>{template.readme}</ReactMarkdown>
                 </Card>
-
-                <Card title={t('features')}>
+              </Col>
+              <Col xs={24} md={8}>
+                <Card 
+                  title={t('features')}
+                  bodyStyle={{ maxHeight: 'calc(90vh - 420px)', overflow: 'auto' }}
+                >
                   <Space direction="vertical" size="small">
                     {template.tags?.map(tag => (
                       <Space key={tag}>
@@ -285,20 +240,9 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
                     ))}
                   </Space>
                 </Card>
-
-                <Card>
-                  <Descriptions column={1} size="small">
-                    <Descriptions.Item label={t('popularity')}>
-                      {template.popularity || 0} {t('deployments')}
-                    </Descriptions.Item>
-                    <Descriptions.Item label={t('lastUpdated')}>
-                      {t('recently')}
-                    </Descriptions.Item>
-                  </Descriptions>
-                </Card>
-              </Space>
-            </Col>
-          </Row>
+              </Col>
+            </Row>
+          </div>
         </TabPane>
 
         <TabPane 
@@ -310,54 +254,101 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
               <Spin tip={t('loadingFiles')} />
             </div>
-          ) : templateDetails ? (
-            <Space direction="vertical" size="large" style={{ width: '100%' }}>
-              {templateDetails.files.map((file, index) => (
+          ) : templateDetails && templateDetails.files.length > 0 ? (
+            <Row gutter={16} style={{ height: 'calc(90vh - 340px)' }}>
+              <Col span={8} style={{ height: '100%' }}>
+                <Card 
+                  size="small" 
+                  title={<span><FileOutlined /> {t('fileList')}</span>}
+                  bodyStyle={{ padding: 0, height: 'calc(100% - 38px)' }}
+                  style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+                >
+                  <List
+                    size="small"
+                    dataSource={templateDetails.files}
+                    renderItem={(file, index) => (
+                      <List.Item
+                        style={{ 
+                          padding: '8px 16px', 
+                          cursor: 'pointer',
+                          backgroundColor: selectedFileIndex === index ? '#1890ff20' : 'transparent',
+                          borderLeft: selectedFileIndex === index ? '3px solid #1890ff' : '3px solid transparent',
+                          transition: 'all 0.2s'
+                        }}
+                        onClick={() => setSelectedFileIndex(index)}
+                      >
+                        <Space>
+                          <CodeOutlined />
+                          <Text 
+                            code 
+                            style={{ 
+                              fontWeight: selectedFileIndex === index ? 600 : 400,
+                              color: selectedFileIndex === index ? '#1890ff' : undefined
+                            }}
+                          >
+                            {file.path || file.name}
+                          </Text>
+                        </Space>
+                      </List.Item>
+                    )}
+                    style={{ height: '100%', overflow: 'auto' }}
+                  />
+                </Card>
+              </Col>
+              <Col span={16} style={{ height: '100%' }}>
                 <Card
-                  key={index}
+                  size="small"
                   title={
                     <Space>
                       <CodeOutlined />
-                      <Text code>{file.path || file.name}</Text>
+                      <Text code>{templateDetails.files[selectedFileIndex]?.path || templateDetails.files[selectedFileIndex]?.name}</Text>
                     </Space>
                   }
-                  size="small"
+                  style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+                  bodyStyle={{ flex: 1, overflow: 'auto', padding: '12px' }}
                 >
-                  <div style={{ maxHeight: 400, overflow: 'auto' }}>
-                    {renderFileContent(file)}
-                  </div>
+                  {templateDetails.files[selectedFileIndex] && renderFileContent(templateDetails.files[selectedFileIndex])}
                 </Card>
-              ))}
-            </Space>
-          ) : null}
+              </Col>
+            </Row>
+          ) : (
+            <Alert
+              message={t('noFiles')}
+              description={t('noFilesDesc')}
+              type="info"
+              showIcon
+            />
+          )}
         </TabPane>
 
         <TabPane tab={<span><SafetyOutlined /> {t('security')}</span>} key="security">
-          <Card>
-            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-              <Alert
-                message={t('securityReview')}
-                description={t('securityReviewDesc')}
-                type="info"
-                showIcon
-              />
-              
-              <Title level={5}>{t('bestPractices')}</Title>
-              <ul>
-                <li>{t('securityTip1')}</li>
-                <li>{t('securityTip2')}</li>
-                <li>{t('securityTip3')}</li>
-                <li>{t('securityTip4')}</li>
-              </ul>
+          <div style={{ height: 'calc(90vh - 340px)', overflow: 'auto' }}>
+            <Card>
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <Alert
+                  message={t('securityReview')}
+                  description={t('securityReviewDesc')}
+                  type="info"
+                  showIcon
+                />
+                
+                <Title level={5}>{t('bestPractices')}</Title>
+                <ul>
+                  <li>{t('securityTip1')}</li>
+                  <li>{t('securityTip2')}</li>
+                  <li>{t('securityTip3')}</li>
+                  <li>{t('securityTip4')}</li>
+                </ul>
 
-              <Divider />
-              
-              <Title level={5}>{t('containerSecurity')}</Title>
-              <Paragraph>
-                {t('containerSecurityDesc')}
-              </Paragraph>
-            </Space>
-          </Card>
+                <Divider />
+                
+                <Title level={5}>{t('containerSecurity')}</Title>
+                <Paragraph>
+                  {t('containerSecurityDesc')}
+                </Paragraph>
+              </Space>
+            </Card>
+          </div>
         </TabPane>
       </Tabs>
     </Modal>

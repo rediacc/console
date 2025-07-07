@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Card, Row, Col, Input, Select, Space, Typography, Spin, Empty, Segmented, Divider, message } from 'antd'
+import { Card, Row, Col, Input, Space, Typography, Spin, Empty, Segmented, Divider, message } from 'antd'
 import { 
   SearchOutlined, 
   AppstoreOutlined, 
   UnorderedListOutlined,
-  TeamOutlined,
   DatabaseOutlined,
   RocketOutlined,
   MonitorOutlined,
@@ -23,7 +22,6 @@ import MarketplaceCard from '@/components/marketplace/MarketplaceCard'
 import MarketplacePreview from '@/components/marketplace/MarketplacePreview'
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import { useDropdownData } from '@/api/queries/useDropdownData'
-import { useTeams } from '@/api/queries/teams'
 import { useCreateRepository } from '@/api/queries/repositories'
 
 const { Title, Text } = Typography
@@ -35,14 +33,6 @@ interface Template {
   category?: string
   tags?: string[]
   difficulty?: 'beginner' | 'intermediate' | 'advanced'
-  popularity?: number
-  isNew?: boolean
-  isFeatured?: boolean
-  prerequisites?: {
-    minCpu?: number
-    minMemory?: string
-    minStorage?: string
-  }
   iconUrl?: string
 }
 
@@ -58,14 +48,12 @@ const MarketplacePage: React.FC = () => {
   const { t } = useTranslation(['marketplace', 'resources', 'common'])
   const navigate = useNavigate()
   const { data: dropdownData } = useDropdownData()
-  const { data: teams } = useTeams()
   const createRepositoryMutation = useCreateRepository()
   
   const [loading, setLoading] = useState(true)
   const [templates, setTemplates] = useState<Template[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [selectedTeam, setSelectedTeam] = useState<string | null>(null)
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null)
   const [showPreview, setShowPreview] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -89,10 +77,6 @@ const MarketplacePage: React.FC = () => {
         category: getTemplateCategory(template.name),
         tags: getTemplateTags(template.name, template.readme),
         difficulty: getTemplateDifficulty(template.name),
-        popularity: Math.floor(Math.random() * 1000) + 100, // Mock popularity
-        isNew: Math.random() > 0.8,
-        isFeatured: ['db_mysql', 'kick_wordpress', 'monitor_prometheus_grafana'].includes(template.name),
-        prerequisites: getTemplatePrerequisites(template.name),
         iconUrl: `${window.location.origin}/config/template_${template.name}_icon.svg`
       }))
       setTemplates(enhancedTemplates)
@@ -148,17 +132,6 @@ const MarketplacePage: React.FC = () => {
     return 'intermediate'
   }
 
-  const getTemplatePrerequisites = (name: string) => {
-    const defaults = { minCpu: 1, minMemory: '1G', minStorage: '10G' }
-    
-    if (name.includes('kafka') || name.includes('elasticsearch')) {
-      return { minCpu: 4, minMemory: '8G', minStorage: '50G' }
-    }
-    if (name.includes('gitlab') || name.includes('mssql')) {
-      return { minCpu: 2, minMemory: '4G', minStorage: '20G' }
-    }
-    return defaults
-  }
 
   // Group templates by category
   const categoryGroups = useMemo((): CategoryGroup[] => {
@@ -316,21 +289,7 @@ const MarketplacePage: React.FC = () => {
           />
         </Col>
         <Col xs={24} sm={12} md={16}>
-          <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
-            <Space>
-              <Select
-                placeholder={t('marketplace:selectTeam')}
-                style={{ width: 200 }}
-                allowClear
-                value={selectedTeam}
-                onChange={setSelectedTeam}
-                options={teams?.map(team => ({
-                  label: team.teamName,
-                  value: team.teamName
-                }))}
-                suffixIcon={<TeamOutlined />}
-              />
-            </Space>
+          <Space style={{ width: '100%', justifyContent: 'flex-end' }} wrap>
             <Segmented
               value={viewMode}
               onChange={setViewMode as any}
@@ -388,8 +347,6 @@ const MarketplacePage: React.FC = () => {
                         setPreviewTemplate(template)
                         setShowPreview(true)
                       }}
-                      selectedTeam={selectedTeam}
-                      selectedMachine={null}
                     />
                   </Col>
                 ))}
@@ -417,8 +374,6 @@ const MarketplacePage: React.FC = () => {
             handleDeployTemplate(previewTemplate)
             setShowPreview(false)
           }}
-          selectedTeam={selectedTeam}
-          selectedMachine={null}
         />
       )}
 
@@ -433,10 +388,8 @@ const MarketplacePage: React.FC = () => {
           resourceType="repository"
           mode="create"
           existingData={{
-            preselectedTemplate: deployingTemplate.name,
-            teamName: selectedTeam
+            preselectedTemplate: deployingTemplate.name
           }}
-          teamFilter={selectedTeam || undefined}
           onSubmit={handleCreateRepository}
           isSubmitting={createRepositoryMutation.isPending}
         />
