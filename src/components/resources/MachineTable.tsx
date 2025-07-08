@@ -60,7 +60,7 @@ interface MachineTableProps {
   onCreateMachine?: () => void;
   onEditMachine?: (machine: Machine) => void;
   onVaultMachine?: (machine: Machine) => void;
-  onFunctionsMachine?: (machine: Machine) => void;
+  onFunctionsMachine?: (machine: Machine, functionName?: string) => void;
   onDeleteMachine?: (machine: Machine) => void;
   onCreateRepository?: (machine: Machine) => void;
   enabled?: boolean;
@@ -334,6 +334,23 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                     label: t('machines:createRepo'),
                     icon: <InboxOutlined />,
                     onClick: () => onCreateRepository && onCreateRepository(record)
+                  },
+                  {
+                    key: 'pullRepo',
+                    label: t('machines:pullRepo'),
+                    icon: <CloudServerOutlined />,
+                    onClick: () => {
+                      if (onFunctionsMachine) {
+                        onFunctionsMachine(record, 'pull');
+                        // Mark this machine for refresh when action completes
+                        if (externalRefreshKeys === undefined) {
+                          setInternalRefreshKeys(prev => ({
+                            ...prev,
+                            [record.machineName]: Date.now()
+                          }))
+                        }
+                      }
+                    }
                   },
                   {
                     key: 'functions',

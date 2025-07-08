@@ -272,9 +272,13 @@
       "name": "tirer",
       "description": "Tirer le référentiel depuis le stockage distant",
       "params": {
+        "sourceType": {
+          "label": "Type de source",
+          "help": "Sélectionnez si vous souhaitez récupérer depuis une machine ou un stockage"
+        },
         "from": {
           "label": "Source",
-          "help": "Machine/stockage source"
+          "help": "Sélectionnez la machine ou le stockage source"
         },
         "repo": {
           "label": "Référentiel",

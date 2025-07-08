@@ -105,6 +105,7 @@
   "remote": "Uzak",
   "remoteOperations": "Uzak İşlemler",
   "createRepo": "Depo Oluştur",
+  "pullRepo": "Depo Çek",
   "runAction": "Sunucuda Çalıştır",
   "advanced": "Gelişmiş",
   "lastUpdated": "Son Güncelleme",

@@ -105,6 +105,7 @@
   "remote": "リモート",
   "remoteOperations": "リモート操作",
   "createRepo": "リポジトリを作成",
+  "pullRepo": "リポジトリを取得",
   "runAction": "サーバーで実行",
   "advanced": "詳細",
   "lastUpdated": "最終更新",

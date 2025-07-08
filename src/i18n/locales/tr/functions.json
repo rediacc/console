@@ -272,9 +272,13 @@
       "name": "çek",
       "description": "Depoyu uzak depolamadan çek",
       "params": {
+        "sourceType": {
+          "label": "Kaynak Türü",
+          "help": "Makineden mi yoksa depolamadan mı çekmek istediğinizi seçin"
+        },
         "from": {
           "label": "Kaynak",
-          "help": "Kaynak makine/depolama"
+          "help": "Kaynak makineyi veya depolamayı seçin"
         },
         "repo": {
           "label": "Depo",

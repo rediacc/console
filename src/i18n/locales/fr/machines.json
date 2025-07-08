@@ -105,6 +105,7 @@
   "remote": "Distant",
   "remoteOperations": "Opérations distantes",
   "createRepo": "Créer un référentiel",
+  "pullRepo": "Récupérer un référentiel",
   "runAction": "Exécuter sur le serveur",
   "advanced": "Avancé",
   "lastUpdated": "Dernière mise à jour",

@@ -105,6 +105,7 @@
   "remote": "远程",
   "remoteOperations": "远程操作",
   "createRepo": "创建仓库",
+  "pullRepo": "拉取仓库",
   "runAction": "在服务器上运行",
   "advanced": "高级",
   "lastUpdated": "最后更新",

@@ -272,9 +272,13 @@
       "name": "pull",
       "description": "Obtener repositorio desde almacenamiento remoto",
       "params": {
+        "sourceType": {
+          "label": "Tipo de origen",
+          "help": "Seleccione si desea obtener desde una máquina o almacenamiento"
+        },
         "from": {
           "label": "Origen",
-          "help": "Máquina/almacenamiento de origen"
+          "help": "Seleccione la máquina o almacenamiento de origen"
         },
         "repo": {
           "label": "Repositorio",

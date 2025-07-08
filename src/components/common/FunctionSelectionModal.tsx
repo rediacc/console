@@ -660,6 +660,44 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                               }
                               disabled={!functionParams['destinationType']}
                             />
+                          ) : paramInfo.ui === 'source-dropdown' ? (
+                            <Select
+                              value={functionParams[paramName] || ''}
+                              onChange={(value) => {
+                                setFunctionParams({
+                                  ...functionParams,
+                                  [paramName]: value
+                                })
+                              }}
+                              placeholder={
+                                functionParams['sourceType'] === 'machine' 
+                                  ? t('machines:selectMachine')
+                                  : t('resources:storage.selectStorage')
+                              }
+                              options={
+                                functionParams['sourceType'] === 'machine'
+                                  ? machinesData?.map(machine => ({
+                                      value: machine.machineName,
+                                      label: machine.machineName === currentMachineName 
+                                        ? `${machine.machineName} (${t('machines:currentMachine')})`
+                                        : machine.machineName
+                                    })) || []
+                                  : storageData?.map(storage => ({
+                                      value: storage.storageName,
+                                      label: storage.storageName
+                                    })) || []
+                              }
+                              notFoundContent={
+                                functionParams['sourceType'] === 'machine'
+                                  ? t('machines:noMachinesFound')
+                                  : t('resources:storage.noStorageFound')
+                              }
+                              showSearch
+                              filterOption={(input, option) =>
+                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                              }
+                              disabled={!functionParams['sourceType']}
+                            />
                           ) : (
                             <Input
                               value={functionParams[paramName] || ''}

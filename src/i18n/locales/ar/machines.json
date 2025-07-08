@@ -105,6 +105,7 @@
   "remote": "بعيد",
   "remoteOperations": "العمليات البعيدة",
   "createRepo": "إنشاء مستودع",
+  "pullRepo": "سحب مستودع",
   "runAction": "تشغيل على الخادم",
   "advanced": "متقدم",
   "lastUpdated": "آخر تحديث",

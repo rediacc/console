@@ -272,9 +272,13 @@
       "name": "abrufen",
       "description": "Repository von Remote-Speicher abrufen",
       "params": {
+        "sourceType": {
+          "label": "Quelltyp",
+          "help": "Wählen Sie, ob von einer Maschine oder einem Speicher abgerufen werden soll"
+        },
         "from": {
           "label": "Quelle",
-          "help": "Quellmaschine/Speicher"
+          "help": "Wählen Sie die Quellmaschine oder den Speicher"
         },
         "repo": {
           "label": "Repository",

@@ -272,9 +272,13 @@
       "name": "拉取",
       "description": "从远程存储拉取仓库",
       "params": {
+        "sourceType": {
+          "label": "源类型",
+          "help": "选择从机器还是存储中拉取"
+        },
         "from": {
           "label": "源",
-          "help": "源机器/存储"
+          "help": "选择源机器或存储"
         },
         "repo": {
           "label": "仓库",

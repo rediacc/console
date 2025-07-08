@@ -385,13 +385,22 @@
         "storage": true
       },
       "params": {
+        "sourceType": {
+          "type": "string",
+          "required": true,
+          "options": ["machine", "storage"],
+          "ui": "dropdown",
+          "default": "storage"
+        },
         "from": {
           "type": "string",
-          "required": true
+          "required": true,
+          "ui": "source-dropdown"
         },
         "repo": {
           "type": "string",
-          "required": true
+          "required": true,
+          "ui": "repository-dropdown"
         }
       }
     },

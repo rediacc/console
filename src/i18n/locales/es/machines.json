@@ -105,6 +105,7 @@
   "remote": "Remoto",
   "remoteOperations": "Operaciones Remotas",
   "createRepo": "Crear Repo",
+  "pullRepo": "Extraer Repo",
   "runAction": "Ejecutar en el Servidor",
   "advanced": "Avanzado",
   "lastUpdated": "Última Actualización",

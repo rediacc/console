@@ -29,6 +29,7 @@ export interface FunctionParam {
   help?: string;
   label?: string;
   options?: string[]; // For dropdown parameters
+  ui?: string; // UI type specification (e.g., 'dropdown', 'repository-dropdown', 'destination-dropdown')
 }
 
 // Import function definitions from JSON

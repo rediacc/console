@@ -1544,7 +1544,7 @@ const ResourcesPage: React.FC = () => {
         isSubmitting={isSubmitting}
         isUpdatingVault={isUpdatingVault}
         functionCategories={
-          unifiedModalState.resourceType === 'machine' ? ['machine'] :
+          unifiedModalState.resourceType === 'machine' ? ['machine', 'backup'] :
           unifiedModalState.resourceType === 'repository' ? ['repository', 'backup', 'network'] : 
           unifiedModalState.resourceType === 'storage' ? ['backup'] :
           []

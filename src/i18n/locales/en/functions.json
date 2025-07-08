@@ -272,9 +272,13 @@
       "name": "pull",
       "description": "Pull repository from remote storage",
       "params": {
+        "sourceType": {
+          "label": "Source Type",
+          "help": "Select whether to pull from a machine or storage"
+        },
         "from": {
           "label": "Source",
-          "help": "Source machine/storage"
+          "help": "Select the source machine or storage"
         },
         "repo": {
           "label": "Repository",
