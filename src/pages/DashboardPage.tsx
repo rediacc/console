@@ -34,7 +34,7 @@ import {
   WarningOutlined,
   FieldTimeOutlined,
   RobotOutlined
-} from '@ant-design/icons';
+} from '@/utils/optimizedIcons';
 import { useDashboard } from '../api/queries/dashboard';
 import { useRecentAuditLogs } from '../api/queries/audit';
 import { fetchPricingConfig, getPlanPrice, PricingConfig } from '../api/pricingService';

@@ -12,7 +12,7 @@ import {
   DeploymentUnitOutlined,
   CheckCircleOutlined,
   FileOutlined
-} from '@ant-design/icons'
+} from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'

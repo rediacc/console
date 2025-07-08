@@ -1,6 +1,6 @@
 import React, { useRef } from 'react'
 import { Card, Table, Input, Spin, Empty, TableProps } from 'antd'
-import { SearchOutlined } from '@ant-design/icons'
+import { SearchOutlined } from '@/utils/optimizedIcons'
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize'
 
 const { Search } = Input

@@ -87,6 +87,18 @@ class UnifiedApiClient {
       return null
     }
   }
+
+  async executePluginCommand(
+    action: 'list' | 'connect' | 'connections',
+    machine: string,
+    repository: string,
+    options: any = {}
+  ) {
+    if (!this.isDesktop) {
+      throw new Error('Plugin commands are only available in desktop mode')
+    }
+    return desktopApiClient.executePluginCommand(action, machine, repository, options)
+  }
 }
 
 // Export a singleton instance

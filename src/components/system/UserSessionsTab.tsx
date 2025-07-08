@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Table, Button, Card, Statistic, Row, Col, Tag, Input, Space, Popconfirm, message } from 'antd'
-import { SearchOutlined, CloseCircleOutlined, ReloadOutlined } from '@ant-design/icons'
+import { SearchOutlined, CloseCircleOutlined, ReloadOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useUserRequests, useDeleteUserRequest, type UserRequest } from '@/api/queries/users'
 import { useSelector } from 'react-redux'

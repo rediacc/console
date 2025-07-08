@@ -281,7 +281,23 @@
     "windows": "Windows",
     "useLoginAuth": "Use login authentication instead of token",
     "useLoginAuthHelp": "Login with {{email}} (you'll be prompted for password)",
-    "apiUrl": "API URL"
+    "apiUrl": "API URL",
+    "pluginTab": "Plugins (rediacc-cli-plugin)",
+    "pluginAction": "Action",
+    "listPlugins": "List Available Plugins",
+    "connectPlugin": "Connect to Plugin",
+    "pluginName": "Plugin Name",
+    "pluginNameHelp": "Name of the plugin to connect to",
+    "pluginNamePlaceholder": "e.g., webui, api, admin",
+    "pluginPort": "Local Port (Optional)",
+    "pluginPortHelp": "Leave empty for auto-assignment (7111-9111)",
+    "pluginPortPlaceholder": "e.g., 8080",
+    "pluginListConnections": "List active connections",
+    "executePlugin": "Execute Plugin Command",
+    "pluginSuccess": "Plugin command executed successfully",
+    "pluginFailed": "Plugin command failed",
+    "enterPluginName": "Please enter a plugin name",
+    "noPluginsRunning": "No running plugin containers found"
   },
   "templates": {
     "selectTemplate": "Select Template",
@@ -301,5 +317,13 @@
     "startEmpty": "Start with an empty repository",
     "default": "Default",
     "failedToLoadTemplate": "Failed to load template data"
+  },
+  "errors": {
+    "machineNotFound": "Selected machine not found",
+    "failedToGetRepositoryGuid": "Failed to get repository GUID"
+  },
+  "messages": {
+    "repositoryCreationQueued": "Repository creation queued for submission",
+    "highestPriorityQueued": "Highest priority {{resourceType}} function queued for submission"
   }
 }

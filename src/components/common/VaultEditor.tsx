@@ -24,7 +24,7 @@ import {
   QuestionCircleOutlined,
   BulbOutlined,
   CheckCircleOutlined,
-} from '@ant-design/icons'
+} from '@/utils/optimizedIcons'
 import { SimpleJsonEditor } from './SimpleJsonEditor'
 import { NestedObjectEditor } from './NestedObjectEditor'
 import type { UploadFile } from 'antd/es/upload/interface'

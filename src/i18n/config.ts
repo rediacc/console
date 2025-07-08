@@ -1,7 +1,9 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
+import Backend from 'i18next-http-backend';
 
+// Only load default language initially (English)
 import enAuth from './locales/en/auth.json';
 import enCommon from './locales/en/common.json';
 import enResources from './locales/en/resources.json';
@@ -13,96 +15,10 @@ import enStorageProviders from './locales/en/storageProviders.json';
 import enFunctions from './locales/en/functions.json';
 import enMarketplace from './locales/en/marketplace.json';
 
-import esAuth from './locales/es/auth.json';
-import esCommon from './locales/es/common.json';
-import esResources from './locales/es/resources.json';
-import esMachines from './locales/es/machines.json';
-import esSystem from './locales/es/system.json';
-import esQueue from './locales/es/queue.json';
-import esSettings from './locales/es/settings.json';
-import esStorageProviders from './locales/es/storageProviders.json';
-import esFunctions from './locales/es/functions.json';
-import esMarketplace from './locales/es/marketplace.json';
-
-import trAuth from './locales/tr/auth.json';
-import trCommon from './locales/tr/common.json';
-import trResources from './locales/tr/resources.json';
-import trMachines from './locales/tr/machines.json';
-import trSystem from './locales/tr/system.json';
-import trQueue from './locales/tr/queue.json';
-import trSettings from './locales/tr/settings.json';
-import trStorageProviders from './locales/tr/storageProviders.json';
-import trFunctions from './locales/tr/functions.json';
-import trMarketplace from './locales/tr/marketplace.json';
-
-import frAuth from './locales/fr/auth.json';
-import frCommon from './locales/fr/common.json';
-import frResources from './locales/fr/resources.json';
-import frMachines from './locales/fr/machines.json';
-import frSystem from './locales/fr/system.json';
-import frQueue from './locales/fr/queue.json';
-import frSettings from './locales/fr/settings.json';
-import frStorageProviders from './locales/fr/storageProviders.json';
-import frFunctions from './locales/fr/functions.json';
-import frMarketplace from './locales/fr/marketplace.json';
-
-import deAuth from './locales/de/auth.json';
-import deCommon from './locales/de/common.json';
-import deResources from './locales/de/resources.json';
-import deMachines from './locales/de/machines.json';
-import deSystem from './locales/de/system.json';
-import deQueue from './locales/de/queue.json';
-import deSettings from './locales/de/settings.json';
-import deStorageProviders from './locales/de/storageProviders.json';
-import deFunctions from './locales/de/functions.json';
-import deMarketplace from './locales/de/marketplace.json';
-
-import zhAuth from './locales/zh/auth.json';
-import zhCommon from './locales/zh/common.json';
-import zhResources from './locales/zh/resources.json';
-import zhMachines from './locales/zh/machines.json';
-import zhSystem from './locales/zh/system.json';
-import zhQueue from './locales/zh/queue.json';
-import zhSettings from './locales/zh/settings.json';
-import zhStorageProviders from './locales/zh/storageProviders.json';
-import zhFunctions from './locales/zh/functions.json';
-import zhMarketplace from './locales/zh/marketplace.json';
-
-import jaAuth from './locales/ja/auth.json';
-import jaCommon from './locales/ja/common.json';
-import jaResources from './locales/ja/resources.json';
-import jaMachines from './locales/ja/machines.json';
-import jaSystem from './locales/ja/system.json';
-import jaQueue from './locales/ja/queue.json';
-import jaSettings from './locales/ja/settings.json';
-import jaStorageProviders from './locales/ja/storageProviders.json';
-import jaFunctions from './locales/ja/functions.json';
-import jaMarketplace from './locales/ja/marketplace.json';
-
-import arAuth from './locales/ar/auth.json';
-import arCommon from './locales/ar/common.json';
-import arResources from './locales/ar/resources.json';
-import arMachines from './locales/ar/machines.json';
-import arSystem from './locales/ar/system.json';
-import arQueue from './locales/ar/queue.json';
-import arSettings from './locales/ar/settings.json';
-import arStorageProviders from './locales/ar/storageProviders.json';
-import arFunctions from './locales/ar/functions.json';
-import arMarketplace from './locales/ar/marketplace.json';
-
-import ruAuth from './locales/ru/auth.json';
-import ruCommon from './locales/ru/common.json';
-import ruResources from './locales/ru/resources.json';
-import ruMachines from './locales/ru/machines.json';
-import ruSystem from './locales/ru/system.json';
-import ruQueue from './locales/ru/queue.json';
-import ruSettings from './locales/ru/settings.json';
-import ruStorageProviders from './locales/ru/storageProviders.json';
-import ruFunctions from './locales/ru/functions.json';
-import ruMarketplace from './locales/ru/marketplace.json';
-
 export const defaultNS = 'common';
-export const resources = {
+
+// Initial resources - only English loaded
+const initialResources = {
   en: {
     common: enCommon,
     auth: enAuth,
@@ -114,106 +30,128 @@ export const resources = {
     storageProviders: enStorageProviders,
     functions: enFunctions,
     marketplace: enMarketplace,
-  },
-  es: {
-    common: esCommon,
-    auth: esAuth,
-    resources: esResources,
-    machines: esMachines,
-    system: esSystem,
-    queue: esQueue,
-    settings: esSettings,
-    storageProviders: esStorageProviders,
-    functions: esFunctions,
-    marketplace: esMarketplace,
-  },
-  tr: {
-    common: trCommon,
-    auth: trAuth,
-    resources: trResources,
-    machines: trMachines,
-    system: trSystem,
-    queue: trQueue,
-    settings: trSettings,
-    storageProviders: trStorageProviders,
-    functions: trFunctions,
-    marketplace: trMarketplace,
-  },
-  fr: {
-    common: frCommon,
-    auth: frAuth,
-    resources: frResources,
-    machines: frMachines,
-    system: frSystem,
-    queue: frQueue,
-    settings: frSettings,
-    storageProviders: frStorageProviders,
-    functions: frFunctions,
-    marketplace: frMarketplace,
-  },
-  de: {
-    common: deCommon,
-    auth: deAuth,
-    resources: deResources,
-    machines: deMachines,
-    system: deSystem,
-    queue: deQueue,
-    settings: deSettings,
-    storageProviders: deStorageProviders,
-    functions: deFunctions,
-    marketplace: deMarketplace,
-  },
-  zh: {
-    common: zhCommon,
-    auth: zhAuth,
-    resources: zhResources,
-    machines: zhMachines,
-    system: zhSystem,
-    queue: zhQueue,
-    settings: zhSettings,
-    storageProviders: zhStorageProviders,
-    functions: zhFunctions,
-    marketplace: zhMarketplace,
-  },
-  ja: {
-    common: jaCommon,
-    auth: jaAuth,
-    resources: jaResources,
-    machines: jaMachines,
-    system: jaSystem,
-    queue: jaQueue,
-    settings: jaSettings,
-    storageProviders: jaStorageProviders,
-    functions: jaFunctions,
-    marketplace: jaMarketplace,
-  },
-  ar: {
-    common: arCommon,
-    auth: arAuth,
-    resources: arResources,
-    machines: arMachines,
-    system: arSystem,
-    queue: arQueue,
-    settings: arSettings,
-    storageProviders: arStorageProviders,
-    functions: arFunctions,
-    marketplace: arMarketplace,
-  },
-  ru: {
-    common: ruCommon,
-    auth: ruAuth,
-    resources: ruResources,
-    machines: ruMachines,
-    system: ruSystem,
-    queue: ruQueue,
-    settings: ruSettings,
-    storageProviders: ruStorageProviders,
-    functions: ruFunctions,
-    marketplace: ruMarketplace,
-  },
-} as const;
+  }
+};
 
-// Initialize i18n and wait for it to be ready
+// Lazy load function for other languages
+const loadLanguageResources = async (lng: string) => {
+  if (lng === 'en' || i18n.hasResourceBundle(lng, 'common')) {
+    return; // Already loaded
+  }
+
+  try {
+    // Dynamic imports for other languages
+    const resources: any = {};
+    
+    switch (lng) {
+      case 'es':
+        resources.auth = (await import('./locales/es/auth.json')).default;
+        resources.common = (await import('./locales/es/common.json')).default;
+        resources.resources = (await import('./locales/es/resources.json')).default;
+        resources.machines = (await import('./locales/es/machines.json')).default;
+        resources.system = (await import('./locales/es/system.json')).default;
+        resources.queue = (await import('./locales/es/queue.json')).default;
+        resources.settings = (await import('./locales/es/settings.json')).default;
+        resources.storageProviders = (await import('./locales/es/storageProviders.json')).default;
+        resources.functions = (await import('./locales/es/functions.json')).default;
+        resources.marketplace = (await import('./locales/es/marketplace.json')).default;
+        break;
+      case 'tr':
+        resources.auth = (await import('./locales/tr/auth.json')).default;
+        resources.common = (await import('./locales/tr/common.json')).default;
+        resources.resources = (await import('./locales/tr/resources.json')).default;
+        resources.machines = (await import('./locales/tr/machines.json')).default;
+        resources.system = (await import('./locales/tr/system.json')).default;
+        resources.queue = (await import('./locales/tr/queue.json')).default;
+        resources.settings = (await import('./locales/tr/settings.json')).default;
+        resources.storageProviders = (await import('./locales/tr/storageProviders.json')).default;
+        resources.functions = (await import('./locales/tr/functions.json')).default;
+        resources.marketplace = (await import('./locales/tr/marketplace.json')).default;
+        break;
+      case 'fr':
+        resources.auth = (await import('./locales/fr/auth.json')).default;
+        resources.common = (await import('./locales/fr/common.json')).default;
+        resources.resources = (await import('./locales/fr/resources.json')).default;
+        resources.machines = (await import('./locales/fr/machines.json')).default;
+        resources.system = (await import('./locales/fr/system.json')).default;
+        resources.queue = (await import('./locales/fr/queue.json')).default;
+        resources.settings = (await import('./locales/fr/settings.json')).default;
+        resources.storageProviders = (await import('./locales/fr/storageProviders.json')).default;
+        resources.functions = (await import('./locales/fr/functions.json')).default;
+        resources.marketplace = (await import('./locales/fr/marketplace.json')).default;
+        break;
+      case 'de':
+        resources.auth = (await import('./locales/de/auth.json')).default;
+        resources.common = (await import('./locales/de/common.json')).default;
+        resources.resources = (await import('./locales/de/resources.json')).default;
+        resources.machines = (await import('./locales/de/machines.json')).default;
+        resources.system = (await import('./locales/de/system.json')).default;
+        resources.queue = (await import('./locales/de/queue.json')).default;
+        resources.settings = (await import('./locales/de/settings.json')).default;
+        resources.storageProviders = (await import('./locales/de/storageProviders.json')).default;
+        resources.functions = (await import('./locales/de/functions.json')).default;
+        resources.marketplace = (await import('./locales/de/marketplace.json')).default;
+        break;
+      case 'zh':
+        resources.auth = (await import('./locales/zh/auth.json')).default;
+        resources.common = (await import('./locales/zh/common.json')).default;
+        resources.resources = (await import('./locales/zh/resources.json')).default;
+        resources.machines = (await import('./locales/zh/machines.json')).default;
+        resources.system = (await import('./locales/zh/system.json')).default;
+        resources.queue = (await import('./locales/zh/queue.json')).default;
+        resources.settings = (await import('./locales/zh/settings.json')).default;
+        resources.storageProviders = (await import('./locales/zh/storageProviders.json')).default;
+        resources.functions = (await import('./locales/zh/functions.json')).default;
+        resources.marketplace = (await import('./locales/zh/marketplace.json')).default;
+        break;
+      case 'ja':
+        resources.auth = (await import('./locales/ja/auth.json')).default;
+        resources.common = (await import('./locales/ja/common.json')).default;
+        resources.resources = (await import('./locales/ja/resources.json')).default;
+        resources.machines = (await import('./locales/ja/machines.json')).default;
+        resources.system = (await import('./locales/ja/system.json')).default;
+        resources.queue = (await import('./locales/ja/queue.json')).default;
+        resources.settings = (await import('./locales/ja/settings.json')).default;
+        resources.storageProviders = (await import('./locales/ja/storageProviders.json')).default;
+        resources.functions = (await import('./locales/ja/functions.json')).default;
+        resources.marketplace = (await import('./locales/ja/marketplace.json')).default;
+        break;
+      case 'ar':
+        resources.auth = (await import('./locales/ar/auth.json')).default;
+        resources.common = (await import('./locales/ar/common.json')).default;
+        resources.resources = (await import('./locales/ar/resources.json')).default;
+        resources.machines = (await import('./locales/ar/machines.json')).default;
+        resources.system = (await import('./locales/ar/system.json')).default;
+        resources.queue = (await import('./locales/ar/queue.json')).default;
+        resources.settings = (await import('./locales/ar/settings.json')).default;
+        resources.storageProviders = (await import('./locales/ar/storageProviders.json')).default;
+        resources.functions = (await import('./locales/ar/functions.json')).default;
+        resources.marketplace = (await import('./locales/ar/marketplace.json')).default;
+        break;
+      case 'ru':
+        resources.auth = (await import('./locales/ru/auth.json')).default;
+        resources.common = (await import('./locales/ru/common.json')).default;
+        resources.resources = (await import('./locales/ru/resources.json')).default;
+        resources.machines = (await import('./locales/ru/machines.json')).default;
+        resources.system = (await import('./locales/ru/system.json')).default;
+        resources.queue = (await import('./locales/ru/queue.json')).default;
+        resources.settings = (await import('./locales/ru/settings.json')).default;
+        resources.storageProviders = (await import('./locales/ru/storageProviders.json')).default;
+        resources.functions = (await import('./locales/ru/functions.json')).default;
+        resources.marketplace = (await import('./locales/ru/marketplace.json')).default;
+        break;
+    }
+
+    // Add resources to i18n
+    Object.keys(resources).forEach(ns => {
+      i18n.addResourceBundle(lng, ns, resources[ns]);
+    });
+  } catch (error) {
+    console.error(`Failed to load language resources for ${lng}:`, error);
+  }
+};
+
+// Initialize i18n with lazy loading
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -223,7 +161,7 @@ i18n
     debug: false,
     ns: ['common', 'auth', 'resources', 'machines', 'system', 'queue', 'settings', 'storageProviders', 'functions', 'marketplace'],
     defaultNS,
-    resources,
+    resources: initialResources,
     interpolation: {
       escapeValue: false,
     },
@@ -232,9 +170,17 @@ i18n
       caches: ['localStorage'],
     },
     react: {
-      useSuspense: true,
-      wait: true
+      useSuspense: false, // Disable suspense to prevent blocking
+      wait: false
     }
   });
+
+// Listen for language changes to load resources dynamically
+i18n.on('languageChanged', (lng) => {
+  loadLanguageResources(lng);
+});
+
+// Export the load function for manual preloading if needed
+export { loadLanguageResources };
 
 export default i18n;

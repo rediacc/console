@@ -14,7 +14,7 @@ import {
   HistoryOutlined,
   ReloadOutlined,
   ImportOutlined
-} from '@ant-design/icons'
+} from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
@@ -405,7 +405,7 @@ const ResourcesPage: React.FC = () => {
             )
             
             if (!machine) {
-              showMessage('error', 'Selected machine not found')
+              showMessage('error', t('resources:errors.machineNotFound'))
               closeUnifiedModal()
               return
             }
@@ -434,7 +434,7 @@ const ResourcesPage: React.FC = () => {
             
             
             if (!repositoryGuid) {
-              showMessage('error', 'Failed to get repository GUID')
+              showMessage('error', t('resources:errors.failedToGetRepositoryGuid'))
               closeUnifiedModal()
               return
             }
@@ -480,7 +480,7 @@ const ResourcesPage: React.FC = () => {
               setQueueTraceModal({ visible: true, taskId: response.taskId, machineName: machine.value })
             } else if (response?.isQueued) {
               // Item was queued, don't open trace modal yet
-              showMessage('info', 'Repository creation queued for submission')
+              showMessage('info', t('resources:messages.repositoryCreationQueued'))
             }
           } catch (error) {
             showMessage('warning', t('repositories.repoCreatedButQueueFailed'))
@@ -736,7 +736,7 @@ const ResourcesPage: React.FC = () => {
         );
         
         if (!machine) {
-          showMessage('error', 'Selected machine not found');
+          showMessage('error', t('resources:errors.machineNotFound'));
           return;
         }
         
@@ -796,7 +796,7 @@ const ResourcesPage: React.FC = () => {
         setQueueTraceModal({ visible: true, taskId: response.taskId, machineName: machineName });
       } else if (response?.isQueued) {
         // Item was queued for highest priority management
-        showMessage('info', `Highest priority ${resourceType} function queued for submission`);
+        showMessage('info', t('resources:messages.highestPriorityQueued', { resourceType }));
       }
     } catch (error) {
       // Error is handled by the mutation
@@ -1379,7 +1379,7 @@ const ResourcesPage: React.FC = () => {
                           onClick={() => setConnectivityTestModal(true)}
                           disabled={machines.length === 0}
                         >
-                          Connectivity Test
+                          {t('machines:connectivityTest')}
                         </Button>
                       )}
                       <Button 
@@ -1406,7 +1406,7 @@ const ResourcesPage: React.FC = () => {
                           }
                         }}
                       >
-                        Refresh
+                        {t('common:actions.refresh')}
                       </Button>
                     </div>
                   )}
@@ -1476,7 +1476,7 @@ const ResourcesPage: React.FC = () => {
                       onClick={() => setConnectivityTestModal(true)}
                       disabled={machines.length === 0}
                     >
-                      Connectivity Test
+                      {t('machines:connectivityTest')}
                     </Button>
                   )}
                   <Button 
@@ -1500,7 +1500,7 @@ const ResourcesPage: React.FC = () => {
                       }
                     }}
                   >
-                    Refresh
+                    {t('common:actions.refresh')}
                   </Button>
                 </Space>
               </div>

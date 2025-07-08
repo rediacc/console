@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { Select, Space, Tag, Input } from 'antd'
-import { TeamOutlined, SearchOutlined } from '@ant-design/icons'
+import { TeamOutlined, SearchOutlined } from '@/utils/optimizedIcons'
 import type { Team } from '@/api/queries/teams'
 
 interface TeamSelectorProps {

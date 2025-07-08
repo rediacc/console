@@ -4,7 +4,8 @@ import path from 'path'
 
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  base: process.env.NODE_ENV === 'production' ? '/console/' : '/',
+  // For Tauri apps, always use root path. For web deployment, use /console/
+  base: process.env.TAURI_ENV_PLATFORM ? '/' : (process.env.NODE_ENV === 'production' ? '/console/' : '/'),
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -30,18 +31,37 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: mode === 'development',
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: mode === 'production',
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.trace'],
+      },
+    },
     rollupOptions: {
       output: {
         manualChunks: {
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-antd': ['antd', '@ant-design/icons'],
+          'vendor-antd': ['antd'],
           'vendor-charts': ['@ant-design/charts', 'd3'],
           'vendor-state': ['@reduxjs/toolkit', 'react-redux', '@tanstack/react-query'],
           'vendor-utils': ['lodash', 'axios', 'date-fns', 'zod'],
+          'vendor-i18n': ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
+        },
+        chunkFileNames: (chunkInfo) => {
+          const facadeModuleId = chunkInfo.facadeModuleId ? chunkInfo.facadeModuleId.split('/').pop() : 'chunk';
+          return `assets/js/${facadeModuleId}-[hash].js`;
         },
       },
     },
+    chunkSizeWarningLimit: 1000, // 1MB warning threshold
+    reportCompressedSize: false, // Disable gzip size reporting for faster builds
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'antd', '@ant-design/icons'],
+    exclude: ['@tauri-apps/api'],
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify(mode),

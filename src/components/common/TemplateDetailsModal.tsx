@@ -5,7 +5,7 @@ import {
   CodeOutlined, 
   FolderOutlined,
   CheckCircleOutlined 
-} from '@ant-design/icons'
+} from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 
 const { Text, Title, Paragraph } = Typography

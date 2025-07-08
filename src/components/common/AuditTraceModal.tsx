@@ -15,7 +15,7 @@ import {
   DownloadOutlined,
   FileTextOutlined,
   FileExcelOutlined
-} from '@ant-design/icons'
+} from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useEntityAuditTrace, AuditTraceRecord } from '@/api/queries/audit'
 

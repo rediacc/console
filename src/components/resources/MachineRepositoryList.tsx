@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Empty, Card, Row, Col, Progress } from 'antd'
-import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, CloudDownloadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, PlusOutlined, MinusOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined, GlobalOutlined } from '@ant-design/icons'
+import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, CloudDownloadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, PlusOutlined, MinusOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined, GlobalOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { type QueueFunction } from '@/api/queries/queue'
 import { useQueueItemTrace } from '@/api/queries/queue'
@@ -17,10 +17,12 @@ import type { ColumnsType } from 'antd/es/table'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import { LocalCommandModal } from './LocalCommandModal'
+import { DesktopLocalCommandModal } from './DesktopLocalCommandModal'
 import { showMessage } from '@/utils/messages'
 import { tokenService } from '@/services/tokenService'
 import { useAppSelector } from '@/store/store'
 import { getLocalizedRelativeTime } from '@/utils/timeUtils'
+import { useDesktopMode } from '@/hooks/useDesktopMode'
 
 const { Text } = Typography
 
@@ -87,6 +89,7 @@ interface MachineRepositoryListProps {
 export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete, hideSystemInfo = false }) => {
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
   const userEmail = useAppSelector((state) => state.auth.user?.email || '')
+  const { isDesktop } = useDesktopMode()
   const [currentToken, setCurrentToken] = useState<string>('')
   const [repositories, setRepositories] = useState<Repository[]>([])
   const [systemContainers, setSystemContainers] = useState<any[]>([])
@@ -1880,16 +1883,29 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         }}
       />
       
-      {/* Local Command Modal */}
+      {/* Local Command Modal - Desktop or Web version based on environment */}
       {localCommandModal.repository && (
-        <LocalCommandModal
-          visible={localCommandModal.visible}
-          onClose={() => setLocalCommandModal({ visible: false, repository: null })}
-          machine={machine.machineName}
-          repository={localCommandModal.repository.name}
-          token={currentToken}
-          userEmail={userEmail}
-        />
+        isDesktop ? (
+          <DesktopLocalCommandModal
+            visible={localCommandModal.visible}
+            onClose={() => setLocalCommandModal({ visible: false, repository: null })}
+            machine={machine.machineName}
+            repository={localCommandModal.repository.name}
+            token={currentToken}
+            userEmail={userEmail}
+            pluginContainers={containersData[localCommandModal.repository.name]?.containers || []}
+          />
+        ) : (
+          <LocalCommandModal
+            visible={localCommandModal.visible}
+            onClose={() => setLocalCommandModal({ visible: false, repository: null })}
+            machine={machine.machineName}
+            repository={localCommandModal.repository.name}
+            token={currentToken}
+            userEmail={userEmail}
+            pluginContainers={containersData[localCommandModal.repository.name]?.containers || []}
+          />
+        )
       )}
     </div>
   )

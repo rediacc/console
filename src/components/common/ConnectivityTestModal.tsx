@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Modal, Table, Button, Space, Typography, Progress, Tag, Alert } from 'antd'
-import { SyncOutlined, CheckCircleOutlined, CloseCircleOutlined, WifiOutlined, ClockCircleOutlined } from '@ant-design/icons'
+import { SyncOutlined, CheckCircleOutlined, CloseCircleOutlined, WifiOutlined, ClockCircleOutlined } from '@/utils/optimizedIcons'
 import type { ColumnsType } from 'antd/es/table/interface'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/context/ThemeContext'

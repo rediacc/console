@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from 'antd';
-import { SunOutlined, MoonOutlined } from '@ant-design/icons';
+import { SunOutlined, MoonOutlined } from '@/utils/optimizedIcons';
 import { useTheme } from '../../context/ThemeContext';
 
 export const ThemeToggle: React.FC = () => {

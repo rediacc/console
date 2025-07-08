@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Modal, Tabs, Form, Input, Select, Checkbox, Button, Space, Typography, message, Radio, Alert } from 'antd'
-import { CopyOutlined, CodeOutlined, DesktopOutlined, WindowsOutlined, AppleOutlined, FolderOpenOutlined, PlayCircleOutlined } from '@ant-design/icons'
+import { CopyOutlined, CodeOutlined, DesktopOutlined, WindowsOutlined, AppleOutlined, FolderOpenOutlined, PlayCircleOutlined, ApiOutlined, SyncOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useDesktopMode } from '@/hooks/useDesktopMode'
 import { unifiedApiClient } from '@/api/unifiedClient'
@@ -18,6 +18,12 @@ interface DesktopLocalCommandModalProps {
   repository: string
   token: string
   userEmail: string
+  pluginContainers?: Array<{
+    name: string
+    image: string
+    status: string
+    [key: string]: any
+  }>
 }
 
 export const DesktopLocalCommandModal: React.FC<DesktopLocalCommandModalProps> = ({
@@ -26,11 +32,12 @@ export const DesktopLocalCommandModal: React.FC<DesktopLocalCommandModalProps> =
   machine,
   repository,
   token,
-  userEmail
+  userEmail,
+  pluginContainers = []
 }) => {
   const { t } = useTranslation()
   const { isDesktop, hasPython, pythonVersion, hasCli } = useDesktopMode()
-  const [activeTab, setActiveTab] = useState('sync')
+  const [activeTab, setActiveTab] = useState('plugin')
   const [executing, setExecuting] = useState(false)
   const [output, setOutput] = useState('')
   
@@ -40,13 +47,22 @@ export const DesktopLocalCommandModal: React.FC<DesktopLocalCommandModalProps> =
   const [syncOptions, setSyncOptions] = useState({
     mirror: false,
     verify: false,
-    confirm: false,
-    dev: false
+    confirm: false
   })
   
   // Terminal command state
   const [termCommand, setTermCommand] = useState('')
-  const [termDev, setTermDev] = useState(false)
+  
+  // Plugin command state
+  const [pluginAction, setPluginAction] = useState<'list' | 'connect' | 'connections'>('list')
+  const [pluginName, setPluginName] = useState('')
+  const [pluginPort, setPluginPort] = useState('')
+
+  // Filter containers that are plugins (image contains 'rediacc/plugin')
+  const availablePlugins = pluginContainers.filter(container => 
+    container.image && container.image.includes('rediacc/plugin') && 
+    container.status && container.status.toLowerCase().includes('running')
+  )
 
   const handleBrowse = async () => {
     if (!isDesktop) return
@@ -83,7 +99,8 @@ export const DesktopLocalCommandModal: React.FC<DesktopLocalCommandModalProps> =
         localPath,
         {
           mirror: syncOptions.mirror,
-          verify: syncOptions.verify
+          verify: syncOptions.verify,
+          confirm: syncOptions.confirm
         }
       )
 
@@ -138,6 +155,51 @@ export const DesktopLocalCommandModal: React.FC<DesktopLocalCommandModalProps> =
     }
   }
 
+  const executePluginCommand = async () => {
+    if (!isDesktop || !hasCli) {
+      message.error(t('resources:localCommandBuilder.cliRequired'))
+      return
+    }
+
+    if (pluginAction === 'connect' && !pluginName) {
+      message.warning(t('resources:localCommandBuilder.enterPluginName'))
+      return
+    }
+
+    setExecuting(true)
+    setOutput('')
+
+    try {
+      const options: any = {}
+      if (pluginAction === 'connect') {
+        options.plugin = pluginName
+        if (pluginPort) {
+          options.port = parseInt(pluginPort, 10)
+        }
+      }
+
+      const result = await unifiedApiClient.executePluginCommand(
+        pluginAction,
+        machine,
+        repository,
+        options
+      )
+
+      setOutput(result.output + (result.error ? `\n\nErrors:\n${result.error}` : ''))
+      
+      if (result.success) {
+        message.success(t('resources:localCommandBuilder.pluginSuccess'))
+      } else {
+        message.error(t('resources:localCommandBuilder.pluginFailed'))
+      }
+    } catch (error: any) {
+      setOutput(`Error: ${error.message}`)
+      message.error(error.message)
+    } finally {
+      setExecuting(false)
+    }
+  }
+
   const copyOutput = () => {
     navigator.clipboard.writeText(output).then(() => {
       message.success(t('common:copiedToClipboard'))
@@ -176,7 +238,101 @@ export const DesktopLocalCommandModal: React.FC<DesktopLocalCommandModalProps> =
       )}
 
       <Tabs activeKey={activeTab} onChange={setActiveTab}>
-        <TabPane tab={t('resources:localCommandBuilder.syncTab')} key="sync" icon={<CodeOutlined />}>
+        <TabPane tab={t('resources:localCommandBuilder.pluginTab')} key="plugin" icon={<ApiOutlined />}>
+          <Form layout="vertical">
+            <Form.Item label={t('resources:localCommandBuilder.pluginAction')}>
+              <Select value={pluginAction} onChange={setPluginAction} disabled={executing}>
+                <Option value="list">{t('resources:localCommandBuilder.listPlugins')}</Option>
+                <Option value="connect">{t('resources:localCommandBuilder.connectPlugin')}</Option>
+                <Option value="connections">{t('resources:localCommandBuilder.pluginListConnections')}</Option>
+              </Select>
+            </Form.Item>
+
+            {pluginAction === 'connect' && (
+              <>
+                <Form.Item 
+                  label={t('resources:localCommandBuilder.pluginName')}
+                  help={t('resources:localCommandBuilder.pluginNameHelp')}
+                  required
+                >
+                  <Select
+                    placeholder={t('resources:localCommandBuilder.pluginNamePlaceholder')}
+                    value={pluginName}
+                    onChange={setPluginName}
+                    disabled={executing}
+                    notFoundContent={availablePlugins.length === 0 ? t('resources:localCommandBuilder.noPluginsRunning') : null}
+                  >
+                    {availablePlugins.map((container) => (
+                      <Option key={container.name} value={container.name}>
+                        {container.name}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+
+                <Form.Item 
+                  label={t('resources:localCommandBuilder.pluginPort')}
+                  help={t('resources:localCommandBuilder.pluginPortHelp')}
+                >
+                  <Input
+                    placeholder={t('resources:localCommandBuilder.pluginPortPlaceholder')}
+                    value={pluginPort}
+                    onChange={(e) => setPluginPort(e.target.value)}
+                    type="number"
+                    disabled={executing}
+                  />
+                </Form.Item>
+              </>
+            )}
+
+            {isDesktop && hasCli && (
+              <Form.Item>
+                <Button
+                  type="primary"
+                  icon={<PlayCircleOutlined />}
+                  onClick={executePluginCommand}
+                  loading={executing}
+                  disabled={pluginAction === 'connect' && !pluginName}
+                >
+                  {t('resources:localCommandBuilder.executePlugin')}
+                </Button>
+              </Form.Item>
+            )}
+          </Form>
+        </TabPane>
+
+        <TabPane tab={t('resources:localCommandBuilder.terminalTab')} key="terminal" icon={<CodeOutlined />}>
+          <Form layout="vertical">
+            <Form.Item 
+              label={t('resources:localCommandBuilder.command')}
+              help={t('resources:localCommandBuilder.commandHelp')}
+            >
+              <Input
+                placeholder="docker ps"
+                value={termCommand}
+                onChange={(e) => setTermCommand(e.target.value)}
+                disabled={executing}
+                onPressEnter={executeTermCommand}
+              />
+            </Form.Item>
+
+            {isDesktop && hasCli && (
+              <Form.Item>
+                <Button
+                  type="primary"
+                  icon={<PlayCircleOutlined />}
+                  onClick={executeTermCommand}
+                  loading={executing}
+                  disabled={!termCommand}
+                >
+                  {t('resources:localCommandBuilder.executeCommand')}
+                </Button>
+              </Form.Item>
+            )}
+          </Form>
+        </TabPane>
+
+        <TabPane tab={t('resources:localCommandBuilder.syncTab')} key="sync" icon={<SyncOutlined />}>
           <Form layout="vertical">
             <Form.Item label={t('resources:localCommandBuilder.action')}>
               <Select value={syncAction} onChange={setSyncAction} disabled={executing}>
@@ -212,7 +368,15 @@ export const DesktopLocalCommandModal: React.FC<DesktopLocalCommandModalProps> =
               <Space direction="vertical">
                 <Checkbox
                   checked={syncOptions.mirror}
-                  onChange={(e) => setSyncOptions({ ...syncOptions, mirror: e.target.checked })}
+                  onChange={(e) => {
+                    const mirrorChecked = e.target.checked
+                    setSyncOptions(prev => ({
+                      ...prev,
+                      mirror: mirrorChecked,
+                      // When mirror is checked, also check confirm
+                      confirm: mirrorChecked ? true : prev.confirm
+                    }))
+                  }}
                   disabled={executing}
                 >
                   {t('resources:localCommandBuilder.mirror')}
@@ -230,6 +394,16 @@ export const DesktopLocalCommandModal: React.FC<DesktopLocalCommandModalProps> =
                     {t('resources:localCommandBuilder.verifyHelp')}
                   </Text>
                 </Checkbox>
+                <Checkbox
+                  checked={syncOptions.confirm}
+                  onChange={(e) => setSyncOptions({ ...syncOptions, confirm: e.target.checked })}
+                  disabled={executing || syncOptions.mirror}
+                >
+                  {t('resources:localCommandBuilder.confirm')}
+                  <Text type="secondary" style={{ marginLeft: 8 }}>
+                    {t('resources:localCommandBuilder.confirmHelp')}
+                  </Text>
+                </Checkbox>
               </Space>
             </Form.Item>
 
@@ -243,50 +417,6 @@ export const DesktopLocalCommandModal: React.FC<DesktopLocalCommandModalProps> =
                   disabled={!localPath}
                 >
                   {t('resources:localCommandBuilder.executeSync')}
-                </Button>
-              </Form.Item>
-            )}
-          </Form>
-        </TabPane>
-
-        <TabPane tab={t('resources:localCommandBuilder.terminalTab')} key="terminal" icon={<DesktopOutlined />}>
-          <Form layout="vertical">
-            <Form.Item 
-              label={t('resources:localCommandBuilder.command')}
-              help={t('resources:localCommandBuilder.commandHelp')}
-            >
-              <Input
-                placeholder="docker ps"
-                value={termCommand}
-                onChange={(e) => setTermCommand(e.target.value)}
-                disabled={executing}
-                onPressEnter={executeTermCommand}
-              />
-            </Form.Item>
-
-            <Form.Item>
-              <Checkbox
-                checked={termDev}
-                onChange={(e) => setTermDev(e.target.checked)}
-                disabled={executing}
-              >
-                {t('resources:localCommandBuilder.devMode')}
-                <Text type="secondary" style={{ marginLeft: 8 }}>
-                  {t('resources:localCommandBuilder.devModeHelp')}
-                </Text>
-              </Checkbox>
-            </Form.Item>
-
-            {isDesktop && hasCli && (
-              <Form.Item>
-                <Button
-                  type="primary"
-                  icon={<PlayCircleOutlined />}
-                  onClick={executeTermCommand}
-                  loading={executing}
-                  disabled={!termCommand}
-                >
-                  {t('resources:localCommandBuilder.executeCommand')}
                 </Button>
               </Form.Item>
             )}

@@ -41,7 +41,7 @@
     }
   },
   "productName": "Rediacc Console",
-  "mainBinaryName": "Rediacc Console",
+  "mainBinaryName": "rediacc-console",
   "version": "1.0.0",
   "identifier": "com.rediacc.console",
   "plugins": {},
@@ -57,7 +57,8 @@
         "minHeight": 600,
         "minWidth": 800,
         "center": true,
-        "useHttpsScheme": true
+        "useHttpsScheme": true,
+        "additionalBrowserArgs": "--disable-gpu --disable-software-rasterizer --disable-gpu-sandbox"
       }
     ],
     "security": {

@@ -281,7 +281,21 @@
     "windows": "Windows",
     "useLoginAuth": "使用登录认证而非令牌",
     "useLoginAuthHelp": "使用 {{email}} 登录（系统将提示您输入密码）",
-    "apiUrl": "API URL"
+    "apiUrl": "API URL",
+    "pluginTab": "插件 (rediacc-cli-plugin)",
+    "pluginAction": "操作",
+    "listPlugins": "列出可用插件",
+    "connectPlugin": "连接到插件",
+    "pluginName": "插件名称",
+    "pluginNameHelp": "要连接的插件名称",
+    "pluginNamePlaceholder": "例如：webui, api, admin",
+    "pluginPort": "本地端口（可选）",
+    "pluginPortHelp": "留空以自动分配（7111-9111）",
+    "pluginPortPlaceholder": "例如：8080",
+    "pluginListConnections": "列出活动连接",
+    "executePlugin": "执行插件命令",
+    "pluginSuccess": "插件命令执行成功",
+    "pluginFailed": "插件命令执行失败"
   },
   "templates": {
     "selectTemplate": "选择模板",
@@ -301,5 +315,13 @@
     "startEmpty": "从空仓库开始",
     "default": "默认",
     "failedToLoadTemplate": "加载模板数据失败"
+  },
+  "errors": {
+    "machineNotFound": "未找到所选机器",
+    "failedToGetRepositoryGuid": "获取仓库GUID失败"
+  },
+  "messages": {
+    "repositoryCreationQueued": "仓库创建已排队等待提交",
+    "highestPriorityQueued": "最高优先级的{{resourceType}}功能已排队等待提交"
   }
 }

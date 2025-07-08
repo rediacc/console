@@ -26,8 +26,10 @@ const queryClient = new QueryClient({
 })
 
 const renderApplication = () => {
+  const StrictModeWrapper = import.meta.env.DEV ? React.StrictMode : React.Fragment;
+  
   ReactDOM.createRoot(document.getElementById('root')!).render(
-    <React.StrictMode>
+    <StrictModeWrapper>
       <Provider store={store}>
         <QueryClientProvider client={queryClient}>
           <AppProviders>
@@ -35,7 +37,7 @@ const renderApplication = () => {
           </AppProviders>
         </QueryClientProvider>
       </Provider>
-    </React.StrictMode>
+    </StrictModeWrapper>
   )
 }
 

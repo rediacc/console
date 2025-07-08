@@ -19,7 +19,7 @@ import {
   DeleteOutlined,
   InfoCircleOutlined,
   CodeOutlined,
-} from '@ant-design/icons'
+} from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { SimpleJsonEditor } from './SimpleJsonEditor'
 

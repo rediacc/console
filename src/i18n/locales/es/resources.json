@@ -281,7 +281,21 @@
     "windows": "Windows",
     "useLoginAuth": "Usar autenticación de inicio de sesión en lugar de token",
     "useLoginAuthHelp": "Iniciar sesión con {{email}} (se le pedirá la contraseña)",
-    "apiUrl": "URL de API"
+    "apiUrl": "URL de API",
+    "pluginTab": "Plugins (rediacc-cli-plugin)",
+    "pluginAction": "Acción",
+    "listPlugins": "Listar Plugins Disponibles",
+    "connectPlugin": "Conectar al Plugin",
+    "pluginName": "Nombre del Plugin",
+    "pluginNameHelp": "Nombre del plugin para conectar",
+    "pluginNamePlaceholder": "ej. webui, api, admin",
+    "pluginPort": "Puerto Local (Opcional)",
+    "pluginPortHelp": "Dejar vacío para asignación automática (7111-9111)",
+    "pluginPortPlaceholder": "ej. 8080",
+    "pluginListConnections": "Listar conexiones activas",
+    "executePlugin": "Ejecutar Comando de Plugin",
+    "pluginSuccess": "Comando de plugin ejecutado exitosamente",
+    "pluginFailed": "Comando de plugin falló"
   },
   "templates": {
     "selectTemplate": "Seleccionar Plantilla",
@@ -301,5 +315,13 @@
     "startEmpty": "Comenzar con un repositorio vacío",
     "default": "Predeterminado",
     "failedToLoadTemplate": "Error al cargar los datos de la plantilla"
+  },
+  "errors": {
+    "machineNotFound": "Máquina seleccionada no encontrada",
+    "failedToGetRepositoryGuid": "Error al obtener el GUID del repositorio"
+  },
+  "messages": {
+    "repositoryCreationQueued": "Creación de repositorio en cola para envío",
+    "highestPriorityQueued": "Función de {{resourceType}} de mayor prioridad en cola para envío"
   }
 }

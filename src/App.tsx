@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { ConfigProvider, theme } from 'antd'
+import { ConfigProvider, theme, Spin } from 'antd'
 import { selectIsAuthenticated } from '@/store/auth/authSelectors'
 import { loginSuccess } from '@/store/auth/authSlice'
 import { getAuthData, migrateFromLocalStorage } from '@/utils/auth'
@@ -11,13 +11,27 @@ import { initializeApiClient } from '@/api/init'
 import AuthLayout from '@/components/layouts/AuthLayout'
 import MainLayout from '@/components/layouts/MainLayout'
 import LoginPage from '@/pages/LoginPage'
-import DashboardPage from '@/pages/DashboardPage'
-import ResourcesPage from '@/pages/resources/ResourcesPage'
-import QueuePage from '@/pages/queue/QueuePage'
-import SystemPage from '@/pages/system/SystemPage'
-import ArchitecturePage from '@/pages/architecture/ArchitecturePage'
-import AuditPage from '@/pages/audit/AuditPage'
-import MarketplacePage from '@/pages/marketplace/MarketplacePage'
+
+// Lazy load heavy pages
+const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
+const ResourcesPage = lazy(() => import('@/pages/resources/ResourcesPage'))
+const QueuePage = lazy(() => import('@/pages/queue/QueuePage'))
+const SystemPage = lazy(() => import('@/pages/system/SystemPage'))
+const ArchitecturePage = lazy(() => import('@/pages/architecture/ArchitecturePage'))
+const AuditPage = lazy(() => import('@/pages/audit/AuditPage'))
+const MarketplacePage = lazy(() => import('@/pages/marketplace/MarketplacePage'))
+
+// Loading component
+const PageLoader: React.FC = () => (
+  <div style={{ 
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    minHeight: '400px' 
+  }}>
+    <Spin size="large" />
+  </div>
+)
 
 const AppContent: React.FC = () => {
   const { theme: currentTheme } = useTheme()
@@ -79,25 +93,53 @@ const AppContent: React.FC = () => {
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               
               {/* Dashboard */}
-              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/dashboard" element={
+                <Suspense fallback={<PageLoader />}>
+                  <DashboardPage />
+                </Suspense>
+              } />
               
               {/* Organization */}
-              <Route path="/resources" element={<ResourcesPage />} />
+              <Route path="/resources" element={
+                <Suspense fallback={<PageLoader />}>
+                  <ResourcesPage />
+                </Suspense>
+              } />
               
               {/* Marketplace */}
-              <Route path="/marketplace" element={<MarketplacePage />} />
+              <Route path="/marketplace" element={
+                <Suspense fallback={<PageLoader />}>
+                  <MarketplacePage />
+                </Suspense>
+              } />
               
               {/* Queue */}
-              <Route path="/queue" element={<QueuePage />} />
+              <Route path="/queue" element={
+                <Suspense fallback={<PageLoader />}>
+                  <QueuePage />
+                </Suspense>
+              } />
               
               {/* System (Users & Permissions) */}
-              <Route path="/system" element={<SystemPage />} />
+              <Route path="/system" element={
+                <Suspense fallback={<PageLoader />}>
+                  <SystemPage />
+                </Suspense>
+              } />
               
               {/* Audit */}
-              <Route path="/audit" element={<AuditPage />} />
+              <Route path="/audit" element={
+                <Suspense fallback={<PageLoader />}>
+                  <AuditPage />
+                </Suspense>
+              } />
               
               {/* Architecture */}
-              <Route path="/architecture" element={<ArchitecturePage />} />
+              <Route path="/architecture" element={
+                <Suspense fallback={<PageLoader />}>
+                  <ArchitecturePage />
+                </Suspense>
+              } />
             </Route>
           </Routes>
         </BrowserRouter>

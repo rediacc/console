@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Modal, Tabs, Form, Input, Select, Checkbox, Button, Space, Typography, message, Radio } from 'antd'
-import { CopyOutlined, CodeOutlined, DesktopOutlined, WindowsOutlined, AppleOutlined } from '@ant-design/icons'
+import { CopyOutlined, CodeOutlined, DesktopOutlined, WindowsOutlined, AppleOutlined, ApiOutlined, SyncOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 
 const { Text, Paragraph } = Typography
@@ -14,6 +14,12 @@ interface LocalCommandModalProps {
   repository: string
   token: string
   userEmail: string
+  pluginContainers?: Array<{
+    name: string
+    image: string
+    status: string
+    [key: string]: any
+  }>
 }
 
 export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
@@ -22,10 +28,11 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
   machine,
   repository,
   token,
-  userEmail
+  userEmail,
+  pluginContainers = []
 }) => {
   const { t } = useTranslation()
-  const [activeTab, setActiveTab] = useState('sync')
+  const [activeTab, setActiveTab] = useState('plugin')
   const [useDocker, setUseDocker] = useState(false)
   const [os, setOs] = useState<'unix' | 'windows'>('unix')
   const [useLogin, setUseLogin] = useState(false)
@@ -37,13 +44,22 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
   const [syncOptions, setSyncOptions] = useState({
     mirror: false,
     verify: false,
-    confirm: false,
-    dev: false
+    confirm: false
   })
   
   // Terminal command state
   const [termCommand, setTermCommand] = useState('')
-  const [termDev, setTermDev] = useState(false)
+  
+  // Plugin command state
+  const [pluginAction, setPluginAction] = useState<'list' | 'connect' | 'connections'>('list')
+  const [pluginName, setPluginName] = useState('')
+  const [pluginPort, setPluginPort] = useState('')
+
+  // Filter containers that are plugins (image contains 'rediacc/plugin')
+  const availablePlugins = pluginContainers.filter(container => 
+    container.image && container.image.includes('rediacc/plugin') && 
+    container.status && container.status.toLowerCase().includes('running')
+  )
 
   // Auto-detect API URL from current browser location
   useEffect(() => {
@@ -53,6 +69,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
       setApiUrl(`${protocol}//${host}/api`)
     }
   }, [visible])
+
 
   const formatPath = (path: string) => {
     if (os === 'windows' && path.includes('/')) {
@@ -99,7 +116,6 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
     if (syncOptions.mirror) options.push('--mirror')
     if (syncOptions.verify) options.push('--verify')
     if (syncOptions.confirm) options.push('--confirm')
-    if (syncOptions.dev) options.push('--dev')
     
     const optionsStr = options.length > 0 ? ' ' + options.join(' ') : ''
     
@@ -130,14 +146,12 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
     const machineParam = `--machine=${machine}`
     const repoParam = `--repo=${repository}`
     const commandParam = termCommand ? ` --command="${termCommand}"` : ''
-    const devParam = termDev ? ' --dev' : ''
     
     // Build the command with proper spacing
     const cmdParts = [baseCommand]
     if (tokenParam) cmdParts.push(tokenParam)
     cmdParts.push(machineParam, repoParam)
     if (commandParam.trim()) cmdParts.push(commandParam.trim())
-    if (devParam.trim()) cmdParts.push(devParam.trim())
     
     const termCmd = cmdParts.join(' ')
     
@@ -150,6 +164,52 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
     return termCmd
   }
 
+  const buildPluginCommand = () => {
+    // Always start with export REDIACC_API_URL as requested by user
+    const setEnvCmd = os === 'windows' 
+      ? `set REDIACC_API_URL=http://localhost:7322/api` 
+      : `export REDIACC_API_URL="http://localhost:7322/api"`
+    
+    const baseCommand = useDocker 
+      ? `docker run -it --rm -e REDIACC_API_URL="http://localhost:7322/api" rediacc/cli plugin`
+      : 'rediacc-cli-plugin'
+    
+    // Only include token if not using login
+    const tokenParam = useLogin ? '' : `--token=${token}`
+    
+    let cmdParts = [baseCommand, pluginAction]
+    
+    if (pluginAction === 'list' || pluginAction === 'connect') {
+      // These actions need machine and repo parameters
+      if (tokenParam) cmdParts.push(tokenParam)
+      cmdParts.push(`--machine=${machine}`)
+      cmdParts.push(`--repo=${repository}`)
+      
+      if (pluginAction === 'connect' && pluginName) {
+        cmdParts.push(`--plugin=${pluginName}`)
+        if (pluginPort) {
+          cmdParts.push(`--port=${pluginPort}`)
+        }
+      }
+    } else if (pluginAction === 'connections') {
+      // connections action only needs token
+      if (tokenParam) cmdParts.push(tokenParam)
+    }
+    
+    const pluginCmd = cmdParts.join(' ')
+    
+    // Always prepend with environment variable
+    const fullCmd = setEnvCmd + (os === 'windows' ? ' && ' : ' && ') + pluginCmd
+    
+    // Include login command if using login
+    if (useLogin) {
+      const connector = os === 'windows' ? ' && ' : ' && '
+      return buildLoginCommand() + connector + fullCmd
+    }
+    
+    return fullCmd
+  }
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
       message.success(t('common:copiedToClipboard'))
@@ -159,7 +219,16 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
   }
 
   const getCommand = () => {
-    return activeTab === 'sync' ? buildSyncCommand() : buildTermCommand()
+    switch (activeTab) {
+      case 'sync':
+        return buildSyncCommand()
+      case 'terminal':
+        return buildTermCommand()
+      case 'plugin':
+        return buildPluginCommand()
+      default:
+        return buildSyncCommand()
+    }
   }
 
   return (
@@ -202,7 +271,69 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
       </Form>
 
       <Tabs activeKey={activeTab} onChange={setActiveTab}>
-        <TabPane tab={t('resources:localCommandBuilder.syncTab')} key="sync" icon={<CodeOutlined />}>
+        <TabPane tab={t('resources:localCommandBuilder.pluginTab')} key="plugin" icon={<ApiOutlined />}>
+          <Form layout="vertical">
+            <Form.Item label={t('resources:localCommandBuilder.pluginAction')}>
+              <Select value={pluginAction} onChange={setPluginAction}>
+                <Option value="list">{t('resources:localCommandBuilder.listPlugins')}</Option>
+                <Option value="connect">{t('resources:localCommandBuilder.connectPlugin')}</Option>
+                <Option value="connections">{t('resources:localCommandBuilder.pluginListConnections')}</Option>
+              </Select>
+            </Form.Item>
+
+            {pluginAction === 'connect' && (
+              <>
+                <Form.Item 
+                  label={t('resources:localCommandBuilder.pluginName')}
+                  help={t('resources:localCommandBuilder.pluginNameHelp')}
+                  required
+                >
+                  <Select
+                    placeholder={t('resources:localCommandBuilder.pluginNamePlaceholder')}
+                    value={pluginName}
+                    onChange={setPluginName}
+                    notFoundContent={availablePlugins.length === 0 ? t('resources:localCommandBuilder.noPluginsRunning') : null}
+                  >
+                    {availablePlugins.map((container) => (
+                      <Option key={container.name} value={container.name}>
+                        {container.name}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+
+                <Form.Item 
+                  label={t('resources:localCommandBuilder.pluginPort')}
+                  help={t('resources:localCommandBuilder.pluginPortHelp')}
+                >
+                  <Input
+                    placeholder={t('resources:localCommandBuilder.pluginPortPlaceholder')}
+                    value={pluginPort}
+                    onChange={(e) => setPluginPort(e.target.value)}
+                    type="number"
+                  />
+                </Form.Item>
+              </>
+            )}
+          </Form>
+        </TabPane>
+
+        <TabPane tab={t('resources:localCommandBuilder.terminalTab')} key="terminal" icon={<CodeOutlined />}>
+          <Form layout="vertical">
+            <Form.Item 
+              label={t('resources:localCommandBuilder.command')}
+              help={t('resources:localCommandBuilder.commandHelp')}
+            >
+              <Input
+                placeholder="docker ps"
+                value={termCommand}
+                onChange={(e) => setTermCommand(e.target.value)}
+              />
+            </Form.Item>
+          </Form>
+        </TabPane>
+
+        <TabPane tab={t('resources:localCommandBuilder.syncTab')} key="sync" icon={<SyncOutlined />}>
           <Form layout="vertical">
             <Form.Item label={t('resources:localCommandBuilder.action')}>
               <Select value={syncAction} onChange={setSyncAction}>
@@ -226,7 +357,15 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
               <Space direction="vertical">
                 <Checkbox
                   checked={syncOptions.mirror}
-                  onChange={(e) => setSyncOptions({ ...syncOptions, mirror: e.target.checked })}
+                  onChange={(e) => {
+                    const mirrorChecked = e.target.checked
+                    setSyncOptions(prev => ({
+                      ...prev,
+                      mirror: mirrorChecked,
+                      // When mirror is checked, also check confirm
+                      confirm: mirrorChecked ? true : prev.confirm
+                    }))
+                  }}
                 >
                   {t('resources:localCommandBuilder.mirror')}
                   <Text type="secondary" style={{ marginLeft: 8 }}>
@@ -245,49 +384,14 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
                 <Checkbox
                   checked={syncOptions.confirm}
                   onChange={(e) => setSyncOptions({ ...syncOptions, confirm: e.target.checked })}
+                  disabled={syncOptions.mirror}
                 >
                   {t('resources:localCommandBuilder.confirm')}
                   <Text type="secondary" style={{ marginLeft: 8 }}>
                     {t('resources:localCommandBuilder.confirmHelp')}
                   </Text>
                 </Checkbox>
-                <Checkbox
-                  checked={syncOptions.dev}
-                  onChange={(e) => setSyncOptions({ ...syncOptions, dev: e.target.checked })}
-                >
-                  {t('resources:localCommandBuilder.devMode')}
-                  <Text type="secondary" style={{ marginLeft: 8 }}>
-                    {t('resources:localCommandBuilder.devModeHelp')}
-                  </Text>
-                </Checkbox>
               </Space>
-            </Form.Item>
-          </Form>
-        </TabPane>
-
-        <TabPane tab={t('resources:localCommandBuilder.terminalTab')} key="terminal" icon={<DesktopOutlined />}>
-          <Form layout="vertical">
-            <Form.Item 
-              label={t('resources:localCommandBuilder.command')}
-              help={t('resources:localCommandBuilder.commandHelp')}
-            >
-              <Input
-                placeholder="docker ps"
-                value={termCommand}
-                onChange={(e) => setTermCommand(e.target.value)}
-              />
-            </Form.Item>
-
-            <Form.Item>
-              <Checkbox
-                checked={termDev}
-                onChange={(e) => setTermDev(e.target.checked)}
-              >
-                {t('resources:localCommandBuilder.devMode')}
-                <Text type="secondary" style={{ marginLeft: 8 }}>
-                  {t('resources:localCommandBuilder.devModeHelp')}
-                </Text>
-              </Checkbox>
             </Form.Item>
           </Form>
         </TabPane>

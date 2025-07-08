@@ -15,7 +15,7 @@ import {
   ControlOutlined,
   ApiOutlined,
   CloudOutlined
-} from '@ant-design/icons'
+} from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import MarketplaceCard from '@/components/marketplace/MarketplaceCard'

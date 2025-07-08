@@ -10,14 +10,13 @@
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build",
+    "tauri:build": "TAURI_ENV_PLATFORM=1 tauri build",
     "tauri:build:mac": "tauri build --target universal-apple-darwin",
     "tauri:build:mac:arm": "tauri build --target aarch64-apple-darwin",
     "tauri:build:win": "tauri build --target x86_64-pc-windows-msvc",
     "tauri:build:win:arm": "tauri build --target aarch64-pc-windows-msvc",
     "tauri:build:linux": "tauri build --target x86_64-unknown-linux-gnu",
-    "tauri:build:linux:arm": "tauri build --target aarch64-unknown-linux-gnu",
-    "tauri:build:linux:armhf": "tauri build --target armv7-unknown-linux-gnueabihf"
+    "tauri:build:linux:arm": "tauri build --target aarch64-unknown-linux-gnu"
   },
   "dependencies": {
     "@ant-design/charts": "^2.2.1",

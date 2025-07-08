@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Modal, Steps, Upload, Button, Alert, Table, Checkbox, Space, Typography, Spin, Tag, Tooltip } from 'antd'
-import { UploadOutlined, CloudOutlined, QuestionCircleOutlined, InfoCircleOutlined } from '@ant-design/icons'
+import { UploadOutlined, CloudOutlined, QuestionCircleOutlined, InfoCircleOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { showMessage } from '@/utils/messages'
 import { useCreateStorage } from '@/api/queries/storage'

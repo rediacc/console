@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Form, Input, Button, Card, message, InputNumber, Alert } from 'antd'
-import { SaveOutlined, ReloadOutlined } from '@ant-design/icons'
+import { SaveOutlined, ReloadOutlined } from '@/utils/optimizedIcons'
 import { configService } from '@/services/configService'
 import { apiClient } from '@/api/client'
 import { useDesktopMode } from '@/hooks/useDesktopMode'

@@ -217,6 +217,54 @@ class DesktopApiClient {
 
     return await invoke('get_system_info')
   }
+
+  // Plugin operations
+  async executePluginCommand(
+    action: 'list' | 'connect' | 'connections',
+    machine: string,
+    repository: string,
+    options: {
+      plugin?: string
+      port?: number
+      team?: string
+    } = {}
+  ): Promise<CommandResult> {
+    if (!this.isAvailable) {
+      throw new Error('Desktop mode not available')
+    }
+
+    const args = [action]
+    
+    // Add authentication token
+    const token = await tokenService.getToken()
+    if (token) {
+      args.push('--token', token)
+    }
+
+    // list and connect actions need machine and repo
+    if (action === 'list' || action === 'connect') {
+      args.push('--machine', machine)
+      args.push('--repo', repository)
+    }
+
+    // connect action needs plugin name
+    if (action === 'connect' && options.plugin) {
+      args.push('--plugin', options.plugin)
+      if (options.port) {
+        args.push('--port', options.port.toString())
+      }
+    }
+
+    // Add team if provided
+    if (options.team) {
+      args.push('--team', options.team)
+    }
+
+    return await invoke('execute_rediacc_cli', {
+      command: 'plugin',
+      args
+    })
+  }
 }
 
 export const desktopApiClient = new DesktopApiClient()

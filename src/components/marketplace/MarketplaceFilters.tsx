@@ -1,6 +1,6 @@
 import React from 'react'
 import { Card, Space, Typography, Select, Tag, Button, Divider, Radio } from 'antd'
-import { CloseOutlined, FilterOutlined } from '@ant-design/icons'
+import { CloseOutlined, FilterOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 
 const { Title, Text } = Typography

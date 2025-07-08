@@ -281,7 +281,21 @@
     "windows": "Windows",
     "useLoginAuth": "Token yerine giriş kimlik doğrulaması kullan",
     "useLoginAuthHelp": "{{email}} ile giriş yap (şifre istenecektir)",
-    "apiUrl": "API URL"
+    "apiUrl": "API URL",
+    "pluginTab": "Eklentiler (rediacc-cli-plugin)",
+    "pluginAction": "İşlem",
+    "listPlugins": "Kullanılabilir Eklentileri Listele",
+    "connectPlugin": "Eklentiye Bağlan",
+    "pluginName": "Eklenti Adı",
+    "pluginNameHelp": "Bağlanılacak eklentinin adı",
+    "pluginNamePlaceholder": "örn: webui, api, admin",
+    "pluginPort": "Yerel Port (İsteğe Bağlı)",
+    "pluginPortHelp": "Otomatik atama için boş bırakın (7111-9111)",
+    "pluginPortPlaceholder": "örn: 8080",
+    "pluginListConnections": "Aktif bağlantıları listele",
+    "executePlugin": "Eklenti Komutunu Çalıştır",
+    "pluginSuccess": "Eklenti komutu başarıyla çalıştırıldı",
+    "pluginFailed": "Eklenti komutu başarısız oldu"
   },
   "templates": {
     "selectTemplate": "Şablon Seç",
@@ -301,5 +315,13 @@
     "startEmpty": "Boş bir depo ile başla",
     "default": "Varsayılan",
     "failedToLoadTemplate": "Şablon verileri yüklenemedi"
+  },
+  "errors": {
+    "machineNotFound": "Seçilen makine bulunamadı",
+    "failedToGetRepositoryGuid": "Depo GUID'i alınamadı"
+  },
+  "messages": {
+    "repositoryCreationQueued": "Depo oluşturma gönderim için kuyruğa alındı",
+    "highestPriorityQueued": "En yüksek öncelikli {{resourceType}} işlevi gönderim için kuyruğa alındı"
   }
 }

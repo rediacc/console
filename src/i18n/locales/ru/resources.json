@@ -281,7 +281,21 @@
     "windows": "Windows",
     "useLoginAuth": "Использовать аутентификацию по логину вместо токена",
     "useLoginAuthHelp": "Войти с {{email}} (вам будет предложено ввести пароль)",
-    "apiUrl": "URL API"
+    "apiUrl": "URL API",
+    "pluginTab": "Плагины (rediacc-cli-plugin)",
+    "pluginAction": "Действие",
+    "listPlugins": "Список доступных плагинов",
+    "connectPlugin": "Подключиться к плагину",
+    "pluginName": "Имя плагина",
+    "pluginNameHelp": "Имя плагина для подключения",
+    "pluginNamePlaceholder": "например: webui, api, admin",
+    "pluginPort": "Локальный порт (необязательно)",
+    "pluginPortHelp": "Оставьте пустым для автоматического назначения (7111-9111)",
+    "pluginPortPlaceholder": "например: 8080",
+    "pluginListConnections": "Список активных подключений",
+    "executePlugin": "Выполнить команду плагина",
+    "pluginSuccess": "Команда плагина успешно выполнена",
+    "pluginFailed": "Ошибка выполнения команды плагина"
   },
   "templates": {
     "selectTemplate": "Выберите шаблон",
@@ -301,5 +315,13 @@
     "startEmpty": "Начать с пустого репозитория",
     "default": "По умолчанию",
     "failedToLoadTemplate": "Не удалось загрузить данные шаблона"
+  },
+  "errors": {
+    "machineNotFound": "Выбранная машина не найдена",
+    "failedToGetRepositoryGuid": "Не удалось получить GUID репозитория"
+  },
+  "messages": {
+    "repositoryCreationQueued": "Создание репозитория поставлено в очередь для отправки",
+    "highestPriorityQueued": "Функция {{resourceType}} с наивысшим приоритетом поставлена в очередь для отправки"
   }
 }

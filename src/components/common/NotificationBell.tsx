@@ -7,7 +7,7 @@ import {
   InfoCircleOutlined,
   WarningOutlined,
   CheckCircleOutlined
-} from '@ant-design/icons'
+} from '@/utils/optimizedIcons'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '@/store/store'
 import { 

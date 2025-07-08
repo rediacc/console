@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react'
 import { Divider, Alert, Button, Space, Upload, message, Form, Input, Select, InputNumber } from 'antd'
-import { UploadOutlined, DownloadOutlined } from '@ant-design/icons'
+import { UploadOutlined, DownloadOutlined } from '@/utils/optimizedIcons'
 import { UseFormReturn, Controller } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import VaultEditor from '../common/VaultEditor'

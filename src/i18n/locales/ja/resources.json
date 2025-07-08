@@ -281,7 +281,21 @@
     "windows": "Windows",
     "useLoginAuth": "トークンの代わりにログイン認証を使用",
     "useLoginAuthHelp": "{{email}}でログイン（パスワードの入力を求められます）",
-    "apiUrl": "API URL"
+    "apiUrl": "API URL",
+    "pluginTab": "プラグイン (rediacc-cli-plugin)",
+    "pluginAction": "アクション",
+    "listPlugins": "利用可能なプラグインをリスト",
+    "connectPlugin": "プラグインに接続",
+    "pluginName": "プラグイン名",
+    "pluginNameHelp": "接続するプラグインの名前",
+    "pluginNamePlaceholder": "例：webui, api, admin",
+    "pluginPort": "ローカルポート（オプション）",
+    "pluginPortHelp": "自動割り当ての場合は空白のままにします（7111-9111）",
+    "pluginPortPlaceholder": "例：8080",
+    "pluginListConnections": "アクティブな接続をリスト",
+    "executePlugin": "プラグインコマンドを実行",
+    "pluginSuccess": "プラグインコマンドが正常に実行されました",
+    "pluginFailed": "プラグインコマンドが失敗しました"
   },
   "templates": {
     "selectTemplate": "テンプレートを選択",
@@ -301,5 +315,13 @@
     "startEmpty": "空のリポジトリから開始",
     "default": "デフォルト",
     "failedToLoadTemplate": "テンプレートデータの読み込みに失敗しました"
+  },
+  "errors": {
+    "machineNotFound": "選択されたマシンが見つかりません",
+    "failedToGetRepositoryGuid": "リポジトリGUIDの取得に失敗しました"
+  },
+  "messages": {
+    "repositoryCreationQueued": "リポジトリ作成が送信待ちキューに追加されました",
+    "highestPriorityQueued": "最高優先度の{{resourceType}}機能が送信待ちキューに追加されました"
   }
 }

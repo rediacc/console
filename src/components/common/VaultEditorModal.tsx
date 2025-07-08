@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Modal, Button, Space, message, Typography, Tag, Upload } from 'antd'
-import { InfoCircleOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons'
+import { InfoCircleOutlined, UploadOutlined, DownloadOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import VaultEditor from './VaultEditor'
 

@@ -235,6 +235,36 @@ function status() {
     echo "❌ No production build found"
   fi
   
+  # Check Tauri build status
+  if [ -f "$ROOT_DIR/src-tauri/target/release/rediacc-console" ]; then
+    echo "✅ Tauri desktop app built"
+  else
+    echo "❌ No Tauri desktop build found"
+  fi
+  
+  # Check bin/console directory
+  if [ -d "$ROOT_DIR/../bin/console" ]; then
+    echo "✅ Console binaries in bin/console:"
+    if [ -f "$ROOT_DIR/../bin/console/rediacc-console" ]; then
+      echo "   • Linux executable"
+    fi
+    if [ -f "$ROOT_DIR/../bin/console/rediacc-console.deb" ]; then
+      echo "   • Debian package (.deb)"
+    fi
+    if [ -f "$ROOT_DIR/../bin/console/rediacc-console.rpm" ]; then
+      echo "   • RPM package (.rpm)"
+    fi
+    if [ -f "$ROOT_DIR/../bin/console/rediacc-console.exe" ]; then
+      echo "   • Windows executable"
+    fi
+    if [ -d "$ROOT_DIR/../bin/console/rediacc-console.app" ]; then
+      echo "   • macOS app bundle"
+    fi
+    if [ -f "$ROOT_DIR/../bin/console/rediacc-console.AppImage" ]; then
+      echo "   • AppImage"
+    fi
+  fi
+  
   # Show version
   if [ -f "$ROOT_DIR/package.json" ]; then
     VERSION=$(node -p "require('./package.json').version")
@@ -252,6 +282,11 @@ function tauri:setup() {
     exit 1
   else
     echo "✅ Node.js found: $(node --version)"
+  fi
+  
+  # Source cargo environment if available
+  if [ -f "$HOME/.cargo/env" ]; then
+    source "$HOME/.cargo/env"
   fi
   
   # Check Rust
@@ -297,6 +332,17 @@ function tauri:setup() {
 function tauri:dev() {
   echo "Starting Tauri desktop app in development mode..."
   
+  # Source cargo environment if available
+  if [ -f "$HOME/.cargo/env" ]; then
+    source "$HOME/.cargo/env"
+  fi
+  
+  # Check if cargo is available
+  if ! command -v cargo >/dev/null 2>&1; then
+    echo "❌ Cargo not found. Please run './go tauri:setup' first."
+    exit 1
+  fi
+  
   # Install dependencies if needed
   if [ ! -d "$ROOT_DIR/node_modules" ] || [ "$ROOT_DIR/package-lock.json" -nt "$ROOT_DIR/node_modules" ]; then
     echo "Installing dependencies..."
@@ -309,6 +355,17 @@ function tauri:dev() {
 # Function to build Tauri desktop app
 function tauri:build() {
   echo "Building Tauri desktop app..."
+  
+  # Source cargo environment if available
+  if [ -f "$HOME/.cargo/env" ]; then
+    source "$HOME/.cargo/env"
+  fi
+  
+  # Check if cargo is available
+  if ! command -v cargo >/dev/null 2>&1; then
+    echo "❌ Cargo not found. Please run './go tauri:setup' first."
+    exit 1
+  fi
   
   # Install dependencies if needed
   if [ ! -d "$ROOT_DIR/node_modules" ] || [ "$ROOT_DIR/package-lock.json" -nt "$ROOT_DIR/node_modules" ]; then
@@ -385,6 +442,68 @@ function tauri:build() {
   echo ""
   echo "✅ Tauri desktop app built successfully!"
   echo "Build output: src-tauri/target/release/bundle/"
+  
+  # Copy to bin/console if bin directory exists
+  if [ -d "$ROOT_DIR/../bin" ]; then
+    echo ""
+    echo "Copying Tauri executables to bin/console..."
+    
+    # Create console directory in bin
+    CONSOLE_BIN_DIR="$ROOT_DIR/../bin/console"
+    mkdir -p "$CONSOLE_BIN_DIR"
+    
+    # Copy the main executable
+    if [ -f "$ROOT_DIR/src-tauri/target/release/rediacc-console" ]; then
+      cp "$ROOT_DIR/src-tauri/target/release/rediacc-console" "$CONSOLE_BIN_DIR/rediacc-console"
+      echo "✅ Copied executable to: $CONSOLE_BIN_DIR/rediacc-console"
+    fi
+    
+    # Copy .deb package if it exists (without version number)
+    DEB_FILE=$(find "$ROOT_DIR/src-tauri/target/release/bundle/deb" -name "*.deb" -type f | grep -v "_amd64/" | head -1)
+    if [ -n "$DEB_FILE" ] && [ -f "$DEB_FILE" ]; then
+      cp "$DEB_FILE" "$CONSOLE_BIN_DIR/rediacc-console.deb"
+      echo "✅ Copied .deb package to: $CONSOLE_BIN_DIR/rediacc-console.deb"
+    fi
+    
+    # Copy .rpm package if it exists (without version number)
+    RPM_FILE=$(find "$ROOT_DIR/src-tauri/target/release/bundle/rpm" -name "*.rpm" -type f | head -1)
+    if [ -n "$RPM_FILE" ] && [ -f "$RPM_FILE" ]; then
+      cp "$RPM_FILE" "$CONSOLE_BIN_DIR/rediacc-console.rpm"
+      echo "✅ Copied .rpm package to: $CONSOLE_BIN_DIR/rediacc-console.rpm"
+    fi
+    
+    # Copy AppImage if it exists
+    APPIMAGE_FILE=$(find "$ROOT_DIR/src-tauri/target/release/bundle" -name "*.AppImage" -type f | head -1)
+    if [ -n "$APPIMAGE_FILE" ] && [ -f "$APPIMAGE_FILE" ]; then
+      cp "$APPIMAGE_FILE" "$CONSOLE_BIN_DIR/rediacc-console.AppImage"
+      echo "✅ Copied AppImage to: $CONSOLE_BIN_DIR/rediacc-console.AppImage"
+    fi
+    
+    # Copy Windows exe if it exists (for cross-compilation)
+    if [ -f "$ROOT_DIR/src-tauri/target/release/rediacc-console.exe" ]; then
+      cp "$ROOT_DIR/src-tauri/target/release/rediacc-console.exe" "$CONSOLE_BIN_DIR/rediacc-console.exe"
+      echo "✅ Copied Windows executable to: $CONSOLE_BIN_DIR/rediacc-console.exe"
+    fi
+    
+    # Copy macOS app bundle if it exists
+    if [ -d "$ROOT_DIR/src-tauri/target/release/bundle/macos/Rediacc Console.app" ]; then
+      cp -r "$ROOT_DIR/src-tauri/target/release/bundle/macos/Rediacc Console.app" "$CONSOLE_BIN_DIR/rediacc-console.app"
+      echo "✅ Copied macOS app bundle to: $CONSOLE_BIN_DIR/rediacc-console.app"
+    fi
+    
+    # Create version info file
+    VERSION=$(node -p "require('$ROOT_DIR/package.json').version")
+    echo "{
+  \"version\": \"${VERSION}\",
+  \"buildDate\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+  \"gitCommit\": \"$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')\",
+  \"type\": \"desktop\",
+  \"platforms\": [\"linux\", \"windows\", \"macos\"]
+}" > "$CONSOLE_BIN_DIR/version.json"
+    
+    echo ""
+    echo "All Tauri executables copied to: $CONSOLE_BIN_DIR"
+  fi
 }
 
 # Help message

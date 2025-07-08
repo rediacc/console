@@ -77,9 +77,6 @@ npm run tauri:build:linux
 
 # Linux ARM64 (64-bit ARM - Raspberry Pi 4, ARM servers)
 npm run tauri:build:linux:arm
-
-# Linux ARMv7 (32-bit ARM - Raspberry Pi 3, older ARM devices)
-npm run tauri:build:linux:armhf
 ```
 
 Or using the go script:
@@ -88,7 +85,6 @@ Or using the go script:
 ./go system build_tauri --mac          # macOS universal
 ./go system build_tauri --mac-arm      # macOS ARM64 only
 ./go system build_tauri --linux-arm    # Linux ARM64
-./go system build_tauri --linux-armhf  # Linux ARMv7
 ```
 
 Build outputs will be in `console/src-tauri/target/release/bundle/`

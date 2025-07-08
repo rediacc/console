@@ -25,7 +25,7 @@ import {
   DownloadOutlined,
   LockOutlined,
   UnlockOutlined
-} from '@ant-design/icons'
+} from '@/utils/optimizedIcons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useSelector } from 'react-redux'

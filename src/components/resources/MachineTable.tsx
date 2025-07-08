@@ -35,7 +35,7 @@ import {
   HddOutlined,
   DesktopOutlined,
   DashboardOutlined,
-} from '@ant-design/icons';
+} from '@/utils/optimizedIcons';
 import { useMachines } from '@/api/queries/machines';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import type { Machine } from '@/types';

@@ -281,7 +281,21 @@
     "windows": "Windows",
     "useLoginAuth": "Login-Authentifizierung anstelle von Token verwenden",
     "useLoginAuthHelp": "Mit {{email}} anmelden (Sie werden nach dem Passwort gefragt)",
-    "apiUrl": "API-URL"
+    "apiUrl": "API-URL",
+    "pluginTab": "Plugins (rediacc-cli-plugin)",
+    "pluginAction": "Aktion",
+    "listPlugins": "Verfügbare Plugins auflisten",
+    "connectPlugin": "Mit Plugin verbinden",
+    "pluginName": "Plugin-Name",
+    "pluginNameHelp": "Name des Plugins zur Verbindung",
+    "pluginNamePlaceholder": "z.B. webui, api, admin",
+    "pluginPort": "Lokaler Port (Optional)",
+    "pluginPortHelp": "Leer lassen für automatische Zuweisung (7111-9111)",
+    "pluginPortPlaceholder": "z.B. 8080",
+    "pluginListConnections": "Aktive Verbindungen anzeigen",
+    "executePlugin": "Plugin-Befehl ausführen",
+    "pluginSuccess": "Plugin-Befehl erfolgreich ausgeführt",
+    "pluginFailed": "Plugin-Befehl fehlgeschlagen"
   },
   "templates": {
     "selectTemplate": "Vorlage auswählen",
@@ -301,5 +315,13 @@
     "startEmpty": "Mit einem leeren Repository beginnen",
     "default": "Standard",
     "failedToLoadTemplate": "Fehler beim Laden der Vorlagendaten"
+  },
+  "errors": {
+    "machineNotFound": "Ausgewählte Maschine nicht gefunden",
+    "failedToGetRepositoryGuid": "Fehler beim Abrufen der Repository-GUID"
+  },
+  "messages": {
+    "repositoryCreationQueued": "Repository-Erstellung zur Einreichung eingereiht",
+    "highestPriorityQueued": "{{resourceType}}-Funktion mit höchster Priorität zur Einreichung eingereiht"
   }
 }

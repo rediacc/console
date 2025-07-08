@@ -1,6 +1,6 @@
 import React from 'react';
 import { Select } from 'antd';
-import { GlobalOutlined } from '@ant-design/icons';
+import { GlobalOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
 
 const { Option } = Select;

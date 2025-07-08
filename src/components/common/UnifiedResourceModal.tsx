@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react'
 import { Modal, Button, Space, Typography, Upload, message, Collapse, Tag, Checkbox } from 'antd'
-import { UploadOutlined, DownloadOutlined, AppstoreOutlined } from '@ant-design/icons'
+import { UploadOutlined, DownloadOutlined, AppstoreOutlined } from '@/utils/optimizedIcons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'

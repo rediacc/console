@@ -12,7 +12,7 @@ import {
   InboxOutlined,
   ScheduleOutlined,
   FilterOutlined
-} from '@ant-design/icons'
+} from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useCompanyArchitecture } from '@/api/queries/architecture'
 import { useTheme } from '@/context/ThemeContext'

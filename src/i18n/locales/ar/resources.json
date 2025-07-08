@@ -281,7 +281,21 @@
     "windows": "Windows",
     "useLoginAuth": "استخدام مصادقة تسجيل الدخول بدلاً من الرمز المميز",
     "useLoginAuthHelp": "تسجيل الدخول باستخدام {{email}} (سيُطلب منك إدخال كلمة المرور)",
-    "apiUrl": "عنوان URL لواجهة برمجة التطبيقات"
+    "apiUrl": "عنوان URL لواجهة برمجة التطبيقات",
+    "pluginTab": "الإضافات (rediacc-cli-plugin)",
+    "pluginAction": "الإجراء",
+    "listPlugins": "عرض الإضافات المتاحة",
+    "connectPlugin": "الاتصال بالإضافة",
+    "pluginName": "اسم الإضافة",
+    "pluginNameHelp": "اسم الإضافة للاتصال بها",
+    "pluginNamePlaceholder": "مثال: webui, api, admin",
+    "pluginPort": "المنفذ المحلي (اختياري)",
+    "pluginPortHelp": "اتركه فارغًا للتعيين التلقائي (7111-9111)",
+    "pluginPortPlaceholder": "مثال: 8080",
+    "pluginListConnections": "عرض الاتصالات النشطة",
+    "executePlugin": "تنفيذ أمر الإضافة",
+    "pluginSuccess": "تم تنفيذ أمر الإضافة بنجاح",
+    "pluginFailed": "فشل تنفيذ أمر الإضافة"
   },
   "templates": {
     "selectTemplate": "اختر قالبًا",
@@ -301,5 +315,13 @@
     "startEmpty": "البدء بمستودع فارغ",
     "default": "افتراضي",
     "failedToLoadTemplate": "فشل تحميل بيانات القالب"
+  },
+  "errors": {
+    "machineNotFound": "الجهاز المحدد غير موجود",
+    "failedToGetRepositoryGuid": "فشل الحصول على معرف المستودع الفريد"
+  },
+  "messages": {
+    "repositoryCreationQueued": "تمت إضافة إنشاء المستودع إلى قائمة الانتظار للإرسال",
+    "highestPriorityQueued": "تمت إضافة وظيفة {{resourceType}} ذات الأولوية القصوى إلى قائمة الانتظار للإرسال"
   }
 }

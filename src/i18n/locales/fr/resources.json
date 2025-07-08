@@ -281,7 +281,21 @@
     "windows": "Windows",
     "useLoginAuth": "Utiliser l'authentification par connexion au lieu du jeton",
     "useLoginAuthHelp": "Se connecter avec {{email}} (vous serez invité à entrer le mot de passe)",
-    "apiUrl": "URL de l'API"
+    "apiUrl": "URL de l'API",
+    "pluginTab": "Plugins (rediacc-cli-plugin)",
+    "pluginAction": "Action",
+    "listPlugins": "Lister les Plugins Disponibles",
+    "connectPlugin": "Se Connecter au Plugin",
+    "pluginName": "Nom du Plugin",
+    "pluginNameHelp": "Nom du plugin pour la connexion",
+    "pluginNamePlaceholder": "ex. webui, api, admin",
+    "pluginPort": "Port Local (Optionnel)",
+    "pluginPortHelp": "Laisser vide pour attribution automatique (7111-9111)",
+    "pluginPortPlaceholder": "ex. 8080",
+    "pluginListConnections": "Lister les connexions actives",
+    "executePlugin": "Exécuter la Commande Plugin",
+    "pluginSuccess": "Commande plugin exécutée avec succès",
+    "pluginFailed": "La commande plugin a échoué"
   },
   "templates": {
     "selectTemplate": "Sélectionner un modèle",
@@ -301,5 +315,13 @@
     "startEmpty": "Commencer avec un référentiel vide",
     "default": "Par défaut",
     "failedToLoadTemplate": "Échec du chargement des données du modèle"
+  },
+  "errors": {
+    "machineNotFound": "Machine sélectionnée introuvable",
+    "failedToGetRepositoryGuid": "Échec de l'obtention du GUID du référentiel"
+  },
+  "messages": {
+    "repositoryCreationQueued": "Création du référentiel mise en file d'attente pour soumission",
+    "highestPriorityQueued": "Fonction {{resourceType}} de priorité maximale mise en file d'attente pour soumission"
   }
 }

@@ -14,7 +14,7 @@ import {
   DownloadOutlined,
   FileExcelOutlined,
   FileTextOutlined
-} from '@ant-design/icons';
+} from '@/utils/optimizedIcons';
 import { useAuditLogs, AuditLog } from '../../api/queries/audit';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';

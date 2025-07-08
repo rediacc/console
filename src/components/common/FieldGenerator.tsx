@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Button, Popover, Space, Radio, message, Tooltip } from 'antd'
-import { KeyOutlined, ReloadOutlined, CopyOutlined, CheckOutlined } from '@ant-design/icons'
+import { KeyOutlined, ReloadOutlined, CopyOutlined, CheckOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { 
   generateSSHKeyPair, 

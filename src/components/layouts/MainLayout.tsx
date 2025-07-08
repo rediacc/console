@@ -25,7 +25,7 @@ import {
   AppstoreOutlined,
   HistoryOutlined,
   ShoppingOutlined,
-} from '@ant-design/icons'
+} from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { selectUser, selectCompany } from '@/store/auth/authSelectors'
 import { logout, updateCompany } from '@/store/auth/authSlice'
