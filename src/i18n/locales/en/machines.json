@@ -18,6 +18,7 @@
   "groupByRepository": "Repository",
   "groupByMounted": "Mounted",
   "groupByUnmounted": "Unmounted",
+  "groupByStatus": "Status",
   "groupByGrand": "Grand Repository",
   "clearFilters": "Clear Filters",
   "searchMachineName": "Search machine name",

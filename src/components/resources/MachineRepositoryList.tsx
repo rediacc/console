@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Empty, Card, Row, Col, Progress } from 'antd'
-import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, CloudDownloadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, PlusOutlined, MinusOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined } from '@ant-design/icons'
+import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, CloudDownloadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, PlusOutlined, MinusOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined, GlobalOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { type QueueFunction } from '@/api/queries/queue'
 import { useQueueItemTrace } from '@/api/queries/queue'
@@ -52,6 +52,9 @@ interface SystemInfo {
   kernel: string
   os_name: string
   uptime: string
+  system_time: number
+  system_time_human: string
+  timezone: string
   cpu_count: number
   cpu_model: string
   memory: {
@@ -77,10 +80,11 @@ interface SystemInfo {
 interface MachineRepositoryListProps {
   machine: Machine
   onActionComplete?: () => void
+  hideSystemInfo?: boolean
 }
 
 
-export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete }) => {
+export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete, hideSystemInfo = false }) => {
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
   const userEmail = useAppSelector((state) => state.auth.user?.email || '')
   const [currentToken, setCurrentToken] = useState<string>('')
@@ -947,6 +951,38 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         width: 120,
         render: (memory: string) => memory || '-',
       },
+      {
+        title: t('resources:repositories.containerPorts'),
+        dataIndex: 'port_mappings',
+        key: 'port_mappings',
+        width: 200,
+        ellipsis: true,
+        render: (portMappings: any[], record: any) => {
+          // If we have structured port mappings, use them
+          if (portMappings && Array.isArray(portMappings) && portMappings.length > 0) {
+            return (
+              <Space direction="vertical" size={0}>
+                {portMappings.map((mapping, index) => (
+                  <Text key={index} style={{ fontSize: 12 }}>
+                    {mapping.host_port ? (
+                      <span>
+                        {mapping.host}:{mapping.host_port} → {mapping.container_port}/{mapping.protocol}
+                      </span>
+                    ) : (
+                      <span>{mapping.container_port}/{mapping.protocol}</span>
+                    )}
+                  </Text>
+                ))}
+              </Space>
+            )
+          }
+          // Fallback to raw ports string
+          else if (record.ports) {
+            return <Text style={{ fontSize: 12 }}>{record.ports}</Text>
+          }
+          return '-'
+        },
+      },
     ]
     
   const renderExpandedRow = (record: Repository) => {
@@ -1154,6 +1190,38 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       key: 'memory_usage',
       width: 120,
       render: (memory: string) => memory || '-',
+    },
+    {
+      title: t('resources:repositories.containerPorts'),
+      dataIndex: 'port_mappings',
+      key: 'port_mappings',
+      width: 200,
+      ellipsis: true,
+      render: (portMappings: any[], record: any) => {
+        // If we have structured port mappings, use them
+        if (portMappings && Array.isArray(portMappings) && portMappings.length > 0) {
+          return (
+            <Space direction="vertical" size={0}>
+              {portMappings.map((mapping, index) => (
+                <Text key={index} style={{ fontSize: 12 }}>
+                  {mapping.host_port ? (
+                    <span>
+                      {mapping.host}:{mapping.host_port} → {mapping.container_port}/{mapping.protocol}
+                    </span>
+                  ) : (
+                    <span>{mapping.container_port}/{mapping.protocol}</span>
+                  )}
+                </Text>
+              ))}
+            </Space>
+          )
+        }
+        // Fallback to raw ports string
+        else if (record.ports) {
+          return <Text style={{ fontSize: 12 }}>{record.ports}</Text>
+        }
+        return '-'
+      },
     },
   ]
 
@@ -1458,8 +1526,28 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
   return (
     <div style={{ padding: '0 20px 20px 20px', overflowX: 'auto' }}>
+      {/* Machine Name Title when in grouped view */}
+      {hideSystemInfo && (
+        <div style={{ marginBottom: 16, paddingTop: 16, borderBottom: '1px solid #f0f0f0', paddingBottom: 12 }}>
+          <Space direction="vertical" size={4}>
+            <Space>
+              <DesktopOutlined style={{ fontSize: 20, color: '#556b2f' }} />
+              <Typography.Title level={4} style={{ margin: 0, color: '#556b2f' }}>
+                {machine.machineName}
+              </Typography.Title>
+            </Space>
+            <Space wrap size={8}>
+              <Tag color="#8FBC8F">{machine.teamName}</Tag>
+              <Tag color="green">{machine.bridgeName}</Tag>
+              {machine.regionName && <Tag color="purple">{machine.regionName}</Tag>}
+              <Tag color="blue">{machine.queueCount} {t('machines:queueItems')}</Tag>
+            </Space>
+          </Space>
+        </div>
+      )}
+      
       {/* Repositories Label with Refresh Button */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: 20 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: hideSystemInfo ? 8 : 20 }}>
         <Typography.Title level={5} style={{ marginBottom: 0 }}>
           {t('resources:repositories.repositories')}
         </Typography.Title>
@@ -1501,7 +1589,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       />
       
       {/* System Containers Section */}
-      {systemContainers.length > 0 && (
+      {systemContainers.length > 0 && !hideSystemInfo && (
         <>
           <Typography.Title level={5} style={{ marginBottom: 16, marginTop: 32 }}>
             {t('resources:repositories.systemContainers')}
@@ -1520,7 +1608,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       )}
       
       {/* System Information Section */}
-      {systemInfo && (
+      {systemInfo && !hideSystemInfo && (
         <>
           <Typography.Title level={5} style={{ marginBottom: 16, marginTop: systemContainers.length > 0 ? 0 : 32 }}>
             {t('resources:repositories.systemInfo')}
@@ -1579,6 +1667,24 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                       {t('resources:repositories.uptime')}
                     </Text>
                     <Text strong style={{ fontSize: 16 }}>{systemInfo.uptime}</Text>
+                  </div>
+                </div>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Card size="small" bordered={false} style={{ background: 'transparent', height: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, height: '100%' }}>
+                  <div style={{ fontSize: 24, lineHeight: 1, paddingTop: 16 }}>
+                    <GlobalOutlined />
+                  </div>
+                  <div style={{ flex: 1, paddingTop: 16 }}>
+                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+                      {t('resources:repositories.systemTime')}
+                    </Text>
+                    <Text strong style={{ fontSize: 16 }}>{systemInfo.system_time_human}</Text>
+                    <Text type="secondary" style={{ display: 'block', fontSize: 11, marginTop: 2 }}>
+                      {t('resources:repositories.timezone')}: {systemInfo.timezone}
+                    </Text>
                   </div>
                 </div>
               </Card>

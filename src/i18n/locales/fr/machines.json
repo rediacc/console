@@ -15,6 +15,11 @@
   "groupByBridge": "Pont",
   "groupByTeam": "Équipe",
   "groupByRegion": "Région",
+  "groupByRepository": "Dépôt",
+  "groupByMounted": "Monté",
+  "groupByUnmounted": "Non monté",
+  "groupByStatus": "Statut",
+  "groupByGrand": "Dépôt Principal",
   "clearFilters": "Effacer les filtres",
   "searchMachineName": "Rechercher le nom de la machine",
   "searchPlaceholder": "Rechercher des machines...",
@@ -23,6 +28,10 @@
   "tableView": "Machine",
   "gridView": "Dépôt",
   "machineCount": "machine | machines",
+  "itemCount": "élément | éléments",
+  "queue": "File d'attente",
+  "editMachine": "Modifier la machine",
+  "delete": "Supprimer",
   "confirmDelete": "Supprimer la machine",
   "deleteWarning": "Êtes-vous sûr de vouloir supprimer la machine \"{{name}}\" ? Cette action ne peut pas être annulée.",
   "deleteSuccess": "Machine supprimée avec succès",
@@ -30,6 +39,10 @@
   "createSuccess": "Machine créée avec succès",
   "updateSuccess": "Machine mise à jour avec succès",
   "vaultUpdateSuccess": "Configuration du coffre-fort de la machine mise à jour avec succès",
+  "autoSetupAfterCreation": "Exécuter automatiquement la configuration après la création de la machine",
+  "setupQueued": "Machine créée avec succès. La configuration a été mise en file d'attente.",
+  "setupQueuedForSubmission": "Machine créée avec succès. La configuration a été mise en file d'attente pour soumission.",
+  "machineCreatedButSetupFailed": "Machine créée avec succès, mais la configuration n'a pas pu être mise en file d'attente.",
   "form": {
     "title": {
       "create": "Créer une nouvelle machine",
@@ -103,5 +116,8 @@
   "hoursAgo": "Il y a {{count}} heure",
   "hoursAgo_plural": "Il y a {{count}} heures",
   "daysAgo": "Il y a {{count}} jour",
-  "daysAgo_plural": "Il y a {{count}} jours"
+  "daysAgo_plural": "Il y a {{count}} jours",
+  "validation": {
+    "sshPasswordNotAllowed": "Le mot de passe SSH ne peut pas être défini dans le coffre-fort. Veuillez utiliser des clés SSH à la place."
+  }
 }

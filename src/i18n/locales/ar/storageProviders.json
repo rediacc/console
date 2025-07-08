@@ -749,6 +749,949 @@
         "تأكد من صحة اسم الدلو",
         "كن على دراية بمشاكل شهادة SSL/TLS"
       ]
+    },
+    "azureblob": {
+      "name": "Azure Blob Storage",
+      "description": "Microsoft Azure Blob Storage",
+      "helpText": "Azure Blob Storage for unstructured data. Supports multiple authentication methods.",
+      "fields": {
+        "account": {
+          "label": "Storage Account Name",
+          "placeholder": "myaccount",
+          "helpText": "Name of your Azure storage account"
+        },
+        "key": {
+          "label": "Storage Account Key",
+          "placeholder": "Enter your account key",
+          "helpText": "Primary or secondary key from Azure portal"
+        },
+        "sas_url": {
+          "label": "SAS URL",
+          "placeholder": "Enter SAS URL if using",
+          "helpText": "Shared Access Signature URL for limited access"
+        },
+        "endpoint": {
+          "label": "Endpoint",
+          "placeholder": "https://myaccount.blob.core.windows.net",
+          "helpText": "Custom endpoint for Azure storage"
+        }
+      },
+      "tips": [
+        "Use SAS tokens for temporary access",
+        "Choose appropriate storage tier for cost optimization",
+        "Enable soft delete for data protection",
+        "Consider using managed identities for Azure resources"
+      ]
+    },
+    "cloudflare-r2": {
+      "name": "Cloudflare R2",
+      "description": "Cloudflare R2 object storage",
+      "helpText": "Cloudflare R2 is S3-compatible object storage with no egress fees.",
+      "fields": {
+        "account_id": {
+          "label": "Account ID",
+          "placeholder": "Enter account ID",
+          "helpText": "Cloudflare account ID"
+        },
+        "access_key_id": {
+          "label": "Access Key ID",
+          "placeholder": "Enter access key",
+          "helpText": "R2 access key ID"
+        },
+        "secret_access_key": {
+          "label": "Secret Access Key",
+          "placeholder": "Enter secret key",
+          "helpText": "R2 secret access key"
+        },
+        "endpoint": {
+          "label": "Endpoint",
+          "placeholder": "https://ACCOUNT_ID.r2.cloudflarestorage.com",
+          "helpText": "R2 endpoint URL"
+        }
+      },
+      "tips": [
+        "No egress fees",
+        "S3-compatible API",
+        "Automatic replication",
+        "Integrated with Cloudflare CDN"
+      ]
+    },
+    "fichier": {
+      "name": "1Fichier",
+      "description": "1Fichier file hosting",
+      "helpText": "1Fichier is a French file hosting service offering free and premium storage.",
+      "fields": {
+        "api_key": {
+          "label": "API Key",
+          "placeholder": "Enter API key",
+          "helpText": "API key from 1Fichier account"
+        },
+        "shared_folder": {
+          "label": "Shared Folder ID",
+          "placeholder": "Enter folder ID",
+          "helpText": "Shared folder ID (optional)"
+        }
+      },
+      "tips": [
+        "No file size limits for premium",
+        "FTP access available",
+        "CDN support for fast downloads",
+        "Private folder options"
+      ]
+    },
+    "filefabric": {
+      "name": "FileFabric",
+      "description": "Enterprise File Fabric",
+      "helpText": "FileFabric provides a multi-cloud data management platform for enterprises.",
+      "fields": {
+        "url": {
+          "label": "URL",
+          "placeholder": "https://yourcompany.filefabric.com",
+          "helpText": "FileFabric instance URL"
+        },
+        "permanent_token": {
+          "label": "Permanent Token",
+          "placeholder": "Enter permanent token",
+          "helpText": "Permanent authentication token"
+        },
+        "root_folder_id": {
+          "label": "Root Folder ID",
+          "placeholder": "Enter folder ID",
+          "helpText": "Root folder ID (optional)"
+        }
+      },
+      "tips": [
+        "Multi-cloud gateway solution",
+        "On-premises deployment available",
+        "Enterprise security features",
+        "Compliance and governance tools"
+      ]
+    },
+    "filescom": {
+      "name": "Files.com",
+      "description": "Files.com cloud FTP",
+      "helpText": "Files.com is a cloud FTP/SFTP service with advanced automation and security features.",
+      "fields": {
+        "site": {
+          "label": "Site Subdomain",
+          "placeholder": "mycompany",
+          "helpText": "Your Files.com subdomain"
+        },
+        "username": {
+          "label": "Username",
+          "placeholder": "Enter username",
+          "helpText": "Files.com username"
+        },
+        "password": {
+          "label": "Password",
+          "placeholder": "Enter password",
+          "helpText": "Files.com password"
+        },
+        "api_key": {
+          "label": "API Key",
+          "placeholder": "Enter API key",
+          "helpText": "API key (alternative to password)"
+        }
+      },
+      "tips": [
+        "Enterprise-grade security",
+        "Automation workflows",
+        "Detailed audit logs",
+        "HIPAA and SOC2 compliant"
+      ]
+    },
+    "gofile": {
+      "name": "GoFile",
+      "description": "GoFile anonymous file sharing",
+      "helpText": "GoFile is a free file sharing and storage platform with anonymous upload support.",
+      "fields": {
+        "account_id": {
+          "label": "Account ID",
+          "placeholder": "Enter account ID",
+          "helpText": "GoFile account ID (optional)"
+        },
+        "root_folder_id": {
+          "label": "Root Folder ID",
+          "placeholder": "Enter root folder ID",
+          "helpText": "Root folder ID for uploads"
+        }
+      },
+      "tips": [
+        "No registration required for basic use",
+        "Unlimited bandwidth",
+        "Files stored for free users limited time",
+        "Premium accounts get permanent storage"
+      ]
+    },
+    "googlephotos": {
+      "name": "Google Photos",
+      "description": "Google Photos storage service",
+      "helpText": "Google Photos backup and sync service. Note: Limited to photo and video operations only.",
+      "fields": {
+        "client_id": {
+          "label": "OAuth Client ID",
+          "placeholder": "123456789012-abcdef.apps.googleusercontent.com",
+          "helpText": "OAuth 2.0 client ID from Google Cloud Console"
+        },
+        "client_secret": {
+          "label": "OAuth Client Secret",
+          "placeholder": "Enter your client secret",
+          "helpText": "OAuth 2.0 client secret"
+        },
+        "token": {
+          "label": "OAuth Token",
+          "helpText": "OAuth2 token with photos.readonly scope"
+        },
+        "read_only": {
+          "label": "Read Only",
+          "helpText": "Google Photos API is read-only for most operations"
+        }
+      },
+      "tips": [
+        "Google Photos API has limited write capabilities",
+        "Best used for backing up photos from Google Photos",
+        "Original quality counts against Google Drive storage",
+        "Albums and metadata can be preserved"
+      ]
+    },
+    "hdfs": {
+      "name": "HDFS",
+      "description": "Hadoop Distributed File System",
+      "helpText": "HDFS is a distributed file system designed to run on commodity hardware, part of Apache Hadoop.",
+      "fields": {
+        "namenode": {
+          "label": "Namenode URL",
+          "placeholder": "http://namenode:9870",
+          "helpText": "HDFS namenode URL"
+        },
+        "username": {
+          "label": "Username",
+          "placeholder": "hadoop",
+          "helpText": "HDFS username"
+        },
+        "service_principal_name": {
+          "label": "Service Principal",
+          "placeholder": "hdfs/namenode.example.com@EXAMPLE.COM",
+          "helpText": "Kerberos service principal name"
+        },
+        "data_transfer_protection": {
+          "label": "Data Transfer Protection",
+          "helpText": "Data transfer protection level"
+        }
+      },
+      "tips": [
+        "Designed for big data workloads",
+        "High throughput access",
+        "Fault tolerant with replication",
+        "Best for large files"
+      ]
+    },
+    "hidrive": {
+      "name": "HiDrive",
+      "description": "STRATO HiDrive cloud storage",
+      "helpText": "HiDrive is a cloud storage service by STRATO, popular in Germany.",
+      "fields": {
+        "user": {
+          "label": "Username",
+          "placeholder": "username",
+          "helpText": "HiDrive username"
+        },
+        "pass": {
+          "label": "Password",
+          "placeholder": "Enter password",
+          "helpText": "HiDrive password"
+        },
+        "protocol": {
+          "label": "Protocol",
+          "helpText": "Protocol to use (webdav or smb)"
+        },
+        "root": {
+          "label": "Root Path",
+          "placeholder": "/",
+          "helpText": "Root path to use"
+        }
+      },
+      "tips": [
+        "Popular in Germany and Europe",
+        "Supports WebDAV and SMB protocols",
+        "GDPR compliant data storage",
+        "Includes collaboration features"
+      ]
+    },
+    "http": {
+      "name": "HTTP",
+      "description": "HTTP/HTTPS remote",
+      "helpText": "Access files over HTTP/HTTPS protocol. Read-only access to web servers.",
+      "fields": {
+        "url": {
+          "label": "URL",
+          "placeholder": "https://example.com/path/",
+          "helpText": "Base URL of the HTTP server"
+        },
+        "headers": {
+          "label": "HTTP Headers",
+          "placeholder": "Header: value",
+          "helpText": "Additional HTTP headers (one per line)"
+        },
+        "no_slash": {
+          "label": "No Slash",
+          "helpText": "Don't add trailing slash to URL"
+        },
+        "no_head": {
+          "label": "No HEAD",
+          "helpText": "Don't use HEAD requests"
+        }
+      },
+      "tips": [
+        "Read-only access",
+        "Good for accessing public files",
+        "Can parse directory listings",
+        "Supports basic authentication"
+      ]
+    },
+    "internetarchive": {
+      "name": "Internet Archive",
+      "description": "Internet Archive storage",
+      "helpText": "Internet Archive is a non-profit digital library offering free access to collections of digitized materials.",
+      "fields": {
+        "access_key_id": {
+          "label": "Access Key",
+          "placeholder": "Enter access key",
+          "helpText": "S3-like access key from Internet Archive"
+        },
+        "secret_access_key": {
+          "label": "Secret Key",
+          "placeholder": "Enter secret key",
+          "helpText": "S3-like secret key"
+        },
+        "endpoint": {
+          "label": "Endpoint",
+          "placeholder": "https://s3.us.archive.org",
+          "helpText": "Internet Archive S3 endpoint"
+        },
+        "front_endpoint": {
+          "label": "Frontend Endpoint",
+          "placeholder": "https://archive.org",
+          "helpText": "Frontend URL for public access"
+        }
+      },
+      "tips": [
+        "Free storage for public domain content",
+        "Requires special access for private items",
+        "Best for archival and preservation",
+        "Supports metadata and collections"
+      ]
+    },
+    "jottacloud": {
+      "name": "Jottacloud",
+      "description": "Norwegian cloud storage service",
+      "helpText": "Jottacloud is a cloud storage service popular in Nordic countries with focus on privacy.",
+      "fields": {
+        "user": {
+          "label": "Username",
+          "placeholder": "username",
+          "helpText": "Jottacloud username"
+        },
+        "pass": {
+          "label": "Password",
+          "placeholder": "Enter password",
+          "helpText": "Jottacloud password"
+        },
+        "device": {
+          "label": "Device Name",
+          "placeholder": "Jotta",
+          "helpText": "Device name (usually Jotta)"
+        },
+        "mountpoint": {
+          "label": "Mountpoint",
+          "placeholder": "Archive",
+          "helpText": "Mountpoint to use (Archive, Sync, or Backup)"
+        }
+      },
+      "tips": [
+        "Unlimited storage on personal plans",
+        "Data stored in Norway (EU privacy laws)",
+        "Supports file versioning",
+        "Good for photo and video backup"
+      ]
+    },
+    "koofr": {
+      "name": "Koofr",
+      "description": "European cloud storage service",
+      "helpText": "Koofr is a European cloud storage service that can also connect to other cloud storage accounts.",
+      "fields": {
+        "user": {
+          "label": "Email",
+          "placeholder": "user@example.com",
+          "helpText": "Your Koofr account email"
+        },
+        "pass": {
+          "label": "Password",
+          "placeholder": "Enter password",
+          "helpText": "Your Koofr password"
+        },
+        "provider": {
+          "label": "Provider",
+          "helpText": "Koofr provider (koofr, digistorage, or other)"
+        }
+      },
+      "tips": [
+        "Can connect multiple cloud accounts",
+        "Data stored in EU (GDPR compliant)",
+        "Supports WebDAV access",
+        "Has desktop and mobile apps"
+      ]
+    },
+    "linkbox": {
+      "name": "Linkbox",
+      "description": "Linkbox cloud storage",
+      "helpText": "Linkbox provides cloud storage with focus on ease of use and sharing capabilities.",
+      "fields": {
+        "token": {
+          "label": "API Token",
+          "placeholder": "Enter API token",
+          "helpText": "API token from Linkbox settings"
+        }
+      },
+      "tips": [
+        "Simple sharing options",
+        "Direct download links",
+        "Mobile apps available",
+        "Affordable pricing tiers"
+      ]
+    },
+    "mailru": {
+      "name": "Mail.ru Cloud",
+      "description": "Mail.ru cloud storage service",
+      "helpText": "Mail.ru Cloud (now part of VK Cloud) is a cloud storage service popular in Russia.",
+      "fields": {
+        "user": {
+          "label": "Username",
+          "placeholder": "user@mail.ru",
+          "helpText": "Your Mail.ru email address"
+        },
+        "pass": {
+          "label": "Password",
+          "placeholder": "Enter password",
+          "helpText": "Your Mail.ru password"
+        },
+        "speedup_enable": {
+          "label": "Enable Speedup",
+          "helpText": "Enable speedup (parallel upload) feature"
+        }
+      },
+      "tips": [
+        "Free tier includes 8GB storage",
+        "Popular in Russian-speaking countries",
+        "Supports large file uploads",
+        "Has mobile and desktop sync apps"
+      ]
+    },
+    "netstorage": {
+      "name": "Akamai NetStorage",
+      "description": "Akamai NetStorage CDN",
+      "helpText": "Akamai NetStorage is a globally distributed cloud storage solution optimized for media delivery.",
+      "fields": {
+        "host": {
+          "label": "Host",
+          "placeholder": "xxxxx.akamaihd.net",
+          "helpText": "NetStorage host"
+        },
+        "account": {
+          "label": "Account",
+          "placeholder": "Enter account",
+          "helpText": "NetStorage account name"
+        },
+        "secret": {
+          "label": "Secret",
+          "placeholder": "Enter secret",
+          "helpText": "NetStorage secret/key"
+        }
+      },
+      "tips": [
+        "Optimized for CDN delivery",
+        "Global edge locations",
+        "Media streaming support",
+        "Enterprise-grade performance"
+      ]
+    },
+    "opendrive": {
+      "name": "OpenDrive",
+      "description": "OpenDrive cloud storage",
+      "helpText": "OpenDrive provides cloud storage, online backup, and FTP replacement services.",
+      "fields": {
+        "username": {
+          "label": "Username",
+          "placeholder": "Enter username",
+          "helpText": "OpenDrive username"
+        },
+        "password": {
+          "label": "Password",
+          "placeholder": "Enter password",
+          "helpText": "OpenDrive password"
+        }
+      },
+      "tips": [
+        "Unlimited storage plans available",
+        "Built-in document viewer",
+        "Task management features",
+        "Note-taking capabilities"
+      ]
+    },
+    "oracle": {
+      "name": "Oracle Object Storage",
+      "description": "Oracle Cloud Infrastructure Object Storage",
+      "helpText": "Oracle Cloud Infrastructure (OCI) Object Storage is a regional service for storing large amounts of unstructured data.",
+      "fields": {
+        "namespace": {
+          "label": "Object Storage Namespace",
+          "placeholder": "Enter namespace",
+          "helpText": "Object storage namespace (found in OCI Console)"
+        },
+        "compartment": {
+          "label": "Compartment OCID",
+          "placeholder": "ocid1.compartment.oc1...",
+          "helpText": "Compartment OCID where bucket exists"
+        },
+        "region": {
+          "label": "Region",
+          "placeholder": "us-ashburn-1",
+          "helpText": "OCI region identifier"
+        },
+        "user": {
+          "label": "User OCID",
+          "placeholder": "ocid1.user.oc1...",
+          "helpText": "User OCID for authentication"
+        },
+        "key_file": {
+          "label": "API Key File",
+          "placeholder": "Base64 encoded PEM file",
+          "helpText": "RSA private key in PEM format (base64 encoded)"
+        },
+        "fingerprint": {
+          "label": "Key Fingerprint",
+          "placeholder": "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99",
+          "helpText": "Fingerprint of the API signing key"
+        },
+        "tenancy": {
+          "label": "Tenancy OCID",
+          "placeholder": "ocid1.tenancy.oc1...",
+          "helpText": "Tenancy OCID"
+        }
+      },
+      "tips": [
+        "Generate API keys in OCI Console user settings",
+        "Use compartments to organize resources",
+        "Storage classes available for cost optimization",
+        "Supports S3 compatibility API as alternative"
+      ]
+    },
+    "pikpak": {
+      "name": "PikPak",
+      "description": "Cloud storage with offline download",
+      "helpText": "PikPak is a cloud storage service that supports offline downloading and media streaming.",
+      "fields": {
+        "user": {
+          "label": "Username",
+          "placeholder": "user@example.com",
+          "helpText": "PikPak account email"
+        },
+        "pass": {
+          "label": "Password",
+          "placeholder": "Enter password",
+          "helpText": "PikPak account password"
+        }
+      },
+      "tips": [
+        "Supports offline downloading",
+        "Built-in media player",
+        "Good for torrenting to cloud",
+        "Has mobile apps with streaming"
+      ]
+    },
+    "pixeldrain": {
+      "name": "Pixeldrain",
+      "description": "Pixeldrain file sharing",
+      "helpText": "Pixeldrain is a file sharing platform with focus on simplicity and ease of use.",
+      "fields": {
+        "api_key": {
+          "label": "API Key",
+          "placeholder": "Enter API key",
+          "helpText": "API key from Pixeldrain account"
+        },
+        "root_folder_id": {
+          "label": "Root Folder ID",
+          "placeholder": "Enter folder ID",
+          "helpText": "Root folder ID (optional)"
+        }
+      },
+      "tips": [
+        "No registration required for uploads",
+        "Files viewable in browser",
+        "API for developers",
+        "Suitable for temporary file sharing"
+      ]
+    },
+    "proton": {
+      "name": "Proton Drive",
+      "description": "Privacy-focused encrypted cloud storage",
+      "helpText": "Proton Drive offers end-to-end encrypted cloud storage from the makers of ProtonMail.",
+      "fields": {
+        "username": {
+          "label": "Username",
+          "placeholder": "user@proton.me",
+          "helpText": "Your Proton account email"
+        },
+        "password": {
+          "label": "Password",
+          "placeholder": "Enter your password",
+          "helpText": "Your Proton account password"
+        },
+        "2fa": {
+          "label": "Two-Factor Code",
+          "placeholder": "Enter 2FA code if enabled",
+          "helpText": "Two-factor authentication code (if enabled)"
+        }
+      },
+      "tips": [
+        "All files are end-to-end encrypted",
+        "Part of the Proton privacy ecosystem",
+        "Free tier includes 1GB storage",
+        "Supports file sharing with encryption"
+      ]
+    },
+    "qingstor": {
+      "name": "QingStor",
+      "description": "QingStor Object Storage",
+      "helpText": "QingStor is an object storage service by QingCloud, popular in China.",
+      "fields": {
+        "access_key_id": {
+          "label": "Access Key ID",
+          "placeholder": "Enter access key ID",
+          "helpText": "Access key ID from QingCloud console"
+        },
+        "secret_access_key": {
+          "label": "Secret Access Key",
+          "placeholder": "Enter secret access key",
+          "helpText": "Secret access key"
+        },
+        "endpoint": {
+          "label": "Endpoint",
+          "placeholder": "https://qingstor.com",
+          "helpText": "QingStor endpoint URL"
+        },
+        "zone": {
+          "label": "Zone",
+          "placeholder": "pek3a",
+          "helpText": "QingStor zone (e.g., pek3a, sh1a)"
+        }
+      },
+      "tips": [
+        "Popular in China market",
+        "S3-compatible API",
+        "Multiple availability zones",
+        "Good performance in Asia"
+      ]
+    },
+    "quatrix": {
+      "name": "Quatrix",
+      "description": "Quatrix secure file transfer",
+      "helpText": "Quatrix is a secure file transfer and storage platform designed for business use.",
+      "fields": {
+        "api_key": {
+          "label": "API Key",
+          "placeholder": "Enter API key",
+          "helpText": "API key from Quatrix account"
+        },
+        "host": {
+          "label": "Host",
+          "placeholder": "https://your-domain.quatrix.com",
+          "helpText": "Your Quatrix host URL"
+        }
+      },
+      "tips": [
+        "Enterprise-focused security",
+        "Supports large file transfers",
+        "Built-in encryption",
+        "Audit trail features"
+      ]
+    },
+    "seafile": {
+      "name": "Seafile",
+      "description": "Open source cloud storage",
+      "helpText": "Seafile is an open source file sync and share platform with file encryption and group collaboration features.",
+      "fields": {
+        "url": {
+          "label": "Server URL",
+          "placeholder": "https://seafile.example.com",
+          "helpText": "Seafile server URL"
+        },
+        "user": {
+          "label": "Username",
+          "placeholder": "user@example.com",
+          "helpText": "Seafile username or email"
+        },
+        "pass": {
+          "label": "Password",
+          "placeholder": "Enter password",
+          "helpText": "Seafile password"
+        },
+        "library": {
+          "label": "Library ID",
+          "placeholder": "Enter library ID",
+          "helpText": "Seafile library ID"
+        },
+        "auth_token": {
+          "label": "Auth Token",
+          "placeholder": "Enter auth token",
+          "helpText": "Authentication token (optional)"
+        }
+      },
+      "tips": [
+        "Self-hosted option available",
+        "File versioning and snapshots",
+        "End-to-end encryption support",
+        "Good for team collaboration"
+      ]
+    },
+    "sharefile": {
+      "name": "Citrix ShareFile",
+      "description": "Enterprise file sharing and storage",
+      "helpText": "Citrix ShareFile is an enterprise content collaboration platform with secure file sharing.",
+      "fields": {
+        "upload_endpoint": {
+          "label": "Upload Endpoint",
+          "placeholder": "https://company.sf-api.com",
+          "helpText": "ShareFile upload endpoint URL"
+        },
+        "root_folder_id": {
+          "label": "Root Folder ID",
+          "placeholder": "Enter root folder ID",
+          "helpText": "ID of the root folder"
+        },
+        "token": {
+          "label": "OAuth Token",
+          "helpText": "OAuth2 token for ShareFile access"
+        }
+      },
+      "tips": [
+        "Designed for enterprise use",
+        "Supports large file transfers",
+        "Has audit trails and compliance features",
+        "Mobile apps available for all platforms"
+      ]
+    },
+    "sia": {
+      "name": "Sia",
+      "description": "Sia decentralized storage",
+      "helpText": "Sia is a decentralized cloud storage platform that encrypts and distributes files across a decentralized network.",
+      "fields": {
+        "api_url": {
+          "label": "API URL",
+          "placeholder": "http://127.0.0.1:9980",
+          "helpText": "Sia daemon API URL"
+        },
+        "api_password": {
+          "label": "API Password",
+          "placeholder": "Enter API password",
+          "helpText": "Sia daemon API password"
+        }
+      },
+      "tips": [
+        "Fully decentralized storage",
+        "Lower cost than traditional cloud",
+        "Requires running Sia daemon",
+        "Payment in Siacoin cryptocurrency"
+      ]
+    },
+    "smb": {
+      "name": "SMB / CIFS",
+      "description": "Windows network shares",
+      "helpText": "Server Message Block (SMB) protocol for accessing Windows shares and NAS devices.",
+      "fields": {
+        "host": {
+          "label": "Host",
+          "placeholder": "server.local or 192.168.1.100",
+          "helpText": "SMB server hostname or IP address"
+        },
+        "user": {
+          "label": "Username",
+          "placeholder": "DOMAIN\\username or username",
+          "helpText": "Username (may include domain)"
+        },
+        "pass": {
+          "label": "Password",
+          "placeholder": "Enter password",
+          "helpText": "Password for SMB authentication"
+        },
+        "domain": {
+          "label": "Domain",
+          "placeholder": "WORKGROUP",
+          "helpText": "SMB domain (default WORKGROUP)"
+        },
+        "port": {
+          "label": "Port",
+          "placeholder": "445",
+          "helpText": "SMB port (usually 445)"
+        }
+      },
+      "tips": [
+        "SMB3 is recommended for security",
+        "Ensure network discovery is enabled",
+        "May require firewall configuration",
+        "Test with IP address if hostname fails"
+      ]
+    },
+    "storj": {
+      "name": "Storj",
+      "description": "Decentralized cloud storage",
+      "helpText": "Storj is a decentralized cloud storage network that encrypts and distributes files across a global network.",
+      "fields": {
+        "access_grant": {
+          "label": "Access Grant",
+          "placeholder": "Enter your access grant",
+          "helpText": "Serialized access grant from Storj"
+        },
+        "satellite_address": {
+          "label": "Satellite Address",
+          "placeholder": "us1.storj.io:7777",
+          "helpText": "Satellite address (optional, defaults to us1.storj.io:7777)"
+        },
+        "api_key": {
+          "label": "API Key",
+          "placeholder": "Enter API key",
+          "helpText": "API key from satellite web interface"
+        },
+        "passphrase": {
+          "label": "Encryption Passphrase",
+          "placeholder": "Enter encryption passphrase",
+          "helpText": "Encryption passphrase for your data"
+        }
+      },
+      "tips": [
+        "Decentralized storage provides high durability",
+        "All data is encrypted client-side",
+        "Pay only for what you use",
+        "Good for archival and backup use cases"
+      ]
+    },
+    "sugarsync": {
+      "name": "SugarSync",
+      "description": "SugarSync cloud storage",
+      "helpText": "SugarSync is a cloud storage service that allows syncing of existing folder structures.",
+      "fields": {
+        "app_id": {
+          "label": "App ID",
+          "placeholder": "Enter app ID",
+          "helpText": "Application ID from SugarSync"
+        },
+        "access_key_id": {
+          "label": "Access Key",
+          "placeholder": "Enter access key",
+          "helpText": "Access key for authentication"
+        },
+        "private_access_key": {
+          "label": "Private Access Key",
+          "placeholder": "Enter private key",
+          "helpText": "Private access key"
+        },
+        "refresh_token": {
+          "label": "Refresh Token",
+          "placeholder": "Enter refresh token",
+          "helpText": "OAuth refresh token"
+        }
+      },
+      "tips": [
+        "Syncs any folder on your computer",
+        "No need to move files to special folder",
+        "Supports selective sync",
+        "Good for backup existing structures"
+      ]
+    },
+    "ulozto": {
+      "name": "Uloz.to",
+      "description": "Uloz.to file hosting",
+      "helpText": "Uloz.to is a file hosting service popular in Czech Republic and Slovakia.",
+      "fields": {
+        "app_token": {
+          "label": "App Token",
+          "placeholder": "Enter app token",
+          "helpText": "Application token from Uloz.to"
+        },
+        "username": {
+          "label": "Username",
+          "placeholder": "Enter username",
+          "helpText": "Uloz.to username"
+        },
+        "password": {
+          "label": "Password",
+          "placeholder": "Enter password",
+          "helpText": "Uloz.to password"
+        }
+      },
+      "tips": [
+        "Popular in Czech and Slovak markets",
+        "Supports large file uploads",
+        "Free and premium tiers",
+        "File sharing capabilities"
+      ]
+    },
+    "wasabi": {
+      "name": "Wasabi",
+      "description": "Wasabi Hot Cloud Storage",
+      "helpText": "Wasabi provides fast cloud object storage with no egress fees and predictable pricing.",
+      "fields": {
+        "access_key_id": {
+          "label": "Access Key ID",
+          "placeholder": "Enter access key",
+          "helpText": "Wasabi access key ID"
+        },
+        "secret_access_key": {
+          "label": "Secret Access Key",
+          "placeholder": "Enter secret key",
+          "helpText": "Wasabi secret access key"
+        },
+        "region": {
+          "label": "Region",
+          "placeholder": "us-east-1",
+          "helpText": "Wasabi region"
+        },
+        "endpoint": {
+          "label": "Endpoint",
+          "placeholder": "s3.wasabisys.com",
+          "helpText": "Wasabi endpoint URL"
+        }
+      },
+      "tips": [
+        "No egress fees",
+        "80% less than AWS S3",
+        "No API request charges",
+        "11 nines durability"
+      ]
+    }
+  },
+  "common": {
+    "additionalProviders": "Additional providers available: iCloud Drive, Amazon Cloud Drive (deprecated), Citrix Files, and more specialized providers.",
+    "noVersioning": {
+      "label": "Disable Versioning",
+      "helpText": "Disable file versioning for this storage to save space"
+    },
+    "parameters": {
+      "label": "Additional Parameters",
+      "placeholder": "--transfers 4 --checkers 8",
+      "helpText": "Extra rclone parameters for advanced configuration"
+    },
+    "authentication": {
+      "oauth": "This provider uses OAuth authentication. You'll need to authorize access.",
+      "apiKey": "This provider uses API key authentication. Generate a key from the provider's console.",
+      "password": "This provider uses password authentication. Consider using app-specific passwords.",
+      "serviceAccount": "This provider supports service account authentication for server applications."
+    },
+    "errors": {
+      "invalidCredentials": "Invalid credentials. Please check your authentication details.",
+      "connectionFailed": "Failed to connect. Please check your network and provider settings.",
+      "permissionDenied": "Permission denied. Check your access rights and authentication.",
+      "quotaExceeded": "Storage quota exceeded. Please free up space or upgrade your plan."
     }
   }
 }

@@ -15,6 +15,11 @@
   "groupByBridge": "ブリッジ",
   "groupByTeam": "チーム",
   "groupByRegion": "地域",
+  "groupByRepository": "リポジトリ",
+  "groupByMounted": "マウント済み",
+  "groupByUnmounted": "マウント解除",
+  "groupByStatus": "ステータス",
+  "groupByGrand": "メインリポジトリ",
   "clearFilters": "フィルターをクリア",
   "searchMachineName": "マシン名を検索",
   "searchPlaceholder": "マシンを検索...",
@@ -23,6 +28,10 @@
   "tableView": "マシン",
   "gridView": "リポジトリ",
   "machineCount": "台のマシン",
+  "itemCount": "件のアイテム",
+  "queue": "キュー",
+  "editMachine": "マシンを編集",
+  "delete": "削除",
   "confirmDelete": "マシンを削除",
   "deleteWarning": "マシン \"{{name}}\" を削除してもよろしいですか？この操作は取り消せません。",
   "deleteSuccess": "マシンが正常に削除されました",
@@ -30,6 +39,10 @@
   "createSuccess": "マシンが正常に作成されました",
   "updateSuccess": "マシンが正常に更新されました",
   "vaultUpdateSuccess": "マシン保険庫設定が正常に更新されました",
+  "autoSetupAfterCreation": "マシン作成後に自動的にセットアップを実行",
+  "setupQueued": "マシンが正常に作成されました。セットアップがキューに登録されました。",
+  "setupQueuedForSubmission": "マシンが正常に作成されました。セットアップが送信用のキューに登録されました。",
+  "machineCreatedButSetupFailed": "マシンは正常に作成されましたが、セットアップをキューに登録できませんでした。",
   "form": {
     "title": {
       "create": "新しいマシンを作成",
@@ -103,5 +116,8 @@
   "hoursAgo": "{{count}}時間前",
   "hoursAgo_plural": "{{count}}時間前",
   "daysAgo": "{{count}}日前",
-  "daysAgo_plural": "{{count}}日前"
+  "daysAgo_plural": "{{count}}日前",
+  "validation": {
+    "sshPasswordNotAllowed": "SSHパスワードは保険庫に設定できません。代わりにSSHキーを使用してください。"
+  }
 }

@@ -2,9 +2,7 @@ import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Table,
-  Input,
   Button,
-  Select,
   Dropdown,
   Card,
   Badge,
@@ -12,9 +10,6 @@ import {
   Space,
   Alert,
   Modal,
-  Row,
-  Col,
-  Segmented,
   Form,
   Empty,
   Radio,
@@ -23,15 +18,11 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table/interface';
 import {
-  SearchOutlined,
   MoreOutlined,
   EditOutlined,
   DeleteOutlined,
   KeyOutlined,
   PlusOutlined,
-  AppstoreOutlined,
-  TableOutlined,
-  FilterOutlined,
   FunctionOutlined,
   HistoryOutlined,
   WifiOutlined,
@@ -39,12 +30,11 @@ import {
   DatabaseOutlined,
   TeamOutlined,
   GlobalOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
   CloudServerOutlined,
   BranchesOutlined,
   HddOutlined,
   DesktopOutlined,
+  DashboardOutlined,
 } from '@ant-design/icons';
 import { useMachines } from '@/api/queries/machines';
 import { useDropdownData } from '@/api/queries/useDropdownData';
@@ -62,12 +52,9 @@ import { useRepositories } from '@/api/queries/repositories';
 import { useTeams } from '@/api/queries/teams';
 import { useTheme } from '@/context/ThemeContext';
 
-const { Option } = Select;
-const { Search } = Input;
 
 interface MachineTableProps {
   teamFilter?: string | string[];
-  showFilters?: boolean;
   showActions?: boolean;
   className?: string;
   onCreateMachine?: () => void;
@@ -84,7 +71,6 @@ interface MachineTableProps {
 
 export const MachineTable: React.FC<MachineTableProps> = ({
   teamFilter,
-  showFilters = true,
   showActions = true,
   className = '',
   onCreateMachine,
@@ -108,12 +94,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
   // State management
-  const [search, setSearch] = useState('');
-  const [selectedBridge, setSelectedBridge] = useState<string | undefined>(undefined);
-  const [selectedTeam, setSelectedTeam] = useState<string | undefined>(Array.isArray(teamFilter) ? undefined : teamFilter);
-  const [selectedRegion, setSelectedRegion] = useState<string | undefined>(undefined);
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
-  const [groupBy, setGroupBy] = useState<'bridge' | 'team' | 'region' | 'repository' | 'mounted' | 'unmounted' | 'grand'>('bridge');
+  const [groupBy, setGroupBy] = useState<'machine' | 'bridge' | 'team' | 'region' | 'repository' | 'status' | 'grand'>('machine');
   const [internalExpandedRowKeys, setInternalExpandedRowKeys] = useState<string[]>([]);
   const [expansionTimestamps, setExpansionTimestamps] = useState<Record<string, number>>({});
   const [internalRefreshKeys, setInternalRefreshKeys] = useState<Record<string, number>>({});
@@ -150,35 +131,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
   // Get unique values for filters
   const teamsData = dropdownData?.teams || [];
-  const regions = dropdownData?.regions || [];
-  const bridges = useMemo(() => {
-    if (!dropdownData?.bridgesByRegion) return [];
-    const allBridges: Array<{ value: string; label: string }> = [];
-    dropdownData.bridgesByRegion.forEach(region => {
-      if (region.bridges && Array.isArray(region.bridges)) {
-        region.bridges.forEach(bridge => {
-          if (!allBridges.find(b => b.value === bridge.value)) {
-            allBridges.push(bridge);
-          }
-        });
-      }
-    });
-    return allBridges;
-  }, [dropdownData]);
 
-  // Filter machines based on selections
-  const filteredMachines = useMemo(() => {
-    const filtered = machines.filter((machine) => {
-      const matchesSearch = search === '' || 
-        machine.machineName.toLowerCase().includes(search.toLowerCase());
-      const matchesBridge = !selectedBridge || machine.bridgeName === selectedBridge;
-      const matchesTeam = !selectedTeam || machine.teamName === selectedTeam;
-      const matchesRegion = !selectedRegion || machine.regionName === selectedRegion;
-      
-      return matchesSearch && matchesBridge && matchesTeam && matchesRegion;
-    });
-    return filtered;
-  }, [machines, search, selectedBridge, selectedTeam, selectedRegion]);
+  // Use machines directly without filtering
+  const filteredMachines = machines;
 
   // Parse machine vault status to get repository information
   const getMachineRepositories = (machine: Machine) => {
@@ -230,98 +185,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     return [];
   };
 
-  // Group machines for grid view
-  const groupedData = useMemo(() => {
-    if (viewMode !== 'grid') return {};
-    
-    if (groupBy === 'repository' || groupBy === 'mounted' || groupBy === 'unmounted' || groupBy === 'grand') {
-      // For repository-based grouping, we need to create entries per repository
-      const result: Record<string, Array<{machine: Machine, repository?: any}>> = {};
-      
-      filteredMachines.forEach(machine => {
-        const machineRepos = getMachineRepositories(machine);
-        
-        if (groupBy === 'repository') {
-          // Group by individual repositories
-          if (machineRepos.length === 0) {
-            // Skip machines without repositories in repository view
-          } else {
-            machineRepos.forEach(repo => {
-              const key = repo.name;
-              if (!result[key]) result[key] = [];
-              result[key].push({ machine, repository: repo });
-            });
-          }
-        } else if (groupBy === 'mounted') {
-          const mountedRepos = machineRepos.filter(r => r.mounted);
-          if (mountedRepos.length === 0) {
-            // Skip machines without mounted repositories
-          } else {
-            mountedRepos.forEach(repo => {
-              const key = 'Mounted Repositories';
-              if (!result[key]) result[key] = [];
-              result[key].push({ machine, repository: repo });
-            });
-          }
-        } else if (groupBy === 'unmounted') {
-          const unmountedRepos = machineRepos.filter(r => !r.mounted);
-          if (unmountedRepos.length === 0) {
-            // Skip machines without unmounted repositories
-          } else {
-            unmountedRepos.forEach(repo => {
-              const key = 'Unmounted Repositories';
-              if (!result[key]) result[key] = [];
-              result[key].push({ machine, repository: repo });
-            });
-          }
-        } else if (groupBy === 'grand') {
-          // Group by grand repository
-          if (machineRepos.length > 0) {
-            machineRepos.forEach(repo => {
-              if (repo.grandGuid) {
-                const grandRepo = repositories.find(r => r.repositoryGuid === repo.grandGuid);
-                const key = grandRepo ? grandRepo.repositoryName : 'Unknown Grand';
-                if (!result[key]) result[key] = [];
-                result[key].push({ machine, repository: repo });
-              } else {
-                const key = 'No Grand Repository';
-                if (!result[key]) result[key] = [];
-                result[key].push({ machine, repository: repo });
-              }
-            });
-          }
-        }
-      });
-      
-      return result;
-    } else {
-      // For machine-based grouping (bridge, team, region) - show repositories
-      const result: Record<string, Array<{machine: Machine, repository?: any}>> = {};
-      
-      filteredMachines.forEach(machine => {
-        const machineRepos = getMachineRepositories(machine);
-        
-        if (machineRepos.length > 0) {
-          machineRepos.forEach(repo => {
-            let key = '';
-            if (groupBy === 'bridge') {
-              key = machine.bridgeName;
-            } else if (groupBy === 'team') {
-              key = machine.teamName;
-            } else if (groupBy === 'region') {
-              key = machine.regionName || 'Unknown';
-            }
-            
-            if (!result[key]) result[key] = [];
-            result[key].push({ machine, repository: repo });
-          });
-        }
-      });
-      
-      return result;
-    }
-  }, [filteredMachines, viewMode, groupBy, repositories]);
-
   const handleDelete = useCallback((machine: Machine) => {
     if (onDeleteMachine) {
       onDeleteMachine(machine);
@@ -351,40 +214,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         key: 'machineName',
         ellipsis: true,
         sorter: (a: Machine, b: Machine) => a.machineName.localeCompare(b.machineName),
-        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
-          <div style={{ padding: 8 }}>
-            <Input
-              placeholder={t('machines:searchMachineName')}
-              value={selectedKeys[0]}
-              onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
-              onPressEnter={() => confirm()}
-              style={{ marginBottom: 8, display: 'block' }}
-            />
-            <Space>
-              <Button
-                type="primary"
-                onClick={() => confirm()}
-                icon={<SearchOutlined />}
-                size="small"
-                style={{ width: 90 }}
-              >
-                {t('common:actions.search')}
-              </Button>
-              <Button
-                onClick={() => clearFilters && clearFilters()}
-                size="small"
-                style={{ width: 90 }}
-              >
-                {t('common:actions.reset')}
-              </Button>
-            </Space>
-          </div>
-        ),
-        filterIcon: (filtered: boolean) => (
-          <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
-        ),
-        onFilter: (value: string | number | boolean, record: Machine) => 
-          record.machineName.toLowerCase().includes(value.toString().toLowerCase()),
       },
       {
         title: t('machines:team'),
@@ -616,139 +445,69 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     return baseColumns;
   }, [isExpertMode, uiMode, showActions, t, handleDelete, dropdownData, onEditMachine, onVaultMachine, onFunctionsMachine, onCreateRepository, executePingForMachineAndWait, machineFunctions]);
 
-  // Render filters section
-  const renderFilters = () => {
-    if (!showFilters) return null;
-
-    return (
-      <div style={{ marginBottom: 16 }}>
-        <Space wrap size="middle">
-          <Input
-            key={t('machines:searchPlaceholder')}
-            placeholder={t('machines:searchPlaceholder')}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ width: 250 }}
-            prefix={<SearchOutlined />}
-          />
-          
-          {isExpertMode && (
-            <>
-              <Select
-                style={{ width: 200 }}
-                placeholder={t('machines:filterByRegion')}
-                allowClear
-                value={selectedRegion}
-                onChange={setSelectedRegion}
-                suffixIcon={<FilterOutlined />}
-              >
-                {regions.map((region) => (
-                  <Option key={region.value} value={region.value}>
-                    {region.label}
-                  </Option>
-                ))}
-              </Select>
-
-              <Select
-                style={{ width: 200 }}
-                placeholder={t('machines:filterByBridge')}
-                allowClear
-                value={selectedBridge}
-                onChange={setSelectedBridge}
-                suffixIcon={<FilterOutlined />}
-              >
-                {bridges.map((bridge) => (
-                  <Option key={bridge.value} value={bridge.value}>
-                    {bridge.label}
-                  </Option>
-                ))}
-              </Select>
-            </>
-          )}
-
-        </Space>
-      </div>
-    );
-  };
 
   // Render view mode toggle
   const renderViewToggle = () => {
-    if (!isExpertMode) return null;
-
     return (
       <div style={{ marginBottom: 16 }}>
-        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-          <Space align="center">
-            <span style={{ marginRight: 8, fontWeight: 500 }}>{t('machines:viewBy')}:</span>
-            <Segmented
-              options={[
-                { label: t('machines:tableView'), value: 'table', icon: <TableOutlined /> },
-                { label: t('machines:gridView'), value: 'grid', icon: <AppstoreOutlined /> },
-              ]}
-              value={viewMode}
-              onChange={(value) => setViewMode(value as 'table' | 'grid')}
-            />
-          </Space>
-          
-          {viewMode === 'grid' && (
-            <Space wrap size="small">
-              <span style={{ marginRight: 8, fontWeight: 500 }}>{t('machines:groupBy')}:</span>
-              <Radio.Group 
-                value={groupBy} 
-                onChange={(e) => setGroupBy(e.target.value)}
-                buttonStyle="solid"
-                style={{
-                  backgroundColor: theme === 'light' ? '#f5f5f5' : undefined,
-                  borderRadius: '6px',
-                  padding: '2px'
-                }}
-                className={theme === 'light' ? 'light-mode-radio-group' : ''}
-              >
-                <Radio.Button value="bridge">
-                  <Space>
-                    <CloudServerOutlined />
-                    {t('machines:groupByBridge')}
-                  </Space>
-                </Radio.Button>
-                <Radio.Button value="team">
-                  <Space>
-                    <TeamOutlined />
-                    {t('machines:groupByTeam')}
-                  </Space>
-                </Radio.Button>
-                <Radio.Button value="region">
-                  <Space>
-                    <GlobalOutlined />
-                    {t('machines:groupByRegion')}
-                  </Space>
-                </Radio.Button>
-                <Radio.Button value="repository">
-                  <Space>
-                    <InboxOutlined />
-                    {t('machines:groupByRepository')}
-                  </Space>
-                </Radio.Button>
-                <Radio.Button value="mounted">
-                  <Space>
-                    <CheckCircleOutlined />
-                    {t('machines:groupByMounted')}
-                  </Space>
-                </Radio.Button>
-                <Radio.Button value="unmounted">
-                  <Space>
-                    <CloseCircleOutlined />
-                    {t('machines:groupByUnmounted')}
-                  </Space>
-                </Radio.Button>
-                <Radio.Button value="grand">
-                  <Space>
-                    <BranchesOutlined />
-                    {t('machines:groupByGrand')}
-                  </Space>
-                </Radio.Button>
-              </Radio.Group>
-            </Space>
-          )}
+        <Space wrap size="small">
+          <span style={{ marginRight: 8, fontWeight: 500 }}>{t('machines:groupBy')}:</span>
+          <Radio.Group 
+            value={groupBy} 
+            onChange={(e) => setGroupBy(e.target.value)}
+            buttonStyle="solid"
+            style={{
+              backgroundColor: theme === 'light' ? '#f5f5f5' : undefined,
+              borderRadius: '6px',
+              padding: '2px'
+            }}
+            className={theme === 'light' ? 'light-mode-radio-group' : ''}
+          >
+            <Radio.Button value="machine">
+              <Space>
+                <DesktopOutlined />
+                {t('machines:machine')}
+              </Space>
+            </Radio.Button>
+            <Radio.Button value="bridge">
+              <Space>
+                <CloudServerOutlined />
+                {t('machines:groupByBridge')}
+              </Space>
+            </Radio.Button>
+            <Radio.Button value="team">
+              <Space>
+                <TeamOutlined />
+                {t('machines:groupByTeam')}
+              </Space>
+            </Radio.Button>
+            {isExpertMode && (
+              <Radio.Button value="region">
+                <Space>
+                  <GlobalOutlined />
+                  {t('machines:groupByRegion')}
+                </Space>
+              </Radio.Button>
+            )}
+            <Radio.Button value="repository">
+              <Space>
+                <InboxOutlined />
+                {t('machines:groupByRepository')}
+              </Space>
+            </Radio.Button>
+            <Radio.Button value="status">
+              <Space>
+                <DashboardOutlined />
+                {t('machines:groupByStatus')}
+              </Space>
+            </Radio.Button>
+            <Radio.Button value="grand">
+              <Space>
+                <BranchesOutlined />
+                {t('machines:groupByGrand')}
+              </Space>
+            </Radio.Button>
+          </Radio.Group>
         </Space>
       </div>
     );
@@ -756,150 +515,108 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
   // Render embedded mode alert (removed since we're enabling full functionality)
 
-  // Render grid view
-  const renderGridView = () => {
+  // Grouped machines for table view
+  const groupedMachinesForTable = useMemo(() => {
+    const result: Record<string, Machine[]> = {};
+    
+    if (groupBy === 'machine') {
+      // Don't group when showing normal machine view
+      return result;
+    }
+    
+    filteredMachines.forEach(machine => {
+      let key = '';
+      if (groupBy === 'bridge') {
+        key = machine.bridgeName;
+      } else if (groupBy === 'team') {
+        key = machine.teamName;
+      } else if (groupBy === 'region') {
+        key = machine.regionName || 'Unknown';
+      } else if (groupBy === 'repository') {
+        // For repository grouping, we'll handle this differently
+        const machineRepos = getMachineRepositories(machine);
+        if (machineRepos.length === 0) {
+          // Skip machines without repositories
+          return;
+        }
+        // Add machine to each repository it has
+        machineRepos.forEach(repo => {
+          const repoKey = repo.name;
+          if (!result[repoKey]) result[repoKey] = [];
+          if (!result[repoKey].find(m => m.machineName === machine.machineName)) {
+            result[repoKey].push(machine);
+          }
+        });
+        return;
+      } else if (groupBy === 'status') {
+        const machineRepos = getMachineRepositories(machine);
+        if (machineRepos.length === 0) {
+          key = 'No Repositories';
+        } else {
+          // Priority-based status assignment
+          const hasInaccessible = machineRepos.some(r => !r.accessible);
+          const hasRunning = machineRepos.some(r => r.mounted && r.docker_running);
+          const hasStopped = machineRepos.some(r => r.mounted && !r.docker_running);
+          const hasUnmounted = machineRepos.some(r => !r.mounted);
+          
+          if (hasInaccessible) {
+            key = 'Inaccessible';
+          } else if (hasRunning) {
+            key = 'Active (Running)';
+          } else if (hasStopped) {
+            key = 'Ready (Stopped)';
+          } else if (hasUnmounted) {
+            key = 'Not Mounted';
+          } else {
+            key = 'Unknown Status';
+          }
+        }
+      } else if (groupBy === 'grand') {
+        // Group by grand repository
+        const machineRepos = getMachineRepositories(machine);
+        if (machineRepos.length === 0) return;
+        
+        machineRepos.forEach(repo => {
+          let grandKey = 'No Grand Repository';
+          if (repo.grandGuid) {
+            const grandRepo = repositories.find(r => r.repositoryGuid === repo.grandGuid);
+            if (grandRepo) {
+              grandKey = grandRepo.repositoryName;
+            }
+          }
+          if (!result[grandKey]) result[grandKey] = [];
+          if (!result[grandKey].find(m => m.machineName === machine.machineName)) {
+            result[grandKey].push(machine);
+          }
+        });
+        return;
+      }
+      
+      if (key && groupBy !== 'repository') {
+        if (!result[key]) result[key] = [];
+        result[key].push(machine);
+      }
+    });
+    
+    return result;
+  }, [filteredMachines, groupBy, repositories]);
+
+  // Render grouped table view
+  const renderGroupedTableView = () => {
     const getGroupColor = () => {
       switch (groupBy) {
+        case 'machine': return '#556b2f';
         case 'bridge': return 'green';
         case 'team': return '#8FBC8F';
         case 'region': return 'purple';
         case 'repository': return '#556b2f';
-        case 'mounted': return 'success';
-        case 'unmounted': return 'warning';
+        case 'status': return 'geekblue';
         case 'grand': return 'blue';
         default: return 'default';
       }
     };
 
-    const renderRepositoryCard = (item: {machine: Machine, repository?: any}) => {
-      const { machine, repository } = item;
-      
-      // Skip items without repositories when in repository view
-      if (!repository) {
-        return null;
-      }
-      
-      return (
-        <Col xs={24} sm={12} md={8} lg={6} xl={4} key={`${machine.machineName}-${repository?.name || 'no-repo'}`}>
-          <Card
-            size="small"
-            hoverable
-            style={{ height: '100%' }}
-            actions={showActions ? [
-              <Tooltip title={t('machines:editMachine')}>
-                <EditOutlined onClick={() => onEditMachine && onEditMachine(machine)} />
-              </Tooltip>,
-              <Tooltip title={t('machines:runFunction')}>
-                <FunctionOutlined onClick={() => onFunctionsMachine && onFunctionsMachine(machine)} />
-              </Tooltip>,
-              <Tooltip title={t('machines:delete')}>
-                <DeleteOutlined onClick={() => handleDelete(machine)} />
-              </Tooltip>,
-            ] : undefined}
-          >
-            <Card.Meta
-              title={
-                <Space direction="vertical" size={0} style={{ width: '100%' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <InboxOutlined style={{ color: '#8B4513' }} />
-                    <strong style={{ fontSize: 14 }}>{repository.name}</strong>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                    <DesktopOutlined style={{ color: '#556b2f' }} />
-                    <span style={{ fontSize: 13 }}>{machine.machineName}</span>
-                  </div>
-                </Space>
-              }
-              description={
-                <Space direction="vertical" size={4} style={{ width: '100%', marginTop: 8 }}>
-                  {/* Tags Section */}
-                  <Space wrap size={4}>
-                    <Tag color="#8FBC8F" style={{ margin: 0, fontSize: 11 }}>{machine.teamName}</Tag>
-                    {machine.regionName && (
-                      <Tag color="purple" style={{ margin: 0, fontSize: 11 }}>{machine.regionName}</Tag>
-                    )}
-                    <Tag color="green" style={{ margin: 0, fontSize: 11 }}>{machine.bridgeName}</Tag>
-                  </Space>
-                  
-                  {/* Repository Info */}
-                  {repository && (
-                    <>
-                      <Space wrap size={4}>
-                        {repository.mounted && (
-                          <Tag icon={<CheckCircleOutlined />} color="blue" style={{ margin: 0, fontSize: 11 }}>
-                            {t('resources:repositories.mounted')}
-                          </Tag>
-                        )}
-                        {repository.accessible && (
-                          <Tag color="green" style={{ margin: 0, fontSize: 11 }}>
-                            {t('resources:repositories.accessible')}
-                          </Tag>
-                        )}
-                        {repository.docker_running && (
-                          <Tag color="cyan" style={{ margin: 0, fontSize: 11 }}>
-                            {repository.container_count} {t('resources:repositories.containers')}
-                          </Tag>
-                        )}
-                        {repository.has_services && (
-                          <Tag color="orange" style={{ margin: 0, fontSize: 11 }}>
-                            {repository.service_count} {t('resources:repositories.services')}
-                          </Tag>
-                        )}
-                      </Space>
-                      
-                      {/* Repository Size and Disk Usage */}
-                      <div style={{ fontSize: 12, color: '#666' }}>
-                        <Space>
-                          <HddOutlined />
-                          <span>{repository.size_human}</span>
-                        </Space>
-                      </div>
-                      
-                      {repository.disk_space && repository.mounted && (
-                        <div style={{ marginTop: 4 }}>
-                          <Progress 
-                            percent={parseInt(repository.disk_space.use_percent)} 
-                            size="small"
-                            strokeWidth={4}
-                            status={parseInt(repository.disk_space.use_percent) > 90 ? 'exception' : 'normal'}
-                            format={(percent) => `${percent}%`}
-                          />
-                          <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
-                            {repository.disk_space.used} / {repository.disk_space.total}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Last Modified */}
-                      <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>
-                        {t('resources:repositories.lastModified')}: {repository.modified_human}
-                      </div>
-                    </>
-                  )}
-                  
-                  {/* Machine Stats */}
-                  <div style={{ marginTop: 4, paddingTop: 4, borderTop: '1px solid #f0f0f0' }}>
-                    <Space size="small">
-                      <Badge count={machine.queueCount} showZero style={{ backgroundColor: machine.queueCount > 0 ? '#52c41a' : '#d9d9d9' }}>
-                        <span style={{ fontSize: 11, color: '#666' }}>{t('machines:queue')}</span>
-                      </Badge>
-                      {machine.vaultStatusTime && (
-                        <span style={{ fontSize: 11, color: '#999' }}>
-                          {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
-                        </span>
-                      )}
-                    </Space>
-                  </div>
-                </Space>
-              }
-            />
-          </Card>
-        </Col>
-      );
-    };
-
-    // Check if there are no repositories
-    if (Object.keys(groupedData).length === 0) {
+    if (Object.keys(groupedMachinesForTable).length === 0) {
       return (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -909,40 +626,126 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       );
     }
 
+    const getGroupBackgroundColor = (groupIndex: number) => {
+      // Only apply background to even groups (0, 2, 4, etc.)
+      return groupIndex % 2 === 0 ? 'rgba(0, 0, 0, 0.02)' : 'transparent';
+    };
+
+    const getGroupBorderColor = (groupIndex: number) => {
+      // Only apply special border to even groups
+      return groupIndex % 2 === 0 ? 'rgba(0, 0, 0, 0.08)' : '#f0f0f0';
+    };
+
+    const getGroupHeaderColor = (groupIndex: number) => {
+      // Only apply header color to even groups
+      return groupIndex % 2 === 0 ? '#595959' : 'transparent';
+    };
+
     return (
-      <Row gutter={[16, 16]}>
-        {Object.entries(groupedData).map(([groupKey, items]) => (
-          <Col span={24} key={groupKey}>
-            <Card
-              title={
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+        {Object.entries(groupedMachinesForTable).map(([groupKey, machines], groupIndex) => (
+          <Card
+            key={groupKey}
+            title={
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 12,
+                padding: '8px 0'
+              }}>
+                {groupIndex % 2 === 0 && (
+                  <div style={{
+                    width: 4,
+                    height: 32,
+                    backgroundColor: getGroupHeaderColor(groupIndex),
+                    borderRadius: 2
+                  }} />
+                )}
                 <Space>
-                  <Tag color={getGroupColor()} style={{ fontSize: '14px' }}>
+                  <span style={{ 
+                    fontSize: '18px', 
+                    fontWeight: 'bold',
+                    color: '#333',
+                    marginRight: 8
+                  }}>
+                    #{groupIndex + 1}
+                  </span>
+                  <Tag 
+                    color={getGroupColor()} 
+                    style={{ 
+                      fontSize: '16px',
+                      padding: '4px 16px',
+                      fontWeight: 500
+                    }}
+                    icon={
+                      groupBy === 'bridge' ? <CloudServerOutlined /> :
+                      groupBy === 'team' ? <TeamOutlined /> :
+                      groupBy === 'region' ? <GlobalOutlined /> :
+                      groupBy === 'repository' ? <InboxOutlined /> :
+                      groupBy === 'status' ? <DashboardOutlined /> :
+                      groupBy === 'grand' ? <BranchesOutlined /> :
+                      null
+                    }
+                  >
                     {groupKey}
                   </Tag>
                   <span style={{ fontSize: '14px', color: '#666' }}>
-                    {items.length} {items.length === 1 ? t('resources:repositories.repository') : t('resources:repositories.repositories')}
+                    {machines.length} {machines.length === 1 ? t('machines:machine') : t('machines:machines')}
                   </span>
                 </Space>
-              }
-              bodyStyle={{ padding: '12px' }}
-            >
-              <Row gutter={[12, 12]}>
-                {items.map((item) => renderRepositoryCard(item))}
-              </Row>
-            </Card>
-          </Col>
+              </div>
+            }
+            bodyStyle={{ 
+              padding: 0,
+              backgroundColor: getGroupBackgroundColor(groupIndex)
+            }}
+            style={{
+              borderColor: getGroupBorderColor(groupIndex),
+              borderWidth: 2,
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)'
+            }}
+            headStyle={{
+              backgroundColor: getGroupBackgroundColor(groupIndex),
+              borderBottom: `2px solid ${getGroupBorderColor(groupIndex)}`
+            }}
+          >
+            {machines.map((machine, index) => (
+              <div 
+                key={machine.machineName} 
+                style={{ 
+                  borderBottom: index < machines.length - 1 ? `1px solid ${getGroupBorderColor(groupIndex)}` : 'none',
+                  backgroundColor: index % 2 === 0 ? 'transparent' : 'rgba(0, 0, 0, 0.01)'
+                }}
+              >
+                <MachineRepositoryList 
+                  machine={machine}
+                  key={`${machine.machineName}-${expansionTimestamps[machine.machineName] || 0}-${refreshKeys[machine.machineName] || 0}`}
+                  onActionComplete={() => {
+                    // Refresh this specific machine's repository list
+                    if (externalRefreshKeys === undefined) {
+                      setInternalRefreshKeys(prev => ({
+                        ...prev,
+                        [machine.machineName]: Date.now()
+                      }))
+                    }
+                  }}
+                  hideSystemInfo={true}
+                />
+              </div>
+            ))}
+          </Card>
         ))}
-      </Row>
+      </div>
     );
   };
 
 
+
   return (
     <div className={className}>
-      {renderFilters()}
       {renderViewToggle()}
       
-      {viewMode === 'table' ? (
+      {groupBy === 'machine' ? (
         <div ref={tableContainerRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <Table
             columns={columns}
@@ -992,7 +795,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           />
         </div>
       ) : (
-        renderGridView()
+        renderGroupedTableView()
       )}
 
       {/* Modals */}

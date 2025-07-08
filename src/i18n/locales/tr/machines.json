@@ -15,6 +15,11 @@
   "groupByBridge": "Köprü",
   "groupByTeam": "Takım",
   "groupByRegion": "Bölge",
+  "groupByRepository": "Depo",
+  "groupByMounted": "Bağlı",
+  "groupByUnmounted": "Bağlı Değil",
+  "groupByStatus": "Durum",
+  "groupByGrand": "Ana Depo",
   "clearFilters": "Filtreleri Temizle",
   "searchMachineName": "Makine adı ara",
   "searchPlaceholder": "Makine ara...",
@@ -23,6 +28,10 @@
   "tableView": "Makine",
   "gridView": "Depo",
   "machineCount": "makine | makine",
+  "itemCount": "öğe | öğe",
+  "queue": "Kuyruk",
+  "editMachine": "Makineyi Düzenle",
+  "delete": "Sil",
   "confirmDelete": "Makineyi Sil",
   "deleteWarning": "\"{{name}}\" makinesini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
   "deleteSuccess": "Makine başarıyla silindi",
@@ -30,6 +39,10 @@
   "createSuccess": "Makine başarıyla oluşturuldu",
   "updateSuccess": "Makine başarıyla güncellendi",
   "vaultUpdateSuccess": "Makine kasa yapılandırması başarıyla güncellendi",
+  "autoSetupAfterCreation": "Makine oluşturulduktan sonra kurulumu otomatik olarak çalıştır",
+  "setupQueued": "Makine başarıyla oluşturuldu. Kurulum kuyruğa alındı.",
+  "setupQueuedForSubmission": "Makine başarıyla oluşturuldu. Kurulum gönderim için kuyruğa alındı.",
+  "machineCreatedButSetupFailed": "Makine başarıyla oluşturuldu, ancak kurulum kuyruğa alınamadı.",
   "form": {
     "title": {
       "create": "Yeni Makine Oluştur",
@@ -103,5 +116,8 @@
   "hoursAgo": "{{count}} saat önce",
   "hoursAgo_plural": "{{count}} saat önce",
   "daysAgo": "{{count}} gün önce",
-  "daysAgo_plural": "{{count}} gün önce"
+  "daysAgo_plural": "{{count}} gün önce",
+  "validation": {
+    "sshPasswordNotAllowed": "SSH şifresi kasada ayarlanamaz. Lütfen bunun yerine SSH anahtarlarını kullanın."
+  }
 }

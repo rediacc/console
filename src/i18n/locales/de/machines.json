@@ -15,6 +15,11 @@
   "groupByBridge": "Brücke",
   "groupByTeam": "Team",
   "groupByRegion": "Region",
+  "groupByRepository": "Repository",
+  "groupByMounted": "Eingehängt",
+  "groupByUnmounted": "Nicht eingehängt",
+  "groupByStatus": "Status",
+  "groupByGrand": "Haupt-Repository",
   "clearFilters": "Filter löschen",
   "searchMachineName": "Maschinennamen suchen",
   "searchPlaceholder": "Maschinen suchen...",
@@ -23,6 +28,10 @@
   "tableView": "Maschine",
   "gridView": "Repository",
   "machineCount": "Maschine | Maschinen",
+  "itemCount": "Element | Elemente",
+  "queue": "Warteschlange",
+  "editMachine": "Maschine bearbeiten",
+  "delete": "Löschen",
   "confirmDelete": "Maschine löschen",
   "deleteWarning": "Sind Sie sicher, dass Sie die Maschine \"{{name}}\" löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
   "deleteSuccess": "Maschine erfolgreich gelöscht",
@@ -30,6 +39,10 @@
   "createSuccess": "Maschine erfolgreich erstellt",
   "updateSuccess": "Maschine erfolgreich aktualisiert",
   "vaultUpdateSuccess": "Maschinen-Tresor-Konfiguration erfolgreich aktualisiert",
+  "autoSetupAfterCreation": "Automatisch Setup nach Maschinenerstellung ausführen",
+  "setupQueued": "Maschine erfolgreich erstellt. Setup wurde in die Warteschlange gestellt.",
+  "setupQueuedForSubmission": "Maschine erfolgreich erstellt. Setup wurde zur Übermittlung in die Warteschlange gestellt.",
+  "machineCreatedButSetupFailed": "Maschine erfolgreich erstellt, aber Setup konnte nicht in die Warteschlange gestellt werden.",
   "form": {
     "title": {
       "create": "Neue Maschine erstellen",
@@ -103,5 +116,8 @@
   "hoursAgo": "Vor {{count}} Stunde",
   "hoursAgo_plural": "Vor {{count}} Stunden",
   "daysAgo": "Vor {{count}} Tag",
-  "daysAgo_plural": "Vor {{count}} Tagen"
+  "daysAgo_plural": "Vor {{count}} Tagen",
+  "validation": {
+    "sshPasswordNotAllowed": "SSH-Passwort kann nicht im Tresor festgelegt werden. Bitte verwenden Sie stattdessen SSH-Schlüssel."
+  }
 }

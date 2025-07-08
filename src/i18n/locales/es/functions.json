@@ -61,6 +61,22 @@
         "source": {
           "label": "Origen",
           "help": "Origen del paquete"
+        },
+        "rclone_source": {
+          "label": "Fuente de Instalación Rclone",
+          "help": "Cómo instalar rclone (install-script = script oficial, package-manager = apt/dnf, manual = omitir)"
+        },
+        "docker_source": {
+          "label": "Fuente de Instalación Docker",
+          "help": "Cómo instalar Docker (docker-repo = repositorio oficial, package-manager = paquetes del SO, snap = tienda snap, manual = omitir)"
+        },
+        "install_amd_driver": {
+          "label": "Instalar Controlador GPU AMD",
+          "help": "Instalar controladores GPU AMD (auto = detectar GPU primero, true = siempre instalar, false = omitir)"
+        },
+        "install_nvidia_driver": {
+          "label": "Instalar Controlador GPU NVIDIA",
+          "help": "Instalar controladores GPU NVIDIA (auto = detectar GPU primero, true = siempre instalar, false = omitir)"
         }
       }
     },
@@ -77,9 +93,11 @@
       "description": "Crear un nuevo repositorio",
       "params": {
         "repo": {
+          "label": "Repositorio",
           "help": "Nombre del repositorio"
         },
         "size": {
+          "label": "Tamaño",
           "help": "Tamaño del repositorio (ej., 10G)"
         }
       }
@@ -89,9 +107,11 @@
       "description": "Montar sistemas de archivos del repositorio",
       "params": {
         "repo": {
+          "label": "Repositorio",
           "help": "Nombre(s) del repositorio, separados por comas"
         },
         "from": {
+          "label": "Desde Máquina",
           "help": "Máquina remota desde donde montar"
         }
       }
@@ -101,9 +121,11 @@
       "description": "Desmontar sistemas de archivos del repositorio",
       "params": {
         "repo": {
+          "label": "Repositorio",
           "help": "Nombre(s) del repositorio, separados por comas"
         },
         "from": {
+          "label": "Desde Máquina",
           "help": "Máquina remota desde donde desmontar"
         }
       }
@@ -113,9 +135,11 @@
       "description": "Iniciar servicios del repositorio usando Rediaccfile",
       "params": {
         "repo": {
+          "label": "Repositorio",
           "help": "Nombre(s) del repositorio, separados por comas"
         },
         "option": {
+          "label": "Opciones",
           "help": "Opciones (ej., prep-only)"
         }
       }
@@ -125,6 +149,7 @@
       "description": "Detener servicios del repositorio",
       "params": {
         "repo": {
+          "label": "Repositorio",
           "help": "Nombre(s) del repositorio, separados por comas"
         }
       }
@@ -134,9 +159,11 @@
       "description": "Redimensionar almacenamiento del repositorio",
       "params": {
         "repo": {
+          "label": "Repositorio",
           "help": "Nombre del repositorio"
         },
         "size": {
+          "label": "Nuevo Tamaño",
           "help": "Nuevo tamaño (ej., 20G)"
         }
       }
@@ -146,6 +173,7 @@
       "description": "Eliminar repositorio",
       "params": {
         "repo": {
+          "label": "Repositorio",
           "help": "Nombre del repositorio"
         }
       }
@@ -155,9 +183,11 @@
       "description": "Activar plugins del repositorio",
       "params": {
         "repo": {
+          "label": "Repositorio",
           "help": "Nombre(s) del repositorio, separados por comas"
         },
         "plugin": {
+          "label": "Plugin",
           "help": "Nombre(s) del plugin, separados por comas"
         }
       }
@@ -167,9 +197,11 @@
       "description": "Desactivar plugins del repositorio",
       "params": {
         "repo": {
+          "label": "Repositorio",
           "help": "Nombre(s) del repositorio, separados por comas"
         },
         "plugin": {
+          "label": "Plugin",
           "help": "Nombre(s) del plugin, separados por comas"
         }
       }
@@ -179,12 +211,15 @@
       "description": "Cambiar propiedad del repositorio",
       "params": {
         "repo": {
+          "label": "Repositorio",
           "help": "Nombre del repositorio"
         },
         "from": {
+          "label": "Propietario Actual",
           "help": "Propietario actual"
         },
         "to": {
+          "label": "Nuevo Propietario",
           "help": "Nuevo propietario (por defecto: usuario universal)"
         }
       }
@@ -194,9 +229,11 @@
       "description": "Listar repositorios",
       "params": {
         "kind": {
+          "label": "Tipo",
           "help": "Tipo a listar"
         },
         "format": {
+          "label": "Formato",
           "help": "Formato de salida (json)"
         }
       }
@@ -206,18 +243,27 @@
       "description": "Enviar repositorio a almacenamiento remoto",
       "params": {
         "repo": {
+          "label": "Repositorio",
           "help": "Nombre(s) del repositorio, separados por comas"
         },
         "dest": {
+          "label": "Nombre del Archivo de Destino",
           "help": "Nombre del archivo de respaldo"
         },
+        "destinationType": {
+          "label": "Tipo de Destino",
+          "help": "Seleccionar si enviar a una máquina o almacenamiento"
+        },
         "to": {
-          "help": "Máquina/almacenamiento de destino"
+          "label": "Destino",
+          "help": "Seleccione la máquina o almacenamiento de destino"
         },
         "state": {
+          "label": "Estado Requerido",
           "help": "Validar que el repositorio esté online u offline antes de enviar"
         },
         "option": {
+          "label": "Opciones",
           "help": "Opciones (ej., override)"
         }
       }
@@ -227,9 +273,11 @@
       "description": "Obtener repositorio desde almacenamiento remoto",
       "params": {
         "from": {
+          "label": "Origen",
           "help": "Máquina/almacenamiento de origen"
         },
         "repo": {
+          "label": "Repositorio",
           "help": "Nombre(s) del repositorio, separados por comas"
         }
       }

@@ -15,6 +15,11 @@
   "groupByBridge": "الجسر",
   "groupByTeam": "الفريق",
   "groupByRegion": "المنطقة",
+  "groupByRepository": "المستودع",
+  "groupByMounted": "مُركب",
+  "groupByUnmounted": "غير مُركب",
+  "groupByStatus": "الحالة",
+  "groupByGrand": "المستودع الرئيسي",
   "clearFilters": "مسح المرشحات",
   "searchMachineName": "البحث باسم الجهاز",
   "searchPlaceholder": "البحث عن الأجهزة...",
@@ -23,6 +28,10 @@
   "tableView": "آلة",
   "gridView": "مستودع",
   "machineCount": "الأجهزة",
+  "itemCount": "عنصر | عناصر",
+  "queue": "قائمة الانتظار",
+  "editMachine": "تحرير الجهاز",
+  "delete": "حذف",
   "confirmDelete": "حذف الجهاز",
   "deleteWarning": "هل أنت متأكد من أنك تريد حذف الجهاز \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء.",
   "deleteSuccess": "تم حذف الجهاز بنجاح",
@@ -30,6 +39,10 @@
   "createSuccess": "تم إنشاء الجهاز بنجاح",
   "updateSuccess": "تم تحديث الجهاز بنجاح",
   "vaultUpdateSuccess": "تم تحديث تكوين خزنة الجهاز بنجاح",
+  "autoSetupAfterCreation": "تشغيل الإعداد تلقائيًا بعد إنشاء الجهاز",
+  "setupQueued": "تم إنشاء الجهاز بنجاح. تمت إضافة الإعداد إلى قائمة الانتظار.",
+  "setupQueuedForSubmission": "تم إنشاء الجهاز بنجاح. تمت إضافة الإعداد إلى قائمة الانتظار للإرسال.",
+  "machineCreatedButSetupFailed": "تم إنشاء الجهاز بنجاح، ولكن لم يمكن إضافة الإعداد إلى قائمة الانتظار.",
   "form": {
     "title": {
       "create": "إنشاء جهاز جديد",
@@ -103,5 +116,8 @@
   "hoursAgo": "منذ ساعة واحدة",
   "hoursAgo_plural": "منذ {{count}} ساعات",
   "daysAgo": "منذ يوم واحد",
-  "daysAgo_plural": "منذ {{count}} أيام"
+  "daysAgo_plural": "منذ {{count}} أيام",
+  "validation": {
+    "sshPasswordNotAllowed": "لا يمكن تعيين كلمة مرور SSH في الخزنة. يرجى استخدام مفاتيح SSH بدلاً من ذلك."
+  }
 }

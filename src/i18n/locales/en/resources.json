@@ -134,6 +134,8 @@
     "systemContainers": "System Containers",
     "repositories": "Repositories",
     "systemInfo": "System Information",
+    "systemTime": "System Time",
+    "timezone": "Timezone",
     "rootDisk": "Root Disk",
     "diskSpace": "Disk Space",
     "datastore": "Datastore",

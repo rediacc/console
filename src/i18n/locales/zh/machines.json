@@ -15,6 +15,11 @@
   "groupByBridge": "桥接",
   "groupByTeam": "团队",
   "groupByRegion": "区域",
+  "groupByRepository": "仓库",
+  "groupByMounted": "已挂载",
+  "groupByUnmounted": "未挂载",
+  "groupByStatus": "状态",
+  "groupByGrand": "主仓库",
   "clearFilters": "清除筛选",
   "searchMachineName": "搜索机器名称",
   "searchPlaceholder": "搜索机器...",
@@ -23,6 +28,10 @@
   "tableView": "机器",
   "gridView": "仓库",
   "machineCount": "台机器",
+  "itemCount": "个项目",
+  "queue": "队列",
+  "editMachine": "编辑机器",
+  "delete": "删除",
   "confirmDelete": "删除机器",
   "deleteWarning": "您确定要删除机器 \"{{name}}\" 吗？此操作无法撤销。",
   "deleteSuccess": "机器删除成功",
@@ -30,6 +39,10 @@
   "createSuccess": "机器创建成功",
   "updateSuccess": "机器更新成功",
   "vaultUpdateSuccess": "机器保险库配置更新成功",
+  "autoSetupAfterCreation": "创建机器后自动运行设置",
+  "setupQueued": "机器创建成功。设置已加入队列。",
+  "setupQueuedForSubmission": "机器创建成功。设置已加入提交队列。",
+  "machineCreatedButSetupFailed": "机器创建成功，但无法将设置加入队列。",
   "form": {
     "title": {
       "create": "创建新机器",
@@ -103,5 +116,8 @@
   "hoursAgo": "{{count}} 小时前",
   "hoursAgo_plural": "{{count}} 小时前",
   "daysAgo": "{{count}} 天前",
-  "daysAgo_plural": "{{count}} 天前"
+  "daysAgo_plural": "{{count}} 天前",
+  "validation": {
+    "sshPasswordNotAllowed": "无法在保险库中设置SSH密码。请改用SSH密钥。"
+  }
 }

@@ -15,6 +15,11 @@
   "groupByBridge": "Puente",
   "groupByTeam": "Equipo",
   "groupByRegion": "Región",
+  "groupByRepository": "Repositorio",
+  "groupByMounted": "Montado",
+  "groupByUnmounted": "Desmontado",
+  "groupByStatus": "Estado",
+  "groupByGrand": "Repositorio Principal",
   "clearFilters": "Limpiar Filtros",
   "searchMachineName": "Buscar nombre de máquina",
   "searchPlaceholder": "Buscar máquinas...",
@@ -23,6 +28,10 @@
   "tableView": "Máquina",
   "gridView": "Repositorio",
   "machineCount": "máquina | máquinas",
+  "itemCount": "elemento | elementos",
+  "queue": "Cola",
+  "editMachine": "Editar Máquina",
+  "delete": "Eliminar",
   "confirmDelete": "Eliminar Máquina",
   "deleteWarning": "¿Está seguro de que desea eliminar la máquina \"{{name}}\"? Esta acción no se puede deshacer.",
   "deleteSuccess": "Máquina eliminada exitosamente",
@@ -30,6 +39,10 @@
   "createSuccess": "Máquina creada exitosamente",
   "updateSuccess": "Máquina actualizada exitosamente",
   "vaultUpdateSuccess": "Configuración de vault de máquina actualizada exitosamente",
+  "autoSetupAfterCreation": "Ejecutar configuración automáticamente después de crear la máquina",
+  "setupQueued": "Máquina creada exitosamente. La configuración se ha agregado a la cola.",
+  "setupQueuedForSubmission": "Máquina creada exitosamente. La configuración se ha agregado a la cola para envío.",
+  "machineCreatedButSetupFailed": "Máquina creada exitosamente, pero no se pudo agregar la configuración a la cola.",
   "form": {
     "title": {
       "create": "Crear Nueva Máquina",
@@ -55,6 +68,7 @@
     "selectMachine": "Seleccionar una máquina"
   },
   "selectMachine": "Seleccionar Máquina",
+  "noMachinesFound": "No se encontraron máquinas",
   "priority": "Prioridad",
   "priorityLow": "Baja",
   "priorityNormal": "Normal",
@@ -102,5 +116,8 @@
   "hoursAgo": "hace {{count}} hora",
   "hoursAgo_plural": "hace {{count}} horas",
   "daysAgo": "hace {{count}} día",
-  "daysAgo_plural": "hace {{count}} días"
+  "daysAgo_plural": "hace {{count}} días",
+  "validation": {
+    "sshPasswordNotAllowed": "La contraseña SSH no se puede establecer en el vault. Por favor, use claves SSH en su lugar."
+  }
 }

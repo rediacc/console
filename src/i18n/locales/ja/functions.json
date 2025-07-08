@@ -5,6 +5,25 @@
   "selectMachinePrompt": "マシンを選択",
   "noMachineSelected": "機能を表示するにはマシンを選択してください",
   "searchFunctions": "機能を検索...",
+  "selectFunction": "機能を選択",
+  "selectFunctionToConfigure": "設定する機能を選択してください",
+  "priorityHelp": "タスクは優先度順、次に古い順に処理されます",
+  "priorityHighest": "最高",
+  "priorityAboveNormal": "標準以上",
+  "priorityBelowNormal": "標準",
+  "currentPriority": "現在",
+  "priorityHighestWarning": "最高優先度 (1)",
+  "priorityHighestDescription": "最高優先度のタスクを送信すると、既存の最高優先度タスクが自動的にキャンセルされます。緊急の重要なタスクにのみ使用してください。",
+  "priorityHighWarning": "高優先度 (2)",
+  "priorityHighDescription": "複数の高優先度タスクの同時実行を許可します。より速い処理が必要な重要なタスクに使用してください。",
+  "priorityNormalWarning": "標準以上の優先度 (3)",
+  "priorityNormalDescription": "標準処理速度より速い。通常より速い処理が必要なタスクに使用してください。",
+  "priorityLowWarning": "標準優先度 (4)",
+  "priorityLowDescription": "標準処理速度。ほとんどの操作と日常的なタスクに推奨されます。",
+  "priorityLowestWarning": "最低優先度 (5)",
+  "priorityLowestDescription": "最も遅い処理速度。バッチ操作や時間制約のないタスクに使用してください。",
+  "validationError": "検証エラー",
+  "missingRequiredParams": "すべての必須パラメータを入力してください: {{params}}",
   "copyFunction": "機能をコピー",
   "copyFunctionPrompt": "この機能を新しい名前でコピー",
   "newFunctionName": "新しい機能名",
@@ -59,7 +78,7 @@
   "priorityLow": "低",
   "priorityNormal": "通常",
   "priorityHigh": "高",
-  "customDescription": "説明（オプション）",
+  "description": "説明（オプション）",
   "descriptionPlaceholder": "このキューアイテムにカスタム説明を追加",
   "addToQueue": "キューに追加",
   "dockerComposeYaml": "Docker Compose YAML",
@@ -94,5 +113,367 @@
   "notAllowedKeysDescription": "以下のキーは使用しないでください（システムが自動的に管理します）：",
   "queueItemCreated": "キューアイテムが作成されました",
   "queueItemCreatedMessage": "キューアイテムが正常に作成されました。",
-  "bridgeFeatures": "ブリッジ機能"
+  "bridgeFeatures": "ブリッジ機能",
+  "categories": {
+    "machine": {
+      "name": "マシン機能",
+      "description": "コアシステムのセットアップとメンテナンス機能"
+    },
+    "repository": {
+      "name": "リポジトリ機能",
+      "description": "リポジトリ管理と操作"
+    },
+    "backup": {
+      "name": "バックアップ機能",
+      "description": "バックアップとリストア操作"
+    },
+    "network": {
+      "name": "ネットワーク機能",
+      "description": "ネットワークとソケットマッピング操作"
+    },
+    "container": {
+      "name": "コンテナ機能",
+      "description": "Dockerコンテナ管理操作"
+    }
+  },
+  "functions": {
+    "setup": {
+      "name": "セットアップ",
+      "description": "必要なツールと設定でオペレーティングシステムをセットアップ",
+      "params": {
+        "datastore_size": {
+          "label": "データストアサイズ",
+          "help": "データストアサイズ（例：95%、100G）"
+        },
+        "source": {
+          "label": "ソース",
+          "help": "パッケージソース"
+        },
+        "rclone_source": {
+          "label": "Rcloneインストールソース",
+          "help": "rcloneのインストール方法（install-script = 公式スクリプト、package-manager = apt/dnf、manual = スキップ）"
+        },
+        "docker_source": {
+          "label": "Dockerインストールソース",
+          "help": "Dockerのインストール方法（docker-repo = 公式リポジトリ、package-manager = OSパッケージ、snap = snapストア、manual = スキップ）"
+        },
+        "install_amd_driver": {
+          "label": "AMD GPUドライバーのインストール",
+          "help": "AMD GPUドライバーのインストール（auto = 最初にGPUを検出、true = 常にインストール、false = スキップ）"
+        },
+        "install_nvidia_driver": {
+          "label": "NVIDIA GPUドライバーのインストール",
+          "help": "NVIDIA GPUドライバーのインストール（auto = 最初にGPUを検出、true = 常にインストール、false = スキップ）"
+        }
+      }
+    },
+    "hello": {
+      "name": "ハロー",
+      "description": "ホスト名からhelloを出力する簡単なテスト機能"
+    },
+    "uninstall": {
+      "name": "アンインストール",
+      "description": "システムコンポーネントのクリーンアップとアンインストール"
+    },
+    "new": {
+      "name": "新規",
+      "description": "新しいリポジトリを作成",
+      "params": {
+        "repo": {
+          "label": "リポジトリ",
+          "help": "リポジトリ名"
+        },
+        "size": {
+          "label": "サイズ",
+          "help": "リポジトリサイズ（例：10G）"
+        }
+      }
+    },
+    "mount": {
+      "name": "マウント",
+      "description": "リポジトリファイルシステムをマウント",
+      "params": {
+        "repo": {
+          "label": "リポジトリ",
+          "help": "リポジトリ名（複数の場合はカンマ区切り）"
+        },
+        "from": {
+          "label": "マシンから",
+          "help": "マウント元のリモートマシン"
+        }
+      }
+    },
+    "unmount": {
+      "name": "アンマウント",
+      "description": "リポジトリファイルシステムをアンマウント",
+      "params": {
+        "repo": {
+          "label": "リポジトリ",
+          "help": "リポジトリ名（複数の場合はカンマ区切り）"
+        },
+        "from": {
+          "label": "マシンから",
+          "help": "アンマウント元のリモートマシン"
+        }
+      }
+    },
+    "up": {
+      "name": "起動",
+      "description": "Rediaccfileを使用してリポジトリサービスを開始",
+      "params": {
+        "repo": {
+          "label": "リポジトリ",
+          "help": "リポジトリ名（複数の場合はカンマ区切り）"
+        },
+        "option": {
+          "label": "オプション",
+          "help": "オプション（例：prep-only）"
+        }
+      }
+    },
+    "down": {
+      "name": "停止",
+      "description": "リポジトリサービスを停止",
+      "params": {
+        "repo": {
+          "label": "リポジトリ",
+          "help": "リポジトリ名（複数の場合はカンマ区切り）"
+        }
+      }
+    },
+    "resize": {
+      "name": "リサイズ",
+      "description": "リポジトリストレージをリサイズ",
+      "params": {
+        "repo": {
+          "label": "リポジトリ",
+          "help": "リポジトリ名"
+        },
+        "size": {
+          "label": "新しいサイズ",
+          "help": "新しいサイズ（例：20G）"
+        }
+      }
+    },
+    "rm": {
+      "name": "削除",
+      "description": "リポジトリを削除",
+      "params": {
+        "repo": {
+          "label": "リポジトリ",
+          "help": "リポジトリ名"
+        }
+      }
+    },
+    "plugin": {
+      "name": "プラグイン",
+      "description": "リポジトリプラグインをアクティベート",
+      "params": {
+        "repo": {
+          "label": "リポジトリ",
+          "help": "リポジトリ名（複数の場合はカンマ区切り）"
+        },
+        "plugin": {
+          "label": "プラグイン",
+          "help": "プラグイン名（複数の場合はカンマ区切り）"
+        }
+      }
+    },
+    "plugout": {
+      "name": "プラグアウト",
+      "description": "リポジトリプラグインを非アクティブ化",
+      "params": {
+        "repo": {
+          "label": "リポジトリ",
+          "help": "リポジトリ名（複数の場合はカンマ区切り）"
+        },
+        "plugin": {
+          "label": "プラグイン",
+          "help": "プラグイン名（複数の場合はカンマ区切り）"
+        }
+      }
+    },
+    "ownership": {
+      "name": "所有権",
+      "description": "リポジトリの所有権を変更",
+      "params": {
+        "repo": {
+          "label": "リポジトリ",
+          "help": "リポジトリ名"
+        },
+        "from": {
+          "label": "現在の所有者",
+          "help": "現在の所有者"
+        },
+        "to": {
+          "label": "新しい所有者",
+          "help": "新しい所有者（デフォルト：ユニバーサルユーザー）"
+        }
+      }
+    },
+    "list": {
+      "name": "リスト",
+      "description": "リポジトリをリスト",
+      "params": {
+        "kind": {
+          "label": "タイプ",
+          "help": "リストするタイプ"
+        },
+        "format": {
+          "label": "フォーマット",
+          "help": "出力フォーマット（json）"
+        }
+      }
+    },
+    "push": {
+      "name": "プッシュ",
+      "description": "リポジトリをリモートストレージにプッシュ",
+      "params": {
+        "repo": {
+          "label": "リポジトリ",
+          "help": "リポジトリ名（複数の場合はカンマ区切り）"
+        },
+        "dest": {
+          "label": "宛先ファイル名",
+          "help": "バックアップファイルの名前"
+        },
+        "destinationType": {
+          "label": "宛先タイプ",
+          "help": "マシンまたはストレージへのプッシュを選択"
+        },
+        "to": {
+          "label": "宛先",
+          "help": "宛先のマシンまたはストレージを選択"
+        },
+        "state": {
+          "label": "必要な状態",
+          "help": "プッシュ前にリポジトリがオンラインまたはオフラインであることを検証"
+        },
+        "option": {
+          "label": "オプション",
+          "help": "オプション（例：override）"
+        }
+      }
+    },
+    "pull": {
+      "name": "プル",
+      "description": "リモートストレージからリポジトリをプル",
+      "params": {
+        "from": {
+          "label": "ソース",
+          "help": "ソースマシン/ストレージ"
+        },
+        "repo": {
+          "label": "リポジトリ",
+          "help": "リポジトリ名（複数の場合はカンマ区切り）"
+        }
+      }
+    },
+    "ping": {
+      "name": "ping",
+      "description": "マシンへのネットワーク接続をテスト"
+    },
+    "container_start": {
+      "name": "コンテナ開始",
+      "description": "Dockerコンテナを開始",
+      "params": {
+        "container": {
+          "label": "コンテナ",
+          "help": "コンテナ名またはID"
+        }
+      }
+    },
+    "container_stop": {
+      "name": "コンテナ停止",
+      "description": "実行中のDockerコンテナを停止",
+      "params": {
+        "container": {
+          "label": "コンテナ",
+          "help": "コンテナ名またはID"
+        }
+      }
+    },
+    "container_restart": {
+      "name": "コンテナ再起動",
+      "description": "Dockerコンテナを再起動",
+      "params": {
+        "container": {
+          "label": "コンテナ",
+          "help": "コンテナ名またはID"
+        }
+      }
+    },
+    "container_remove": {
+      "name": "コンテナ削除",
+      "description": "Dockerコンテナを削除",
+      "params": {
+        "container": {
+          "label": "コンテナ",
+          "help": "コンテナ名またはID"
+        },
+        "force": {
+          "label": "強制削除",
+          "help": "実行中のコンテナを強制削除"
+        }
+      }
+    },
+    "container_logs": {
+      "name": "コンテナログ",
+      "description": "Dockerコンテナのログを表示",
+      "params": {
+        "container": {
+          "label": "コンテナ",
+          "help": "コンテナ名またはID"
+        },
+        "lines": {
+          "label": "行数",
+          "help": "表示する行数（デフォルト：100）"
+        },
+        "follow": {
+          "label": "ログを追跡",
+          "help": "リアルタイムでログ出力を追跡"
+        }
+      }
+    },
+    "container_inspect": {
+      "name": "コンテナ検査",
+      "description": "Dockerコンテナの詳細を検査",
+      "params": {
+        "container": {
+          "label": "コンテナ",
+          "help": "コンテナ名またはID"
+        }
+      }
+    },
+    "container_stats": {
+      "name": "コンテナ統計",
+      "description": "Dockerコンテナのリソース使用統計を表示",
+      "params": {
+        "container": {
+          "label": "コンテナ",
+          "help": "コンテナ名またはID（オプション - 空の場合はすべて表示）"
+        }
+      }
+    },
+    "container_pause": {
+      "name": "コンテナ一時停止",
+      "description": "実行中のDockerコンテナを一時停止",
+      "params": {
+        "container": {
+          "label": "コンテナ",
+          "help": "コンテナ名またはID"
+        }
+      }
+    },
+    "container_unpause": {
+      "name": "コンテナ再開",
+      "description": "一時停止したDockerコンテナを再開",
+      "params": {
+        "container": {
+          "label": "コンテナ",
+          "help": "コンテナ名またはID"
+        }
+      }
+    }
+  }
 }
