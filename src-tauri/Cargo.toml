@@ -1,0 +1,25 @@
+[package]
+name = "rediacc-console"
+version = "1.0.0"
+description = "Rediacc Console Desktop Application"
+authors = ["Rediacc Team"]
+license = "MIT"
+repository = ""
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[build-dependencies]
+tauri-build = { version = "1.5", features = [] }
+
+[dependencies]
+tauri = { version = "1.6", features = [ "system-tray", "dialog-save", "dialog-open", "fs-write-file", "fs-read-dir", "fs-create-dir", "fs-remove-dir", "dialog-confirm", "dialog-ask", "fs-read-file", "fs-remove-file", "fs-exists", "dialog-message", "http-request", "shell-sidecar", "path-all", "notification-all", "shell-execute", "shell-open"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }
+anyhow = "1.0"
+
+[features]
+# this feature is used for production builds or when `devPath` points to the filesystem
+# DO NOT REMOVE!!
+custom-protocol = ["tauri/custom-protocol"]

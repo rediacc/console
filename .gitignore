@@ -96,3 +96,11 @@ docs/generated/
 *.tar.gz
 *.rar
 *.7z
+
+# Tauri
+src-tauri/target/
+src-tauri/WixTools/
+
+# Build artifacts
+artifacts/
+.build_cache/
