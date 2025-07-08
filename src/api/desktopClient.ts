@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/tauri'
+import { invoke } from '@tauri-apps/api/core'
 import { ApiResponse } from './client'
 import { encryptRequestData, decryptResponseData, hasVaultFields } from './encryptionMiddleware'
 import { tokenService } from '@/services/tokenService'

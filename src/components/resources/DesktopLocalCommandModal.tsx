@@ -4,7 +4,8 @@ import { CopyOutlined, CodeOutlined, DesktopOutlined, WindowsOutlined, AppleOutl
 import { useTranslation } from 'react-i18next'
 import { useDesktopMode } from '@/hooks/useDesktopMode'
 import { unifiedApiClient } from '@/api/unifiedClient'
-import { dialog } from '@tauri-apps/api'
+import {  } from '@tauri-apps/api'
+import * as dialog from "@tauri-apps/plugin-dialog"
 
 const { Text, Paragraph } = Typography
 const { Option } = Select

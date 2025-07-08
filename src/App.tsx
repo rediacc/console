@@ -7,6 +7,7 @@ import { loginSuccess } from '@/store/auth/authSlice'
 import { getAuthData, migrateFromLocalStorage } from '@/utils/auth'
 import { ThemeProvider, useTheme } from '@/context/ThemeContext'
 import { ThemedToaster } from '@/components/common/ThemedToaster'
+import { initializeApiClient } from '@/api/init'
 import AuthLayout from '@/components/layouts/AuthLayout'
 import MainLayout from '@/components/layouts/MainLayout'
 import LoginPage from '@/pages/LoginPage'
@@ -24,7 +25,10 @@ const AppContent: React.FC = () => {
   const isAuthenticated = useSelector(selectIsAuthenticated)
 
   useEffect(() => {
-    const initializeAuth = async () => {
+    const initialize = async () => {
+      // Initialize API client with correct URL
+      await initializeApiClient()
+      
       // Migrate any existing localStorage data to secure memory storage
       await migrateFromLocalStorage()
       
@@ -39,7 +43,7 @@ const AppContent: React.FC = () => {
       }
     }
     
-    initializeAuth()
+    initialize()
   }, [dispatch])
 
   return (

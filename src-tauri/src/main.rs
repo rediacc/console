@@ -2,9 +2,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use serde::{Deserialize, Serialize};
-use std::process::Command;
 use std::fs;
 use std::path::Path;
+use std::process::Command;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct CommandResult {
@@ -23,10 +23,12 @@ async fn execute_python_script(
         .arg(&script_path)
         .args(&args)
         .output()
-        .or_else(|_| Command::new("python")
-            .arg(&script_path)
-            .args(&args)
-            .output())
+        .or_else(|_| {
+            Command::new("python")
+                .arg(&script_path)
+                .args(&args)
+                .output()
+        })
         .map_err(|e| format!("Failed to execute Python script: {}", e))?;
 
     Ok(CommandResult {
@@ -74,12 +76,12 @@ async fn terminal_command(
     command: Option<String>,
 ) -> Result<CommandResult, String> {
     let mut args = vec!["--machine".to_string(), machine];
-    
+
     if let Some(r) = repo {
         args.push("--repo".to_string());
         args.push(r);
     }
-    
+
     if let Some(cmd) = command {
         args.push("--command".to_string());
         args.push(cmd);
@@ -114,9 +116,7 @@ async fn check_python_installed() -> Result<bool, String> {
 // Check if CLI is installed
 #[tauri::command]
 async fn check_cli_installed() -> Result<bool, String> {
-    let output = Command::new("rediacc-cli")
-        .arg("--version")
-        .output();
+    let output = Command::new("rediacc-cli").arg("--version").output();
 
     match output {
         Ok(output) => Ok(output.status.success()),
@@ -128,17 +128,17 @@ async fn check_cli_installed() -> Result<bool, String> {
 #[tauri::command]
 async fn list_local_directories(path: String) -> Result<Vec<String>, String> {
     let path = Path::new(&path);
-    
+
     if !path.exists() {
         return Err("Path does not exist".to_string());
     }
-    
+
     if !path.is_dir() {
         return Err("Path is not a directory".to_string());
     }
-    
+
     let mut directories = Vec::new();
-    
+
     match fs::read_dir(path) {
         Ok(entries) => {
             for entry in entries {
@@ -155,7 +155,7 @@ async fn list_local_directories(path: String) -> Result<Vec<String>, String> {
         }
         Err(e) => return Err(format!("Failed to read directory: {}", e)),
     }
-    
+
     directories.sort();
     Ok(directories)
 }
@@ -177,7 +177,10 @@ async fn detect_linux_distro() -> Result<String, String> {
             Ok(content) => {
                 for line in content.lines() {
                     if line.starts_with("PRETTY_NAME=") {
-                        return Ok(line.replace("PRETTY_NAME=", "").trim_matches('"').to_string());
+                        return Ok(line
+                            .replace("PRETTY_NAME=", "")
+                            .trim_matches('"')
+                            .to_string());
                     }
                 }
                 Ok("Unknown Linux".to_string())
@@ -208,10 +211,7 @@ async fn execute_python_command(
 
 // Execute Rediacc CLI commands
 #[tauri::command]
-async fn execute_rediacc_cli(
-    command: String,
-    args: Vec<String>,
-) -> Result<CommandResult, String> {
+async fn execute_rediacc_cli(command: String, args: Vec<String>) -> Result<CommandResult, String> {
     let cli_path = match command.as_str() {
         "sync" => "rediacc-cli-sync",
         "term" => "rediacc-cli-term",
@@ -283,9 +283,7 @@ async fn get_python_version() -> Result<String, String> {
 // Check if Rediacc CLI is available
 #[tauri::command]
 async fn check_rediacc_cli_available() -> Result<bool, String> {
-    let output = Command::new("rediacc-cli")
-        .arg("--version")
-        .output();
+    let output = Command::new("rediacc-cli").arg("--version").output();
 
     match output {
         Ok(output) => Ok(output.status.success()),
@@ -303,9 +301,42 @@ async fn get_system_info() -> Result<serde_json::Value, String> {
     }))
 }
 
+// Get system configuration
+#[tauri::command]
+async fn get_system_config() -> Result<serde_json::Value, String> {
+    // Try to get from environment variables first
+    let domain = std::env::var("SYSTEM_DOMAIN").unwrap_or_else(|_| "localhost".to_string());
+    let http_port = std::env::var("SYSTEM_HTTP_PORT")
+        .unwrap_or_else(|_| "7322".to_string())
+        .parse::<u32>()
+        .unwrap_or(7322);
+
+    // Build API URL
+    let api_url = format!("http://{}:{}/api", domain, http_port);
+
+    // Check if we're in development or production
+    let environment = if cfg!(debug_assertions) {
+        "development"
+    } else {
+        "production"
+    };
+
+    Ok(serde_json::json!({
+        "apiUrl": api_url,
+        "domain": domain,
+        "httpPort": http_port,
+        "environment": environment,
+    }))
+}
+
 fn main() {
     #[allow(unused_mut)]
     let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_http::init())
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_fs::init())
         .invoke_handler(tauri::generate_handler![
             execute_python_command,
             execute_python_script,
@@ -319,9 +350,10 @@ fn main() {
             get_python_version,
             check_rediacc_cli_available,
             get_system_info,
+            get_system_config,
             list_local_directories,
         ]);
-    
+
     #[cfg(target_os = "linux")]
     {
         builder = builder.invoke_handler(tauri::generate_handler![
@@ -337,11 +369,12 @@ fn main() {
             get_python_version,
             check_rediacc_cli_available,
             get_system_info,
+            get_system_config,
             list_local_directories,
             detect_linux_distro,
         ]);
     }
-    
+
     builder
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

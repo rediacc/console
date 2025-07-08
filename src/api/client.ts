@@ -5,11 +5,12 @@ import { showMessage } from '@/utils/messages'
 import { encryptRequestData, decryptResponseData, hasVaultFields } from './encryptionMiddleware'
 import { tokenService } from '@/services/tokenService'
 
-// Use relative path in production (served via nginx proxy) and absolute in development
-const MIDDLEWARE_PORT = import.meta.env.VITE_MIDDLEWARE_PORT || '8080'
-const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (import.meta.env.PROD ? '/api' : `http://localhost:${MIDDLEWARE_PORT}/api`)
+// API configuration
 const API_PREFIX = '/StoredProcedure'
+
+// Get API URL - will be set dynamically
+let API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (import.meta.env.PROD ? '/api' : 'http://localhost:7322/api')
 
 export interface ApiResponse<T = any> {
   failure: number
@@ -28,6 +29,12 @@ class ApiClient {
   private readonly HTTP_UNAUTHORIZED = 401
   private readonly HTTP_SERVER_ERROR = 500
   private readonly TOKEN_UPDATE_DELAY_MS = 5
+
+  // Method to update API URL dynamically
+  updateApiUrl(newUrl: string) {
+    API_BASE_URL = newUrl
+    this.client.defaults.baseURL = API_BASE_URL + API_PREFIX
+  }
   private readonly TOKEN_UPDATE_POLL_INTERVAL_MS = 10
   private readonly REDIRECT_DELAY_MS = 1500
 

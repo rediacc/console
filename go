@@ -3,14 +3,50 @@
 # Exit on error
 set -e
 
+# Required environment variables (must be defined in parent .env file):
+# - SYSTEM_HTTP_PORT: Middleware API port
+# - SYSTEM_DOMAIN: Domain for API access
+# Optional environment variables:
+# - CONSOLE_PORT: Console dev server port (default: 3000)
+
 # Root directory
 ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Function to check required environment variables
+check_required_env() {
+    if [ -z "$SYSTEM_HTTP_PORT" ] || [ -z "$SYSTEM_DOMAIN" ]; then
+        echo "❌ Error: Required environment variables are not set!"
+        echo ""
+        if [ ! -f "$ROOT_DIR/../.env" ]; then
+            echo "The parent .env file does not exist at: $ROOT_DIR/../.env"
+        else
+            echo "The parent .env file exists but is missing required variables."
+        fi
+        echo ""
+        echo "Please ensure the following variables are defined:"
+        echo "  - SYSTEM_HTTP_PORT (e.g., 7322)"
+        echo "  - SYSTEM_DOMAIN (e.g., localhost)"
+        exit 1
+    fi
+}
 
 # Load environment variables if .env exists in parent directory
 if [ -f "$ROOT_DIR/../.env" ]; then
     source "$ROOT_DIR/../.env"
-    export VITE_HTTP_PORT=$SYSTEM_HTTP_PORT
+else
+    # No .env file found
+    check_required_env
 fi
+
+# Check if required environment variables are set after loading
+check_required_env
+
+# Console port can have a default
+CONSOLE_PORT=${CONSOLE_PORT:-3000}
+
+# Export for Vite
+export VITE_HTTP_PORT=$SYSTEM_HTTP_PORT
+export VITE_API_URL="http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}/api"
 
 # Function to run development server
 function dev() {
@@ -23,8 +59,8 @@ function dev() {
   fi
   
   # Start development server
-  echo "Starting development server on port 3000..."
-  npm run dev
+  echo "Starting development server on port ${CONSOLE_PORT}..."
+  PORT=$CONSOLE_PORT npm run dev
 }
 
 # Function to build the application
@@ -124,7 +160,7 @@ function release() {
   
   # Create deployment config template
   echo "{
-  \"apiUrl\": \"http://localhost:8080/api\",
+  \"apiUrl\": \"http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}/api\",
   \"environment\": \"production\"
 }" > "$BIN_DIR/config.template.json"
   
@@ -149,11 +185,11 @@ function setup() {
   echo "Setting up development environment..."
   
   # Check if middleware is running
-  if ! curl -s http://localhost:8080/api > /dev/null 2>&1; then
-    echo "⚠️  Middleware API is not running!"
+  if ! curl -s http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}/api > /dev/null 2>&1; then
+    echo "⚠️  Middleware API is not running on ${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}!"
     echo "Start it with: cd ../middleware && ./go start"
   else
-    echo "✅ Middleware API is running"
+    echo "✅ Middleware API is running on ${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}"
   fi
   
   # Install dependencies
@@ -163,8 +199,8 @@ function setup() {
   # Create .env file if it doesn't exist
   if [ ! -f "$ROOT_DIR/.env" ]; then
     echo "Creating .env file..."
-    echo "VITE_API_URL=http://localhost:8080/api" > "$ROOT_DIR/.env"
-    echo "✅ .env file created"
+    echo "VITE_API_URL=http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}/api" > "$ROOT_DIR/.env"
+    echo "✅ .env file created with API URL: http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}/api"
   fi
   
   echo ""
@@ -179,15 +215,15 @@ function status() {
   echo "======================"
   
   # Check if dev server is running
-  if lsof -i :3000 > /dev/null 2>&1; then
-    echo "✅ Development server is running on port 3000"
+  if lsof -i :${CONSOLE_PORT} > /dev/null 2>&1; then
+    echo "✅ Development server is running on port ${CONSOLE_PORT}"
   else
     echo "❌ Development server is not running"
   fi
   
   # Check if middleware is running
-  if curl -s http://localhost:8080/api > /dev/null 2>&1; then
-    echo "✅ Middleware API is running on port 8080"
+  if curl -s http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}/api > /dev/null 2>&1; then
+    echo "✅ Middleware API is running on ${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}"
   else
     echo "❌ Middleware API is not running"
   fi

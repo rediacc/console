@@ -1,0 +1,85 @@
+{
+  "identifier": "migrated",
+  "description": "permissions that were migrated from v1",
+  "local": true,
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "fs:allow-read-file",
+    "fs:allow-write-file",
+    "fs:allow-read-dir",
+    "fs:allow-mkdir",
+    "fs:allow-remove",
+    "fs:allow-remove",
+    "fs:allow-exists",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        "$HOME/.rediacc/**",
+        "$DOWNLOAD/**",
+        "$DOCUMENT/**",
+        "$DESKTOP/**"
+      ]
+    },
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "args": true,
+          "cmd": "python3",
+          "name": "python3",
+          "sidecar": false
+        },
+        {
+          "args": true,
+          "cmd": "python",
+          "name": "python",
+          "sidecar": false
+        },
+        {
+          "args": true,
+          "cmd": "rediacc-cli",
+          "name": "rediacc-cli",
+          "sidecar": false
+        },
+        {
+          "args": true,
+          "cmd": "rediacc-cli-sync",
+          "name": "rediacc-cli-sync",
+          "sidecar": false
+        },
+        {
+          "args": true,
+          "cmd": "rediacc-cli-term",
+          "name": "rediacc-cli-term",
+          "sidecar": false
+        }
+      ]
+    },
+    "shell:allow-open",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "dialog:allow-message",
+    "dialog:allow-ask",
+    "dialog:allow-confirm",
+    {
+      "identifier": "http:default",
+      "allow": [
+        {
+          "url": "http://**/"
+        },
+        {
+          "url": "https://**/"
+        }
+      ]
+    },
+    "notification:default",
+    "fs:default",
+    "notification:default",
+    "http:default",
+    "shell:default",
+    "dialog:default"
+  ]
+}
