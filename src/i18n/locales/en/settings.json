@@ -11,5 +11,63 @@
     "description": "Configure your personal vault settings to customize your experience.",
     "configureVault": "Configure Vault",
     "modalTitle": "Configure User Vault"
+  },
+  "twoFactorAuth": {
+    "title": "Two-Factor Authentication",
+    "status": {
+      "enabled": "Two-Factor Authentication is Enabled",
+      "disabled": "Two-Factor Authentication is Disabled",
+      "enabledDescription": "Your account is protected with an additional layer of security.",
+      "disabledDescription": "Add an extra layer of security to your account."
+    },
+    "whatIs": {
+      "title": "What is Two-Factor Authentication?",
+      "description": "Two-Factor Authentication (2FA) adds an extra layer of security to your account by requiring a time-based code from your phone in addition to your password.",
+      "benefit1": "Protects your account even if your password is compromised",
+      "benefit2": "Uses industry-standard TOTP (Time-based One-Time Password) algorithm",
+      "benefit3": "Works with popular authenticator apps like Google Authenticator, Authy, or Microsoft Authenticator"
+    },
+    "enable": "Enable Two-Factor Authentication",
+    "disable": "Disable Two-Factor Authentication",
+    "setupMethods": {
+      "qrCode": "QR Code",
+      "manual": "Manual Entry"
+    },
+    "scanQRCode": "Scan this QR code with your authenticator app",
+    "manualSetup": {
+      "title": "Manual Setup",
+      "instructions": "Enter this secret key in your authenticator app:"
+    },
+    "important": "Important",
+    "saveSecretWarning": "Save this secret key in a safe place. You'll need it to recover access to your account if you lose your authenticator device.",
+    "secretCopied": "Secret key copied to clipboard",
+    "done": "Done",
+    "enableSuccess": {
+      "title": "Two-Factor Authentication Enabled!",
+      "subtitle": "Your account is now protected with 2FA. Use one of the methods below to set up your authenticator app."
+    },
+    "enableModal": {
+      "title": "Enable Two-Factor Authentication",
+      "warning": "Security Verification Required",
+      "warningDescription": "Please enter your account password to enable two-factor authentication.",
+      "passwordLabel": "Current Password",
+      "passwordPlaceholder": "Enter your current password",
+      "passwordRequired": "Password is required",
+      "submit": "Enable 2FA"
+    },
+    "disableModal": {
+      "title": "Disable Two-Factor Authentication",
+      "warning": "Security Warning",
+      "warningDescription": "Disabling 2FA will make your account less secure. You'll need to enter your current password and a valid 2FA code to proceed.",
+      "passwordLabel": "Current Password",
+      "passwordPlaceholder": "Enter your current password",
+      "passwordRequired": "Password is required",
+      "codeLabel": "2FA Code",
+      "codePlaceholder": "000000",
+      "codeRequired": "2FA code is required",
+      "codeLength": "Code must be exactly 6 digits",
+      "codeFormat": "Code must contain only numbers",
+      "submit": "Disable 2FA"
+    }
   }
 }

@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
-import { Card, Form, Input, Button, Typography, Space, Alert, Tooltip } from 'antd'
-import { UserOutlined, LockOutlined, KeyOutlined, InfoCircleOutlined } from '@/utils/optimizedIcons'
+import { Card, Form, Input, Button, Typography, Space, Alert, Tooltip, Modal } from 'antd'
+import { UserOutlined, LockOutlined, KeyOutlined, InfoCircleOutlined, SafetyCertificateOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { loginSuccess } from '@/store/auth/authSlice'
 import { saveAuthData } from '@/utils/auth'
@@ -21,6 +21,8 @@ import {
   getVaultProtocolMessage 
 } from '@/utils/vaultProtocol'
 import { masterPasswordService } from '@/services/masterPasswordService'
+import { tokenService } from '@/services/tokenService'
+import { useVerify2FA } from '@/api/queries/twoFactor'
 
 const { Text } = Typography
 
@@ -85,11 +87,16 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [vaultProtocolState, setVaultProtocolState] = useState<VaultProtocolState | null>(null)
+  const [show2FAModal, setShow2FAModal] = useState(false)
+  const [pending2FAData, setPending2FAData] = useState<any>(null)
+  const [twoFACode, setTwoFACode] = useState('')
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const [form] = Form.useForm<LoginForm>()
+  const [twoFAForm] = Form.useForm()
   const { theme } = useTheme()
   const { t } = useTranslation(['auth', 'common'])
+  const verify2FAMutation = useVerify2FA()
 
   const handleLogin = async (values: LoginForm) => {
     setLoading(true)
@@ -113,6 +120,24 @@ const LoginPage: React.FC = () => {
       const token = userData.nextRequestCredential
       if (!token) {
         throw new Error('No authentication token received')
+      }
+
+      // Check if 2FA is required
+      const isAuthorized = userData.isAuthorized
+      const authenticationStatus = userData.authenticationStatus
+      
+      // If 2FA is required but not authorized, show 2FA modal
+      if (authenticationStatus === '2FA verification required' && !isAuthorized) {
+        // Store the login data for after 2FA verification
+        setPending2FAData({
+          token,
+          email: values.email,
+          userData,
+          masterPassword: values.masterPassword
+        })
+        setShow2FAModal(true)
+        setLoading(false)
+        return
       }
 
       // Extract VaultCompany and company name from response
@@ -169,13 +194,67 @@ const LoginPage: React.FC = () => {
     }
   }
 
+  const handle2FAVerification = async () => {
+    try {
+      // Set the token temporarily for the 2FA verification request
+      const { token } = pending2FAData
+      await tokenService.setToken(token)
+      
+      // Verify the 2FA code
+      const result = await verify2FAMutation.mutateAsync({ code: twoFACode })
+      
+      if (result.isAuthorized) {
+        // Check if this is because 2FA is not enabled
+        if (result.has2FAEnabled === false) {
+          showMessage('info', 'Two-factor authentication is not enabled for this account.')
+          setShow2FAModal(false)
+          setTwoFACode('')
+          return
+        }
+        
+        // Continue with the login process using stored data
+        const { token, email, userData, masterPassword } = pending2FAData
+        
+        // Extract VaultCompany and company name from stored userData
+        const vaultCompany = userData.vaultCompany || null
+        const companyName = userData.CompanyName || userData.company || null
+        
+        // Save auth data
+        await saveAuthData(token, email, companyName)
+        
+        // Store master password if encryption is enabled
+        const companyHasEncryption = isEncrypted(vaultCompany)
+        if (companyHasEncryption && masterPassword) {
+          await masterPasswordService.setMasterPassword(masterPassword)
+        }
+        
+        // Update Redux store
+        dispatch(loginSuccess({
+          user: { email, company: companyName },
+          company: companyName,
+          vaultCompany: vaultCompany,
+          companyEncryptionEnabled: companyHasEncryption,
+        }))
+        
+        // Close modal and navigate
+        setShow2FAModal(false)
+        navigate('/dashboard')
+      }
+    } catch (error: any) {
+      // Error is handled by the mutation
+      // Clear the temporarily set token on error
+      await tokenService.clearToken()
+    }
+  }
+
   return (
-    <Card
-      style={{
-        width: 400,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-      }}
-    >
+    <>
+      <Card
+        style={{
+          width: 400,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+        }}
+      >
       <Space direction="vertical" size={24} style={{ width: '100%' }}>
         <div style={{ 
           display: 'flex',
@@ -291,6 +370,86 @@ const LoginPage: React.FC = () => {
         </div>
       </Space>
     </Card>
+
+      {/* 2FA Verification Modal */}
+      <Modal
+        title={
+          <Space>
+            <SafetyCertificateOutlined style={{ color: '#556b2f' }} />
+            <span>{t('login.twoFactorAuth.title')}</span>
+          </Space>
+        }
+        open={show2FAModal}
+        onCancel={() => {
+          setShow2FAModal(false)
+          setTwoFACode('')
+          setPending2FAData(null)
+        }}
+        footer={null}
+        width={400}
+      >
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <Alert
+            message={t('login.twoFactorAuth.required')}
+            description={t('login.twoFactorAuth.description')}
+            type="info"
+            showIcon
+          />
+          
+          <Form
+            form={twoFAForm}
+            onFinish={() => handle2FAVerification()}
+            layout="vertical"
+          >
+            <Form.Item
+              name="twoFACode"
+              label={t('login.twoFactorAuth.codeLabel')}
+              rules={[
+                { required: true, message: t('common:messages.required') },
+                { len: 6, message: t('login.twoFactorAuth.codeLength') },
+                { pattern: /^\d{6}$/, message: t('login.twoFactorAuth.codeFormat') }
+              ]}
+            >
+              <Input
+                size="large"
+                placeholder={t('login.twoFactorAuth.codePlaceholder')}
+                value={twoFACode}
+                onChange={(e) => setTwoFACode(e.target.value)}
+                autoComplete="off"
+                maxLength={6}
+                style={{ textAlign: 'center', fontSize: '20px', letterSpacing: '8px' }}
+              />
+            </Form.Item>
+            
+            <Form.Item style={{ marginBottom: 0 }}>
+              <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+                <Button
+                  onClick={() => {
+                    setShow2FAModal(false)
+                    setTwoFACode('')
+                    setPending2FAData(null)
+                  }}
+                >
+                  {t('common:general.cancel')}
+                </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={verify2FAMutation.isPending}
+                  disabled={twoFACode.length !== 6}
+                  style={{
+                    background: '#556b2f',
+                    borderColor: '#556b2f',
+                  }}
+                >
+                  {t('login.twoFactorAuth.verify')}
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        </Space>
+      </Modal>
+    </>
   )
 }
 

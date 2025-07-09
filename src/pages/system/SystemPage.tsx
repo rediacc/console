@@ -24,7 +24,8 @@ import {
   WarningOutlined,
   DownloadOutlined,
   LockOutlined,
-  UnlockOutlined
+  UnlockOutlined,
+  SafetyCertificateOutlined
 } from '@/utils/optimizedIcons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -43,6 +44,7 @@ import VaultEditorModal from '@/components/common/VaultEditorModal'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
 import UnifiedResourceModal, { ResourceType } from '@/components/common/UnifiedResourceModal'
 import UserSessionsTab from '@/components/system/UserSessionsTab'
+import TwoFactorSettings from '@/components/settings/TwoFactorSettings'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import { 
   useUpdateCompanyVault, 
@@ -151,6 +153,7 @@ const SystemPage: React.FC = () => {
   const [companyVaultModalOpen, setCompanyVaultModalOpen] = useState(false)
   const [userVaultModalOpen, setUserVaultModalOpen] = useState(false)
   const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false)
+  const [twoFactorModalOpen, setTwoFactorModalOpen] = useState(false)
   const [changePasswordForm] = Form.useForm()
   
   // User state
@@ -1603,7 +1606,7 @@ const SystemPage: React.FC = () => {
                   {t('personal.description')}
                 </Text>
 
-                <Space style={{ marginTop: 16 }}>
+                <Space style={{ marginTop: 16 }} wrap>
                   <Button
                     type="primary"
                     icon={<SettingOutlined />}
@@ -1619,6 +1622,14 @@ const SystemPage: React.FC = () => {
                     size="large"
                   >
                     Change Password
+                  </Button>
+                  <Button
+                    type="primary"
+                    icon={<SafetyCertificateOutlined />}
+                    onClick={() => setTwoFactorModalOpen(true)}
+                    size="large"
+                  >
+                    Two-Factor Authentication
                   </Button>
                 </Space>
               </Space>
@@ -2629,6 +2640,12 @@ const SystemPage: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* Two-Factor Authentication Modal */}
+      <TwoFactorSettings
+        open={twoFactorModalOpen}
+        onCancel={() => setTwoFactorModalOpen(false)}
+      />
     </>
   )
 }
