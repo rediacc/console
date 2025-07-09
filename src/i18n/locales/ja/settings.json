@@ -11,5 +11,75 @@
     "description": "体験をカスタマイズするための個人保険庫設定を構成します。",
     "configureVault": "保険庫を設定",
     "modalTitle": "ユーザー保険庫を設定"
+  },
+  "twoFactorAuth": {
+    "title": "二要素認証",
+    "status": {
+      "enabled": "二要素認証が有効です",
+      "disabled": "二要素認証が無効です",
+      "enabledDescription": "アカウントは追加のセキュリティレイヤーで保護されています。",
+      "disabledDescription": "アカウントに追加のセキュリティレイヤーを追加します。"
+    },
+    "whatIs": {
+      "title": "二要素認証とは？",
+      "description": "二要素認証（2FA）は、パスワードに加えて携帯電話からの時間ベースのコードを要求することで、アカウントに追加のセキュリティレイヤーを追加します。",
+      "benefit1": "パスワードが侵害されてもアカウントを保護します",
+      "benefit2": "業界標準のTOTP（時間ベースのワンタイムパスワード）アルゴリズムを使用",
+      "benefit3": "Google Authenticator、Authy、Microsoft Authenticatorなどの人気の認証アプリで動作"
+    },
+    "enable": "二要素認証を有効にする",
+    "disable": "二要素認証を無効にする",
+    "setupMethods": {
+      "qrCode": "QRコード",
+      "manual": "手動入力"
+    },
+    "scanQRCode": "認証アプリでこのQRコードをスキャンしてください",
+    "manualSetup": {
+      "title": "手動設定",
+      "instructions": "認証アプリにこのシークレットキーを入力してください："
+    },
+    "important": "重要",
+    "saveSecretWarning": "このシークレットキーを安全な場所に保存してください。認証デバイスを紛失した場合、アカウントへのアクセスを回復するために必要になります。",
+    "secretCopied": "シークレットキーをクリップボードにコピーしました",
+    "done": "完了",
+    "enableSuccess": {
+      "title": "二要素認証が有効になりました！",
+      "subtitle": "アカウントが2FAで保護されるようになりました。",
+      "verified": "2FAが正常に検証されました",
+      "verifiedDescription": "認証アプリが正常に設定され、アカウントで二要素認証がアクティブになりました。"
+    },
+    "verification": {
+      "title": "認証アプリを確認",
+      "subtitle": "QRコードをスキャンするか、認証アプリにシークレットキーを入力し、6桁のコードを入力して確認してください。",
+      "codeLabel": "確認コード",
+      "codePlaceholder": "000000",
+      "codeRequired": "確認コードは必須です",
+      "codeLength": "コードは正確に6桁である必要があります",
+      "codeFormat": "コードは数字のみを含む必要があります",
+      "submit": "確認して2FAを有効化"
+    },
+    "enableModal": {
+      "title": "二要素認証を有効にする",
+      "warning": "セキュリティ確認が必要です",
+      "warningDescription": "二要素認証を有効にするには、アカウントのパスワードを入力してください。",
+      "passwordLabel": "現在のパスワード",
+      "passwordPlaceholder": "現在のパスワードを入力",
+      "passwordRequired": "パスワードは必須です",
+      "submit": "2FAを有効化"
+    },
+    "disableModal": {
+      "title": "二要素認証を無効にする",
+      "warning": "セキュリティ警告",
+      "warningDescription": "2FAを無効にすると、アカウントのセキュリティが低下します。続行するには、現在のパスワードと有効な2FAコードを入力する必要があります。",
+      "passwordLabel": "現在のパスワード",
+      "passwordPlaceholder": "現在のパスワードを入力",
+      "passwordRequired": "パスワードは必須です",
+      "codeLabel": "2FAコード",
+      "codePlaceholder": "000000",
+      "codeRequired": "2FAコードは必須です",
+      "codeLength": "コードは正確に6桁である必要があります",
+      "codeFormat": "コードは数字のみを含む必要があります",
+      "submit": "2FAを無効化"
+    }
   }
 }

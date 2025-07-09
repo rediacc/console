@@ -11,5 +11,75 @@
     "description": "Configure los ajustes de su vault personal para personalizar su experiencia.",
     "configureVault": "Configurar Vault",
     "modalTitle": "Configurar Vault del Usuario"
+  },
+  "twoFactorAuth": {
+    "title": "Autenticación de Dos Factores",
+    "status": {
+      "enabled": "La Autenticación de Dos Factores está Activada",
+      "disabled": "La Autenticación de Dos Factores está Desactivada",
+      "enabledDescription": "Su cuenta está protegida con una capa adicional de seguridad.",
+      "disabledDescription": "Añada una capa extra de seguridad a su cuenta."
+    },
+    "whatIs": {
+      "title": "¿Qué es la Autenticación de Dos Factores?",
+      "description": "La Autenticación de Dos Factores (2FA) añade una capa extra de seguridad a su cuenta al requerir un código temporal de su teléfono además de su contraseña.",
+      "benefit1": "Protege su cuenta incluso si su contraseña se ve comprometida",
+      "benefit2": "Utiliza el algoritmo estándar de la industria TOTP (Contraseña de un Solo Uso Basada en Tiempo)",
+      "benefit3": "Funciona con aplicaciones de autenticación populares como Google Authenticator, Authy o Microsoft Authenticator"
+    },
+    "enable": "Activar Autenticación de Dos Factores",
+    "disable": "Desactivar Autenticación de Dos Factores",
+    "setupMethods": {
+      "qrCode": "Código QR",
+      "manual": "Entrada Manual"
+    },
+    "scanQRCode": "Escanee este código QR con su aplicación de autenticación",
+    "manualSetup": {
+      "title": "Configuración Manual",
+      "instructions": "Ingrese esta clave secreta en su aplicación de autenticación:"
+    },
+    "important": "Importante",
+    "saveSecretWarning": "Guarde esta clave secreta en un lugar seguro. La necesitará para recuperar el acceso a su cuenta si pierde su dispositivo de autenticación.",
+    "secretCopied": "Clave secreta copiada al portapapeles",
+    "done": "Hecho",
+    "enableSuccess": {
+      "title": "¡Autenticación de Dos Factores Activada!",
+      "subtitle": "Su cuenta ahora está protegida con 2FA.",
+      "verified": "2FA Verificado Exitosamente",
+      "verifiedDescription": "Su aplicación de autenticación se ha configurado correctamente y la autenticación de dos factores ahora está activa en su cuenta."
+    },
+    "verification": {
+      "title": "Verifique Su Autenticador",
+      "subtitle": "Escanee el código QR o ingrese la clave secreta en su aplicación de autenticación, luego ingrese el código de 6 dígitos para verificar.",
+      "codeLabel": "Código de Verificación",
+      "codePlaceholder": "000000",
+      "codeRequired": "El código de verificación es obligatorio",
+      "codeLength": "El código debe tener exactamente 6 dígitos",
+      "codeFormat": "El código debe contener solo números",
+      "submit": "Verificar y Activar 2FA"
+    },
+    "enableModal": {
+      "title": "Activar Autenticación de Dos Factores",
+      "warning": "Verificación de Seguridad Requerida",
+      "warningDescription": "Por favor, ingrese la contraseña de su cuenta para activar la autenticación de dos factores.",
+      "passwordLabel": "Contraseña Actual",
+      "passwordPlaceholder": "Ingrese su contraseña actual",
+      "passwordRequired": "La contraseña es obligatoria",
+      "submit": "Activar 2FA"
+    },
+    "disableModal": {
+      "title": "Desactivar Autenticación de Dos Factores",
+      "warning": "Advertencia de Seguridad",
+      "warningDescription": "Desactivar 2FA hará que su cuenta sea menos segura. Necesitará ingresar su contraseña actual y un código 2FA válido para continuar.",
+      "passwordLabel": "Contraseña Actual",
+      "passwordPlaceholder": "Ingrese su contraseña actual",
+      "passwordRequired": "La contraseña es obligatoria",
+      "codeLabel": "Código 2FA",
+      "codePlaceholder": "000000",
+      "codeRequired": "El código 2FA es obligatorio",
+      "codeLength": "El código debe tener exactamente 6 dígitos",
+      "codeFormat": "El código debe contener solo números",
+      "submit": "Desactivar 2FA"
+    }
   }
 }

@@ -11,5 +11,75 @@
     "description": "Configurez vos paramètres personnels du coffre-fort pour personnaliser votre expérience.",
     "configureVault": "Configurer le coffre-fort",
     "modalTitle": "Configurer le coffre-fort utilisateur"
+  },
+  "twoFactorAuth": {
+    "title": "Authentification à Deux Facteurs",
+    "status": {
+      "enabled": "L'Authentification à Deux Facteurs est Activée",
+      "disabled": "L'Authentification à Deux Facteurs est Désactivée",
+      "enabledDescription": "Votre compte est protégé par une couche de sécurité supplémentaire.",
+      "disabledDescription": "Ajoutez une couche de sécurité supplémentaire à votre compte."
+    },
+    "whatIs": {
+      "title": "Qu'est-ce que l'Authentification à Deux Facteurs ?",
+      "description": "L'Authentification à Deux Facteurs (2FA) ajoute une couche de sécurité supplémentaire à votre compte en exigeant un code temporel de votre téléphone en plus de votre mot de passe.",
+      "benefit1": "Protège votre compte même si votre mot de passe est compromis",
+      "benefit2": "Utilise l'algorithme standard de l'industrie TOTP (Mot de Passe à Usage Unique Basé sur le Temps)",
+      "benefit3": "Fonctionne avec les applications d'authentification populaires comme Google Authenticator, Authy ou Microsoft Authenticator"
+    },
+    "enable": "Activer l'Authentification à Deux Facteurs",
+    "disable": "Désactiver l'Authentification à Deux Facteurs",
+    "setupMethods": {
+      "qrCode": "Code QR",
+      "manual": "Saisie Manuelle"
+    },
+    "scanQRCode": "Scannez ce code QR avec votre application d'authentification",
+    "manualSetup": {
+      "title": "Configuration Manuelle",
+      "instructions": "Entrez cette clé secrète dans votre application d'authentification :"
+    },
+    "important": "Important",
+    "saveSecretWarning": "Conservez cette clé secrète dans un endroit sûr. Vous en aurez besoin pour récupérer l'accès à votre compte si vous perdez votre appareil d'authentification.",
+    "secretCopied": "Clé secrète copiée dans le presse-papiers",
+    "done": "Terminé",
+    "enableSuccess": {
+      "title": "Authentification à Deux Facteurs Activée !",
+      "subtitle": "Votre compte est maintenant protégé avec 2FA.",
+      "verified": "2FA Vérifié avec Succès",
+      "verifiedDescription": "Votre application d'authentification a été configurée avec succès et l'authentification à deux facteurs est maintenant active sur votre compte."
+    },
+    "verification": {
+      "title": "Vérifiez Votre Authentificateur",
+      "subtitle": "Scannez le code QR ou entrez la clé secrète dans votre application d'authentification, puis entrez le code à 6 chiffres pour vérifier.",
+      "codeLabel": "Code de Vérification",
+      "codePlaceholder": "000000",
+      "codeRequired": "Le code de vérification est requis",
+      "codeLength": "Le code doit comporter exactement 6 chiffres",
+      "codeFormat": "Le code ne doit contenir que des chiffres",
+      "submit": "Vérifier et Activer 2FA"
+    },
+    "enableModal": {
+      "title": "Activer l'Authentification à Deux Facteurs",
+      "warning": "Vérification de Sécurité Requise",
+      "warningDescription": "Veuillez entrer le mot de passe de votre compte pour activer l'authentification à deux facteurs.",
+      "passwordLabel": "Mot de Passe Actuel",
+      "passwordPlaceholder": "Entrez votre mot de passe actuel",
+      "passwordRequired": "Le mot de passe est requis",
+      "submit": "Activer 2FA"
+    },
+    "disableModal": {
+      "title": "Désactiver l'Authentification à Deux Facteurs",
+      "warning": "Avertissement de Sécurité",
+      "warningDescription": "Désactiver 2FA rendra votre compte moins sécurisé. Vous devrez entrer votre mot de passe actuel et un code 2FA valide pour continuer.",
+      "passwordLabel": "Mot de Passe Actuel",
+      "passwordPlaceholder": "Entrez votre mot de passe actuel",
+      "passwordRequired": "Le mot de passe est requis",
+      "codeLabel": "Code 2FA",
+      "codePlaceholder": "000000",
+      "codeRequired": "Le code 2FA est requis",
+      "codeLength": "Le code doit comporter exactement 6 chiffres",
+      "codeFormat": "Le code ne doit contenir que des chiffres",
+      "submit": "Désactiver 2FA"
+    }
   }
 }

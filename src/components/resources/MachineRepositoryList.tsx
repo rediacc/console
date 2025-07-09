@@ -743,6 +743,28 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       let repositoryVault = grandRepositoryVault
       let destinationMachineVault = undefined
       let destinationStorageVault = undefined
+      let sourceMachineVault = undefined
+      let sourceStorageVault = undefined
+      
+      // For pull from machine, get source machine vault data
+      if (functionData.function.name === 'pull' && 
+          functionData.params.sourceType === 'machine' && 
+          functionData.params.from) {
+        const sourceMachine = machinesData?.find(m => m.machineName === functionData.params.from)
+        if (sourceMachine && sourceMachine.vaultContent) {
+          sourceMachineVault = sourceMachine.vaultContent
+        }
+      }
+      
+      // For pull from storage, get source storage vault data
+      if (functionData.function.name === 'pull' && 
+          functionData.params.sourceType === 'storage' && 
+          functionData.params.from) {
+        const sourceStorage = storageData?.find(s => s.storageName === functionData.params.from)
+        if (sourceStorage && sourceStorage.vaultContent) {
+          sourceStorageVault = sourceStorage.vaultContent
+        }
+      }
       
       // For push to machine, get destination machine vault data
       if (functionData.function.name === 'push' && 
@@ -820,6 +842,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         // No need to create a new repository
         finalParams.repo = repositoryData.repositoryGuid
         finalParams.grand = repositoryData.grandGuid || repositoryData.repositoryGuid || ''
+      } else if (functionData.function.name === 'pull') {
+        // For pull function, set the repo and grand parameters
+        finalParams.repo = repositoryData.repositoryGuid
+        finalParams.grand = repositoryData.grandGuid || repositoryData.repositoryGuid || ''
       }
       
       // Build queue vault
@@ -837,7 +863,9 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         repositoryGuid,
         repositoryVault,
         destinationMachineVault,
-        destinationStorageVault
+        destinationStorageVault,
+        sourceMachineVault,
+        sourceStorageVault
       })
       
       const response = await managedQueueMutation.mutateAsync({

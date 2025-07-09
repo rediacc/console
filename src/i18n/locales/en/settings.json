@@ -44,7 +44,19 @@
     "done": "Done",
     "enableSuccess": {
       "title": "Two-Factor Authentication Enabled!",
-      "subtitle": "Your account is now protected with 2FA. Use one of the methods below to set up your authenticator app."
+      "subtitle": "Your account is now protected with 2FA.",
+      "verified": "2FA Successfully Verified",
+      "verifiedDescription": "Your authenticator app has been successfully configured and two-factor authentication is now active on your account."
+    },
+    "verification": {
+      "title": "Verify Your Authenticator",
+      "subtitle": "Scan the QR code or enter the secret key in your authenticator app, then enter the 6-digit code to verify.",
+      "codeLabel": "Verification Code",
+      "codePlaceholder": "000000",
+      "codeRequired": "Verification code is required",
+      "codeLength": "Code must be exactly 6 digits",
+      "codeFormat": "Code must contain only numbers",
+      "submit": "Verify and Enable 2FA"
     },
     "enableModal": {
       "title": "Enable Two-Factor Authentication",

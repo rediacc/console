@@ -7,7 +7,6 @@ import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 import QRCode from 'react-qr-code'
 import { message } from 'antd'
-import { useQueryClient } from '@tanstack/react-query'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -21,7 +20,6 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
   const [passwordForm] = Form.useForm()
   const [disableForm] = Form.useForm()
   const userEmail = useSelector((state: RootState) => state.auth.user?.email)
-  const queryClient = useQueryClient()
   
   const { data: twoFAStatus, isLoading: statusLoading, refetch: refetch2FAStatus } = useGet2FAStatus()
   
@@ -32,25 +30,32 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
   const [showDisableModal, setShowDisableModal] = useState(false)
   const [twoFASecret, setTwoFASecret] = useState<string>('')
   const [showSuccess, setShowSuccess] = useState(false)
+  const [showVerification, setShowVerification] = useState(false)
+  const [verificationForm] = Form.useForm()
   
   // Refresh 2FA status when modal opens and reset states
   useEffect(() => {
     if (open) {
       // Reset states when modal opens
       setShowSuccess(false)
+      setShowVerification(false)
       setTwoFASecret('')
+      verificationForm.resetFields()
       // Fetch fresh status
       refetch2FAStatus()
     }
-  }, [open, refetch2FAStatus])
+  }, [open, refetch2FAStatus, verificationForm])
 
   const handleEnable2FA = async (values: { password: string }) => {
     try {
-      const result = await enable2FAMutation.mutateAsync({ password: values.password })
+      const result = await enable2FAMutation.mutateAsync({ 
+        password: values.password,
+        generateOnly: true  // Generate secret without saving
+      })
       setTwoFASecret(result.secret)
-      setShowSuccess(true)
-      passwordForm.resetFields()
       setShowEnableModal(false)
+      setShowVerification(true)  // Show verification modal
+      passwordForm.resetFields()
     } catch (error: any) {
       // Error is handled by mutation, but we should close the modal
       // if 2FA is already enabled
@@ -58,6 +63,22 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
         setShowEnableModal(false)
         passwordForm.resetFields()
       }
+    }
+  }
+
+  const handleVerify2FA = async (values: { code: string }) => {
+    try {
+      await enable2FAMutation.mutateAsync({ 
+        password: '', // Not needed for verification
+        verificationCode: values.code,
+        secret: twoFASecret,
+        confirmEnable: true  // Confirm enabling with verification
+      })
+      setShowVerification(false)
+      setShowSuccess(true)
+      verificationForm.resetFields()
+    } catch (_error) {
+      // Error handled by mutation
     }
   }
 
@@ -95,7 +116,117 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
       )
     }
 
-    if (showSuccess && twoFASecret) {
+    if (showVerification && twoFASecret) {
+      return (
+        <Space direction="vertical" size={24} style={{ width: '100%' }}>
+          <div style={{ textAlign: 'center' }}>
+            <SafetyCertificateOutlined style={{ fontSize: 48, color: '#556b2f' }} />
+            <Title level={4} style={{ marginTop: 16 }}>
+              {t('twoFactorAuth.verification.title')}
+            </Title>
+            <Paragraph type="secondary">
+              {t('twoFactorAuth.verification.subtitle')}
+            </Paragraph>
+          </div>
+
+          <Tabs
+            items={[
+              {
+                key: 'qrcode',
+                label: t('twoFactorAuth.setupMethods.qrCode'),
+                children: (
+                  <Space direction="vertical" align="center" style={{ width: '100%' }}>
+                    <div style={{ background: 'white', padding: 16, borderRadius: 8 }}>
+                      <QRCode 
+                        value={generateOtpAuthUrl(twoFASecret, userEmail || '')} 
+                        size={200}
+                      />
+                    </div>
+                    <Text type="secondary">{t('twoFactorAuth.scanQRCode')}</Text>
+                  </Space>
+                ),
+              },
+              {
+                key: 'manual',
+                label: t('twoFactorAuth.setupMethods.manual'),
+                children: (
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    <Alert
+                      message={t('twoFactorAuth.manualSetup.title')}
+                      description={
+                        <Space direction="vertical" style={{ width: '100%' }}>
+                          <Text>{t('twoFactorAuth.manualSetup.instructions')}</Text>
+                          <Space.Compact style={{ width: '100%', marginTop: 8 }}>
+                            <Input 
+                              value={twoFASecret} 
+                              readOnly 
+                              style={{ fontFamily: 'monospace' }}
+                            />
+                            <Button 
+                              icon={<CopyOutlined />}
+                              onClick={() => copyToClipboard(twoFASecret)}
+                            />
+                          </Space.Compact>
+                        </Space>
+                      }
+                      type="info"
+                    />
+                  </Space>
+                ),
+              },
+            ]}
+          />
+
+          <Form
+            form={verificationForm}
+            layout="vertical"
+            onFinish={handleVerify2FA}
+          >
+            <Form.Item
+              name="code"
+              label={t('twoFactorAuth.verification.codeLabel')}
+              rules={[
+                { required: true, message: t('twoFactorAuth.verification.codeRequired') },
+                { len: 6, message: t('twoFactorAuth.verification.codeLength') },
+                { pattern: /^\d{6}$/, message: t('twoFactorAuth.verification.codeFormat') }
+              ]}
+            >
+              <Input
+                size="large"
+                placeholder={t('twoFactorAuth.verification.codePlaceholder')}
+                maxLength={6}
+                style={{ textAlign: 'center', fontSize: '20px', letterSpacing: '8px' }}
+              />
+            </Form.Item>
+
+            <Form.Item style={{ marginBottom: 0 }}>
+              <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                <Button onClick={() => {
+                  setShowVerification(false)
+                  setTwoFASecret('')
+                  verificationForm.resetFields()
+                }}>
+                  {t('common:general.cancel')}
+                </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={enable2FAMutation.isPending}
+                  style={{
+                    background: '#556b2f',
+                    borderColor: '#556b2f',
+                  }}
+                >
+                  {t('twoFactorAuth.verification.submit')}
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        </Space>
+      )
+    }
+
+    if (showSuccess) {
       return (
         <Result
           status="success"
@@ -103,59 +234,12 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
           subTitle={t('twoFactorAuth.enableSuccess.subtitle')}
           extra={
             <Space direction="vertical" size={24} style={{ width: '100%' }}>
-              <Tabs
-                items={[
-                  {
-                    key: 'qrcode',
-                    label: t('twoFactorAuth.setupMethods.qrCode'),
-                    children: (
-                      <Space direction="vertical" align="center" style={{ width: '100%' }}>
-                        <div style={{ background: 'white', padding: 16, borderRadius: 8 }}>
-                          <QRCode 
-                            value={generateOtpAuthUrl(twoFASecret, userEmail || '')} 
-                            size={200}
-                          />
-                        </div>
-                        <Text type="secondary">{t('twoFactorAuth.scanQRCode')}</Text>
-                      </Space>
-                    ),
-                  },
-                  {
-                    key: 'manual',
-                    label: t('twoFactorAuth.setupMethods.manual'),
-                    children: (
-                      <Space direction="vertical" style={{ width: '100%' }}>
-                        <Alert
-                          message={t('twoFactorAuth.manualSetup.title')}
-                          description={
-                            <Space direction="vertical" style={{ width: '100%' }}>
-                              <Text>{t('twoFactorAuth.manualSetup.instructions')}</Text>
-                              <Space.Compact style={{ width: '100%', marginTop: 8 }}>
-                                <Input 
-                                  value={twoFASecret} 
-                                  readOnly 
-                                  style={{ fontFamily: 'monospace' }}
-                                />
-                                <Button 
-                                  icon={<CopyOutlined />}
-                                  onClick={() => copyToClipboard(twoFASecret)}
-                                />
-                              </Space.Compact>
-                            </Space>
-                          }
-                          type="info"
-                        />
-                      </Space>
-                    ),
-                  },
-                ]}
-              />
-              
               <Alert
-                message={t('twoFactorAuth.important')}
-                description={t('twoFactorAuth.saveSecretWarning')}
-                type="warning"
+                message={t('twoFactorAuth.enableSuccess.verified')}
+                description={t('twoFactorAuth.enableSuccess.verifiedDescription')}
+                type="success"
                 showIcon
+                icon={<CheckCircleOutlined />}
               />
               
               <Button 

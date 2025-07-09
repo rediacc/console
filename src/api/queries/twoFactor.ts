@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 import apiClient from '@/api/client'
-import { createMutation } from '@/api/utils/mutationFactory'
 import { showMessage } from '@/utils/messages'
 import { hashPassword } from '@/utils/auth'
 
@@ -79,42 +78,66 @@ export const useEnable2FA = () => {
   const userEmail = useSelector((state: RootState) => state.auth.user?.email)
   
   return useMutation({
-    mutationFn: async (data: { password: string }) => {
-      const passwordHash = await hashPassword(data.password)
-      const response = await apiClient.post('/UpdateUser2FA', {
-        enable: true,
-        userHash: passwordHash
-      })
-      
-      // If we get here, the response has failure: 0
-      // The API client's interceptor handles non-zero failure codes as errors
-      
-      // The 2FA secret is in the second table (index 1)
-      const responseData = response.tables[1]?.data[0]
-      
-      // Ensure we have the expected response structure
-      if (!response.tables[1]) {
-        throw new Error('Unexpected response format: missing 2FA data table')
+    mutationFn: async (data: { 
+      password?: string; 
+      generateOnly?: boolean;
+      verificationCode?: string;
+      secret?: string;
+      confirmEnable?: boolean;
+    }) => {
+      // Generate only mode - get secret without saving
+      if (data.generateOnly && data.password) {
+        const passwordHash = await hashPassword(data.password)
+        const response = await apiClient.post('/UpdateUser2FA', {
+          enable: true,
+          userHash: passwordHash,
+          generateOnly: true
+        })
+        
+        // The 2FA secret is in the second table (index 1)
+        const responseData = response.tables[1]?.data[0]
+        
+        // Ensure we have the expected response structure
+        if (!response.tables[1]) {
+          throw new Error('Unexpected response format: missing 2FA data table')
+        }
+        
+        // Ensure we have a secret in the response
+        if (!responseData?.secret) {
+          throw new Error('2FA secret not returned by server')
+        }
+        
+        return responseData as EnableTwoFactorResponse
       }
       
-      // Ensure we have a secret in the response
-      if (!responseData?.secret) {
-        throw new Error('2FA secret not returned by server')
+      // Confirm enable mode - verify code and save
+      if (data.confirmEnable && data.verificationCode && data.secret) {
+        const response = await apiClient.post('/UpdateUser2FA', {
+          enable: true,
+          verificationCode: data.verificationCode,
+          secret: data.secret,
+          confirmEnable: true
+        })
+        
+        return response.tables[0]?.data[0] as EnableTwoFactorResponse
       }
       
-      return responseData as EnableTwoFactorResponse
+      throw new Error('Invalid parameters for 2FA operation')
     },
-    onSuccess: (data, variables, context) => {
-      // Immediately update the cache with the new status
-      queryClient.setQueryData(['2fa-status', userEmail], {
-        is2FAEnabled: true,
-        isAuthorized: true,
-        authenticationStatus: '2FA enabled'
-      } as TwoFactorStatus)
-      
-      // Then invalidate to ensure fresh data on next fetch
-      queryClient.invalidateQueries({ queryKey: ['2fa-status'] })
-      showMessage('success', '2FA has been enabled. Please scan the QR code with your authenticator app.')
+    onSuccess: (_data, variables) => {
+      // Only update cache and show success if we're confirming enable
+      if (variables.confirmEnable) {
+        // Immediately update the cache with the new status
+        queryClient.setQueryData(['2fa-status', userEmail], {
+          is2FAEnabled: true,
+          isAuthorized: true,
+          authenticationStatus: '2FA enabled'
+        } as TwoFactorStatus)
+        
+        // Then invalidate to ensure fresh data on next fetch
+        queryClient.invalidateQueries({ queryKey: ['2fa-status'] })
+        showMessage('success', '2FA has been successfully enabled and verified.')
+      }
     },
     onError: (error: any) => {
       // The error message will come from the API's error array or the extracted error message

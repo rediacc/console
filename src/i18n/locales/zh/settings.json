@@ -11,5 +11,75 @@
     "description": "配置您的个人保险库设置以自定义您的体验。",
     "configureVault": "配置保险库",
     "modalTitle": "配置用户保险库"
+  },
+  "twoFactorAuth": {
+    "title": "双因素认证",
+    "status": {
+      "enabled": "双因素认证已启用",
+      "disabled": "双因素认证已禁用",
+      "enabledDescription": "您的账户已通过额外的安全层进行保护。",
+      "disabledDescription": "为您的账户添加额外的安全层。"
+    },
+    "whatIs": {
+      "title": "什么是双因素认证？",
+      "description": "双因素认证（2FA）通过要求除密码外还需要手机上的基于时间的代码，为您的账户添加额外的安全层。",
+      "benefit1": "即使您的密码被泄露，也能保护您的账户",
+      "benefit2": "使用行业标准的TOTP（基于时间的一次性密码）算法",
+      "benefit3": "与Google Authenticator、Authy或Microsoft Authenticator等流行的身份验证应用程序配合使用"
+    },
+    "enable": "启用双因素认证",
+    "disable": "禁用双因素认证",
+    "setupMethods": {
+      "qrCode": "二维码",
+      "manual": "手动输入"
+    },
+    "scanQRCode": "使用您的身份验证应用扫描此二维码",
+    "manualSetup": {
+      "title": "手动设置",
+      "instructions": "在您的身份验证应用中输入此密钥："
+    },
+    "important": "重要",
+    "saveSecretWarning": "请将此密钥保存在安全的地方。如果您丢失了身份验证设备，您将需要它来恢复对账户的访问。",
+    "secretCopied": "密钥已复制到剪贴板",
+    "done": "完成",
+    "enableSuccess": {
+      "title": "双因素认证已启用！",
+      "subtitle": "您的账户现在受到2FA的保护。",
+      "verified": "2FA验证成功",
+      "verifiedDescription": "您的身份验证应用已成功配置，双因素认证现已在您的账户上激活。"
+    },
+    "verification": {
+      "title": "验证您的身份验证器",
+      "subtitle": "扫描二维码或在身份验证应用中输入密钥，然后输入6位数字代码进行验证。",
+      "codeLabel": "验证码",
+      "codePlaceholder": "000000",
+      "codeRequired": "验证码是必需的",
+      "codeLength": "代码必须正好是6位数字",
+      "codeFormat": "代码必须只包含数字",
+      "submit": "验证并启用2FA"
+    },
+    "enableModal": {
+      "title": "启用双因素认证",
+      "warning": "需要安全验证",
+      "warningDescription": "请输入您的账户密码以启用双因素认证。",
+      "passwordLabel": "当前密码",
+      "passwordPlaceholder": "输入您的当前密码",
+      "passwordRequired": "密码是必需的",
+      "submit": "启用2FA"
+    },
+    "disableModal": {
+      "title": "禁用双因素认证",
+      "warning": "安全警告",
+      "warningDescription": "禁用2FA将使您的账户安全性降低。您需要输入当前密码和有效的2FA代码才能继续。",
+      "passwordLabel": "当前密码",
+      "passwordPlaceholder": "输入您的当前密码",
+      "passwordRequired": "密码是必需的",
+      "codeLabel": "2FA代码",
+      "codePlaceholder": "000000",
+      "codeRequired": "2FA代码是必需的",
+      "codeLength": "代码必须正好是6位数字",
+      "codeFormat": "代码必须只包含数字",
+      "submit": "禁用2FA"
+    }
   }
 }
