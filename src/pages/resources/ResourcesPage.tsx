@@ -775,8 +775,53 @@ const ResourcesPage: React.FC = () => {
       } else if (resourceType === 'repository') {
         queueVaultParams.repositoryGuid = currentResource.repositoryGuid;
         queueVaultParams.repositoryVault = currentResource.vaultContent || '{}';
+        // Also need machine vault for the selected machine
+        const fullMachine = machines.find(m => m.machineName === machineName && m.teamName === currentResource.teamName);
+        queueVaultParams.machineVault = fullMachine?.vaultContent || '{}';
       } else if (resourceType === 'storage') {
         queueVaultParams.storageName = currentResource.storageName;
+        queueVaultParams.storageVault = currentResource.vaultContent || '{}';
+        // Also need machine vault for the selected machine
+        const fullMachine = machines.find(m => m.machineName === machineName && m.teamName === currentResource.teamName);
+        queueVaultParams.machineVault = fullMachine?.vaultContent || '{}';
+      }
+      
+      // Handle pull function source vault data
+      if (functionData.function.name === 'pull') {
+        // For pull from machine, get source machine vault data
+        if (functionData.params.sourceType === 'machine' && functionData.params.from) {
+          const sourceMachine = machines.find(m => m.machineName === functionData.params.from);
+          if (sourceMachine && sourceMachine.vaultContent) {
+            queueVaultParams.sourceMachineVault = sourceMachine.vaultContent;
+          }
+        }
+        
+        // For pull from storage, get source storage vault data
+        if (functionData.params.sourceType === 'storage' && functionData.params.from) {
+          const sourceStorage = storages.find(s => s.storageName === functionData.params.from);
+          if (sourceStorage && sourceStorage.vaultContent) {
+            queueVaultParams.sourceStorageVault = sourceStorage.vaultContent;
+          }
+        }
+      }
+      
+      // Handle push function destination vault data
+      if (functionData.function.name === 'push') {
+        // For push to machine, get destination machine vault data
+        if (functionData.params.destinationType === 'machine' && functionData.params.to) {
+          const destinationMachine = machines.find(m => m.machineName === functionData.params.to);
+          if (destinationMachine && destinationMachine.vaultContent) {
+            queueVaultParams.destinationMachineVault = destinationMachine.vaultContent;
+          }
+        }
+        
+        // For push to storage, get destination storage vault data
+        if (functionData.params.destinationType === 'storage' && functionData.params.to) {
+          const destinationStorage = storages.find(s => s.storageName === functionData.params.to);
+          if (destinationStorage && destinationStorage.vaultContent) {
+            queueVaultParams.destinationStorageVault = destinationStorage.vaultContent;
+          }
+        }
       }
       
       const queueVault = await buildQueueVault(queueVaultParams);

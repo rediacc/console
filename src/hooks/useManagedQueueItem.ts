@@ -44,6 +44,7 @@ export const useManagedQueueItem = () => {
       priority
     }
     
+    
     const response = await apiClient.post('/CreateQueueItem', minifiedData)
     
     // Extract taskId from response and add it to the response object

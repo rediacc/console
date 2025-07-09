@@ -18,6 +18,8 @@ export function useQueueVaultBuilder() {
       storageVault?: any
       destinationMachineVault?: any
       destinationStorageVault?: any
+      sourceMachineVault?: any
+      sourceStorageVault?: any
       allRepositoryCredentials?: Record<string, string>
     }
   ): Promise<string> => {
@@ -60,7 +62,9 @@ export function useQueueVaultBuilder() {
       storageVault: context.storageVault ? parseVault(context.storageVault) : {},
       companyVault: companyVaultData ? parseVault(companyVaultData.vault) : {},
       destinationMachineVault: context.destinationMachineVault ? parseVault(context.destinationMachineVault) : {},
-      destinationStorageVault: context.destinationStorageVault ? parseVault(context.destinationStorageVault) : {}
+      destinationStorageVault: context.destinationStorageVault ? parseVault(context.destinationStorageVault) : {},
+      sourceMachineVault: context.sourceMachineVault ? parseVault(context.sourceMachineVault) : {},
+      sourceStorageVault: context.sourceStorageVault ? parseVault(context.sourceStorageVault) : {}
     }
     
     // Build complete context with vault data

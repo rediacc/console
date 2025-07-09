@@ -52,6 +52,7 @@ class QueueDataService {
     try {
       const requirements = this.getFunctionRequirements(context.functionName)
       
+      
       const queueVaultData: any = {
         function: context.functionName,
         machine: context.machineName || '', // Use empty string if no machine name
@@ -63,9 +64,11 @@ class QueueDataService {
       }
 
     if (requirements.machine && context.machineVault && context.machineName) {
-      queueVaultData.contextData.MACHINES = {
-        [context.machineName]: this.extractMachineForGeneralSettings(context.machineVault)
+      // Initialize MACHINES if it doesn't exist
+      if (!queueVaultData.contextData.MACHINES) {
+        queueVaultData.contextData.MACHINES = {}
       }
+      queueVaultData.contextData.MACHINES[context.machineName] = this.extractMachineForGeneralSettings(context.machineVault)
       
       // For push function, also add destination machine if pushing to another machine
       if (context.functionName === 'push' && 
@@ -145,7 +148,10 @@ class QueueDataService {
         
         queueVaultData.contextData.STORAGE_SYSTEMS[context.params.to] = storageConfig
       }
-    } else if (context.functionName === 'pull' && context.params.sourceType === 'storage' && context.params.from && context.sourceStorageVault) {
+    }
+    
+    // Handle pull function source vault data
+    if (context.functionName === 'pull' && context.params.sourceType === 'storage' && context.params.from && context.sourceStorageVault) {
       // For pull function from storage systems
       if (!queueVaultData.contextData.STORAGE_SYSTEMS) {
         queueVaultData.contextData.STORAGE_SYSTEMS = {}
@@ -189,15 +195,22 @@ class QueueDataService {
       })
       
       queueVaultData.contextData.STORAGE_SYSTEMS[context.params.from] = storageConfig
-    } else if (context.functionName === 'pull' && context.params.sourceType === 'machine' && context.params.from && context.params.from !== context.machineName && context.sourceMachineVault) {
+    }
+    
+    if (context.functionName === 'pull' && context.params.sourceType === 'machine' && context.params.from && context.sourceMachineVault) {
       // For pull function from machines
+      
       if (!queueVaultData.contextData.MACHINES) {
         queueVaultData.contextData.MACHINES = {}
       }
       
       // Add source machine vault data
-      queueVaultData.contextData.MACHINES[context.params.from] = this.extractMachineForGeneralSettings(context.sourceMachineVault)
-    } else if (context.functionName === 'ssh_test' && context.machineVault && !context.machineName) {
+      const sourceMachineData = this.extractMachineForGeneralSettings(context.sourceMachineVault)
+      
+      queueVaultData.contextData.MACHINES[context.params.from] = sourceMachineData
+    }
+    
+    if (context.functionName === 'ssh_test' && context.machineVault && !context.machineName) {
       // For ssh_test with bridge-only tasks (no machine name), include SSH details directly in vault data
       const machineData = this.extractMachineForGeneralSettings(context.machineVault)
       // Add ssh_password if present in the machine vault
@@ -254,6 +267,7 @@ class QueueDataService {
     })
 
 
+
       return minifyJSON(JSON.stringify(queueVaultData))
     } catch (error) {
       console.error('Error building queue vault:', error)
@@ -272,6 +286,9 @@ class QueueDataService {
   private extractMachineForGeneralSettings(machineVault: any): any {
     if (!machineVault || !Object.keys(machineVault).length) return {}
     
+    // Parse vault if it's a string
+    const vault = typeof machineVault === 'string' ? JSON.parse(machineVault) : machineVault
+    
     const fieldMappings = [
       { targetKey: 'IP', sources: ['ip', 'IP'] },
       { targetKey: 'USER', sources: ['user', 'USER'] },
@@ -279,11 +296,14 @@ class QueueDataService {
       { targetKey: 'HOST_ENTRY', sources: ['host_entry', 'HOST_ENTRY'] }
     ]
 
-    return fieldMappings.reduce((target, { targetKey, sources }) => {
-      const sourceKey = sources.find(s => machineVault[s] !== undefined)
-      if (sourceKey !== undefined) target[targetKey] = machineVault[sourceKey]
+    const result = fieldMappings.reduce((target, { targetKey, sources }) => {
+      const sourceKey = sources.find(s => vault[s] !== undefined)
+      if (sourceKey !== undefined) target[targetKey] = vault[sourceKey]
       return target
     }, {} as any)
+    
+    
+    return result
   }
 
   private extractRepositoryData(repositoryVault: any, repositoryGuid: string, _companyVault: any): any {
