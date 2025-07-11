@@ -127,7 +127,7 @@ const LoginPage: React.FC = () => {
       const authenticationStatus = userData.authenticationStatus
       
       // If 2FA is required but not authorized, show 2FA modal
-      if (authenticationStatus === '2FA verification required' && !isAuthorized) {
+      if (authenticationStatus === '2FA_REQUIRED' && !isAuthorized) {
         // Store the login data for after 2FA verification
         setPending2FAData({
           token,
