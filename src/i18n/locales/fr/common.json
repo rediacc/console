@@ -181,7 +181,7 @@
         },
         "datastore": {
           "label": "Chemin du magasin de données",
-          "description": "Chemin vers le répertoire du magasin de données sur la machine"
+          "description": "Chemin du répertoire pour stocker les données. S'il est situé sur un système de fichiers BTRFS, il utilisera les fonctionnalités natives. Sinon, un fichier de pool de stockage BTRFS sera créé et monté ici pour activer les instantanés et la compression"
         },
         "port": {
           "label": "Port SSH",

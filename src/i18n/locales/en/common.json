@@ -180,7 +180,7 @@
         },
         "datastore": {
           "label": "Datastore Path",
-          "description": "Path to the datastore directory on the machine"
+          "description": "Directory path for storing data. If located on a BTRFS filesystem, it will utilize native features. Otherwise, a BTRFS storage pool file will be created and mounted here to enable snapshots and compression"
         },
         "port": {
           "label": "SSH Port",

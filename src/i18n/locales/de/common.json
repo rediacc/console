@@ -181,7 +181,7 @@
         },
         "datastore": {
           "label": "Datenspeicher-Pfad",
-          "description": "Pfad zum Datenspeicher-Verzeichnis auf der Maschine"
+          "description": "Verzeichnispfad für die Datenspeicherung. Wenn auf einem BTRFS-Dateisystem, werden native Funktionen genutzt. Andernfalls wird eine BTRFS-Speicherpool-Datei erstellt und hier eingehängt, um Snapshots und Komprimierung zu ermöglichen"
         },
         "port": {
           "label": "SSH-Port",

@@ -286,6 +286,7 @@ const MarketplacePage: React.FC = () => {
             prefix={<SearchOutlined />}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            autoComplete="off"
           />
         </Col>
         <Col xs={24} sm={12} md={16}>

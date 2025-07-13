@@ -342,6 +342,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                 onChange={(e) => setNewKey(e.target.value)}
                 onPressEnter={handleAddEntry}
                 style={{ width: '70%' }}
+                autoComplete="off"
               />
               <Button
                 type="primary"

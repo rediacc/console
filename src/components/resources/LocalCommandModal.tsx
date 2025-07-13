@@ -311,6 +311,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
                     value={pluginPort}
                     onChange={(e) => setPluginPort(e.target.value)}
                     type="number"
+                    autoComplete="off"
                   />
                 </Form.Item>
               </>
@@ -328,6 +329,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
                 placeholder="docker ps"
                 value={termCommand}
                 onChange={(e) => setTermCommand(e.target.value)}
+                autoComplete="off"
               />
             </Form.Item>
           </Form>
@@ -350,6 +352,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
                 placeholder={os === 'windows' ? 'C:\\path\\to\\local\\folder' : '/path/to/local/folder'}
                 value={localPath}
                 onChange={(e) => setLocalPath(e.target.value)}
+                autoComplete="off"
               />
             </Form.Item>
 

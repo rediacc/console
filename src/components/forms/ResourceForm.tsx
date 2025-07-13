@@ -79,6 +79,7 @@ function ResourceForm<T = any>({
                 {...controllerField}
                 placeholder={field.placeholder}
                 disabled={field.disabled}
+                autoComplete="off"
               />
             )}
           />
@@ -95,6 +96,7 @@ function ResourceForm<T = any>({
                 type={field.type || 'text'}
                 placeholder={field.placeholder}
                 disabled={field.disabled}
+                autoComplete="off"
               />
             )}
           />

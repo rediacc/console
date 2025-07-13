@@ -365,6 +365,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
               value={functionSearchTerm}
               onChange={(e) => setFunctionSearchTerm(e.target.value)}
               style={{ marginBottom: 16 }}
+              autoComplete="off"
             />
             <div style={{ maxHeight: 400, overflow: 'auto' }}>
               {Object.entries(functionsByCategory).map(([category, funcs]) => (
@@ -706,6 +707,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                 [paramName]: e.target.value
                               })}
                               placeholder={paramInfo.help || ''}
+                              autoComplete="off"
                             />
                           )}
                         </Form.Item>
@@ -801,6 +803,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                       onChange={(e) => setFunctionDescription(e.target.value)}
                       placeholder={t('functions:descriptionPlaceholder')}
                       rows={2}
+                      autoComplete="off"
                     />
                   </Form.Item>
                 </Form>

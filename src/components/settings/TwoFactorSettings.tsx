@@ -196,6 +196,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
                 placeholder={t('twoFactorAuth.verification.codePlaceholder')}
                 maxLength={6}
                 style={{ textAlign: 'center', fontSize: '20px', letterSpacing: '8px' }}
+                autoComplete="off"
               />
             </Form.Item>
 
@@ -379,6 +380,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
               prefix={<KeyOutlined />}
               placeholder={t('twoFactorAuth.enableModal.passwordPlaceholder')}
               size="large"
+              autoComplete="off"
             />
           </Form.Item>
           
@@ -441,6 +443,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
               prefix={<KeyOutlined />}
               placeholder={t('twoFactorAuth.disableModal.passwordPlaceholder')}
               size="large"
+              autoComplete="off"
             />
           </Form.Item>
           
@@ -458,6 +461,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
               placeholder={t('twoFactorAuth.disableModal.codePlaceholder')}
               maxLength={6}
               style={{ textAlign: 'center', fontSize: '20px', letterSpacing: '8px' }}
+              autoComplete="off"
             />
           </Form.Item>
           

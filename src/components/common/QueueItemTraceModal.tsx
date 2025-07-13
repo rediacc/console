@@ -111,15 +111,18 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
           setAccumulatedOutput(finalOutput)
           setLastOutputStatus('completed')
         } else if (vaultContent.status === 'in_progress' && vaultContent.message) {
-          // For in-progress updates, append new output
-          const newLine = vaultContent.message
-          if (newLine && lastOutputStatus !== 'completed') {
+          // For in-progress updates, check if we should append or replace
+          const newMessage = vaultContent.message
+          if (newMessage && lastOutputStatus !== 'completed') {
             setAccumulatedOutput(prev => {
-              // Only append if it's actually new content
-              if (!prev.endsWith(newLine)) {
-                return prev + (prev ? '\n' : '') + newLine
+              // If the new message starts with the current content, only append the difference
+              if (newMessage.startsWith(prev)) {
+                const newContent = newMessage.substring(prev.length)
+                return prev + newContent
+              } else {
+                // Otherwise, replace the entire content
+                return newMessage
               }
-              return prev
             })
             setLastOutputStatus('in_progress')
           }

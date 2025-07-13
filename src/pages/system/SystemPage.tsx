@@ -1665,6 +1665,7 @@ const SystemPage: React.FC = () => {
           value={newGroupName}
           onChange={(e) => setNewGroupName(e.target.value)}
           onPressEnter={handleCreateGroup}
+          autoComplete="off"
         />
       </Modal>
 
@@ -2122,6 +2123,7 @@ const SystemPage: React.FC = () => {
                     value={token}
                     readOnly
                     style={{ width: '100%' }}
+                    autoComplete="off"
                   />
                   <Button
                     icon={<CopyOutlined />}
@@ -2386,6 +2388,7 @@ const SystemPage: React.FC = () => {
                 <Input.Password 
                   placeholder={tSystem('dangerZone.updateMasterPassword.modal.newPasswordPlaceholder')}
                   size="large"
+                  autoComplete="new-password"
                 />
               </Form.Item>
               
@@ -2408,6 +2411,7 @@ const SystemPage: React.FC = () => {
                 <Input.Password 
                   placeholder={tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordPlaceholder')}
                   size="large"
+                  autoComplete="new-password"
                 />
               </Form.Item>
             </>
@@ -2594,6 +2598,7 @@ const SystemPage: React.FC = () => {
             <Input.Password 
               placeholder="Enter new password"
               size="large"
+              autoComplete="new-password"
             />
           </Form.Item>
 
@@ -2616,6 +2621,7 @@ const SystemPage: React.FC = () => {
             <Input.Password 
               placeholder="Confirm new password"
               size="large"
+              autoComplete="new-password"
             />
           </Form.Item>
 

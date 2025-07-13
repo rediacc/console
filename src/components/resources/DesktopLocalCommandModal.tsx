@@ -280,6 +280,7 @@ export const DesktopLocalCommandModal: React.FC<DesktopLocalCommandModalProps> =
                     onChange={(e) => setPluginPort(e.target.value)}
                     type="number"
                     disabled={executing}
+                    autoComplete="off"
                   />
                 </Form.Item>
               </>
@@ -313,6 +314,7 @@ export const DesktopLocalCommandModal: React.FC<DesktopLocalCommandModalProps> =
                 onChange={(e) => setTermCommand(e.target.value)}
                 disabled={executing}
                 onPressEnter={executeTermCommand}
+                autoComplete="off"
               />
             </Form.Item>
 
@@ -351,6 +353,7 @@ export const DesktopLocalCommandModal: React.FC<DesktopLocalCommandModalProps> =
                   value={localPath}
                   onChange={(e) => setLocalPath(e.target.value)}
                   disabled={executing}
+                  autoComplete="off"
                 />
                 {isDesktop && (
                   <Button 

@@ -181,7 +181,7 @@
         },
         "datastore": {
           "label": "数据存储路径",
-          "description": "机器上数据存储目录的路径"
+          "description": "用于存储数据的目录路径。如果位于BTRFS文件系统上，将使用原生功能。否则，将创建BTRFS存储池文件并挂载在此处，以启用快照和压缩功能"
         },
         "port": {
           "label": "SSH端口",

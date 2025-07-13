@@ -509,6 +509,7 @@ const QueuePage: React.FC = () => {
               prefix={<SearchOutlined />}
               allowClear
               status={taskIdFilter && !isValidGuid(taskIdFilter) ? 'error' : undefined}
+              autoComplete="off"
             />
             {taskIdFilter && !isValidGuid(taskIdFilter) && (
               <Text type="danger" style={{ fontSize: '12px' }}>

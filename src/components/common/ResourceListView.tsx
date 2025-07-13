@@ -76,6 +76,7 @@ function ResourceListView<T = any>({
                   style={{ width: 300 }}
                   prefix={<SearchOutlined />}
                   allowClear
+                  autoComplete="off"
                 />
               )}
               {filters}

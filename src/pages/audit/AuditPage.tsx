@@ -318,6 +318,7 @@ const AuditPage = () => {
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
                   allowClear
+                  autoComplete="off"
                 />
               </Space>
             </Col>

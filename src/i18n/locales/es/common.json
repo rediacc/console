@@ -181,7 +181,7 @@
         },
         "datastore": {
           "label": "Ruta del Almacén",
-          "description": "Ruta al directorio del almacén de datos en la máquina"
+          "description": "Ruta del directorio para almacenar datos. Si está en un sistema de archivos BTRFS, utilizará las funciones nativas. De lo contrario, se creará un archivo de pool de almacenamiento BTRFS y se montará aquí para habilitar instantáneas y compresión"
         },
         "port": {
           "label": "Puerto SSH",

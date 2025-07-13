@@ -181,7 +181,7 @@
         },
         "datastore": {
           "label": "Veri Deposu Yolu",
-          "description": "Makinedeki veri deposu dizininin yolu"
+          "description": "Veri depolamak için dizin yolu. BTRFS dosya sisteminde bulunuyorsa, yerel özellikleri kullanır. Aksi takdirde, anlık görüntüler ve sıkıştırmayı etkinleştirmek için bir BTRFS depolama havuzu dosyası oluşturulur ve buraya bağlanır"
         },
         "port": {
           "label": "SSH Portu",

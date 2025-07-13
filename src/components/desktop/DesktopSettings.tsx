@@ -89,7 +89,7 @@ const DesktopSettings: React.FC = () => {
           rules={[{ required: true, message: 'Please enter the API domain' }]}
           help="The domain where your Rediacc API is hosted"
         >
-          <Input placeholder="localhost" />
+          <Input placeholder="localhost" autoComplete="off" />
         </Form.Item>
 
         <Form.Item

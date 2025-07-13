@@ -73,6 +73,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
               value={searchValue}
               onChange={e => setSearchValue(e.target.value)}
               onPressEnter={e => e.stopPropagation()}
+              autoComplete="off"
             />
           </div>
           <div style={{ borderTop: '1px solid #f0f0f0' }}>
