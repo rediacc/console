@@ -89,6 +89,7 @@
       "enterRepositoryName": "リポジトリ名を入力",
       "enterSize": "サイズを入力（例：10G）"
     },
+    "keepOpenAfterCreation": "作成後もリポジトリを開いたままにする",
     "fetchingRepositories": "リポジトリを取得中...",
     "status": "ステータス",
     "exists": "存在",

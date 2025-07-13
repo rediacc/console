@@ -20,7 +20,6 @@ export async function encryptRequestData(data: any): Promise<any> {
   try {
     return await encryptVaultFields(data, masterPassword)
   } catch (error) {
-    console.error('Failed to encrypt request data:', error)
     showMessage('error', 'Failed to encrypt secure data')
     throw error
   }
@@ -39,7 +38,6 @@ export async function decryptResponseData(data: any): Promise<any> {
   try {
     return await decryptVaultFields(data, masterPassword)
   } catch (error) {
-    console.error('Failed to decrypt response data:', error)
     showMessage('error', 'Failed to decrypt secure data - check your master password')
     // Return original data instead of throwing to allow app to continue
     return data

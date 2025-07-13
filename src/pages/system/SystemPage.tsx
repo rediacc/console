@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Card, Tabs, Modal, Form, Input, Button, Space, Popconfirm, Tag, Select, Badge, List, Typography, Row, Col, Table, Empty, Spin, Alert, message, Checkbox, Result, Radio } from 'antd'
+import { Card, Tabs, Modal, Form, Input, Button, Space, Popconfirm, Tag, Select, Badge, List, Typography, Row, Col, Table, Empty, Spin, Alert, message, Checkbox, Result, Radio, Upload } from 'antd'
 import { 
   UserOutlined, 
   SafetyOutlined, 
@@ -25,7 +25,10 @@ import {
   DownloadOutlined,
   LockOutlined,
   UnlockOutlined,
-  SafetyCertificateOutlined
+  SafetyCertificateOutlined,
+  UploadOutlined,
+  ExportOutlined,
+  ImportOutlined
 } from '@/utils/optimizedIcons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -51,7 +54,9 @@ import {
   useCompanyVault,
   useUpdateCompanyBlockUserRequests,
   useGetCompanyVaults,
-  useUpdateCompanyVaults
+  useUpdateCompanyVaults,
+  useExportCompanyData,
+  useImportCompanyData
 } from '@/api/queries/company'
 import { showMessage } from '@/utils/messages'
 
@@ -214,6 +219,12 @@ const SystemPage: React.FC = () => {
   const [successModalOpen, setSuccessModalOpen] = useState(false)
   const [countdown, setCountdown] = useState(60)
   const countdownInterval = useRef<NodeJS.Timeout | null>(null)
+  
+  // Data import/export state
+  const [importModalOpen, setImportModalOpen] = useState(false)
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importMode, setImportMode] = useState<'skip' | 'override'>('skip')
+  const [importForm] = Form.useForm()
 
   // Common hooks
   const { data: dropdownData } = useDropdownData()
@@ -226,6 +237,8 @@ const SystemPage: React.FC = () => {
   const blockUserRequestsMutation = useUpdateCompanyBlockUserRequests()
   const exportVaultsQuery = useGetCompanyVaults()
   const updateVaultsMutation = useUpdateCompanyVaults()
+  const exportCompanyDataQuery = useExportCompanyData()
+  const importCompanyDataMutation = useImportCompanyData()
   
   // User hooks
   const { data: users = [], isLoading: usersLoading } = useUsers()
@@ -408,6 +421,66 @@ const SystemPage: React.FC = () => {
   }
 
   // Danger zone handlers
+  const handleExportCompanyData = async () => {
+    try {
+      const result = await exportCompanyDataQuery.refetch()
+      if (result.data) {
+        // Create a timestamp for the filename
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0]
+        
+        // The export data should contain the full company export in JSON format
+        const exportData = result.data
+        
+        // Create and download the file
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `company-data-export-${timestamp}.json`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+        
+        showMessage('success', tSystem('dangerZone.exportData.success'))
+      }
+    } catch (error) {
+      showMessage('error', tSystem('dangerZone.exportData.error'))
+    }
+  }
+
+  const handleImportCompanyData = async (values: any) => {
+    if (!importFile) {
+      showMessage('error', tSystem('dangerZone.importData.modal.fileRequired'))
+      return
+    }
+
+    try {
+      // Read the file content
+      const fileContent = await importFile.text()
+      
+      // Validate JSON
+      try {
+        JSON.parse(fileContent)
+      } catch {
+        showMessage('error', tSystem('dangerZone.importData.modal.invalidFile'))
+        return
+      }
+
+      // Import the data
+      await importCompanyDataMutation.mutateAsync({
+        companyDataJson: fileContent,
+        importMode: importMode
+      })
+
+      setImportModalOpen(false)
+      setImportFile(null)
+      importForm.resetFields()
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
   const handleExportVaults = async () => {
     try {
       const result = await exportVaultsQuery.refetch()
@@ -2273,6 +2346,54 @@ const SystemPage: React.FC = () => {
 
           <hr style={{ margin: 0, borderColor: '#f0f0f0' }} />
 
+          {/* Export Company Data */}
+          <Row gutter={[16, 16]} align="middle">
+            <Col xs={24} lg={16}>
+              <Space direction="vertical" size={8}>
+                <Title level={5} style={{ margin: 0 }}>{tSystem('dangerZone.exportData.title')}</Title>
+                <Text type="secondary">
+                  {tSystem('dangerZone.exportData.description')}
+                </Text>
+              </Space>
+            </Col>
+            <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
+              <Button 
+                type="primary"
+                icon={<ExportOutlined />}
+                onClick={handleExportCompanyData}
+                loading={exportCompanyDataQuery.isFetching}
+              >
+                {tSystem('dangerZone.exportData.button')}
+              </Button>
+            </Col>
+          </Row>
+
+          <hr style={{ margin: 0, borderColor: '#f0f0f0' }} />
+
+          {/* Import Company Data */}
+          <Row gutter={[16, 16]} align="middle">
+            <Col xs={24} lg={16}>
+              <Space direction="vertical" size={8}>
+                <Title level={5} style={{ margin: 0 }}>{tSystem('dangerZone.importData.title')}</Title>
+                <Text type="secondary">
+                  {tSystem('dangerZone.importData.description')}
+                </Text>
+              </Space>
+            </Col>
+            <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
+              <Button 
+                type="primary"
+                danger
+                icon={<ImportOutlined />}
+                onClick={() => setImportModalOpen(true)}
+              >
+                {tSystem('dangerZone.importData.button')}
+              </Button>
+            </Col>
+          </Row>
+
+          <hr style={{ margin: 0, borderColor: '#f0f0f0' }} />
+
           {/* Update Master Password */}
           <Row gutter={[16, 16]} align="middle">
             <Col xs={24} lg={16}>
@@ -2652,6 +2773,104 @@ const SystemPage: React.FC = () => {
         open={twoFactorModalOpen}
         onCancel={() => setTwoFactorModalOpen(false)}
       />
+
+      {/* Import Company Data Modal */}
+      <Modal
+        title={tSystem('dangerZone.importData.modal.title')}
+        open={importModalOpen}
+        onCancel={() => {
+          setImportModalOpen(false)
+          setImportFile(null)
+          importForm.resetFields()
+          setImportMode('skip')
+        }}
+        footer={null}
+        width={600}
+      >
+        <Form
+          form={importForm}
+          layout="vertical"
+          onFinish={handleImportCompanyData}
+        >
+          <Alert
+            message={tSystem('dangerZone.importData.modal.warning')}
+            description={tSystem('dangerZone.importData.modal.warningText')}
+            type="warning"
+            showIcon
+            style={{ marginBottom: 24 }}
+          />
+
+          <Form.Item
+            label={tSystem('dangerZone.importData.modal.selectFile')}
+            required
+          >
+            <Upload
+              beforeUpload={(file) => {
+                setImportFile(file)
+                return false // Prevent automatic upload
+              }}
+              onRemove={() => setImportFile(null)}
+              maxCount={1}
+              accept=".json"
+            >
+              <Button icon={<UploadOutlined />}>
+                {importFile ? importFile.name : tSystem('dangerZone.importData.modal.selectFile')}
+              </Button>
+            </Upload>
+          </Form.Item>
+
+          <Form.Item
+            label={tSystem('dangerZone.importData.modal.importMode')}
+          >
+            <Radio.Group
+              value={importMode}
+              onChange={(e) => setImportMode(e.target.value)}
+            >
+              <Space direction="vertical">
+                <Radio value="skip">
+                  <Space direction="vertical" size={0}>
+                    <Text strong>{tSystem('dangerZone.importData.modal.modeSkip')}</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      {tSystem('dangerZone.importData.modal.modeSkipDesc')}
+                    </Text>
+                  </Space>
+                </Radio>
+                <Radio value="override">
+                  <Space direction="vertical" size={0}>
+                    <Text strong>{tSystem('dangerZone.importData.modal.modeOverride')}</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      {tSystem('dangerZone.importData.modal.modeOverrideDesc')}
+                    </Text>
+                  </Space>
+                </Radio>
+              </Space>
+            </Radio.Group>
+          </Form.Item>
+
+          <Form.Item style={{ marginBottom: 0, marginTop: 32 }}>
+            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+              <Button
+                onClick={() => {
+                  setImportModalOpen(false)
+                  setImportFile(null)
+                  importForm.resetFields()
+                  setImportMode('skip')
+                }}
+              >
+                {tSystem('dangerZone.importData.modal.cancel')}
+              </Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={importCompanyDataMutation.isPending}
+                disabled={!importFile}
+              >
+                {tSystem('dangerZone.importData.modal.import')}
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
     </>
   )
 }

@@ -133,6 +133,37 @@
         "updateFailed": "Échec de la mise à jour des coffres-forts avec le nouveau mot de passe de chiffrement",
         "partialSuccess": "{{updated}} coffres-forts mis à jour avec succès, mais {{failed}} ont échoué. Vérifiez les journaux pour plus de détails."
       }
+    },
+    "exportData": {
+      "title": "Exporter les données de l'entreprise",
+      "description": "Exportez toutes les données de l'entreprise, y compris les utilisateurs, équipes, permissions, régions, ponts, machines, dépôts, configurations de stockage et planifications. Cette exportation peut être utilisée à des fins de sauvegarde ou de migration.",
+      "button": "Exporter les données de l'entreprise",
+      "success": "Données de l'entreprise exportées avec succès",
+      "error": "Échec de l'exportation des données de l'entreprise",
+      "downloading": "Préparation de l'exportation..."
+    },
+    "importData": {
+      "title": "Importer les données de l'entreprise",
+      "description": "Importez les données de l'entreprise à partir d'un fichier précédemment exporté. Vous pouvez choisir d'ignorer les éléments existants ou de les remplacer par les données importées.",
+      "button": "Importer les données de l'entreprise",
+      "success": "Données de l'entreprise importées avec succès",
+      "error": "Échec de l'importation des données de l'entreprise",
+      "modal": {
+        "title": "Importer les données de l'entreprise",
+        "selectFile": "Sélectionner un fichier",
+        "fileRequired": "Veuillez sélectionner un fichier à importer",
+        "invalidFile": "Format de fichier invalide. Veuillez sélectionner un fichier d'exportation de données valide.",
+        "importMode": "Mode d'importation",
+        "modeSkip": "Ignorer les éléments existants",
+        "modeOverride": "Remplacer les éléments existants",
+        "modeSkipDesc": "Importer uniquement les éléments qui n'existent pas",
+        "modeOverrideDesc": "Remplacer les éléments existants par les données importées",
+        "warning": "Avertissement",
+        "warningText": "L'importation de données modifiera la configuration de votre entreprise. Assurez-vous d'avoir une sauvegarde avant de continuer.",
+        "cancel": "Annuler",
+        "import": "Importer",
+        "importing": "Importation en cours..."
+      }
     }
   },
   "userSessions": {

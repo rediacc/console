@@ -133,6 +133,37 @@
         "updateFailed": "使用新加密密码更新保险库失败",
         "partialSuccess": "成功更新了 {{updated}} 个保险库，但 {{failed}} 个失败。请查看日志了解详情。"
       }
+    },
+    "exportData": {
+      "title": "导出公司数据",
+      "description": "导出所有公司数据，包括用户、团队、权限、区域、桥接、机器、仓库、存储配置和计划。此导出可用于备份或迁移目的。",
+      "button": "导出公司数据",
+      "success": "公司数据导出成功",
+      "error": "导出公司数据失败",
+      "downloading": "正在准备导出..."
+    },
+    "importData": {
+      "title": "导入公司数据",
+      "description": "从先前导出的文件中导入公司数据。您可以选择跳过现有项目或用导入的数据覆盖它们。",
+      "button": "导入公司数据",
+      "success": "公司数据导入成功",
+      "error": "导入公司数据失败",
+      "modal": {
+        "title": "导入公司数据",
+        "selectFile": "选择文件",
+        "fileRequired": "请选择要导入的文件",
+        "invalidFile": "无效的文件格式。请选择有效的公司数据导出文件。",
+        "importMode": "导入模式",
+        "modeSkip": "跳过现有项目",
+        "modeOverride": "覆盖现有项目",
+        "modeSkipDesc": "仅导入不存在的项目",
+        "modeOverrideDesc": "用导入的数据替换现有项目",
+        "warning": "警告",
+        "warningText": "导入数据将修改您的公司配置。请确保在继续之前有备份。",
+        "cancel": "取消",
+        "import": "导入",
+        "importing": "正在导入..."
+      }
     }
   },
   "userSessions": {

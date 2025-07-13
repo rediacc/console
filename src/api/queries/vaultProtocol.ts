@@ -49,7 +49,6 @@ export const useEnableCompanyEncryption = () => {
       showMessage('success', 'Vault encryption enabled successfully. All users must now use this master password.')
     },
     onError: (error: any) => {
-      console.error('Failed to enable encryption:', error)
       showMessage('error', error.message || 'Failed to enable vault encryption')
     }
   })
@@ -90,7 +89,6 @@ export const useDisableCompanyEncryption = () => {
       showMessage('success', 'Vault encryption disabled. Master passwords are no longer required.')
     },
     onError: (error: any) => {
-      console.error('Failed to disable encryption:', error)
       showMessage('error', error.message || 'Failed to disable vault encryption')
     }
   })

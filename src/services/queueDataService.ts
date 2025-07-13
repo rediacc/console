@@ -270,8 +270,6 @@ class QueueDataService {
 
       return minifyJSON(JSON.stringify(queueVaultData))
     } catch (error) {
-      console.error('Error building queue vault:', error)
-      console.error('Context:', context)
       throw new Error(`Failed to build queue vault: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }

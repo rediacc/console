@@ -62,7 +62,6 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
       const data = await response.json()
       setTemplateData(data)
     } catch (err) {
-      console.error('Error fetching template details:', err)
       setError('Failed to load template details')
       message.error('Failed to load template details')
     } finally {

@@ -81,7 +81,7 @@ const MarketplacePage: React.FC = () => {
       }))
       setTemplates(enhancedTemplates)
     } catch (err) {
-      console.error('Error fetching templates:', err)
+      // Error fetching templates
     } finally {
       setLoading(false)
     }
@@ -255,7 +255,6 @@ const MarketplacePage: React.FC = () => {
         navigate('/resources')
       }, 1000)
     } catch (error) {
-      console.error('Failed to create repository:', error)
       message.error(t('resources:repository.createError'))
     }
   }

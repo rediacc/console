@@ -89,6 +89,7 @@
       "enterRepositoryName": "Entrer le nom du référentiel",
       "enterSize": "Entrer la taille (ex : 10G)"
     },
+    "keepOpenAfterCreation": "Garder le référentiel ouvert après création",
     "fetchingRepositories": "Récupération des référentiels...",
     "status": "Statut",
     "exists": "Existe",

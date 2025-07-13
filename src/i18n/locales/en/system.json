@@ -133,6 +133,37 @@
         "updateFailed": "Failed to update vaults with new encryption password",
         "partialSuccess": "Updated {{updated}} vaults successfully, but {{failed}} failed. Check logs for details."
       }
+    },
+    "exportData": {
+      "title": "Export Company Data",
+      "description": "Export all company data including users, teams, permissions, regions, bridges, machines, repositories, storage configurations, and schedules. This export can be used for backup or migration purposes.",
+      "button": "Export Company Data",
+      "success": "Company data exported successfully",
+      "error": "Failed to export company data",
+      "downloading": "Preparing export..."
+    },
+    "importData": {
+      "title": "Import Company Data",
+      "description": "Import company data from a previously exported file. You can choose to skip existing items or override them with the imported data.",
+      "button": "Import Company Data",
+      "success": "Company data imported successfully",
+      "error": "Failed to import company data",
+      "modal": {
+        "title": "Import Company Data",
+        "selectFile": "Select File",
+        "fileRequired": "Please select a file to import",
+        "invalidFile": "Invalid file format. Please select a valid company data export file.",
+        "importMode": "Import Mode",
+        "modeSkip": "Skip existing items",
+        "modeOverride": "Override existing items",
+        "modeSkipDesc": "Only import items that don't already exist",
+        "modeOverrideDesc": "Replace existing items with imported data",
+        "warning": "Warning",
+        "warningText": "Importing data will modify your company configuration. Make sure you have a backup before proceeding.",
+        "cancel": "Cancel",
+        "import": "Import",
+        "importing": "Importing..."
+      }
     }
   },
   "userSessions": {

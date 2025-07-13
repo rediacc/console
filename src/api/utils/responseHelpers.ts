@@ -24,7 +24,6 @@ export const parseNestedJson = (data: any, fields: string[]): Record<string, any
     try {
       result[field] = typeof data[field] === 'string' ? JSON.parse(data[field]) : data[field]
     } catch (e) {
-      console.error(`Failed to parse ${field}:`, e)
       result[field] = data[field]
     }
     return result
@@ -39,7 +38,7 @@ export const fixTripleEncodedFields = (data: any, fields: string[]): void => {
       try {
         data[field] = JSON.parse(data[field])
       } catch (e) {
-        console.error(`Failed to parse triple-encoded field ${field}:`, e)
+        // Failed to parse triple-encoded field
       }
     }
   })

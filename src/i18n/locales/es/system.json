@@ -133,6 +133,37 @@
         "updateFailed": "Error al actualizar las bóvedas con la nueva contraseña de encriptación",
         "partialSuccess": "Se actualizaron {{updated}} bóvedas exitosamente, pero {{failed}} fallaron. Revise los registros para más detalles."
       }
+    },
+    "exportData": {
+      "title": "Exportar Datos de la Empresa",
+      "description": "Exporte todos los datos de la empresa incluyendo usuarios, equipos, permisos, regiones, puentes, máquinas, repositorios, configuraciones de almacenamiento y horarios. Esta exportación puede usarse para respaldo o migración.",
+      "button": "Exportar Datos de la Empresa",
+      "success": "Datos de la empresa exportados exitosamente",
+      "error": "Error al exportar los datos de la empresa",
+      "downloading": "Preparando exportación..."
+    },
+    "importData": {
+      "title": "Importar Datos de la Empresa",
+      "description": "Importe datos de la empresa desde un archivo previamente exportado. Puede elegir omitir elementos existentes o sobrescribirlos con los datos importados.",
+      "button": "Importar Datos de la Empresa",
+      "success": "Datos de la empresa importados exitosamente",
+      "error": "Error al importar los datos de la empresa",
+      "modal": {
+        "title": "Importar Datos de la Empresa",
+        "selectFile": "Seleccionar Archivo",
+        "fileRequired": "Por favor seleccione un archivo para importar",
+        "invalidFile": "Formato de archivo inválido. Por favor seleccione un archivo de exportación de datos válido.",
+        "importMode": "Modo de Importación",
+        "modeSkip": "Omitir elementos existentes",
+        "modeOverride": "Sobrescribir elementos existentes",
+        "modeSkipDesc": "Solo importar elementos que no existan",
+        "modeOverrideDesc": "Reemplazar elementos existentes con datos importados",
+        "warning": "Advertencia",
+        "warningText": "Importar datos modificará la configuración de su empresa. Asegúrese de tener un respaldo antes de continuar.",
+        "cancel": "Cancelar",
+        "import": "Importar",
+        "importing": "Importando..."
+      }
     }
   },
   "userSessions": {

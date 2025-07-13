@@ -212,7 +212,6 @@ async function tryDecryptField(key: string, value: string, password: string): Pr
     }
     return value; // Not encrypted, keep as is
   } catch (error) {
-    console.error(`Failed to decrypt field ${key}:`, error);
     return value; // Keep encrypted on error
   }
 }
@@ -247,7 +246,6 @@ async function tryEncryptField(key: string, value: string, password: string): Pr
   try {
     return await encryptString(value, password);
   } catch (error) {
-    console.error(`Failed to encrypt field ${key}:`, error);
     return value; // Keep original on error
   }
 }

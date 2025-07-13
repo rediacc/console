@@ -78,7 +78,7 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
         setTemplateDetails(data)
       }
     } catch (error) {
-      console.error('Failed to fetch template details:', error)
+      // Failed to fetch template details
     } finally {
       setLoading(false)
     }

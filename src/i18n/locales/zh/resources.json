@@ -89,6 +89,7 @@
       "enterRepositoryName": "输入仓库名称",
       "enterSize": "输入大小（例如：10G）"
     },
+    "keepOpenAfterCreation": "创建后保持仓库打开",
     "fetchingRepositories": "正在获取仓库...",
     "status": "状态",
     "exists": "存在",

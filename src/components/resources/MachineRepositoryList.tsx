@@ -835,7 +835,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 repositoryName: createdRepositoryName
               })
             } catch (deleteError) {
-              console.error('Failed to cleanup repository after error:', deleteError)
+              // Failed to cleanup repository after error
             }
           }
           showMessage('error', t('resources:repositories.failedToCreateRepository'))
@@ -1912,7 +1912,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               })
               showMessage('info', t('resources:repositories.cleanedUpFailedPush'))
             } catch (deleteError) {
-              console.error('Failed to cleanup repository after failed push:', deleteError)
+              // Failed to cleanup repository after failed push
             }
             setCreatedRepositoryName(null)
           }

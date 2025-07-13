@@ -489,22 +489,14 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       
       // Validate initial data
       setTimeout(() => {
-        console.log('=== VaultEditor initial validation ===')
-        console.log('Entity type:', entityType)
-        console.log('Initial data:', initialData)
-        console.log('Field definitions:', fieldDefinitions)
-        
         form.validateFields()
           .then(() => {
-            console.log('Initial vault validation passed')
             onValidate?.(true)
           })
           .catch((errorInfo) => {
-            console.log('Initial vault validation failed:', errorInfo)
             const errors = errorInfo.errorFields?.map((field: any) => 
               `${field.name.join('.')}: ${field.errors.join(', ')}`
             )
-            console.log('Initial validation errors:', errors)
             onValidate?.(false, errors)
           })
       }, 0)
@@ -603,24 +595,15 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       ? Object.keys(formData).filter(key => key !== 'ssh_password')
       : undefined // undefined means validate all fields
     
-    console.log('=== VaultEditor validation ===')
-    console.log('Entity type:', entityType)
-    console.log('Form data:', formData)
-    console.log('Fields to validate:', fieldsToValidate)
-    console.log('Complete data:', completeData)
-    
     form
       .validateFields(fieldsToValidate)
       .then(() => {
-        console.log('Vault validation passed')
         onValidate?.(true)
       })
       .catch((errorInfo) => {
-        console.log('Vault validation failed:', errorInfo)
         const errors = errorInfo.errorFields?.map((field: any) => 
           `${field.name.join('.')}: ${field.errors.join(', ')}`
         )
-        console.log('Validation errors:', errors)
         onValidate?.(false, errors)
       })
   }

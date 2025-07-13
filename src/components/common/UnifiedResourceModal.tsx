@@ -1,14 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react'
 import { Modal, Button, Space, Typography, Upload, message, Collapse, Tag, Checkbox } from 'antd'
 
-// Override message.error to add logging
-const originalMessageError = message.error
-message.error = (content: any, ...args: any[]) => {
-  console.log('=== message.error called ===')
-  console.log('Error message:', content)
-  console.trace('Stack trace:')
-  return originalMessageError(content, ...args)
-}
+// message.error is imported from antd
 import { UploadOutlined, DownloadOutlined, AppstoreOutlined } from '@/utils/optimizedIcons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -75,14 +68,6 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   defaultParams = {},
   preselectedFunction,
 }) => {
-  // Add immediate console log
-  console.log('=== UnifiedResourceModal rendered ===', {
-    open,
-    resourceType,
-    mode,
-    isSubmitting,
-    teamFilter
-  })
   const { t } = useTranslation(['resources', 'machines', 'common'])
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const isExpertMode = uiMode === 'expert'
@@ -103,17 +88,16 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   // State for test connection (for machines)
   const [testConnectionSuccess, setTestConnectionSuccess] = useState(false)
   
-  // Debug logging for test connection state
+  // Track test connection state changes
   useEffect(() => {
-    console.log('=== UnifiedResourceModal test connection state ===')
-    console.log('Resource type:', resourceType)
-    console.log('Mode:', mode)
-    console.log('Test connection success:', testConnectionSuccess)
-    console.log('Button should be disabled:', mode === 'create' && resourceType === 'machine' && !testConnectionSuccess)
+    // Test connection state updated
   }, [testConnectionSuccess, resourceType, mode])
   
   // State for auto-setup after machine creation
   const [autoSetupEnabled, setAutoSetupEnabled] = useState(true)
+  
+  // State for keeping repository open after creation
+  const [keepRepositoryOpen, setKeepRepositoryOpen] = useState(true)
   
   // State for template selection (for repositories)
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(existingData?.preselectedTemplate || null)
@@ -141,12 +125,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   // Log when modal opens
   useEffect(() => {
     if (open) {
-      console.log('=== UnifiedResourceModal opened ===')
-      console.log('Resource type:', resourceType)
-      console.log('Mode:', mode)
-      console.log('UI Mode:', uiMode)
-      console.log('Existing data:', existingData)
-      console.log('Team filter:', teamFilter)
+      // Modal opened with resource configuration
     }
   }, [open, resourceType, mode, uiMode, existingData, teamFilter])
   
@@ -531,37 +510,14 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
 
   // Handle form submission
   const handleSubmit = async (data: any) => {
-    console.log('=== UnifiedResourceModal handleSubmit ===')
-    console.log('Mode:', mode)
-    console.log('Resource type:', resourceType)
-    console.log('Form data:', data)
-    console.log('Form errors:', form.formState.errors)
-    console.log('Form isDirty:', form.formState.isDirty)
-    console.log('Form isValid:', form.formState.isValid)
-    console.log('Form isSubmitting:', form.formState.isSubmitting)
-    console.log('UI Mode:', uiMode)
-    
-    // Log all field states
+    // Get form fields configuration
     const fields = getFormFields()
-    console.log('Form fields configuration:', fields)
-    fields.forEach(field => {
-      const fieldValue = form.getValues(field.name)
-      const fieldError = form.formState.errors[field.name]
-      console.log(`Field "${field.name}":`, {
-        value: fieldValue,
-        error: fieldError,
-        required: field.required,
-        disabled: field.disabled
-      })
-    })
     
     // Validate machine creation - check if SSH password is present without SSH key configured
     if (mode === 'create' && resourceType === 'machine') {
       const vaultData = data.machineVault ? JSON.parse(data.machineVault) : {}
-      console.log('Machine vault data:', vaultData)
       // Only block if password exists AND SSH key is not configured
       if (vaultData.ssh_password && !vaultData.ssh_key_configured) {
-        console.log('Validation failed: SSH password without SSH key configured')
         message.error(t('machines:validation.sshPasswordNotAllowed'))
         return
       }
@@ -609,9 +565,13 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           data.tmpl = btoa(JSON.stringify(templateData))
         }
       } catch (error) {
-        console.error('Failed to fetch template data:', error)
         message.warning(t('resources:templates.failedToLoadTemplate'))
       }
+    }
+    
+    // Add keep_open flag for repository creation
+    if (resourceType === 'repository' && mode === 'create') {
+      data.keep_open = keepRepositoryOpen
     }
     
     // Add auto-setup flag for machine creation
@@ -750,19 +710,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             loading={isSubmitting}
             disabled={mode === 'create' && resourceType === 'machine' && !testConnectionSuccess}
             onClick={() => {
-              console.log('=== Create/Save button clicked ===')
-              console.log('formRef.current:', formRef.current)
-              console.log('Mode:', mode)
-              console.log('Resource type:', resourceType)
-              console.log('Test connection success:', testConnectionSuccess)
-              console.log('Form state before submit:', form.getValues())
-              console.log('Form errors before submit:', form.formState.errors)
-              
               if (formRef.current) {
-                console.log('Calling formRef.current.submit()')
                 formRef.current.submit()
-              } else {
-                console.log('ERROR: formRef.current is null')
               }
             }}
             style={{ background: '#556b2f', borderColor: '#556b2f' }}
@@ -790,6 +739,18 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
               onChange={(e) => setAutoSetupEnabled(e.target.checked)}
             >
               {t('machines:autoSetupAfterCreation')}
+            </Checkbox>
+          </div>
+        )}
+        
+        {/* Keep open checkbox for repository creation */}
+        {resourceType === 'repository' && mode === 'create' && (
+          <div style={{ marginBottom: 16 }}>
+            <Checkbox 
+              checked={keepRepositoryOpen} 
+              onChange={(e) => setKeepRepositoryOpen(e.target.checked)}
+            >
+              {t('resources:repositories.keepOpenAfterCreation')}
             </Checkbox>
           </div>
         )}

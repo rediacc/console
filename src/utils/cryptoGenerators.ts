@@ -105,7 +105,6 @@ export async function generateSSHKeyPair(options: GenerationOptions = {}): Promi
     const keyPair = await generateEd25519KeyPair()
     if (!keyPair) {
       // Fallback to RSA if Ed25519 is not supported
-      console.warn('Ed25519 not supported, falling back to RSA')
       const rsaKeyPair = await generateRSAKeyPair(keySize)
       return {
         privateKey: await exportRSAPrivateKeyToPEM(rsaKeyPair.privateKey),

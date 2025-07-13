@@ -92,7 +92,6 @@ class SecureMemoryStorage {
         salt: btoa(String.fromCharCode(...salt))
       };
     } catch (error) {
-      console.error('Encryption failed:', error);
       throw new Error('Failed to encrypt data');
     }
   }
@@ -127,7 +126,6 @@ class SecureMemoryStorage {
       return decoder.decode(decrypted);
     } catch (error) {
       // Authentication failure or tampering detected
-      console.error('Decryption failed - data may be tampered:', error);
       return '';
     }
   }

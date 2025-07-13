@@ -70,7 +70,6 @@ export const useUpdateCompanyBlockUserRequests = () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
     },
     onError: (error: any) => {
-      console.error('Failed to update block user requests:', error)
       showMessage('error', 'Failed to update user request blocking status')
     }
   })
@@ -145,9 +144,64 @@ export const useUpdateCompanyVaults = () => {
       queryClient.invalidateQueries()
     },
     onError: (error: any) => {
-      console.error('Failed to update vaults:', error)
       // Show the actual error message from the API response
       const errorMessage = error?.message || i18n.t('system:dangerZone.updateMasterPassword.error.updateFailed')
+      showMessage('error', errorMessage)
+    }
+  })
+}
+
+// Export company data
+export const useExportCompanyData = () => {
+  return useQuery({
+    queryKey: ['company-export-data'],
+    queryFn: async () => {
+      const response = await apiClient.get('/ExportCompanyData')
+      // The export data is in table[1]
+      const exportData = response.tables[1]?.data[0]
+      
+      if (!exportData) {
+        throw new Error('No export data returned')
+      }
+      
+      return exportData
+    },
+    enabled: false // Only fetch when manually triggered
+  })
+}
+
+// Import company data
+export const useImportCompanyData = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (params: { companyDataJson: string; importMode?: 'skip' | 'override' }) => {
+      const response = await apiClient.post('/ImportCompanyData', {
+        companyDataJson: params.companyDataJson,
+        importMode: params.importMode || 'skip'
+      })
+      return response.tables[0]?.data[0]
+    },
+    onSuccess: (data) => {
+      const importedCount = data?.ImportedCount || 0
+      const skippedCount = data?.SkippedCount || 0
+      const errorCount = data?.ErrorCount || 0
+      
+      let message = `Import completed: ${importedCount} items imported`
+      if (skippedCount > 0) {
+        message += `, ${skippedCount} items skipped`
+      }
+      if (errorCount > 0) {
+        message += `, ${errorCount} errors`
+      }
+      
+      showMessage('success', message)
+      
+      // Invalidate all queries to refresh data
+      queryClient.invalidateQueries()
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.message || 'Failed to import company data'
       showMessage('error', errorMessage)
     }
   })

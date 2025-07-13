@@ -66,13 +66,9 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     const [showVaultValidationErrors, setShowVaultValidationErrors] = useState(false)
     const importExportHandlers = useRef<{ handleImport: (file: any) => boolean; handleExport: () => void } | null>(null)
     
-    // Debug logging for vault validation
+    // Track vault validation state changes
     useEffect(() => {
-      console.log('=== ResourceFormWithVault vault state ===')
-      console.log('Is vault valid:', isVaultValid)
-      console.log('Vault validation errors:', vaultValidationErrors)
-      console.log('Show vault validation errors:', showVaultValidationErrors)
-      console.log('Entity type:', entityType)
+      // Vault validation state updated
     }, [isVaultValid, vaultValidationErrors, showVaultValidationErrors, entityType])
     
 
@@ -89,17 +85,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     }, [vaultData, setValue, vaultFieldName])
 
     const handleFormSubmit = async (formData: any) => {
-      console.log('=== ResourceFormWithVault handleFormSubmit ===')
-      console.log('Form data:', formData)
-      console.log('Vault valid:', isVaultValid)
-      console.log('Vault data:', vaultData)
-      console.log('Show vault validation errors:', showVaultValidationErrors)
-      console.log('Form errors:', form.formState.errors)
-      console.log('Form isValid:', form.formState.isValid)
-      
       if (!isVaultValid) {
-        console.log('Validation failed: Vault is not valid')
-        console.log('About to show error message: "Please fix validation errors before saving"')
         setShowVaultValidationErrors(true)
         message.error(t('vaultEditor.pleaseFixErrors'))
         return
@@ -129,17 +115,10 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     // Expose submit method to parent
     useImperativeHandle(ref, () => ({
       submit: async () => {
-        console.log('=== ResourceFormWithVault submit called ===')
-        console.log('Current form values:', form.getValues())
-        console.log('Form state:', form.formState)
-        console.log('Is vault valid before submit:', isVaultValid)
-        
         try {
           const result = await handleSubmit(handleFormSubmit)()
-          console.log('Submit result:', result)
           return result
         } catch (error) {
-          console.error('Submit error:', error)
           throw error
         }
       }

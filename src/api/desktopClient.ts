@@ -77,7 +77,6 @@ class DesktopApiClient {
       
       return decryptedResponse
     } catch (error) {
-      console.error('Desktop API error:', error)
       throw error
     }
   }

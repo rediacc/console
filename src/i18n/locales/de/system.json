@@ -133,6 +133,37 @@
         "updateFailed": "Fehler beim Aktualisieren der Tresore mit neuem Verschlüsselungspasswort",
         "partialSuccess": "{{updated}} Tresore erfolgreich aktualisiert, aber {{failed}} fehlgeschlagen. Überprüfen Sie die Protokolle für Details."
       }
+    },
+    "exportData": {
+      "title": "Unternehmensdaten exportieren",
+      "description": "Exportieren Sie alle Unternehmensdaten einschließlich Benutzer, Teams, Berechtigungen, Regionen, Brücken, Maschinen, Repositories, Speicherkonfigurationen und Zeitpläne. Dieser Export kann für Backup- oder Migrationszwecke verwendet werden.",
+      "button": "Unternehmensdaten exportieren",
+      "success": "Unternehmensdaten erfolgreich exportiert",
+      "error": "Fehler beim Exportieren der Unternehmensdaten",
+      "downloading": "Export wird vorbereitet..."
+    },
+    "importData": {
+      "title": "Unternehmensdaten importieren",
+      "description": "Importieren Sie Unternehmensdaten aus einer zuvor exportierten Datei. Sie können wählen, ob vorhandene Elemente übersprungen oder mit den importierten Daten überschrieben werden sollen.",
+      "button": "Unternehmensdaten importieren",
+      "success": "Unternehmensdaten erfolgreich importiert",
+      "error": "Fehler beim Importieren der Unternehmensdaten",
+      "modal": {
+        "title": "Unternehmensdaten importieren",
+        "selectFile": "Datei auswählen",
+        "fileRequired": "Bitte wählen Sie eine Datei zum Importieren aus",
+        "invalidFile": "Ungültiges Dateiformat. Bitte wählen Sie eine gültige Unternehmensdaten-Exportdatei aus.",
+        "importMode": "Importmodus",
+        "modeSkip": "Vorhandene Elemente überspringen",
+        "modeOverride": "Vorhandene Elemente überschreiben",
+        "modeSkipDesc": "Nur Elemente importieren, die noch nicht existieren",
+        "modeOverrideDesc": "Vorhandene Elemente durch importierte Daten ersetzen",
+        "warning": "Warnung",
+        "warningText": "Das Importieren von Daten wird Ihre Unternehmenskonfiguration ändern. Stellen Sie sicher, dass Sie ein Backup haben, bevor Sie fortfahren.",
+        "cancel": "Abbrechen",
+        "import": "Importieren",
+        "importing": "Importiere..."
+      }
     }
   },
   "userSessions": {

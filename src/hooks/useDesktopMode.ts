@@ -74,7 +74,7 @@ export const useDesktopMode = () => {
         })
       }
     } catch (error) {
-      console.error('Failed to check desktop capabilities:', error)
+      // Failed to check desktop capabilities
     } finally {
       setLoading(false)
     }

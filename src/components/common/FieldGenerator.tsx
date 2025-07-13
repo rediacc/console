@@ -45,7 +45,6 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = ({
       setGeneratedValues(values)
       message.success(t('fieldGenerator.generationSuccess'))
     } catch (error) {
-      console.error('Generation error:', error)
       message.error(t('fieldGenerator.generationError'))
     } finally {
       setGenerating(false)

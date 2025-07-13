@@ -89,6 +89,7 @@
       "enterRepositoryName": "Enter repository name",
       "enterSize": "Enter size (e.g., 10G)"
     },
+    "keepOpenAfterCreation": "Keep repository open after creation",
     "fetchingRepositories": "Fetching repositories...",
     "status": "Status",
     "exists": "Exists",

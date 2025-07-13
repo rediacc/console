@@ -40,7 +40,7 @@ class ConfigService {
         const systemConfig = await this.getDesktopConfig()
         this.config = systemConfig
       } catch (error) {
-        console.warn('Failed to load desktop config, using defaults:', error)
+        // Failed to load desktop config, using defaults
         this.config = this.getDefaultConfig()
       }
     } else {
@@ -128,7 +128,7 @@ class ConfigService {
         // Write config
         await fs.writeTextFile(configPath, JSON.stringify(this.config, null, 2))
       } catch (error) {
-        console.error('Failed to save config:', error)
+        // Failed to save config
       }
     }
   }

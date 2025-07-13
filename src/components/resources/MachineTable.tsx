@@ -486,6 +486,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                 {t('machines:machine')}
               </Space>
             </Radio.Button>
+            <span style={{ marginLeft: 16 }} />
             <Radio.Button value="bridge">
               <Space>
                 <CloudServerOutlined />

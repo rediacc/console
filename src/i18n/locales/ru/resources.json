@@ -89,6 +89,7 @@
       "enterRepositoryName": "Введите название репозитория",
       "enterSize": "Введите размер (например, 10G)"
     },
+    "keepOpenAfterCreation": "Оставить репозиторий открытым после создания",
     "fetchingRepositories": "Получение репозиториев...",
     "status": "Статус",
     "exists": "Существует",

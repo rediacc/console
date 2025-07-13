@@ -84,7 +84,6 @@ async function pollQueueItemStatus(taskId: string): Promise<QueueItemCompletionR
     }
   } catch (error) {
     // Continue polling on error
-    console.debug('Error polling queue item status:', error)
     return null
   }
 }

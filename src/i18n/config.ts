@@ -147,7 +147,7 @@ const loadLanguageResources = async (lng: string) => {
       i18n.addResourceBundle(lng, ns, resources[ns]);
     });
   } catch (error) {
-    console.error(`Failed to load language resources for ${lng}:`, error);
+    // Failed to load language resources
   }
 };
 

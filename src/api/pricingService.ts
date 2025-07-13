@@ -68,11 +68,8 @@ export const fetchPricingConfig = async (): Promise<PricingConfig | null> => {
     
     return data;
   } catch (error) {
-    console.error('Error fetching pricing configuration:', error);
-    
     // If fetch fails, return the cached data if available
     if (cachedData) {
-      console.warn('Using cached pricing data due to fetch error');
       return cachedData;
     }
     
@@ -87,7 +84,7 @@ export const fetchPricingConfig = async (): Promise<PricingConfig | null> => {
           return fallbackData;
         }
       } catch (fallbackError) {
-        console.error('Fallback to English pricing also failed:', fallbackError);
+        // Fallback to English pricing also failed
       }
     }
     

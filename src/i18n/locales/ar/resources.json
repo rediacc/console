@@ -89,6 +89,7 @@
       "enterRepositoryName": "أدخل اسم المستودع",
       "enterSize": "أدخل الحجم (مثل: 10G)"
     },
+    "keepOpenAfterCreation": "إبقاء المستودع مفتوحًا بعد الإنشاء",
     "fetchingRepositories": "جارٍ جلب المستودعات...",
     "status": "الحالة",
     "exists": "موجود",

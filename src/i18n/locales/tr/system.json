@@ -133,6 +133,37 @@
         "updateFailed": "Kasalar yeni şifreleme parolası ile güncellenemedi",
         "partialSuccess": "{{updated}} kasa başarıyla güncellendi, ancak {{failed}} başarısız oldu. Detaylar için günlükleri kontrol edin."
       }
+    },
+    "exportData": {
+      "title": "Şirket Verilerini Dışa Aktar",
+      "description": "Kullanıcılar, takımlar, izinler, bölgeler, köprüler, makineler, depolar, depolama yapılandırmaları ve zamanlamalar dahil tüm şirket verilerini dışa aktarın. Bu dışa aktarma yedekleme veya taşıma amaçları için kullanılabilir.",
+      "button": "Şirket Verilerini Dışa Aktar",
+      "success": "Şirket verileri başarıyla dışa aktarıldı",
+      "error": "Şirket verileri dışa aktarılamadı",
+      "downloading": "Dışa aktarma hazırlanıyor..."
+    },
+    "importData": {
+      "title": "Şirket Verilerini İçe Aktar",
+      "description": "Daha önce dışa aktarılmış bir dosyadan şirket verilerini içe aktarın. Mevcut öğeleri atlayabilir veya içe aktarılan verilerle üzerine yazabilirsiniz.",
+      "button": "Şirket Verilerini İçe Aktar",
+      "success": "Şirket verileri başarıyla içe aktarıldı",
+      "error": "Şirket verileri içe aktarılamadı",
+      "modal": {
+        "title": "Şirket Verilerini İçe Aktar",
+        "selectFile": "Dosya Seç",
+        "fileRequired": "Lütfen içe aktarmak için bir dosya seçin",
+        "invalidFile": "Geçersiz dosya formatı. Lütfen geçerli bir şirket verisi dışa aktarma dosyası seçin.",
+        "importMode": "İçe Aktarma Modu",
+        "modeSkip": "Mevcut öğeleri atla",
+        "modeOverride": "Mevcut öğelerin üzerine yaz",
+        "modeSkipDesc": "Sadece mevcut olmayan öğeleri içe aktar",
+        "modeOverrideDesc": "Mevcut öğeleri içe aktarılan verilerle değiştir",
+        "warning": "Uyarı",
+        "warningText": "Veri içe aktarma işlemi şirket yapılandırmanızı değiştirecektir. Devam etmeden önce bir yedeğinizin olduğundan emin olun.",
+        "cancel": "İptal",
+        "import": "İçe Aktar",
+        "importing": "İçe aktarılıyor..."
+      }
     }
   },
   "userSessions": {

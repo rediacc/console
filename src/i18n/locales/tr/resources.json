@@ -89,6 +89,7 @@
       "enterRepositoryName": "Depo adını girin",
       "enterSize": "Boyut girin (örn., 10G)"
     },
+    "keepOpenAfterCreation": "Oluşturduktan sonra depoyu açık tut",
     "fetchingRepositories": "Depolar getiriliyor...",
     "status": "Durum",
     "exists": "Mevcut",

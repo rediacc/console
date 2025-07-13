@@ -77,7 +77,6 @@ const DashboardPage = () => {
         const pricingData = await fetchPricingConfig();
         setPricing(pricingData);
       } catch (error) {
-        console.error('Failed to load pricing:', error);
         setPricing(null);
       } finally {
         setPricingLoading(false);

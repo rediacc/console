@@ -51,7 +51,6 @@ const parseJsonField = (data: any, field: string): any => {
   try {
     return JSON.parse(data[field])
   } catch (e) {
-    console.error(`Failed to parse ${field}:`, e)
     return data[field]
   }
 }
@@ -88,7 +87,6 @@ export const useDropdownData = (context?: string) => {
         try {
           return parseDropdownData(rawData)
         } catch (e) {
-          console.error('Failed to parse dropdown data:', e)
           return EMPTY_DROPDOWN_DATA
         }
       }

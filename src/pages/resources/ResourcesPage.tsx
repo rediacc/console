@@ -450,6 +450,11 @@ const ResourcesPage: React.FC = () => {
               params.tmpl = data.tmpl
             }
             
+            // Add keep_open parameter if provided
+            if (data.keep_open) {
+              params.keep_open = 'true'
+            }
+            
             const queueVault = await buildQueueVault({
               teamName: data.teamName,
               machineName: machine.value,

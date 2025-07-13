@@ -50,7 +50,6 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       const data = await response.json()
       setTemplates(data.templates || [])
     } catch (err) {
-      console.error('Error fetching templates:', err)
       setError('Failed to load templates')
       message.error('Failed to load templates')
     } finally {

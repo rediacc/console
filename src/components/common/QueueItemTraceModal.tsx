@@ -9,6 +9,8 @@ import { queueMonitoringService } from '@/services/queueMonitoringService'
 import { showMessage } from '@/utils/messages'
 import { useTheme } from '@/context/ThemeContext'
 import { useTranslation } from 'react-i18next'
+import { useSelector } from 'react-redux'
+import { RootState } from '@/store/store'
 import './QueueItemTraceModal.css'
 
 dayjs.extend(relativeTime)
@@ -54,10 +56,11 @@ interface QueueItemTraceModalProps {
 
 const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visible, onClose, onTaskStatusChange }) => {
   const { t } = useTranslation(['queue', 'common'])
+  const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const [lastTraceFetchTime, setLastTraceFetchTime] = useState<dayjs.Dayjs | null>(null)
   const [isMonitoring, setIsMonitoring] = useState(false)
   const [activeKeys, setActiveKeys] = useState<string[]>(['overview']) // Start with overview panel open
-  const [simpleMode, setSimpleMode] = useState(false) // Start in detailed mode to show all 7 result sets
+  const [simpleMode, setSimpleMode] = useState(uiMode === 'simple') // Start in simple mode if UI mode is simple
   const [accumulatedOutput, setAccumulatedOutput] = useState<string>('') // Store accumulated console output
   const [lastOutputStatus, setLastOutputStatus] = useState<string>('') // Track the last status to detect completion
   const { data: traceData, isLoading: isTraceLoading, refetch: refetchTrace } = useQueueItemTrace(taskId, visible)
@@ -161,7 +164,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
           }
         }
       } catch (error) {
-        console.error('Error processing console output:', error)
+        // Error processing console output
       }
     }
   }, [traceData?.responseVaultContent, lastOutputStatus, accumulatedOutput])
@@ -174,12 +177,12 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
       setIsMonitoring(queueMonitoringService.isTaskMonitored(taskId))
       // Reset collapsed state and simple mode when opening modal
       setActiveKeys(['overview'])
-      setSimpleMode(false)
+      setSimpleMode(uiMode === 'simple') // Set simple mode based on UI mode
       // Reset accumulated output when opening modal with new task
       setAccumulatedOutput('')
       setLastOutputStatus('')
     }
-  }, [taskId, visible])
+  }, [taskId, visible, uiMode])
   
   // Monitor status changes and notify parent component
   useEffect(() => {
@@ -895,7 +898,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                               </div>
                             )
                           } catch (error) {
-                            console.error('Failed to parse response console output:', error, traceData.responseVaultContent)
+                            // Failed to parse response console output
                             // Try to display raw vault content as fallback
                             try {
                               const rawContent = typeof traceData.responseVaultContent.vaultContent === 'string' 
@@ -1103,7 +1106,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                             />
                           )
                         } catch (error) {
-                          console.error('Failed to parse request vault content:', error)
+                          // Failed to parse request vault content
                           return <Empty description="Invalid request vault content format" />
                         }
                       })()
@@ -1265,7 +1268,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                             />
                           )
                         } catch (error) {
-                          console.error('Failed to parse response vault content:', error)
+                          // Failed to parse response vault content
                           return <Empty description="Invalid response vault content format" />
                         }
                       })()

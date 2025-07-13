@@ -78,7 +78,7 @@ export const DesktopLocalCommandModal: React.FC<DesktopLocalCommandModalProps> =
         setLocalPath(selected)
       }
     } catch (error) {
-      console.error('Failed to open dialog:', error)
+      // Failed to open dialog
     }
   }
 
