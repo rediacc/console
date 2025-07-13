@@ -119,6 +119,6 @@
   "daysAgo": "Vor {{count}} Tag",
   "daysAgo_plural": "Vor {{count}} Tagen",
   "validation": {
-    "sshPasswordNotAllowed": "SSH-Passwort kann nicht im Tresor festgelegt werden. Bitte verwenden Sie stattdessen SSH-Schlüssel."
+    "sshPasswordNotAllowed": "SSH-Passwort kann nicht ohne konfigurierte SSH-Schlüssel verwendet werden. Bitte richten Sie zuerst SSH-Schlüssel ein oder entfernen Sie das Passwort."
   }
 }

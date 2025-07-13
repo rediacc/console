@@ -144,6 +144,30 @@
     "sshPasswordRequiredWhenNoKey": "Se requiere contraseña SSH para la configuración inicial de la clave",
     "providerFields": "Configuración de {{provider}}",
     "providerRequiredFields": "Campos requeridos para {{provider}}",
+    "testConnection": {
+      "button": "Probar Conexión",
+      "missingFields": "Por favor, complete la dirección IP, nombre de usuario y contraseña antes de probar",
+      "initiated": "Se ha iniciado la prueba de conexión SSH. Por favor, verifique la cola para ver los resultados.",
+      "success": "Conexión SSH exitosa",
+      "failed": "Conexión SSH fallida",
+      "testing": "Probando conexión..."
+    },
+    "systemCompatibility": {
+      "title": "Compatibilidad del Sistema",
+      "systemInfo": "Información del Sistema",
+      "kernelVersion": "Versión del Kernel",
+      "operatingSystem": "Sistema Operativo",
+      "btrfsAvailable": "BTRFS Disponible",
+      "compatibilityStatus": "Estado de Compatibilidad",
+      "compatible": "Compatible",
+      "warning": "Advertencia",
+      "incompatible": "Incompatible",
+      "unknown": "Desconocido",
+      "knownIssues": "Problemas Conocidos",
+      "recommendations": "Recomendaciones",
+      "yes": "Sí",
+      "no": "No"
+    },
     "fields": {
       "MACHINE": {
         "description": "Configuración de máquina para acceso SSH y almacenamiento",

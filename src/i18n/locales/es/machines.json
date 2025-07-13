@@ -119,6 +119,6 @@
   "daysAgo": "hace {{count}} día",
   "daysAgo_plural": "hace {{count}} días",
   "validation": {
-    "sshPasswordNotAllowed": "La contraseña SSH no se puede establecer en el vault. Por favor, use claves SSH en su lugar."
+    "sshPasswordNotAllowed": "La contraseña SSH no se puede usar sin claves SSH configuradas. Por favor, configure primero las claves SSH o elimine la contraseña."
   }
 }

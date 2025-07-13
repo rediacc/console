@@ -1,5 +1,14 @@
 import React, { useRef, useEffect, useState } from 'react'
 import { Modal, Button, Space, Typography, Upload, message, Collapse, Tag, Checkbox } from 'antd'
+
+// Override message.error to add logging
+const originalMessageError = message.error
+message.error = (content: any, ...args: any[]) => {
+  console.log('=== message.error called ===')
+  console.log('Error message:', content)
+  console.trace('Stack trace:')
+  return originalMessageError(content, ...args)
+}
 import { UploadOutlined, DownloadOutlined, AppstoreOutlined } from '@/utils/optimizedIcons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -66,6 +75,14 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   defaultParams = {},
   preselectedFunction,
 }) => {
+  // Add immediate console log
+  console.log('=== UnifiedResourceModal rendered ===', {
+    open,
+    resourceType,
+    mode,
+    isSubmitting,
+    teamFilter
+  })
   const { t } = useTranslation(['resources', 'machines', 'common'])
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const isExpertMode = uiMode === 'expert'
@@ -85,6 +102,15 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   
   // State for test connection (for machines)
   const [testConnectionSuccess, setTestConnectionSuccess] = useState(false)
+  
+  // Debug logging for test connection state
+  useEffect(() => {
+    console.log('=== UnifiedResourceModal test connection state ===')
+    console.log('Resource type:', resourceType)
+    console.log('Mode:', mode)
+    console.log('Test connection success:', testConnectionSuccess)
+    console.log('Button should be disabled:', mode === 'create' && resourceType === 'machine' && !testConnectionSuccess)
+  }, [testConnectionSuccess, resourceType, mode])
   
   // State for auto-setup after machine creation
   const [autoSetupEnabled, setAutoSetupEnabled] = useState(true)
@@ -112,6 +138,18 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   const getResourceTranslationKey = () => RESOURCE_CONFIG[resourceType as keyof typeof RESOURCE_CONFIG]?.key || `${resourceType}s`
   const mapToOptions = (items: any[] | undefined) => items?.map(item => ({ value: item.value, label: item.label })) || []
 
+  // Log when modal opens
+  useEffect(() => {
+    if (open) {
+      console.log('=== UnifiedResourceModal opened ===')
+      console.log('Resource type:', resourceType)
+      console.log('Mode:', mode)
+      console.log('UI Mode:', uiMode)
+      console.log('Existing data:', existingData)
+      console.log('Team filter:', teamFilter)
+    }
+  }, [open, resourceType, mode, uiMode, existingData, teamFilter])
+  
   // Calculate modal dimensions based on viewport
   useEffect(() => {
     const calculateModalDimensions = () => {
@@ -493,10 +531,37 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
 
   // Handle form submission
   const handleSubmit = async (data: any) => {
-    // Validate machine creation - check if SSH password is present
+    console.log('=== UnifiedResourceModal handleSubmit ===')
+    console.log('Mode:', mode)
+    console.log('Resource type:', resourceType)
+    console.log('Form data:', data)
+    console.log('Form errors:', form.formState.errors)
+    console.log('Form isDirty:', form.formState.isDirty)
+    console.log('Form isValid:', form.formState.isValid)
+    console.log('Form isSubmitting:', form.formState.isSubmitting)
+    console.log('UI Mode:', uiMode)
+    
+    // Log all field states
+    const fields = getFormFields()
+    console.log('Form fields configuration:', fields)
+    fields.forEach(field => {
+      const fieldValue = form.getValues(field.name)
+      const fieldError = form.formState.errors[field.name]
+      console.log(`Field "${field.name}":`, {
+        value: fieldValue,
+        error: fieldError,
+        required: field.required,
+        disabled: field.disabled
+      })
+    })
+    
+    // Validate machine creation - check if SSH password is present without SSH key configured
     if (mode === 'create' && resourceType === 'machine') {
       const vaultData = data.machineVault ? JSON.parse(data.machineVault) : {}
-      if (vaultData.ssh_password) {
+      console.log('Machine vault data:', vaultData)
+      // Only block if password exists AND SSH key is not configured
+      if (vaultData.ssh_password && !vaultData.ssh_key_configured) {
+        console.log('Validation failed: SSH password without SSH key configured')
         message.error(t('machines:validation.sshPasswordNotAllowed'))
         return
       }
@@ -684,7 +749,22 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             type="primary"
             loading={isSubmitting}
             disabled={mode === 'create' && resourceType === 'machine' && !testConnectionSuccess}
-            onClick={() => formRef.current?.submit()}
+            onClick={() => {
+              console.log('=== Create/Save button clicked ===')
+              console.log('formRef.current:', formRef.current)
+              console.log('Mode:', mode)
+              console.log('Resource type:', resourceType)
+              console.log('Test connection success:', testConnectionSuccess)
+              console.log('Form state before submit:', form.getValues())
+              console.log('Form errors before submit:', form.formState.errors)
+              
+              if (formRef.current) {
+                console.log('Calling formRef.current.submit()')
+                formRef.current.submit()
+              } else {
+                console.log('ERROR: formRef.current is null')
+              }
+            }}
             style={{ background: '#556b2f', borderColor: '#556b2f' }}
           >
             {mode === 'create' ? t('general.create') : t('general.save')}

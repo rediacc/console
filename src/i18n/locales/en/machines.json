@@ -119,6 +119,6 @@
   "daysAgo": "{{count}} day ago",
   "daysAgo_plural": "{{count}} days ago",
   "validation": {
-    "sshPasswordNotAllowed": "SSH password cannot be set in the vault. Please use SSH keys instead."
+    "sshPasswordNotAllowed": "SSH password cannot be used without SSH keys configured. Please set up SSH keys first or remove the password."
   }
 }

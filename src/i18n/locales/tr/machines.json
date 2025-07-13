@@ -119,6 +119,6 @@
   "daysAgo": "{{count}} gün önce",
   "daysAgo_plural": "{{count}} gün önce",
   "validation": {
-    "sshPasswordNotAllowed": "SSH şifresi kasada ayarlanamaz. Lütfen bunun yerine SSH anahtarlarını kullanın."
+    "sshPasswordNotAllowed": "SSH anahtarları yapılandırılmadan SSH şifresi kullanılamaz. Lütfen önce SSH anahtarlarını ayarlayın veya şifreyi kaldırın."
   }
 }

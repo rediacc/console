@@ -119,6 +119,6 @@
   "daysAgo": "منذ يوم واحد",
   "daysAgo_plural": "منذ {{count}} أيام",
   "validation": {
-    "sshPasswordNotAllowed": "لا يمكن تعيين كلمة مرور SSH في الخزنة. يرجى استخدام مفاتيح SSH بدلاً من ذلك."
+    "sshPasswordNotAllowed": "لا يمكن استخدام كلمة مرور SSH بدون تكوين مفاتيح SSH. يرجى إعداد مفاتيح SSH أولاً أو إزالة كلمة المرور."
   }
 }

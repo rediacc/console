@@ -152,6 +152,22 @@
       "failed": "SSH接続失敗",
       "testing": "接続テスト中..."
     },
+    "systemCompatibility": {
+      "title": "システム互換性",
+      "systemInfo": "システム情報",
+      "kernelVersion": "カーネルバージョン",
+      "operatingSystem": "オペレーティングシステム",
+      "btrfsAvailable": "BTRFS利用可能",
+      "compatibilityStatus": "互換性ステータス",
+      "compatible": "互換性あり",
+      "warning": "警告",
+      "incompatible": "互換性なし",
+      "unknown": "不明",
+      "knownIssues": "既知の問題",
+      "recommendations": "推奨事項",
+      "yes": "はい",
+      "no": "いいえ"
+    },
     "fields": {
       "MACHINE": {
         "description": "SSHアクセスとストレージのマシン設定",

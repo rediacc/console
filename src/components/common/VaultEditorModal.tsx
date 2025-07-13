@@ -61,7 +61,13 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
   }
 
   const handleSave = async () => {
+    console.log('=== VaultEditorModal handleSave ===')
+    console.log('Is valid:', isValid)
+    console.log('Vault data:', vaultData)
+    console.log('Validation errors:', validationErrors)
+    
     if (!isValid) {
+      console.log('VaultEditorModal validation failed - showing error message')
       setShowValidationErrors(true)
       message.error(t('vaultEditor.pleaseFixErrors'))
       return

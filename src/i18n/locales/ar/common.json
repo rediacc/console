@@ -152,6 +152,22 @@
       "failed": "فشل اتصال SSH",
       "testing": "جارٍ اختبار الاتصال..."
     },
+    "systemCompatibility": {
+      "title": "توافق النظام",
+      "systemInfo": "معلومات النظام",
+      "kernelVersion": "إصدار النواة",
+      "operatingSystem": "نظام التشغيل",
+      "btrfsAvailable": "BTRFS متاح",
+      "compatibilityStatus": "حالة التوافق",
+      "compatible": "متوافق",
+      "warning": "تحذير",
+      "incompatible": "غير متوافق",
+      "unknown": "غير معروف",
+      "knownIssues": "المشاكل المعروفة",
+      "recommendations": "التوصيات",
+      "yes": "نعم",
+      "no": "لا"
+    },
     "fields": {
       "MACHINE": {
         "description": "تكوين الجهاز للوصول عبر SSH والتخزين",

@@ -152,6 +152,22 @@
       "failed": "SSH连接失败",
       "testing": "测试连接中..."
     },
+    "systemCompatibility": {
+      "title": "系统兼容性",
+      "systemInfo": "系统信息",
+      "kernelVersion": "内核版本",
+      "operatingSystem": "操作系统",
+      "btrfsAvailable": "BTRFS 可用",
+      "compatibilityStatus": "兼容性状态",
+      "compatible": "兼容",
+      "warning": "警告",
+      "incompatible": "不兼容",
+      "unknown": "未知",
+      "knownIssues": "已知问题",
+      "recommendations": "建议",
+      "yes": "是",
+      "no": "否"
+    },
     "fields": {
       "MACHINE": {
         "description": "SSH访问和存储的机器配置",

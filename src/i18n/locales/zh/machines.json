@@ -119,6 +119,6 @@
   "daysAgo": "{{count}} 天前",
   "daysAgo_plural": "{{count}} 天前",
   "validation": {
-    "sshPasswordNotAllowed": "无法在保险库中设置SSH密码。请改用SSH密钥。"
+    "sshPasswordNotAllowed": "未配置SSH密钥时无法使用SSH密码。请先设置SSH密钥或删除密码。"
   }
 }

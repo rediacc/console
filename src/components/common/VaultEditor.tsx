@@ -318,6 +318,11 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 form.setFieldValue('host_entry', result.host_entry)
               }
               
+              // Store kernel compatibility data if available
+              if (result.kernel_compatibility) {
+                form.setFieldValue('kernel_compatibility', result.kernel_compatibility)
+              }
+              
               // Clear SSH password after successful test
               form.setFieldValue('ssh_password', '')
               
@@ -484,12 +489,22 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       
       // Validate initial data
       setTimeout(() => {
+        console.log('=== VaultEditor initial validation ===')
+        console.log('Entity type:', entityType)
+        console.log('Initial data:', initialData)
+        console.log('Field definitions:', fieldDefinitions)
+        
         form.validateFields()
-          .then(() => onValidate?.(true))
+          .then(() => {
+            console.log('Initial vault validation passed')
+            onValidate?.(true)
+          })
           .catch((errorInfo) => {
+            console.log('Initial vault validation failed:', errorInfo)
             const errors = errorInfo.errorFields?.map((field: any) => 
               `${field.name.join('.')}: ${field.errors.join(', ')}`
             )
+            console.log('Initial validation errors:', errors)
             onValidate?.(false, errors)
           })
       }, 0)
@@ -588,15 +603,24 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       ? Object.keys(formData).filter(key => key !== 'ssh_password')
       : undefined // undefined means validate all fields
     
+    console.log('=== VaultEditor validation ===')
+    console.log('Entity type:', entityType)
+    console.log('Form data:', formData)
+    console.log('Fields to validate:', fieldsToValidate)
+    console.log('Complete data:', completeData)
+    
     form
       .validateFields(fieldsToValidate)
       .then(() => {
+        console.log('Vault validation passed')
         onValidate?.(true)
       })
       .catch((errorInfo) => {
+        console.log('Vault validation failed:', errorInfo)
         const errors = errorInfo.errorFields?.map((field: any) => 
           `${field.name.join('.')}: ${field.errors.join(', ')}`
         )
+        console.log('Validation errors:', errors)
         onValidate?.(false, errors)
       })
   }
@@ -1092,12 +1116,27 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               key="required"
             >
               {requiredFields
-                .filter(fieldName => !(entityType === 'MACHINE' && fieldName === 'datastore'))
                 .map((fieldName) => {
                   const field = fields[fieldName as keyof typeof fields]
                   if (!field) return null
                   return renderField(fieldName, field as FieldDefinition, true)
                 })}
+              
+              {/* Conditionally show ssh_password in required fields when SSH key is not configured */}
+              {entityType === 'MACHINE' && !requiredFields.includes('ssh_password') && (
+                <Form.Item
+                  noStyle
+                  shouldUpdate={(prevValues, currentValues) => prevValues.ssh_key_configured !== currentValues.ssh_key_configured}
+                >
+                  {({ getFieldValue }) => {
+                    const sshKeyConfigured = getFieldValue('ssh_key_configured')
+                    if (!sshKeyConfigured && fields['ssh_password']) {
+                      return renderField('ssh_password', fields['ssh_password'] as FieldDefinition, true)
+                    }
+                    return null
+                  }}
+                </Form.Item>
+              )}
               
               {/* Test Connection button for MACHINE entity */}
               {entityType === 'MACHINE' && (
@@ -1193,10 +1232,92 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 </Form.Item>
               )}
               
-              {/* Datastore Path field after Test Connection button */}
-              {entityType === 'MACHINE' && fields['datastore'] && (
-                renderField('datastore', fields['datastore'] as FieldDefinition, true)
+              {/* Kernel Compatibility Display */}
+              {entityType === 'MACHINE' && form.getFieldValue('kernel_compatibility') && (
+                <Form.Item
+                  label={t('vaultEditor.systemCompatibility.title')}
+                  style={{ marginBottom: 16 }}
+                >
+                  {(() => {
+                    const compatibility = form.getFieldValue('kernel_compatibility')
+                    const status = compatibility.compatibility_status || 'unknown'
+                    const osInfo = compatibility.os_info || {}
+                    
+                    const statusConfig = {
+                      compatible: { type: 'success' as const, icon: <CheckCircleOutlined />, color: '#52c41a' },
+                      warning: { type: 'warning' as const, icon: <WarningOutlined />, color: '#faad14' },
+                      incompatible: { type: 'error' as const, icon: <ExclamationCircleOutlined />, color: '#ff4d4f' },
+                      unknown: { type: 'info' as const, icon: <QuestionCircleOutlined />, color: '#1890ff' }
+                    }
+                    
+                    const config = statusConfig[status] || statusConfig.unknown
+                    
+                    return (
+                      <Space direction="vertical" style={{ width: '100%' }}>
+                        {/* OS Information */}
+                        <Card size="small" style={{ marginBottom: 8 }}>
+                          <Space direction="vertical" style={{ width: '100%' }}>
+                            <Space>
+                              <InfoCircleOutlined />
+                              <Text strong>{t('vaultEditor.systemCompatibility.systemInfo')}:</Text>
+                            </Space>
+                            <Text>{t('vaultEditor.systemCompatibility.operatingSystem')}: {osInfo.pretty_name || t('vaultEditor.systemCompatibility.unknown')}</Text>
+                            <Text>{t('vaultEditor.systemCompatibility.kernelVersion')}: {compatibility.kernel_version || t('vaultEditor.systemCompatibility.unknown')}</Text>
+                            <Space>
+                              <Text>{t('vaultEditor.systemCompatibility.btrfsAvailable')}:</Text>
+                              {compatibility.btrfs_available ? (
+                                <Tag color="success">{t('vaultEditor.systemCompatibility.yes')}</Tag>
+                              ) : (
+                                <Tag color="warning">{t('vaultEditor.systemCompatibility.no')}</Tag>
+                              )}
+                            </Space>
+                          </Space>
+                        </Card>
+                        
+                        {/* Compatibility Status */}
+                        <Alert
+                          type={config.type}
+                          icon={config.icon}
+                          message={
+                            <Space>
+                              <Text strong>{t('vaultEditor.systemCompatibility.compatibilityStatus')}:</Text>
+                              <Text style={{ color: config.color, textTransform: 'capitalize' }}>
+                                {t(`vaultEditor.systemCompatibility.${status}`)}
+                              </Text>
+                            </Space>
+                          }
+                          description={
+                            <>
+                              {compatibility.compatibility_issues && compatibility.compatibility_issues.length > 0 && (
+                                <div style={{ marginTop: 8 }}>
+                                  <Text strong>{t('vaultEditor.systemCompatibility.knownIssues')}:</Text>
+                                  <ul style={{ marginTop: 4, marginBottom: 8 }}>
+                                    {compatibility.compatibility_issues.map((issue: string, index: number) => (
+                                      <li key={index}>{issue}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              {compatibility.recommendations && compatibility.recommendations.length > 0 && (
+                                <div>
+                                  <Text strong>{t('vaultEditor.systemCompatibility.recommendations')}:</Text>
+                                  <ul style={{ marginTop: 4, marginBottom: 0 }}>
+                                    {compatibility.recommendations.map((rec: string, index: number) => (
+                                      <li key={index}>{rec}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </>
+                          }
+                          showIcon
+                        />
+                      </Space>
+                    )
+                  })()}
+                </Form.Item>
               )}
+              
             </Collapse.Panel>
           )}
 
@@ -1213,6 +1334,27 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               {optionalFields.map((fieldName) => {
                 const field = fields[fieldName as keyof typeof fields]
                 if (!field) return null
+                
+                // Skip ssh_password for MACHINE entity as it's conditionally shown in required fields
+                if (entityType === 'MACHINE' && fieldName === 'ssh_password') {
+                  return (
+                    <Form.Item
+                      key={fieldName}
+                      noStyle
+                      shouldUpdate={(prevValues, currentValues) => prevValues.ssh_key_configured !== currentValues.ssh_key_configured}
+                    >
+                      {({ getFieldValue }) => {
+                        const sshKeyConfigured = getFieldValue('ssh_key_configured')
+                        // Only show in optional fields if SSH key IS configured
+                        if (sshKeyConfigured) {
+                          return renderField(fieldName, field as FieldDefinition, false)
+                        }
+                        return null
+                      }}
+                    </Form.Item>
+                  )
+                }
+                
                 return renderField(fieldName, field as FieldDefinition, false)
               })}
             </Collapse.Panel>

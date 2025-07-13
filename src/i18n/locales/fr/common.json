@@ -152,6 +152,22 @@
       "failed": "Échec de la connexion SSH",
       "testing": "Test de connexion..."
     },
+    "systemCompatibility": {
+      "title": "Compatibilité du Système",
+      "systemInfo": "Informations Système",
+      "kernelVersion": "Version du Noyau",
+      "operatingSystem": "Système d'Exploitation",
+      "btrfsAvailable": "BTRFS Disponible",
+      "compatibilityStatus": "État de Compatibilité",
+      "compatible": "Compatible",
+      "warning": "Avertissement",
+      "incompatible": "Incompatible",
+      "unknown": "Inconnu",
+      "knownIssues": "Problèmes Connus",
+      "recommendations": "Recommandations",
+      "yes": "Oui",
+      "no": "Non"
+    },
     "fields": {
       "MACHINE": {
         "description": "Configuration de la machine pour l'accès SSH et le stockage",

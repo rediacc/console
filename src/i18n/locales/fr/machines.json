@@ -119,6 +119,6 @@
   "daysAgo": "Il y a {{count}} jour",
   "daysAgo_plural": "Il y a {{count}} jours",
   "validation": {
-    "sshPasswordNotAllowed": "Le mot de passe SSH ne peut pas être défini dans le coffre-fort. Veuillez utiliser des clés SSH à la place."
+    "sshPasswordNotAllowed": "Le mot de passe SSH ne peut pas être utilisé sans clés SSH configurées. Veuillez d'abord configurer les clés SSH ou supprimer le mot de passe."
   }
 }

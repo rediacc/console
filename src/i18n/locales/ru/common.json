@@ -152,6 +152,22 @@
       "failed": "SSH-соединение не удалось",
       "testing": "Проверка соединения..."
     },
+    "systemCompatibility": {
+      "title": "Совместимость системы",
+      "systemInfo": "Информация о системе",
+      "kernelVersion": "Версия ядра",
+      "operatingSystem": "Операционная система",
+      "btrfsAvailable": "BTRFS доступен",
+      "compatibilityStatus": "Статус совместимости",
+      "compatible": "Совместимо",
+      "warning": "Предупреждение",
+      "incompatible": "Несовместимо",
+      "unknown": "Неизвестно",
+      "knownIssues": "Известные проблемы",
+      "recommendations": "Рекомендации",
+      "yes": "Да",
+      "no": "Нет"
+    },
     "fields": {
       "MACHINE": {
         "description": "Конфигурация машины для SSH-доступа и хранения",

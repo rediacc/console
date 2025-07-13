@@ -128,6 +128,13 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   // Use queue trace to monitor the task
   const { data: traceData } = useQueueItemTrace(taskId, !!taskId)
 
+  // IMPORTANT: This component uses a hybrid approach:
+  // 1. teamRepositories (from API) - provides repository credentials and metadata
+  // 2. vaultStatus data - provides machine-specific repository status (mounted, size, containers, etc.)
+  // 
+  // The vaultStatus is populated by the bridge after each operation via list_system() function.
+  // While this data can become stale, it provides valuable machine-specific information
+  // that isn't available through the direct API (like mount status, disk usage, container counts).
   useEffect(() => {
     // Use cached vaultStatus data from the machine object
     if (!repositoriesLoading && machine) {

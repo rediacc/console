@@ -119,6 +119,6 @@
   "daysAgo": "{{count}}日前",
   "daysAgo_plural": "{{count}}日前",
   "validation": {
-    "sshPasswordNotAllowed": "SSHパスワードは保険庫に設定できません。代わりにSSHキーを使用してください。"
+    "sshPasswordNotAllowed": "SSHキーが設定されていない場合、SSHパスワードは使用できません。まずSSHキーを設定するか、パスワードを削除してください。"
   }
 }

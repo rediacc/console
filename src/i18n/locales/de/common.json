@@ -152,6 +152,22 @@
       "failed": "SSH-Verbindung fehlgeschlagen",
       "testing": "Teste Verbindung..."
     },
+    "systemCompatibility": {
+      "title": "Systemkompatibilität",
+      "systemInfo": "Systeminformationen",
+      "kernelVersion": "Kernel-Version",
+      "operatingSystem": "Betriebssystem",
+      "btrfsAvailable": "BTRFS verfügbar",
+      "compatibilityStatus": "Kompatibilitätsstatus",
+      "compatible": "Kompatibel",
+      "warning": "Warnung",
+      "incompatible": "Inkompatibel",
+      "unknown": "Unbekannt",
+      "knownIssues": "Bekannte Probleme",
+      "recommendations": "Empfehlungen",
+      "yes": "Ja",
+      "no": "Nein"
+    },
     "fields": {
       "MACHINE": {
         "description": "Maschinenkonfiguration für SSH-Zugriff und Speicher",

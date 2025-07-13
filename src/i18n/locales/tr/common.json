@@ -152,6 +152,22 @@
       "failed": "SSH bağlantısı başarısız",
       "testing": "Bağlantı test ediliyor..."
     },
+    "systemCompatibility": {
+      "title": "Sistem Uyumluluğu",
+      "systemInfo": "Sistem Bilgileri",
+      "kernelVersion": "Çekirdek Sürümü",
+      "operatingSystem": "İşletim Sistemi",
+      "btrfsAvailable": "BTRFS Mevcut",
+      "compatibilityStatus": "Uyumluluk Durumu",
+      "compatible": "Uyumlu",
+      "warning": "Uyarı",
+      "incompatible": "Uyumsuz",
+      "unknown": "Bilinmiyor",
+      "knownIssues": "Bilinen Sorunlar",
+      "recommendations": "Öneriler",
+      "yes": "Evet",
+      "no": "Hayır"
+    },
     "fields": {
       "MACHINE": {
         "description": "SSH erişimi ve depolama için makine yapılandırması",

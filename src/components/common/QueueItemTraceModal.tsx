@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Spin, Row, Col, Tabs, Switch, Collapse, Steps, Progress, Statistic, Alert, Divider, Badge, Tooltip } from 'antd'
-import { ReloadOutlined, HistoryOutlined, FileTextOutlined, BellOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, RightOutlined, UserOutlined, RetweetOutlined, WarningOutlined, RocketOutlined, TeamOutlined, DashboardOutlined, ThunderboltOutlined, HourglassOutlined, ExclamationCircleOutlined, CrownOutlined, CodeOutlined } from '@/utils/optimizedIcons'
+import { ReloadOutlined, HistoryOutlined, FileTextOutlined, BellOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, RightOutlined, UserOutlined, RetweetOutlined, WarningOutlined, RocketOutlined, TeamOutlined, DashboardOutlined, ThunderboltOutlined, HourglassOutlined, ExclamationCircleOutlined, CrownOutlined, CodeOutlined, QuestionCircleOutlined } from '@/utils/optimizedIcons'
 import { useQueueItemTrace, useRetryFailedQueueItem, useCancelQueueItem } from '@/api/queries/queue'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -1122,6 +1122,138 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                           const content = typeof traceData.responseVaultContent.vaultContent === 'string' 
                             ? JSON.parse(traceData.responseVaultContent.vaultContent) 
                             : traceData.responseVaultContent.vaultContent || {}
+                          
+                          // Check if this is an SSH test result with kernel compatibility data
+                          if (content.result && typeof content.result === 'string') {
+                            try {
+                              const result = JSON.parse(content.result)
+                              if (result.status === 'success' && result.kernel_compatibility) {
+                                const compatibility = result.kernel_compatibility
+                                const osInfo = compatibility.os_info || {}
+                                const status = compatibility.compatibility_status || 'unknown'
+                                
+                                const statusConfig = {
+                                  compatible: { type: 'success' as const, icon: <CheckCircleOutlined />, color: '#52c41a' },
+                                  warning: { type: 'warning' as const, icon: <WarningOutlined />, color: '#faad14' },
+                                  incompatible: { type: 'error' as const, icon: <ExclamationCircleOutlined />, color: '#ff4d4f' },
+                                  unknown: { type: 'info' as const, icon: <QuestionCircleOutlined />, color: '#1890ff' }
+                                }
+                                
+                                const config = statusConfig[status] || statusConfig.unknown
+                                
+                                return (
+                                  <Space direction="vertical" style={{ width: '100%' }}>
+                                    {/* SSH Test Result Summary */}
+                                    <Card size="small" title="SSH Test Result" style={{ marginBottom: 16 }}>
+                                      <Descriptions column={2} size="small">
+                                        <Descriptions.Item label="Status">
+                                          <Tag color="success">{result.status}</Tag>
+                                        </Descriptions.Item>
+                                        <Descriptions.Item label="Machine">
+                                          {result.machine || 'N/A'}
+                                        </Descriptions.Item>
+                                        <Descriptions.Item label="IP Address">
+                                          {result.ip}
+                                        </Descriptions.Item>
+                                        <Descriptions.Item label="User">
+                                          {result.user}
+                                        </Descriptions.Item>
+                                        <Descriptions.Item label="Auth Method">
+                                          <Tag>{result.auth_method}</Tag>
+                                        </Descriptions.Item>
+                                        <Descriptions.Item label="SSH Key">
+                                          {result.ssh_key_configured ? (
+                                            <Tag color="success">Configured</Tag>
+                                          ) : (
+                                            <Tag color="warning">Not Configured</Tag>
+                                          )}
+                                        </Descriptions.Item>
+                                      </Descriptions>
+                                    </Card>
+                                    
+                                    {/* System Information */}
+                                    <Card size="small" title="System Information" style={{ marginBottom: 16 }}>
+                                      <Descriptions column={1} size="small">
+                                        <Descriptions.Item label="Operating System">
+                                          {osInfo.pretty_name || 'Unknown'}
+                                        </Descriptions.Item>
+                                        <Descriptions.Item label="Kernel Version">
+                                          <Text code>{compatibility.kernel_version || 'Unknown'}</Text>
+                                        </Descriptions.Item>
+                                        <Descriptions.Item label="OS ID">
+                                          {osInfo.id || 'Unknown'}
+                                        </Descriptions.Item>
+                                        <Descriptions.Item label="Version">
+                                          {osInfo.version_id || 'Unknown'}
+                                        </Descriptions.Item>
+                                        <Descriptions.Item label="BTRFS Support">
+                                          {compatibility.btrfs_available ? (
+                                            <Tag color="success">Available</Tag>
+                                          ) : (
+                                            <Tag color="warning">Not Available</Tag>
+                                          )}
+                                        </Descriptions.Item>
+                                      </Descriptions>
+                                    </Card>
+                                    
+                                    {/* Compatibility Status */}
+                                    <Alert
+                                      type={config.type}
+                                      icon={config.icon}
+                                      message={
+                                        <Space>
+                                          <Text strong>Compatibility Status:</Text>
+                                          <Text style={{ color: config.color, textTransform: 'capitalize' }}>
+                                            {status}
+                                          </Text>
+                                        </Space>
+                                      }
+                                      description={
+                                        <>
+                                          {compatibility.compatibility_issues && compatibility.compatibility_issues.length > 0 && (
+                                            <div style={{ marginTop: 8 }}>
+                                              <Text strong>Known Issues:</Text>
+                                              <ul style={{ marginTop: 4, marginBottom: 8 }}>
+                                                {compatibility.compatibility_issues.map((issue: string, index: number) => (
+                                                  <li key={index}>{issue}</li>
+                                                ))}
+                                              </ul>
+                                            </div>
+                                          )}
+                                          {compatibility.recommendations && compatibility.recommendations.length > 0 && (
+                                            <div>
+                                              <Text strong>Recommendations:</Text>
+                                              <ul style={{ marginTop: 4, marginBottom: 0 }}>
+                                                {compatibility.recommendations.map((rec: string, index: number) => (
+                                                  <li key={index}>{rec}</li>
+                                                ))}
+                                              </ul>
+                                            </div>
+                                          )}
+                                        </>
+                                      }
+                                      showIcon
+                                    />
+                                    
+                                    {/* Raw JSON fallback */}
+                                    <Collapse style={{ marginTop: 16 }}>
+                                      <Collapse.Panel header="Raw Response Data" key="raw">
+                                        <SimpleJsonEditor
+                                          value={JSON.stringify(result, null, 2)}
+                                          readOnly={true}
+                                          height="200px"
+                                        />
+                                      </Collapse.Panel>
+                                    </Collapse>
+                                  </Space>
+                                )
+                              }
+                            } catch (e) {
+                              // Fall through to default JSON display
+                            }
+                          }
+                          
+                          // Default JSON display for non-SSH test results
                           return (
                             <SimpleJsonEditor
                               value={JSON.stringify(content, null, 2)}
