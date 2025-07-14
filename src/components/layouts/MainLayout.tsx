@@ -89,7 +89,7 @@ const MainLayout: React.FC = () => {
       key: '/marketplace',
       icon: <ShoppingOutlined />,
       label: t('navigation.marketplace'),
-      showInSimple: true,
+      showInSimple: false,
     },
     {
       key: '/queue',

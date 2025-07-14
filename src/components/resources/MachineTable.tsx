@@ -198,7 +198,11 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   // Get machine functions
   const { getFunctionsByCategory } = useLocalizedFunctions();
   const machineFunctions = useMemo(() => 
-    getFunctionsByCategory('machine').filter(func => func.showInMenu !== false), 
+    getFunctionsByCategory('machine').filter(func => 
+      func.showInMenu !== false && 
+      func.name !== 'mount' && 
+      func.name !== 'pull'
+    ), 
     [getFunctionsByCategory]
   );
 
@@ -334,23 +338,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                     label: t('machines:createRepo'),
                     icon: <InboxOutlined />,
                     onClick: () => onCreateRepository && onCreateRepository(record)
-                  },
-                  {
-                    key: 'pullRepo',
-                    label: t('machines:pullRepo'),
-                    icon: <CloudServerOutlined />,
-                    onClick: () => {
-                      if (onFunctionsMachine) {
-                        onFunctionsMachine(record, 'pull');
-                        // Mark this machine for refresh when action completes
-                        if (externalRefreshKeys === undefined) {
-                          setInternalRefreshKeys(prev => ({
-                            ...prev,
-                            [record.machineName]: Date.now()
-                          }))
-                        }
-                      }
-                    }
                   },
                   {
                     key: 'functions',
