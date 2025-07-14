@@ -245,8 +245,8 @@ class QueueDataService {
       queueVaultData.contextData.REPO_CREDENTIALS = context.allRepositoryCredentials
     }
 
-    // For 'mount' and 'unmount' functions that need PLUGINS
-    if ((context.functionName === 'mount' || context.functionName === 'unmount') && context.companyVault?.PLUGINS) {
+    // For 'mount', 'unmount', 'new', and 'up' functions that need PLUGINS
+    if ((context.functionName === 'mount' || context.functionName === 'unmount' || context.functionName === 'new' || context.functionName === 'up') && context.companyVault?.PLUGINS) {
       queueVaultData.contextData.PLUGINS = context.companyVault.PLUGINS
     }
 
@@ -352,7 +352,7 @@ class QueueDataService {
    * Add company vault data to general settings
    */
   private addCompanyVaultToGeneralSettings(generalSettings: any, companyVault: any): void {
-    this.copySimpleFields(generalSettings, companyVault, ['UNIVERSAL_USER_ID', 'UNIVERSAL_USER_NAME', 'DOCKER_JSON_CONF'])
+    this.copySimpleFields(generalSettings, companyVault, ['UNIVERSAL_USER_ID', 'UNIVERSAL_USER_NAME', 'DOCKER_JSON_CONF', 'PLUGINS'])
     this.copySSHKeys(generalSettings, companyVault)
   }
 

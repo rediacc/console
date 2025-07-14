@@ -39,6 +39,7 @@ interface Repository {
   has_rediaccfile: boolean
   docker_running: boolean
   container_count: number
+  plugin_count: number
   has_services: boolean
   service_count: number
   disk_space?: {
@@ -202,7 +203,33 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                   return repo;
                 });
                 
-                setRepositories(mappedRepositories)
+                // Count plugin containers for each repository before setting
+                const repositoriesWithPluginCounts = mappedRepositories.map((repo: Repository) => {
+                  // Initialize plugin count
+                  let pluginCount = 0
+                  
+                  // Count containers that are plugins (name starts with "plugin-")
+                  if (result.containers && Array.isArray(result.containers)) {
+                    result.containers.forEach((container: any) => {
+                      // Check if this container belongs to this repository
+                      const belongsToRepo = container.repository === repo.name ||
+                        container.labels?.['com.redisolar.repository-guid'] === repo.name ||
+                        container.labels?.['com.rediacc.repository-guid'] === repo.name
+                      
+                      // Check if it's a plugin container
+                      if (belongsToRepo && container.name && container.name.startsWith('plugin-')) {
+                        pluginCount++
+                      }
+                    })
+                  }
+                  
+                  return {
+                    ...repo,
+                    plugin_count: pluginCount
+                  }
+                })
+                
+                setRepositories(repositoriesWithPluginCounts)
                 
                 // Process containers and services if included
                 if (result.containers && Array.isArray(result.containers)) {
@@ -445,7 +472,33 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 return repo;
               });
               
-              setRepositories(mappedRepositories)
+              // Count plugin containers for each repository before setting
+              const repositoriesWithPluginCounts = mappedRepositories.map((repo: Repository) => {
+                // Initialize plugin count
+                let pluginCount = 0
+                
+                // Count containers that are plugins (name starts with "plugin-")
+                if (commandOutput.containers && Array.isArray(commandOutput.containers)) {
+                  commandOutput.containers.forEach((container: any) => {
+                    // Check if this container belongs to this repository
+                    const belongsToRepo = container.repository === repo.name ||
+                      container.labels?.['com.redisolar.repository-guid'] === repo.name ||
+                      container.labels?.['com.rediacc.repository-guid'] === repo.name
+                    
+                    // Check if it's a plugin container
+                    if (belongsToRepo && container.name && container.name.startsWith('plugin-')) {
+                      pluginCount++
+                    }
+                  })
+                }
+                
+                return {
+                  ...repo,
+                  plugin_count: pluginCount
+                }
+              })
+              
+              setRepositories(repositoriesWithPluginCounts)
               
               // Process system containers if included in response
               if (commandOutput.system_containers && Array.isArray(commandOutput.system_containers)) {
@@ -1028,6 +1081,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     const services = servicesData[record.name]
     const containers = containersData[record.name]
     
+    // Separate plugin containers from regular containers
+    const pluginContainers = containers?.containers?.filter((c: any) => c.name && c.name.startsWith('plugin-')) || []
+    const regularContainers = containers?.containers?.filter((c: any) => !c.name || !c.name.startsWith('plugin-')) || []
+    
     // Container columns with repository context
     const containerColumnsWithRepo: ColumnsType<any> = [
       ...containerColumns.slice(0, -1), // All columns except actions
@@ -1161,17 +1218,34 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           )}
         </div>
         
-        {/* Containers Table */}
+        {/* Plugin Containers Table */}
+        {pluginContainers.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <Typography.Title level={5} style={{ marginBottom: 16 }}>
+              {t('resources:repositories.pluginsList')}
+            </Typography.Title>
+            <Table
+              columns={containerColumnsWithRepo}
+              dataSource={pluginContainers}
+              rowKey="id"
+              size="small"
+              pagination={false}
+              scroll={{ x: 'max-content' }}
+            />
+          </div>
+        )}
+        
+        {/* Regular Containers Table */}
         <div>
           <Typography.Title level={5} style={{ marginBottom: 16 }}>
             {t('resources:repositories.containersList')}
           </Typography.Title>
           {containers?.error ? (
             <Alert message={t('resources:repositories.errorLoadingContainers')} description={containers.error} type="error" />
-          ) : containers?.containers && containers.containers.length > 0 ? (
+          ) : regularContainers.length > 0 ? (
             <Table
               columns={containerColumnsWithRepo}
-              dataSource={containers.containers}
+              dataSource={regularContainers}
               rowKey="id"
               size="small"
               pagination={false}
@@ -1271,8 +1345,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       width: 50,
       fixed: 'left',
       render: (_: any, record: Repository) => {
-        // Only show expand button if repository has services or containers
-        if (!record.mounted || (!record.has_services && record.container_count === 0)) {
+        // Only show expand button if repository has services, containers, or plugins
+        if (!record.mounted || (!record.has_services && record.container_count === 0 && record.plugin_count === 0)) {
           return null
         }
         
@@ -1359,6 +1433,11 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               {record.docker_running && (
                 <Tag color="cyan">
                   Docker ({record.container_count} {t('resources:repositories.containers')})
+                </Tag>
+              )}
+              {record.plugin_count > 0 && (
+                <Tag color="blue">
+                  {record.plugin_count} {record.plugin_count === 1 ? t('resources:repositories.plugin') : t('resources:repositories.plugins')}
                 </Tag>
               )}
               {record.has_services && (
@@ -1619,7 +1698,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           expandedRowRender: renderExpandedRow,
           expandedRowKeys: expandedRows,
           onExpandedRowsChange: (keys) => setExpandedRows(keys as string[]),
-          rowExpandable: (record) => record.mounted && (record.has_services || record.container_count > 0),
+          rowExpandable: (record) => record.mounted && (record.has_services || record.container_count > 0 || record.plugin_count > 0),
           expandIcon: () => null, // Hide default expand icon since we have custom button
         }}
         locale={{
