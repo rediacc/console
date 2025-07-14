@@ -3,7 +3,6 @@ import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Empty, Ca
 import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, CloudDownloadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, PlusOutlined, MinusOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined, GlobalOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { type QueueFunction } from '@/api/queries/queue'
-import { useQueueItemTrace } from '@/api/queries/queue'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import { Machine } from '@/types'
@@ -11,8 +10,6 @@ import { useTeams } from '@/api/queries/teams'
 import { useRepositories, useCreateRepository, useDeleteRepository } from '@/api/queries/repositories'
 import { useMachines } from '@/api/queries/machines'
 import { useStorage } from '@/api/queries/storage'
-import { queueMonitoringService } from '@/services/queueMonitoringService'
-import queueManagerService from '@/services/queueManagerService'
 import type { ColumnsType } from 'antd/es/table'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
@@ -97,9 +94,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [taskId, setTaskId] = useState<string | null>(null)
-  const [queueId, setQueueId] = useState<string | null>(null)
-  const [isQueued, setIsQueued] = useState(false)
   const [selectedRepository, setSelectedRepository] = useState<Repository | null>(null)
   const [functionModalOpen, setFunctionModalOpen] = useState(false)
   const [selectedFunction, setSelectedFunction] = useState<string | null>(null)
@@ -125,9 +119,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const { data: storageData = [] } = useStorage(machine.teamName)
   const createRepositoryMutation = useCreateRepository()
   const deleteRepositoryMutation = useDeleteRepository()
-  
-  // Use queue trace to monitor the task
-  const { data: traceData } = useQueueItemTrace(taskId, !!taskId)
 
   // IMPORTANT: This component uses a hybrid approach:
   // 1. teamRepositories (from API) - provides repository credentials and metadata
@@ -361,254 +352,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     }
     fetchToken()
   }, [])
-
-  // Monitor queued item for task ID
-  useEffect(() => {
-    if (!queueId) return
-
-    const unsubscribe = managedQueueMutation.subscribeToQueueItem?.(queueId, (item) => {
-      if (item?.taskId) {
-        // Got the task ID!
-        setTaskId(item.taskId)
-        setQueueId(null) // Clear queue ID
-        setIsQueued(false)
-        showMessage('info', t('resources:repositories.taskSubmitted'))
-        
-        // Start monitoring the task
-        queueMonitoringService.addTask(
-          item.taskId,
-          machine.teamName,
-          machine.machineName,
-          'PENDING', // Initial status when task is created
-          undefined, // retryCount
-          undefined, // lastFailureReason
-          machine.bridgeName,
-          4 // regular priority for repository list tasks
-        )
-      } else if (item?.status === 'failed') {
-        setError(t('resources:repositories.failedToSubmit'))
-        setLoading(false)
-        setQueueId(null)
-        setIsQueued(false)
-      } else if (item?.status === 'cancelled') {
-        setError(t('resources:repositories.taskCancelled'))
-        setLoading(false)
-        setQueueId(null)
-        setIsQueued(false)
-      }
-    })
-
-    return () => {
-      unsubscribe?.()
-    }
-  }, [queueId, managedQueueMutation, t])
-
-  useEffect(() => {
-    // Log task status for debugging
-    if (traceData?.queueDetails?.status) {
-      // Task status: traceData.queueDetails.status
-    }
-    
-    // Check if task is completed
-    if (traceData?.queueDetails?.status === 'COMPLETED') {
-      // Ensure the queue manager is updated
-      if (taskId) {
-        // Task completed, updating queue manager
-        queueManagerService.updateTaskStatus(taskId, 'completed')
-      }
-      
-      // Check if we have response vault content
-      if (!traceData?.responseVaultContent?.vaultContent) {
-        // Task completed but no response vault content received
-        // Full trace data: traceData
-        setError('Task completed but no response data received. Check console for details.')
-        setLoading(false)
-        return
-      }
-      
-      try {
-        // Parse the response vault content
-        const vaultContent = JSON.parse(traceData.responseVaultContent.vaultContent)
-        // Parsed vault content: vaultContent
-        
-        // The result is nested in the response
-        if (vaultContent.result) {
-          const result = JSON.parse(vaultContent.result)
-          // Parsed result: result
-          
-          // Parse the command output which contains the repositories
-          if (result.command_output) {
-            const commandOutput = JSON.parse(result.command_output)
-            // Command output: commandOutput
-            
-            // Process system information if available
-            if (commandOutput.system) {
-              setSystemInfo(commandOutput.system)
-            }
-            
-            if (commandOutput.repositories && Array.isArray(commandOutput.repositories)) {
-              // Map repository GUIDs back to names if needed
-              const mappedRepositories = commandOutput.repositories.map((repo: Repository) => {
-                // Check if the name looks like a GUID
-                const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(repo.name);
-                
-                if (isGuid) {
-                  // Find the matching repository by GUID
-                  const matchingRepo = teamRepositories.find(r => r.repositoryGuid === repo.name);
-                  if (matchingRepo) {
-                    return {
-                      ...repo,
-                      name: matchingRepo.repositoryName
-                    };
-                  }
-                }
-                
-                // If not a GUID or no match found, check if it's a repository name that needs GUID lookup
-                const repoByName = teamRepositories.find(r => r.repositoryName === repo.name);
-                if (!repoByName) {
-                  // This might be a case where name is "A1" but it's actually a repository name
-                }
-                
-                return repo;
-              });
-              
-              // Count plugin containers for each repository before setting
-              const repositoriesWithPluginCounts = mappedRepositories.map((repo: Repository) => {
-                // Initialize plugin count
-                let pluginCount = 0
-                
-                // Count containers that are plugins (name starts with "plugin-")
-                if (commandOutput.containers && Array.isArray(commandOutput.containers)) {
-                  commandOutput.containers.forEach((container: any) => {
-                    // Check if this container belongs to this repository
-                    const belongsToRepo = container.repository === repo.name ||
-                      container.labels?.['com.redisolar.repository-guid'] === repo.name ||
-                      container.labels?.['com.rediacc.repository-guid'] === repo.name
-                    
-                    // Check if it's a plugin container
-                    if (belongsToRepo && container.name && container.name.startsWith('plugin-')) {
-                      pluginCount++
-                    }
-                  })
-                }
-                
-                return {
-                  ...repo,
-                  plugin_count: pluginCount
-                }
-              })
-              
-              setRepositories(repositoriesWithPluginCounts)
-              
-              // Process system containers if included in response
-              if (commandOutput.system_containers && Array.isArray(commandOutput.system_containers)) {
-                setSystemContainers(commandOutput.system_containers)
-              } else {
-                setSystemContainers([])
-              }
-              
-              // Process services data if included in response
-              if (commandOutput.services && Array.isArray(commandOutput.services)) {
-                const servicesMap: Record<string, any> = {}
-                
-                // Initialize empty services array for all repositories
-                mappedRepositories.forEach((repo: Repository) => {
-                  servicesMap[repo.name] = { services: [] }
-                })
-                
-                // Add services to their respective repositories
-                commandOutput.services.forEach((service: any) => {
-                  // Find the repository name for this service
-                  const repoGuid = service.repository
-                  
-                  // Try to find the mapped repository by matching the GUID
-                  const mappedRepo = mappedRepositories.find((repo: Repository) => {
-                    // Check if this repository's original name was the GUID we're looking for
-                    const originalRepo = commandOutput.repositories.find((r: any) => r.name === repoGuid)
-                    if (!originalRepo) return false
-                    
-                    // Match by comparing properties that should be the same
-                    return repo.mount_path === originalRepo.mount_path || 
-                           repo.image_path === originalRepo.image_path ||
-                           (repo.size === originalRepo.size && repo.modified === originalRepo.modified)
-                  })
-                  
-                  if (mappedRepo && servicesMap[mappedRepo.name]) {
-                    servicesMap[mappedRepo.name].services.push(service)
-                  }
-                })
-                
-                // Services data processed: servicesMap
-                
-                // Update all services data at once
-                setServicesData(servicesMap)
-              }
-              
-              // Process containers data if included in response
-              if (commandOutput.containers && Array.isArray(commandOutput.containers)) {
-                const containersMap: Record<string, any> = {}
-                
-                // Initialize empty containers array for all repositories
-                mappedRepositories.forEach((repo: Repository) => {
-                  containersMap[repo.name] = { containers: [] }
-                })
-                
-                // Add containers to their respective repositories
-                commandOutput.containers.forEach((container: any) => {
-                  // Find the repository name for this container
-                  const repoGuid = container.repository
-                  
-                  // Try to find the mapped repository by matching the GUID
-                  const mappedRepo = mappedRepositories.find((repo: Repository) => {
-                    // Check if this repository's original name was the GUID we're looking for
-                    const originalRepo = commandOutput.repositories.find((r: any) => r.name === repoGuid)
-                    if (!originalRepo) return false
-                    
-                    // Match by comparing properties that should be the same
-                    return repo.mount_path === originalRepo.mount_path || 
-                           repo.image_path === originalRepo.image_path ||
-                           (repo.size === originalRepo.size && repo.modified === originalRepo.modified)
-                  })
-                  
-                  if (mappedRepo && containersMap[mappedRepo.name]) {
-                    containersMap[mappedRepo.name].containers.push(container)
-                  }
-                })
-                
-                // Containers data processed: containersMap
-                
-                // Update all containers data at once
-                setContainersData(containersMap)
-              }
-            } else {
-              setRepositories([])
-            }
-          } else {
-            // No command_output in result
-            setRepositories([])
-            setError('No repository data in response')
-          }
-        } else {
-          // No result in vault content
-          setError('Invalid response format - missing result')
-        }
-        setLoading(false)
-      } catch (err) {
-        // Error parsing response: err
-        setError('Failed to parse repository data: ' + (err as Error).message)
-        setLoading(false)
-      }
-    } else if (traceData?.queueDetails?.status === 'FAILED' || traceData?.queueDetails?.permanentlyFailed) {
-      // Ensure the queue manager is updated
-      if (taskId) {
-        // Task failed, updating queue manager
-        queueManagerService.updateTaskStatus(taskId, 'failed')
-      }
-      
-      setError(traceData.queueDetails.lastFailureReason || 'Failed to fetch repositories')
-      setLoading(false)
-    }
-  }, [traceData])
 
   const handleRefresh = () => {
     // Trigger parent component to refresh machine data
@@ -1596,30 +1339,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   if (loading) {
     return (
       <div style={{ padding: '20px', textAlign: 'center' }}>
-        <Spin tip={
-          isQueued 
-            ? t('resources:repositories.waitingInQueue')
-            : t('resources:repositories.fetchingRepositories')
-        } />
-        {isQueued && queueId && (
-          <div style={{ marginTop: 20 }}>
-            <Text type="secondary">{t('resources:repositories.queuePosition')}: {managedQueueMutation.getQueuePosition?.(queueId) || '...'}</Text>
-            <br />
-            <Text type="secondary">{t('resources:repositories.checkQueueManager')}</Text>
-          </div>
-        )}
-        {taskId && (
-          <div style={{ marginTop: 20 }}>
-            <Text type="secondary">Task ID: {taskId}</Text>
-            <br />
-            <Text type="secondary">
-              {t('common:status.label')}: {traceData?.queueDetails?.status || t('common:status.initializing')}
-              {traceData?.queueDetails?.status === 'PENDING' && ` (${t('common:status.waitingForExecution')})`}
-              {traceData?.queueDetails?.status === 'ASSIGNED' && ` (${t('common:status.processing')})`}
-              {traceData?.queueDetails?.status === 'PROCESSING' && ` (${t('common:status.running')})`}
-            </Text>
-          </div>
-        )}
+        <Spin tip={t('resources:repositories.fetchingRepositories')} />
       </div>
     )
   }
