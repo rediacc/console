@@ -338,6 +338,53 @@
           "label": "Plugins",
           "description": "Plugin configurations with container images and activation status"
         }
+      },
+      "DISTRIBUTEDSTORAGE": {
+        "description": "Distributed storage cluster configuration for Ceph-based storage",
+        "ceph_dashboard_credentials": {
+          "label": "Dashboard Credentials",
+          "description": "Credentials for accessing the Ceph dashboard",
+          "url": {
+            "label": "Dashboard URL",
+            "description": "URL for accessing the Ceph dashboard interface"
+          },
+          "username": {
+            "label": "Username",
+            "description": "Username for dashboard authentication"
+          },
+          "password": {
+            "label": "Password",
+            "description": "Password for dashboard authentication"
+          }
+        },
+        "ceph_config": {
+          "label": "Ceph Configuration",
+          "description": "Advanced Ceph configuration options for cluster customization",
+          "monitors": {
+            "label": "Monitor IPs",
+            "description": "IP addresses of Ceph monitor nodes"
+          },
+          "auth_config": {
+            "label": "Authentication Config",
+            "description": "Additional Ceph authentication configuration"
+          },
+          "custom_settings": {
+            "label": "Custom Settings",
+            "description": "Custom Ceph configuration parameters"
+          }
+        },
+        "monitoring": {
+          "label": "Monitoring",
+          "description": "Monitoring and alerting configuration for the cluster",
+          "prometheus_endpoint": {
+            "label": "Prometheus Endpoint",
+            "description": "URL for Prometheus metrics endpoint"
+          },
+          "alert_rules": {
+            "label": "Alert Rules",
+            "description": "Custom alert rules for cluster monitoring"
+          }
+        }
       }
     }
   },

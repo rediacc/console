@@ -22,16 +22,18 @@ import {
   createTeamSchema,
   createRegionSchema,
   createBridgeSchema,
+  createDistributedStorageSchema,
   CreateMachineForm,
   CreateRepositoryForm,
   CreateStorageForm,
   CreateScheduleForm,
+  CreateDistributedStorageForm,
 } from '@/utils/validation'
 import { z } from 'zod'
 
 const { Text } = Typography
 
-export type ResourceType = 'machine' | 'repository' | 'storage' | 'schedule' | 'team' | 'region' | 'bridge'
+export type ResourceType = 'machine' | 'repository' | 'storage' | 'schedule' | 'team' | 'region' | 'bridge' | 'distributedStorage'
 
 export interface UnifiedResourceModalProps {
   open: boolean
@@ -115,7 +117,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     schedule: { key: 'schedules', createKey: 'resources:schedules.createSchedule' },
     team: { key: 'teams', createKey: 'system:teams.createTeam' },
     region: { key: 'regions', createKey: 'system:regions.createRegion' },
-    bridge: { key: 'bridges', createKey: 'system:bridges.createBridge' }
+    bridge: { key: 'bridges', createKey: 'system:bridges.createBridge' },
+    distributedStorage: { key: 'distributedStorage', createKey: 'resources:distributedStorage.createCluster' }
   } as const
 
   // Helper functions
@@ -177,7 +180,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     schedule: createScheduleSchema,
     team: createTeamSchema,
     region: createRegionSchema,
-    bridge: createBridgeSchema
+    bridge: createBridgeSchema,
+    distributedStorage: createDistributedStorageSchema
   }
 
   const getSchema = () => {
@@ -326,12 +330,22 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     (teamFilter && Array.isArray(teamFilter) && teamFilter.length === 1)
 
   // Field factories
-  const createNameField = () => ({
-    name: `${resourceType}Name`,
-    label: t(`${getResourceTranslationKey()}.${resourceType}Name`),
-    placeholder: t(`${getResourceTranslationKey()}.placeholders.enter${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)}Name`),
-    required: true,
-  })
+  const createNameField = () => {
+    if (resourceType === 'distributedStorage') {
+      return {
+        name: 'clusterName',
+        label: t('resources:distributedStorage.clusterName'),
+        placeholder: t('resources:distributedStorage.placeholders.enterClusterName'),
+        required: true,
+      }
+    }
+    return {
+      name: `${resourceType}Name`,
+      label: t(`${getResourceTranslationKey()}.${resourceType}Name`),
+      placeholder: t(`${getResourceTranslationKey()}.placeholders.enter${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)}Name`),
+      required: true,
+    }
+  }
 
   const createTeamField = () => ({
     name: 'teamName',
@@ -452,6 +466,80 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         sizeUnits: ['G', 'T'],
         helperText: t('repositories.sizeHelperText', { defaultValue: 'Specify size for storage provisioning (e.g., 10G, 100G, 1T)' })
       })
+    } else if (resourceType === 'distributedStorage') {
+      // Distributed storage needs cluster configuration
+      fields.push(nameField)
+      
+      // Get machines for the selected team for node selection
+      const selectedTeamName = form.watch('teamName') || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
+      const teamMachines = dropdownData?.machinesByTeam?.find(t => t.teamName === selectedTeamName)?.machines || []
+      
+      // Nodes selection (multiple machines)
+      fields.push({
+        name: 'nodes',
+        label: t('resources:distributedStorage.fields.nodes'),
+        placeholder: t('resources:distributedStorage.placeholders.selectNodes'),
+        required: true,
+        type: 'multiSelect' as const,
+        options: teamMachines.map((m: any) => ({ value: m.value, label: m.label })),
+        disabled: !selectedTeamName || teamMachines.length === 0,
+        helperText: t('resources:distributedStorage.fields.nodesHelp')
+      })
+      
+      // Pool configuration fields
+      fields.push(
+        {
+          name: 'poolName',
+          label: t('resources:distributedStorage.fields.poolName'),
+          placeholder: t('resources:distributedStorage.placeholders.enterPoolName'),
+          required: true,
+          helperText: t('resources:distributedStorage.fields.poolNameHelp'),
+        },
+        {
+          name: 'poolPgNum',
+          label: t('resources:distributedStorage.fields.poolPgNum'),
+          type: 'number' as const,
+          required: true,
+          defaultValue: 128,
+          min: 1,
+          max: 1024,
+          helperText: t('resources:distributedStorage.fields.poolPgNumHelp'),
+        },
+        {
+          name: 'poolSize',
+          label: t('resources:distributedStorage.fields.poolSize'),
+          placeholder: t('resources:distributedStorage.placeholders.enterPoolSize'),
+          required: true,
+          type: 'size' as const,
+          sizeUnits: ['G', 'T'],
+          helperText: t('resources:distributedStorage.fields.poolSizeHelp'),
+        },
+        {
+          name: 'osdDevice',
+          label: t('resources:distributedStorage.fields.osdDevice'),
+          placeholder: t('resources:distributedStorage.placeholders.enterOsdDevice'),
+          required: true,
+          helperText: t('resources:distributedStorage.fields.osdDeviceHelp'),
+        },
+        {
+          name: 'rbdImagePrefix',
+          label: t('resources:distributedStorage.fields.rbdImagePrefix'),
+          placeholder: t('resources:distributedStorage.placeholders.enterRbdPrefix'),
+          required: true,
+          defaultValue: 'rediacc_disk',
+          helperText: t('resources:distributedStorage.fields.rbdImagePrefixHelp'),
+        },
+        {
+          name: 'healthCheckTimeout',
+          label: t('resources:distributedStorage.fields.healthCheckTimeout'),
+          type: 'number' as const,
+          required: true,
+          defaultValue: 1800,
+          min: 60,
+          max: 3600,
+          helperText: t('resources:distributedStorage.fields.healthCheckTimeoutHelp'),
+        }
+      )
     } else if (!['team', 'region'].includes(resourceType)) {
       fields.push(nameField)
     } else {
@@ -462,8 +550,14 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   }
 
   // Helper functions
-  const getEntityType = () => resourceType.toUpperCase()
-  const getVaultFieldName = () => `${resourceType}Vault`
+  const getEntityType = () => {
+    if (resourceType === 'distributedStorage') return 'DISTRIBUTEDSTORAGE'
+    return resourceType.toUpperCase()
+  }
+  const getVaultFieldName = () => {
+    if (resourceType === 'distributedStorage') return 'distributedStorageVault'
+    return `${resourceType}Vault`
+  }
   
   const createFunctionSubtitle = () => (
     <Space size="small">
@@ -485,6 +579,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   const getFunctionTitle = () => {
     if (resourceType === 'machine') return t('machines:systemFunctions')
     if (resourceType === 'storage') return t('resources:storage.storageFunctions')
+    if (resourceType === 'distributedStorage') return t('resources:distributedStorage.distributedStorageFunctions')
     return t(`${getResourceTranslationKey()}.${resourceType}Functions`)
   }
 
@@ -582,8 +677,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     await onSubmit(data)
   }
 
-  // Show functions button only for machines, repositories, and storage
-  const showFunctions = (resourceType === 'machine' || resourceType === 'repository' || resourceType === 'storage') && 
+  // Show functions button only for machines, repositories, storage, and distributed storage
+  const showFunctions = (resourceType === 'machine' || resourceType === 'repository' || resourceType === 'storage' || resourceType === 'distributedStorage') && 
     mode === 'create' && 
     existingData &&
     !existingData.prefilledMachine && // Don't show functions when creating repo from machine

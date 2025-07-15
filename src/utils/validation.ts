@@ -7,8 +7,8 @@ const createResourceNameSchema = (resourceType: string) =>
     .max(100, `${resourceType} name must be less than 100 characters`)
 
 // Resource name schemas
-const resourceTypes = ['Team', 'Region', 'Bridge', 'Machine', 'Repository', 'Storage', 'Schedule'] as const
-export const [teamNameSchema, regionNameSchema, bridgeNameSchema, machineNameSchema, repositoryNameSchema, storageNameSchema, scheduleNameSchema] = 
+const resourceTypes = ['Team', 'Region', 'Bridge', 'Machine', 'Repository', 'Storage', 'Schedule', 'DistributedStorage'] as const
+export const [teamNameSchema, regionNameSchema, bridgeNameSchema, machineNameSchema, repositoryNameSchema, storageNameSchema, scheduleNameSchema, distributedStorageNameSchema] = 
   resourceTypes.map(type => createResourceNameSchema(type))
 
 // User schemas
@@ -44,7 +44,8 @@ const resourceSchemas = {
   machine: { teamName: teamNameSchema, regionName: regionNameSchema, bridgeName: bridgeNameSchema, machineName: machineNameSchema },
   repository: { teamName: teamNameSchema, repositoryName: repositoryNameSchema },
   storage: { teamName: teamNameSchema, storageName: storageNameSchema },
-  schedule: { teamName: teamNameSchema, scheduleName: scheduleNameSchema }
+  schedule: { teamName: teamNameSchema, scheduleName: scheduleNameSchema },
+  distributedStorage: { teamName: teamNameSchema, clusterName: distributedStorageNameSchema }
 } as const
 
 export const createTeamSchema = withVault(resourceSchemas.team, 'teamVault')
@@ -66,6 +67,45 @@ export const createRepositorySchema = withVault({
 }, 'repositoryVault')
 export const createStorageSchema = withVault(resourceSchemas.storage, 'storageVault')
 export const createScheduleSchema = withVault(resourceSchemas.schedule, 'scheduleVault')
+
+// Special schema for distributed storage with complex configuration
+export const createDistributedStorageSchema = withVault({
+  ...resourceSchemas.distributedStorage,
+  nodes: z.array(z.string())
+    .min(3, 'At least 3 nodes are required for distributed storage')
+    .refine((nodes) => new Set(nodes).size === nodes.length, 'Duplicate nodes are not allowed'),
+  poolName: z.string()
+    .min(1, 'Pool name is required')
+    .max(100, 'Pool name must be less than 100 characters')
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Pool name can only contain letters, numbers, hyphens, and underscores')
+    .default('rbd'),
+  poolPgNum: z.number()
+    .min(1, 'Pool PG number must be at least 1')
+    .max(1024, 'Pool PG number must be less than 1024')
+    .default(128),
+  poolSize: z.string()
+    .regex(/^\d+[GT]$/, 'Invalid size format (e.g., 100G, 1T)')
+    .refine((val) => {
+      const match = val.match(/^(\d+)([GT])$/)
+      if (!match) return false
+      const num = parseInt(match[1])
+      return num > 0
+    }, 'Size must be greater than 0')
+    .default('100G'),
+  osdDevice: z.string()
+    .min(1, 'OSD device is required')
+    .regex(/^\/dev\/[a-zA-Z0-9_\/]+$/, 'Invalid device path (e.g., /dev/sdb)')
+    .default('/dev/sdb'),
+  rbdImagePrefix: z.string()
+    .min(1, 'RBD image prefix is required')
+    .max(50, 'RBD image prefix must be less than 50 characters')
+    .regex(/^[a-zA-Z0-9_-]+$/, 'RBD image prefix can only contain letters, numbers, hyphens, and underscores')
+    .default('rediacc_disk'),
+  healthCheckTimeout: z.number()
+    .min(60, 'Health check timeout must be at least 60 seconds')
+    .max(3600, 'Health check timeout must be less than 3600 seconds (1 hour)')
+    .default(1800),
+}, 'distributedStorageVault')
 
 export const createUserSchema = z.object({
   newUserEmail: emailSchema,
@@ -96,7 +136,8 @@ const editSchemaConfigs = [
   ['editBridgeSchema', bridgeNameSchema, 'bridgeName'],
   ['editRepositorySchema', repositoryNameSchema, 'repositoryName'],
   ['editStorageSchema', storageNameSchema, 'storageName'],
-  ['editScheduleSchema', scheduleNameSchema, 'scheduleName']
+  ['editScheduleSchema', scheduleNameSchema, 'scheduleName'],
+  ['editDistributedStorageSchema', distributedStorageNameSchema, 'clusterName']
 ] as const
 
 export const editTeamSchema = createEditSchema(teamNameSchema, 'teamName')
@@ -106,6 +147,7 @@ export const editMachineSchema = z.object(resourceSchemas.machine)
 export const editRepositorySchema = createEditSchema(repositoryNameSchema, 'repositoryName')
 export const editStorageSchema = createEditSchema(storageNameSchema, 'storageName')
 export const editScheduleSchema = createEditSchema(scheduleNameSchema, 'scheduleName')
+export const editDistributedStorageSchema = createEditSchema(distributedStorageNameSchema, 'clusterName')
 
 // Type exports
 export type CreateTeamForm = z.infer<typeof createTeamSchema>
@@ -115,6 +157,7 @@ export type CreateMachineForm = z.infer<typeof createMachineSchema>
 export type CreateRepositoryForm = z.infer<typeof createRepositorySchema>
 export type CreateStorageForm = z.infer<typeof createStorageSchema>
 export type CreateScheduleForm = z.infer<typeof createScheduleSchema>
+export type CreateDistributedStorageForm = z.infer<typeof createDistributedStorageSchema>
 export type CreateUserForm = z.infer<typeof createUserSchema>
 export type LoginForm = z.infer<typeof loginSchema>
 export type QueueItemForm = z.infer<typeof queueItemSchema>
@@ -125,3 +168,4 @@ export type EditMachineForm = z.infer<typeof editMachineSchema>
 export type EditRepositoryForm = z.infer<typeof editRepositorySchema>
 export type EditStorageForm = z.infer<typeof editStorageSchema>
 export type EditScheduleForm = z.infer<typeof editScheduleSchema>
+export type EditDistributedStorageForm = z.infer<typeof editDistributedStorageSchema>

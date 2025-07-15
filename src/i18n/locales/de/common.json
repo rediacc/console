@@ -339,6 +339,53 @@
           "label": "Plugins",
           "description": "Plugin-Konfigurationen mit Container-Images und Aktivierungsstatus"
         }
+      },
+      "DISTRIBUTEDSTORAGE": {
+        "description": "Konfiguration des verteilten Speicherclusters für Ceph-basierten Speicher",
+        "ceph_dashboard_credentials": {
+          "label": "Dashboard-Anmeldedaten",
+          "description": "Anmeldedaten für den Zugriff auf das Ceph-Dashboard",
+          "url": {
+            "label": "Dashboard-URL",
+            "description": "URL für den Zugriff auf die Ceph-Dashboard-Oberfläche"
+          },
+          "username": {
+            "label": "Benutzername",
+            "description": "Benutzername für die Dashboard-Authentifizierung"
+          },
+          "password": {
+            "label": "Passwort",
+            "description": "Passwort für die Dashboard-Authentifizierung"
+          }
+        },
+        "ceph_config": {
+          "label": "Ceph-Konfiguration",
+          "description": "Erweiterte Ceph-Konfigurationsoptionen für die Cluster-Anpassung",
+          "monitors": {
+            "label": "Monitor-IPs",
+            "description": "IP-Adressen der Ceph-Monitor-Knoten"
+          },
+          "auth_config": {
+            "label": "Authentifizierungskonfiguration",
+            "description": "Zusätzliche Ceph-Authentifizierungskonfiguration"
+          },
+          "custom_settings": {
+            "label": "Benutzerdefinierte Einstellungen",
+            "description": "Benutzerdefinierte Ceph-Konfigurationsparameter"
+          }
+        },
+        "monitoring": {
+          "label": "Überwachung",
+          "description": "Überwachungs- und Alarmkonfiguration für den Cluster",
+          "prometheus_endpoint": {
+            "label": "Prometheus-Endpunkt",
+            "description": "URL für den Prometheus-Metriken-Endpunkt"
+          },
+          "alert_rules": {
+            "label": "Alarmregeln",
+            "description": "Benutzerdefinierte Alarmregeln für die Clusterüberwachung"
+          }
+        }
       }
     }
   },

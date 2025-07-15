@@ -207,6 +207,53 @@
       "enterScheduleName": "Entrer le nom de la planification"
     }
   },
+  "distributedStorage": {
+    "clusterName": "Nom du Cluster",
+    "createCluster": "Créer un Stockage Distribué",
+    "editCluster": "Modifier le Cluster",
+    "deleteCluster": "Supprimer le Cluster",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer le cluster de stockage distribué \"{{clusterName}}\" ? Cette action ne peut pas être annulée.",
+    "noDistributedStorage": "Aucun cluster de stockage distribué trouvé dans cette équipe",
+    "deleteSuccess": "Cluster de stockage distribué supprimé avec succès",
+    "deleteError": "Échec de la suppression du cluster de stockage distribué",
+    "createSuccess": "Cluster de stockage distribué créé avec succès",
+    "queueItemCreated": "Fonction de stockage distribué mise en file d'attente avec succès",
+    "placeholders": {
+      "enterClusterName": "Entrez le nom du cluster",
+      "selectNodes": "Sélectionnez au moins 3 nœuds",
+      "enterPoolName": "Entrez le nom du pool (ex: rbd)",
+      "enterPoolSize": "Entrez la taille du pool (ex: 100G)",
+      "enterOsdDevice": "Entrez le chemin du périphérique OSD (ex: /dev/sdb)",
+      "enterRbdPrefix": "Entrez le préfixe d'image RBD"
+    },
+    "fields": {
+      "nodes": "Nœuds de Stockage",
+      "nodesHelp": "Sélectionnez au moins 3 machines pour former le cluster de stockage distribué. Plus de nœuds offrent une meilleure redondance et performance.",
+      "poolName": "Nom du Pool",
+      "poolNameHelp": "Nom pour le pool de stockage. 'rbd' par défaut est recommandé pour le stockage de blocs. Utilisez uniquement des lettres, chiffres, tirets et underscores.",
+      "poolPgNum": "Groupes de Placement",
+      "poolPgNumHelp": "Nombre de groupes de placement pour la distribution des données. La valeur par défaut de 128 convient à la plupart des clusters. Utilisez des valeurs plus élevées pour les clusters plus importants.",
+      "poolSize": "Taille du Pool",
+      "poolSizeHelp": "Capacité totale de stockage à allouer pour ce pool (ex: 100G, 1T). Sera distribuée entre tous les nœuds.",
+      "osdDevice": "Périphérique OSD",
+      "osdDeviceHelp": "Périphérique de bloc à utiliser pour l'OSD sur chaque nœud (ex: /dev/sdb). Doit être le même chemin sur tous les nœuds sélectionnés.",
+      "rbdImagePrefix": "Préfixe d'Image RBD",
+      "rbdImagePrefixHelp": "Préfixe pour les noms d'images RBD. 'rediacc_disk' par défaut est recommandé. Utilisé lors de la création de périphériques de blocs pour les dépôts.",
+      "healthCheckTimeout": "Délai de Vérification de Santé (secondes)",
+      "healthCheckTimeoutHelp": "Temps maximum d'attente pour les vérifications de santé du cluster (60-3600 secondes). La valeur par défaut de 1800 secondes (30 minutes) convient à la plupart des déploiements.",
+      "status": "Statut",
+      "nodeCount": "Nombre de Nœuds"
+    },
+    "status": {
+      "healthy": "Sain",
+      "warning": "Avertissement",
+      "error": "Erreur",
+      "provisioning": "Provisionnement",
+      "unknown": "Inconnu"
+    },
+    "functionsFor": "Fonctions pour {{name}}",
+    "distributedStorageFunctions": "Fonctions de Stockage Distribué"
+  },
   "general": {
     "team": "Équipe",
     "region": "Région",
@@ -226,7 +273,8 @@
     "machines": "Machines",
     "repositories": "Référentiel (Identifiants)",
     "storage": "Stockage",
-    "schedules": "Planifications"
+    "schedules": "Planifications",
+    "distributedStorage": "Stockage Distribué"
   },
   "audit": {
     "title": "Historique d'audit - {{name}}",

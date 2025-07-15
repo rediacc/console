@@ -199,6 +199,87 @@
         }
       }
     },
+    "DISTRIBUTEDSTORAGE": {
+      "descriptionKey": "fields.DISTRIBUTEDSTORAGE.description",
+      "required": ["ceph_dashboard_credentials"],
+      "optional": ["ceph_config", "monitoring"],
+      "fields": {
+        "ceph_dashboard_credentials": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string",
+              "format": "uri",
+              "example": "Dashboard URL. Example: https://192.168.1.100:8443"
+            },
+            "username": {
+              "type": "string",
+              "example": "Dashboard username. Example: admin"
+            },
+            "password": {
+              "type": "string",
+              "sensitive": true,
+              "example": "Dashboard password (sensitive)"
+            }
+          },
+          "description": "Ceph dashboard access credentials"
+        },
+        "ceph_config": {
+          "type": "object",
+          "properties": {
+            "monitors": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "ipv4"
+              },
+              "example": "Monitor IPs. Example: [\"192.168.1.100\", \"192.168.1.101\", \"192.168.1.102\"]"
+            },
+            "auth_config": {
+              "type": "string",
+              "example": "Additional Ceph authentication config"
+            },
+            "custom_settings": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "example": "Custom Ceph settings. Example: {\"osd_pool_default_size\": \"3\"}"
+            }
+          },
+          "description": "Advanced Ceph configuration options"
+        },
+        "monitoring": {
+          "type": "object",
+          "properties": {
+            "prometheus_endpoint": {
+              "type": "string",
+              "format": "uri",
+              "example": "Prometheus endpoint. Example: http://192.168.1.100:9283/metrics"
+            },
+            "alert_rules": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "expression": {
+                    "type": "string"
+                  },
+                  "severity": {
+                    "type": "string",
+                    "enum": ["critical", "warning", "info"]
+                  }
+                }
+              }
+            }
+          },
+          "description": "Monitoring and alerting configuration"
+        }
+      }
+    },
     "REGION": {
       "descriptionKey": "fields.REGION.description",
       "required": [],

@@ -207,6 +207,53 @@
       "enterScheduleName": "Ingrese el nombre del horario"
     }
   },
+  "distributedStorage": {
+    "clusterName": "Nombre del Clúster",
+    "createCluster": "Crear Almacenamiento Distribuido",
+    "editCluster": "Editar Clúster",
+    "deleteCluster": "Eliminar Clúster",
+    "confirmDelete": "¿Está seguro de que desea eliminar el clúster de almacenamiento distribuido \"{{clusterName}}\"? Esta acción no se puede deshacer.",
+    "noDistributedStorage": "No se encontraron clústeres de almacenamiento distribuido en este equipo",
+    "deleteSuccess": "Clúster de almacenamiento distribuido eliminado exitosamente",
+    "deleteError": "Error al eliminar el clúster de almacenamiento distribuido",
+    "createSuccess": "Clúster de almacenamiento distribuido creado exitosamente",
+    "queueItemCreated": "Función de almacenamiento distribuido encolada exitosamente",
+    "placeholders": {
+      "enterClusterName": "Ingrese el nombre del clúster",
+      "selectNodes": "Seleccione al menos 3 nodos",
+      "enterPoolName": "Ingrese el nombre del pool (p.ej., rbd)",
+      "enterPoolSize": "Ingrese el tamaño del pool (p.ej., 100G)",
+      "enterOsdDevice": "Ingrese la ruta del dispositivo OSD (p.ej., /dev/sdb)",
+      "enterRbdPrefix": "Ingrese el prefijo de imagen RBD"
+    },
+    "fields": {
+      "nodes": "Nodos de Almacenamiento",
+      "nodesHelp": "Seleccione al menos 3 máquinas para formar el clúster de almacenamiento distribuido. Más nodos proporcionan mejor redundancia y rendimiento.",
+      "poolName": "Nombre del Pool",
+      "poolNameHelp": "Nombre para el pool de almacenamiento. Se recomienda 'rbd' por defecto para almacenamiento de bloques. Use solo letras, números, guiones y guiones bajos.",
+      "poolPgNum": "Grupos de Ubicación",
+      "poolPgNumHelp": "Número de grupos de ubicación para distribución de datos. El valor predeterminado de 128 funciona bien para la mayoría de los clústeres. Use valores más altos para clústeres más grandes.",
+      "poolSize": "Tamaño del Pool",
+      "poolSizeHelp": "Capacidad total de almacenamiento a asignar para este pool (p.ej., 100G, 1T). Se distribuirá entre todos los nodos.",
+      "osdDevice": "Dispositivo OSD",
+      "osdDeviceHelp": "Dispositivo de bloque a usar para OSD en cada nodo (p.ej., /dev/sdb). Debe ser la misma ruta de dispositivo en todos los nodos seleccionados.",
+      "rbdImagePrefix": "Prefijo de Imagen RBD",
+      "rbdImagePrefixHelp": "Prefijo para nombres de imagen RBD. Se recomienda 'rediacc_disk' por defecto. Se usa al crear dispositivos de bloque para repositorios.",
+      "healthCheckTimeout": "Tiempo de Espera de Verificación de Salud (segundos)",
+      "healthCheckTimeoutHelp": "Tiempo máximo de espera para verificaciones de salud del clúster (60-3600 segundos). El valor predeterminado de 1800 segundos (30 minutos) es adecuado para la mayoría de las implementaciones.",
+      "status": "Estado",
+      "nodeCount": "Cantidad de Nodos"
+    },
+    "status": {
+      "healthy": "Saludable",
+      "warning": "Advertencia",
+      "error": "Error",
+      "provisioning": "Aprovisionando",
+      "unknown": "Desconocido"
+    },
+    "functionsFor": "Funciones para {{name}}",
+    "distributedStorageFunctions": "Funciones de Almacenamiento Distribuido"
+  },
   "general": {
     "team": "Equipo",
     "region": "Región",
@@ -226,7 +273,8 @@
     "machines": "Máquinas",
     "repositories": "Repo (Credenciales)",
     "storage": "Almacenamiento",
-    "schedules": "Horarios"
+    "schedules": "Horarios",
+    "distributedStorage": "Almacenamiento Distribuido"
   },
   "audit": {
     "title": "Historial de Auditoría - {{name}}",

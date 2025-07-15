@@ -339,6 +339,53 @@
           "label": "Plugins",
           "description": "Configuraciones de plugins con imágenes de contenedor y estado de activación"
         }
+      },
+      "DISTRIBUTEDSTORAGE": {
+        "description": "Configuración del clúster de almacenamiento distribuido para almacenamiento basado en Ceph",
+        "ceph_dashboard_credentials": {
+          "label": "Credenciales del Panel",
+          "description": "Credenciales para acceder al panel de Ceph",
+          "url": {
+            "label": "URL del Panel",
+            "description": "URL para acceder a la interfaz del panel de Ceph"
+          },
+          "username": {
+            "label": "Nombre de Usuario",
+            "description": "Nombre de usuario para autenticación del panel"
+          },
+          "password": {
+            "label": "Contraseña",
+            "description": "Contraseña para autenticación del panel"
+          }
+        },
+        "ceph_config": {
+          "label": "Configuración de Ceph",
+          "description": "Opciones avanzadas de configuración de Ceph para personalización del clúster",
+          "monitors": {
+            "label": "IPs de Monitores",
+            "description": "Direcciones IP de los nodos monitores de Ceph"
+          },
+          "auth_config": {
+            "label": "Configuración de Autenticación",
+            "description": "Configuración adicional de autenticación de Ceph"
+          },
+          "custom_settings": {
+            "label": "Configuración Personalizada",
+            "description": "Parámetros de configuración personalizados de Ceph"
+          }
+        },
+        "monitoring": {
+          "label": "Monitoreo",
+          "description": "Configuración de monitoreo y alertas para el clúster",
+          "prometheus_endpoint": {
+            "label": "Endpoint de Prometheus",
+            "description": "URL para el endpoint de métricas de Prometheus"
+          },
+          "alert_rules": {
+            "label": "Reglas de Alerta",
+            "description": "Reglas de alerta personalizadas para monitoreo del clúster"
+          }
+        }
       }
     }
   },
