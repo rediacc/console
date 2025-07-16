@@ -7,16 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
-    "tauri": "tauri",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "TAURI_ENV_PLATFORM=1 tauri build",
-    "tauri:build:mac": "tauri build --target universal-apple-darwin",
-    "tauri:build:mac:arm": "tauri build --target aarch64-apple-darwin",
-    "tauri:build:win": "tauri build --target x86_64-pc-windows-msvc",
-    "tauri:build:win:arm": "tauri build --target aarch64-pc-windows-msvc",
-    "tauri:build:linux": "tauri build --target x86_64-unknown-linux-gnu",
-    "tauri:build:linux:arm": "tauri build --target aarch64-unknown-linux-gnu"
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx"
   },
   "dependencies": {
     "@ant-design/charts": "^2.2.1",
@@ -24,12 +15,6 @@
     "@hookform/resolvers": "^5.0.1",
     "@reduxjs/toolkit": "^2.3.0",
     "@tanstack/react-query": "^5.62.0",
-    "@tauri-apps/api": "^2.6.0",
-    "@tauri-apps/plugin-dialog": "^2.3.0",
-    "@tauri-apps/plugin-fs": "^2.4.0",
-    "@tauri-apps/plugin-http": "^2.5.0",
-    "@tauri-apps/plugin-notification": "^2.3.0",
-    "@tauri-apps/plugin-shell": "^2.3.0",
     "@types/react-syntax-highlighter": "^15.5.13",
     "antd": "^5.21.6",
     "axios": "^1.7.7",
@@ -52,7 +37,6 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.6.2",
     "@types/d3": "^7.4.3",
     "@types/lodash": "^4.17.13",
     "@types/react": "^18.3.12",

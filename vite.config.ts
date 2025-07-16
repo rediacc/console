@@ -4,8 +4,8 @@ import path from 'path'
 
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  // For Tauri apps, always use root path. For web deployment, use /console/
-  base: process.env.TAURI_ENV_PLATFORM ? '/' : (process.env.NODE_ENV === 'production' ? '/console/' : '/'),
+  // For web deployment, use /console/
+  base: process.env.NODE_ENV === 'production' ? '/console/' : '/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -61,7 +61,6 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: ['react', 'react-dom', 'antd', '@ant-design/icons'],
-    exclude: ['@tauri-apps/api'],
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify(mode),

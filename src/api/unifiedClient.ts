@@ -1,108 +1,71 @@
 import { apiClient as webApiClient } from './client'
-import { desktopApiClient } from './desktopClient'
 
 class UnifiedApiClient {
-  private isDesktop = false
-  
-  constructor() {
-    this.detectEnvironment()
-  }
-
-  private async detectEnvironment() {
-    this.isDesktop = await desktopApiClient.isDesktopMode()
-  }
-
   async post<T = any>(endpoint: string, data?: any) {
-    await this.detectEnvironment() // Re-check in case it changed
-    
-    if (this.isDesktop) {
-      return desktopApiClient.post<T>(endpoint, data)
-    } else {
-      return webApiClient.post<T>(endpoint, data)
-    }
+    return webApiClient.post<T>(endpoint, data)
   }
 
-  // Desktop-specific methods (return null/throw in web mode)
-  async executePythonScript(scriptPath: string, args: string[] = []) {
-    if (!this.isDesktop) {
-      throw new Error('Python execution is only available in desktop mode')
-    }
-    return desktopApiClient.executePythonScript(scriptPath, args)
+  // Desktop-specific methods (always throw in web mode)
+  async executePythonScript(_scriptPath: string, _args: string[] = []) {
+    throw new Error('Python execution is not available in web mode')
   }
 
   async syncFiles(
-    direction: 'upload' | 'download',
-    machine: string,
-    repository: string,
-    localPath: string,
-    options: any = {}
+    _direction: 'upload' | 'download',
+    _machine: string,
+    _repository: string,
+    _localPath: string,
+    _options: any = {}
   ) {
-    if (!this.isDesktop) {
-      throw new Error('File sync is only available in desktop mode')
-    }
-    return desktopApiClient.syncFiles(direction, machine, repository, localPath, options)
+    throw new Error('File sync is not available in web mode')
   }
 
   async executeTerminalCommand(
-    machine: string,
-    repository: string,
-    command: string,
-    team?: string
+    _machine: string,
+    _repository: string,
+    _command: string,
+    _team?: string
   ) {
-    if (!this.isDesktop) {
-      throw new Error('Terminal commands are only available in desktop mode')
-    }
-    return desktopApiClient.executeTerminalCommand(machine, repository, command, team)
+    throw new Error('Terminal commands are not available in web mode')
   }
 
   // Environment checks
   async isDesktopMode(): Promise<boolean> {
-    return this.isDesktop
+    return false
   }
 
   async checkPythonAvailable(): Promise<boolean> {
-    if (!this.isDesktop) return false
-    return desktopApiClient.checkPythonAvailable()
+    return false
   }
 
   async getPythonVersion(): Promise<string | null> {
-    if (!this.isDesktop) return null
-    try {
-      return await desktopApiClient.getPythonVersion()
-    } catch {
-      return null
-    }
+    return null
   }
 
   async checkCliAvailable(): Promise<boolean> {
-    if (!this.isDesktop) return false
-    return desktopApiClient.checkCliAvailable()
+    return false
   }
 
   async getSystemInfo(): Promise<any | null> {
-    if (!this.isDesktop) return null
-    try {
-      return await desktopApiClient.getSystemInfo()
-    } catch {
-      return null
-    }
+    return null
   }
 
   async executePluginCommand(
-    action: 'list' | 'connect' | 'connections',
-    machine: string,
-    repository: string,
-    options: any = {}
+    _action: 'list' | 'connect' | 'connections',
+    _machine: string,
+    _repository: string,
+    _options: any = {}
   ) {
-    if (!this.isDesktop) {
-      throw new Error('Plugin commands are only available in desktop mode')
-    }
-    return desktopApiClient.executePluginCommand(action, machine, repository, options)
+    throw new Error('Plugin commands are not available in web mode')
   }
 }
 
 // Export a singleton instance
 export const unifiedApiClient = new UnifiedApiClient()
 
-// Also export the type for use in other files
-export type { CommandResult } from './desktopClient'
+// Command result type for compatibility
+export interface CommandResult {
+  success: boolean
+  output: string
+  error: string
+}

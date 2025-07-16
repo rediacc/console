@@ -11,7 +11,6 @@ export default tseslint.config(
       'dist/',
       'bin/',
       'node_modules/',
-      'src-tauri/',
       '*.config.js',
       '*.config.ts',
       'vite.config.ts',

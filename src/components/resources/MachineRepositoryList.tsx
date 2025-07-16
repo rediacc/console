@@ -13,13 +13,11 @@ import { useStorage } from '@/api/queries/storage'
 import type { ColumnsType } from 'antd/es/table'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
-import { LocalCommandModal } from './LocalCommandModal'
-import { DesktopLocalCommandModal } from './DesktopLocalCommandModal'
+import { LocalActionsMenu } from './LocalActionsMenu'
 import { showMessage } from '@/utils/messages'
 import { tokenService } from '@/services/tokenService'
 import { useAppSelector } from '@/store/store'
 import { getLocalizedRelativeTime } from '@/utils/timeUtils'
-import { useDesktopMode } from '@/hooks/useDesktopMode'
 
 const { Text } = Typography
 
@@ -87,7 +85,6 @@ interface MachineRepositoryListProps {
 export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete, hideSystemInfo = false }) => {
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
   const userEmail = useAppSelector((state) => state.auth.user?.email || '')
-  const { isDesktop } = useDesktopMode()
   const [currentToken, setCurrentToken] = useState<string>('')
   const [repositories, setRepositories] = useState<Repository[]>([])
   const [systemContainers, setSystemContainers] = useState<any[]>([])
@@ -104,10 +101,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const [expandedRows, setExpandedRows] = useState<string[]>([])
   const [servicesData, setServicesData] = useState<Record<string, any>>({})
   const [containersData, setContainersData] = useState<Record<string, any>>({})
-  const [localCommandModal, setLocalCommandModal] = useState<{
-    visible: boolean
-    repository: Repository | null
-  }>({ visible: false, repository: null })
   const [createdRepositoryName, setCreatedRepositoryName] = useState<string | null>(null)
   
   // Keep managed queue for function execution
@@ -1309,13 +1302,13 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         return (
           <Space size="small">
             {record.mounted && (
-              <Button
-                size="small"
-                icon={<DesktopOutlined />}
-                onClick={() => setLocalCommandModal({ visible: true, repository: record })}
-              >
-                {t('resources:local')}
-              </Button>
+              <LocalActionsMenu
+                machine={machine.machineName}
+                repository={record.name}
+                token={currentToken}
+                teamName={machine.teamName}
+                pluginContainers={containersData[record.name]?.containers || []}
+              />
             )}
             <Dropdown
               menu={{ items: menuItems }}
@@ -1718,30 +1711,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         }}
       />
       
-      {/* Local Command Modal - Desktop or Web version based on environment */}
-      {localCommandModal.repository && (
-        isDesktop ? (
-          <DesktopLocalCommandModal
-            visible={localCommandModal.visible}
-            onClose={() => setLocalCommandModal({ visible: false, repository: null })}
-            machine={machine.machineName}
-            repository={localCommandModal.repository.name}
-            token={currentToken}
-            userEmail={userEmail}
-            pluginContainers={containersData[localCommandModal.repository.name]?.containers || []}
-          />
-        ) : (
-          <LocalCommandModal
-            visible={localCommandModal.visible}
-            onClose={() => setLocalCommandModal({ visible: false, repository: null })}
-            machine={machine.machineName}
-            repository={localCommandModal.repository.name}
-            token={currentToken}
-            userEmail={userEmail}
-            pluginContainers={containersData[localCommandModal.repository.name]?.containers || []}
-          />
-        )
-      )}
     </div>
   )
 }
