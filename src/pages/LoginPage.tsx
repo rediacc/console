@@ -23,8 +23,9 @@ import {
 import { masterPasswordService } from '@/services/masterPasswordService'
 import { tokenService } from '@/services/tokenService'
 import { useVerify2FA } from '@/api/queries/twoFactor'
+import RegistrationModal from '@/components/auth/RegistrationModal'
 
-const { Text } = Typography
+const { Text, Link } = Typography
 
 interface LoginForm {
   email: string
@@ -90,6 +91,7 @@ const LoginPage: React.FC = () => {
   const [show2FAModal, setShow2FAModal] = useState(false)
   const [pending2FAData, setPending2FAData] = useState<any>(null)
   const [twoFACode, setTwoFACode] = useState('')
+  const [showRegistration, setShowRegistration] = useState(false)
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const [form] = Form.useForm<LoginForm>()
@@ -365,7 +367,10 @@ const LoginPage: React.FC = () => {
 
         <div style={{ textAlign: 'center' }}>
           <Text type="secondary">
-            {t('auth:login.noAccount')} {t('auth:login.register')}
+            {t('auth:login.noAccount')}{' '}
+            <Link onClick={() => setShowRegistration(true)} style={{ color: '#556b2f' }}>
+              {t('auth:login.register')}
+            </Link>
           </Text>
         </div>
       </Space>
@@ -449,6 +454,12 @@ const LoginPage: React.FC = () => {
           </Form>
         </Space>
       </Modal>
+
+      {/* Registration Modal */}
+      <RegistrationModal
+        visible={showRegistration}
+        onClose={() => setShowRegistration(false)}
+      />
     </>
   )
 }

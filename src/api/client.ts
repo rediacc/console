@@ -95,10 +95,7 @@ class ApiClient {
   }
 
   async activateUser(email: string, activationCode: string) {
-    return (await axios.post<ApiResponse>(
-      `${API_BASE_URL}${API_PREFIX}/ActivateUserAccount`,
-      { userEmail: email, activationCode }
-    )).data
+    return this.makeRequest('/ActivateUserAccount', { userEmail: email, activationCode })
   }
 
   private async makeRequest<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
