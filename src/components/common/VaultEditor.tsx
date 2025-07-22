@@ -401,10 +401,13 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   // Initialize form with data
   useEffect(() => {
     if (entityDef) {
-      // Check if this is truly new data by comparing serialized versions
+      // Always re-initialize when initialData changes from non-empty to empty (indicating a reset)
       const currentDataString = JSON.stringify(initialData)
-      if (currentDataString === lastInitializedData) {
-        // Same data, don't re-initialize
+      const wasNonEmpty = lastInitializedData && lastInitializedData !== '{}'
+      const isNowEmpty = currentDataString === '{}'
+      
+      // Skip re-initialization only if data hasn't changed AND we're not resetting
+      if (currentDataString === lastInitializedData && !(wasNonEmpty && isNowEmpty)) {
         return
       }
       

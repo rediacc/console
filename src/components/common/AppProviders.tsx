@@ -1,34 +1,27 @@
 import React from 'react';
-import { ConfigProvider, App as AntApp } from 'antd';
+import { ConfigProvider, App as AntApp, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import enUS from 'antd/locale/en_US';
 import esES from 'antd/locale/es_ES';
+import frFR from 'antd/locale/fr_FR';
+import deDE from 'antd/locale/de_DE';
+import zhCN from 'antd/locale/zh_CN';
+import jaJP from 'antd/locale/ja_JP';
+import arEG from 'antd/locale/ar_EG';
+import trTR from 'antd/locale/tr_TR';
+import ruRU from 'antd/locale/ru_RU';
 
 const antdLocales = {
   en: enUS,
   es: esES,
-};
-
-const theme = {
-  token: {
-    colorPrimary: '#556b2f',
-    colorSuccess: '#22c55e',
-    colorWarning: '#f59e0b',
-    colorError: '#ef4444',
-    colorInfo: '#3b82f6',
-    colorTextBase: '#111827',
-    colorBgBase: '#ffffff',
-    borderRadius: 6,
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-  },
-  components: {
-    Button: {
-      primaryShadow: '0 2px 0 rgba(85, 107, 47, 0.1)',
-    },
-    Card: {
-      boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
-    },
-  },
+  fr: frFR,
+  de: deDE,
+  zh: zhCN,
+  ja: jaJP,
+  ar: arEG,
+  tr: trTR,
+  ru: ruRU,
 };
 
 interface AppProvidersProps {
@@ -40,7 +33,42 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   const currentLocale = antdLocales[i18n.language as keyof typeof antdLocales] || enUS;
 
   return (
-    <ConfigProvider theme={theme} locale={currentLocale}>
+    <ThemeProvider>
+      <AppProvidersContent currentLocale={currentLocale} language={i18n.language}>
+        {children}
+      </AppProvidersContent>
+    </ThemeProvider>
+  );
+};
+
+interface AppProvidersContentProps {
+  children: React.ReactNode;
+  currentLocale: any;
+  language: string;
+}
+
+const AppProvidersContent: React.FC<AppProvidersContentProps> = ({ children, currentLocale, language }) => {
+  const { theme: currentTheme } = useTheme();
+
+  return (
+    <ConfigProvider
+      key={language} // Force re-render when language changes
+      locale={currentLocale}
+      theme={{
+        algorithm: currentTheme === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        token: {
+          colorPrimary: '#333333',
+          borderRadius: 6,
+          colorBgContainer: currentTheme === 'dark' ? '#1a1a1a' : '#ffffff',
+          colorBgElevated: currentTheme === 'dark' ? '#2a2a2a' : '#ffffff',
+          colorBgLayout: currentTheme === 'dark' ? '#0a0a0a' : '#f5f5f5',
+          colorText: currentTheme === 'dark' ? '#fafafa' : '#09090b',
+          colorTextSecondary: currentTheme === 'dark' ? '#a1a1aa' : '#6c757d',
+          colorBorder: currentTheme === 'dark' ? '#3f3f46' : '#dee2e6',
+          colorBorderSecondary: currentTheme === 'dark' ? '#27272a' : '#e9ecef',
+        },
+      }}
+    >
       <AntApp>
         {children}
       </AntApp>

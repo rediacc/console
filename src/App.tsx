@@ -1,11 +1,12 @@
 import React, { useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { ConfigProvider, theme, Spin } from 'antd'
+import { Spin } from 'antd'
 import { selectIsAuthenticated } from '@/store/auth/authSelectors'
 import { loginSuccess } from '@/store/auth/authSlice'
 import { getAuthData, migrateFromLocalStorage } from '@/utils/auth'
-import { ThemeProvider, useTheme } from '@/context/ThemeContext'
+import { ThemeProvider } from '@/context/ThemeContext'
+import { AppProviders } from '@/components/common/AppProviders'
 import { ThemedToaster } from '@/components/common/ThemedToaster'
 import { initializeApiClient } from '@/api/init'
 import AuthLayout from '@/components/layouts/AuthLayout'
@@ -34,7 +35,6 @@ const PageLoader: React.FC = () => (
 )
 
 const AppContent: React.FC = () => {
-  const { theme: currentTheme } = useTheme()
   const dispatch = useDispatch()
   const isAuthenticated = useSelector(selectIsAuthenticated)
 
@@ -61,22 +61,7 @@ const AppContent: React.FC = () => {
   }, [dispatch])
 
   return (
-      <ConfigProvider
-        theme={{
-          algorithm: currentTheme === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
-          token: {
-            colorPrimary: '#333333',
-            borderRadius: 6,
-            colorBgContainer: currentTheme === 'dark' ? '#1a1a1a' : '#ffffff',
-            colorBgElevated: currentTheme === 'dark' ? '#2a2a2a' : '#ffffff',
-            colorBgLayout: currentTheme === 'dark' ? '#0a0a0a' : '#f5f5f5',
-            colorText: currentTheme === 'dark' ? '#fafafa' : '#09090b',
-            colorTextSecondary: currentTheme === 'dark' ? '#a1a1aa' : '#6c757d',
-            colorBorder: currentTheme === 'dark' ? '#3f3f46' : '#dee2e6',
-            colorBorderSecondary: currentTheme === 'dark' ? '#27272a' : '#e9ecef',
-          },
-        }}
-      >
+      <AppProviders>
         <BrowserRouter basename={import.meta.env.BASE_URL}>
           <Routes>
             {/* Auth routes */}
@@ -144,16 +129,12 @@ const AppContent: React.FC = () => {
           </Routes>
         </BrowserRouter>
         <ThemedToaster />
-      </ConfigProvider>
+      </AppProviders>
   )
 }
 
 const App: React.FC = () => {
-  return (
-    <ThemeProvider>
-      <AppContent />
-    </ThemeProvider>
-  )
+  return <AppContent />
 }
 
 export default App

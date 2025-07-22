@@ -171,7 +171,12 @@ i18n
     },
     react: {
       useSuspense: false, // Disable suspense to prevent blocking
-      wait: false
+      wait: false,
+      bindI18n: 'languageChanged loaded', // Re-render components when language changes
+      bindI18nStore: 'added removed', // Re-render when translations are added/removed
+      transEmptyNodeValue: '', // Prevent showing keys for empty translations
+      transSupportBasicHtmlNodes: true,
+      transKeepBasicHtmlNodesFor: ['br', 'strong', 'i', 'p']
     }
   });
 

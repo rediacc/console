@@ -26,8 +26,10 @@ const languages: Language[] = [
 const LanguageSelector: React.FC = () => {
   const { i18n, t } = useTranslation();
 
-  const handleChange = (value: string) => {
-    i18n.changeLanguage(value);
+  const handleChange = async (value: string) => {
+    await i18n.changeLanguage(value);
+    // Force a re-render of the entire app by updating the document direction for RTL languages
+    document.documentElement.dir = value === 'ar' ? 'rtl' : 'ltr';
   };
 
   return (

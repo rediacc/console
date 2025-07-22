@@ -74,6 +74,11 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
       // Vault validation state updated
     }, [isVaultValid, vaultValidationErrors, showVaultValidationErrors, entityType])
     
+    // Update vault data when initialVaultData prop changes
+    useEffect(() => {
+      setVaultData(initialVaultData || {})
+    }, [initialVaultData])
+    
 
     const {
       control,
@@ -360,7 +365,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
           <VaultEditor
             entityType={entityType}
-            initialData={initialVaultData}
+            initialData={vaultData}
             onChange={handleVaultChange}
             onValidate={handleVaultValidate}
             teamName={teamName}

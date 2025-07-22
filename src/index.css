@@ -236,14 +236,14 @@ body {
   background-color: rgba(85, 107, 47, 0.2) !important;
 }
 
-/* UI Mode Transitions */
+/* UI Mode Transitions - optimized for performance */
 .ant-menu-item {
-  transition: all 0.3s ease, height 0.3s ease, opacity 0.3s ease !important;
+  transition: background-color 0.15s ease, opacity 0.15s ease !important;
 }
 
 .ant-table-thead > tr > th,
 .ant-table-tbody > tr > td {
-  transition: all 0.3s ease, width 0.3s ease, opacity 0.3s ease !important;
+  transition: background-color 0.15s ease, color 0.15s ease !important;
 }
 
 /* Smooth icon transitions */

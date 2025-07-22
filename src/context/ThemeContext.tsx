@@ -21,26 +21,20 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   useEffect(() => {
     const applyTheme = (theme: Theme) => {
-      // Set data-theme attribute
-      document.body.setAttribute('data-theme', theme);
-      
-      // Add/remove dark class for Tailwind
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-        document.body.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-        document.body.classList.remove('dark');
-      }
-      
-      // Set body styles
-      if (theme === 'dark') {
-        document.body.style.backgroundColor = '#0a0a0a';
-        document.body.style.color = '#fafafa';
-      } else {
-        document.body.style.backgroundColor = '#ffffff';
-        document.body.style.color = '#09090b';
-      }
+      // Batch DOM updates for better performance
+      requestAnimationFrame(() => {
+        // Set data-theme attribute
+        document.body.setAttribute('data-theme', theme);
+        
+        // Add/remove dark class for Tailwind
+        const isDark = theme === 'dark';
+        document.documentElement.classList.toggle('dark', isDark);
+        document.body.classList.toggle('dark', isDark);
+        
+        // Remove inline styles - let CSS handle the colors
+        document.body.style.removeProperty('background-color');
+        document.body.style.removeProperty('color');
+      });
       
       // Save to localStorage
       localStorage.setItem('theme', theme);

@@ -106,6 +106,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   const [showTemplateDetails, setShowTemplateDetails] = useState(false)
   const [templateToView, setTemplateToView] = useState<string | null>(null)
   
+  // State to track modal instance
+  const [modalInstanceId, setModalInstanceId] = useState(() => Date.now())
+  
   // Import/Export handlers ref
   const importExportHandlers = useRef<{ handleImport: (file: any) => boolean; handleExport: () => void } | null>(null)
   
@@ -264,6 +267,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   // Set default values when modal opens
   useEffect(() => {
     if (open && mode === 'create') {
+      // Generate new instance ID when modal opens
+      setModalInstanceId(Date.now())
+      
       // Reset form to default values first
       form.reset(getDefaultValues())
       
@@ -851,6 +857,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         )}
         
         <ResourceFormWithVault
+          key={modalInstanceId}
           ref={formRef}
           form={form}
           fields={getFormFields()}
@@ -858,7 +865,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           entityType={getEntityType()}
           vaultFieldName={getVaultFieldName()}
           showDefaultsAlert={mode === 'create' && uiMode === 'simple'}
-          initialVaultData={mode === 'edit' && existingData ? JSON.parse(existingData.vaultContent || '{}') : undefined}
+          initialVaultData={mode === 'edit' && existingData ? JSON.parse(existingData.vaultContent || '{}') : {}}
           hideImportExport={true}
           onImportExportRef={(handlers) => {
             importExportHandlers.current = handlers

@@ -11,6 +11,17 @@
   --color-info: #74c0fc;
 }
 
+/* Body styles for themes */
+body[data-theme="light"] {
+  background-color: #ffffff;
+  color: #212529;
+}
+
+body[data-theme="dark"] {
+  background-color: #0a0a0a;
+  color: #fafafa;
+}
+
 /* Light theme variables */
 [data-theme="light"] {
   /* Background colors */
@@ -134,9 +145,26 @@
   border-color: var(--color-border-secondary);
 }
 
-/* Smooth transitions for theme changes */
-* {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+/* Smooth transitions for theme changes - optimized for performance */
+body,
+.ant-layout,
+.ant-layout-header,
+.ant-layout-content,
+.ant-layout-sider,
+.ant-card,
+.ant-table,
+.ant-menu,
+.ant-modal-content {
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* Border transitions for specific elements */
+.ant-card,
+.ant-table-thead > tr > th,
+.ant-table-tbody > tr > td,
+.ant-input,
+.ant-select-selector {
+  transition: border-color 0.15s ease;
 }
 
 /* Override transitions for performance-critical elements */
