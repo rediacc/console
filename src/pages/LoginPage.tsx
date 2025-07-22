@@ -117,7 +117,7 @@ const LoginPage: React.FC = () => {
       }
 
       // Extract token and company data
-      const userData = loginResponse.tables[0].data[0]
+      const userData = loginResponse.resultSets[0].data[0]
       
       const token = userData.nextRequestCredential
       if (!token) {

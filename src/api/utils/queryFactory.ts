@@ -41,8 +41,8 @@ export const createResourceQuery = <T>(config: ResourceQueryConfig<T>) =>
 
 // Common data extractors
 export const dataExtractors = {
-  primaryOrSecondary: (response: any) => response.tables?.[1]?.data || response.tables?.[0]?.data || [],
-  primary: (response: any) => response.tables?.[0]?.data || []
+  primaryOrSecondary: (response: any) => response.resultSets?.[1]?.data || [],
+  primary: (response: any) => response.resultSets?.[0]?.data || []
 }
 
 // Common filters

@@ -28,7 +28,7 @@ export const useAuditLogs = (params?: AuditLogsParams) => {
         maxRecords: params?.maxRecords || 100
       });
       
-      return response.tables?.[1]?.data as AuditLog[] || [];
+      return response.resultSets?.[1]?.data as AuditLog[] || [];
     }
   });
 };
@@ -41,7 +41,7 @@ export const useRecentAuditLogs = (maxRecords: number = 10) => {
         maxRecords
       });
       
-      return response.tables?.[1]?.data as AuditLog[] || [];
+      return response.resultSets?.[1]?.data as AuditLog[] || [];
     }
   });
 };
@@ -92,8 +92,8 @@ export const getEntityAuditTrace = async (
   // Table 0: Token rotation (nextRequestCredential)
   // Table 1: Audit records
   // Table 2: Summary information
-  const records = response.tables?.[1]?.data || [];
-  const summary = response.tables?.[2]?.data?.[0] || null;
+  const records = response.resultSets?.[1]?.data || [];
+  const summary = response.resultSets?.[2]?.data?.[0] || null;
 
   return {
     records,

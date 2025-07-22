@@ -388,7 +388,7 @@ class QueueMonitoringService {
 
   private extractQueueDetails(response: any): any {
     let queueDetails: any = null
-    response.tables?.forEach((table: any) => {
+    response.resultSets?.forEach((table: any) => {
       if (table.data && table.data.length > 0 && table.resultSetIndex === 1) {
         queueDetails = table.data[0]
       }

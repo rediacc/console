@@ -65,7 +65,7 @@ export async function waitForQueueItemCompletion(
 async function pollQueueItemStatus(taskId: string): Promise<QueueItemCompletionResult | null> {
   try {
     const response = await apiClient.get('/GetQueueItemTrace', { taskId })
-    const queueDetails = response.tables?.[QUEUE_DETAILS_TABLE_INDEX]?.data?.[0]
+    const queueDetails = response.resultSets?.[QUEUE_DETAILS_TABLE_INDEX]?.data?.[0]
     
     if (!queueDetails) {
       return null
@@ -89,7 +89,7 @@ async function pollQueueItemStatus(taskId: string): Promise<QueueItemCompletionR
 }
 
 function handleCompletedStatus(response: any): QueueItemCompletionResult {
-  const responseVault = response.tables?.[RESPONSE_VAULT_TABLE_INDEX]?.data?.[0]
+  const responseVault = response.resultSets?.[RESPONSE_VAULT_TABLE_INDEX]?.data?.[0]
   
   if (!responseVault?.vaultContent) {
     return createSuccessResult('Hello function completed successfully', 'COMPLETED')

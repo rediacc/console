@@ -28,7 +28,7 @@ export function useQueueVaultBuilder() {
     try {
       const response = await apiClient.get('/GetCompanyVault')
       // Company vault data is in the second table (index 1)
-      const vaultData = response.tables[1]?.data[0]
+      const vaultData = response.resultSets[1]?.data[0]
       
       if (vaultData) {
         companyVaultData = {

@@ -3,7 +3,7 @@ export const extractTableData = <T = any[]>(
   tableIndex = 1,
   defaultValue: T = [] as T
 ): T => {
-  const data = response.tables?.[tableIndex]?.data ?? response.tables?.[0]?.data ?? defaultValue
+  const data = response.resultSets?.[tableIndex]?.data ?? response.resultSets?.[0]?.data ?? defaultValue
   return Array.isArray(data) ? data : defaultValue
 }
 

@@ -28,7 +28,7 @@ export const useStorage = (teamFilter?: string | string[]) => {
       }
       
       const response = await apiClient.get('/GetTeamStorages', params)
-      const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
+      const data = response.resultSets?.[1]?.data || []
       const storages = Array.isArray(data) ? data : []
       return storages
         .filter((storage: any) => storage && storage.storageName)

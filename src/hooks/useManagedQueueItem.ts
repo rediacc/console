@@ -48,7 +48,7 @@ export const useManagedQueueItem = () => {
     const response = await apiClient.post('/CreateQueueItem', minifiedData)
     
     // Extract taskId from response and add it to the response object
-    const taskId = response.tables[1]?.data[0]?.taskId || response.tables[1]?.data[0]?.TaskId
+    const taskId = response.resultSets[1]?.data[0]?.taskId || response.resultSets[1]?.data[0]?.TaskId
     return { ...response, taskId }
   }
 

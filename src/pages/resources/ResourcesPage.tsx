@@ -307,7 +307,7 @@ const ResourcesPage: React.FC = () => {
   // Rclone import wizard state
   const [rcloneImportWizardOpen, setRcloneImportWizardOpen] = useState(false)
   
-  // Dynamic page sizes for tables
+  // Dynamic page sizes for resultSets
   const repositoryPageSize = useDynamicPageSize(repositoryTableRef, {
     containerOffset: 220, // Account for tab headers, pagination, and padding
     minRows: 5,
@@ -453,7 +453,7 @@ const ResourcesPage: React.FC = () => {
             })
             
             // The repository data is in the second table (index 1)
-            const createdRepo = repoResponse.tables[1]?.data?.find(
+            const createdRepo = repoResponse.resultSets[1]?.data?.find(
               (r: any) => r.repoName === data.repositoryName
             )
             

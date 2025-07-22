@@ -35,7 +35,7 @@ export const useUsers = () => {
     queryKey: ['users'],
     queryFn: async () => {
       const response = await apiClient.get('/GetCompanyUsers')
-      const users = response.tables[1]?.data || []
+      const users = response.resultSets[1]?.data || []
       
       // Map PermissionsName to permissionGroupName to match our interface
       return users.map((user: any) => ({
@@ -110,7 +110,7 @@ export const usePermissionGroups = () => {
     queryKey: ['permission-groups'],
     queryFn: async () => {
       const response = await apiClient.get('/GetCompanyPermissionGroups')
-      return response.tables[1]?.data || []
+      return response.resultSets[1]?.data || []
     },
   })
 }
@@ -155,7 +155,7 @@ export const useUserRequests = () => {
     queryKey: ['user-requests'],
     queryFn: async () => {
       const response = await apiClient.get('/GetUserRequests')
-      return response.tables[1]?.data || []
+      return response.resultSets[1]?.data || []
     },
     staleTime: 10 * 1000, // 10 seconds - refresh more frequently for active sessions
     refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds

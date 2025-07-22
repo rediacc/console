@@ -148,11 +148,11 @@ export const useCompanyInfo = () => {
       }
       
       // Look for the data in the second result set
-      if (!response.tables?.[1]?.data?.[0]?.subscriptionAndResourcesJson) {
+      if (!response.resultSets?.[1]?.data?.[0]?.subscriptionAndResourcesJson) {
         throw new Error('Invalid dashboard data format');
       }
       
-      const jsonData = response.tables[1].data[0].subscriptionAndResourcesJson;
+      const jsonData = response.resultSets[1].data[0].subscriptionAndResourcesJson;
       
       // Parse the main JSON string
       const parsedData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
@@ -187,11 +187,11 @@ export const useDashboard = () => {
       }
       
       // Look for the data in the second result set
-      if (!response.tables?.[1]?.data?.[0]?.subscriptionAndResourcesJson) {
+      if (!response.resultSets?.[1]?.data?.[0]?.subscriptionAndResourcesJson) {
         throw new Error('Invalid dashboard data format');
       }
       
-      const jsonData = response.tables[1].data[0].subscriptionAndResourcesJson;
+      const jsonData = response.resultSets[1].data[0].subscriptionAndResourcesJson;
       
       // Parse the main JSON string
       const parsedData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
@@ -227,8 +227,8 @@ export const useDashboard = () => {
       }
       
       // Check if there's a second result set with all active subscriptions
-      if (response.tables?.[2]?.data) {
-        parsedData.allActiveSubscriptions = response.tables[2].data;
+      if (response.resultSets?.[2]?.data) {
+        parsedData.allActiveSubscriptions = response.resultSets[2].data;
       }
       
       return parsedData as DashboardData;

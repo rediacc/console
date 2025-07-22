@@ -20,7 +20,7 @@ export const usePermissionGroups = () => {
     queryKey: ['permissionGroups'],
     queryFn: async () => {
       const response = await apiClient.get<any[]>('/GetCompanyPermissionGroups')
-      const data = response.tables[1]?.data || []
+      const data = response.resultSets[1]?.data || []
       
       // Transform the data to match our interface
       return data.map(group => ({
@@ -39,7 +39,7 @@ export const usePermissionGroupDetails = (groupName: string) => {
     queryKey: ['permissionGroup', groupName],
     queryFn: async () => {
       const response = await apiClient.get('/GetPermissionGroupDetails', { permissionGroupName: groupName })
-      const permissionRows = response.tables[1]?.data || []
+      const permissionRows = response.resultSets[1]?.data || []
       
       // Transform the rows into a single object with permissions array
       const permissions = permissionRows.map((row: any) => row.PermissionName || row.permissionName)

@@ -23,7 +23,7 @@ export const useBridges = (regionName?: string) => {
     queryFn: async () => {
       if (!regionName) return []
       const response = await apiClient.get('/GetRegionBridges', { regionName })
-      const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
+      const data = response.resultSets?.[1]?.data || []
       if (!Array.isArray(data)) return []
       // Filter out any empty or invalid bridge objects
       return data.filter(bridge => bridge && bridge.bridgeName)

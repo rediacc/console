@@ -57,7 +57,7 @@ const QueuePage: React.FC = () => {
   
   const isFetching = isLoading || isRefetching
   
-  // Dynamic page sizes for tables with minimum size for small screens
+  // Dynamic page sizes for resultSets with minimum size for small screens
   const activePageSize = useDynamicPageSize(activeTableRef, {
     containerOffset: 300, // Account for filters, stats cards, tabs
     minRows: 8, // Minimum for small screens

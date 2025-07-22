@@ -31,12 +31,12 @@ export const useGet2FAStatus = () => {
       let data = null
       
       // Check table 1 (expected location)
-      if (response.tables && response.tables[1] && response.tables[1].data && response.tables[1].data[0]) {
-        data = response.tables[1].data[0]
+      if (response.resultSets && response.resultSets[1] && response.resultSets[1].data && response.resultSets[1].data[0]) {
+        data = response.resultSets[1].data[0]
       }
       // Fallback to table 0
-      else if (response.tables && response.tables[0] && response.tables[0].data && response.tables[0].data[0]) {
-        data = response.tables[0].data[0]
+      else if (response.resultSets && response.resultSets[0] && response.resultSets[0].data && response.resultSets[0].data[0]) {
+        data = response.resultSets[0].data[0]
       }
       // Check if data is directly in the response
       else if (response.is2FAEnabled !== undefined) {
@@ -95,10 +95,10 @@ export const useEnable2FA = () => {
         })
         
         // The 2FA secret is in the second table (index 1)
-        const responseData = response.tables[1]?.data[0]
+        const responseData = response.resultSets[1]?.data[0]
         
         // Ensure we have the expected response structure
-        if (!response.tables[1]) {
+        if (!response.resultSets[1]) {
           throw new Error('Unexpected response format: missing 2FA data table')
         }
         
@@ -119,7 +119,7 @@ export const useEnable2FA = () => {
           confirmEnable: true
         })
         
-        return response.tables[0]?.data[0] as EnableTwoFactorResponse
+        return response.resultSets[0]?.data[0] as EnableTwoFactorResponse
       }
       
       throw new Error('Invalid parameters for 2FA operation')
@@ -167,7 +167,7 @@ export const useDisable2FA = () => {
         currentCode: data.currentCode
       })
       
-      return response.tables[0]?.data[0]
+      return response.resultSets[0]?.data[0]
     },
     onSuccess: () => {
       // Immediately update the cache with the new status
@@ -197,8 +197,8 @@ export const useVerify2FA = () => {
         '2FACode': data.code
       })
       
-      // Check both tables for the response data
-      const responseData = response.tables[1]?.data[0] || response.tables[0]?.data[0]
+      // Check both resultSets for the response data
+      const responseData = response.resultSets[1]?.data[0] || response.resultSets[0]?.data[0]
       return {
         isAuthorized: responseData?.isAuthorized || false,
         result: responseData?.result || '',

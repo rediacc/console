@@ -16,7 +16,7 @@ export interface ApiResponse<T = any> {
   failure: number
   errors: string[]
   message: string
-  tables: Array<{
+  resultSets: Array<{
     data: T[]
   }>
 }
@@ -144,7 +144,7 @@ class ApiClient {
     return [
       response?.data?.errors?.join('; '),
       response?.data?.message,
-      response?.data?.tables?.[0]?.data?.[0]?.message,
+      response?.data?.resultSets?.[0]?.data?.[0]?.message,
       errors?.join('; '),
       message,
     ].find(Boolean) || 'Request failed'
@@ -169,7 +169,7 @@ class ApiClient {
   }
 
   private async handleTokenRotation(responseData: ApiResponse): Promise<void> {
-    const newToken = responseData.tables?.[0]?.data?.[0]?.nextRequestCredential
+    const newToken = responseData.resultSets?.[0]?.data?.[0]?.nextRequestCredential
     if (!newToken) return
     
     this.isUpdatingToken = true

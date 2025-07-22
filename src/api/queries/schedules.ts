@@ -41,7 +41,7 @@ export const useSchedules = (teamFilter?: string | string[]) => {
       }
       
       const response = await apiClient.get('/GetTeamSchedules', params)
-      const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
+      const data = response.resultSets?.[1]?.data || []
       const schedules = Array.isArray(data) ? data : []
       return schedules
         .filter((schedule: any) => schedule && schedule.scheduleName)

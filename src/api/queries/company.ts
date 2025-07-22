@@ -16,7 +16,7 @@ export const useCompanyVault = () => {
     queryFn: async () => {
       const response = await apiClient.get('/GetCompanyVault')
       // Company vault data is in the second table (index 1)
-      const vaultData = response.tables[1]?.data[0]
+      const vaultData = response.resultSets[1]?.data[0]
       
       if (!vaultData) {
         return { vault: '{}', vaultVersion: 1 }
@@ -53,7 +53,7 @@ export const useUpdateCompanyBlockUserRequests = () => {
       const response = await apiClient.post('/UpdateCompanyBlockUserRequests', {
         blockUserRequests
       })
-      return response.tables[0]?.data[0]
+      return response.resultSets[0]?.data[0]
     },
     onSuccess: (data, variables) => {
       const action = variables ? 'blocked' : 'unblocked'
@@ -83,10 +83,10 @@ export const useGetCompanyVaults = () => {
       const response = await apiClient.get('/GetCompanyVaults')
       
       // The main vault data is in table[1]
-      const allVaults = response.tables[1]?.data || []
+      const allVaults = response.resultSets[1]?.data || []
       
       // The bridges with RequestCredential info is in table[2]
-      const bridgesWithRequestCredential = response.tables[2]?.data || []
+      const bridgesWithRequestCredential = response.resultSets[2]?.data || []
       
       // Dynamically organize vaults by entity type
       const vaultsByType: Record<string, any[]> = {}
@@ -124,7 +124,7 @@ export const useUpdateCompanyVaults = () => {
       const response = await apiClient.post('/UpdateCompanyVaults', {
         updates: JSON.stringify(vaultUpdates)  // Renamed to 'updates' to avoid automatic encryption
       })
-      return response.tables[0]?.data[0]
+      return response.resultSets[0]?.data[0]
     },
     onSuccess: (data) => {
       const result = data?.Result || {}
@@ -158,7 +158,7 @@ export const useExportCompanyData = () => {
     queryFn: async () => {
       const response = await apiClient.get('/ExportCompanyData')
       // The export data is in table[1]
-      const exportData = response.tables[1]?.data[0]
+      const exportData = response.resultSets[1]?.data[0]
       
       if (!exportData) {
         throw new Error('No export data returned')
@@ -180,7 +180,7 @@ export const useImportCompanyData = () => {
         companyDataJson: params.companyDataJson,
         importMode: params.importMode || 'skip'
       })
-      return response.tables[0]?.data[0]
+      return response.resultSets[0]?.data[0]
     },
     onSuccess: (data) => {
       const importedCount = data?.ImportedCount || 0

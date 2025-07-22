@@ -44,7 +44,7 @@ export const useDistributedStorageClusters = (teamFilter?: string | string[]) =>
       }
       
       const response = await apiClient.get('/ListDistributedStorageClusters', params)
-      const data = response.tables?.[1]?.data || response.tables?.[0]?.data || []
+      const data = response.resultSets?.[1]?.data || []
       const clusters = Array.isArray(data) ? data : []
       return clusters
         .filter((cluster: any) => cluster && cluster.clusterName)
@@ -80,7 +80,7 @@ export const useDistributedStorageCluster = (teamName?: string, clusterName?: st
       const response = await apiClient.get('/GetDistributedStorageCluster', { teamName, clusterName })
       
       // Extract cluster data from first table
-      const clusterData = response.tables?.[0]?.data?.[0]
+      const clusterData = response.resultSets?.[0]?.data?.[0]
       if (!clusterData) throw new Error('Cluster not found')
       
       const cluster: DistributedStorageCluster = {
@@ -101,7 +101,7 @@ export const useDistributedStorageCluster = (teamName?: string, clusterName?: st
       }
       
       // Extract nodes from second table
-      const nodesData = response.tables?.[1]?.data || []
+      const nodesData = response.resultSets?.[1]?.data || []
       const nodes: DistributedStorageNode[] = nodesData.map((node: any) => ({
         nodeName: node.machineName,
         isPrimary: node.isPrimary || false,

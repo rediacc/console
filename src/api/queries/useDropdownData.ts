@@ -81,7 +81,7 @@ export const useDropdownData = (context?: string) => {
     queryKey: ['dropdown-data', context],
     queryFn: async () => {
       const response = await apiClient.get<any>('/GetLookupData', context ? { context } : {})
-      const rawData = response.tables[1]?.data[0] ?? response.tables[0]?.data[0]
+      const rawData = response.resultSets[1]?.data[0] ?? response.resultSets[0]?.data[0]
       
       if (rawData?.dropdownValues) {
         try {

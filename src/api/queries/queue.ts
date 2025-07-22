@@ -88,12 +88,12 @@ export const useQueueItems = (filters: QueueFilters = {}) => {
     queryFn: async () => {
       const response = await apiClient.get<{ items: QueueItem[], statistics: QueueStatistics }>('/GetTeamQueueItems', filters)
       
-      // Find the actual data tables (skip the nextRequestCredential table)
+      // Find the actual data resultSets (skip the nextRequestCredential table)
       // The queue items table has multiple fields, statistics table has count fields
       let items: QueueItem[] = []
       let statistics: QueueStatistics | null = null
       
-      response.tables?.forEach((table) => {
+      response.resultSets?.forEach((table) => {
         if (table.data && table.data.length > 0) {
           const firstItem = table.data[0]
           // Check if this is the statistics table
@@ -104,7 +104,7 @@ export const useQueueItems = (filters: QueueFilters = {}) => {
           else if ('taskId' in firstItem || 'TaskId' in firstItem) {
             items = table.data as QueueItem[]
           }
-          // Skip tables that only have nextRequestCredential
+          // Skip resultSets that only have nextRequestCredential
         }
       })
       
@@ -120,7 +120,7 @@ export const useNextQueueItems = (machineName: string, itemCount: number = 5) =>
     queryKey: ['queue-next', machineName, itemCount],
     queryFn: async () => {
       const response = await apiClient.get<QueueItem[]>('/GetQueueItemsNext', { machineName, itemCount })
-      return response.tables[1]?.data || []
+      return response.resultSets[1]?.data || []
     },
     enabled: !!machineName,
   })
@@ -158,7 +158,7 @@ export const useCreateQueueItem = () => {
       }
       const response = await apiClient.post('/CreateQueueItem', minifiedData)
       // Extract taskId from response and add it to the response object
-      const taskId = response.tables[1]?.data[0]?.taskId || response.tables[1]?.data[0]?.TaskId
+      const taskId = response.resultSets[1]?.data[0]?.taskId || response.resultSets[1]?.data[0]?.TaskId
       return { ...response, taskId }
     },
     onSuccess: (response, variables) => {
@@ -343,8 +343,8 @@ export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true
       let machineStats: any = null
       let planInfo: any = null
       
-      // Parse the response tables by index
-      response.tables?.forEach((table) => {
+      // Parse the response resultSets by index
+      response.resultSets?.forEach((table) => {
         if (table.data && table.data.length > 0) {
           const resultSetIndex = table.resultSetIndex
           
