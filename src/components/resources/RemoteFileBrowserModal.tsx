@@ -33,7 +33,7 @@ import { useStorage } from '@/api/queries/storage';
 import { useMachines } from '@/api/queries/machines';
 import { useTeams } from '@/api/queries/teams';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import { useCreateQueueItem } from '@/api/queries/queue';
+import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { waitForQueueItemCompletion } from '@/services/helloService';
 import { showMessage } from '@/utils/messages';
 import { formatTimestamp } from '@/utils/timeUtils';
@@ -55,6 +55,7 @@ interface RemoteFileBrowserModalProps {
   bridgeName: string;
   onPullSelected?: (files: RemoteFile[], destination: string) => void;
   onClose?: () => void;
+  onQueueItemCreated?: (taskId: string, machineName: string) => void;
 }
 
 export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
@@ -65,6 +66,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
   bridgeName,
   onPullSelected,
   onClose,
+  onQueueItemCreated,
 }) => {
   const { t } = useTranslation(['resources', 'common', 'machines']);
   const { data: dropdownData } = useDropdownData();
@@ -72,14 +74,14 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
   const { data: machinesData, isLoading: isLoadingMachines } = useMachines(teamName);
   const { data: teamsData } = useTeams();
   const { buildQueueVault } = useQueueVaultBuilder();
-  const { mutateAsync: createQueueItem } = useCreateQueueItem();
+  const { mutateAsync: createQueueItem } = useManagedQueueItem();
 
   // State
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState<RemoteFile[]>([]);
   const [currentPath, setCurrentPath] = useState('');
   const [selectedSource, setSelectedSource] = useState<string>('');
-  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [selectedFile, setSelectedFile] = useState<string>('');
   const [searchText, setSearchText] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
@@ -118,13 +120,6 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       setSelectedSource(machineName);
     }
   }, [machineName, selectedSource]);
-
-  // Load files when source or path changes
-  useEffect(() => {
-    if (open && selectedSource) {
-      loadFiles();
-    }
-  }, [open, selectedSource, currentPath]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadFiles = async () => {
     if (!selectedSource) {
@@ -222,7 +217,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       });
 
       console.log('Creating queue item with vault:', vault);
-      const queueResult = await createQueueItem({
+      const result = await createQueueItem({
         teamName,
         machineName,
         bridgeName,
@@ -230,19 +225,22 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
         priority: 4
       });
 
-      console.log('Queue result:', queueResult);
-      if (!queueResult.taskId) {
+      console.log('Queue result:', result);
+      const taskId = result.taskId || result.queueId;
+      if (!taskId) {
         throw new Error('Failed to create queue item - no taskId returned');
       }
 
-      // Wait for the task to complete
-      console.log('Waiting for task completion:', queueResult.taskId);
-      const completionResult = await waitForQueueItemCompletion(queueResult.taskId, 30000);
-      
-      console.log('Completion result:', completionResult);
-      if (completionResult.success) {
-        // Parse the result based on the format
+      // Only wait for completion if it's not queued (priority > 1)
+      if (!result.isQueued) {
+        console.log('Waiting for task completion:', taskId);
+        const completionResult = await waitForQueueItemCompletion(taskId, 30000);
+        
+        console.log('Completion result:', completionResult);
+        if (completionResult.success) {
+          // Parse the result based on the format
         let fileList: RemoteFile[] = [];
+        let dataToProcess = '';
         
         try {
           // The response data is in completionResult.responseData (parsed vault content)
@@ -257,7 +255,6 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           }
           
           // Parse the command result which contains command_output
-          let dataToProcess = '';
           if (typeof commandResult === 'string') {
             try {
               const parsed = JSON.parse(commandResult);
@@ -268,20 +265,33 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           }
           
           // If the data looks like it contains output from the command, extract the JSON array
-          if (typeof dataToProcess === 'string' && dataToProcess.includes('[')) {
-            // Find the JSON array in the output
-            const jsonStartIndex = dataToProcess.indexOf('[');
-            const jsonEndIndex = dataToProcess.lastIndexOf(']');
-            if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
-              const jsonString = dataToProcess.substring(jsonStartIndex, jsonEndIndex + 1);
-              console.log('Extracted JSON:', jsonString);
-              
-              // Clean up the JSON string - remove escaped quotes and newlines
-              const cleanedJson = jsonString
-                .replace(/\\\\/g, '\\')
-                .replace(/\\n/g, '\n');
-              
-              dataToProcess = cleanedJson;
+          if (typeof dataToProcess === 'string') {
+            // First check if it starts with debug output
+            if (dataToProcess.includes('DEBUG:')) {
+              console.log('Raw data with debug output:', dataToProcess);
+              // Find the JSON array after all the debug output
+              const jsonStartIndex = dataToProcess.lastIndexOf('[');
+              const jsonEndIndex = dataToProcess.lastIndexOf(']');
+              if (jsonStartIndex !== -1 && jsonEndIndex !== -1 && jsonStartIndex < jsonEndIndex) {
+                const jsonString = dataToProcess.substring(jsonStartIndex, jsonEndIndex + 1);
+                console.log('Extracted JSON after debug:', jsonString);
+                dataToProcess = jsonString;
+              }
+            } else if (dataToProcess.includes('[')) {
+              // Find the JSON array in the output
+              const jsonStartIndex = dataToProcess.indexOf('[');
+              const jsonEndIndex = dataToProcess.lastIndexOf(']');
+              if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
+                const jsonString = dataToProcess.substring(jsonStartIndex, jsonEndIndex + 1);
+                console.log('Extracted JSON:', jsonString);
+                
+                // Clean up the JSON string - remove escaped quotes and newlines
+                const cleanedJson = jsonString
+                  .replace(/\\\\/g, '\\')
+                  .replace(/\\n/g, '\n');
+                
+                dataToProcess = cleanedJson;
+              }
             }
           }
           
@@ -311,43 +321,76 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           }
         } catch (parseError) {
           console.log('Parsing as plain text format:', parseError);
-          // Handle plain text format (rclone ls)
-          const textData = typeof dataToProcess === 'string' ? dataToProcess : JSON.stringify(dataToProcess);
-          const lines = textData.trim().split('\n').filter(line => line.trim());
+          console.log('Data that failed to parse:', dataToProcess);
           
-          // Filter out any status messages
-          const fileLines = lines.filter(line => 
-            !line.startsWith('Listing') && 
-            !line.startsWith('Setting up') &&
-            !line.startsWith('Error:') &&
-            line.trim() !== ''
-          );
-          
-          fileList = fileLines.map(line => {
-            const match = line.match(/^\s*(\d+)\s+(.+)$/);
-            if (match) {
-              const [, sizeStr, name] = match;
-              return {
-                name: name.trim(),
-                size: parseInt(sizeStr),
-                isDirectory: name.endsWith('/'),
-                path: currentPath ? `${currentPath}/${name.trim()}` : name.trim()
-              };
+          // Check if this looks like rclone JSON output that's malformed
+          if (typeof dataToProcess === 'string' && dataToProcess.includes('"Path":') && dataToProcess.includes('"Name":')) {
+            console.log('Detected malformed rclone JSON output');
+            // Try to extract individual JSON objects
+            const jsonObjects = dataToProcess.match(/\{[^}]+\}/g);
+            if (jsonObjects) {
+              fileList = jsonObjects.map(jsonStr => {
+                try {
+                  const file = JSON.parse(jsonStr);
+                  return {
+                    name: file.Name || '',
+                    size: file.Size || 0,
+                    isDirectory: file.IsDir || false,
+                    modTime: file.ModTime,
+                    mimeType: file.MimeType,
+                    path: file.Path || (currentPath ? `${currentPath}/${file.Name}` : file.Name)
+                  };
+                } catch (e) {
+                  return null;
+                }
+              }).filter(f => f !== null) as RemoteFile[];
             }
-            // If no size match (might be directory listing)
-            return {
-              name: line.trim(),
-              size: 0,
-              isDirectory: line.endsWith('/'),
-              path: currentPath ? `${currentPath}/${line.trim()}` : line.trim()
-            };
-          });
+          } else {
+            // Handle plain text format (rclone ls)
+            const textData = typeof dataToProcess === 'string' ? dataToProcess : JSON.stringify(dataToProcess);
+            const lines = textData.trim().split('\n').filter(line => line.trim());
+            
+            // Filter out any status messages
+            const fileLines = lines.filter(line => 
+              !line.startsWith('Listing') && 
+              !line.startsWith('Setting up') &&
+              !line.startsWith('Error:') &&
+              !line.startsWith('DEBUG:') &&
+              line.trim() !== ''
+            );
+          
+            fileList = fileLines.map(line => {
+              const match = line.match(/^\s*(\d+)\s+(.+)$/);
+              if (match) {
+                const [, sizeStr, name] = match;
+                return {
+                  name: name.trim(),
+                  size: parseInt(sizeStr),
+                  isDirectory: name.endsWith('/'),
+                  path: currentPath ? `${currentPath}/${name.trim()}` : name.trim()
+                };
+              }
+              // If no size match (might be directory listing)
+              return {
+                name: line.trim(),
+                size: 0,
+                isDirectory: line.endsWith('/'),
+                path: currentPath ? `${currentPath}/${line.trim()}` : line.trim()
+              };
+            });
+          }
         }
 
-        setFiles(fileList.filter(f => f.name)); // Filter out any empty entries
+          setFiles(fileList.filter(f => f.name)); // Filter out any empty entries
+        } else {
+          console.error('List operation failed:', completionResult.message);
+          showMessage('error', completionResult.message || t('resources:remoteFiles.loadError'));
+          setFiles([]);
+        }
       } else {
-        console.error('List operation failed:', completionResult.message);
-        showMessage('error', completionResult.message || t('resources:remoteFiles.loadError'));
+        // Item is queued, we can't get immediate results
+        console.log('List operation queued with ID:', taskId);
+        showMessage('info', 'File listing has been queued. Please try again in a moment.');
         setFiles([]);
       }
     } catch (error: any) {
@@ -366,34 +409,32 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
 
   const handleNavigate = (path: string) => {
     setCurrentPath(path);
-    setSelectedFiles([]);
+    setSelectedFile('');
+    setFiles([]); // Clear files when navigating to require manual load
   };
 
-  const handleFileSelect = (fileName: string) => {
-    setSelectedFiles(prev => {
-      if (prev.includes(fileName)) {
-        return prev.filter(f => f !== fileName);
-      }
-      return [...prev, fileName];
-    });
-  };
 
   const handlePull = async () => {
-    if (selectedFiles.length === 0) {
-      showMessage('warning', t('resources:remoteFiles.selectFiles'));
+    if (!selectedFile) {
+      showMessage('warning', t('resources:remoteFiles.selectFile'));
       return;
     }
 
-    const selectedFileObjects = files.filter(f => selectedFiles.includes(f.name));
+    const selectedFileObject = files.find(f => f.name === selectedFile);
+    if (!selectedFileObject) return;
     
     if (onPullSelected) {
-      onPullSelected(selectedFileObjects, selectedSource);
+      onPullSelected([selectedFileObject], selectedSource);
       onCancel();
     } else {
       // Direct pull implementation
-      for (const file of selectedFileObjects) {
+      const file = selectedFileObject;
         // Get vault data - same pattern as list function
         let additionalVaultData = {};
+        
+        // Find the source details from storage or machines
+        const sourceDetails = storageSources.find(s => s.value === selectedSource);
+        const isStorageSource = sourceDetails?.type === 'storage';
         
         // Always need the current machine's vault data
         const currentMachine = machinesData?.find(m => m.machineName === machineName);
@@ -406,6 +447,36 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
         if (currentTeam && currentTeam.vaultContent) {
           additionalVaultData.teamVault = currentTeam.vaultContent;
         }
+        
+        // If pulling from storage, add storage vault
+        if (isStorageSource) {
+          const storage = storageData?.find(s => s.storageName === selectedSource);
+          if (storage && storage.vaultContent) {
+            try {
+              const storageVaultData = JSON.parse(storage.vaultContent);
+              additionalVaultData.additionalStorageData = {
+                [selectedSource]: storageVaultData
+              };
+            } catch (e) {
+              console.error('Failed to parse storage vault:', e);
+            }
+          }
+        }
+        
+        // If pulling from another machine, add that machine's vault
+        if (!isStorageSource && selectedSource !== machineName) {
+          const sourceMachine = machinesData?.find(m => m.machineName === selectedSource);
+          if (sourceMachine && sourceMachine.vaultContent) {
+            try {
+              const sourceMachineData = JSON.parse(sourceMachine.vaultContent);
+              additionalVaultData.additionalMachineData = {
+                [selectedSource]: sourceMachineData
+              };
+            } catch (e) {
+              console.error('Failed to parse source machine vault:', e);
+            }
+          }
+        }
 
         const vault = await buildQueueVault({
           teamName,
@@ -415,7 +486,8 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           params: {
             from: selectedSource,
             repo: file.name,
-            path: currentPath || ''
+            path: currentPath || '',
+            sourceType: isStorageSource ? 'storage' : 'machine'
           },
           priority: 3,
           description: `Pull ${file.name} from ${selectedSource}`,
@@ -423,16 +495,22 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           ...additionalVaultData
         });
 
-        await createQueueItem({
+        const response = await createQueueItem({
           teamName,
           machineName,
           bridgeName,
           queueVault: vault,
           priority: 3
         });
-      }
 
-      showMessage('success', t('resources:remoteFiles.pullStarted', { count: selectedFiles.length }));
+        // Check if response has taskId and open trace modal
+        if (response?.taskId && onQueueItemCreated) {
+          onQueueItemCreated(response.taskId, machineName);
+        } else if (response?.isQueued) {
+          showMessage('info', t('resources:messages.pullOperationQueued'));
+        }
+
+      showMessage('success', t('resources:remoteFiles.pullStarted'));
       onCancel();
     }
   };
@@ -555,44 +633,60 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           type="primary"
           icon={<CloudDownloadOutlined />}
           onClick={handlePull}
-          disabled={selectedFiles.length === 0}
+          disabled={!selectedFile}
         >
-          {t('resources:remoteFiles.pull')} ({selectedFiles.length})
+          {t('resources:remoteFiles.pull')}
         </Button>,
       ]}
     >
       <Space direction="vertical" style={{ width: '100%' }} size="middle">
-        {/* Source selector */}
-        <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-          <Select
-            style={{ width: 300 }}
-            placeholder={t('resources:remoteFiles.selectSource')}
-            value={selectedSource}
-            onChange={(value) => {
-              setSelectedSource(value);
-              setCurrentPath('');
-              setSelectedFiles([]);
-            }}
-            loading={isLoadingStorage || isLoadingMachines}
-            notFoundContent={
-              isLoadingStorage || isLoadingMachines ? (
-                <Spin size="small" />
-              ) : storageSources.length === 0 ? (
-                <Empty 
-                  image={Empty.PRESENTED_IMAGE_SIMPLE} 
-                  description={t('resources:remoteFiles.noSources')} 
-                />
-              ) : null
-            }
-            options={storageSources}
-          />
-          <Input.Search
-            placeholder={t('common:actions.search')}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 250 }}
-          />
-        </Space>
+        {/* Source selector with label */}
+        <div>
+          <div style={{ marginBottom: 8, fontWeight: 500 }}>
+            {t('resources:remoteFiles.sourceLabel')}
+          </div>
+          <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+            <Space>
+              <Select
+                style={{ width: 300 }}
+                placeholder={t('resources:remoteFiles.selectSource')}
+                value={selectedSource}
+                onChange={(value) => {
+                  setSelectedSource(value);
+                  setCurrentPath('');
+                  setSelectedFile('');
+                  setFiles([]); // Clear files when changing source
+                }}
+                loading={isLoadingStorage || isLoadingMachines}
+                notFoundContent={
+                  isLoadingStorage || isLoadingMachines ? (
+                    <Spin size="small" />
+                  ) : storageSources.length === 0 ? (
+                    <Empty 
+                      image={Empty.PRESENTED_IMAGE_SIMPLE} 
+                      description={t('resources:remoteFiles.noSources')} 
+                    />
+                  ) : null
+                }
+                options={storageSources}
+              />
+              <Button
+                icon={<FolderOpenOutlined />}
+                onClick={loadFiles}
+                loading={loading}
+                disabled={!selectedSource}
+              >
+                {t('resources:remoteFiles.loadFiles')}
+              </Button>
+            </Space>
+            <Input.Search
+              placeholder={t('common:actions.search')}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{ width: 250 }}
+            />
+          </Space>
+        </div>
 
         {/* Breadcrumb navigation */}
         {currentPath && (
@@ -605,7 +699,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
             <Empty 
               description={
                 loading 
-                  ? t('common:states.loading') 
+                  ? t('common:general.loading') 
                   : t('resources:remoteFiles.noFiles')
               } 
             />
@@ -625,8 +719,9 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
                   }),
               }}
               rowSelection={{
-                selectedRowKeys: selectedFiles,
-                onChange: (keys) => setSelectedFiles(keys as string[]),
+                type: 'radio',
+                selectedRowKeys: selectedFile ? [selectedFile] : [],
+                onChange: (keys) => setSelectedFile(keys[0] as string || ''),
                 getCheckboxProps: (record) => ({
                   disabled: record.isDirectory,
                 }),

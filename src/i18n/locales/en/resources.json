@@ -439,15 +439,17 @@
   "remoteFiles": {
     "title": "Browse Remote Files",
     "selectSource": "Select source location",
+    "sourceLabel": "Source Location:",
+    "loadFiles": "Load Files",
     "name": "Name",
     "size": "Size",
     "modified": "Modified",
-    "pull": "Pull Selected Files",
-    "pullStarted": "Started pulling {{count}} file(s)",
+    "pull": "Pull Selected File",
+    "pullStarted": "Started pulling file",
     "loadError": "Failed to load files",
-    "selectFiles": "Please select files to pull",
+    "selectFile": "Please select a file to pull",
     "noFiles": "No files found in this location",
     "noSources": "No sources available",
-    "info": "Select files to pull to this machine. Directories cannot be selected directly."
+    "info": "Select a file to pull to this machine. Only one file can be selected at a time. Directories cannot be selected."
   }
 }

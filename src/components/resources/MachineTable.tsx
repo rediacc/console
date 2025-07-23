@@ -53,8 +53,6 @@ import { useRepositories } from '@/api/queries/repositories';
 import { useTeams } from '@/api/queries/teams';
 import { useTheme } from '@/context/ThemeContext';
 import { RemoteFileBrowserModal } from './RemoteFileBrowserModal';
-import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
-import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 
 
 interface MachineTableProps {
@@ -68,6 +66,7 @@ interface MachineTableProps {
   onDeleteMachine?: (machine: Machine) => void;
   onCreateRepository?: (machine: Machine, repositoryGuid?: string) => void;
   enabled?: boolean;
+  onQueueItemCreated?: (taskId: string, machineName: string) => void;
   expandedRowKeys?: string[];
   onExpandedRowsChange?: (keys: string[]) => void;
   refreshKeys?: Record<string, number>;
@@ -84,6 +83,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   onDeleteMachine,
   onCreateRepository,
   enabled = true,
+  onQueueItemCreated,
   expandedRowKeys: externalExpandedRowKeys,
   onExpandedRowsChange: externalOnExpandedRowsChange,
   refreshKeys: externalRefreshKeys,
@@ -122,8 +122,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     machine: Machine | null;
   }>({ open: false, machine: null });
   
-  const { buildVault } = useQueueVaultBuilder();
-  const { createQueueItem } = useManagedQueueItem();
 
 
   // Queries only - mutations are handled by parent
@@ -203,41 +201,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     }
   }, [onDeleteMachine]);
 
-  const handlePullFiles = useCallback(async (files: any[], source: string) => {
-    if (!remoteFileBrowserModal.machine) return;
-    
-    const machine = remoteFileBrowserModal.machine;
-    
-    // Create queue items for each file
-    for (const file of files) {
-      const vault = buildVault({
-        function: 'pull',
-        from: source,
-        repo: file.name
-      });
-
-      await createQueueItem({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        functionName: 'pull',
-        priority: 3,
-        queueVault: vault,
-        description: `Pull ${file.name} from ${source}`
-      });
-    }
-
-    showMessage('success', t('resources:remoteFiles.pullStarted', { count: files.length }));
-    
-    // Refresh the machine after a delay
-    setTimeout(() => {
-      if (externalRefreshKeys === undefined) {
-        setInternalRefreshKeys(prev => ({
-          ...prev,
-          [machine.machineName]: Date.now()
-        }));
-      }
-    }, 2000);
-  }, [remoteFileBrowserModal.machine, buildVault, createQueueItem, t, externalRefreshKeys]);
 
 
 
@@ -880,7 +843,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           machineName={remoteFileBrowserModal.machine.machineName}
           teamName={remoteFileBrowserModal.machine.teamName}
           bridgeName={remoteFileBrowserModal.machine.bridgeName}
-          onPullSelected={handlePullFiles}
+          onQueueItemCreated={onQueueItemCreated}
         />
       )}
     </div>

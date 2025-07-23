@@ -1403,6 +1403,9 @@ const ResourcesPage: React.FC = () => {
           expandedRowKeys={expandedRowKeys}
           onExpandedRowsChange={setExpandedRowKeys}
           refreshKeys={refreshKeys}
+          onQueueItemCreated={(taskId, machineName) => {
+            setQueueTraceModal({ visible: true, taskId, machineName });
+          }}
         />
       ),
     },
