@@ -426,5 +426,18 @@
   "messages": {
     "repositoryCreationQueued": "リポジトリ作成が送信待ちキューに追加されました",
     "highestPriorityQueued": "最高優先度の{{resourceType}}機能が送信待ちキューに追加されました"
+  },
+  "remoteFiles": {
+    "title": "リモートファイルの参照",
+    "selectSource": "ソースの場所を選択",
+    "name": "名前",
+    "size": "サイズ",
+    "modified": "更新日時",
+    "pull": "選択したファイルを取得",
+    "pullStarted": "{{count}}個のファイルの取得を開始しました",
+    "loadError": "ファイルの読み込みに失敗しました",
+    "selectFiles": "取得するファイルを選択してください",
+    "noFiles": "この場所にファイルが見つかりません",
+    "info": "このマシンに取得するファイルを選択してください。ディレクトリは直接選択できません。"
   }
 }

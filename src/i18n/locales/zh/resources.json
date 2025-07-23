@@ -426,5 +426,18 @@
   "messages": {
     "repositoryCreationQueued": "仓库创建已排队等待提交",
     "highestPriorityQueued": "最高优先级的{{resourceType}}功能已排队等待提交"
+  },
+  "remoteFiles": {
+    "title": "浏览远程文件",
+    "selectSource": "选择源位置",
+    "name": "名称",
+    "size": "大小",
+    "modified": "修改时间",
+    "pull": "拉取选定的文件",
+    "pullStarted": "开始拉取{{count}}个文件",
+    "loadError": "加载文件失败",
+    "selectFiles": "请选择要拉取的文件",
+    "noFiles": "在此位置未找到文件",
+    "info": "选择要拉取到此机器的文件。目录不能直接选择。"
   }
 }

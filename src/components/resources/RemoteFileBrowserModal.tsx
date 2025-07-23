@@ -1,0 +1,648 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  Modal,
+  Table,
+  Button,
+  Space,
+  Tag,
+  Input,
+  Select,
+  Spin,
+  Empty,
+  Alert,
+  Breadcrumb,
+  Radio,
+  Tooltip,
+  message,
+} from 'antd';
+import type { ColumnsType } from 'antd/es/table/interface';
+import {
+  FolderOutlined,
+  FileOutlined,
+  CloudDownloadOutlined,
+  ReloadOutlined,
+  HomeOutlined,
+  FolderOpenOutlined,
+  ClockCircleOutlined,
+  DatabaseOutlined,
+  RightOutlined,
+} from '@ant-design/icons';
+import { useDropdownData } from '@/api/queries/useDropdownData';
+import { useStorage } from '@/api/queries/storage';
+import { useMachines } from '@/api/queries/machines';
+import { useTeams } from '@/api/queries/teams';
+import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
+import { useCreateQueueItem } from '@/api/queries/queue';
+import { waitForQueueItemCompletion } from '@/services/helloService';
+import { showMessage } from '@/utils/messages';
+import { formatTimestamp } from '@/utils/timeUtils';
+
+interface RemoteFile {
+  name: string;
+  size: number;
+  isDirectory: boolean;
+  modTime?: string;
+  mimeType?: string;
+  path?: string;
+}
+
+interface RemoteFileBrowserModalProps {
+  open: boolean;
+  onCancel: () => void;
+  machineName: string;
+  teamName: string;
+  bridgeName: string;
+  onPullSelected?: (files: RemoteFile[], destination: string) => void;
+  onClose?: () => void;
+}
+
+export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
+  open,
+  onCancel,
+  machineName,
+  teamName,
+  bridgeName,
+  onPullSelected,
+  onClose,
+}) => {
+  const { t } = useTranslation(['resources', 'common', 'machines']);
+  const { data: dropdownData } = useDropdownData();
+  const { data: storageData, isLoading: isLoadingStorage } = useStorage(teamName);
+  const { data: machinesData, isLoading: isLoadingMachines } = useMachines(teamName);
+  const { data: teamsData } = useTeams();
+  const { buildQueueVault } = useQueueVaultBuilder();
+  const { mutateAsync: createQueueItem } = useCreateQueueItem();
+
+  // State
+  const [loading, setLoading] = useState(false);
+  const [files, setFiles] = useState<RemoteFile[]>([]);
+  const [currentPath, setCurrentPath] = useState('');
+  const [selectedSource, setSelectedSource] = useState<string>('');
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [searchText, setSearchText] = useState('');
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+
+  // Get available storage sources
+  const storageSources = useMemo(() => {
+    const sources: { value: string; label: string; type: 'machine' | 'storage' }[] = [];
+    
+    // Add machines
+    if (machinesData && machinesData.length > 0) {
+      machinesData.forEach(machine => {
+        sources.push({
+          value: machine.machineName,
+          label: `${machine.machineName} (Machine)`,
+          type: 'machine'
+        });
+      });
+    }
+
+    // Add storage systems
+    if (storageData && storageData.length > 0) {
+      storageData.forEach(storage => {
+        sources.push({
+          value: storage.storageName,
+          label: `${storage.storageName} (Cloud Storage)`,
+          type: 'storage'
+        });
+      });
+    }
+
+    return sources;
+  }, [machinesData, storageData]);
+
+  // Set default source to current machine
+  useEffect(() => {
+    if (!selectedSource && machineName) {
+      setSelectedSource(machineName);
+    }
+  }, [machineName, selectedSource]);
+
+  // Load files when source or path changes
+  useEffect(() => {
+    if (open && selectedSource) {
+      loadFiles();
+    }
+  }, [open, selectedSource, currentPath]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadFiles = async () => {
+    if (!selectedSource) {
+      console.log('No source selected, skipping file load');
+      return;
+    }
+
+    console.log('Loading files from:', selectedSource, 'path:', currentPath);
+    setLoading(true);
+    try {
+      // Find the source details from storage or machines
+      const sourceDetails = storageSources.find(s => s.value === selectedSource);
+      const isStorageSource = sourceDetails?.type === 'storage';
+      
+      // Get vault data for the source
+      let additionalVaultData = {};
+      
+      // For list function, we always need the current machine's vault data
+      // because the command runs on the current machine
+      const currentMachine = machinesData?.find(m => m.machineName === machineName);
+      console.log('Current machine data:', currentMachine);
+      console.log('Machine vault content:', currentMachine?.vaultContent);
+      
+      if (currentMachine && currentMachine.vaultContent) {
+        additionalVaultData.machineVault = currentMachine.vaultContent;
+      }
+      
+      // Get team vault data (contains SSH keys)
+      const currentTeam = teamsData?.find(t => t.teamName === teamName);
+      console.log('Current team data:', currentTeam);
+      if (currentTeam && currentTeam.vaultContent) {
+        additionalVaultData.teamVault = currentTeam.vaultContent;
+      }
+      
+      // If listing from a different machine, we need that machine's vault too
+      if (!isStorageSource && selectedSource !== machineName) {
+        const sourceMachine = machinesData?.find(m => m.machineName === selectedSource);
+        if (sourceMachine && sourceMachine.vaultContent) {
+          // Parse the vault to add it to MACHINES section
+          try {
+            const sourceMachineData = JSON.parse(sourceMachine.vaultContent);
+            // We'll need to manually add this to the context
+            additionalVaultData.additionalMachineData = {
+              [selectedSource]: sourceMachineData
+            };
+          } catch (e) {
+            console.error('Failed to parse source machine vault:', e);
+          }
+        }
+      }
+      
+      // If listing from storage, add storage vault
+      if (isStorageSource) {
+        const storage = storageData?.find(s => s.storageName === selectedSource);
+        if (storage && storage.vaultContent) {
+          // For storage systems, the vault data needs to be added to STORAGE_SYSTEMS
+          try {
+            const storageVaultData = JSON.parse(storage.vaultContent);
+            additionalVaultData.additionalStorageData = {
+              [selectedSource]: storageVaultData
+            };
+          } catch (e) {
+            console.error('Failed to parse storage vault:', e);
+          }
+        }
+      }
+
+      console.log('Building vault with data:', {
+        teamName,
+        machineName,
+        bridgeName,
+        functionName: 'list',
+        params: {
+          from: selectedSource,
+          path: currentPath || '',
+          format: 'json'
+        },
+        additionalVaultData
+      });
+      
+      const vault = await buildQueueVault({
+        teamName,
+        machineName,
+        bridgeName,
+        functionName: 'list',
+        params: {
+          from: selectedSource,
+          path: currentPath || '',
+          format: 'json'
+        },
+        priority: 4,
+        description: `List files from ${selectedSource}`,
+        addedVia: 'file-browser',
+        ...additionalVaultData
+      });
+
+      console.log('Creating queue item with vault:', vault);
+      const queueResult = await createQueueItem({
+        teamName,
+        machineName,
+        bridgeName,
+        queueVault: vault,
+        priority: 4
+      });
+
+      console.log('Queue result:', queueResult);
+      if (!queueResult.taskId) {
+        throw new Error('Failed to create queue item - no taskId returned');
+      }
+
+      // Wait for the task to complete
+      console.log('Waiting for task completion:', queueResult.taskId);
+      const completionResult = await waitForQueueItemCompletion(queueResult.taskId, 30000);
+      
+      console.log('Completion result:', completionResult);
+      if (completionResult.success) {
+        // Parse the result based on the format
+        let fileList: RemoteFile[] = [];
+        
+        try {
+          // The response data is in completionResult.responseData (parsed vault content)
+          // The actual command output should be in the result field
+          let commandResult = completionResult.responseData?.result;
+          
+          // If there's no response data, the operation completed but returned no data
+          if (!commandResult && !completionResult.responseData) {
+            console.log('No response data received');
+            setFiles([]);
+            return;
+          }
+          
+          // Parse the command result which contains command_output
+          let dataToProcess = '';
+          if (typeof commandResult === 'string') {
+            try {
+              const parsed = JSON.parse(commandResult);
+              dataToProcess = parsed.command_output || '';
+            } catch (e) {
+              dataToProcess = commandResult;
+            }
+          }
+          
+          // If the data looks like it contains output from the command, extract the JSON array
+          if (typeof dataToProcess === 'string' && dataToProcess.includes('[')) {
+            // Find the JSON array in the output
+            const jsonStartIndex = dataToProcess.indexOf('[');
+            const jsonEndIndex = dataToProcess.lastIndexOf(']');
+            if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
+              const jsonString = dataToProcess.substring(jsonStartIndex, jsonEndIndex + 1);
+              console.log('Extracted JSON:', jsonString);
+              
+              // Clean up the JSON string - remove escaped quotes and newlines
+              const cleanedJson = jsonString
+                .replace(/\\\\/g, '\\')
+                .replace(/\\n/g, '\n');
+              
+              dataToProcess = cleanedJson;
+            }
+          }
+          
+          // First try to parse as JSON
+          const parsedData = typeof dataToProcess === 'string' ? JSON.parse(dataToProcess) : dataToProcess;
+          console.log('Parsed data:', parsedData);
+          
+          if (Array.isArray(parsedData)) {
+            // Direct array format (SSH ls output or rclone lsjson)
+            fileList = parsedData.map((file: any) => ({
+              name: file.name || file.Name || '',
+              size: parseInt(file.size || file.Size || '0'),
+              isDirectory: file.isDirectory !== undefined ? file.isDirectory : (file.permissions?.startsWith('d') || file.IsDir || false),
+              modTime: file.date ? `${file.date} ${file.time}` : file.ModTime,
+              path: file.Path || (currentPath ? `${currentPath}/${file.name || file.Name}` : file.name || file.Name)
+            }));
+          } else if (parsedData.entries) {
+            // rclone lsjson format with entries wrapper
+            fileList = parsedData.entries.map((file: any) => ({
+              name: file.Name,
+              size: file.Size || 0,
+              isDirectory: file.IsDir || false,
+              modTime: file.ModTime,
+              mimeType: file.MimeType,
+              path: file.Path || (currentPath ? `${currentPath}/${file.Name}` : file.Name)
+            }));
+          }
+        } catch (parseError) {
+          console.log('Parsing as plain text format:', parseError);
+          // Handle plain text format (rclone ls)
+          const textData = typeof dataToProcess === 'string' ? dataToProcess : JSON.stringify(dataToProcess);
+          const lines = textData.trim().split('\n').filter(line => line.trim());
+          
+          // Filter out any status messages
+          const fileLines = lines.filter(line => 
+            !line.startsWith('Listing') && 
+            !line.startsWith('Setting up') &&
+            !line.startsWith('Error:') &&
+            line.trim() !== ''
+          );
+          
+          fileList = fileLines.map(line => {
+            const match = line.match(/^\s*(\d+)\s+(.+)$/);
+            if (match) {
+              const [, sizeStr, name] = match;
+              return {
+                name: name.trim(),
+                size: parseInt(sizeStr),
+                isDirectory: name.endsWith('/'),
+                path: currentPath ? `${currentPath}/${name.trim()}` : name.trim()
+              };
+            }
+            // If no size match (might be directory listing)
+            return {
+              name: line.trim(),
+              size: 0,
+              isDirectory: line.endsWith('/'),
+              path: currentPath ? `${currentPath}/${line.trim()}` : line.trim()
+            };
+          });
+        }
+
+        setFiles(fileList.filter(f => f.name)); // Filter out any empty entries
+      } else {
+        console.error('List operation failed:', completionResult.message);
+        showMessage('error', completionResult.message || t('resources:remoteFiles.loadError'));
+        setFiles([]);
+      }
+    } catch (error: any) {
+      console.error('Error loading files:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        response: error.response
+      });
+      showMessage('error', error.message || t('resources:remoteFiles.loadError'));
+      setFiles([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNavigate = (path: string) => {
+    setCurrentPath(path);
+    setSelectedFiles([]);
+  };
+
+  const handleFileSelect = (fileName: string) => {
+    setSelectedFiles(prev => {
+      if (prev.includes(fileName)) {
+        return prev.filter(f => f !== fileName);
+      }
+      return [...prev, fileName];
+    });
+  };
+
+  const handlePull = async () => {
+    if (selectedFiles.length === 0) {
+      showMessage('warning', t('resources:remoteFiles.selectFiles'));
+      return;
+    }
+
+    const selectedFileObjects = files.filter(f => selectedFiles.includes(f.name));
+    
+    if (onPullSelected) {
+      onPullSelected(selectedFileObjects, selectedSource);
+      onCancel();
+    } else {
+      // Direct pull implementation
+      for (const file of selectedFileObjects) {
+        // Get vault data - same pattern as list function
+        let additionalVaultData = {};
+        
+        // Always need the current machine's vault data
+        const currentMachine = machinesData?.find(m => m.machineName === machineName);
+        if (currentMachine && currentMachine.vaultContent) {
+          additionalVaultData.machineVault = currentMachine.vaultContent;
+        }
+        
+        // Get team vault data (contains SSH keys)
+        const currentTeam = teamsData?.find(t => t.teamName === teamName);
+        if (currentTeam && currentTeam.vaultContent) {
+          additionalVaultData.teamVault = currentTeam.vaultContent;
+        }
+
+        const vault = await buildQueueVault({
+          teamName,
+          machineName,
+          bridgeName,
+          functionName: 'pull',
+          params: {
+            from: selectedSource,
+            repo: file.name,
+            path: currentPath || ''
+          },
+          priority: 3,
+          description: `Pull ${file.name} from ${selectedSource}`,
+          addedVia: 'file-browser',
+          ...additionalVaultData
+        });
+
+        await createQueueItem({
+          teamName,
+          machineName,
+          bridgeName,
+          queueVault: vault,
+          priority: 3
+        });
+      }
+
+      showMessage('success', t('resources:remoteFiles.pullStarted', { count: selectedFiles.length }));
+      onCancel();
+    }
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Filter files based on search
+  const filteredFiles = useMemo(() => {
+    if (!searchText) return files;
+    return files.filter(file => 
+      file.name.toLowerCase().includes(searchText.toLowerCase())
+    );
+  }, [files, searchText]);
+
+  // Table columns
+  const columns: ColumnsType<RemoteFile> = [
+    {
+      title: t('resources:remoteFiles.name'),
+      dataIndex: 'name',
+      key: 'name',
+      render: (name: string, record: RemoteFile) => (
+        <Space>
+          {record.isDirectory ? (
+            <FolderOutlined style={{ color: '#1890ff' }} />
+          ) : (
+            <FileOutlined style={{ color: '#666' }} />
+          )}
+          {record.isDirectory ? (
+            <a onClick={() => handleNavigate(currentPath ? `${currentPath}/${name}` : name)}>
+              {name}
+            </a>
+          ) : (
+            <span>{name}</span>
+          )}
+        </Space>
+      ),
+      sorter: (a, b) => {
+        // Directories first
+        if (a.isDirectory && !b.isDirectory) return -1;
+        if (!a.isDirectory && b.isDirectory) return 1;
+        return a.name.localeCompare(b.name);
+      },
+    },
+    {
+      title: t('resources:remoteFiles.size'),
+      dataIndex: 'size',
+      key: 'size',
+      width: 120,
+      render: (size: number, record: RemoteFile) => 
+        record.isDirectory ? '-' : formatFileSize(size),
+      sorter: (a, b) => a.size - b.size,
+    },
+    {
+      title: t('resources:remoteFiles.modified'),
+      dataIndex: 'modTime',
+      key: 'modTime',
+      width: 200,
+      render: (time: string) => time ? formatTimestamp(time) : '-',
+      sorter: (a, b) => {
+        if (!a.modTime || !b.modTime) return 0;
+        return new Date(a.modTime).getTime() - new Date(b.modTime).getTime();
+      },
+    },
+  ];
+
+  // Breadcrumb items
+  const breadcrumbItems = useMemo(() => {
+    const items = [
+      {
+        title: <HomeOutlined />,
+        onClick: () => handleNavigate(''),
+      }
+    ];
+
+    if (currentPath) {
+      const parts = currentPath.split('/').filter(Boolean);
+      parts.forEach((part, index) => {
+        const path = parts.slice(0, index + 1).join('/');
+        items.push({
+          title: part,
+          onClick: () => handleNavigate(path),
+        });
+      });
+    }
+
+    return items;
+  }, [currentPath]);
+
+  return (
+    <Modal
+      title={
+        <Space>
+          <CloudDownloadOutlined />
+          {t('resources:remoteFiles.title')}
+        </Space>
+      }
+      open={open}
+      onCancel={onCancel}
+      width={900}
+      footer={[
+        <Button key="cancel" onClick={onCancel}>
+          {t('common:actions.cancel')}
+        </Button>,
+        <Button
+          key="refresh"
+          icon={<ReloadOutlined />}
+          onClick={loadFiles}
+          loading={loading}
+        >
+          {t('common:actions.refresh')}
+        </Button>,
+        <Button
+          key="pull"
+          type="primary"
+          icon={<CloudDownloadOutlined />}
+          onClick={handlePull}
+          disabled={selectedFiles.length === 0}
+        >
+          {t('resources:remoteFiles.pull')} ({selectedFiles.length})
+        </Button>,
+      ]}
+    >
+      <Space direction="vertical" style={{ width: '100%' }} size="middle">
+        {/* Source selector */}
+        <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+          <Select
+            style={{ width: 300 }}
+            placeholder={t('resources:remoteFiles.selectSource')}
+            value={selectedSource}
+            onChange={(value) => {
+              setSelectedSource(value);
+              setCurrentPath('');
+              setSelectedFiles([]);
+            }}
+            loading={isLoadingStorage || isLoadingMachines}
+            notFoundContent={
+              isLoadingStorage || isLoadingMachines ? (
+                <Spin size="small" />
+              ) : storageSources.length === 0 ? (
+                <Empty 
+                  image={Empty.PRESENTED_IMAGE_SIMPLE} 
+                  description={t('resources:remoteFiles.noSources')} 
+                />
+              ) : null
+            }
+            options={storageSources}
+          />
+          <Input.Search
+            placeholder={t('common:actions.search')}
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 250 }}
+          />
+        </Space>
+
+        {/* Breadcrumb navigation */}
+        {currentPath && (
+          <Breadcrumb items={breadcrumbItems} separator={<RightOutlined />} />
+        )}
+
+        {/* File list */}
+        <Spin spinning={loading}>
+          {filteredFiles.length === 0 ? (
+            <Empty 
+              description={
+                loading 
+                  ? t('common:states.loading') 
+                  : t('resources:remoteFiles.noFiles')
+              } 
+            />
+          ) : (
+            <Table
+              dataSource={filteredFiles}
+              columns={columns}
+              rowKey="name"
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: true,
+                showTotal: (total, range) => 
+                  t('common:table.showingRecords', { 
+                    start: range[0], 
+                    end: range[1], 
+                    total 
+                  }),
+              }}
+              rowSelection={{
+                selectedRowKeys: selectedFiles,
+                onChange: (keys) => setSelectedFiles(keys as string[]),
+                getCheckboxProps: (record) => ({
+                  disabled: record.isDirectory,
+                }),
+              }}
+              scroll={{ y: 400 }}
+            />
+          )}
+        </Spin>
+
+        {/* Info message */}
+        <Alert
+          type="info"
+          message={t('resources:remoteFiles.info')}
+          showIcon
+        />
+      </Space>
+    </Modal>
+  );
+};

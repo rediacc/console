@@ -151,6 +151,10 @@
         "repo": {
           "label": "Repository",
           "help": "Repository-Name(n), kommagetrennt"
+        },
+        "option": {
+          "label": "Optionen",
+          "help": "Zusätzliche Optionen"
         }
       }
     },
@@ -225,16 +229,20 @@
       }
     },
     "list": {
-      "name": "auflisten",
-      "description": "Repositories auflisten",
+      "name": "Remote-Dateien auflisten",
+      "description": "Dateien in Remote-Speicherorten auflisten",
       "params": {
-        "kind": {
-          "label": "Typ",
-          "help": "Aufzulistender Typ"
+        "from": {
+          "label": "Quellort",
+          "help": "Maschine oder Speichersystem zum Auflisten von Dateien"
+        },
+        "path": {
+          "label": "Pfad",
+          "help": "Optionaler Pfad innerhalb des Speichers"
         },
         "format": {
-          "label": "Format",
-          "help": "Ausgabeformat (json)"
+          "label": "Ausgabeformat",
+          "help": "Format für die Dateiliste"
         }
       }
     },
@@ -269,7 +277,7 @@
       }
     },
     "pull": {
-      "name": "abrufen",
+      "name": "Pull",
       "description": "Repository von Remote-Speicher abrufen",
       "params": {
         "sourceType": {
@@ -392,5 +400,12 @@
         }
       }
     }
-  }
+  },
+  "checkboxOptions": {
+    "mountRepositoryFirst": "Repository zuerst einbinden",
+    "preparationOnly": "Nur Vorbereitung",
+    "unmountAfterStopping": "Nach dem Stoppen aushängen",
+    "overrideExistingFile": "Vorhandene Datei überschreiben"
+  },
+  "additionalOptions": "Zusätzliche Optionen (erweitert)"
 }

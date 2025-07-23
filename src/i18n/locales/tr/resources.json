@@ -426,5 +426,18 @@
   "messages": {
     "repositoryCreationQueued": "Depo oluşturma gönderim için kuyruğa alındı",
     "highestPriorityQueued": "En yüksek öncelikli {{resourceType}} işlevi gönderim için kuyruğa alındı"
+  },
+  "remoteFiles": {
+    "title": "Uzak Dosyalara Göz At",
+    "selectSource": "Kaynak konumu seçin",
+    "name": "Ad",
+    "size": "Boyut",
+    "modified": "Değiştirilme",
+    "pull": "Seçili Dosyaları Çek",
+    "pullStarted": "{{count}} dosyanın çekilmesi başlatıldı",
+    "loadError": "Dosyalar yüklenemedi",
+    "selectFiles": "Lütfen çekilecek dosyaları seçin",
+    "noFiles": "Bu konumda dosya bulunamadı",
+    "info": "Bu makineye çekilecek dosyaları seçin. Dizinler doğrudan seçilemez."
   }
 }

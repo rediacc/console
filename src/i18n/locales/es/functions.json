@@ -151,6 +151,10 @@
         "repo": {
           "label": "Repositorio",
           "help": "Nombre(s) del repositorio, separados por comas"
+        },
+        "option": {
+          "label": "Opciones",
+          "help": "Opciones adicionales"
         }
       }
     },
@@ -225,16 +229,20 @@
       }
     },
     "list": {
-      "name": "list",
-      "description": "Listar repositorios",
+      "name": "Listar archivos remotos",
+      "description": "Listar archivos en ubicaciones de almacenamiento remoto",
       "params": {
-        "kind": {
-          "label": "Tipo",
-          "help": "Tipo a listar"
+        "from": {
+          "label": "Ubicación de origen",
+          "help": "Máquina o sistema de almacenamiento desde donde listar archivos"
+        },
+        "path": {
+          "label": "Ruta",
+          "help": "Ruta opcional dentro del almacenamiento"
         },
         "format": {
-          "label": "Formato",
-          "help": "Formato de salida (json)"
+          "label": "Formato de salida",
+          "help": "Formato para el listado de archivos"
         }
       }
     },
@@ -269,7 +277,7 @@
       }
     },
     "pull": {
-      "name": "pull",
+      "name": "Pull",
       "description": "Obtener repositorio desde almacenamiento remoto",
       "params": {
         "sourceType": {
@@ -392,5 +400,12 @@
         }
       }
     }
-  }
+  },
+  "checkboxOptions": {
+    "mountRepositoryFirst": "Montar repositorio primero",
+    "preparationOnly": "Solo preparación",
+    "unmountAfterStopping": "Desmontar después de detener",
+    "overrideExistingFile": "Sobrescribir archivo existente"
+  },
+  "additionalOptions": "Opciones adicionales (avanzado)"
 }

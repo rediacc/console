@@ -38,8 +38,24 @@ class QueueManagerService {
   private listeners: ((queue: QueuedItem[]) => void)[] = []
 
   constructor() {
-    // Start processing queue when service is initialized
-    this.startProcessing()
+    // Check if we're in a Chrome extension context to avoid message channel conflicts
+    if (this.isExtensionContext()) {
+      // Delay startup to avoid conflicts with extension initialization
+      setTimeout(() => this.startProcessing(), 1200)
+    } else {
+      // Start processing queue when service is initialized
+      this.startProcessing()
+    }
+  }
+
+  private isExtensionContext(): boolean {
+    try {
+      return typeof chrome !== 'undefined' && 
+             chrome.runtime !== undefined && 
+             chrome.runtime.id !== undefined
+    } catch {
+      return false
+    }
   }
 
   /**

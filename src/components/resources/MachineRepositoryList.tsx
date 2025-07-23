@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Empty, Card, Row, Col, Progress } from 'antd'
-import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, CloudDownloadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, PlusOutlined, MinusOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined, GlobalOutlined } from '@/utils/optimizedIcons'
+import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, CloudDownloadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, PlusOutlined, MinusOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined, GlobalOutlined, KeyOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { type QueueFunction } from '@/api/queries/queue'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
@@ -37,6 +37,8 @@ interface Repository {
   plugin_count: number
   has_services: boolean
   service_count: number
+  isUnmapped?: boolean  // True when showing GUID instead of name
+  originalGuid?: string // The original GUID when unmapped
   disk_space?: {
     total: string
     used: string
@@ -79,10 +81,11 @@ interface MachineRepositoryListProps {
   machine: Machine
   onActionComplete?: () => void
   hideSystemInfo?: boolean
+  onCreateRepository?: (machine: Machine, repositoryGuid: string) => void
 }
 
 
-export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete, hideSystemInfo = false }) => {
+export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete, hideSystemInfo = false, onCreateRepository }) => {
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
   const userEmail = useAppSelector((state) => state.auth.user?.email || '')
   const [currentToken, setCurrentToken] = useState<string>('')
@@ -179,12 +182,23 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                     if (matchingRepo) {
                       return {
                         ...repo,
-                        name: matchingRepo.repositoryName
+                        name: matchingRepo.repositoryName,
+                        isUnmapped: false
+                      };
+                    } else {
+                      // No matching repository found, mark as unmapped
+                      return {
+                        ...repo,
+                        isUnmapped: true,
+                        originalGuid: repo.name
                       };
                     }
                   }
                   
-                  return repo;
+                  return {
+                    ...repo,
+                    isUnmapped: false
+                  };
                 });
                 
                 // Count plugin containers for each repository before setting
@@ -1207,65 +1221,21 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         // Build smart menu items based on repository state
         const menuItems = []
         
-        // Mount and Up - if the repository is not mounted
-        if (!record.mounted) {
-          menuItems.push({
-            key: 'mount',
-            label: t('functions:functions.mount.name'),
-            icon: <ApiOutlined />,
-            onClick: () => handleQuickAction(record, 'mount')
-          })
-          menuItems.push({
-            key: 'up',
-            label: t('functions:functions.up.name'),
-            icon: <PlayCircleOutlined style={{ color: '#52c41a' }} />,
-            onClick: () => handleQuickAction(record, 'up', 4, 'mount')
-          })
-        }
+        // Up - always available
+        menuItems.push({
+          key: 'up',
+          label: t('functions:functions.up.name'),
+          icon: <PlayCircleOutlined style={{ color: '#52c41a' }} />,
+          onClick: () => handleQuickAction(record, 'up')
+        })
         
-        // Unmount - if mounted, accessible, and container_count is 0
-        if (record.mounted && record.accessible && record.container_count === 0) {
-          menuItems.push({
-            key: 'unmount',
-            label: t('functions:functions.unmount.name'),
-            icon: <DisconnectOutlined />,
-            onClick: () => handleQuickAction(record, 'unmount')
-          })
-        }
-        
-        // Up - if mounted, has Rediaccfile, and no containers running
-        if (record.mounted && record.has_rediaccfile && record.container_count === 0) {
-          menuItems.push({
-            key: 'up',
-            label: t('functions:functions.up.name'),
-            icon: <PlayCircleOutlined style={{ color: '#52c41a' }} />,
-            onClick: () => handleQuickAction(record, 'up')
-          })
-        }
-        
-        // Down and Unmount - if mounted, accessible, has_services, docker_running and container_count is not 0
-        if (record.mounted && record.accessible && record.has_services && record.docker_running && record.container_count > 0) {
+        // Down - only when mounted
+        if (record.mounted) {
           menuItems.push({
             key: 'down',
             label: t('functions:functions.down.name'),
-            icon: <StopOutlined style={{ color: '#ff4d4f' }} />,
-            onClick: () => handleQuickAction(record, 'down')
-          })
-          menuItems.push({
-            key: 'down-unmount',
-            label: t('functions:functions.down.name') + ' + ' + t('functions:functions.unmount.name'),
-            icon: <StopOutlined style={{ color: '#ff4d4f' }} />,
-            onClick: () => handleQuickAction(record, 'down', 4, 'mount')
-          })
-        }
-        
-        // Resize - when not mounted
-        if (!record.mounted) {
-          menuItems.push({
-            key: 'resize',
-            label: t('functions:functions.resize.name'),
-            icon: <ExpandOutlined />,
-            onClick: () => handleRunFunction(record, 'resize')
+            icon: <PauseCircleOutlined style={{ color: '#ff4d4f' }} />,
+            onClick: () => handleQuickAction(record, 'down', 4, 'unmount')
           })
         }
         
@@ -1275,14 +1245,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           label: t('functions:functions.push.name'),
           icon: <CloudUploadOutlined />,
           onClick: () => handleRunFunction(record, 'push')
-        })
-        
-        // Pull - always available
-        menuItems.push({
-          key: 'pull',
-          label: t('functions:functions.pull.name'),
-          icon: <CloudDownloadOutlined />,
-          onClick: () => handleRunFunction(record, 'pull')
         })
         
         // Always add divider and advanced option at the end
@@ -1301,15 +1263,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         
         return (
           <Space size="small">
-            {record.mounted && (
-              <LocalActionsMenu
-                machine={machine.machineName}
-                repository={record.name}
-                token={currentToken}
-                teamName={machine.teamName}
-                pluginContainers={containersData[record.name]?.containers || []}
-              />
-            )}
             <Dropdown
               menu={{ items: menuItems }}
               trigger={['click']}
@@ -1323,6 +1276,25 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 {t('machines:remote')}
               </Button>
             </Dropdown>
+            {record.mounted && (
+              <LocalActionsMenu
+                machine={machine.machineName}
+                repository={record.name}
+                token={currentToken}
+                teamName={machine.teamName}
+                pluginContainers={containersData[record.name]?.containers || []}
+              />
+            )}
+            {record.isUnmapped && onCreateRepository && (
+              <Button
+                type="default"
+                size="small"
+                icon={<KeyOutlined />}
+                onClick={() => onCreateRepository(machine, record.originalGuid || record.name)}
+              >
+                {t('resources:repositories.addCredential')}
+              </Button>
+            )}
           </Space>
         )
       },
@@ -1377,26 +1349,16 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         </div>
       )}
       
-      {/* Repositories Label with Refresh Button */}
+      {/* Repositories Label */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: hideSystemInfo ? 8 : 20 }}>
         <Typography.Title level={5} style={{ marginBottom: 0 }}>
           {t('resources:repositories.repositories')}
         </Typography.Title>
-        <Space>
-          {machine.vaultStatusTime && !loading && (
-            <Text type="secondary" style={{ fontSize: '12px' }} title={`Raw: ${machine.vaultStatusTime}, Local: ${new Date(machine.vaultStatusTime).toLocaleString()}`}>
-              {t('machines:lastUpdated')}: {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
-            </Text>
-          )}
-          <Button
-            size="small"
-            icon={<ReloadOutlined />}
-            onClick={handleRefresh}
-            loading={loading}
-          >
-            {t('common:actions.refresh')}
-          </Button>
-        </Space>
+        {machine.vaultStatusTime && !loading && (
+          <Text type="secondary" style={{ fontSize: '12px' }} title={`Raw: ${machine.vaultStatusTime}, Local: ${new Date(machine.vaultStatusTime).toLocaleString()}`}>
+            {t('machines:lastUpdated')}: {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
+          </Text>
+        )}
       </div>
       
       {/* Repository Table */}

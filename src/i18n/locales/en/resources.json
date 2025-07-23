@@ -87,8 +87,11 @@
     "deleteError": "Failed to delete repository",
     "placeholders": {
       "enterRepositoryName": "Enter repository name",
-      "enterSize": "Enter size (e.g., 10G)"
+      "enterSize": "Enter size (e.g., 10G)",
+      "enterGuid": "Optional: Enter a specific GUID (e.g., 550e8400-e29b-41d4-a716-446655440000)"
     },
+    "guid": "Repository GUID",
+    "guidHelperText": "Optional: Specify a custom GUID for the repository. Leave empty to auto-generate.",
     "keepOpenAfterCreation": "Keep repository open after creation",
     "fetchingRepositories": "Fetching repositories...",
     "status": "Status",
@@ -128,6 +131,7 @@
     "mountPath": "Mount Path",
     "lastModified": "Last Modified",
     "noCredentialsFound": "No credentials found for repository '{{name}}'",
+    "addCredential": "Add Credential",
     "taskSubmitted": "Repository list task submitted, monitoring progress...",
     "failedToSubmit": "Failed to submit repository list request",
     "taskCancelled": "Repository list task was cancelled",
@@ -431,5 +435,19 @@
   "messages": {
     "repositoryCreationQueued": "Repository creation queued for submission",
     "highestPriorityQueued": "Highest priority {{resourceType}} function queued for submission"
+  },
+  "remoteFiles": {
+    "title": "Browse Remote Files",
+    "selectSource": "Select source location",
+    "name": "Name",
+    "size": "Size",
+    "modified": "Modified",
+    "pull": "Pull Selected Files",
+    "pullStarted": "Started pulling {{count}} file(s)",
+    "loadError": "Failed to load files",
+    "selectFiles": "Please select files to pull",
+    "noFiles": "No files found in this location",
+    "noSources": "No sources available",
+    "info": "Select files to pull to this machine. Directories cannot be selected directly."
   }
 }

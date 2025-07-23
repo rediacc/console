@@ -29,7 +29,23 @@ class QueueMonitoringService {
 
   private constructor() {
     this.loadFromStorage()
-    this.startMonitoring()
+    // Check if we're in a Chrome extension context to avoid message channel conflicts
+    if (this.isExtensionContext()) {
+      // Delay startup to avoid conflicts with extension initialization
+      setTimeout(() => this.startMonitoring(), 1000)
+    } else {
+      this.startMonitoring()
+    }
+  }
+
+  private isExtensionContext(): boolean {
+    try {
+      return typeof chrome !== 'undefined' && 
+             chrome.runtime !== undefined && 
+             chrome.runtime.id !== undefined
+    } catch {
+      return false
+    }
   }
 
   static getInstance(): QueueMonitoringService {
@@ -148,8 +164,27 @@ class QueueMonitoringService {
       // Update last check time
       task.lastCheckTime = Date.now()
 
-      // Fetch the latest status
-      const response = await apiClient.get('/GetQueueItemTrace', { taskId: task.taskId })
+      // Add Chrome extension protection to API calls
+      let response
+      if (this.isExtensionContext()) {
+        // In Chrome extension context, wrap API call with additional error handling
+        try {
+          response = await Promise.race([
+            apiClient.get('/GetQueueItemTrace', { taskId: task.taskId }),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Chrome extension timeout')), 8000)
+            )
+          ])
+        } catch (extensionError: any) {
+          if (extensionError.message === 'Chrome extension timeout') {
+            return // Skip this check to avoid blocking
+          }
+          throw extensionError
+        }
+      } else {
+        // Fetch the latest status normally
+        response = await apiClient.get('/GetQueueItemTrace', { taskId: task.taskId })
+      }
       
       // Extract queue details from response
       const queueDetails = this.extractQueueDetails(response)

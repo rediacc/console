@@ -151,6 +151,10 @@
         "repo": {
           "label": "Repository",
           "help": "Repository name(s), comma-separated"
+        },
+        "option": {
+          "label": "Options",
+          "help": "Additional options"
         }
       }
     },
@@ -269,7 +273,7 @@
       }
     },
     "pull": {
-      "name": "pull",
+      "name": "Pull",
       "description": "Pull repository from remote storage",
       "params": {
         "sourceType": {
@@ -283,6 +287,24 @@
         "repo": {
           "label": "Repository",
           "help": "Repository name(s), comma-separated"
+        }
+      }
+    },
+    "list": {
+      "name": "List Remote Files",
+      "description": "List files in remote storage locations",
+      "params": {
+        "from": {
+          "label": "Source Location",
+          "help": "Machine or storage system to list files from"
+        },
+        "path": {
+          "label": "Path",
+          "help": "Optional path within the storage"
+        },
+        "format": {
+          "label": "Output Format",
+          "help": "Format for the file listing"
         }
       }
     },
@@ -392,5 +414,12 @@
         }
       }
     }
-  }
+  },
+  "checkboxOptions": {
+    "mountRepositoryFirst": "Mount repository first",
+    "preparationOnly": "Preparation only",
+    "unmountAfterStopping": "Unmount after stopping",
+    "overrideExistingFile": "Override existing file"
+  },
+  "additionalOptions": "Additional options (advanced)"
 }

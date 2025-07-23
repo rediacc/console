@@ -35,6 +35,7 @@ import {
   HddOutlined,
   DesktopOutlined,
   DashboardOutlined,
+  CloudDownloadOutlined,
 } from '@/utils/optimizedIcons';
 import { useMachines } from '@/api/queries/machines';
 import { useDropdownData } from '@/api/queries/useDropdownData';
@@ -51,6 +52,9 @@ import { getLocalizedRelativeTime, formatTimestamp } from '@/utils/timeUtils';
 import { useRepositories } from '@/api/queries/repositories';
 import { useTeams } from '@/api/queries/teams';
 import { useTheme } from '@/context/ThemeContext';
+import { RemoteFileBrowserModal } from './RemoteFileBrowserModal';
+import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
+import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 
 
 interface MachineTableProps {
@@ -62,7 +66,7 @@ interface MachineTableProps {
   onVaultMachine?: (machine: Machine) => void;
   onFunctionsMachine?: (machine: Machine, functionName?: string) => void;
   onDeleteMachine?: (machine: Machine) => void;
-  onCreateRepository?: (machine: Machine) => void;
+  onCreateRepository?: (machine: Machine, repositoryGuid?: string) => void;
   enabled?: boolean;
   expandedRowKeys?: string[];
   onExpandedRowsChange?: (keys: string[]) => void;
@@ -112,6 +116,14 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     entityIdentifier: string | null
     entityName?: string
   }>({ open: false, entityType: null, entityIdentifier: null });
+  
+  const [remoteFileBrowserModal, setRemoteFileBrowserModal] = useState<{
+    open: boolean;
+    machine: Machine | null;
+  }>({ open: false, machine: null });
+  
+  const { buildVault } = useQueueVaultBuilder();
+  const { createQueueItem } = useManagedQueueItem();
 
 
   // Queries only - mutations are handled by parent
@@ -190,6 +202,42 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       onDeleteMachine(machine);
     }
   }, [onDeleteMachine]);
+
+  const handlePullFiles = useCallback(async (files: any[], source: string) => {
+    if (!remoteFileBrowserModal.machine) return;
+    
+    const machine = remoteFileBrowserModal.machine;
+    
+    // Create queue items for each file
+    for (const file of files) {
+      const vault = buildVault({
+        function: 'pull',
+        from: source,
+        repo: file.name
+      });
+
+      await createQueueItem({
+        teamName: machine.teamName,
+        machineName: machine.machineName,
+        functionName: 'pull',
+        priority: 3,
+        queueVault: vault,
+        description: `Pull ${file.name} from ${source}`
+      });
+    }
+
+    showMessage('success', t('resources:remoteFiles.pullStarted', { count: files.length }));
+    
+    // Refresh the machine after a delay
+    setTimeout(() => {
+      if (externalRefreshKeys === undefined) {
+        setInternalRefreshKeys(prev => ({
+          ...prev,
+          [machine.machineName]: Date.now()
+        }));
+      }
+    }, 2000);
+  }, [remoteFileBrowserModal.machine, buildVault, createQueueItem, t, externalRefreshKeys]);
 
 
 
@@ -338,6 +386,17 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                     label: t('machines:createRepo'),
                     icon: <InboxOutlined />,
                     onClick: () => onCreateRepository && onCreateRepository(record)
+                  },
+                  {
+                    key: 'pull',
+                    label: t('functions:functions.pull.name'),
+                    icon: <CloudDownloadOutlined />,
+                    onClick: () => {
+                      setRemoteFileBrowserModal({
+                        open: true,
+                        machine: record
+                      });
+                    }
                   },
                   {
                     key: 'functions',
@@ -734,6 +793,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                       }))
                     }
                   }}
+                  onCreateRepository={onCreateRepository}
                   hideSystemInfo={true}
                 />
               </div>
@@ -777,6 +837,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                       }))
                     }
                   }}
+                  onCreateRepository={onCreateRepository}
                 />
               ),
               rowExpandable: () => true,
@@ -811,6 +872,17 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         entityIdentifier={auditTraceModal.entityIdentifier}
         entityName={auditTraceModal.entityName}
       />
+      
+      {remoteFileBrowserModal.machine && (
+        <RemoteFileBrowserModal
+          open={remoteFileBrowserModal.open}
+          onCancel={() => setRemoteFileBrowserModal({ open: false, machine: null })}
+          machineName={remoteFileBrowserModal.machine.machineName}
+          teamName={remoteFileBrowserModal.machine.teamName}
+          bridgeName={remoteFileBrowserModal.machine.bridgeName}
+          onPullSelected={handlePullFiles}
+        />
+      )}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react'
-import { Modal, Row, Col, Card, Input, Space, Form, Slider, Empty, Typography, Tag, Button, Select, Tooltip, InputNumber, Alert } from 'antd'
+import { Modal, Row, Col, Card, Input, Space, Form, Slider, Empty, Typography, Tag, Button, Select, Tooltip, InputNumber, Alert, Checkbox } from 'antd'
 import { ExclamationCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
@@ -699,6 +699,49 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                               }
                               disabled={!functionParams['sourceType']}
                             />
+                          ) : paramInfo.ui === 'checkbox' && paramInfo.checkboxOptions ? (
+                            <Space direction="vertical" style={{ width: '100%' }}>
+                              {paramInfo.checkboxOptions.map((option: any) => (
+                                <Checkbox
+                                  key={option.value}
+                                  checked={functionParams[paramName]?.includes(option.value)}
+                                  onChange={(e) => {
+                                    const currentValue = functionParams[paramName] || ''
+                                    const values = currentValue.split(' ').filter(Boolean)
+                                    
+                                    if (e.target.checked) {
+                                      // Add the value if not already present
+                                      if (!values.includes(option.value)) {
+                                        values.push(option.value)
+                                      }
+                                    } else {
+                                      // Remove the value
+                                      const index = values.indexOf(option.value)
+                                      if (index > -1) {
+                                        values.splice(index, 1)
+                                      }
+                                    }
+                                    
+                                    setFunctionParams({
+                                      ...functionParams,
+                                      [paramName]: values.join(' ')
+                                    })
+                                  }}
+                                >
+                                  {t(`functions:checkboxOptions.${option.label}`)}
+                                </Checkbox>
+                              ))}
+                              <Input
+                                value={functionParams[paramName] || ''}
+                                onChange={(e) => setFunctionParams({
+                                  ...functionParams,
+                                  [paramName]: e.target.value
+                                })}
+                                placeholder={t('functions:additionalOptions')}
+                                autoComplete="off"
+                                style={{ marginTop: 8 }}
+                              />
+                            </Space>
                           ) : (
                             <Input
                               value={functionParams[paramName] || ''}

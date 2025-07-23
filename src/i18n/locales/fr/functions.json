@@ -151,6 +151,10 @@
         "repo": {
           "label": "Référentiel",
           "help": "Nom(s) du référentiel, séparés par des virgules"
+        },
+        "option": {
+          "label": "Options",
+          "help": "Options supplémentaires"
         }
       }
     },
@@ -225,16 +229,20 @@
       }
     },
     "list": {
-      "name": "lister",
-      "description": "Lister les référentiels",
+      "name": "Lister les fichiers distants",
+      "description": "Lister les fichiers dans les emplacements de stockage distants",
       "params": {
-        "kind": {
-          "label": "Type",
-          "help": "Type à lister"
+        "from": {
+          "label": "Emplacement source",
+          "help": "Machine ou système de stockage d'où lister les fichiers"
+        },
+        "path": {
+          "label": "Chemin",
+          "help": "Chemin optionnel dans le stockage"
         },
         "format": {
-          "label": "Format",
-          "help": "Format de sortie (json)"
+          "label": "Format de sortie",
+          "help": "Format pour la liste des fichiers"
         }
       }
     },
@@ -269,7 +277,7 @@
       }
     },
     "pull": {
-      "name": "tirer",
+      "name": "Pull",
       "description": "Tirer le référentiel depuis le stockage distant",
       "params": {
         "sourceType": {
@@ -392,5 +400,12 @@
         }
       }
     }
-  }
+  },
+  "checkboxOptions": {
+    "mountRepositoryFirst": "Monter le dépôt en premier",
+    "preparationOnly": "Préparation uniquement",
+    "unmountAfterStopping": "Démonter après l'arrêt",
+    "overrideExistingFile": "Écraser le fichier existant"
+  },
+  "additionalOptions": "Options supplémentaires (avancé)"
 }

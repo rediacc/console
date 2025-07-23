@@ -426,5 +426,18 @@
   "messages": {
     "repositoryCreationQueued": "Repository-Erstellung zur Einreichung eingereiht",
     "highestPriorityQueued": "{{resourceType}}-Funktion mit höchster Priorität zur Einreichung eingereiht"
+  },
+  "remoteFiles": {
+    "title": "Remote-Dateien durchsuchen",
+    "selectSource": "Quellort auswählen",
+    "name": "Name",
+    "size": "Größe",
+    "modified": "Geändert",
+    "pull": "Ausgewählte Dateien abrufen",
+    "pullStarted": "Abruf von {{count}} Datei(en) gestartet",
+    "loadError": "Fehler beim Laden der Dateien",
+    "selectFiles": "Bitte wählen Sie Dateien zum Abrufen aus",
+    "noFiles": "Keine Dateien an diesem Ort gefunden",
+    "info": "Wählen Sie Dateien aus, um sie auf diese Maschine zu übertragen. Verzeichnisse können nicht direkt ausgewählt werden."
   }
 }

@@ -21,6 +21,8 @@ export function useQueueVaultBuilder() {
       sourceMachineVault?: any
       sourceStorageVault?: any
       allRepositoryCredentials?: Record<string, string>
+      additionalStorageData?: Record<string, any>
+      additionalMachineData?: Record<string, any>
     }
   ): Promise<string> => {
     // Fetch company vault directly from API to ensure we have the latest data
@@ -70,7 +72,9 @@ export function useQueueVaultBuilder() {
     const fullContext: QueueRequestContext = {
       ...context,
       ...vaults,
-      allRepositoryCredentials: context.allRepositoryCredentials
+      allRepositoryCredentials: context.allRepositoryCredentials,
+      additionalStorageData: context.additionalStorageData,
+      additionalMachineData: context.additionalMachineData
     }
 
     // Use the service to build the vault

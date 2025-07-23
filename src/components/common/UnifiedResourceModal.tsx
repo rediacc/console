@@ -223,13 +223,24 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       repository: {
         machineName: '',
         size: '',
+        repositoryGuid: '',  // Add default for repositoryGuid
       },
       team: { teamName: '', teamVault: '{}' },
       region: { regionName: '', regionVault: '{}' },
       bridge: { regionName: '', bridgeName: '', bridgeVault: '{}' },
     }
 
-    return { ...baseDefaults, ...resourceDefaults[resourceType as keyof typeof resourceDefaults] }
+    // Merge existingData to override defaults if provided
+    const finalDefaults = { ...baseDefaults, ...resourceDefaults[resourceType as keyof typeof resourceDefaults] }
+    if (existingData) {
+      Object.keys(existingData).forEach(key => {
+        if (existingData[key] !== undefined) {
+          finalDefaults[key] = existingData[key]
+        }
+      })
+    }
+
+    return finalDefaults
   }
 
   const form = useForm({
@@ -399,12 +410,15 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         // Check if machine is prefilled
         const isPrefilledMachine = existingData?.prefilledMachine
         
+        // Check if this is credential-only mode (when repositoryGuid is pre-filled from "Add Credential" button)
+        const isCredentialOnlyMode = existingData?.repositoryGuid && existingData?.repositoryGuid.trim() !== ''
+        
         // Get machines for the team (use existingData teamName if available)
         const teamName = existingData?.teamName || 'Private Team'
         const teamMachines = dropdownData?.machinesByTeam?.find(t => t.teamName === teamName)?.machines || []
         
-        // Only show machine selection if not prefilled
-        if (!isPrefilledMachine) {
+        // Only show machine selection if not prefilled and not in credential-only mode
+        if (!isPrefilledMachine && !isCredentialOnlyMode) {
           simpleFields.push({
             name: 'machineName',
             label: t('machines:machine'),
@@ -416,16 +430,29 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           })
         }
         
-        // Size field for repository provisioning
-        simpleFields.push({
-          name: 'size',
-          label: t('repositories.size'),
-          placeholder: t('repositories.placeholders.enterSize'),
-          required: false,
-          type: 'size' as const,
-          sizeUnits: ['G', 'T'],
-          helperText: t('repositories.sizeHelperText', { defaultValue: 'Optional: Specify size if provisioning storage (e.g., 10G, 100G, 1T)' })
-        })
+        // Size field for repository provisioning - only show if not in credential-only mode
+        if (!isCredentialOnlyMode) {
+          simpleFields.push({
+            name: 'size',
+            label: t('repositories.size'),
+            placeholder: t('repositories.placeholders.enterSize'),
+            required: false,
+            type: 'size' as const,
+            sizeUnits: ['G', 'T'],
+            helperText: t('repositories.sizeHelperText', { defaultValue: 'Optional: Specify size if provisioning storage (e.g., 10G, 100G, 1T)' })
+          })
+        }
+        
+        // Show repositoryGuid field in credential-only mode
+        if (isCredentialOnlyMode) {
+          simpleFields.push({
+            name: 'repositoryGuid',
+            label: t('repositories.guid', { defaultValue: 'Repository GUID' }),
+            type: 'text' as const,
+            disabled: true, // Make it read-only
+            helperText: t('repositories.guidHelperText', { defaultValue: 'This repository already exists on the machine.' })
+          })
+        }
       }
       
       return simpleFields
@@ -445,12 +472,15 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       // Check if machine is prefilled
       const isPrefilledMachine = existingData?.prefilledMachine
       
+      // Check if this is credential-only mode (when repositoryGuid is pre-filled from "Add Credential" button)
+      const isCredentialOnlyMode = existingData?.repositoryGuid && existingData?.repositoryGuid.trim() !== ''
+      
       // Get machines for the selected team
       const selectedTeamName = form.watch('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
       const teamMachines = dropdownData?.machinesByTeam?.find(t => t.teamName === selectedTeamName)?.machines || []
       
-      // Only show machine selection if not prefilled
-      if (!isPrefilledMachine) {
+      // Only show machine selection if not prefilled and not in credential-only mode
+      if (!isPrefilledMachine && !isCredentialOnlyMode) {
         fields.push({
           name: 'machineName',
           label: t('machines:machine'),
@@ -463,15 +493,40 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         })
       }
       
-      fields.push({
-        name: 'size',
-        label: t('repositories.size'),
-        placeholder: t('repositories.placeholders.enterSize'),
-        required: true,
-        type: 'size' as const,
-        sizeUnits: ['G', 'T'],
-        helperText: t('repositories.sizeHelperText', { defaultValue: 'Specify size for storage provisioning (e.g., 10G, 100G, 1T)' })
-      })
+      // Only show size field if not in credential-only mode
+      if (!isCredentialOnlyMode) {
+        fields.push({
+          name: 'size',
+          label: t('repositories.size'),
+          placeholder: t('repositories.placeholders.enterSize'),
+          required: true,
+          type: 'size' as const,
+          sizeUnits: ['G', 'T'],
+          helperText: t('repositories.sizeHelperText', { defaultValue: 'Specify size for storage provisioning (e.g., 10G, 100G, 1T)' })
+        })
+      }
+      
+      // Repository GUID field
+      if (isCredentialOnlyMode) {
+        // In credential-only mode, always show the GUID field as read-only
+        fields.push({
+          name: 'repositoryGuid',
+          label: t('repositories.guid', { defaultValue: 'Repository GUID' }),
+          type: 'text' as const,
+          disabled: true, // Make it read-only
+          helperText: t('repositories.guidHelperText', { defaultValue: 'This repository already exists on the machine.' })
+        })
+      } else if (isExpertMode) {
+        // In expert mode (when creating new repo), show as optional editable field
+        fields.push({
+          name: 'repositoryGuid',
+          label: t('repositories.guid', { defaultValue: 'Repository GUID' }),
+          placeholder: t('repositories.placeholders.enterGuid', { defaultValue: 'Optional: Enter a specific GUID (e.g., 550e8400-e29b-41d4-a716-446655440000)' }),
+          required: false,
+          type: 'text' as const,
+          helperText: t('repositories.guidHelperText', { defaultValue: 'Optional: Specify a custom GUID for the repository. Leave empty to auto-generate.' })
+        })
+      }
     } else if (resourceType === 'distributedStorage') {
       // Distributed storage needs cluster configuration
       fields.push(nameField)
@@ -844,8 +899,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           </div>
         )}
         
-        {/* Keep open checkbox for repository creation */}
-        {resourceType === 'repository' && mode === 'create' && (
+        {/* Keep open checkbox for repository creation - only show when creating physical storage */}
+        {resourceType === 'repository' && mode === 'create' && !(existingData?.repositoryGuid && existingData?.repositoryGuid.trim() !== '') && (
           <div style={{ marginBottom: 16 }}>
             <Checkbox 
               checked={keepRepositoryOpen} 
@@ -865,7 +920,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           entityType={getEntityType()}
           vaultFieldName={getVaultFieldName()}
           showDefaultsAlert={mode === 'create' && uiMode === 'simple'}
-          initialVaultData={mode === 'edit' && existingData ? JSON.parse(existingData.vaultContent || '{}') : {}}
+          initialVaultData={existingData?.vaultContent ? JSON.parse(existingData.vaultContent) : {}}
           hideImportExport={true}
           onImportExportRef={(handlers) => {
             importExportHandlers.current = handlers

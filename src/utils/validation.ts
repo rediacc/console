@@ -52,19 +52,42 @@ export const createTeamSchema = withVault(resourceSchemas.team, 'teamVault')
 export const createRegionSchema = withVault(resourceSchemas.region, 'regionVault')
 export const createBridgeSchema = withVault(resourceSchemas.bridge, 'bridgeVault')
 export const createMachineSchema = withVault(resourceSchemas.machine, 'machineVault')
-// Special schema for repository creation with required machine selection and size
+// Special schema for repository creation with conditional machine selection and size
 export const createRepositorySchema = withVault({
   ...resourceSchemas.repository,
-  machineName: z.string().min(1, 'Machine is required'),
+  machineName: z.string().optional(),  // Optional - required only when creating physical storage
   size: z.string()
-    .regex(/^\d+[GT]$/, 'Invalid size format')
+    .optional()
     .refine((val) => {
+      // Skip validation if empty or undefined
+      if (!val || val.trim() === '') return true
+      
+      // Validate format
       const match = val.match(/^(\d+)([GT])$/)
       if (!match) return false
+      
       const num = parseInt(match[1])
       return num > 0
-    }, 'Size must be greater than 0')
+    }, 'Invalid size format (e.g., 10G, 100G, 1T)'),  // Optional - required only when creating physical storage
+  repositoryGuid: z.union([
+    z.string().length(0),  // Allow empty string
+    z.string().uuid('Invalid GUID format')  // Or valid UUID
+  ]).optional()  // Optional repository GUID
 }, 'repositoryVault')
+  .refine((data) => {
+    // If repositoryGuid is provided (credential-only mode), machine and size are not required
+    // Otherwise, both machine and size must be provided for physical storage creation
+    const isCredentialOnlyMode = data.repositoryGuid && data.repositoryGuid.trim() !== ''
+    if (isCredentialOnlyMode) {
+      return true  // No additional requirements in credential-only mode
+    }
+    // In normal mode, both machine and size are required
+    return (data.machineName && data.machineName.trim() !== '') && 
+           (data.size && data.size.trim() !== '')
+  }, {
+    message: 'Machine and size are required when creating new repository storage',
+    path: ['machineName']  // Show error on machine field
+  })
 export const createStorageSchema = withVault(resourceSchemas.storage, 'storageVault')
 export const createScheduleSchema = withVault(resourceSchemas.schedule, 'scheduleVault')
 

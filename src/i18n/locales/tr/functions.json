@@ -151,6 +151,10 @@
         "repo": {
           "label": "Depo",
           "help": "Depo ad(lar)ı, virgülle ayrılmış"
+        },
+        "option": {
+          "label": "Seçenekler",
+          "help": "Ek seçenekler"
         }
       }
     },
@@ -225,16 +229,20 @@
       }
     },
     "list": {
-      "name": "listele",
-      "description": "Depoları listele",
+      "name": "Uzak Dosyaları Listele",
+      "description": "Uzak depolama konumlarındaki dosyaları listele",
       "params": {
-        "kind": {
-          "label": "Tür",
-          "help": "Listelenecek tür"
+        "from": {
+          "label": "Kaynak Konumu",
+          "help": "Dosyaların listeleneceği makine veya depolama sistemi"
+        },
+        "path": {
+          "label": "Yol",
+          "help": "Depolama içindeki isteğe bağlı yol"
         },
         "format": {
-          "label": "Format",
-          "help": "Çıktı formatı (json)"
+          "label": "Çıktı Formatı",
+          "help": "Dosya listesi için format"
         }
       }
     },
@@ -269,7 +277,7 @@
       }
     },
     "pull": {
-      "name": "çek",
+      "name": "Pull",
       "description": "Depoyu uzak depolamadan çek",
       "params": {
         "sourceType": {
@@ -392,5 +400,12 @@
         }
       }
     }
-  }
+  },
+  "checkboxOptions": {
+    "mountRepositoryFirst": "Önce depoyu bağla",
+    "preparationOnly": "Sadece hazırlık",
+    "unmountAfterStopping": "Durdurduktan sonra bağlantıyı kes",
+    "overrideExistingFile": "Mevcut dosyanın üzerine yaz"
+  },
+  "additionalOptions": "Ek seçenekler (gelişmiş)"
 }

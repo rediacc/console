@@ -182,7 +182,19 @@
           "required": true
         },
         "option": {
-          "type": "string"
+          "type": "string",
+          "label": "Options",
+          "ui": "checkbox",
+          "checkboxOptions": [
+            {
+              "value": "mount",
+              "label": "mountRepositoryFirst"
+            },
+            {
+              "value": "prep-only",
+              "label": "preparationOnly"
+            }
+          ]
         },
         "grand": {
           "type": "string"
@@ -203,7 +215,15 @@
           "required": true
         },
         "option": {
-          "type": "string"
+          "type": "string",
+          "label": "Options",
+          "ui": "checkbox",
+          "checkboxOptions": [
+            {
+              "value": "unmount",
+              "label": "unmountAfterStopping"
+            }
+          ]
         },
         "grand": {
           "type": "string"
@@ -368,7 +388,15 @@
           "ui": "dropdown"
         },
         "option": {
-          "type": "string"
+          "type": "string",
+          "label": "Options",
+          "ui": "checkbox",
+          "checkboxOptions": [
+            {
+              "value": "override",
+              "label": "overrideExistingFile"
+            }
+          ]
         },
         "grand": {
           "type": "string",
@@ -402,6 +430,32 @@
           "type": "string",
           "required": true,
           "ui": "repository-dropdown"
+        }
+      }
+    },
+    "list": {
+      "name": "list",
+      "category": "backup",
+      "showInMenu": false,
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "storage": true
+      },
+      "params": {
+        "from": {
+          "type": "string",
+          "required": true
+        },
+        "path": {
+          "type": "string",
+          "required": false
+        },
+        "format": {
+          "type": "string",
+          "required": false,
+          "default": "json",
+          "options": ["json", "text"]
         }
       }
     },

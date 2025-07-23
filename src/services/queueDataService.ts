@@ -27,6 +27,9 @@ export interface QueueRequestContext {
   sourceStorageVault?: any  // For pull operations from storage systems
   // For functions that need all repository credentials
   allRepositoryCredentials?: Record<string, string>
+  // Additional data for list function
+  additionalStorageData?: Record<string, any>  // Storage system configurations by name
+  additionalMachineData?: Record<string, any>  // Machine configurations by name
 }
 
 export interface FunctionRequirements {
@@ -147,6 +150,69 @@ class QueueDataService {
         })
         
         queueVaultData.contextData.STORAGE_SYSTEMS[context.params.to] = storageConfig
+      }
+    }
+    
+    // Handle list function with storage systems
+    if (context.functionName === 'list' && context.params.from) {
+      // Check if listing from a storage system (passed via additionalStorageData)
+      if (context.additionalStorageData && context.additionalStorageData[context.params.from]) {
+        if (!queueVaultData.contextData.STORAGE_SYSTEMS) {
+          queueVaultData.contextData.STORAGE_SYSTEMS = {}
+        }
+        
+        const storageVaultData = context.additionalStorageData[context.params.from]
+        const provider = storageVaultData.provider
+        
+        // Transform storage config to environment variables expected by the script
+        const storageConfig: any = {
+          RCLONE_REDIACC_BACKEND: provider  // The provider type (e.g., 'onedrive', 's3', 'drive')
+        }
+        
+        // Only add folder if it exists in the vault
+        if (storageVaultData.folder !== undefined && storageVaultData.folder !== null) {
+          storageConfig.RCLONE_REDIACC_FOLDER = storageVaultData.folder
+        }
+        
+        // Only add parameters if they exist in the vault
+        if (storageVaultData.parameters) {
+          storageConfig.RCLONE_PARAMETERS = storageVaultData.parameters
+        }
+        
+        // Use provider-specific prefix (e.g., RCLONE_ONEDRIVE_, RCLONE_S3_)
+        const providerPrefix = `RCLONE_${provider.toUpperCase()}`
+        
+        // Dynamically add all other fields from the vault as rclone config
+        Object.entries(storageVaultData).forEach(([key, value]) => {
+          // Skip special fields that we've already handled
+          if (key === 'provider' || key === 'folder' || key === 'parameters') {
+            return
+          }
+          
+          // Convert the key to uppercase for rclone environment variable format
+          const envKey = `${providerPrefix}_${key.toUpperCase()}`
+          
+          // Handle different value types
+          if (value === null || value === undefined) {
+            return // Skip null/undefined values
+          } else if (typeof value === 'object') {
+            // For objects (like tokens), keep as object (not stringified)
+            storageConfig[envKey] = value
+          } else {
+            // For primitives, use as-is
+            storageConfig[envKey] = String(value)
+          }
+        })
+        
+        queueVaultData.contextData.STORAGE_SYSTEMS[context.params.from] = storageConfig
+      }
+      
+      // Check if listing from another machine (passed via additionalMachineData)
+      if (context.additionalMachineData && context.additionalMachineData[context.params.from]) {
+        if (!queueVaultData.contextData.MACHINES) {
+          queueVaultData.contextData.MACHINES = {}
+        }
+        queueVaultData.contextData.MACHINES[context.params.from] = context.additionalMachineData[context.params.from]
       }
     }
     

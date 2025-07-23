@@ -238,6 +238,10 @@
         "repo": {
           "label": "リポジトリ",
           "help": "リポジトリ名（複数の場合はカンマ区切り）"
+        },
+        "option": {
+          "label": "オプション",
+          "help": "追加オプション"
         }
       }
     },
@@ -312,16 +316,20 @@
       }
     },
     "list": {
-      "name": "リスト",
-      "description": "リポジトリをリスト",
+      "name": "リモートファイルのリスト",
+      "description": "リモートストレージの場所にあるファイルをリストする",
       "params": {
-        "kind": {
-          "label": "タイプ",
-          "help": "リストするタイプ"
+        "from": {
+          "label": "ソースの場所",
+          "help": "ファイルをリストするマシンまたはストレージシステム"
+        },
+        "path": {
+          "label": "パス",
+          "help": "ストレージ内のオプションのパス"
         },
         "format": {
-          "label": "フォーマット",
-          "help": "出力フォーマット（json）"
+          "label": "出力フォーマット",
+          "help": "ファイルリストのフォーマット"
         }
       }
     },
@@ -356,7 +364,7 @@
       }
     },
     "pull": {
-      "name": "プル",
+      "name": "Pull",
       "description": "リモートストレージからリポジトリをプル",
       "params": {
         "sourceType": {
@@ -479,5 +487,12 @@
         }
       }
     }
-  }
+  },
+  "checkboxOptions": {
+    "mountRepositoryFirst": "最初にリポジトリをマウント",
+    "preparationOnly": "準備のみ",
+    "unmountAfterStopping": "停止後にアンマウント",
+    "overrideExistingFile": "既存ファイルを上書き"
+  },
+  "additionalOptions": "追加オプション（上級）"
 }

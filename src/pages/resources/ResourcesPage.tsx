@@ -416,14 +416,17 @@ const ResourcesPage: React.FC = () => {
       if (mode === 'create') {
         // For repository creation, we need to handle the two-step process
         if (resourceType === 'repository') {
+          // Check if this is credential-only mode (repositoryGuid is provided)
+          const isCredentialOnlyMode = data.repositoryGuid && data.repositoryGuid.trim() !== ''
+          
           // Check if we have machine and size for full repository creation
-          if (data.machineName && data.size) {
+          if (data.machineName && data.size && !isCredentialOnlyMode) {
             // Step 1: Create the repository credentials
             const { machineName, size, ...repoData } = data
             await mutations.repository.create.mutateAsync(repoData)
-          
-          // Step 2: Queue the "new" function to create the repository on the machine
-          try {
+            
+            // Step 2: Queue the "new" function to create the repository on the machine
+            try {
             // Find the machine details
             const teamData = dropdownData?.machinesByTeam?.find(
               t => t.teamName === data.teamName
@@ -515,9 +518,9 @@ const ResourcesPage: React.FC = () => {
               // Item was queued, don't open trace modal yet
               showMessage('info', t('resources:messages.repositoryCreationQueued'))
             }
-          } catch (error) {
-            showMessage('warning', t('repositories.repoCreatedButQueueFailed'))
-          }
+            } catch (error) {
+              showMessage('warning', t('repositories.repoCreatedButQueueFailed'))
+            }
           } else {
             // Create repository credentials only (no machine provisioning)
             await mutations.repository.create.mutateAsync(data)
@@ -1368,16 +1371,31 @@ const ResourcesPage: React.FC = () => {
             }))
           }}
           onDeleteMachine={handleDeleteMachine}
-          onCreateRepository={(machine) => {
+          onCreateRepository={(machine, repositoryGuid) => {
             // Set the team filter to the machine's team
             if (machine.teamName !== selectedTeams[0]) {
               setSelectedTeams([machine.teamName])
             }
+            
+            // Generate default vault content with a valid Access Password for credential-only mode
+            let vaultContent = undefined
+            if (repositoryGuid) {
+              // Generate a random 32-character credential
+              const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+{}|:<>,.?/'
+              let credential = ''
+              for (let i = 0; i < 32; i++) {
+                credential += chars.charAt(Math.floor(Math.random() * chars.length))
+              }
+              vaultContent = JSON.stringify({ credential })
+            }
+            
             // Open the repository creation modal with prefilled machine
             openUnifiedModal('repository', 'create', { 
               machineName: machine.machineName,
               teamName: machine.teamName,
-              prefilledMachine: true 
+              prefilledMachine: true,
+              repositoryGuid: repositoryGuid,  // Pass the GUID if provided
+              vaultContent: vaultContent  // Pass default vault content for credential-only mode
             })
           }}
           enabled={teamResourcesTab === 'machines'}

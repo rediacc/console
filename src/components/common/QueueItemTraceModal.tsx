@@ -54,13 +54,47 @@ interface QueueItemTraceModalProps {
   onTaskStatusChange?: (status: string, taskId: string) => void
 }
 
+// Shared console output component
+interface ConsoleOutputProps {
+  content: string
+  theme: string
+  consoleOutputRef: React.RefObject<HTMLDivElement>
+  isEmpty?: boolean
+}
+
+const ConsoleOutput: React.FC<ConsoleOutputProps> = ({ content, theme, consoleOutputRef, isEmpty }) => {
+  if (isEmpty || !content) {
+    return <Empty description="No console output available" />
+  }
+
+  return (
+    <div 
+      ref={consoleOutputRef}
+      style={{ 
+        backgroundColor: theme === 'dark' ? '#1f1f1f' : '#f5f5f5',
+        border: `1px solid ${theme === 'dark' ? '#303030' : '#d9d9d9'}`,
+        borderRadius: '4px',
+        padding: '12px',
+        fontFamily: 'monospace',
+        fontSize: '12px',
+        lineHeight: '1.5',
+        whiteSpace: 'pre-wrap',
+        wordBreak: 'break-word',
+        height: '400px',
+        overflowY: 'scroll'
+      }}>
+      {content}
+    </div>
+  )
+}
+
 const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visible, onClose, onTaskStatusChange }) => {
   const { t } = useTranslation(['queue', 'common'])
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const [lastTraceFetchTime, setLastTraceFetchTime] = useState<dayjs.Dayjs | null>(null)
   const [isMonitoring, setIsMonitoring] = useState(false)
   const [activeKeys, setActiveKeys] = useState<string[]>(['overview']) // Start with overview panel open
-  const [simpleMode, setSimpleMode] = useState(uiMode === 'simple') // Start in simple mode if UI mode is simple
+  const [simpleMode, setSimpleMode] = useState(true) // Default to simple mode
   const [accumulatedOutput, setAccumulatedOutput] = useState<string>('') // Store accumulated console output
   const [lastOutputStatus, setLastOutputStatus] = useState<string>('') // Track the last status to detect completion
   const { data: traceData, isLoading: isTraceLoading, refetch: refetchTrace } = useQueueItemTrace(taskId, visible)
@@ -177,7 +211,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
       setIsMonitoring(queueMonitoringService.isTaskMonitored(taskId))
       // Reset collapsed state and simple mode when opening modal
       setActiveKeys(['overview'])
-      setSimpleMode(uiMode === 'simple') // Set simple mode based on UI mode
+      setSimpleMode(true) // Default to simple mode
       // Reset accumulated output when opening modal with new task
       setAccumulatedOutput('')
       setLastOutputStatus('')
@@ -708,6 +742,34 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             </Card>
           )}
 
+          {/* Console Output for Simple Mode */}
+          {simpleMode && (
+            <Card 
+              title={
+                <Space>
+                  <CodeOutlined />
+                  <Text>Response (Console)</Text>
+                  {traceData?.queueDetails?.status === 'PROCESSING' && (
+                    <Tag icon={<SyncOutlined spin />} color="processing">
+                      Live Output
+                    </Tag>
+                  )}
+                </Space>
+              }
+              style={{ marginTop: 16 }}
+            >
+              <ConsoleOutput
+                content={accumulatedOutput
+                  .replace(/\\r\\n/g, '\n')
+                  .replace(/\\n/g, '\n')
+                  .replace(/\\r/g, '\r')}
+                theme={theme}
+                consoleOutputRef={consoleOutputRef}
+                isEmpty={!traceData?.responseVaultContent?.hasContent}
+              />
+            </Card>
+          )}
+
           {/* Detailed View with All 7 Result Sets */}
           {!simpleMode && (
             <div style={{ marginTop: 16 }}>
@@ -856,83 +918,15 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                       size="small"
                       style={{ height: '100%' }}
                     >
-                      {traceData.responseVaultContent && traceData.responseVaultContent.hasContent ? (
-                        (() => {
-                          try {
-                            // Parse the vault content
-                            const vaultContent = typeof traceData.responseVaultContent.vaultContent === 'string' 
-                              ? JSON.parse(traceData.responseVaultContent.vaultContent) 
-                              : traceData.responseVaultContent.vaultContent || {}
-                            
-                            // Use accumulated output instead of parsing each time
-                            // Convert escape sequences to actual newlines
-                            const commandOutput = accumulatedOutput
-                              .replace(/\\r\\n/g, '\n')  // Replace \r\n with newline
-                              .replace(/\\n/g, '\n')     // Replace \n with newline
-                              .replace(/\\r/g, '\r')     // Replace \r with carriage return
-                            
-                            // Display command output in a pre-formatted text area
-                            return (
-                              <div>
-                                {commandOutput ? (
-                              <div 
-                                ref={consoleOutputRef}
-                                style={{ 
-                                backgroundColor: theme === 'dark' ? '#1f1f1f' : '#f5f5f5',
-                                border: `1px solid ${theme === 'dark' ? '#303030' : '#d9d9d9'}`,
-                                borderRadius: '4px',
-                                padding: '12px',
-                                fontFamily: 'monospace',
-                                fontSize: '12px',
-                                lineHeight: '1.5',
-                                whiteSpace: 'pre-wrap',
-                                wordBreak: 'break-word',
-                                height: '400px',
-                                overflowY: 'scroll'
-                              }}>
-                                {commandOutput}
-                              </div>
-                            ) : (
-                              <Empty description="No console output available" />
-                            )}
-                              </div>
-                            )
-                          } catch (error) {
-                            // Failed to parse response console output
-                            // Try to display raw vault content as fallback
-                            try {
-                              const rawContent = typeof traceData.responseVaultContent.vaultContent === 'string' 
-                                ? traceData.responseVaultContent.vaultContent 
-                                : JSON.stringify(traceData.responseVaultContent.vaultContent, null, 2)
-                              return (
-                                <div>
-                                  <div 
-                                    ref={consoleOutputRef}
-                                    style={{ 
-                                    backgroundColor: theme === 'dark' ? '#1f1f1f' : '#f5f5f5',
-                                    border: `1px solid ${theme === 'dark' ? '#303030' : '#d9d9d9'}`,
-                                    borderRadius: '4px',
-                                    padding: '12px',
-                                    fontFamily: 'monospace',
-                                    fontSize: '12px',
-                                    lineHeight: '1.5',
-                                    whiteSpace: 'pre-wrap',
-                                    wordBreak: 'break-word',
-                                    height: '400px',
-                                    overflowY: 'scroll'
-                                  }}>
-                                  {rawContent}
-                                  </div>
-                                </div>
-                              )
-                            } catch (fallbackError) {
-                              return <Empty description="Failed to parse console output" />
-                            }
-                          }
-                        })()
-                      ) : (
-                        <Empty description="No response available yet" />
-                      )}
+                      <ConsoleOutput
+                        content={accumulatedOutput
+                          .replace(/\\r\\n/g, '\n')
+                          .replace(/\\n/g, '\n')
+                          .replace(/\\r/g, '\r')}
+                        theme={theme}
+                        consoleOutputRef={consoleOutputRef}
+                        isEmpty={!traceData.responseVaultContent?.hasContent}
+                      />
                     </Card>
                   </Col>
                 </Row>
@@ -1145,7 +1139,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                                   unknown: { type: 'info' as const, icon: <QuestionCircleOutlined />, color: '#1890ff' }
                                 }
                                 
-                                const config = statusConfig[status] || statusConfig.unknown
+                                const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.unknown
                                 
                                 return (
                                   <Space direction="vertical" style={{ width: '100%' }}>

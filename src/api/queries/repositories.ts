@@ -34,18 +34,30 @@ export const useCreateRepository = createMutation<{
   repositoryName: string
   repositoryVault?: string
   parentRepoName?: string  // Optional parent repository name
+  repositoryGuid?: string  // Optional repository GUID
 }>({
   endpoint: '/CreateRepository',
   method: 'post',
   invalidateKeys: ['repositories', 'teams'],
   successMessage: (vars) => `Repository "${vars.repositoryName}" created successfully`,
   errorMessage: 'Failed to create repository',
-  transformData: (data) => ({
-    teamName: data.teamName,
-    repoName: data.repositoryName, // Map repositoryName to repoName for API
-    repoVault: data.repositoryVault || '{}', // Map repositoryVault to repoVault for API
-    parentRepoName: data.parentRepoName  // Pass through parent repository name
-  })
+  transformData: (data) => {
+    const apiData: any = {
+      teamName: data.teamName,
+      repoName: data.repositoryName, // Map repositoryName to repoName for API
+      repoVault: data.repositoryVault || '{}', // Map repositoryVault to repoVault for API
+    }
+    
+    // Only include optional parameters if they have values
+    if (data.parentRepoName) {
+      apiData.parentRepoName = data.parentRepoName
+    }
+    if (data.repositoryGuid && data.repositoryGuid.trim() !== '') {
+      apiData.repoGuid = data.repositoryGuid
+    }
+    
+    return apiData
+  }
 })
 
 // Update repository name

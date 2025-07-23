@@ -151,6 +151,10 @@
         "repo": {
           "label": "仓库",
           "help": "仓库名称（多个用逗号分隔）"
+        },
+        "option": {
+          "label": "选项",
+          "help": "附加选项"
         }
       }
     },
@@ -225,16 +229,20 @@
       }
     },
     "list": {
-      "name": "列表",
-      "description": "列出仓库",
+      "name": "列出远程文件",
+      "description": "列出远程存储位置中的文件",
       "params": {
-        "kind": {
-          "label": "类型",
-          "help": "要列出的类型"
+        "from": {
+          "label": "源位置",
+          "help": "要列出文件的机器或存储系统"
+        },
+        "path": {
+          "label": "路径",
+          "help": "存储中的可选路径"
         },
         "format": {
-          "label": "格式",
-          "help": "输出格式（json）"
+          "label": "输出格式",
+          "help": "文件列表的格式"
         }
       }
     },
@@ -269,7 +277,7 @@
       }
     },
     "pull": {
-      "name": "拉取",
+      "name": "Pull",
       "description": "从远程存储拉取仓库",
       "params": {
         "sourceType": {
@@ -392,5 +400,12 @@
         }
       }
     }
-  }
+  },
+  "checkboxOptions": {
+    "mountRepositoryFirst": "首先挂载存储库",
+    "preparationOnly": "仅准备",
+    "unmountAfterStopping": "停止后卸载",
+    "overrideExistingFile": "覆盖现有文件"
+  },
+  "additionalOptions": "额外选项（高级）"
 }

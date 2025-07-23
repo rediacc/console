@@ -426,5 +426,18 @@
   "messages": {
     "repositoryCreationQueued": "Création du référentiel mise en file d'attente pour soumission",
     "highestPriorityQueued": "Fonction {{resourceType}} de priorité maximale mise en file d'attente pour soumission"
+  },
+  "remoteFiles": {
+    "title": "Parcourir les fichiers distants",
+    "selectSource": "Sélectionner l'emplacement source",
+    "name": "Nom",
+    "size": "Taille",
+    "modified": "Modifié",
+    "pull": "Récupérer les fichiers sélectionnés",
+    "pullStarted": "Démarrage de la récupération de {{count}} fichier(s)",
+    "loadError": "Échec du chargement des fichiers",
+    "selectFiles": "Veuillez sélectionner les fichiers à récupérer",
+    "noFiles": "Aucun fichier trouvé à cet emplacement",
+    "info": "Sélectionnez les fichiers à récupérer sur cette machine. Les répertoires ne peuvent pas être sélectionnés directement."
   }
 }

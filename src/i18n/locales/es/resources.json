@@ -426,5 +426,18 @@
   "messages": {
     "repositoryCreationQueued": "Creación de repositorio en cola para envío",
     "highestPriorityQueued": "Función de {{resourceType}} de mayor prioridad en cola para envío"
+  },
+  "remoteFiles": {
+    "title": "Explorar archivos remotos",
+    "selectSource": "Seleccionar ubicación de origen",
+    "name": "Nombre",
+    "size": "Tamaño",
+    "modified": "Modificado",
+    "pull": "Descargar archivos seleccionados",
+    "pullStarted": "Se inició la descarga de {{count}} archivo(s)",
+    "loadError": "Error al cargar los archivos",
+    "selectFiles": "Por favor seleccione archivos para descargar",
+    "noFiles": "No se encontraron archivos en esta ubicación",
+    "info": "Seleccione archivos para descargar a esta máquina. Los directorios no se pueden seleccionar directamente."
   }
 }
