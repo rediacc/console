@@ -789,7 +789,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             dataSource={filteredMachines}
             rowKey="machineName"
             loading={isLoading}
-            scroll={{ x: 'max-content', y: 'calc(100vh - 400px)' }}
+            scroll={{ x: true, y: 'calc(100vh - 400px)' }}
             rowClassName={(record) => {
               const isSelected = externalSelectedMachine?.machineName === record.machineName;
               return isSelected ? 'ant-table-row-selected' : '';

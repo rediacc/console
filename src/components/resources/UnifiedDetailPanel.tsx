@@ -73,7 +73,9 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
       if (!isDragging.current) return
 
       const deltaX = dragStartX.current - e.clientX
-      const newWidth = Math.max(300, Math.min(800, dragStartWidth.current + deltaX))
+      const windowWidth = window.innerWidth
+      const maxWidth = Math.min(800, windowWidth - 400) // Leave at least 400px for the table
+      const newWidth = Math.max(300, Math.min(maxWidth, dragStartWidth.current + deltaX))
       onSplitWidthChange(newWidth)
     }
 

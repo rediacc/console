@@ -81,10 +81,11 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
         {/* Left Panel - Machine Table */}
         <div 
           style={{
-            flex: 1,
+            width: selectedResource ? `calc(100% - ${splitWidth}px)` : '100%',
             height: '100%',
-            overflow: 'hidden',
-            minWidth: 0, // Allow flex shrinking
+            overflow: 'auto',
+            minWidth: 300, // Minimum width to prevent crushing the table
+            transition: 'width 0.3s ease-in-out',
           }}
         >
           <MachineTable
