@@ -242,7 +242,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
                   <Statistic
                     title={t('resources:containers.memoryUsage')}
                     value={`${resourceUsage?.memoryUsed} / ${resourceUsage?.memoryTotal}`}
-                    valueStyle={{ fontSize: 14 }}
+                    valueStyle={{ fontSize: 16 }}
                   />
                   <Progress 
                     percent={resourceUsage?.memoryPercent || 0} 

@@ -284,6 +284,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                           title={t('resources:repositories.hostname')}
                           value={vaultData.system.hostname}
                           prefix={<CloudServerOutlined />}
+                          valueStyle={{ fontSize: 16 }}
                         />
                       </Card>
                     </Col>
@@ -293,6 +294,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                           title={t('resources:repositories.uptime')}
                           value={vaultData.system.uptime}
                           prefix={<FieldTimeOutlined />}
+                          valueStyle={{ fontSize: 16 }}
                         />
                       </Card>
                     </Col>

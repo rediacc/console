@@ -307,6 +307,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
                       title={t('resources:repositories.imageSize')}
                       value={repositoryData.repositoryData.size_human}
                       prefix={<HddOutlined />}
+                      valueStyle={{ fontSize: 16 }}
                     />
                   </Card>
                 </Col>
@@ -316,6 +317,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
                       title={t('resources:repositories.lastModified')}
                       value={repositoryData.repositoryData.modified_human}
                       prefix={<ClockCircleOutlined />}
+                      valueStyle={{ fontSize: 16 }}
                     />
                   </Card>
                 </Col>
