@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Machine, Repository } from '@/types'
 import { MachineTable } from './MachineTable'
 import { UnifiedDetailPanel } from './UnifiedDetailPanel'
@@ -56,7 +56,26 @@ interface SplitResourceViewProps {
 
 export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
   const { type, selectedResource, onResourceSelect, onMachineRepositoryClick, onMachineContainerClick } = props
-  const [splitWidth, setSplitWidth] = useState(520) // fixed width for detail panel
+  
+  // Calculate 25% of window width for the panel
+  const calculatePanelWidth = () => {
+    const windowWidth = window.innerWidth
+    const panelWidth = Math.floor(windowWidth * 0.25)
+    // Ensure minimum width of 300px and maximum of 600px
+    return Math.max(300, Math.min(600, panelWidth))
+  }
+  
+  const [splitWidth, setSplitWidth] = useState(calculatePanelWidth)
+
+  // Update panel width on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setSplitWidth(calculatePanelWidth())
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const handleMachineSelect = (machine: Machine) => {
     onResourceSelect(machine)

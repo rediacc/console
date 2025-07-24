@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Repository } from '@/api/queries/repositories'
 import { Table, Button, Tag, Space, Empty, Typography, Dropdown } from 'antd'
 import { 
@@ -42,7 +42,26 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
 }) => {
   const { t } = useTranslation(['resources', 'common'])
   const { theme } = useTheme()
-  const [splitWidth, setSplitWidth] = useState(520)
+  
+  // Calculate 25% of window width for the panel
+  const calculatePanelWidth = () => {
+    const windowWidth = window.innerWidth
+    const panelWidth = Math.floor(windowWidth * 0.25)
+    // Ensure minimum width of 300px and maximum of 600px
+    return Math.max(300, Math.min(600, panelWidth))
+  }
+  
+  const [splitWidth, setSplitWidth] = useState(calculatePanelWidth)
+
+  // Update panel width on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setSplitWidth(calculatePanelWidth())
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const handleRowClick = (repository: Repository) => {
     onRepositorySelect(repository)

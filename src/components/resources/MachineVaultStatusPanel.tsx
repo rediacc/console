@@ -18,7 +18,6 @@ import {
   CloseOutlined,
   DesktopOutlined,
   DatabaseOutlined,
-  ClockCircleOutlined,
   GlobalOutlined,
   HddOutlined,
   WifiOutlined,
@@ -35,6 +34,7 @@ import { useTranslation } from 'react-i18next'
 import { Machine } from '@/types'
 import { useTheme } from '@/context/ThemeContext'
 import { getLocalizedRelativeTime } from '@/utils/timeUtils'
+import { calculateResourcePercent } from '@/utils/sizeUtils'
 
 const { Text, Title } = Typography
 
@@ -133,7 +133,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
   const { theme } = useTheme()
 
   // Parse vault status data
-  const vaultData = useMemo(() => {
+  const vaultData = useMemo((): { system?: SystemInfo; network?: any; block_devices?: BlockDevice[]; system_containers?: Container[] } | null => {
     if (!machine?.vaultStatus) return null
 
     try {
@@ -344,7 +344,11 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                           <Text>{vaultData.system.memory.used} / {vaultData.system.memory.total}</Text>
                         </div>
                         <Progress 
-                          percent={Math.round((parseFloat(vaultData.system.memory.used) / parseFloat(vaultData.system.memory.total)) * 100)} 
+                          percent={calculateResourcePercent(
+                            undefined,
+                            vaultData.system.memory.used,
+                            vaultData.system.memory.total
+                          )} 
                           strokeColor="#1890ff"
                           trailColor={theme === 'dark' ? 'rgba(255,255,255,0.08)' : undefined}
                         />
@@ -367,9 +371,19 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                           <Text>{vaultData.system.disk.used} / {vaultData.system.disk.total}</Text>
                         </div>
                         <Progress 
-                          percent={parseInt(vaultData.system.disk.use_percent)} 
-                          status={parseInt(vaultData.system.disk.use_percent) > 90 ? 'exception' : 'normal'}
-                          strokeColor={parseInt(vaultData.system.disk.use_percent) > 90 ? '#ff4d4f' : '#fa8c16'}
+                          percent={calculateResourcePercent(
+                            vaultData.system.disk.use_percent,
+                            vaultData.system.disk.used,
+                            vaultData.system.disk.total
+                          )} 
+                          status={(() => {
+                            const percent = parseInt(vaultData.system.disk.use_percent) || 0
+                            return percent > 90 ? 'exception' : 'normal'
+                          })()}
+                          strokeColor={(() => {
+                            const percent = parseInt(vaultData.system.disk.use_percent) || 0
+                            return percent > 90 ? '#ff4d4f' : '#fa8c16'
+                          })()}
                           trailColor={theme === 'dark' ? 'rgba(255,255,255,0.08)' : undefined}
                         />
                         <Text type="secondary" style={{ fontSize: 12 }}>
@@ -395,9 +409,19 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                             <Text>{vaultData.system.datastore.used} / {vaultData.system.datastore.total}</Text>
                           </div>
                           <Progress 
-                            percent={parseInt(vaultData.system.datastore.use_percent)} 
-                            status={parseInt(vaultData.system.datastore.use_percent) > 90 ? 'exception' : 'normal'}
-                            strokeColor={parseInt(vaultData.system.datastore.use_percent) > 90 ? '#ff4d4f' : '#52c41a'}
+                            percent={calculateResourcePercent(
+                              vaultData.system.datastore.use_percent,
+                              vaultData.system.datastore.used,
+                              vaultData.system.datastore.total
+                            )} 
+                            status={(() => {
+                              const percent = parseInt(vaultData.system.datastore.use_percent) || 0
+                              return percent > 90 ? 'exception' : 'normal'
+                            })()}
+                            strokeColor={(() => {
+                              const percent = parseInt(vaultData.system.datastore.use_percent) || 0
+                              return percent > 90 ? '#ff4d4f' : '#52c41a'
+                            })()}
                             trailColor={theme === 'dark' ? 'rgba(255,255,255,0.08)' : undefined}
                           />
                           <Text type="secondary" style={{ fontSize: 12 }}>
