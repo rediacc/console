@@ -84,10 +84,12 @@ interface MachineRepositoryListProps {
   onCreateRepository?: (machine: Machine, repositoryGuid: string) => void
   onRepositoryClick?: (repository: Repository) => void
   highlightedRepository?: Repository | null
+  onContainerClick?: (container: any) => void
+  highlightedContainer?: any | null
 }
 
 
-export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete, hideSystemInfo = false, onCreateRepository, onRepositoryClick, highlightedRepository }) => {
+export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete, hideSystemInfo = false, onCreateRepository, onRepositoryClick, highlightedRepository, onContainerClick, highlightedContainer }) => {
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
   const userEmail = useAppSelector((state) => state.auth.user?.email || '')
   const [currentToken, setCurrentToken] = useState<string>('')
@@ -964,6 +966,19 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               size="small"
               pagination={false}
               scroll={{ x: 'max-content' }}
+              onRow={(container) => ({
+                onClick: (e) => {
+                  const target = e.target as HTMLElement
+                  if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
+                    return
+                  }
+                  onContainerClick?.(container)
+                },
+                style: {
+                  cursor: onContainerClick ? 'pointer' : 'default',
+                  backgroundColor: highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : undefined
+                }
+              })}
             />
           ) : (
             <Empty description={t('resources:repositories.noContainers')} />
@@ -983,6 +998,19 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               size="small"
               pagination={false}
               scroll={{ x: 'max-content' }}
+              onRow={(container) => ({
+                onClick: (e) => {
+                  const target = e.target as HTMLElement
+                  if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
+                    return
+                  }
+                  onContainerClick?.(container)
+                },
+                style: {
+                  cursor: onContainerClick ? 'pointer' : 'default',
+                  backgroundColor: highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : undefined
+                }
+              })}
             />
           </div>
         )}

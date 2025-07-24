@@ -101,6 +101,7 @@ const ResourcesPage: React.FC = () => {
   const [teamResourcesTab, setTeamResourcesTab] = useState('machines')
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null)
   const [selectedRepositoryFromMachine, setSelectedRepositoryFromMachine] = useState<Repository | null>(null)
+  const [selectedContainerFromMachine, setSelectedContainerFromMachine] = useState<any | null>(null)
   
   // Unified modal state
   const [unifiedModalState, setUnifiedModalState] = useState<{
@@ -188,7 +189,15 @@ const ResourcesPage: React.FC = () => {
       // If we can't find the repository, still show what we have
       setSelectedRepositoryFromMachine(mappedRepository)
       setSelectedMachine(null) // Close machine panel when repository is selected
+      setSelectedContainerFromMachine(null)
     }
+  }
+  
+  // Handler for container click from machine list
+  const handleMachineContainerClick = (machine: Machine, container: any) => {
+    setSelectedMachine(null)
+    setSelectedRepositoryFromMachine(null)
+    setSelectedContainerFromMachine(container)
   }
   
   // Machine mutations
@@ -1447,16 +1456,27 @@ const ResourcesPage: React.FC = () => {
           onQueueItemCreated={(taskId, machineName) => {
             setQueueTraceModal({ visible: true, taskId, machineName });
           }}
-          selectedResource={selectedMachine || selectedRepositoryFromMachine}
+          selectedResource={selectedMachine || selectedRepositoryFromMachine || selectedContainerFromMachine}
           onResourceSelect={(resource) => {
             if (resource && 'machineName' in resource) {
               handleMachineSelect(resource as Machine)
+            } else if (resource && 'repositoryName' in resource) {
+              handleMachineSelect(null)
+              setSelectedRepositoryFromMachine(resource as Repository)
+              setSelectedContainerFromMachine(null)
+            } else if (resource && 'id' in resource && 'state' in resource) {
+              // Container
+              handleMachineSelect(null)
+              setSelectedRepositoryFromMachine(null)
+              setSelectedContainerFromMachine(resource)
             } else {
               handleMachineSelect(null)
               setSelectedRepositoryFromMachine(null)
+              setSelectedContainerFromMachine(null)
             }
           }}
           onMachineRepositoryClick={handleMachineRepositoryClick}
+          onMachineContainerClick={handleMachineContainerClick}
         />
       ),
     },

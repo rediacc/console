@@ -1,12 +1,41 @@
 import React, { useEffect, useRef } from 'react'
 import { MachineVaultStatusPanel } from './MachineVaultStatusPanel'
 import { RepositoryDetailPanel } from './RepositoryDetailPanel'
+import { ContainerDetailPanel } from './ContainerDetailPanel'
 import { Machine, Repository } from '@/types'
 import { useTheme } from '@/context/ThemeContext'
 
+interface ContainerData {
+  id: string
+  name: string
+  image: string
+  command: string
+  created: string
+  status: string
+  state: string
+  ports: string
+  port_mappings?: Array<{
+    host?: string
+    host_port?: string
+    container_port: string
+    protocol: string
+  }>
+  labels: string
+  mounts: string
+  networks: string
+  size: string
+  repository: string
+  cpu_percent: string
+  memory_usage: string
+  memory_percent: string
+  net_io: string
+  block_io: string
+  pids: string
+}
+
 interface UnifiedDetailPanelProps {
-  type: 'machine' | 'repository'
-  data: Machine | Repository | null
+  type: 'machine' | 'repository' | 'container'
+  data: Machine | Repository | ContainerData | null
   visible: boolean
   onClose: () => void
   splitWidth: number
@@ -22,7 +51,8 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
   onSplitWidthChange
 }) => {
   // Determine actual type based on data if not explicitly provided
-  const actualType = type || (data && 'machineName' in data ? 'machine' : 'repository')
+  const actualType = type || (data && 'machineName' in data ? 'machine' : 
+                             data && 'repositoryName' in data ? 'repository' : 'container')
   const { theme } = useTheme()
   const isDragging = useRef(false)
   const dragStartX = useRef(0)
@@ -119,9 +149,16 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
             onClose={onClose}
             splitView={true}
           />
-        ) : (
+        ) : actualType === 'repository' ? (
           <RepositoryDetailPanel
             repository={data as Repository}
+            visible={visible}
+            onClose={onClose}
+            splitView={true}
+          />
+        ) : (
+          <ContainerDetailPanel
+            container={data as ContainerData}
             visible={visible}
             onClose={onClose}
             splitView={true}

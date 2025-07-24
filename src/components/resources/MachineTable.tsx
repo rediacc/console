@@ -74,6 +74,7 @@ interface MachineTableProps {
   onRowClick?: (machine: Machine) => void;
   selectedMachine?: Machine | null;
   onMachineRepositoryClick?: (machine: Machine, repository: any) => void;
+  onMachineContainerClick?: (machine: Machine, container: any) => void;
 }
 
 export const MachineTable: React.FC<MachineTableProps> = ({
@@ -94,6 +95,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   onRowClick,
   selectedMachine: externalSelectedMachine,
   onMachineRepositoryClick,
+  onMachineContainerClick,
 }) => {
   const { t } = useTranslation(['machines', 'common', 'functions', 'resources']);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
@@ -791,6 +793,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                     }
                   }}
                   onRepositoryClick={(repository) => onMachineRepositoryClick?.(machine, repository)}
+                  onContainerClick={(container) => onMachineContainerClick?.(machine, container)}
                   onCreateRepository={onCreateRepository}
                   hideSystemInfo={true}
                 />
@@ -844,6 +847,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                     }
                   }}
                   onRepositoryClick={(repository) => onMachineRepositoryClick?.(record, repository)}
+                  onContainerClick={(container) => onMachineContainerClick?.(record, container)}
                   onCreateRepository={onCreateRepository}
                 />
               ),
