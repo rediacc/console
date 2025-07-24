@@ -47,6 +47,30 @@ const formatDurationFull = (seconds: number): string => {
   return `${minutes} minute${minutes !== 1 ? 's' : ''}`
 }
 
+// Helper function to extract timestamp from trace logs for specific action
+const getTimelineTimestamp = (traceLogs: any[], action: string, fallbackAction?: string): string | null => {
+  if (!traceLogs || traceLogs.length === 0) return null
+  
+  // Try primary action first
+  let log = traceLogs.find(log => 
+    normalizeProperty(log, 'action', 'Action') === action
+  )
+  
+  // If not found and fallback provided, try fallback action
+  if (!log && fallbackAction) {
+    log = traceLogs.find(log => 
+      normalizeProperty(log, 'action', 'Action') === fallbackAction
+    )
+  }
+  
+  if (log) {
+    const timestamp = normalizeProperty(log, 'timestamp', 'Timestamp')
+    return timestamp ? dayjs(timestamp).format('HH:mm:ss') : null
+  }
+  
+  return null
+}
+
 interface QueueItemTraceModalProps {
   taskId: string | null
   visible: boolean
@@ -692,15 +716,39 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   <Step title="Created" description={traceData.queueDetails.createdTime ? dayjs(traceData.queueDetails.createdTime).format('HH:mm:ss') : ''} />
                   <Step title="Assigned" description={traceData.queueDetails.assignedTime ? dayjs(traceData.queueDetails.assignedTime).format('HH:mm:ss') : 'Waiting'} />
                   <Step title="Processing" description={
-                    normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PROCESSING' ? 'In Progress' : 
-                    normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLING' ? 'Cancelling...' : ''
+                    (() => {
+                      const currentStep = getCurrentStep()
+                      const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
+                      const processingTimestamp = getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_PROCESSING', 'QUEUE_ITEM_RESPONSE_UPDATED')
+                      
+                      // If currently processing
+                      if (status === 'PROCESSING') {
+                        return processingTimestamp || 'In Progress'
+                      }
+                      
+                      // If cancelling
+                      if (status === 'CANCELLING') {
+                        return 'Cancelling...'
+                      }
+                      
+                      // If we've reached or passed processing stage (step 2 or higher)
+                      if (currentStep >= 2) {
+                        return processingTimestamp || 'Processed'
+                      }
+                      
+                      // Haven't reached processing yet
+                      return ''
+                    })()
                   } />
                   <Step 
                     title="Completed" 
                     description={
-                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' ? 'Done' :
-                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED' ? 'Failed' :
-                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED' ? 'Cancelled' :
+                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' ? 
+                        `Done${getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_COMPLETED') ? ' - ' + getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_COMPLETED') : ''}` :
+                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED' ? 
+                        `Failed${getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_FAILED') ? ' - ' + getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_FAILED') : ''}` :
+                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED' ? 
+                        `Cancelled${getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_CANCELLED') ? ' - ' + getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_CANCELLED') : ''}` :
                       normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLING' ? 'Cancelling' : ''
                     }
                   />

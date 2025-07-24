@@ -76,6 +76,7 @@ interface MachineTableProps {
   selectedMachine?: Machine | null;
   onMachineRepositoryClick?: (machine: Machine, repository: any) => void;
   onMachineContainerClick?: (machine: Machine, container: any) => void;
+  onRefreshMachines?: () => Promise<any>;
 }
 
 export const MachineTable: React.FC<MachineTableProps> = ({
@@ -97,6 +98,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   selectedMachine: externalSelectedMachine,
   onMachineRepositoryClick,
   onMachineContainerClick,
+  onRefreshMachines,
 }) => {
   const { t } = useTranslation(['machines', 'common', 'functions', 'resources']);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
@@ -112,6 +114,10 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const [internalExpandedRowKeys, setInternalExpandedRowKeys] = useState<string[]>([]);
   const [expansionTimestamps, setExpansionTimestamps] = useState<Record<string, number>>({});
   const [internalRefreshKeys, setInternalRefreshKeys] = useState<Record<string, number>>({});
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showLoadingIndicator, setShowLoadingIndicator] = useState(false);
+  const [loadingTimer, setLoadingTimer] = useState<NodeJS.Timeout | null>(null);
+  const [expandingRowKey, setExpandingRowKey] = useState<string | null>(null);
   
   // Use external or internal state
   const expandedRowKeys = externalExpandedRowKeys !== undefined ? externalExpandedRowKeys : internalExpandedRowKeys;
@@ -135,6 +141,14 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   const [vaultPanelVisible, setVaultPanelVisible] = useState(false);
 
+  // Clean up timer on unmount
+  React.useEffect(() => {
+    return () => {
+      if (loadingTimer) {
+        clearTimeout(loadingTimer);
+      }
+    };
+  }, [loadingTimer]);
 
   // Queries only - mutations are handled by parent
   const { data: machines = [], isLoading } = useMachines(teamFilter, enabled);
@@ -779,6 +793,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                   onContainerClick={(container) => onMachineContainerClick?.(machine, container)}
                   onCreateRepository={onCreateRepository}
                   hideSystemInfo={true}
+                  isLoading={showLoadingIndicator && expandingRowKey === machine.machineName}
+                  onRefreshMachines={onRefreshMachines}
                 />
               </div>
             ))}
@@ -830,6 +846,29 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                     ...prev,
                     [record.machineName]: Date.now()
                   }));
+                  
+                  // Trigger refresh when expanding
+                  if (onRefreshMachines) {
+                    setExpandingRowKey(record.machineName);
+                    setIsRefreshing(true);
+                    
+                    // Start 1-second timer for loading indicator
+                    const timer = setTimeout(() => {
+                      setShowLoadingIndicator(true);
+                    }, 1000);
+                    setLoadingTimer(timer);
+                    
+                    // Trigger refresh
+                    onRefreshMachines().finally(() => {
+                      if (loadingTimer) {
+                        clearTimeout(loadingTimer);
+                      }
+                      setIsRefreshing(false);
+                      setShowLoadingIndicator(false);
+                      setExpandingRowKey(null);
+                      setLoadingTimer(null);
+                    });
+                  }
                 }
                 
                 // Also call the row click handler if provided
@@ -865,6 +904,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                   onRepositoryClick={(repository) => onMachineRepositoryClick?.(record, repository)}
                   onContainerClick={(container) => onMachineContainerClick?.(record, container)}
                   onCreateRepository={onCreateRepository}
+                  isLoading={showLoadingIndicator && expandingRowKey === record.machineName}
+                  onRefreshMachines={onRefreshMachines}
                 />
               ),
               rowExpandable: () => true,

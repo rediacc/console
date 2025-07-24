@@ -86,10 +86,12 @@ interface MachineRepositoryListProps {
   highlightedRepository?: Repository | null
   onContainerClick?: (container: any) => void
   highlightedContainer?: any | null
+  isLoading?: boolean
+  onRefreshMachines?: () => Promise<any>
 }
 
 
-export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete, hideSystemInfo = false, onCreateRepository, onRepositoryClick, highlightedRepository, onContainerClick, highlightedContainer }) => {
+export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete, hideSystemInfo = false, onCreateRepository, onRepositoryClick, highlightedRepository, onContainerClick, highlightedContainer, isLoading, onRefreshMachines }) => {
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
   const userEmail = useAppSelector((state) => state.auth.user?.email || '')
   const [currentToken, setCurrentToken] = useState<string>('')
@@ -109,6 +111,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const [servicesData, setServicesData] = useState<Record<string, any>>({})
   const [containersData, setContainersData] = useState<Record<string, any>>({})
   const [createdRepositoryName, setCreatedRepositoryName] = useState<string | null>(null)
+  const [isRefreshingRepo, setIsRefreshingRepo] = useState(false)
+  const [showRepoLoadingIndicator, setShowRepoLoadingIndicator] = useState(false)
+  const [repoLoadingTimer, setRepoLoadingTimer] = useState<NodeJS.Timeout | null>(null)
+  const [expandingRepoKey, setExpandingRepoKey] = useState<string | null>(null)
   
   // Keep managed queue for function execution
   const managedQueueMutation = useManagedQueueItem()
@@ -363,6 +369,15 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     }
     fetchToken()
   }, [])
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (repoLoadingTimer) {
+        clearTimeout(repoLoadingTimer)
+      }
+    }
+  }, [repoLoadingTimer])
 
   const handleRefresh = () => {
     // Trigger parent component to refresh machine data
@@ -901,20 +916,31 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     ]
     
     return (
-      <div style={{ padding: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div style={{ padding: '16px', position: 'relative' }}>
+        {/* Loading Overlay for Repository Expansion */}
+        {showRepoLoadingIndicator && expandingRepoKey === record.name && (
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(255, 255, 255, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10,
+            borderRadius: '4px'
+          }}>
+            <Space direction="vertical" align="center">
+              <Spin size="large" />
+              <Text type="secondary">{t('common:general.refreshing')}</Text>
+            </Space>
+          </div>
+        )}
+        
+        <div style={{ marginBottom: 16 }}>
           <Typography.Title level={5} style={{ margin: 0 }}>{t('resources:repositories.containersAndPlugins')}</Typography.Title>
-          <Button
-            type="text"
-            size="small"
-            icon={<ReloadOutlined />}
-            onClick={() => {
-              // Refresh button removed - data comes from machine vaultStatus
-              showMessage('info', t('resources:repositories.refreshNotAvailable'))
-            }}
-          >
-            {t('common:refresh')}
-          </Button>
         </div>
         
         {/* Regular Containers Table */}
@@ -1224,7 +1250,29 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   }
 
   return (
-    <div style={{ padding: '0 20px 20px 20px', overflowX: 'auto' }}>
+    <div style={{ padding: '0 20px 20px 20px', overflowX: 'auto', position: 'relative' }}>
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(255, 255, 255, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10,
+          borderRadius: '4px'
+        }}>
+          <Space direction="vertical" align="center">
+            <Spin size="large" />
+            <Text type="secondary">{t('common:general.refreshing')}</Text>
+          </Space>
+        </div>
+      )}
+      
       {/* Machine Name Title when in grouped view */}
       {hideSystemInfo && (
         <div style={{ marginBottom: 16, paddingTop: 16, borderBottom: '1px solid #f0f0f0', paddingBottom: 12 }}>
@@ -1293,6 +1341,29 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                   setExpandedRows(expandedRows.filter(key => key !== record.name))
                 } else {
                   setExpandedRows([...expandedRows, record.name])
+                  
+                  // Trigger refresh when expanding
+                  if (onRefreshMachines) {
+                    setExpandingRepoKey(record.name)
+                    setIsRefreshingRepo(true)
+                    
+                    // Start 1-second timer for loading indicator
+                    const timer = setTimeout(() => {
+                      setShowRepoLoadingIndicator(true)
+                    }, 1000)
+                    setRepoLoadingTimer(timer)
+                    
+                    // Trigger refresh
+                    onRefreshMachines().finally(() => {
+                      if (repoLoadingTimer) {
+                        clearTimeout(repoLoadingTimer)
+                      }
+                      setIsRefreshingRepo(false)
+                      setShowRepoLoadingIndicator(false)
+                      setExpandingRepoKey(null)
+                      setRepoLoadingTimer(null)
+                    })
+                  }
                 }
               }
               

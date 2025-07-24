@@ -52,6 +52,7 @@ interface SplitResourceViewProps {
   onResourceSelect: (resource: Machine | Repository | ContainerData | null) => void
   onMachineRepositoryClick?: (machine: Machine, repository: any) => void
   onMachineContainerClick?: (machine: Machine, container: ContainerData) => void
+  onRefreshMachines?: () => Promise<any>
 }
 
 export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
