@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Empty, Card, Row, Col, Progress } from 'antd'
-import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, CloudDownloadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, PlusOutlined, MinusOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined, GlobalOutlined, KeyOutlined } from '@/utils/optimizedIcons'
+import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, CloudDownloadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, PlusOutlined, MinusOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined, GlobalOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { type QueueFunction } from '@/api/queries/queue'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
@@ -760,7 +760,15 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         key: 'name',
         width: 300,
         ellipsis: true,
-        render: (name: string) => <Tag color="cyan">{name}</Tag>,
+        render: (name: string, record: any) => {
+          const isPlugin = name?.startsWith('plugin-')
+          return (
+            <Space>
+              {isPlugin ? <ApiOutlined style={{ color: '#1890ff' }} /> : <AppstoreOutlined style={{ color: '#52c41a' }} />}
+              <strong>{name}</strong>
+            </Space>
+          )
+        },
       },
       {
         title: t('resources:repositories.containerPorts'),
@@ -991,7 +999,12 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       key: 'name',
       width: 200,
       ellipsis: true,
-      render: (name: string) => <Tag color="purple">{name}</Tag>,
+      render: (name: string) => (
+        <Space>
+          <CloudServerOutlined style={{ color: '#722ed1' }} />
+          <strong>{name}</strong>
+        </Space>
+      ),
     },
     {
       title: t('resources:repositories.containerImage'),

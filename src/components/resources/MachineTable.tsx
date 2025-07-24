@@ -257,6 +257,12 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         key: 'machineName',
         ellipsis: true,
         sorter: (a: Machine, b: Machine) => a.machineName.localeCompare(b.machineName),
+        render: (name: string) => (
+          <Space>
+            <DesktopOutlined style={{ color: '#556b2f' }} />
+            <strong>{name}</strong>
+          </Space>
+        ),
       },
     );
 
