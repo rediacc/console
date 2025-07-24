@@ -1147,3 +1147,111 @@ body {
 .light-mode-radio-group .ant-radio-button-wrapper-checked .anticon {
   color: var(--color-bg-primary);
 }
+
+/* Machine Vault Status Panel Styles */
+.machine-vault-status-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mobile responsiveness for the panel */
+@media (max-width: 768px) {
+  .machine-vault-status-panel {
+    width: 100vw !important;
+    right: -100vw;
+  }
+  
+  .machine-vault-status-panel[style*="right: 0"] {
+    right: 0 !important;
+  }
+}
+
+/* Panel header sticky positioning */
+.machine-vault-status-panel > div:first-child {
+  flex-shrink: 0;
+}
+
+/* Panel content scrolling */
+.machine-vault-status-panel > div:last-child {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Table row hover effect for clickable rows */
+.ant-table-row {
+  transition: background-color 0.2s ease;
+}
+
+.ant-table-row:hover {
+  background-color: var(--color-bg-hover);
+}
+
+[data-theme="dark"] .ant-table-row:hover {
+  background-color: var(--color-bg-hover);
+}
+
+/* Panel animations */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Panel shadow for depth */
+.machine-vault-status-panel {
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .machine-vault-status-panel {
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.24);
+}
+
+/* Panel close button hover effect */
+.machine-vault-status-panel button[type="text"]:hover {
+  background-color: var(--color-bg-hover);
+}
+
+/* Panel content spacing */
+.machine-vault-status-panel .ant-collapse {
+  background: transparent;
+  border: none;
+}
+
+.machine-vault-status-panel .ant-collapse-item {
+  border: 1px solid var(--color-border-primary);
+  margin-bottom: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.machine-vault-status-panel .ant-collapse-header {
+  background: var(--color-bg-secondary);
+  font-weight: 500;
+}
+
+[data-theme="dark"] .machine-vault-status-panel .ant-collapse-header {
+  background: var(--color-bg-tertiary);
+}
+
+/* Panel description list styling */
+.machine-vault-status-panel .ant-descriptions-item-label {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.machine-vault-status-panel .ant-descriptions-item-content {
+  color: var(--color-text-primary);
+}

@@ -53,6 +53,7 @@ import { useRepositories } from '@/api/queries/repositories';
 import { useTeams } from '@/api/queries/teams';
 import { useTheme } from '@/context/ThemeContext';
 import { RemoteFileBrowserModal } from './RemoteFileBrowserModal';
+import { MachineVaultStatusPanel } from './MachineVaultStatusPanel';
 
 
 interface MachineTableProps {
@@ -70,6 +71,8 @@ interface MachineTableProps {
   expandedRowKeys?: string[];
   onExpandedRowsChange?: (keys: string[]) => void;
   refreshKeys?: Record<string, number>;
+  onRowClick?: (machine: Machine) => void;
+  selectedMachine?: Machine | null;
 }
 
 export const MachineTable: React.FC<MachineTableProps> = ({
@@ -87,6 +90,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   expandedRowKeys: externalExpandedRowKeys,
   onExpandedRowsChange: externalOnExpandedRowsChange,
   refreshKeys: externalRefreshKeys,
+  onRowClick,
+  selectedMachine: externalSelectedMachine,
 }) => {
   const { t } = useTranslation(['machines', 'common', 'functions', 'resources']);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
@@ -122,6 +127,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     machine: Machine | null;
   }>({ open: false, machine: null });
   
+  const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
+  const [vaultPanelVisible, setVaultPanelVisible] = useState(false);
 
 
   // Queries only - mutations are handled by parent
@@ -201,6 +208,23 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     }
   }, [onDeleteMachine]);
 
+  const handleRowClick = useCallback((machine: Machine) => {
+    if (onRowClick) {
+      onRowClick(machine);
+    } else {
+      setSelectedMachine(machine);
+      setVaultPanelVisible(true);
+    }
+  }, [onRowClick]);
+
+  const handlePanelClose = useCallback(() => {
+    setVaultPanelVisible(false);
+    // Keep selectedMachine for a bit to avoid UI flicker during close animation
+    setTimeout(() => {
+      setSelectedMachine(null);
+    }, 300);
+  }, []);
+
 
 
 
@@ -230,7 +254,11 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         ellipsis: true,
         sorter: (a: Machine, b: Machine) => a.machineName.localeCompare(b.machineName),
       },
-      {
+    );
+
+    // Only show team column if not in split view mode
+    if (!onRowClick) {
+      baseColumns.push({
         title: t('machines:team'),
         dataIndex: 'teamName',
         key: 'teamName',
@@ -238,56 +266,60 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         ellipsis: true,
         render: (teamName: string) => <Tag color="#8FBC8F">{teamName}</Tag>,
         sorter: (a: Machine, b: Machine) => a.teamName.localeCompare(b.teamName),
-      },
-    );
+      });
+    }
 
-    // Add team/bridge/region columns in expert mode
-    if (isExpertMode) {
-      // Show region and bridge columns (team is already filtered in embedded mode)
-      baseColumns.push(
-        {
-          title: t('machines:region'),
-          dataIndex: 'regionName',
-          key: 'regionName',
-          width: 150,
-          ellipsis: true,
-          render: (regionName: string) => regionName ? <Tag color="purple">{regionName}</Tag> : '-',
-          sorter: (a: Machine, b: Machine) => (a.regionName || '').localeCompare(b.regionName || ''),
-        },
-        {
-          title: t('machines:bridge'),
+    // Add team/bridge/region columns in expert mode - but not in split view
+    if (!onRowClick) {
+      if (isExpertMode) {
+        // Show region and bridge columns (team is already filtered in embedded mode)
+        baseColumns.push(
+          {
+            title: t('machines:region'),
+            dataIndex: 'regionName',
+            key: 'regionName',
+            width: 150,
+            ellipsis: true,
+            render: (regionName: string) => regionName ? <Tag color="purple">{regionName}</Tag> : '-',
+            sorter: (a: Machine, b: Machine) => (a.regionName || '').localeCompare(b.regionName || ''),
+          },
+          {
+            title: t('machines:bridge'),
+            dataIndex: 'bridgeName',
+            key: 'bridgeName',
+            width: 150,
+            ellipsis: true,
+            render: (bridgeName: string) => <Tag color="green">{bridgeName}</Tag>,
+            sorter: (a: Machine, b: Machine) => a.bridgeName.localeCompare(b.bridgeName),
+          }
+        );
+      } else if (uiMode !== 'simple') {
+        // Show only bridge in non-expert UI
+        baseColumns.push({
+          title: t('bridges.bridge'),
           dataIndex: 'bridgeName',
           key: 'bridgeName',
           width: 150,
           ellipsis: true,
-          render: (bridgeName: string) => <Tag color="green">{bridgeName}</Tag>,
-          sorter: (a: Machine, b: Machine) => a.bridgeName.localeCompare(b.bridgeName),
-        }
-      );
-    } else if (uiMode !== 'simple') {
-      // Show only bridge in non-expert UI
-      baseColumns.push({
-        title: t('bridges.bridge'),
-        dataIndex: 'bridgeName',
-        key: 'bridgeName',
-        width: 150,
-        ellipsis: true,
-        render: (bridge: string) => <Tag color="#8FBC8F">{bridge}</Tag>,
-      });
+          render: (bridge: string) => <Tag color="#8FBC8F">{bridge}</Tag>,
+        });
+      }
     }
 
-    // Queue items column
-    baseColumns.push({
-      title: t('machines:queueItems'),
-      dataIndex: 'queueCount',
-      key: 'queueCount',
-      width: 100,
-      align: 'center' as const,
-      sorter: (a: Machine, b: Machine) => a.queueCount - b.queueCount,
-      render: (count: number) => (
-        <Badge count={count} showZero style={{ backgroundColor: count > 0 ? '#52c41a' : '#d9d9d9' }} />
-      ),
-    });
+    // Queue items column - not in split view
+    if (!onRowClick) {
+      baseColumns.push({
+        title: t('machines:queueItems'),
+        dataIndex: 'queueCount',
+        key: 'queueCount',
+        width: 100,
+        align: 'center' as const,
+        sorter: (a: Machine, b: Machine) => a.queueCount - b.queueCount,
+        render: (count: number) => (
+          <Badge count={count} showZero style={{ backgroundColor: count > 0 ? '#52c41a' : '#d9d9d9' }} />
+        ),
+      });
+    }
 
     // Last updated column
     baseColumns.push({
@@ -781,11 +813,19 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             rowKey="machineName"
             loading={isLoading}
             scroll={{ x: 'max-content', y: 'calc(100vh - 400px)' }}
+            rowClassName={(record) => {
+              const isSelected = externalSelectedMachine?.machineName === record.machineName;
+              return isSelected ? 'ant-table-row-selected' : '';
+            }}
             pagination={{
               pageSize: dynamicPageSize,
               showSizeChanger: false,
               showTotal: (total, range) => t('common:table.showingRecords', { start: range[0], end: range[1], total }),
             }}
+            onRow={(record) => ({
+              onClick: () => handleRowClick(record),
+              style: { cursor: 'pointer' }
+            })}
             expandable={{
               expandedRowRender: (record) => (
                 <MachineRepositoryList 
@@ -844,6 +884,15 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           teamName={remoteFileBrowserModal.machine.teamName}
           bridgeName={remoteFileBrowserModal.machine.bridgeName}
           onQueueItemCreated={onQueueItemCreated}
+        />
+      )}
+      
+      {/* Machine Vault Status Panel - only show in standalone mode */}
+      {!onRowClick && (
+        <MachineVaultStatusPanel
+          machine={selectedMachine}
+          visible={vaultPanelVisible}
+          onClose={handlePanelClose}
         />
       )}
     </div>

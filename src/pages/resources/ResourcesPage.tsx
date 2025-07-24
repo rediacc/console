@@ -32,6 +32,7 @@ import { useTeams, Team } from '@/api/queries/teams'
 
 // Machine queries
 import { MachineTable } from '@/components/resources/MachineTable'
+import { SplitMachineView } from '@/components/resources/SplitMachineView'
 import {
   useCreateMachine,
   useUpdateMachineName,
@@ -1342,7 +1343,7 @@ const ResourcesPage: React.FC = () => {
         </span>
       ),
       children: (
-        <MachineTable 
+        <SplitMachineView 
           teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
           showFilters={true}
           showActions={true}
