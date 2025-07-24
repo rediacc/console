@@ -10,8 +10,7 @@ import {
   Button, 
   Empty,
   Divider,
-  Statistic,
-  Badge
+  Statistic
 } from 'antd'
 import { 
   CloseOutlined,
@@ -24,7 +23,8 @@ import {
   CloudServerOutlined,
   FolderOutlined,
   CheckCircleOutlined,
-  StopOutlined
+  StopOutlined,
+  CodeOutlined
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { Repository } from '@/api/queries/repositories'
@@ -61,6 +61,15 @@ interface RepositoryVaultData {
   container_count: number
   has_services: boolean
   service_count: number
+}
+
+interface ServiceData {
+  name: string
+  active_state: string
+  memory_human?: string
+  main_pid?: number
+  uptime_human?: string
+  restarts?: number
 }
 
 export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({ 
@@ -121,10 +130,30 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
             })
             
             if (repoData) {
+              // Extract services for this repository
+              const servicesForRepo: ServiceData[] = []
+              if (result.services && Array.isArray(result.services)) {
+                result.services.forEach((service: any) => {
+                  // Check if service belongs to this repository
+                  if (service.repository === repoData.name || 
+                      service.repository === repository.repositoryGuid) {
+                    servicesForRepo.push(service)
+                  } else if (service.service_name || service.unit_file) {
+                    // Check by service name pattern
+                    const serviceName = service.service_name || service.unit_file || ''
+                    const guidMatch = serviceName.match(/rediacc_([0-9a-f-]{36})_/)
+                    if (guidMatch && (guidMatch[1] === repository.repositoryGuid || guidMatch[1] === repoData.name)) {
+                      servicesForRepo.push(service)
+                    }
+                  }
+                })
+              }
+
               return {
                 machine: machine,
                 repositoryData: repoData,
-                systemData: result.system
+                systemData: result.system,
+                services: servicesForRepo
               }
             }
           }
@@ -382,34 +411,81 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
                 </>
               )}
 
-              {/* System Information Section - if available */}
-              {repositoryData.systemData && (
+              {/* Services Section */}
+              {repositoryData.services && repositoryData.services.length > 0 && (
                 <>
                   <Divider style={{ margin: '24px 0' }}>
                     <Space>
-                      <CloudServerOutlined />
-                      {t('resources:repositories.machineSystemInfo')}
+                      <CodeOutlined />
+                      {t('resources:repositories.servicesSection')}
                     </Space>
                   </Divider>
 
-                  <Card size="small">
-                    <Space direction="vertical" style={{ width: '100%' }} size="small">
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Text type="secondary">{t('resources:repositories.datastore')}:</Text>
-                        <Text style={{ fontSize: 12, wordBreak: 'break-all' }}>
-                          {repositoryData.systemData.datastore?.path || 'N/A'}
-                        </Text>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Text type="secondary">{t('resources:repositories.datastoreUsage')}:</Text>
-                        <Text style={{ fontSize: 12 }}>
-                          {repositoryData.systemData.datastore?.used || '0'} / {repositoryData.systemData.datastore?.total || '0'}
-                        </Text>
-                      </div>
-                    </Space>
-                  </Card>
+                  <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                    {repositoryData.services.map((service: ServiceData, index: number) => (
+                      <Card 
+                        key={`${service.name}-${index}`} 
+                        size="small"
+                        style={{ 
+                          borderLeft: `4px solid ${
+                            service.active_state === 'active' ? '#52c41a' :
+                            service.active_state === 'failed' ? '#ff4d4f' : '#d9d9d9'
+                          }`
+                        }}
+                      >
+                        <Row gutter={[16, 8]}>
+                          <Col span={24}>
+                            <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                              <Text strong>{service.name}</Text>
+                              <Tag color={
+                                service.active_state === 'active' ? 'success' : 
+                                service.active_state === 'failed' ? 'error' : 'default'
+                              }>
+                                {service.active_state}
+                              </Tag>
+                            </Space>
+                          </Col>
+                          {(service.memory_human || service.main_pid || service.uptime_human) && (
+                            <Col span={24}>
+                              <Space wrap size="middle">
+                                {service.memory_human && (
+                                  <div>
+                                    <Text type="secondary" style={{ fontSize: 11 }}>Memory</Text>
+                                    <br />
+                                    <Text style={{ fontSize: 12 }}>{service.memory_human}</Text>
+                                  </div>
+                                )}
+                                {service.main_pid && (
+                                  <div>
+                                    <Text type="secondary" style={{ fontSize: 11 }}>PID</Text>
+                                    <br />
+                                    <Text style={{ fontSize: 12 }}>{service.main_pid}</Text>
+                                  </div>
+                                )}
+                                {service.uptime_human && (
+                                  <div>
+                                    <Text type="secondary" style={{ fontSize: 11 }}>Uptime</Text>
+                                    <br />
+                                    <Text style={{ fontSize: 12 }}>{service.uptime_human}</Text>
+                                  </div>
+                                )}
+                                {service.restarts !== undefined && (
+                                  <div>
+                                    <Text type="secondary" style={{ fontSize: 11 }}>Restarts</Text>
+                                    <br />
+                                    <Text style={{ fontSize: 12 }}>{service.restarts}</Text>
+                                  </div>
+                                )}
+                              </Space>
+                            </Col>
+                          )}
+                        </Row>
+                      </Card>
+                    ))}
+                  </Space>
                 </>
               )}
+
             </>
           )}
         </div>

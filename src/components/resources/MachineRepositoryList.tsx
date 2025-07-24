@@ -935,7 +935,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     return (
       <div style={{ padding: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <Typography.Title level={5} style={{ margin: 0 }}>{t('resources:repositories.servicesAndContainers')}</Typography.Title>
+          <Typography.Title level={5} style={{ margin: 0 }}>{t('resources:repositories.containersAndPlugins')}</Typography.Title>
           <Button
             type="text"
             size="small"
@@ -949,46 +949,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           </Button>
         </div>
         
-        {/* Services Table */}
-        <div style={{ marginBottom: 24 }}>
-          <Typography.Title level={5} style={{ marginBottom: 16 }}>
-            {t('resources:repositories.servicesList')}
-          </Typography.Title>
-          {services?.error ? (
-            <Alert message={t('resources:repositories.errorLoadingServices')} description={services.error} type="error" />
-          ) : services?.services && services.services.length > 0 ? (
-            <Table
-              columns={serviceColumns}
-              dataSource={services.services}
-              rowKey="name"
-              size="small"
-              pagination={false}
-              scroll={{ x: 'max-content' }}
-            />
-          ) : (
-            <Empty description={t('resources:repositories.noServices')} />
-          )}
-        </div>
-        
-        {/* Plugin Containers Table */}
-        {pluginContainers.length > 0 && (
-          <div style={{ marginBottom: 24 }}>
-            <Typography.Title level={5} style={{ marginBottom: 16 }}>
-              {t('resources:repositories.pluginsList')}
-            </Typography.Title>
-            <Table
-              columns={containerColumnsWithRepo}
-              dataSource={pluginContainers}
-              rowKey="id"
-              size="small"
-              pagination={false}
-              scroll={{ x: 'max-content' }}
-            />
-          </div>
-        )}
-        
         {/* Regular Containers Table */}
-        <div>
+        <div style={{ marginBottom: 24 }}>
           <Typography.Title level={5} style={{ marginBottom: 16 }}>
             {t('resources:repositories.containersList')}
           </Typography.Title>
@@ -1007,6 +969,23 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             <Empty description={t('resources:repositories.noContainers')} />
           )}
         </div>
+        
+        {/* Plugin Containers Table */}
+        {pluginContainers.length > 0 && (
+          <div>
+            <Typography.Title level={5} style={{ marginBottom: 16 }}>
+              {t('resources:repositories.pluginsList')}
+            </Typography.Title>
+            <Table
+              columns={containerColumnsWithRepo}
+              dataSource={pluginContainers}
+              rowKey="id"
+              size="small"
+              pagination={false}
+              scroll={{ x: 'max-content' }}
+            />
+          </div>
+        )}
       </div>
     )
   }
@@ -1139,88 +1118,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           </strong>
         </Space>
       ),
-    },
-    {
-      title: t('resources:repositories.size'),
-      dataIndex: 'size_human',
-      key: 'size_human',
-      width: 100,
-      render: (size: string) => <Text>{size}</Text>,
-    },
-    {
-      title: t('resources:repositories.diskSpace'),
-      key: 'disk_space',
-      width: 250,
-      render: (_: any, record: Repository) => {
-        if (!record.disk_space || !record.mounted) return '-'
-        return (
-          <Space direction="vertical" size={0}>
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              {t('resources:repositories.used')}: {record.disk_space.used} / {record.disk_space.total}
-            </Text>
-            <Progress 
-              percent={parseInt(record.disk_space.use_percent)} 
-              size="small" 
-              status={parseInt(record.disk_space.use_percent) > 90 ? 'exception' : 'normal'}
-              format={(percent) => `${percent}%`}
-            />
-          </Space>
-        )
-      },
-    },
-    {
-      title: t('resources:repositories.status'),
-      key: 'status',
-      width: 400,
-      render: (_: any, record: Repository) => (
-        <Space direction="vertical" size={0}>
-          <Space wrap>
-            <Tag icon={<CheckCircleOutlined />} color="success">
-              {t('resources:repositories.exists')}
-            </Tag>
-            {record.mounted && (
-              <Tag color="blue">{t('resources:repositories.mounted')}</Tag>
-            )}
-            {record.accessible && (
-              <Tag color="green">{t('resources:repositories.accessible')}</Tag>
-            )}
-            {record.has_rediaccfile && (
-              <Tag color="purple">{t('resources:repositories.hasRediaccfile')}</Tag>
-            )}
-          </Space>
-          {(record.docker_running || record.has_services) && (
-            <Space wrap>
-              {record.docker_running && (
-                <Tag color="cyan">
-                  Docker ({record.container_count} {t('resources:repositories.containers')})
-                </Tag>
-              )}
-              {record.plugin_count > 0 && (
-                <Tag color="blue">
-                  {record.plugin_count} {record.plugin_count === 1 ? t('resources:repositories.plugin') : t('resources:repositories.plugins')}
-                </Tag>
-              )}
-              {record.has_services && (
-                <Tag color="orange">
-                  {record.service_count} {t('resources:repositories.services')}
-                </Tag>
-              )}
-            </Space>
-          )}
-          {record.mounted && record.mount_path && (
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              {t('resources:repositories.mountPath')}: {record.mount_path}
-            </Text>
-          )}
-        </Space>
-      ),
-    },
-    {
-      title: t('resources:repositories.lastModified'),
-      dataIndex: 'modified_human',
-      key: 'modified_human',
-      width: 200,
-      render: (modified: string) => <Text type="secondary">{modified}</Text>,
     },
     {
       title: t('common:table.actions'),
