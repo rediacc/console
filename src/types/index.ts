@@ -9,3 +9,12 @@ export interface Machine {
   vaultStatus?: string
   vaultStatusTime?: string
 }
+
+export interface Repository {
+  repositoryName: string
+  repositoryGuid: string
+  teamName: string
+  vaultVersion: number
+  vaultContent?: string
+  grandGuid?: string
+}

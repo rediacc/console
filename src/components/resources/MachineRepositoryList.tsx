@@ -82,10 +82,12 @@ interface MachineRepositoryListProps {
   onActionComplete?: () => void
   hideSystemInfo?: boolean
   onCreateRepository?: (machine: Machine, repositoryGuid: string) => void
+  onRepositoryClick?: (repository: Repository) => void
+  highlightedRepository?: Repository | null
 }
 
 
-export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete, hideSystemInfo = false, onCreateRepository }) => {
+export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete, hideSystemInfo = false, onCreateRepository, onRepositoryClick, highlightedRepository }) => {
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
   const userEmail = useAppSelector((state) => state.auth.user?.email || '')
   const [currentToken, setCurrentToken] = useState<string>('')
@@ -1123,10 +1125,18 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       key: 'name',
       width: 200,
       ellipsis: true,
-      render: (name: string) => (
+      render: (name: string, record: Repository) => (
         <Space>
           <InboxOutlined style={{ color: '#556b2f' }} />
-          <strong>{name}</strong>
+          <strong 
+            style={{ 
+              cursor: onRepositoryClick ? 'pointer' : 'default',
+              color: highlightedRepository?.name === record.name ? '#1890ff' : 'inherit'
+            }}
+            onClick={() => onRepositoryClick?.(record)}
+          >
+            {name}
+          </strong>
         </Space>
       ),
     },
@@ -1379,6 +1389,20 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         locale={{
           emptyText: t('resources:repositories.noRepositories')
         }}
+        onRow={(record) => ({
+          onClick: (e) => {
+            // Don't trigger row click if clicking on action buttons or expand button
+            const target = e.target as HTMLElement
+            if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
+              return
+            }
+            onRepositoryClick?.(record)
+          },
+          style: {
+            cursor: onRepositoryClick ? 'pointer' : 'default',
+            backgroundColor: highlightedRepository?.name === record.name ? 'rgba(24, 144, 255, 0.05)' : undefined
+          }
+        })}
       />
       
       {/* System Containers Section */}
@@ -1400,157 +1424,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         </>
       )}
       
-      {/* System Information Section */}
-      {systemInfo && !hideSystemInfo && (
-        <>
-          <Typography.Title level={5} style={{ marginBottom: 16, marginTop: systemContainers.length > 0 ? 0 : 32 }}>
-            {t('resources:repositories.systemInfo')}
-          </Typography.Title>
-          <Card style={{ marginBottom: 20 }}>
-          <Row gutter={[16, 16]}>
-            <Col xs={24} sm={12} md={8}>
-              <Card size="small" bordered={false} style={{ background: 'transparent', height: '100%' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, height: '100%' }}>
-                  <div style={{ fontSize: 24, lineHeight: 1, paddingTop: 16 }}>
-                    <DesktopOutlined />
-                  </div>
-                  <div style={{ flex: 1, paddingTop: 16 }}>
-                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
-                      {t('resources:repositories.systemInfo')}
-                    </Text>
-                    <Text strong style={{ fontSize: 16, display: 'block' }}>{systemInfo.hostname}</Text>
-                    <Space direction="vertical" size={0} style={{ marginTop: 4 }}>
-                      <Text type="secondary" style={{ fontSize: 11 }}>{systemInfo.os_name}</Text>
-                      <Text type="secondary" style={{ fontSize: 11 }}>Kernel: {systemInfo.kernel}</Text>
-                      <Text type="secondary" style={{ fontSize: 11 }}>CPUs: {systemInfo.cpu_count} x {systemInfo.cpu_model}</Text>
-                    </Space>
-                  </div>
-                </div>
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={8}>
-              <Card size="small" bordered={false} style={{ background: 'transparent', height: '100%' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, height: '100%' }}>
-                  <div style={{ fontSize: 24, lineHeight: 1, paddingTop: 16 }}>
-                    <DatabaseOutlined />
-                  </div>
-                  <div style={{ flex: 1, paddingTop: 16 }}>
-                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
-                      {t('resources:repositories.memory')}
-                    </Text>
-                    <Text strong style={{ fontSize: 16 }}>
-                      {systemInfo.memory.used}
-                      <Text type="secondary" style={{ fontSize: 14, fontWeight: 'normal' }}> / {systemInfo.memory.total}</Text>
-                    </Text>
-                    <Text type="secondary" style={{ display: 'block', fontSize: 11, marginTop: 4 }}>
-                      {t('resources:repositories.available')}: {systemInfo.memory.available}
-                    </Text>
-                  </div>
-                </div>
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={8}>
-              <Card size="small" bordered={false} style={{ background: 'transparent', height: '100%' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, height: '100%' }}>
-                  <div style={{ fontSize: 24, lineHeight: 1, paddingTop: 16 }}>
-                    <ClockCircleOutlined />
-                  </div>
-                  <div style={{ flex: 1, paddingTop: 16 }}>
-                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
-                      {t('resources:repositories.uptime')}
-                    </Text>
-                    <Text strong style={{ fontSize: 16 }}>{systemInfo.uptime}</Text>
-                  </div>
-                </div>
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={8}>
-              <Card size="small" bordered={false} style={{ background: 'transparent', height: '100%' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, height: '100%' }}>
-                  <div style={{ fontSize: 24, lineHeight: 1, paddingTop: 16 }}>
-                    <GlobalOutlined />
-                  </div>
-                  <div style={{ flex: 1, paddingTop: 16 }}>
-                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
-                      {t('resources:repositories.systemTime')}
-                    </Text>
-                    <Text strong style={{ fontSize: 16 }}>{systemInfo.system_time_human}</Text>
-                    <Text type="secondary" style={{ display: 'block', fontSize: 11, marginTop: 2 }}>
-                      {t('resources:repositories.timezone')}: {systemInfo.timezone}
-                    </Text>
-                  </div>
-                </div>
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={8}>
-              <Card size="small" bordered={false} style={{ background: 'transparent', height: '100%' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, height: '100%' }}>
-                  <div style={{ fontSize: 24, lineHeight: 1, paddingTop: 16 }}>
-                    <HddOutlined />
-                  </div>
-                  <div style={{ flex: 1, paddingTop: 16 }}>
-                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
-                      {t('resources:repositories.rootDisk')}
-                    </Text>
-                    <Text strong style={{ fontSize: 16 }}>
-                      {systemInfo.disk.used}
-                      <Text type="secondary" style={{ fontSize: 14, fontWeight: 'normal' }}> / {systemInfo.disk.total}</Text>
-                    </Text>
-                    <Text type="secondary" style={{ display: 'block', fontSize: 11, marginTop: 2 }}>
-                      {t('resources:repositories.available')}: {systemInfo.disk.available}
-                    </Text>
-                  </div>
-                  <div style={{ width: 80, paddingTop: 16 }}>
-                    <Progress 
-                      percent={parseInt(systemInfo.disk.use_percent)} 
-                      size="small" 
-                      status={parseInt(systemInfo.disk.use_percent) > 90 ? 'exception' : 'normal'}
-                      strokeWidth={4}
-                      format={(percent) => `${percent}%`}
-                    />
-                  </div>
-                </div>
-              </Card>
-            </Col>
-            {systemInfo.datastore.path && (
-              <Col xs={24} sm={12} md={8}>
-                <Card size="small" bordered={false} style={{ background: 'transparent', height: '100%' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, height: '100%' }}>
-                    <div style={{ fontSize: 24, lineHeight: 1, paddingTop: 16 }}>
-                      <DatabaseOutlined />
-                    </div>
-                    <div style={{ flex: 1, paddingTop: 16 }}>
-                      <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
-                        {t('resources:repositories.datastore')}
-                      </Text>
-                      <Text strong style={{ fontSize: 16 }}>
-                        {systemInfo.datastore.used}
-                        <Text type="secondary" style={{ fontSize: 14, fontWeight: 'normal' }}> / {systemInfo.datastore.total}</Text>
-                      </Text>
-                      <Text type="secondary" style={{ display: 'block', fontSize: 11, marginTop: 2, wordBreak: 'break-all' }}>
-                        {systemInfo.datastore.path}
-                      </Text>
-                      <Text type="secondary" style={{ display: 'block', fontSize: 11 }}>
-                        {t('resources:repositories.available')}: {systemInfo.datastore.available}
-                      </Text>
-                    </div>
-                    <div style={{ width: 80, paddingTop: 16 }}>
-                      <Progress 
-                        percent={parseInt(systemInfo.datastore.use_percent)} 
-                        size="small" 
-                        status={parseInt(systemInfo.datastore.use_percent) > 90 ? 'exception' : 'normal'}
-                        strokeWidth={4}
-                        format={(percent) => `${percent}%`}
-                      />
-                    </div>
-                  </div>
-                </Card>
-              </Col>
-            )}
-          </Row>
-        </Card>
-        </>
-      )}
       
       
       {/* Function Selection Modal */}

@@ -32,7 +32,7 @@ import { useTeams, Team } from '@/api/queries/teams'
 
 // Machine queries
 import { MachineTable } from '@/components/resources/MachineTable'
-import { SplitMachineView } from '@/components/resources/SplitMachineView'
+import { SplitResourceView } from '@/components/resources/SplitResourceView'
 import {
   useCreateMachine,
   useUpdateMachineName,
@@ -99,6 +99,8 @@ const ResourcesPage: React.FC = () => {
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const [selectedTeams, setSelectedTeams] = useState<string[]>([])
   const [teamResourcesTab, setTeamResourcesTab] = useState('machines')
+  const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null)
+  const [selectedRepositoryFromMachine, setSelectedRepositoryFromMachine] = useState<Repository | null>(null)
   
   // Unified modal state
   const [unifiedModalState, setUnifiedModalState] = useState<{
@@ -151,6 +153,43 @@ const ResourcesPage: React.FC = () => {
   // State for machine table expanded rows and refresh keys
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
   const [refreshKeys, setRefreshKeys] = useState<Record<string, number>>({})
+  
+  // Handler for machine selection
+  const handleMachineSelect = (machine: Machine | null) => {
+    setSelectedMachine(machine)
+    if (machine) {
+      setSelectedRepositoryFromMachine(null) // Close repository panel
+    }
+  }
+  
+  // Handler for repository click from machine list
+  const handleMachineRepositoryClick = (machine: Machine, repository: any) => {
+    // Map repository data from MachineRepositoryList format to Repository type
+    const mappedRepository: Repository = {
+      repositoryName: repository.name,
+      repositoryGuid: repository.originalGuid || repository.name, // Use GUID if available
+      teamName: machine.teamName,
+      vaultVersion: 0, // This will be updated from API data
+      vaultContent: undefined,
+      grandGuid: undefined
+    }
+    
+    // Find the actual repository from the API data
+    const actualRepository = repositories.find(r => 
+      r.repositoryName === repository.name || 
+      r.repositoryGuid === repository.originalGuid || 
+      r.repositoryGuid === repository.name
+    )
+    
+    if (actualRepository) {
+      setSelectedRepositoryFromMachine(actualRepository)
+      setSelectedMachine(null) // Close machine panel when repository is selected
+    } else {
+      // If we can't find the repository, still show what we have
+      setSelectedRepositoryFromMachine(mappedRepository)
+      setSelectedMachine(null) // Close machine panel when repository is selected
+    }
+  }
   
   // Machine mutations
   const createMachineMutation = useCreateMachine()
@@ -1343,7 +1382,8 @@ const ResourcesPage: React.FC = () => {
         </span>
       ),
       children: (
-        <SplitMachineView 
+        <SplitResourceView
+          type="machine" 
           teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
           showFilters={true}
           showActions={true}
@@ -1407,6 +1447,16 @@ const ResourcesPage: React.FC = () => {
           onQueueItemCreated={(taskId, machineName) => {
             setQueueTraceModal({ visible: true, taskId, machineName });
           }}
+          selectedResource={selectedMachine || selectedRepositoryFromMachine}
+          onResourceSelect={(resource) => {
+            if (resource && 'machineName' in resource) {
+              handleMachineSelect(resource as Machine)
+            } else {
+              handleMachineSelect(null)
+              setSelectedRepositoryFromMachine(null)
+            }
+          }}
+          onMachineRepositoryClick={handleMachineRepositoryClick}
         />
       ),
     },

@@ -168,7 +168,20 @@
     "model": "Model",
     "partitions": "Partitions",
     "used": "Used",
-    "refreshNotAvailable": "Refresh not available - data is cached from machine status"
+    "refreshNotAvailable": "Refresh not available - data is cached from machine status",
+    "noRepositoryData": "No repository data available",
+    "repositoryInfo": "Repository Information",
+    "repositoryGuid": "Repository GUID",
+    "notMounted": "Not Mounted",
+    "rediaccfile": "Rediaccfile",
+    "storageInfo": "Storage Information",
+    "imageSize": "Image Size",
+    "diskUsage": "Disk Usage",
+    "filePaths": "File Paths",
+    "imagePath": "Image Path",
+    "activity": "Activity",
+    "machineSystemInfo": "Machine System Information",
+    "datastoreUsage": "Datastore Usage"
   },
   "storage": {
     "storageName": "Storage Name",

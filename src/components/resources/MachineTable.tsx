@@ -73,6 +73,7 @@ interface MachineTableProps {
   refreshKeys?: Record<string, number>;
   onRowClick?: (machine: Machine) => void;
   selectedMachine?: Machine | null;
+  onMachineRepositoryClick?: (machine: Machine, repository: any) => void;
 }
 
 export const MachineTable: React.FC<MachineTableProps> = ({
@@ -92,6 +93,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   refreshKeys: externalRefreshKeys,
   onRowClick,
   selectedMachine: externalSelectedMachine,
+  onMachineRepositoryClick,
 }) => {
   const { t } = useTranslation(['machines', 'common', 'functions', 'resources']);
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
@@ -788,6 +790,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                       }))
                     }
                   }}
+                  onRepositoryClick={(repository) => onMachineRepositoryClick?.(machine, repository)}
                   onCreateRepository={onCreateRepository}
                   hideSystemInfo={true}
                 />
@@ -840,6 +843,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                       }))
                     }
                   }}
+                  onRepositoryClick={(repository) => onMachineRepositoryClick?.(record, repository)}
                   onCreateRepository={onCreateRepository}
                 />
               ),
