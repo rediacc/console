@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { MachineVaultStatusPanel } from './MachineVaultStatusPanel'
 import { RepositoryDetailPanel } from './RepositoryDetailPanel'
 import { ContainerDetailPanel } from './ContainerDetailPanel'
@@ -50,13 +50,59 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
   splitWidth,
   onSplitWidthChange
 }) => {
-  // Determine actual type based on data if not explicitly provided
-  const actualType = type || (data && 'machineName' in data ? 'machine' : 
-                             data && 'repositoryName' in data ? 'repository' : 'container')
   const { theme } = useTheme()
   const isDragging = useRef(false)
   const dragStartX = useRef(0)
   const dragStartWidth = useRef(0)
+  
+  // State for fade transition
+  const [opacity, setOpacity] = useState(1)
+  const [currentData, setCurrentData] = useState(data)
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const prevDataRef = useRef(data)
+
+  // Handle data changes with fade transition
+  useEffect(() => {
+    // Check if data has actually changed (different entity)
+    if (!data || !prevDataRef.current) {
+      setCurrentData(data)
+      setOpacity(1)
+      prevDataRef.current = data
+      return
+    }
+
+    const prevId = 'machineName' in prevDataRef.current ? prevDataRef.current.machineName :
+                   'repositoryName' in prevDataRef.current ? prevDataRef.current.repositoryName :
+                   'id' in prevDataRef.current ? prevDataRef.current.id : null
+
+    const currentId = 'machineName' in data ? data.machineName :
+                      'repositoryName' in data ? data.repositoryName :
+                      'id' in data ? data.id : null
+
+    if (prevId !== currentId) {
+      // Data has changed, trigger fade transition
+      setIsTransitioning(true)
+      setOpacity(0)
+
+      // After fade out, switch data
+      setTimeout(() => {
+        setCurrentData(data)
+        // Fade in new content
+        setTimeout(() => {
+          setOpacity(1)
+          setTimeout(() => {
+            setIsTransitioning(false)
+          }, 300)
+        }, 50)
+      }, 300)
+
+      prevDataRef.current = data
+    } else {
+      // Same entity, just update without transition
+      setCurrentData(data)
+      prevDataRef.current = data
+    }
+  }, [data])
 
   // Handle resize
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -96,7 +142,11 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
     }
   }, [splitWidth, onSplitWidthChange])
 
-  if (!visible || !data) return null
+  if (!visible || !currentData) return null
+
+  // Determine actual type based on currentData if not explicitly provided
+  const actualType = type || (currentData && 'machineName' in currentData ? 'machine' : 
+                             currentData && 'repositoryName' in currentData ? 'repository' : 'container')
 
   return (
     <div
@@ -107,6 +157,8 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
         borderLeft: `1px solid ${theme === 'dark' ? '#303030' : '#f0f0f0'}`,
         display: 'flex',
         flexShrink: 0,
+        opacity,
+        transition: 'opacity 0.3s ease',
       }}
     >
       {/* Resize Handle */}
@@ -146,21 +198,21 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
       <div style={{ flex: 1, overflow: 'hidden' }}>
         {actualType === 'machine' ? (
           <MachineVaultStatusPanel
-            machine={data as Machine}
+            machine={currentData as Machine}
             visible={visible}
             onClose={onClose}
             splitView={true}
           />
         ) : actualType === 'repository' ? (
           <RepositoryDetailPanel
-            repository={data as Repository}
+            repository={currentData as Repository}
             visible={visible}
             onClose={onClose}
             splitView={true}
           />
         ) : (
           <ContainerDetailPanel
-            container={data as ContainerData}
+            container={currentData as ContainerData}
             visible={visible}
             onClose={onClose}
             splitView={true}

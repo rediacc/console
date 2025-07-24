@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Empty, Card, Row, Col, Progress } from 'antd'
-import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, CloudDownloadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, PlusOutlined, MinusOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined, GlobalOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined } from '@/utils/optimizedIcons'
+import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, CloudDownloadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined, GlobalOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { type QueueFunction } from '@/api/queries/queue'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
@@ -758,7 +758,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         title: t('resources:repositories.containerName'),
         dataIndex: 'name',
         key: 'name',
-        width: 300,
         ellipsis: true,
         render: (name: string, record: any) => {
           const isPlugin = name?.startsWith('plugin-')
@@ -774,7 +773,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         title: t('resources:repositories.containerPorts'),
         dataIndex: 'port_mappings',
         key: 'port_mappings',
-        width: 300,
         ellipsis: true,
         render: (portMappings: any[], record: any) => {
           // If we have structured port mappings, use them
@@ -949,7 +947,16 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 },
                 style: {
                   cursor: onContainerClick ? 'pointer' : 'default',
-                  backgroundColor: highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : undefined
+                  backgroundColor: highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : undefined,
+                  transition: 'background-color 0.3s ease'
+                },
+                onMouseEnter: (e) => {
+                  if (onContainerClick) {
+                    e.currentTarget.style.backgroundColor = highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'
+                  }
+                },
+                onMouseLeave: (e) => {
+                  e.currentTarget.style.backgroundColor = highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : ''
                 }
               })}
             />
@@ -981,7 +988,16 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 },
                 style: {
                   cursor: onContainerClick ? 'pointer' : 'default',
-                  backgroundColor: highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : undefined
+                  backgroundColor: highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : undefined,
+                  transition: 'background-color 0.3s ease'
+                },
+                onMouseEnter: (e) => {
+                  if (onContainerClick) {
+                    e.currentTarget.style.backgroundColor = highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'
+                  }
+                },
+                onMouseLeave: (e) => {
+                  e.currentTarget.style.backgroundColor = highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : ''
                 }
               })}
             />
@@ -1077,58 +1093,35 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
   const columns: ColumnsType<Repository> = [
     {
-      title: '',
-      key: 'expand',
-      width: 50,
-      fixed: 'left',
-      render: (_: any, record: Repository) => {
-        // Only show expand button if repository has services, containers, or plugins
-        if (!record.mounted || (!record.has_services && record.container_count === 0 && record.plugin_count === 0)) {
-          return null
-        }
-        
+      title: t('resources:repositories.repositoryName'),
+      dataIndex: 'name',
+      key: 'name',
+      ellipsis: true,
+      render: (name: string, record: Repository) => {
         const isExpanded = expandedRows.includes(record.name)
+        const hasExpandableContent = record.mounted && (record.has_services || record.container_count > 0 || record.plugin_count > 0)
+        
         return (
-          <Button
-            type="text"
-            size="small"
-            icon={isExpanded ? <MinusOutlined /> : <PlusOutlined />}
-            onClick={() => {
-              if (isExpanded) {
-                setExpandedRows(expandedRows.filter(key => key !== record.name))
-              } else {
-                setExpandedRows([...expandedRows, record.name])
-              }
-            }}
-          />
+          <Space>
+            <span style={{ 
+              display: 'inline-block',
+              width: 12,
+              transition: 'transform 0.3s ease',
+              transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+              visibility: hasExpandableContent ? 'visible' : 'hidden'
+            }}>
+              <RightOutlined style={{ fontSize: 12, color: '#999' }} />
+            </span>
+            <InboxOutlined style={{ color: '#556b2f' }} />
+            <strong>{name}</strong>
+          </Space>
         )
       },
     },
     {
-      title: t('resources:repositories.repositoryName'),
-      dataIndex: 'name',
-      key: 'name',
-      width: 200,
-      ellipsis: true,
-      render: (name: string, record: Repository) => (
-        <Space>
-          <InboxOutlined style={{ color: '#556b2f' }} />
-          <strong 
-            style={{ 
-              cursor: onRepositoryClick ? 'pointer' : 'default',
-              color: highlightedRepository?.name === record.name ? '#1890ff' : 'inherit'
-            }}
-            onClick={() => onRepositoryClick?.(record)}
-          >
-            {name}
-          </strong>
-        </Space>
-      ),
-    },
-    {
       title: t('common:table.actions'),
       key: 'actions',
-      width: 180,
+      width: 160,
       fixed: 'right',
       render: (_: any, record: Repository) => {
         // Build smart menu items based on repository state
@@ -1287,25 +1280,50 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           expandedRowKeys: expandedRows,
           onExpandedRowsChange: (keys) => setExpandedRows(keys as string[]),
           rowExpandable: (record) => record.mounted && (record.has_services || record.container_count > 0 || record.plugin_count > 0),
-          expandIcon: () => null, // Hide default expand icon since we have custom button
+          expandIcon: () => null, // Hide default expand icon
+          expandRowByClick: false, // We'll handle this manually
         }}
         locale={{
           emptyText: t('resources:repositories.noRepositories')
         }}
-        onRow={(record) => ({
-          onClick: (e) => {
-            // Don't trigger row click if clicking on action buttons or expand button
-            const target = e.target as HTMLElement
-            if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
-              return
+        onRow={(record) => {
+          const hasExpandableContent = record.mounted && (record.has_services || record.container_count > 0 || record.plugin_count > 0)
+          return {
+            onClick: (e) => {
+              const target = e.target as HTMLElement
+              // Don't trigger if clicking on buttons or dropdowns
+              if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
+                return
+              }
+              
+              // Toggle expansion if the row has expandable content
+              if (hasExpandableContent) {
+                const isExpanded = expandedRows.includes(record.name)
+                if (isExpanded) {
+                  setExpandedRows(expandedRows.filter(key => key !== record.name))
+                } else {
+                  setExpandedRows([...expandedRows, record.name])
+                }
+              }
+              
+              // Still call onRepositoryClick if provided
+              onRepositoryClick?.(record)
+            },
+            style: {
+              cursor: hasExpandableContent || onRepositoryClick ? 'pointer' : 'default',
+              backgroundColor: highlightedRepository?.name === record.name ? 'rgba(24, 144, 255, 0.05)' : undefined,
+              transition: 'background-color 0.3s ease'
+            },
+            onMouseEnter: (e) => {
+              if (hasExpandableContent || onRepositoryClick) {
+                e.currentTarget.style.backgroundColor = highlightedRepository?.name === record.name ? 'rgba(24, 144, 255, 0.08)' : 'rgba(0, 0, 0, 0.02)'
+              }
+            },
+            onMouseLeave: (e) => {
+              e.currentTarget.style.backgroundColor = highlightedRepository?.name === record.name ? 'rgba(24, 144, 255, 0.05)' : ''
             }
-            onRepositoryClick?.(record)
-          },
-          style: {
-            cursor: onRepositoryClick ? 'pointer' : 'default',
-            backgroundColor: highlightedRepository?.name === record.name ? 'rgba(24, 144, 255, 0.05)' : undefined
           }
-        })}
+        }}
       />
       
       {/* System Containers Section */}

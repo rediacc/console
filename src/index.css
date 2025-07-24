@@ -1255,3 +1255,116 @@ body {
 .machine-vault-status-panel .ant-descriptions-item-content {
   color: var(--color-text-primary);
 }
+
+/* Machine Repository List - Smooth expand/collapse animations */
+.ant-table-expanded-row > .ant-table-cell {
+  animation: expandRow 0.3s ease-out;
+}
+
+@keyframes expandRow {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Smooth rotation for expand chevron icon */
+.ant-table-row .anticon-right {
+  transition: transform 0.3s ease;
+}
+
+/* Repository table hover states */
+.ant-table-tbody > tr.ant-table-row {
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.ant-table-tbody > tr.ant-table-row:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="dark"] .ant-table-tbody > tr.ant-table-row:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Nested table hover states for containers and plugins */
+.ant-table-expanded-row .ant-table-tbody > tr.ant-table-row {
+  transition: background-color 0.3s ease;
+}
+
+.ant-table-expanded-row .ant-table-tbody > tr.ant-table-row:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="dark"] .ant-table-expanded-row .ant-table-tbody > tr.ant-table-row:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Machine table specific styles */
+.ant-table-tbody > tr.ant-table-row.ant-table-row-selected {
+  background-color: rgba(85, 107, 47, 0.08);
+}
+
+.ant-table-tbody > tr.ant-table-row.ant-table-row-selected:hover {
+  background-color: rgba(85, 107, 47, 0.12);
+}
+
+/* Hide Ant Design's default expand column */
+.ant-table-expand-icon-th,
+.ant-table-row-expand-icon-cell {
+  display: none !important;
+}
+
+/* Panel switch animations */
+.machine-vault-status-panel,
+.repository-detail-panel,
+.container-detail-panel {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Smooth panel content transitions */
+.panel-transition-wrapper {
+  transition: opacity 0.3s ease;
+}
+
+/* Panel scrollbar styling */
+.machine-vault-status-panel::-webkit-scrollbar,
+.repository-detail-panel::-webkit-scrollbar,
+.container-detail-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.machine-vault-status-panel::-webkit-scrollbar-track,
+.repository-detail-panel::-webkit-scrollbar-track,
+.container-detail-panel::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.machine-vault-status-panel::-webkit-scrollbar-thumb,
+.repository-detail-panel::-webkit-scrollbar-thumb,
+.container-detail-panel::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.machine-vault-status-panel::-webkit-scrollbar-thumb:hover,
+.repository-detail-panel::-webkit-scrollbar-thumb:hover,
+.container-detail-panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}

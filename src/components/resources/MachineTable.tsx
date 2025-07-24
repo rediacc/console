@@ -36,6 +36,7 @@ import {
   DesktopOutlined,
   DashboardOutlined,
   CloudDownloadOutlined,
+  RightOutlined,
 } from '@/utils/optimizedIcons';
 import { useMachines } from '@/api/queries/machines';
 import { useDropdownData } from '@/api/queries/useDropdownData';
@@ -257,12 +258,23 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         key: 'machineName',
         ellipsis: true,
         sorter: (a: Machine, b: Machine) => a.machineName.localeCompare(b.machineName),
-        render: (name: string) => (
-          <Space>
-            <DesktopOutlined style={{ color: '#556b2f' }} />
-            <strong>{name}</strong>
-          </Space>
-        ),
+        render: (name: string, record: Machine) => {
+          const isExpanded = expandedRowKeys.includes(record.machineName);
+          return (
+            <Space>
+              <span style={{ 
+                display: 'inline-block',
+                width: 12,
+                transition: 'transform 0.3s ease',
+                transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'
+              }}>
+                <RightOutlined style={{ fontSize: 12, color: '#999' }} />
+              </span>
+              <DesktopOutlined style={{ color: '#556b2f' }} />
+              <strong>{name}</strong>
+            </Space>
+          );
+        },
       },
     );
 
@@ -337,7 +349,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       baseColumns.push({
         title: t('common:table.actions'),
         key: 'actions',
-        width: 350,
+        width: 320,
         render: (_: unknown, record: Machine) => (
           <Space>
             <Button
@@ -800,8 +812,41 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               showTotal: (total, range) => t('common:table.showingRecords', { start: range[0], end: range[1], total }),
             }}
             onRow={(record) => ({
-              onClick: () => handleRowClick(record),
-              style: { cursor: 'pointer' }
+              onClick: (e) => {
+                const target = e.target as HTMLElement;
+                // Don't expand if clicking on buttons or dropdowns
+                if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
+                  return;
+                }
+                
+                // Toggle expansion
+                const isExpanded = expandedRowKeys.includes(record.machineName);
+                if (isExpanded) {
+                  setExpandedRowKeys(expandedRowKeys.filter(key => key !== record.machineName));
+                } else {
+                  setExpandedRowKeys([...expandedRowKeys, record.machineName]);
+                  // Track expansion timestamp
+                  setExpansionTimestamps(prev => ({
+                    ...prev,
+                    [record.machineName]: Date.now()
+                  }));
+                }
+                
+                // Also call the row click handler if provided
+                if (onRowClick) {
+                  handleRowClick(record);
+                }
+              },
+              style: { 
+                cursor: 'pointer',
+                transition: 'background-color 0.3s ease'
+              },
+              onMouseEnter: (e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.02)';
+              },
+              onMouseLeave: (e) => {
+                e.currentTarget.style.backgroundColor = '';
+              }
             })}
             expandable={{
               expandedRowRender: (record) => (
@@ -837,7 +882,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                   }
                 });
                 setExpansionTimestamps(newTimestamps);
-              }
+              },
+              expandIcon: () => null, // Hide default expand icon
+              expandRowByClick: false // We handle this manually
             }}
             sticky
           />
