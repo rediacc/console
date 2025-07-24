@@ -325,41 +325,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       });
     }
 
-    // Last updated column
-    baseColumns.push({
-      title: t('machines:lastUpdated'),
-      dataIndex: 'vaultStatusTime',
-      key: 'vaultStatusTime',
-      width: 180,
-      render: (time: string) => {
-        const relativeTime = getLocalizedRelativeTime(time, t);
-        const formattedTime = formatTimestamp(time);
-        
-        return (
-          <span title={formattedTime}>
-            {relativeTime}
-          </span>
-        );
-      },
-      sorter: (a: Machine, b: Machine) => {
-        const timeA = a.vaultStatusTime ? new Date(a.vaultStatusTime).getTime() : 0;
-        const timeB = b.vaultStatusTime ? new Date(b.vaultStatusTime).getTime() : 0;
-        return timeA - timeB;
-      },
-    });
-
-    // Vault version in expert mode
-    if (isExpertMode) {
-      baseColumns.push({
-        title: t('machines:vaultVersion'),
-        dataIndex: 'vaultVersion',
-        key: 'vaultVersion',
-        width: 100,
-        align: 'center' as const,
-        sorter: (a: Machine, b: Machine) => a.vaultVersion - b.vaultVersion,
-        render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
-      });
-    }
 
     // Actions column last if showActions is true
     if (showActions) {

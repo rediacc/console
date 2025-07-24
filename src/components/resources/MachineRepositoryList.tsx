@@ -758,50 +758,15 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         title: t('resources:repositories.containerName'),
         dataIndex: 'name',
         key: 'name',
-        width: 200,
+        width: 300,
         ellipsis: true,
         render: (name: string) => <Tag color="cyan">{name}</Tag>,
-      },
-      {
-        title: t('resources:repositories.containerImage'),
-        dataIndex: 'image',
-        key: 'image',
-        width: 250,
-        ellipsis: true,
-      },
-      {
-        title: t('resources:repositories.containerStatus'),
-        dataIndex: 'state',
-        key: 'state',
-        width: 200,
-        render: (state: string, record: any) => (
-          <Space>
-            <Tag color={state === 'running' ? 'success' : 'default'}>
-              {state}
-            </Tag>
-            {record.status && <Text type="secondary" style={{ fontSize: 12 }}>{record.status}</Text>}
-          </Space>
-        ),
-      },
-      {
-        title: t('resources:repositories.containerCPU'),
-        dataIndex: 'cpu_percent',
-        key: 'cpu_percent',
-        width: 100,
-        render: (cpu: string) => cpu || '-',
-      },
-      {
-        title: t('resources:repositories.containerMemory'),
-        dataIndex: 'memory_usage',
-        key: 'memory_usage',
-        width: 120,
-        render: (memory: string) => memory || '-',
       },
       {
         title: t('resources:repositories.containerPorts'),
         dataIndex: 'port_mappings',
         key: 'port_mappings',
-        width: 200,
+        width: 300,
         ellipsis: true,
         render: (portMappings: any[], record: any) => {
           // If we have structured port mappings, use them

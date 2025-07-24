@@ -34,6 +34,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { Machine } from '@/types'
 import { useTheme } from '@/context/ThemeContext'
+import { getLocalizedRelativeTime } from '@/utils/timeUtils'
 
 const { Text, Title } = Typography
 
@@ -248,7 +249,15 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
             <Badge count={machine.queueCount} style={{ backgroundColor: '#52c41a' }}>
               <Tag color="blue">{t('machines:queueItems')}</Tag>
             </Badge>
+            <Tag color="blue">{t('machines:vaultVersion')}: {machine.vaultVersion}</Tag>
           </Space>
+          {machine.vaultStatusTime && (
+            <div style={{ marginTop: 8 }}>
+              <Text type="secondary" style={{ fontSize: 12 }} title={new Date(machine.vaultStatusTime).toLocaleString()}>
+                {t('machines:lastUpdated')}: {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
+              </Text>
+            </div>
+          )}
         </div>
 
         {/* Content */}
