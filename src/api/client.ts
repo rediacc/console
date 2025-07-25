@@ -94,8 +94,15 @@ class ApiClient {
     return (await this.client.post<ApiResponse>('/DeleteUserRequest', {})).data
   }
 
-  async activateUser(email: string, activationCode: string) {
-    return this.makeRequest('/ActivateUserAccount', { userEmail: email, activationCode })
+  async activateUser(email: string, activationCode: string, passwordHash: string) {
+    const response = await this.client.post<ApiResponse>('/ActivateUserAccount', 
+      { activationCode },
+      { headers: { 
+        'Rediacc-UserEmail': email,
+        'Rediacc-UserHash': passwordHash 
+      } }
+    )
+    return response.data
   }
 
   private async makeRequest<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {

@@ -40,6 +40,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
   const [registrationData, setRegistrationData] = useState<{
     email: string
     companyName: string
+    passwordHash: string
   } | null>(null)
   
   const [registrationForm] = Form.useForm<RegistrationForm>()
@@ -53,23 +54,26 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
       // Hash the password
       const passwordHash = await hashPassword(values.password)
 
-      // Call CreateNewCompany
-      const response = await apiClient.post('/CreateNewCompany', {
-        companyName: values.companyName,
-        userEmail: values.email,
-        userHash: passwordHash,
-        subscriptionPlan: 'COMMUNITY',
-        companyVaultDefaults: JSON.stringify({})
+      // Call CreateNewCompany with headers
+      const axiosClient = (apiClient as any).client
+      const response = await axiosClient.post('/CreateNewCompany', {
+        companyName: values.companyName
+      }, {
+        headers: {
+          'Rediacc-UserEmail': values.email,
+          'Rediacc-UserHash': passwordHash
+        }
       })
 
-      if (response.failure !== 0) {
-        throw new Error(response.errors?.join('; ') || 'Registration failed')
+      if (response.data.failure !== 0) {
+        throw new Error(response.data.errors?.join('; ') || 'Registration failed')
       }
 
       // Store registration data for verification step
       setRegistrationData({
         email: values.email,
-        companyName: values.companyName
+        companyName: values.companyName,
+        passwordHash: passwordHash
       })
 
       // Move to verification step
@@ -94,7 +98,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
       // Use the updated activateUser method with authentication
       const response = await apiClient.activateUser(
         registrationData.email,
-        values.activationCode
+        values.activationCode,
+        registrationData.passwordHash
       )
 
       if (response.failure !== 0) {
