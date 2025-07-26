@@ -339,53 +339,6 @@
           "label": "Eklentiler",
           "description": "Konteyner görüntüleri ve etkinleştirme durumu ile eklenti yapılandırmaları"
         }
-      },
-      "DISTRIBUTEDSTORAGE": {
-        "description": "Ceph tabanlı depolama için dağıtık depolama kümesi yapılandırması",
-        "ceph_dashboard_credentials": {
-          "label": "Kontrol Paneli Kimlik Bilgileri",
-          "description": "Ceph kontrol paneline erişim için kimlik bilgileri",
-          "url": {
-            "label": "Kontrol Paneli URL'si",
-            "description": "Ceph kontrol paneli arayüzüne erişim için URL"
-          },
-          "username": {
-            "label": "Kullanıcı Adı",
-            "description": "Kontrol paneli kimlik doğrulaması için kullanıcı adı"
-          },
-          "password": {
-            "label": "Şifre",
-            "description": "Kontrol paneli kimlik doğrulaması için şifre"
-          }
-        },
-        "ceph_config": {
-          "label": "Ceph Yapılandırması",
-          "description": "Küme özelleştirmesi için gelişmiş Ceph yapılandırma seçenekleri",
-          "monitors": {
-            "label": "Monitör IP'leri",
-            "description": "Ceph monitör düğümlerinin IP adresleri"
-          },
-          "auth_config": {
-            "label": "Kimlik Doğrulama Yapılandırması",
-            "description": "Ek Ceph kimlik doğrulama yapılandırması"
-          },
-          "custom_settings": {
-            "label": "Özel Ayarlar",
-            "description": "Özel Ceph yapılandırma parametreleri"
-          }
-        },
-        "monitoring": {
-          "label": "İzleme",
-          "description": "Küme için izleme ve uyarı yapılandırması",
-          "prometheus_endpoint": {
-            "label": "Prometheus Uç Noktası",
-            "description": "Prometheus metrikleri uç noktası için URL"
-          },
-          "alert_rules": {
-            "label": "Uyarı Kuralları",
-            "description": "Küme izleme için özel uyarı kuralları"
-          }
-        }
       }
     }
   },

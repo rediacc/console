@@ -207,53 +207,6 @@
       "enterScheduleName": "输入计划名称"
     }
   },
-  "distributedStorage": {
-    "clusterName": "集群名称",
-    "createCluster": "创建分布式存储",
-    "editCluster": "编辑集群",
-    "deleteCluster": "删除集群",
-    "confirmDelete": "您确定要删除分布式存储集群“{{clusterName}}”吗？此操作无法撤销。",
-    "noDistributedStorage": "在此团队中未找到分布式存储集群",
-    "deleteSuccess": "分布式存储集群删除成功",
-    "deleteError": "删除分布式存储集群失败",
-    "createSuccess": "分布式存储集群创建成功",
-    "queueItemCreated": "分布式存储功能已成功加入队列",
-    "placeholders": {
-      "enterClusterName": "输入集群名称",
-      "selectNodes": "选择至少3个节点",
-      "enterPoolName": "输入池名称（例如：rbd）",
-      "enterPoolSize": "输入池大小（例如：100G）",
-      "enterOsdDevice": "输入OSD设备路径（例如：/dev/sdb）",
-      "enterRbdPrefix": "输入RBD映像前缀"
-    },
-    "fields": {
-      "nodes": "存储节点",
-      "nodesHelp": "选择至少3台机器来组成分布式存储集群。更多节点提供更好的冗余和性能。",
-      "poolName": "池名称",
-      "poolNameHelp": "存储池的名称。对于块存储，建议使用默认的'rbd'。仅使用字母、数字、连字符和下划线。",
-      "poolPgNum": "放置组",
-      "poolPgNumHelp": "用于数据分布的放置组数量。默认值128适用于大多数集群。对于较大的集群使用更高的值。",
-      "poolSize": "池大小",
-      "poolSizeHelp": "为此池分配的总存储容量（例如：100G、1T）。将分布在所有节点上。",
-      "osdDevice": "OSD设备",
-      "osdDeviceHelp": "每个节点上用于OSD的块设备（例如：/dev/sdb）。必须在所有选定节点上是相同的设备路径。",
-      "rbdImagePrefix": "RBD映像前缀",
-      "rbdImagePrefixHelp": "RBD映像名称的前缀。建议使用默认的'rediacc_disk'。在为存储库创建块设备时使用。",
-      "healthCheckTimeout": "健康检查超时（秒）",
-      "healthCheckTimeoutHelp": "集群健康检查的最大等待时间（60-3600秒）。默认值1800秒（30分钟）适合大多数部署。",
-      "status": "状态",
-      "nodeCount": "节点数量"
-    },
-    "status": {
-      "healthy": "健康",
-      "warning": "警告",
-      "error": "错误",
-      "provisioning": "配置中",
-      "unknown": "未知"
-    },
-    "functionsFor": "{{name}}的功能",
-    "distributedStorageFunctions": "分布式存储功能"
-  },
   "general": {
     "team": "团队",
     "region": "区域",
@@ -273,8 +226,7 @@
     "machines": "机器",
     "repositories": "仓库（凭据）",
     "storage": "存储",
-    "schedules": "计划",
-    "distributedStorage": "分布式存储"
+    "schedules": "计划"
   },
   "audit": {
     "title": "审计历史 - {{name}}",

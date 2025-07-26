@@ -270,53 +270,6 @@
       "enterScheduleName": "Enter schedule name"
     }
   },
-  "distributedStorage": {
-    "clusterName": "Cluster Name",
-    "createCluster": "Create Distributed Storage",
-    "editCluster": "Edit Cluster",
-    "deleteCluster": "Delete Cluster",
-    "confirmDelete": "Are you sure you want to delete distributed storage cluster \"{{clusterName}}\"? This action cannot be undone.",
-    "noDistributedStorage": "No distributed storage clusters found in this team",
-    "deleteSuccess": "Distributed storage cluster deleted successfully",
-    "deleteError": "Failed to delete distributed storage cluster",
-    "createSuccess": "Distributed storage cluster created successfully",
-    "queueItemCreated": "Distributed storage function queued successfully",
-    "placeholders": {
-      "enterClusterName": "Enter cluster name",
-      "selectNodes": "Select at least 3 nodes",
-      "enterPoolName": "Enter pool name (e.g., rbd)",
-      "enterPoolSize": "Enter pool size (e.g., 100G)",
-      "enterOsdDevice": "Enter OSD device path (e.g., /dev/sdb)",
-      "enterRbdPrefix": "Enter RBD image prefix"
-    },
-    "fields": {
-      "nodes": "Storage Nodes",
-      "nodesHelp": "Select at least 3 machines to form the distributed storage cluster. More nodes provide better redundancy and performance.",
-      "poolName": "Pool Name",
-      "poolNameHelp": "Name for the storage pool. Default 'rbd' is recommended for block storage. Only use letters, numbers, hyphens, and underscores.",
-      "poolPgNum": "Placement Groups",
-      "poolPgNumHelp": "Number of placement groups for data distribution. Default 128 works well for most clusters. Use higher values for larger clusters.",
-      "poolSize": "Pool Size",
-      "poolSizeHelp": "Total storage capacity to allocate for this pool (e.g., 100G, 1T). This will be distributed across all nodes.",
-      "osdDevice": "OSD Device",
-      "osdDeviceHelp": "Block device to use for OSD on each node (e.g., /dev/sdb). Must be the same device path on all selected nodes.",
-      "rbdImagePrefix": "RBD Image Prefix",
-      "rbdImagePrefixHelp": "Prefix for RBD image names. Default 'rediacc_disk' is recommended. Used when creating block devices for repositories.",
-      "healthCheckTimeout": "Health Check Timeout (seconds)",
-      "healthCheckTimeoutHelp": "Maximum time to wait for cluster health checks (60-3600 seconds). Default 1800 seconds (30 minutes) is suitable for most deployments.",
-      "status": "Status",
-      "nodeCount": "Node Count"
-    },
-    "status": {
-      "healthy": "Healthy",
-      "warning": "Warning",
-      "error": "Error",
-      "provisioning": "Provisioning",
-      "unknown": "Unknown"
-    },
-    "functionsFor": "Functions for {{name}}",
-    "distributedStorageFunctions": "Distributed Storage Functions"
-  },
   "general": {
     "team": "Team",
     "region": "Region",
@@ -336,8 +289,7 @@
     "machines": "Machines",
     "repositories": "Repo (Credentials)",
     "storage": "Storage",
-    "schedules": "Schedules",
-    "distributedStorage": "Distributed Storage"
+    "schedules": "Schedules"
   },
   "audit": {
     "title": "Audit History - {{name}}",

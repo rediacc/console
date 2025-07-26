@@ -222,59 +222,11 @@
     "configureVault": "Kasayı Yapılandır - {{name}}",
     "vaultVersion": "Kasa Sürümü"
   },
-  "distributedStorage": {
-    "clusterName": "Küme Adı",
-    "createCluster": "Dağıtık Depolama Oluştur",
-    "editCluster": "Kümeyi Düzenle",
-    "deleteCluster": "Kümeyi Sil",
-    "confirmDelete": "\"{{clusterName}}\" dağıtık depolama kümesini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
-    "noDistributedStorage": "Bu takımda dağıtık depolama kümesi bulunamadı",
-    "deleteSuccess": "Dağıtık depolama kümesi başarıyla silindi",
-    "deleteError": "Dağıtık depolama kümesi silinemedi",
-    "createSuccess": "Dağıtık depolama kümesi başarıyla oluşturuldu",
-    "queueItemCreated": "Dağıtık depolama işlevi başarıyla kuyruğa alındı",
-    "placeholders": {
-      "enterClusterName": "Küme adını girin",
-      "selectNodes": "En az 3 düğüm seçin",
-      "enterPoolName": "Havuz adını girin (örn: rbd)",
-      "enterPoolSize": "Havuz boyutunu girin (örn: 100G)",
-      "enterOsdDevice": "OSD cihaz yolunu girin (örn: /dev/sdb)",
-      "enterRbdPrefix": "RBD görüntü önekini girin"
-    },
-    "fields": {
-      "nodes": "Depolama Düğümleri",
-      "nodesHelp": "Dağıtık depolama kümesi oluşturmak için en az 3 makine seçin. Daha fazla düğüm daha iyi yedeklilik ve performans sağlar.",
-      "poolName": "Havuz Adı",
-      "poolNameHelp": "Depolama havuzunun adı. Blok depolama için varsayılan 'rbd' önerilir. Yalnızca harf, rakam, kısa çizgi ve alt çizgi kullanın.",
-      "poolPgNum": "Yerleştirme Grupları",
-      "poolPgNumHelp": "Veri dağıtımı için yerleştirme grubu sayısı. Varsayılan 128 değeri çoğu küme için uygundur. Daha büyük kümeler için daha yüksek değerler kullanın.",
-      "poolSize": "Havuz Boyutu",
-      "poolSizeHelp": "Bu havuz için ayrılacak toplam depolama kapasitesi (örn: 100G, 1T). Tüm düğümler arasında dağıtılacaktır.",
-      "osdDevice": "OSD Cihazı",
-      "osdDeviceHelp": "Her düğümde OSD için kullanılacak blok cihazı (örn: /dev/sdb). Seçilen tüm düğümlerde aynı cihaz yolu olmalıdır.",
-      "rbdImagePrefix": "RBD Görüntü Öneki",
-      "rbdImagePrefixHelp": "RBD görüntü adları için önek. Varsayılan 'rediacc_disk' önerilir. Depolar için blok cihazları oluştururken kullanılır.",
-      "healthCheckTimeout": "Sağlık Kontrolü Zaman Aşımı (saniye)",
-      "healthCheckTimeoutHelp": "Küme sağlık kontrolleri için maksimum bekleme süresi (60-3600 saniye). Varsayılan 1800 saniye (30 dakika) çoğu dağıtım için uygundur.",
-      "status": "Durum",
-      "nodeCount": "Düğüm Sayısı"
-    },
-    "status": {
-      "healthy": "Sağlıklı",
-      "warning": "Uyarı",
-      "error": "Hata",
-      "provisioning": "Hazırlanıyor",
-      "unknown": "Bilinmiyor"
-    },
-    "functionsFor": "{{name}} için İşlevler",
-    "distributedStorageFunctions": "Dağıtık Depolama İşlevleri"
-  },
   "resourceTabs": {
     "machines": "Makineler",
     "repositories": "Depo (Kimlik Bilgileri)",
     "storage": "Depolama",
-    "schedules": "Zamanlamalar",
-    "distributedStorage": "Dağıtık Depolama"
+    "schedules": "Zamanlamalar"
   },
   "audit": {
     "title": "Denetim Geçmişi - {{name}}",

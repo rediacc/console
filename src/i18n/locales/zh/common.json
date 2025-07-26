@@ -339,53 +339,6 @@
           "label": "插件",
           "description": "带有容器镜像和激活状态的插件配置"
         }
-      },
-      "DISTRIBUTEDSTORAGE": {
-        "description": "基于Ceph存储的分布式存储集群配置",
-        "ceph_dashboard_credentials": {
-          "label": "仪表板凭据",
-          "description": "访问Ceph仪表板的凭据",
-          "url": {
-            "label": "仪表板URL",
-            "description": "访问Ceph仪表板界面的URL"
-          },
-          "username": {
-            "label": "用户名",
-            "description": "仪表板身份验证的用户名"
-          },
-          "password": {
-            "label": "密码",
-            "description": "仪表板身份验证的密码"
-          }
-        },
-        "ceph_config": {
-          "label": "Ceph配置",
-          "description": "用于集群自定义的高级Ceph配置选项",
-          "monitors": {
-            "label": "监视器IP",
-            "description": "Ceph监视器节点的IP地址"
-          },
-          "auth_config": {
-            "label": "认证配置",
-            "description": "其他Ceph认证配置"
-          },
-          "custom_settings": {
-            "label": "自定义设置",
-            "description": "自定义Ceph配置参数"
-          }
-        },
-        "monitoring": {
-          "label": "监控",
-          "description": "集群的监控和警报配置",
-          "prometheus_endpoint": {
-            "label": "Prometheus端点",
-            "description": "Prometheus指标端点的URL"
-          },
-          "alert_rules": {
-            "label": "警报规则",
-            "description": "集群监控的自定义警报规则"
-          }
-        }
       }
     }
   },

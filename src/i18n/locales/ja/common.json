@@ -339,53 +339,6 @@
           "label": "プラグイン",
           "description": "コンテナイメージとアクティベーション状態を持つプラグイン設定"
         }
-      },
-      "DISTRIBUTEDSTORAGE": {
-        "description": "Cephベースのストレージ用の分散ストレージクラスター構成",
-        "ceph_dashboard_credentials": {
-          "label": "ダッシュボード認証情報",
-          "description": "Cephダッシュボードへのアクセス認証情報",
-          "url": {
-            "label": "ダッシュボードURL",
-            "description": "Cephダッシュボードインターフェースへのアクセス用URL"
-          },
-          "username": {
-            "label": "ユーザー名",
-            "description": "ダッシュボード認証用のユーザー名"
-          },
-          "password": {
-            "label": "パスワード",
-            "description": "ダッシュボード認証用のパスワード"
-          }
-        },
-        "ceph_config": {
-          "label": "Ceph構成",
-          "description": "クラスターカスタマイズ用の高度なCeph構成オプション",
-          "monitors": {
-            "label": "モニターIP",
-            "description": "CephモニターノードのIPアドレス"
-          },
-          "auth_config": {
-            "label": "認証構成",
-            "description": "追加のCeph認証構成"
-          },
-          "custom_settings": {
-            "label": "カスタム設定",
-            "description": "カスタムCeph構成パラメータ"
-          }
-        },
-        "monitoring": {
-          "label": "監視",
-          "description": "クラスターの監視とアラート構成",
-          "prometheus_endpoint": {
-            "label": "Prometheusエンドポイント",
-            "description": "Prometheusメトリクスエンドポイント用URL"
-          },
-          "alert_rules": {
-            "label": "アラートルール",
-            "description": "クラスター監視用のカスタムアラートルール"
-          }
-        }
       }
     }
   },

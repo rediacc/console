@@ -207,53 +207,6 @@
       "enterScheduleName": "スケジュール名を入力"
     }
   },
-  "distributedStorage": {
-    "clusterName": "クラスター名",
-    "createCluster": "分散ストレージを作成",
-    "editCluster": "クラスターを編集",
-    "deleteCluster": "クラスターを削除",
-    "confirmDelete": "分散ストレージクラスター「{{clusterName}}」を削除してもよろしいですか？この操作は元に戻せません。",
-    "noDistributedStorage": "このチームに分散ストレージクラスターが見つかりません",
-    "deleteSuccess": "分散ストレージクラスターが正常に削除されました",
-    "deleteError": "分散ストレージクラスターの削除に失敗しました",
-    "createSuccess": "分散ストレージクラスターが正常に作成されました",
-    "queueItemCreated": "分散ストレージ機能が正常にキューに追加されました",
-    "placeholders": {
-      "enterClusterName": "クラスター名を入力",
-      "selectNodes": "少なくとも3つのノードを選択",
-      "enterPoolName": "プール名を入力（例：rbd）",
-      "enterPoolSize": "プールサイズを入力（例：100G）",
-      "enterOsdDevice": "OSDデバイスパスを入力（例：/dev/sdb）",
-      "enterRbdPrefix": "RBDイメージプレフィックスを入力"
-    },
-    "fields": {
-      "nodes": "ストレージノード",
-      "nodesHelp": "分散ストレージクラスターを形成するために少なくとも3台のマシンを選択してください。ノードが多いほど、冗長性とパフォーマンスが向上します。",
-      "poolName": "プール名",
-      "poolNameHelp": "ストレージプールの名前。ブロックストレージにはデフォルトの'rbd'が推奨されます。文字、数字、ハイフン、アンダースコアのみを使用してください。",
-      "poolPgNum": "配置グループ",
-      "poolPgNumHelp": "データ分散のための配置グループ数。デフォルトの128はほとんどのクラスターで適切に機能します。大規模なクラスターにはより高い値を使用してください。",
-      "poolSize": "プールサイズ",
-      "poolSizeHelp": "このプールに割り当てる総ストレージ容量（例：100G、1T）。すべてのノードに分散されます。",
-      "osdDevice": "OSDデバイス",
-      "osdDeviceHelp": "各ノードでOSDに使用するブロックデバイス（例：/dev/sdb）。選択したすべてのノードで同じデバイスパスである必要があります。",
-      "rbdImagePrefix": "RBDイメージプレフィックス",
-      "rbdImagePrefixHelp": "RBDイメージ名のプレフィックス。デフォルトの'rediacc_disk'が推奨されます。リポジトリ用のブロックデバイスを作成する際に使用されます。",
-      "healthCheckTimeout": "ヘルスチェックタイムアウト（秒）",
-      "healthCheckTimeoutHelp": "クラスターヘルスチェックの最大待機時間（60〜3600秒）。デフォルトの1800秒（30分）はほとんどのデプロイメントに適しています。",
-      "status": "ステータス",
-      "nodeCount": "ノード数"
-    },
-    "status": {
-      "healthy": "正常",
-      "warning": "警告",
-      "error": "エラー",
-      "provisioning": "プロビジョニング中",
-      "unknown": "不明"
-    },
-    "functionsFor": "{{name}}の機能",
-    "distributedStorageFunctions": "分散ストレージ機能"
-  },
   "general": {
     "team": "チーム",
     "region": "地域",
@@ -273,8 +226,7 @@
     "machines": "マシン",
     "repositories": "リポジトリ（認証情報）",
     "storage": "ストレージ",
-    "schedules": "スケジュール",
-    "distributedStorage": "分散ストレージ"
+    "schedules": "スケジュール"
   },
   "audit": {
     "title": "監査履歴 - {{name}}",

@@ -13,8 +13,7 @@ import {
   WifiOutlined,
   HistoryOutlined,
   ReloadOutlined,
-  ImportOutlined,
-  ClusterOutlined
+  ImportOutlined
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
@@ -72,15 +71,6 @@ import {
   Schedule 
 } from '@/api/queries/schedules'
 
-// Distributed Storage queries
-import { 
-  useDistributedStorageClusters, 
-  useCreateDistributedStorageCluster, 
-  useUpdateDistributedStorageClusterVault,
-  useDeleteDistributedStorageCluster, 
-  DistributedStorageCluster 
-} from '@/api/queries/distributedStorage'
-
 import { useDropdownData } from '@/api/queries/useDropdownData'
 // Validation schemas now handled in UnifiedResourceModal
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize'
@@ -131,7 +121,6 @@ const ResourcesPage: React.FC = () => {
       case 'repositories': return t('repositories.createRepository')
       case 'storage': return t('storage.createStorage')
       case 'schedules': return t('schedules.createSchedule')
-      case 'distributedStorage': return t('distributedStorage.createCluster')
       default: return t('general.create')
     }
   }
@@ -143,7 +132,6 @@ const ResourcesPage: React.FC = () => {
       case 'repositories': return 'repositories'
       case 'storage': return 'storage'
       case 'schedules': return 'schedules'
-      case 'distributedStorage': return 'distributedStorage'
       default: return teamResourcesTab
     }
   }
@@ -209,13 +197,12 @@ const ResourcesPage: React.FC = () => {
   
   // Generic delete handler
   const handleDelete = async (resourceType: ResourceType, resource: any) => {
-    const resourceName = resourceType === 'distributedStorage' ? resource.clusterName : resource[`${resourceType}Name`]
+    const resourceName = resource[`${resourceType}Name`]
     const mutations = {
       machine: deleteMachineMutation,
       repository: deleteRepositoryMutation,
       storage: deleteStorageMutation,
-      schedule: deleteScheduleMutation,
-      distributedStorage: deleteDistributedStorageMutation
+      schedule: deleteScheduleMutation
     }
     
     // Get the correct translation namespace and key
@@ -263,12 +250,6 @@ const ResourcesPage: React.FC = () => {
               scheduleName: resourceName,
             } as any)
             refetchSchedules()
-          } else if (resourceType === 'distributedStorage') {
-            await mutation.mutateAsync({
-              teamName: resource.teamName,
-              clusterName: resourceName,
-            } as any)
-            refetchDistributedStorage()
           }
           showMessage('success', t(getTranslationKey('deleteSuccess')))
         } catch (error) {
@@ -322,14 +303,6 @@ const ResourcesPage: React.FC = () => {
   const updateScheduleNameMutation = useUpdateScheduleName()
   const deleteScheduleMutation = useDeleteSchedule()
   const updateScheduleVaultMutation = useUpdateScheduleVault()
-  
-  // Distributed Storage hooks - only fetch when distributed storage tab is active
-  const { data: distributedStorageClusters = [], isLoading: distributedStorageLoading, refetch: refetchDistributedStorage } = useDistributedStorageClusters(
-    selectedTeams.length > 0 && teamResourcesTab === 'distributedStorage' ? selectedTeams : undefined
-  )
-  const createDistributedStorageMutation = useCreateDistributedStorageCluster()
-  const updateDistributedStorageVaultMutation = useUpdateDistributedStorageClusterVault()
-  const deleteDistributedStorageMutation = useDeleteDistributedStorageCluster()
   
   // Queue mutation - using managed version for high-priority handling
   const createQueueItemMutation = useManagedQueueItem()
@@ -458,8 +431,7 @@ const ResourcesPage: React.FC = () => {
         machine: { create: createMachineMutation, updateName: updateMachineNameMutation, updateVault: updateMachineVaultMutation },
         repository: { create: createRepositoryMutation, updateName: updateRepositoryNameMutation, updateVault: updateRepositoryVaultMutation },
         storage: { create: createStorageMutation, updateName: updateStorageNameMutation, updateVault: updateStorageVaultMutation },
-        schedule: { create: createScheduleMutation, updateName: updateScheduleNameMutation, updateVault: updateScheduleVaultMutation },
-        distributedStorage: { create: createDistributedStorageMutation, updateName: undefined, updateVault: updateDistributedStorageVaultMutation }
+        schedule: { create: createScheduleMutation, updateName: updateScheduleNameMutation, updateVault: updateScheduleVaultMutation }
       }
       
       if (mode === 'create') {
@@ -640,14 +612,6 @@ const ResourcesPage: React.FC = () => {
             closeUnifiedModal()
             // Refresh machines
             refetchMachines()
-          } else if (resourceType === 'distributedStorage') {
-            // Handle distributed storage creation
-            // We don't need to transform nodes here as the SQL stored procedure expects individual params
-            await mutations.distributedStorage.create.mutateAsync(data)
-            showMessage('success', t(`${getResourceTranslationKey()}.createSuccess`))
-            closeUnifiedModal()
-            // Refresh distributed storage clusters
-            refetchDistributedStorage()
           } else {
             // Handle other resource types
             await mutations[resourceType as keyof typeof mutations].create.mutateAsync(data)
@@ -660,8 +624,8 @@ const ResourcesPage: React.FC = () => {
         const currentName = currentResource[resourceName]
         const newName = data[resourceName]
         
-        // Update name if changed (skip for distributed storage as it doesn't support name changes)
-        if (newName !== currentName && resourceType !== 'distributedStorage') {
+        // Update name if changed
+        if (newName !== currentName) {
           const mutation = mutations[resourceType as keyof typeof mutations].updateName
           if (resourceType === 'machine') {
             await mutation.mutateAsync({
@@ -722,13 +686,6 @@ const ResourcesPage: React.FC = () => {
               scheduleVault: vaultData,
               vaultVersion: currentResource.vaultVersion + 1,
             } as any)
-          } else if (resourceType === 'distributedStorage') {
-            await vaultMutation.mutateAsync({
-              teamName: currentResource.teamName,
-              clusterName: currentResource.clusterName,
-              clusterVault: vaultData,
-              vaultVersion: currentResource.vaultVersion + 1,
-            } as any)
           }
         }
         
@@ -758,8 +715,7 @@ const ResourcesPage: React.FC = () => {
         machine: updateMachineVaultMutation,
         repository: updateRepositoryVaultMutation,
         storage: updateStorageVaultMutation,
-        schedule: updateScheduleVaultMutation,
-        distributedStorage: updateDistributedStorageVaultMutation
+        schedule: updateScheduleVaultMutation
       }
       
       const mutation = mutations[resourceType as keyof typeof mutations]
@@ -791,13 +747,6 @@ const ResourcesPage: React.FC = () => {
           scheduleVault: vault,
           vaultVersion: version,
         } as any)
-      } else if (resourceType === 'distributedStorage') {
-        await mutation.mutateAsync({
-          teamName: currentResource.teamName,
-          clusterName: currentResource.clusterName,
-          clusterVault: vault,
-          vaultVersion: version,
-        } as any)
       }
     } catch (error) {
       // Error handled by mutation
@@ -807,11 +756,10 @@ const ResourcesPage: React.FC = () => {
   const handleDeleteRepository = (repository: Repository) => handleDelete('repository', repository)
   const handleDeleteStorage = (storage: Storage) => handleDelete('storage', storage)
   const handleDeleteSchedule = (schedule: Schedule) => handleDelete('schedule', schedule)
-  const handleDeleteDistributedStorage = (cluster: DistributedStorageCluster) => handleDelete('distributedStorage', cluster)
 
   // Generic function selection handler
   const handleResourceFunctionSelected = async (
-    resourceType: 'machine' | 'repository' | 'storage' | 'distributedStorage',
+    resourceType: 'machine' | 'repository' | 'storage',
     functionData: {
       function: QueueFunction;
       params: Record<string, any>;
@@ -893,12 +841,6 @@ const ResourcesPage: React.FC = () => {
         // Also need machine vault for the selected machine
         const fullMachine = machines.find(m => m.machineName === machineName && m.teamName === currentResource.teamName);
         queueVaultParams.machineVault = fullMachine?.vaultContent || '{}';
-      } else if (resourceType === 'distributedStorage') {
-        queueVaultParams.clusterName = currentResource.clusterName;
-        queueVaultParams.distributedStorageVault = currentResource.vaultContent || '{}';
-        // Also need machine vault for the selected machine (primary node)
-        const fullMachine = machines.find(m => m.machineName === machineName && m.teamName === currentResource.teamName);
-        queueVaultParams.machineVault = fullMachine?.vaultContent || '{}';
       }
       
       // Handle pull function source vault data
@@ -972,9 +914,6 @@ const ResourcesPage: React.FC = () => {
     
   const handleStorageFunctionSelected = (functionData: any) => 
     handleResourceFunctionSelected('storage', functionData);
-    
-  const handleDistributedStorageFunctionSelected = (functionData: any) => 
-    handleResourceFunctionSelected('distributedStorage', functionData);
 
   // Removed individual function handlers - now using generic handler above
 
@@ -1244,124 +1183,6 @@ const ResourcesPage: React.FC = () => {
     },
   ]
 
-  // Distributed Storage columns
-  const distributedStorageColumns = [
-    {
-      title: t('distributedStorage.clusterName'),
-      dataIndex: 'clusterName',
-      key: 'clusterName',
-      ellipsis: true,
-      render: (text: string) => (
-        <Space>
-          <ClusterOutlined style={{ color: '#556b2f' }} />
-          <strong>{text}</strong>
-        </Space>
-      ),
-    },
-    {
-      title: t('general.team'),
-      dataIndex: 'teamName',
-      key: 'teamName',
-      width: 150,
-      ellipsis: true,
-      render: (teamName: string) => <Tag color="#8FBC8F">{teamName}</Tag>,
-    },
-    {
-      title: t('distributedStorage.fields.status'),
-      dataIndex: 'status',
-      key: 'status',
-      width: 120,
-      render: (status: string) => {
-        const statusColors: Record<string, string> = {
-          'Healthy': 'green',
-          'Warning': 'orange',
-          'Error': 'red',
-          'Provisioning': 'blue',
-          'Unknown': 'default'
-        }
-        return <Tag color={statusColors[status] || 'default'}>{t(`distributedStorage.status.${status.toLowerCase()}`)}</Tag>
-      },
-    },
-    {
-      title: t('distributedStorage.fields.nodeCount'),
-      dataIndex: 'nodeCount',
-      key: 'nodeCount',
-      width: 120,
-      align: 'center' as const,
-      render: (count: number) => <Tag>{count} nodes</Tag>,
-    },
-    {
-      title: t('distributedStorage.fields.poolSize'),
-      dataIndex: 'poolSize',
-      key: 'poolSize',
-      width: 100,
-      ellipsis: true,
-    },
-    ...(uiMode === 'expert' ? [{
-      title: t('general.vaultVersion'),
-      dataIndex: 'vaultVersion',
-      key: 'vaultVersion',
-      width: 100,
-      align: 'center' as const,
-      render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
-    }] : []),
-    {
-      title: t('common:table.actions'),
-      key: 'actions',
-      width: 350,
-      render: (_: any, record: DistributedStorageCluster) => (
-        <Space>
-          <Button
-            type="primary"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => {
-              setCurrentResource(record);
-              openUnifiedModal('distributedStorage', 'edit', record);
-            }}
-          >
-            {t('common:actions.edit')}
-          </Button>
-          <Button
-            type="primary"
-            size="small"
-            icon={<FunctionOutlined />}
-            onClick={() => {
-              setCurrentResource(record);
-              openUnifiedModal('distributedStorage', 'create', record, 'distributed_storage_status');
-            }}
-          >
-            {t('common:actions.functions')}
-          </Button>
-          <Button
-            type="primary"
-            size="small"
-            icon={<HistoryOutlined />}
-            onClick={() => {
-              setAuditTraceModal({
-                open: true,
-                entityType: 'DistributedStorageCluster',
-                entityIdentifier: record.clusterName,
-                entityName: record.clusterName
-              });
-            }}
-          >
-            {t('machines:trace')}
-          </Button>
-          <Button
-            type="primary"
-            danger
-            size="small"
-            icon={<DeleteOutlined />}
-            onClick={() => handleDeleteDistributedStorage(record)}
-          >
-            {t('common:actions.delete')}
-          </Button>
-        </Space>
-      ),
-    },
-  ]
-
   // Check if we're currently submitting or updating vault
   const isSubmitting = createMachineMutation.isPending ||
                       updateMachineNameMutation.isPending ||
@@ -1372,14 +1193,12 @@ const ResourcesPage: React.FC = () => {
                       updateStorageNameMutation.isPending ||
                       createScheduleMutation.isPending ||
                       updateScheduleNameMutation.isPending ||
-                      createDistributedStorageMutation.isPending ||
                       createQueueItemMutation.isPending
                       
   const isUpdatingVault = updateMachineVaultMutation.isPending ||
                          updateRepositoryVaultMutation.isPending ||
                          updateStorageVaultMutation.isPending ||
-                         updateScheduleVaultMutation.isPending ||
-                         updateDistributedStorageVaultMutation.isPending
+                         updateScheduleVaultMutation.isPending
 
   const teamResourcesTabs = [
     {
@@ -1598,45 +1417,6 @@ const ResourcesPage: React.FC = () => {
         </div>
       ),
     },
-    {
-      key: 'distributedStorage',
-      label: (
-        <span>
-          <ClusterOutlined />
-          {t('resourceTabs.distributedStorage')}
-        </span>
-      ),
-      children: (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          {distributedStorageLoading ? (
-            <div style={{ textAlign: 'center', padding: '100px 0' }}>
-              <Spin size="large" tip={t('common:general.loading')} />
-            </div>
-          ) : distributedStorageClusters.length === 0 ? (
-            <Empty
-              description={t('distributedStorage.noDistributedStorage')}
-              style={{ margin: 'auto' }}
-            />
-          ) : (
-            <Table
-              columns={distributedStorageColumns}
-              dataSource={distributedStorageClusters}
-              rowKey="clusterName"
-              scroll={{ x: 'max-content' }}
-              pagination={{
-                total: distributedStorageClusters?.length || 0,
-                pageSize: 10,
-                showSizeChanger: false,
-                showTotal: (total, range) => `${t('common:general.showingRecords', { start: range[0], end: range[1], total })}`,
-                position: ['bottomRight'],
-              }}
-              style={{ flex: 1 }}
-              sticky
-            />
-          )}
-        </div>
-      ),
-    },
   ]
 
   // Calculate available height for full-height layout
@@ -1722,9 +1502,6 @@ const ResourcesPage: React.FC = () => {
                             case 'schedules':
                               openUnifiedModal('schedule', 'create')
                               break
-                            case 'distributedStorage':
-                              openUnifiedModal('distributedStorage', 'create')
-                              break
                           }
                         }}
                         style={{ background: '#556b2f', borderColor: '#556b2f' }}
@@ -1768,9 +1545,6 @@ const ResourcesPage: React.FC = () => {
                               break
                             case 'schedules':
                               refetchSchedules()
-                              break
-                            case 'distributedStorage':
-                              refetchDistributedStorage()
                               break
                           }
                         }}
@@ -1902,14 +1676,12 @@ const ResourcesPage: React.FC = () => {
         onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
         onFunctionSubmit={
           unifiedModalState.data && 
-          (unifiedModalState.resourceType === 'machine' || unifiedModalState.resourceType === 'repository' || unifiedModalState.resourceType === 'storage' || unifiedModalState.resourceType === 'distributedStorage')
+          (unifiedModalState.resourceType === 'machine' || unifiedModalState.resourceType === 'repository' || unifiedModalState.resourceType === 'storage')
             ? unifiedModalState.resourceType === 'machine' 
               ? handleMachineFunctionSelected 
               : unifiedModalState.resourceType === 'repository'
               ? handleRepositoryFunctionSelected
-              : unifiedModalState.resourceType === 'storage'
-              ? handleStorageFunctionSelected
-              : handleDistributedStorageFunctionSelected
+              : handleStorageFunctionSelected
             : undefined
         }
         isSubmitting={isSubmitting}
@@ -1918,7 +1690,6 @@ const ResourcesPage: React.FC = () => {
           unifiedModalState.resourceType === 'machine' ? ['machine', 'backup'] :
           unifiedModalState.resourceType === 'repository' ? ['repository', 'backup', 'network'] : 
           unifiedModalState.resourceType === 'storage' ? ['backup'] :
-          unifiedModalState.resourceType === 'distributedStorage' ? ['distributed_storage'] :
           []
         }
         hiddenParams={

@@ -339,53 +339,6 @@
           "label": "الإضافات",
           "description": "تكوينات الإضافات مع صور الحاويات وحالة التفعيل"
         }
-      },
-      "DISTRIBUTEDSTORAGE": {
-        "description": "تكوين مجموعة التخزين الموزع للتخزين القائم على Ceph",
-        "ceph_dashboard_credentials": {
-          "label": "بيانات اعتماد لوحة التحكم",
-          "description": "بيانات الاعتماد للوصول إلى لوحة تحكم Ceph",
-          "url": {
-            "label": "رابط لوحة التحكم",
-            "description": "الرابط للوصول إلى واجهة لوحة تحكم Ceph"
-          },
-          "username": {
-            "label": "اسم المستخدم",
-            "description": "اسم المستخدم لمصادقة لوحة التحكم"
-          },
-          "password": {
-            "label": "كلمة المرور",
-            "description": "كلمة المرور لمصادقة لوحة التحكم"
-          }
-        },
-        "ceph_config": {
-          "label": "تكوين Ceph",
-          "description": "خيارات تكوين Ceph المتقدمة لتخصيص المجموعة",
-          "monitors": {
-            "label": "عناوين IP للشاشات",
-            "description": "عناوين IP لعقد مراقبة Ceph"
-          },
-          "auth_config": {
-            "label": "تكوين المصادقة",
-            "description": "تكوين مصادقة Ceph إضافي"
-          },
-          "custom_settings": {
-            "label": "إعدادات مخصصة",
-            "description": "معاملات تكوين Ceph المخصصة"
-          }
-        },
-        "monitoring": {
-          "label": "المراقبة",
-          "description": "تكوين المراقبة والتنبيهات للمجموعة",
-          "prometheus_endpoint": {
-            "label": "نقطة نهاية Prometheus",
-            "description": "الرابط لنقطة نهاية مقاييس Prometheus"
-          },
-          "alert_rules": {
-            "label": "قواعد التنبيه",
-            "description": "قواعد التنبيه المخصصة لمراقبة المجموعة"
-          }
-        }
       }
     }
   },

@@ -207,53 +207,6 @@
       "enterScheduleName": "Zeitplannamen eingeben"
     }
   },
-  "distributedStorage": {
-    "clusterName": "Cluster-Name",
-    "createCluster": "Verteilten Speicher erstellen",
-    "editCluster": "Cluster bearbeiten",
-    "deleteCluster": "Cluster löschen",
-    "confirmDelete": "Sind Sie sicher, dass Sie den verteilten Speichercluster \"{{clusterName}}\" löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
-    "noDistributedStorage": "Keine verteilten Speichercluster in diesem Team gefunden",
-    "deleteSuccess": "Verteilter Speichercluster erfolgreich gelöscht",
-    "deleteError": "Fehler beim Löschen des verteilten Speicherclusters",
-    "createSuccess": "Verteilter Speichercluster erfolgreich erstellt",
-    "queueItemCreated": "Verteilte Speicherfunktion erfolgreich in die Warteschlange gestellt",
-    "placeholders": {
-      "enterClusterName": "Cluster-Namen eingeben",
-      "selectNodes": "Mindestens 3 Knoten auswählen",
-      "enterPoolName": "Pool-Namen eingeben (z.B. rbd)",
-      "enterPoolSize": "Pool-Größe eingeben (z.B. 100G)",
-      "enterOsdDevice": "OSD-Gerätepfad eingeben (z.B. /dev/sdb)",
-      "enterRbdPrefix": "RBD-Bildpräfix eingeben"
-    },
-    "fields": {
-      "nodes": "Speicherknoten",
-      "nodesHelp": "Wählen Sie mindestens 3 Maschinen aus, um den verteilten Speichercluster zu bilden. Mehr Knoten bieten bessere Redundanz und Leistung.",
-      "poolName": "Pool-Name",
-      "poolNameHelp": "Name für den Speicherpool. Standard 'rbd' wird für Blockspeicher empfohlen. Verwenden Sie nur Buchstaben, Zahlen, Bindestriche und Unterstriche.",
-      "poolPgNum": "Platzierungsgruppen",
-      "poolPgNumHelp": "Anzahl der Platzierungsgruppen für die Datenverteilung. Der Standardwert 128 funktioniert gut für die meisten Cluster. Verwenden Sie höhere Werte für größere Cluster.",
-      "poolSize": "Pool-Größe",
-      "poolSizeHelp": "Gesamte Speicherkapazität, die diesem Pool zugewiesen werden soll (z.B. 100G, 1T). Wird auf alle Knoten verteilt.",
-      "osdDevice": "OSD-Gerät",
-      "osdDeviceHelp": "Blockgerät für OSD auf jedem Knoten (z.B. /dev/sdb). Muss auf allen ausgewählten Knoten derselbe Gerätepfad sein.",
-      "rbdImagePrefix": "RBD-Bildpräfix",
-      "rbdImagePrefixHelp": "Präfix für RBD-Bildnamen. Standard 'rediacc_disk' wird empfohlen. Wird beim Erstellen von Blockgeräten für Repositories verwendet.",
-      "healthCheckTimeout": "Gesundheitsprüfungs-Timeout (Sekunden)",
-      "healthCheckTimeoutHelp": "Maximale Wartezeit für Cluster-Gesundheitsprüfungen (60-3600 Sekunden). Der Standardwert von 1800 Sekunden (30 Minuten) ist für die meisten Bereitstellungen geeignet.",
-      "status": "Status",
-      "nodeCount": "Knotenanzahl"
-    },
-    "status": {
-      "healthy": "Gesund",
-      "warning": "Warnung",
-      "error": "Fehler",
-      "provisioning": "Bereitstellung",
-      "unknown": "Unbekannt"
-    },
-    "functionsFor": "Funktionen für {{name}}",
-    "distributedStorageFunctions": "Verteilte Speicherfunktionen"
-  },
   "general": {
     "team": "Team",
     "region": "Region",
@@ -273,8 +226,7 @@
     "machines": "Maschinen",
     "repositories": "Repo (Anmeldedaten)",
     "storage": "Speicher",
-    "schedules": "Zeitpläne",
-    "distributedStorage": "Verteilter Speicher"
+    "schedules": "Zeitpläne"
   },
   "audit": {
     "title": "Audit-Verlauf - {{name}}",

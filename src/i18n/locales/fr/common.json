@@ -339,53 +339,6 @@
           "label": "Plugins",
           "description": "Configurations de plugins avec images de conteneurs et statut d'activation"
         }
-      },
-      "DISTRIBUTEDSTORAGE": {
-        "description": "Configuration du cluster de stockage distribué pour le stockage basé sur Ceph",
-        "ceph_dashboard_credentials": {
-          "label": "Identifiants du Tableau de Bord",
-          "description": "Identifiants pour accéder au tableau de bord Ceph",
-          "url": {
-            "label": "URL du Tableau de Bord",
-            "description": "URL pour accéder à l'interface du tableau de bord Ceph"
-          },
-          "username": {
-            "label": "Nom d'Utilisateur",
-            "description": "Nom d'utilisateur pour l'authentification du tableau de bord"
-          },
-          "password": {
-            "label": "Mot de Passe",
-            "description": "Mot de passe pour l'authentification du tableau de bord"
-          }
-        },
-        "ceph_config": {
-          "label": "Configuration Ceph",
-          "description": "Options de configuration avancées de Ceph pour la personnalisation du cluster",
-          "monitors": {
-            "label": "IPs des Moniteurs",
-            "description": "Adresses IP des nœuds moniteurs Ceph"
-          },
-          "auth_config": {
-            "label": "Configuration d'Authentification",
-            "description": "Configuration d'authentification Ceph supplémentaire"
-          },
-          "custom_settings": {
-            "label": "Paramètres Personnalisés",
-            "description": "Paramètres de configuration Ceph personnalisés"
-          }
-        },
-        "monitoring": {
-          "label": "Surveillance",
-          "description": "Configuration de surveillance et d'alerte pour le cluster",
-          "prometheus_endpoint": {
-            "label": "Point de Terminaison Prometheus",
-            "description": "URL pour le point de terminaison des métriques Prometheus"
-          },
-          "alert_rules": {
-            "label": "Règles d'Alerte",
-            "description": "Règles d'alerte personnalisées pour la surveillance du cluster"
-          }
-        }
       }
     }
   },

@@ -12,7 +12,7 @@ export interface ResourceFormWithVaultRef {
 interface FormFieldConfig {
   name: string
   label: string
-  type?: 'text' | 'select' | 'multiSelect' | 'password' | 'email' | 'number' | 'size'
+  type?: 'text' | 'select' | 'password' | 'email' | 'number' | 'size'
   placeholder?: string
   required?: boolean
   options?: Array<{ value: string; label: string }>
@@ -21,9 +21,6 @@ interface FormFieldConfig {
   disabled?: boolean
   helperText?: string
   sizeUnits?: string[] // For size type: ['G', 'T'] or ['percentage', 'G', 'T']
-  defaultValue?: any
-  min?: number
-  max?: number
 }
 
 interface ResourceFormWithVaultProps<T extends Record<string, any> = any> {
@@ -156,30 +153,6 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
             />
           )
 
-        case 'multiSelect':
-          return (
-            <Controller
-              name={field.name as any}
-              control={control}
-              defaultValue={field.defaultValue || []}
-              render={({ field: controllerField }) => (
-                <Select
-                  {...controllerField}
-                  mode="multiple"
-                  placeholder={field.placeholder}
-                  options={field.options}
-                  disabled={field.disabled}
-                  allowClear
-                  showSearch
-                  filterOption={(input, option) =>
-                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                  }
-                  style={{ width: '100%' }}
-                />
-              )}
-            />
-          )
-
         case 'password':
           return (
             <Controller
@@ -196,25 +169,6 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
             />
           )
 
-        case 'number':
-          return (
-            <Controller
-              name={field.name as any}
-              control={control}
-              defaultValue={field.defaultValue}
-              render={({ field: controllerField }) => (
-                <InputNumber
-                  {...controllerField}
-                  placeholder={field.placeholder}
-                  disabled={field.disabled}
-                  style={{ width: '100%' }}
-                  min={field.min}
-                  max={field.max}
-                />
-              )}
-            />
-          )
-
         case 'size':
           const units = field.sizeUnits || ['G', 'T']
           const defaultUnit = units[0] === 'percentage' ? '%' : units[0]
@@ -223,7 +177,6 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
             <Controller
               name={field.name as any}
               control={control}
-              defaultValue={field.defaultValue}
               render={({ field: controllerField }) => {
                 // Parse the current value (e.g., "100G" -> {value: 100, unit: "G"})
                 const currentValue = controllerField.value || ''
@@ -302,7 +255,6 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
             <Controller
               name={field.name as any}
               control={control}
-              defaultValue={field.defaultValue || ''}
               render={({ field: controllerField }) => (
                 <Input
                   {...controllerField}
