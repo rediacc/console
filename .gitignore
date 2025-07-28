@@ -27,8 +27,5 @@ Thumbs.db
 # Temporary files
 *.tmp
 
-# Backup files
-*~
-
 # Build artifacts
 .build_cache/
