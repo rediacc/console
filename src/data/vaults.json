@@ -360,6 +360,167 @@
           }
         }
       }
+    },
+    "CLUSTER": {
+      "descriptionKey": "fields.CLUSTER.description",
+      "required": [],
+      "optional": ["monitors", "mgrs", "osds", "mds", "fsid", "config"],
+      "fields": {
+        "monitors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": "Monitor nodes. Example: [\"node1\", \"node2\", \"node3\"]"
+        },
+        "mgrs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": "Manager nodes. Example: [\"node1\", \"node2\"]"
+        },
+        "osds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": "OSD nodes. Example: [\"node1\", \"node2\", \"node3\", \"node4\"]"
+        },
+        "mds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": "MDS nodes. Example: [\"node1\", \"node2\"]"
+        },
+        "fsid": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "example": "Cluster UUID. Example: a7f64266-0894-4f1e-a635-d0aeaca0e993"
+        },
+        "config": {
+          "type": "object",
+          "example": "Additional cluster configuration"
+        }
+      }
+    },
+    "POOL": {
+      "descriptionKey": "fields.POOL.description",
+      "required": [],
+      "optional": ["pg_num", "pgp_num", "size", "min_size", "crush_rule", "application"],
+      "fields": {
+        "pg_num": {
+          "type": "number",
+          "example": "Number of placement groups. Example: 128"
+        },
+        "pgp_num": {
+          "type": "number",
+          "example": "Number of placement groups for placement. Example: 128"
+        },
+        "size": {
+          "type": "number",
+          "example": "Number of replicas. Example: 3"
+        },
+        "min_size": {
+          "type": "number",
+          "example": "Minimum number of replicas. Example: 2"
+        },
+        "crush_rule": {
+          "type": "string",
+          "example": "CRUSH rule name. Example: replicated_rule"
+        },
+        "application": {
+          "type": "string",
+          "example": "Pool application. Example: rbd"
+        }
+      }
+    },
+    "IMAGE": {
+      "descriptionKey": "fields.IMAGE.description",
+      "required": [],
+      "optional": ["size", "features", "object_size", "stripe_unit", "stripe_count", "data_pool"],
+      "fields": {
+        "size": {
+          "type": "string",
+          "format": "size",
+          "example": "Image size. Example: 10G"
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": "RBD features. Example: [\"layering\", \"exclusive-lock\", \"object-map\", \"fast-diff\", \"deep-flatten\"]"
+        },
+        "object_size": {
+          "type": "string",
+          "example": "Object size. Example: 4M"
+        },
+        "stripe_unit": {
+          "type": "string",
+          "example": "Stripe unit. Example: 4M"
+        },
+        "stripe_count": {
+          "type": "number",
+          "example": "Stripe count. Example: 1"
+        },
+        "data_pool": {
+          "type": "string",
+          "example": "Data pool name. Example: rbd_data"
+        }
+      }
+    },
+    "SNAPSHOT": {
+      "descriptionKey": "fields.SNAPSHOT.description",
+      "required": [],
+      "optional": ["protected", "timestamp", "size"],
+      "fields": {
+        "protected": {
+          "type": "boolean",
+          "example": "Protection status. Example: true"
+        },
+        "timestamp": {
+          "type": "string",
+          "example": "Creation timestamp. Example: 2024-01-15T10:30:00Z"
+        },
+        "size": {
+          "type": "string",
+          "format": "size",
+          "example": "Snapshot size. Example: 10G"
+        }
+      }
+    },
+    "CLONE": {
+      "descriptionKey": "fields.CLONE.description",
+      "required": [],
+      "optional": ["parent_pool", "parent_image", "parent_snapshot", "features", "size"],
+      "fields": {
+        "parent_pool": {
+          "type": "string",
+          "example": "Parent pool name. Example: rbd"
+        },
+        "parent_image": {
+          "type": "string",
+          "example": "Parent image name. Example: base-image"
+        },
+        "parent_snapshot": {
+          "type": "string",
+          "example": "Parent snapshot name. Example: snap1"
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": "RBD features. Example: [\"layering\", \"exclusive-lock\"]"
+        },
+        "size": {
+          "type": "string",
+          "format": "size",
+          "example": "Clone size. Example: 20G"
+        }
+      }
     }
   },
   "commonTypes": {

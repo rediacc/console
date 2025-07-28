@@ -14,7 +14,10 @@ import {
   ClockCircleOutlined,
   DownloadOutlined,
   FileTextOutlined,
-  FileExcelOutlined
+  FileExcelOutlined,
+  DatabaseOutlined,
+  HddOutlined,
+  CopyOutlined
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useEntityAuditTrace, AuditTraceRecord } from '@/api/queries/audit'
@@ -63,6 +66,12 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
         return <CheckCircleOutlined style={{ color: '#52c41a' }} />
       case 'x-circle':
         return <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
+      case 'database':
+        return <DatabaseOutlined style={{ color: '#1890ff' }} />
+      case 'hdd':
+        return <HddOutlined style={{ color: '#fa8c16' }} />
+      case 'copy':
+        return <CopyOutlined style={{ color: '#722ed1' }} />
       default:
         return <InfoCircleOutlined style={{ color: '#1890ff' }} />
     }
@@ -89,6 +98,15 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
         return 'success'
       case 'Cancelled':
         return 'error'
+      case 'Assigned to Cluster':
+      case 'Assigned to Image':
+      case 'Assigned to Clone':
+        return 'blue'
+      case 'Removed from Cluster':
+      case 'Removed from Clone':
+        return 'orange'
+      case 'Reassigned Image':
+        return 'purple'
       default:
         return 'default'
     }

@@ -25,6 +25,7 @@ import {
   AppstoreOutlined,
   HistoryOutlined,
   ShoppingOutlined,
+  HddOutlined,
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { selectUser, selectCompany } from '@/store/auth/authSelectors'
@@ -84,6 +85,13 @@ const MainLayout: React.FC = () => {
       icon: <AppstoreOutlined />,
       label: t('navigation.resources'),
       showInSimple: true,
+    },
+    {
+      key: '/distributed-storage',
+      icon: <HddOutlined />,
+      label: t('navigation.distributedStorage'),
+      showInSimple: false, // Show in expert mode only
+      requiresPlan: ['ELITE', 'PREMIUM', 'Elite', 'Premium'], // Support both uppercase and proper case
     },
     {
       key: '/marketplace',
@@ -172,8 +180,31 @@ const MainLayout: React.FC = () => {
   }
 
   const menuItems = allMenuItems
-    .filter(item => item.type === 'divider' || uiMode === 'expert' || item.showInSimple)
-    .map(({ showInSimple, ...item }) => item)
+    .filter(item => {
+      // Check UI mode visibility
+      if (item.type !== 'divider' && !(uiMode === 'expert' || item.showInSimple)) {
+        return false
+      }
+      
+      // Check plan requirements
+      if (item.requiresPlan) {
+        // If no subscription data, hide the item
+        if (!companyData?.activeSubscription) {
+          return false
+        }
+        const currentPlan = companyData.activeSubscription.PlanName
+        // Check if current plan matches any required plan (case-insensitive)
+        const hasRequiredPlan = item.requiresPlan.some(
+          requiredPlan => requiredPlan.toUpperCase() === currentPlan?.toUpperCase()
+        )
+        if (!hasRequiredPlan) {
+          return false
+        }
+      }
+      
+      return true
+    })
+    .map(({ showInSimple, requiresPlan, ...item }) => item)
 
   // Don't select any menu during transition
   const selectedKeys = isTransitioning ? [] : [location.pathname]

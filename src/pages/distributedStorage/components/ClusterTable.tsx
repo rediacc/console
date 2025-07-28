@@ -1,0 +1,377 @@
+import React, { useState } from 'react'
+import { Table, Button, Space, Tag, Modal, Empty, Dropdown, Badge } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
+import {
+  EditOutlined,
+  DeleteOutlined,
+  CloudServerOutlined,
+  FunctionOutlined,
+  HistoryOutlined,
+  ExpandOutlined,
+  KeyOutlined,
+  DesktopOutlined,
+  RightOutlined,
+  TeamOutlined
+} from '@/utils/optimizedIcons'
+import { useTranslation } from 'react-i18next'
+import { DistributedStorageCluster } from '@/api/queries/distributedStorage'
+import { useDistributedStorageClusterMachines } from '@/api/queries/distributedStorage'
+import AuditTraceModal from '@/components/common/AuditTraceModal'
+import { ManageClusterMachinesModal } from './ManageClusterMachinesModal'
+
+interface ClusterTableProps {
+  clusters: DistributedStorageCluster[]
+  loading: boolean
+  onCreateCluster: () => void
+  onEditCluster: (cluster: DistributedStorageCluster) => void
+  onDeleteCluster: (cluster: DistributedStorageCluster) => void
+  onRunFunction: (cluster: DistributedStorageCluster) => void
+}
+
+// Machine count badge component
+const MachineCountBadge: React.FC<{ cluster: DistributedStorageCluster }> = ({ cluster }) => {
+  const { data: machines = [] } = useDistributedStorageClusterMachines(
+    cluster.clusterName,
+    true
+  )
+  
+  return (
+    <Badge 
+      count={machines.length} 
+      showZero 
+      style={{ backgroundColor: machines.length > 0 ? '#52c41a' : '#d9d9d9' }}
+    >
+      <TeamOutlined style={{ fontSize: 16 }} />
+    </Badge>
+  )
+}
+
+export const ClusterTable: React.FC<ClusterTableProps> = ({
+  clusters,
+  loading,
+  onCreateCluster,
+  onEditCluster,
+  onDeleteCluster,
+  onRunFunction
+}) => {
+  const { t } = useTranslation(['distributedStorage', 'common', 'machines'])
+  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
+  const [selectedCluster, setSelectedCluster] = useState<DistributedStorageCluster | null>(null)
+  const [assignModalOpen, setAssignModalOpen] = useState(false)
+  const [auditTraceModal, setAuditTraceModal] = useState<{
+    open: boolean
+    entityType: string | null
+    entityIdentifier: string | null
+    entityName?: string
+  }>({ open: false, entityType: null, entityIdentifier: null })
+
+  // Function menu items
+  const getFunctionMenuItems = (_cluster: DistributedStorageCluster) => [
+    {
+      key: 'status',
+      label: t('functions.cluster_status'),
+      icon: <ExpandOutlined />,
+    },
+    {
+      key: 'dashboard',
+      label: t('functions.cluster_dashboard'),
+      icon: <KeyOutlined />,
+    },
+    {
+      type: 'divider' as const,
+    },
+    {
+      key: 'advanced',
+      label: t('common:actions.advanced'),
+      icon: <FunctionOutlined />,
+    },
+  ]
+
+  const handleDelete = (cluster: DistributedStorageCluster) => {
+    Modal.confirm({
+      title: t('clusters.confirmDelete'),
+      content: t('clusters.deleteWarning', { name: cluster.clusterName }),
+      okText: t('common:actions.delete'),
+      okType: 'danger',
+      cancelText: t('common:actions.cancel'),
+      onOk: () => onDeleteCluster(cluster),
+    })
+  }
+
+  const columns: ColumnsType<DistributedStorageCluster> = [
+    {
+      title: t('clusters.clusterName'),
+      dataIndex: 'clusterName',
+      key: 'clusterName',
+      ellipsis: true,
+      render: (name: string, record: DistributedStorageCluster) => {
+        const isExpanded = expandedRowKeys.includes(record.clusterName)
+        return (
+          <Space>
+            <span style={{ 
+              display: 'inline-block',
+              width: 12,
+              transition: 'transform 0.3s ease',
+              transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'
+            }}>
+              <RightOutlined style={{ fontSize: 12, color: '#999' }} />
+            </span>
+            <CloudServerOutlined style={{ color: '#556b2f' }} />
+            <strong>{name}</strong>
+          </Space>
+        )
+      },
+    },
+    {
+      title: t('common:general.team'),
+      dataIndex: 'teamName',
+      key: 'teamName',
+      width: 150,
+      ellipsis: true,
+      render: (teamName: string) => <Tag color="#8FBC8F">{teamName}</Tag>,
+    },
+    {
+      title: t('machines:title'),
+      key: 'machineCount',
+      width: 120,
+      align: 'center',
+      render: (_: unknown, record: DistributedStorageCluster) => (
+        <Space size="small">
+          <MachineCountBadge cluster={record} />
+          <Button
+            type="link"
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation()
+              setSelectedCluster(record)
+              setAssignModalOpen(true)
+            }}
+          >
+            {t('machines:manage')}
+          </Button>
+        </Space>
+      ),
+    },
+    {
+      title: t('common:general.vaultVersion'),
+      dataIndex: 'vaultVersion',
+      key: 'vaultVersion',
+      width: 100,
+      align: 'center',
+      render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
+    },
+    {
+      title: t('common:table.actions'),
+      key: 'actions',
+      width: 250,
+      render: (_: unknown, record: DistributedStorageCluster) => (
+        <Space>
+          <Button
+            type="primary"
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => onEditCluster(record)}
+          >
+            {t('common:actions.edit')}
+          </Button>
+          <Dropdown
+            menu={{
+              items: getFunctionMenuItems(record),
+              onClick: ({ key }) => {
+                if (key === 'advanced') {
+                  onRunFunction(record)
+                } else {
+                  // Handle specific function
+                  onRunFunction({ ...record, preselectedFunction: key })
+                }
+              }
+            }}
+            trigger={['click']}
+          >
+            <Button
+              type="primary"
+              size="small"
+              icon={<FunctionOutlined />}
+            >
+              {t('common:actions.remote')}
+            </Button>
+          </Dropdown>
+          <Button
+            type="primary"
+            size="small"
+            icon={<HistoryOutlined />}
+            onClick={() => {
+              setAuditTraceModal({
+                open: true,
+                entityType: 'DistributedStorageCluster',
+                entityIdentifier: record.clusterName,
+                entityName: record.clusterName
+              })
+            }}
+          >
+            {t('common:actions.trace')}
+          </Button>
+          <Button
+            type="primary"
+            danger
+            size="small"
+            icon={<DeleteOutlined />}
+            onClick={() => handleDelete(record)}
+          >
+            {t('common:actions.delete')}
+          </Button>
+        </Space>
+      ),
+    },
+  ]
+
+  // Expanded row render to show machines in cluster
+  const expandedRowRender = (record: DistributedStorageCluster) => {
+    return <ClusterMachines cluster={record} />
+  }
+
+  return (
+    <>
+      {clusters.length === 0 && !loading ? (
+        <Empty
+          description={t('clusters.noClusters')}
+          style={{ marginTop: 48 }}
+        >
+          <Button type="primary" onClick={onCreateCluster}>
+            {t('clusters.create')}
+          </Button>
+        </Empty>
+      ) : (
+        <Table
+          columns={columns}
+          dataSource={clusters}
+          rowKey="clusterName"
+          loading={loading}
+          scroll={{ x: 'max-content' }}
+          pagination={{
+            showSizeChanger: true,
+            showTotal: (total, range) => t('common:table.showingRecords', { start: range[0], end: range[1], total }),
+          }}
+          expandable={{
+            expandedRowRender,
+            expandedRowKeys,
+            onExpandedRowsChange: (keys) => setExpandedRowKeys(keys as string[]),
+            expandIcon: () => null,
+            expandRowByClick: false,
+          }}
+          onRow={(record) => ({
+            onClick: (e) => {
+              const target = e.target as HTMLElement
+              if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
+                return
+              }
+              
+              const isExpanded = expandedRowKeys.includes(record.clusterName)
+              if (isExpanded) {
+                setExpandedRowKeys(expandedRowKeys.filter(key => key !== record.clusterName))
+              } else {
+                setExpandedRowKeys([...expandedRowKeys, record.clusterName])
+              }
+            },
+            style: { 
+              cursor: 'pointer',
+              transition: 'background-color 0.3s ease'
+            },
+            onMouseEnter: (e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.02)'
+            },
+            onMouseLeave: (e) => {
+              e.currentTarget.style.backgroundColor = ''
+            }
+          })}
+        />
+      )}
+      
+      {/* Audit Trace Modal */}
+      <AuditTraceModal
+        open={auditTraceModal.open}
+        onCancel={() => setAuditTraceModal({ open: false, entityType: null, entityIdentifier: null })}
+        entityType={auditTraceModal.entityType}
+        entityIdentifier={auditTraceModal.entityIdentifier}
+        entityName={auditTraceModal.entityName}
+      />
+      
+      {/* Manage Cluster Machines Modal */}
+      {selectedCluster && (
+        <ManageClusterMachinesModal
+          open={assignModalOpen}
+          clusterName={selectedCluster.clusterName}
+          teamName={selectedCluster.teamName || ''}
+          onCancel={() => {
+            setAssignModalOpen(false)
+            setSelectedCluster(null)
+          }}
+          onSuccess={() => {
+            setAssignModalOpen(false)
+            setSelectedCluster(null)
+            // Force refresh of expanded rows if this cluster is expanded
+            if (expandedRowKeys.includes(selectedCluster.clusterName)) {
+              setExpandedRowKeys([])
+              setTimeout(() => {
+                setExpandedRowKeys([selectedCluster.clusterName])
+              }, 100)
+            }
+          }}
+        />
+      )}
+    </>
+  )
+}
+
+// Sub-component to show machines in a cluster
+const ClusterMachines: React.FC<{ cluster: DistributedStorageCluster }> = ({ cluster }) => {
+  const { t } = useTranslation(['distributedStorage', 'common'])
+  const { data: machines = [], isLoading } = useDistributedStorageClusterMachines(
+    cluster.clusterName,
+    true
+  )
+
+  const machineColumns: ColumnsType<Record<string, any>> = [
+    {
+      title: t('machines.machineName'),
+      dataIndex: 'machineName',
+      key: 'machineName',
+      render: (name: string) => (
+        <Space>
+          <DesktopOutlined style={{ color: '#556b2f' }} />
+          <strong>{name}</strong>
+        </Space>
+      ),
+    },
+    {
+      title: t('machines.bridgeName'),
+      dataIndex: 'bridgeName',
+      key: 'bridgeName',
+      render: (name: string) => <Tag color="green">{name}</Tag>,
+    },
+    {
+      title: t('machines.assignedDate'),
+      dataIndex: 'assignedDate',
+      key: 'assignedDate',
+      render: (date: string) => date ? new Date(date).toLocaleString() : '-',
+    },
+  ]
+
+  return (
+    <div style={{ padding: '16px' }}>
+      <h4>{t('clusters.assignedMachines')}</h4>
+      {machines.length === 0 && !isLoading ? (
+        <Empty description={t('clusters.noMachinesAssigned')} />
+      ) : (
+        <Table
+          columns={machineColumns}
+          dataSource={machines}
+          rowKey="machineName"
+          loading={isLoading}
+          size="small"
+          pagination={false}
+        />
+      )}
+    </div>
+  )
+}

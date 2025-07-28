@@ -118,7 +118,54 @@
   "hoursAgo_plural": "{{count}} hours ago",
   "daysAgo": "{{count}} day ago",
   "daysAgo_plural": "{{count}} days ago",
+  "distributedStorageCluster": "Distributed Storage",
+  "assignToCluster": "Assign to Cluster",
+  "changeClusterAssignment": "Change Cluster Assignment",
+  "selectCluster": "Select a cluster or leave empty to unassign",
+  "clusterAssignmentHelp": "Leave empty to unassign the machine from its current cluster",
+  "currentClusterAssignment": "Currently assigned to cluster: {{cluster}}",
+  "clusterAssignedSuccess": "Machine assigned to cluster {{cluster}} successfully",
+  "clusterUnassignedSuccess": "Machine unassigned from cluster successfully",
+  "clusterRemovedSuccess": "Machine removed from cluster successfully",
+  "assignmentStatus": {
+    "available": "Available",
+    "cluster": "Assigned to Cluster",
+    "image": "Assigned to Image",
+    "clone": "Assigned to Clone",
+    "title": "Assignment Status"
+  },
+  "bulkOperations": {
+    "assignToClone": "Assign to Clone",
+    "removeFromClone": "Remove from Clone",
+    "validating": "Validating machine availability...",
+    "assignmentSuccess": "Successfully assigned {{count}} machines",
+    "assignmentPartial": "Assigned {{success}} of {{total}} machines",
+    "removalSuccess": "Successfully removed {{count}} machines",
+    "selectMachines": "Select machines to assign",
+    "selectedCount": "{{count}} machine selected",
+    "selectedCount_plural": "{{count}} machines selected"
+  },
+  "bulkActions": {
+    "selected": "{{count}} machines selected",
+    "assignToCluster": "Assign to Cluster",
+    "removeFromCluster": "Remove from Cluster",
+    "viewAssignmentStatus": "View Assignment Status"
+  },
   "validation": {
-    "sshPasswordNotAllowed": "SSH password cannot be used without SSH keys configured. Please set up SSH keys first or remove the password."
-  }
+    "sshPasswordNotAllowed": "SSH password cannot be used without SSH keys configured. Please set up SSH keys first or remove the password.",
+    "alreadyAssigned": "Machine is already assigned to {{resourceType}}: {{resourceName}}",
+    "noMachinesSelected": "Please select at least one machine",
+    "allMachinesUnavailable": "All selected machines are unavailable",
+    "machineNotAvailable": "Machine {{machineName}} is not available for assignment"
+  },
+  "bulkAssignDescription": "All selected machines will be assigned to the same cluster",
+  "noMachinesWithClusters": "None of the selected machines are assigned to a cluster",
+  "removeFromClusterWarning": "Are you sure you want to remove {{count}} machines from their clusters?",
+  "removeFromClusterDescription": "This will unassign the machines from their current clusters",
+  "noAvailableMachinesForClone": "No available machines for clone assignment",
+  "selectMachines": "Select machines",
+  "noAvailableMachines": "No available machines",
+  "machines": "Machines",
+  "currentMachineAssignment": "Currently assigned to: {{machine}}",
+  "manage": "Manage"
 }

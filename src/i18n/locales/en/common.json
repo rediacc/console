@@ -3,6 +3,7 @@
     "dashboard": "Dashboard",
     "architecture": "Architecture",
     "resources": "Resources",
+    "distributedStorage": "Distributed Storage",
     "marketplace": "Marketplace",
     "queue": "Queue",
     "system": "System",
@@ -24,7 +25,17 @@
     "addToQueue": "Add to Queue",
     "viewTrace": "View Trace",
     "close": "Close",
-    "back": "Back"
+    "back": "Back",
+    "manage": "Manage",
+    "remote": "Remote",
+    "advanced": "Advanced",
+    "trace": "Trace",
+    "runFunction": "Run Function",
+    "editVault": "Edit Vault",
+    "createResource": "Create {{resource}}",
+    "editResource": "Edit {{resource}}",
+    "clearSelection": "Clear Selection",
+    "remove": "Remove"
   },
   "close": "Close",
   "copiedToClipboard": "Copied to clipboard",
@@ -83,7 +94,16 @@
     "showingRecords": "Showing records {{start}}-{{end}} of {{total}}",
     "defaultsApplied": "Default values applied",
     "important": "Important",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "vaultVersion": "Vault Version"
+  },
+  "total": "Total",
+  "none": "None",
+  "noMatchingResults": "No matching results",
+  "current": "Current",
+  "utilized": "Utilized",
+  "fields": {
+    "vault": "Vault Configuration"
   },
   "yes": "Yes",
   "no": "No",
@@ -118,6 +138,11 @@
     "rawJsonTooltip": "Direct JSON editing - Use with caution!",
     "expertModeOnly": "Expert Mode Only",
     "expertModeDescription": "Direct JSON editing can break system functionality if not done correctly. Only modify if you understand the vault schema and implications.",
+    "fields.CLUSTER.description": "Configure Ceph distributed storage cluster settings",
+    "fields.POOL.description": "Configure Ceph storage pool settings",
+    "fields.IMAGE.description": "Configure RBD image settings",
+    "fields.SNAPSHOT.description": "Configure RBD snapshot settings",
+    "fields.CLONE.description": "Configure RBD clone settings",
     "jsonError": "JSON Error",
     "formatJson": "Format JSON",
     "resetToFormValues": "Reset to Form Values",
@@ -337,6 +362,125 @@
         "PLUGINS": {
           "label": "Plugins",
           "description": "Plugin configurations with container images and activation status"
+        }
+      },
+      "CLUSTER": {
+        "description": "Configure Ceph distributed storage cluster settings",
+        "monitors": {
+          "label": "Monitor Nodes",
+          "description": "List of monitor nodes in the cluster"
+        },
+        "mgrs": {
+          "label": "Manager Nodes",
+          "description": "List of manager nodes in the cluster"
+        },
+        "osds": {
+          "label": "OSD Nodes",
+          "description": "List of OSD (Object Storage Daemon) nodes"
+        },
+        "mds": {
+          "label": "MDS Nodes",
+          "description": "List of MDS (Metadata Server) nodes"
+        },
+        "fsid": {
+          "label": "Filesystem ID",
+          "description": "Unique identifier for the Ceph cluster (UUID format)"
+        },
+        "config": {
+          "label": "Configuration",
+          "description": "Additional cluster configuration options"
+        }
+      },
+      "POOL": {
+        "description": "Configure Ceph storage pool settings",
+        "pg_num": {
+          "label": "Placement Groups",
+          "description": "Number of placement groups for the pool"
+        },
+        "pgp_num": {
+          "label": "PGP Number",
+          "description": "Number of placement groups for placement purposes"
+        },
+        "size": {
+          "label": "Replication Size",
+          "description": "Number of replicas for objects in the pool"
+        },
+        "min_size": {
+          "label": "Minimum Size",
+          "description": "Minimum number of replicas required for I/O"
+        },
+        "crush_rule": {
+          "label": "CRUSH Rule",
+          "description": "CRUSH rule name for data placement"
+        },
+        "application": {
+          "label": "Application",
+          "description": "Application type for the pool (e.g., rbd, cephfs)"
+        }
+      },
+      "IMAGE": {
+        "description": "Configure RBD image settings",
+        "size": {
+          "label": "Image Size",
+          "description": "Size of the RBD image (e.g., 10G, 1T)"
+        },
+        "features": {
+          "label": "Features",
+          "description": "RBD features to enable for the image"
+        },
+        "object_size": {
+          "label": "Object Size",
+          "description": "Size of objects within the image"
+        },
+        "stripe_unit": {
+          "label": "Stripe Unit",
+          "description": "Stripe unit size for the image"
+        },
+        "stripe_count": {
+          "label": "Stripe Count",
+          "description": "Number of stripes for the image"
+        },
+        "data_pool": {
+          "label": "Data Pool",
+          "description": "Separate pool for storing image data"
+        }
+      },
+      "SNAPSHOT": {
+        "description": "Configure RBD snapshot settings",
+        "protected": {
+          "label": "Protected",
+          "description": "Whether the snapshot is protected from deletion"
+        },
+        "timestamp": {
+          "label": "Timestamp",
+          "description": "Creation timestamp of the snapshot"
+        },
+        "size": {
+          "label": "Snapshot Size",
+          "description": "Size of the snapshot"
+        }
+      },
+      "CLONE": {
+        "description": "Configure RBD clone settings",
+        "parent_pool": {
+          "label": "Parent Pool",
+          "description": "Pool containing the parent image"
+        },
+        "parent_image": {
+          "label": "Parent Image",
+          "description": "Name of the parent image"
+        },
+        "parent_snapshot": {
+          "label": "Parent Snapshot",
+          "description": "Name of the parent snapshot"
+        },
+        "features": {
+          "label": "Features",
+          "description": "RBD features for the clone"
+        },
+        "size": {
+          "label": "Clone Size",
+          "description": "Size of the clone image"
         }
       }
     }

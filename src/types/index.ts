@@ -1,5 +1,14 @@
+export type MachineAssignmentType = 'AVAILABLE' | 'CLUSTER' | 'IMAGE' | 'CLONE'
+
+export interface MachineAssignmentStatus {
+  assignmentType: MachineAssignmentType
+  assignmentDetails: string
+  status?: string
+}
+
 export interface Machine {
   machineName: string
+  machineGuid?: string
   teamName: string
   bridgeName: string
   regionName?: string
@@ -8,6 +17,8 @@ export interface Machine {
   vaultContent?: string
   vaultStatus?: string
   vaultStatusTime?: string
+  distributedStorageClusterName?: string
+  assignmentStatus?: MachineAssignmentStatus
 }
 
 export interface Repository {

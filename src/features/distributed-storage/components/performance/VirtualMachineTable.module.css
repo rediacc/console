@@ -1,0 +1,100 @@
+.virtualTable {
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.virtualTable:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: -2px;
+}
+
+.header {
+  padding: 16px;
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  font-weight: 500;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.headerContent {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.row {
+  padding: 0 16px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.row:hover {
+  background-color: #fafafa;
+}
+
+.rowContent {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.checkboxColumn {
+  width: 40px;
+  flex-shrink: 0;
+}
+
+.machineName {
+  flex: 1;
+  min-width: 200px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teamName {
+  width: 150px;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status {
+  width: 200px;
+}
+
+.actions {
+  width: 150px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.loadingRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .teamName {
+    display: none;
+  }
+  
+  .machineName {
+    min-width: 150px;
+  }
+  
+  .status {
+    width: 150px;
+  }
+}

@@ -1,0 +1,170 @@
+{
+  "title": "Distributed Storage",
+  "description": "Manage distributed storage clusters, pools, images, and snapshots",
+  
+  "clusters": {
+    "title": "Clusters",
+    "name": "Cluster Name",
+    "createCluster": "Create Cluster",
+    "editCluster": "Edit Cluster",
+    "deleteCluster": "Delete Cluster",
+    "clusterDetails": "Cluster Details",
+    "fsid": "FSID",
+    "secretKey": "Secret Key",
+    "monitorHosts": "Monitor Hosts",
+    "configureVault": "Configure Vault",
+    "assignMachines": "Assign Machines",
+    "manageMachines": "Manage Machines",
+    "availableMachines": "Available Machines",
+    "assignedMachines": "Assigned Machines",
+    "removeFromCluster": "Remove from Cluster",
+    "noMachinesAssigned": "No machines assigned to this cluster"
+  },
+  
+  "pools": {
+    "title": "Pools",
+    "name": "Pool Name",
+    "createPool": "Create Pool",
+    "editPool": "Edit Pool",
+    "deletePool": "Delete Pool",
+    "poolDetails": "Pool Details",
+    "poolId": "Pool ID",
+    "size": "Size",
+    "minSize": "Min Size",
+    "pgNum": "PG Number",
+    "pgpNum": "PGP Number",
+    "crush": "CRUSH Rule",
+    "configureVault": "Configure Vault"
+  },
+  
+  "images": {
+    "title": "Images",
+    "name": "Image Name",
+    "assignedMachine": "Assigned Machine",
+    "reassignMachine": "Reassign Machine",
+    "reassignmentSuccess": "Image machine assignment updated successfully",
+    "reassignmentModal": {
+      "title": "Reassign Image to Machine",
+      "currentAssignment": "Current Assignment",
+      "selectNewMachine": "Select New Machine",
+      "noMachineAssigned": "No machine currently assigned",
+      "warning": "Warning: Reassigning an image to a different machine will make it unavailable on the current machine until data is migrated."
+    }
+  },
+  
+  "snapshots": {
+    "title": "Snapshots"
+  },
+  
+  "clones": {
+    "title": "Clones",
+    "assignMachines": "Assign Machines",
+    "assignedMachines": "Assigned Machines",
+    "machineManager": "Machine Manager",
+    "addMachine": "Add Machine",
+    "removeMachine": "Remove Machine",
+    "removeSelectedMachines": "Remove Selected Machines",
+    "exportMachines": "Export Machines",
+    "searchMachines": "Search machines...",
+    "statistics": "Statistics",
+    "totalMachines": "Total Machines",
+    "noMachinesAssigned": "No machines assigned to this clone"
+  },
+  
+  "assignment": {
+    "status": "Assignment Status",
+    "available": "Available",
+    "assignedToCluster": "Assigned to Cluster",
+    "assignedToImage": "Assigned to Image", 
+    "assignedToClone": "Assigned to Clone",
+    "viewStatus": "View Assignment Status",
+    "history": "Assignment History",
+    "currentAssignment": "Current Assignment",
+    "none": "None",
+    "assignedTo": "Assigned to {{type}}: {{name}}",
+    "actions": {
+      "assignToCluster": "Assigned to Cluster",
+      "removedFromCluster": "Removed from Cluster",
+      "assignedToImage": "Assigned to Image",
+      "reassignedImage": "Reassigned Image",
+      "assignedToClone": "Assigned to Clone",
+      "removedFromClone": "Removed from Clone"
+    }
+  },
+  
+  "warnings": {
+    "exclusivity": "Machines can only be assigned to one resource at a time (cluster, image, or clone).",
+    "exclusivityCluster": "This machine is currently assigned to a cluster. It must be removed from the cluster before it can be assigned elsewhere.",
+    "exclusivityImage": "This machine is currently assigned to an image. The image must be reassigned before this machine can be used elsewhere.",
+    "exclusivityClone": "This machine is currently assigned to a clone. It must be removed from the clone before it can be assigned elsewhere.",
+    "dataLoss": "Warning: Removing machines may result in data loss if not properly migrated.",
+    "reassignment": "Reassigning resources requires careful planning to avoid service disruption."
+  },
+  
+  "machineSection": {
+    "title": "Distributed Storage",
+    "notAssigned": "Not assigned to any distributed storage resource",
+    "viewDetails": "View Details",
+    "manageAssignment": "Manage Assignment"
+  },
+  
+  "tabs": {
+    "clusters": "Clusters",
+    "pools": "Pools", 
+    "machines": "Machines"
+  },
+  
+  "machines": {
+    "summary": {
+      "title": "Machine Availability",
+      "total": "Total Machines",
+      "available": "Available",
+      "assignedToClusters": "Assigned to Clusters",
+      "assignedToImages": "Assigned to Images",
+      "assignedToClones": "Assigned to Clones"
+    },
+    "filters": {
+      "assignmentStatus": "Assignment Status",
+      "allStatuses": "All Statuses",
+      "searchPlaceholder": "Search machines..."
+    },
+    "actions": {
+      "viewDetails": "View Details",
+      "removeAssignment": "Remove Assignment", 
+      "exportReport": "Export Report"
+    }
+  },
+  
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "refresh": "Refresh",
+    "actions": "Actions",
+    "details": "Details"
+  },
+  
+  "dashboard": {
+    "title": "Distributed Storage Machines",
+    "subtitle": "{{total}} total machines across all teams",
+    "clusterSummary": "Cluster Summary",
+    "totalClusters": "Total Clusters",
+    "avgMachinesPerCluster": "Avg Machines/Cluster",
+    "machineUtilization": "Machine Utilization",
+    "utilizationDetails": "{{used}} of {{total}} machines in use",
+    "teamBreakdown": "Team Machine Distribution"
+  },
+  
+  "assignmentStatus": {
+    "available": "Available",
+    "cluster": "Cluster",
+    "image": "Image",
+    "clone": "Clone"
+  }
+}

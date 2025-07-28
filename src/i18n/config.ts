@@ -14,6 +14,7 @@ import enSettings from './locales/en/settings.json';
 import enStorageProviders from './locales/en/storageProviders.json';
 import enFunctions from './locales/en/functions.json';
 import enMarketplace from './locales/en/marketplace.json';
+import enDistributedStorage from './locales/en/distributedStorage.json';
 
 export const defaultNS = 'common';
 
@@ -30,6 +31,7 @@ const initialResources = {
     storageProviders: enStorageProviders,
     functions: enFunctions,
     marketplace: enMarketplace,
+    distributedStorage: enDistributedStorage,
   }
 };
 
@@ -55,6 +57,7 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/es/storageProviders.json')).default;
         resources.functions = (await import('./locales/es/functions.json')).default;
         resources.marketplace = (await import('./locales/es/marketplace.json')).default;
+        resources.distributedStorage = (await import('./locales/es/distributedStorage.json')).default;
         break;
       case 'tr':
         resources.auth = (await import('./locales/tr/auth.json')).default;
@@ -67,6 +70,7 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/tr/storageProviders.json')).default;
         resources.functions = (await import('./locales/tr/functions.json')).default;
         resources.marketplace = (await import('./locales/tr/marketplace.json')).default;
+        resources.distributedStorage = (await import('./locales/tr/distributedStorage.json')).default;
         break;
       case 'fr':
         resources.auth = (await import('./locales/fr/auth.json')).default;
@@ -79,6 +83,7 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/fr/storageProviders.json')).default;
         resources.functions = (await import('./locales/fr/functions.json')).default;
         resources.marketplace = (await import('./locales/fr/marketplace.json')).default;
+        resources.distributedStorage = (await import('./locales/fr/distributedStorage.json')).default;
         break;
       case 'de':
         resources.auth = (await import('./locales/de/auth.json')).default;
@@ -91,6 +96,7 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/de/storageProviders.json')).default;
         resources.functions = (await import('./locales/de/functions.json')).default;
         resources.marketplace = (await import('./locales/de/marketplace.json')).default;
+        resources.distributedStorage = (await import('./locales/de/distributedStorage.json')).default;
         break;
       case 'zh':
         resources.auth = (await import('./locales/zh/auth.json')).default;
@@ -103,6 +109,7 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/zh/storageProviders.json')).default;
         resources.functions = (await import('./locales/zh/functions.json')).default;
         resources.marketplace = (await import('./locales/zh/marketplace.json')).default;
+        resources.distributedStorage = (await import('./locales/zh/distributedStorage.json')).default;
         break;
       case 'ja':
         resources.auth = (await import('./locales/ja/auth.json')).default;
@@ -115,6 +122,7 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/ja/storageProviders.json')).default;
         resources.functions = (await import('./locales/ja/functions.json')).default;
         resources.marketplace = (await import('./locales/ja/marketplace.json')).default;
+        resources.distributedStorage = (await import('./locales/ja/distributedStorage.json')).default;
         break;
       case 'ar':
         resources.auth = (await import('./locales/ar/auth.json')).default;
@@ -127,6 +135,7 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/ar/storageProviders.json')).default;
         resources.functions = (await import('./locales/ar/functions.json')).default;
         resources.marketplace = (await import('./locales/ar/marketplace.json')).default;
+        resources.distributedStorage = (await import('./locales/ar/distributedStorage.json')).default;
         break;
       case 'ru':
         resources.auth = (await import('./locales/ru/auth.json')).default;
@@ -139,6 +148,7 @@ const loadLanguageResources = async (lng: string) => {
         resources.storageProviders = (await import('./locales/ru/storageProviders.json')).default;
         resources.functions = (await import('./locales/ru/functions.json')).default;
         resources.marketplace = (await import('./locales/ru/marketplace.json')).default;
+        resources.distributedStorage = (await import('./locales/ru/distributedStorage.json')).default;
         break;
     }
 
@@ -159,7 +169,7 @@ i18n
     fallbackLng: 'en',
     lng: 'en',
     debug: false,
-    ns: ['common', 'auth', 'resources', 'machines', 'system', 'queue', 'settings', 'storageProviders', 'functions', 'marketplace'],
+    ns: ['common', 'auth', 'resources', 'machines', 'system', 'queue', 'settings', 'storageProviders', 'functions', 'marketplace', 'distributedStorage'],
     defaultNS,
     resources: initialResources,
     interpolation: {

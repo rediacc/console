@@ -40,6 +40,7 @@ import { useRecentAuditLogs } from '../api/queries/audit';
 import { fetchPricingConfig, getPlanPrice, PricingConfig } from '../api/pricingService';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
+import DistributedStorageDashboardWidget from '../components/dashboard/DistributedStorageDashboardWidget';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -591,6 +592,11 @@ const DashboardPage = () => {
               </Col>
             </Row>
           </Card>
+        )}
+
+        {/* Distributed Storage Machine Statistics - Premium/Elite only */}
+        {dashboard.featureAccess?.HasAdvancedAnalytics === 1 && dashboard.distributedStorageStats && (
+          <DistributedStorageDashboardWidget stats={dashboard.distributedStorageStats} />
         )}
 
         {/* Subscription & Plans Card - Full Width */}

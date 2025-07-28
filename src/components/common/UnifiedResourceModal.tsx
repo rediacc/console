@@ -22,16 +22,26 @@ import {
   createTeamSchema,
   createRegionSchema,
   createBridgeSchema,
+  createClusterSchema,
+  createPoolSchema,
+  createImageSchema,
+  createSnapshotSchema,
+  createCloneSchema,
   CreateMachineForm,
   CreateRepositoryForm,
   CreateStorageForm,
   CreateScheduleForm,
+  CreateClusterForm,
+  CreatePoolForm,
+  CreateImageForm,
+  CreateSnapshotForm,
+  CreateCloneForm,
 } from '@/utils/validation'
 import { z } from 'zod'
 
 const { Text } = Typography
 
-export type ResourceType = 'machine' | 'repository' | 'storage' | 'schedule' | 'team' | 'region' | 'bridge'
+export type ResourceType = 'machine' | 'repository' | 'storage' | 'schedule' | 'team' | 'region' | 'bridge' | 'cluster' | 'pool' | 'image' | 'snapshot' | 'clone'
 
 export interface UnifiedResourceModalProps {
   open: boolean
@@ -68,7 +78,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   defaultParams = {},
   preselectedFunction,
 }) => {
-  const { t } = useTranslation(['resources', 'machines', 'common'])
+  const { t } = useTranslation(['resources', 'machines', 'common', 'distributedStorage', 'system'])
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const isExpertMode = uiMode === 'expert'
   const { data: dropdownData } = useDropdownData()
@@ -118,7 +128,12 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     schedule: { key: 'schedules', createKey: 'resources:schedules.createSchedule' },
     team: { key: 'teams', createKey: 'system:teams.createTeam' },
     region: { key: 'regions', createKey: 'system:regions.createRegion' },
-    bridge: { key: 'bridges', createKey: 'system:bridges.createBridge' }
+    bridge: { key: 'bridges', createKey: 'system:bridges.createBridge' },
+    cluster: { key: 'clusters', createKey: 'distributedStorage:clusters.createCluster' },
+    pool: { key: 'pools', createKey: 'distributedStorage:pools.createPool' },
+    image: { key: 'images', createKey: 'distributedStorage:images.createImage' },
+    snapshot: { key: 'snapshots', createKey: 'distributedStorage:snapshots.createSnapshot' },
+    clone: { key: 'clones', createKey: 'distributedStorage:clones.createClone' }
   } as const
 
   // Helper functions
@@ -180,7 +195,12 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     schedule: createScheduleSchema,
     team: createTeamSchema,
     region: createRegionSchema,
-    bridge: createBridgeSchema
+    bridge: createBridgeSchema,
+    cluster: createClusterSchema,
+    pool: createPoolSchema,
+    image: createImageSchema,
+    snapshot: createSnapshotSchema,
+    clone: createCloneSchema
   }
 
   const getSchema = () => {
@@ -200,6 +220,10 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         [`${resourceType}Name`]: existingData[`${resourceType}Name`],
         ...(resourceType === 'machine' && { regionName: existingData.regionName, bridgeName: existingData.bridgeName }),
         ...(resourceType === 'bridge' && { regionName: existingData.regionName }),
+        ...(resourceType === 'pool' && { clusterName: existingData.clusterName }),
+        ...(resourceType === 'image' && { poolName: existingData.poolName }),
+        ...(resourceType === 'snapshot' && { poolName: existingData.poolName, imageName: existingData.imageName }),
+        ...(resourceType === 'clone' && { poolName: existingData.poolName, imageName: existingData.imageName, snapshotName: existingData.snapshotName }),
         [`${resourceType}Vault`]: existingData.vaultContent || '{}',
       }
     }
@@ -224,6 +248,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       team: { teamName: '', teamVault: '{}' },
       region: { regionName: '', regionVault: '{}' },
       bridge: { regionName: '', bridgeName: '', bridgeVault: '{}' },
+      cluster: { clusterName: '', clusterVault: '{}' },
+      pool: { clusterName: '', poolName: '', poolVault: '{}' },
+      image: { poolName: '', imageName: '', imageVault: '{}' },
+      snapshot: { poolName: '', imageName: '', snapshotName: '', snapshotVault: '{}' },
+      clone: { poolName: '', imageName: '', snapshotName: '', cloneName: '', cloneVault: '{}' },
     }
 
     // Merge existingData to override defaults if provided
@@ -331,6 +360,21 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         }),
         ...(resourceType === 'bridge' && {
           regionName: existingData.regionName,
+        }),
+        ...(resourceType === 'pool' && {
+          clusterName: existingData.clusterName,
+        }),
+        ...(resourceType === 'image' && {
+          poolName: existingData.poolName,
+        }),
+        ...(resourceType === 'snapshot' && {
+          poolName: existingData.poolName,
+          imageName: existingData.imageName,
+        }),
+        ...(resourceType === 'clone' && {
+          poolName: existingData.poolName,
+          imageName: existingData.imageName,
+          snapshotName: existingData.snapshotName,
         }),
         [`${resourceType}Vault`]: existingData.vaultContent || '{}',
       })
@@ -513,6 +557,129 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           helperText: t('repositories.guidHelperText', { defaultValue: 'Optional: Specify a custom GUID for the repository. Leave empty to auto-generate.' })
         })
       }
+    } else if (resourceType === 'cluster') {
+      fields.push(nameField)
+    } else if (resourceType === 'pool') {
+      // Get clusters for the selected team
+      const selectedTeamName = form.watch('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
+      const teamClusters = existingData?.clusters || []
+      
+      fields.push({
+        name: 'clusterName',
+        label: t('distributedStorage:pools.cluster'),
+        placeholder: t('distributedStorage:pools.selectCluster'),
+        required: true,
+        type: 'select' as const,
+        options: teamClusters.map((c: any) => ({ value: c.clusterName, label: c.clusterName })),
+        disabled: teamClusters.length === 0,
+      })
+      fields.push(nameField)
+    } else if (resourceType === 'image') {
+      // Image needs pool selection and machine assignment
+      const selectedTeamName = form.watch('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
+      const teamPools = existingData?.pools || []
+      const availableMachines = existingData?.availableMachines || []
+      
+      fields.push({
+        name: 'poolName',
+        label: t('distributedStorage:images.pool'),
+        placeholder: t('distributedStorage:images.selectPool'),
+        required: true,
+        type: 'select' as const,
+        options: teamPools.map((p: any) => ({ value: p.poolName, label: `${p.poolName} (${p.clusterName})` })),
+        disabled: teamPools.length === 0,
+      })
+      fields.push(nameField)
+      
+      // Add machine selection for image creation
+      if (mode === 'create') {
+        fields.push({
+          name: 'machineName',
+          label: t('distributedStorage:images.machine'),
+          placeholder: t('distributedStorage:images.selectMachine'),
+          required: true,
+          type: 'select' as const,
+          options: availableMachines.map((m: any) => ({ 
+            value: m.machineName, 
+            label: m.machineName,
+            disabled: m.status !== 'AVAILABLE'
+          })),
+          disabled: availableMachines.length === 0,
+          helperText: availableMachines.length === 0 ? t('machines:noMachinesFound') : undefined,
+        })
+      }
+    } else if (resourceType === 'snapshot') {
+      // Snapshot needs pool and image selection
+      const selectedTeamName = form.watch('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
+      const teamPools = existingData?.pools || []
+      const selectedPoolName = form.watch('poolName') || existingData?.poolName
+      const poolImages = existingData?.images || []
+      
+      if (!existingData?.poolName) {
+        fields.push({
+          name: 'poolName',
+          label: t('distributedStorage:snapshots.pool'),
+          placeholder: t('distributedStorage:snapshots.selectPool'),
+          required: true,
+          type: 'select' as const,
+          options: teamPools.map((p: any) => ({ value: p.poolName, label: `${p.poolName} (${p.clusterName})` })),
+          disabled: teamPools.length === 0,
+        })
+      }
+      
+      fields.push({
+        name: 'imageName',
+        label: t('distributedStorage:snapshots.image'),
+        placeholder: t('distributedStorage:snapshots.selectImage'),
+        required: true,
+        type: 'select' as const,
+        options: poolImages.map((i: any) => ({ value: i.imageName, label: i.imageName })),
+        disabled: !selectedPoolName || poolImages.length === 0,
+      })
+      fields.push(nameField)
+    } else if (resourceType === 'clone') {
+      // Clone needs pool, image, and snapshot selection
+      const selectedTeamName = form.watch('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
+      const teamPools = existingData?.pools || []
+      const selectedPoolName = form.watch('poolName') || existingData?.poolName
+      const poolImages = existingData?.images || []
+      const selectedImageName = form.watch('imageName') || existingData?.imageName
+      const imageSnapshots = existingData?.snapshots || []
+      
+      if (!existingData?.poolName) {
+        fields.push({
+          name: 'poolName',
+          label: t('distributedStorage:clones.pool'),
+          placeholder: t('distributedStorage:clones.selectPool'),
+          required: true,
+          type: 'select' as const,
+          options: teamPools.map((p: any) => ({ value: p.poolName, label: `${p.poolName} (${p.clusterName})` })),
+          disabled: teamPools.length === 0,
+        })
+      }
+      
+      if (!existingData?.imageName) {
+        fields.push({
+          name: 'imageName',
+          label: t('distributedStorage:clones.image'),
+          placeholder: t('distributedStorage:clones.selectImage'),
+          required: true,
+          type: 'select' as const,
+          options: poolImages.map((i: any) => ({ value: i.imageName, label: i.imageName })),
+          disabled: !selectedPoolName || poolImages.length === 0,
+        })
+      }
+      
+      fields.push({
+        name: 'snapshotName',
+        label: t('distributedStorage:clones.snapshot'),
+        placeholder: t('distributedStorage:clones.selectSnapshot'),
+        required: true,
+        type: 'select' as const,
+        options: imageSnapshots.map((s: any) => ({ value: s.snapshotName, label: s.snapshotName })),
+        disabled: !selectedImageName || imageSnapshots.length === 0,
+      })
+      fields.push(nameField)
     } else if (!['team', 'region'].includes(resourceType)) {
       fields.push(nameField)
     } else {

@@ -37,6 +37,7 @@ import {
   DashboardOutlined,
   CloudDownloadOutlined,
   RightOutlined,
+  InfoCircleOutlined,
 } from '@/utils/optimizedIcons';
 import { useMachines } from '@/api/queries/machines';
 import { useDropdownData } from '@/api/queries/useDropdownData';
@@ -55,6 +56,12 @@ import { useTeams } from '@/api/queries/teams';
 import { useTheme } from '@/context/ThemeContext';
 import { RemoteFileBrowserModal } from './RemoteFileBrowserModal';
 import { MachineVaultStatusPanel } from './MachineVaultStatusPanel';
+import { AssignToClusterModal } from './AssignToClusterModal';
+import { RemoveFromClusterModal } from './RemoveFromClusterModal';
+import { ViewAssignmentStatusModal } from './ViewAssignmentStatusModal';
+import MachineAssignmentStatusBadge from './MachineAssignmentStatusBadge';
+import MachineAssignmentStatusCell from './MachineAssignmentStatusCell';
+import { useGetMachineAssignmentStatus } from '@/api/queries/distributedStorage';
 
 
 interface MachineTableProps {
@@ -119,6 +126,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const [loadingTimer, setLoadingTimer] = useState<NodeJS.Timeout | null>(null);
   const [expandingRowKey, setExpandingRowKey] = useState<string | null>(null);
   
+  // Bulk selection state
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  
   // Use external or internal state
   const expandedRowKeys = externalExpandedRowKeys !== undefined ? externalExpandedRowKeys : internalExpandedRowKeys;
   const setExpandedRowKeys = externalOnExpandedRowsChange || setInternalExpandedRowKeys;
@@ -138,6 +148,15 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     machine: Machine | null;
   }>({ open: false, machine: null });
   
+  const [assignClusterModal, setAssignClusterModal] = useState<{
+    open: boolean;
+    machine: Machine | null;
+  }>({ open: false, machine: null });
+  
+  const [bulkAssignClusterModal, setBulkAssignClusterModal] = useState(false);
+  const [removeFromClusterModal, setRemoveFromClusterModal] = useState(false);
+  const [viewAssignmentStatusModal, setViewAssignmentStatusModal] = useState(false);
+  
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   const [vaultPanelVisible, setVaultPanelVisible] = useState(false);
 
@@ -151,7 +170,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   }, [loadingTimer]);
 
   // Queries only - mutations are handled by parent
-  const { data: machines = [], isLoading } = useMachines(teamFilter, enabled);
+  const { data: machines = [], isLoading, refetch } = useMachines(teamFilter, enabled);
   const { data: dropdownData } = useDropdownData();
   const { data: teams } = useTeams();
   const { data: repositories = [] } = useRepositories(teamFilter);
@@ -342,6 +361,17 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       }
     }
 
+    // Distributed Storage Assignment Status column - show in expert mode
+    if (!onRowClick && isExpertMode) {
+      baseColumns.push({
+        title: t('machines:assignmentStatus.title'),
+        key: 'assignmentStatus',
+        width: 180,
+        ellipsis: true,
+        render: (_: unknown, record: Machine) => <MachineAssignmentStatusCell machine={record} />,
+      });
+    }
+
     // Queue items column - not in split view
     if (!onRowClick) {
       baseColumns.push({
@@ -459,7 +489,20 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                         showMessage('error', result.error || t('machines:connectionFailed'));
                       }
                     }
-                  }
+                  },
+                  ...(isExpertMode ? [{
+                    key: 'assignCluster',
+                    label: record.distributedStorageClusterName 
+                      ? t('machines:changeClusterAssignment')
+                      : t('machines:assignToCluster'),
+                    icon: <CloudServerOutlined />,
+                    onClick: () => {
+                      setAssignClusterModal({
+                        open: true,
+                        machine: record
+                      });
+                    }
+                  }] : [])
                 ]
               }}
               trigger={['click']}
@@ -504,6 +547,66 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     return baseColumns;
   }, [isExpertMode, uiMode, showActions, t, handleDelete, dropdownData, onEditMachine, onVaultMachine, onFunctionsMachine, onCreateRepository, executePingForMachineAndWait, machineFunctions]);
 
+  // Row selection configuration
+  const rowSelection = isExpertMode ? {
+    selectedRowKeys,
+    onChange: (newSelectedRowKeys: React.Key[]) => {
+      setSelectedRowKeys(newSelectedRowKeys as string[]);
+    },
+    getCheckboxProps: (record: Machine) => ({
+      disabled: false, // Can be customized based on machine status
+    }),
+  } : undefined;
+
+  // Render bulk actions toolbar
+  const renderBulkActionsToolbar = () => {
+    if (!isExpertMode || selectedRowKeys.length === 0) return null;
+
+    return (
+      <div style={{ 
+        marginBottom: 16, 
+        padding: '12px 16px', 
+        backgroundColor: '#f0f2f5',
+        borderRadius: 8,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between'
+      }}>
+        <Space>
+          <span style={{ fontWeight: 500 }}>
+            {t('machines:bulkActions.selected', { count: selectedRowKeys.length })}
+          </span>
+          <Button
+            size="small"
+            onClick={() => setSelectedRowKeys([])}
+          >
+            {t('common:actions.clearSelection')}
+          </Button>
+        </Space>
+        <Space>
+          <Button
+            type="primary"
+            icon={<CloudServerOutlined />}
+            onClick={() => setBulkAssignClusterModal(true)}
+          >
+            {t('machines:bulkActions.assignToCluster')}
+          </Button>
+          <Button
+            icon={<CloudServerOutlined />}
+            onClick={() => setRemoveFromClusterModal(true)}
+          >
+            {t('machines:bulkActions.removeFromCluster')}
+          </Button>
+          <Button
+            icon={<InfoCircleOutlined />}
+            onClick={() => setViewAssignmentStatusModal(true)}
+          >
+            {t('machines:bulkActions.viewAssignmentStatus')}
+          </Button>
+        </Space>
+      </div>
+    );
+  };
 
   // Render view mode toggle
   const renderViewToggle = () => {
@@ -809,6 +912,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   return (
     <div className={className}>
       {renderViewToggle()}
+      {renderBulkActionsToolbar()}
       
       {groupBy === 'machine' ? (
         <div ref={tableContainerRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -818,6 +922,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             rowKey="machineName"
             loading={isLoading}
             scroll={{ x: true, y: 'calc(100vh - 400px)' }}
+            rowSelection={rowSelection}
             rowClassName={(record) => {
               const isSelected = externalSelectedMachine?.machineName === record.machineName;
               return isSelected ? 'ant-table-row-selected' : '';
@@ -953,6 +1058,50 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           onQueueItemCreated={onQueueItemCreated}
         />
       )}
+      
+      {/* Assign to Cluster Modal */}
+      {assignClusterModal.machine && (
+        <AssignToClusterModal
+          open={assignClusterModal.open}
+          machine={assignClusterModal.machine}
+          onCancel={() => setAssignClusterModal({ open: false, machine: null })}
+          onSuccess={() => {
+            setAssignClusterModal({ open: false, machine: null });
+            refetch();
+          }}
+        />
+      )}
+      
+      {/* Bulk Assign to Cluster Modal */}
+      <AssignToClusterModal
+        open={bulkAssignClusterModal}
+        machines={machines.filter(m => selectedRowKeys.includes(m.machineName))}
+        onCancel={() => setBulkAssignClusterModal(false)}
+        onSuccess={() => {
+          setBulkAssignClusterModal(false);
+          setSelectedRowKeys([]);
+          refetch();
+        }}
+      />
+      
+      {/* Remove from Cluster Modal */}
+      <RemoveFromClusterModal
+        open={removeFromClusterModal}
+        machines={machines.filter(m => selectedRowKeys.includes(m.machineName))}
+        onCancel={() => setRemoveFromClusterModal(false)}
+        onSuccess={() => {
+          setRemoveFromClusterModal(false);
+          setSelectedRowKeys([]);
+          refetch();
+        }}
+      />
+      
+      {/* View Assignment Status Modal */}
+      <ViewAssignmentStatusModal
+        open={viewAssignmentStatusModal}
+        machines={machines.filter(m => selectedRowKeys.includes(m.machineName))}
+        onCancel={() => setViewAssignmentStatusModal(false)}
+      />
       
       {/* Machine Vault Status Panel - only show in standalone mode */}
       {!onRowClick && (

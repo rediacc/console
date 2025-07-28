@@ -16,6 +16,7 @@ import LoginPage from '@/pages/LoginPage'
 // Lazy load heavy pages
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
 const ResourcesPage = lazy(() => import('@/pages/resources/ResourcesPage'))
+const DistributedStoragePage = lazy(() => import('@/pages/distributedStorage/DistributedStoragePage'))
 const QueuePage = lazy(() => import('@/pages/queue/QueuePage'))
 const SystemPage = lazy(() => import('@/pages/system/SystemPage'))
 const ArchitecturePage = lazy(() => import('@/pages/architecture/ArchitecturePage'))
@@ -88,6 +89,13 @@ const AppContent: React.FC = () => {
               <Route path="/resources" element={
                 <Suspense fallback={<PageLoader />}>
                   <ResourcesPage />
+                </Suspense>
+              } />
+              
+              {/* Distributed Storage */}
+              <Route path="/distributed-storage" element={
+                <Suspense fallback={<PageLoader />}>
+                  <DistributedStoragePage />
                 </Suspense>
               } />
               

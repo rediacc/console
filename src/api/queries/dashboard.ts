@@ -124,6 +124,32 @@ interface QueueStats {
   MachineIssues: QueueMachineIssue[] | string;
 }
 
+interface DistributedStorageTeamBreakdown {
+  TeamName: string;
+  TotalMachines: number;
+  AvailableMachines: number;
+  ClusterMachines: number;
+  ImageMachines: number;
+  CloneMachines: number;
+}
+
+interface DistributedStorageStats {
+  total_machines: number;
+  available_machines: number;
+  cluster_assigned_machines: number;
+  image_assigned_machines: number;
+  clone_assigned_machines: number;
+  truly_available_machines: number;
+  available_percentage: number;
+  cluster_percentage: number;
+  image_percentage: number;
+  clone_percentage: number;
+  total_clusters: number;
+  active_clusters: number;
+  avg_machines_per_cluster: number;
+  team_breakdown: DistributedStorageTeamBreakdown[] | string;
+}
+
 interface DashboardData {
   companyInfo: CompanyInfo;
   activeSubscription: ActiveSubscription | null;
@@ -133,6 +159,7 @@ interface DashboardData {
   accountHealth: AccountHealth;
   featureAccess: FeatureAccess;
   queueStats?: QueueStats;
+  distributedStorageStats?: DistributedStorageStats;
   allActiveSubscriptions?: SubscriptionDetail[];
 }
 
@@ -222,6 +249,16 @@ export const useDashboard = () => {
           }
           if (typeof parsedData.queueStats.MachineIssues === 'string') {
             parsedData.queueStats.MachineIssues = JSON.parse(parsedData.queueStats.MachineIssues);
+          }
+        }
+      }
+      if (typeof parsedData.distributedStorageStats === 'string') {
+        parsedData.distributedStorageStats = JSON.parse(parsedData.distributedStorageStats);
+        
+        // Parse nested JSON arrays in distributedStorageStats
+        if (parsedData.distributedStorageStats) {
+          if (typeof parsedData.distributedStorageStats.team_breakdown === 'string') {
+            parsedData.distributedStorageStats.team_breakdown = JSON.parse(parsedData.distributedStorageStats.team_breakdown);
           }
         }
       }

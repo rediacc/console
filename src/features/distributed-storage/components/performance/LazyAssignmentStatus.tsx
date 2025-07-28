@@ -1,0 +1,181 @@
+import React, { useEffect, useRef, useState, useCallback } from 'react'
+import { Skeleton, Tag } from 'antd'
+import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge'
+import { MachineAssignmentService } from '../../services'
+import { useGetMachineAssignmentStatus } from '@/api/queries/distributedStorage'
+import type { Machine } from '@/types'
+
+interface LazyAssignmentStatusProps {
+  machine: Machine
+  teamName?: string
+  priority?: 'high' | 'normal' | 'low'
+  onStatusLoaded?: (status: string) => void
+}
+
+interface IntersectionOptions {
+  rootMargin?: string
+  threshold?: number | number[]
+}
+
+const PRIORITY_CONFIGS: Record<string, IntersectionOptions> = {
+  high: { rootMargin: '100px', threshold: 0 },
+  normal: { rootMargin: '50px', threshold: 0.1 },
+  low: { rootMargin: '0px', threshold: 0.5 }
+}
+
+export const LazyAssignmentStatus: React.FC<LazyAssignmentStatusProps> = ({
+  machine,
+  teamName,
+  priority = 'normal',
+  onStatusLoaded
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [isVisible, setIsVisible] = useState(false)
+  const [hasLoaded, setHasLoaded] = useState(false)
+  
+  // Quick check for immediate status (no API call needed)
+  const immediateStatus = MachineAssignmentService.getMachineAssignmentType(machine)
+  const needsApiCall = immediateStatus === 'CLONE'
+  
+  // Only fetch if visible and needs API call
+  const { data: assignmentData, isLoading } = useGetMachineAssignmentStatus(
+    teamName || machine.teamName,
+    machine.machineName,
+    isVisible && needsApiCall && !hasLoaded
+  )
+  
+  // Intersection observer setup
+  useEffect(() => {
+    if (!containerRef.current) return
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting && !isVisible) {
+            setIsVisible(true)
+          }
+        })
+      },
+      PRIORITY_CONFIGS[priority]
+    )
+    
+    observer.observe(containerRef.current)
+    
+    return () => {
+      observer.disconnect()
+    }
+  }, [priority, isVisible])
+  
+  // Handle status loaded
+  useEffect(() => {
+    if (assignmentData && !hasLoaded) {
+      setHasLoaded(true)
+      if (onStatusLoaded) {
+        onStatusLoaded(assignmentData.assignmentType)
+      }
+    }
+  }, [assignmentData, hasLoaded, onStatusLoaded])
+  
+  // Render loading skeleton
+  if (!isVisible) {
+    return (
+      <div ref={containerRef} style={{ height: 22, width: 120 }}>
+        <Skeleton.Input 
+          active 
+          size="small" 
+          style={{ width: 120, height: 22 }} 
+        />
+      </div>
+    )
+  }
+  
+  // If no API call needed, show immediate status
+  if (!needsApiCall) {
+    const assignmentInfo = MachineAssignmentService.getAssignmentInfo(machine)
+    
+    return (
+      <div ref={containerRef}>
+        <MachineAssignmentStatusBadge
+          assignmentType={immediateStatus}
+          resourceName={assignmentInfo.resourceName}
+        />
+      </div>
+    )
+  }
+  
+  // Loading state for API call
+  if (isLoading && !hasLoaded) {
+    return (
+      <div ref={containerRef}>
+        <Skeleton.Input 
+          active 
+          size="small" 
+          style={{ width: 120, height: 22 }} 
+        />
+      </div>
+    )
+  }
+  
+  // Show assignment data
+  const finalAssignmentType = assignmentData?.assignmentType || immediateStatus
+  const finalResourceName = assignmentData?.resourceName || 
+    MachineAssignmentService.getAssignmentInfo(machine).resourceName
+  
+  return (
+    <div ref={containerRef}>
+      <MachineAssignmentStatusBadge
+        assignmentType={finalAssignmentType}
+        resourceName={finalResourceName}
+      />
+    </div>
+  )
+}
+
+/**
+ * Progressive loader for machine list status
+ */
+export const ProgressiveMachineStatusLoader: React.FC<{
+  machines: Machine[]
+  teamName?: string
+  batchSize?: number
+  batchDelay?: number
+}> = ({ machines, teamName, batchSize = 10, batchDelay = 100 }) => {
+  const [loadedCount, setLoadedCount] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
+  
+  // Load next batch
+  const loadNextBatch = useCallback(() => {
+    if (isLoading || loadedCount >= machines.length) return
+    
+    setIsLoading(true)
+    setTimeout(() => {
+      setLoadedCount(prev => Math.min(prev + batchSize, machines.length))
+      setIsLoading(false)
+    }, batchDelay)
+  }, [isLoading, loadedCount, machines.length, batchSize, batchDelay])
+  
+  // Auto-load batches
+  useEffect(() => {
+    if (loadedCount < machines.length && !isLoading) {
+      loadNextBatch()
+    }
+  }, [loadedCount, machines.length, isLoading, loadNextBatch])
+  
+  return (
+    <div>
+      {machines.slice(0, loadedCount).map(machine => (
+        <LazyAssignmentStatus
+          key={machine.machineName}
+          machine={machine}
+          teamName={teamName}
+          priority={loadedCount < batchSize ? 'high' : 'normal'}
+        />
+      ))}
+      {loadedCount < machines.length && (
+        <div style={{ padding: '8px', textAlign: 'center' }}>
+          <Skeleton.Button active size="small" />
+        </div>
+      )}
+    </div>
+  )
+}

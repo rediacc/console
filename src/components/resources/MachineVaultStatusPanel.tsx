@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { 
   Typography, 
   Card, 
@@ -35,6 +35,8 @@ import { Machine } from '@/types'
 import { useTheme } from '@/context/ThemeContext'
 import { getLocalizedRelativeTime } from '@/utils/timeUtils'
 import { calculateResourcePercent } from '@/utils/sizeUtils'
+import { DistributedStorageSection } from './DistributedStorageSection'
+import AuditTraceModal from '@/components/common/AuditTraceModal'
 
 const { Text, Title } = Typography
 
@@ -129,8 +131,16 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
   onClose,
   splitView = false 
 }) => {
-  const { t } = useTranslation(['machines', 'resources', 'common'])
+  const { t } = useTranslation(['machines', 'resources', 'common', 'distributedStorage'])
   const { theme } = useTheme()
+  
+  // State for audit trace modal
+  const [auditTraceModal, setAuditTraceModal] = useState<{
+    open: boolean
+    entityType: string | null
+    entityIdentifier: string | null
+    entityName?: string
+  }>({ open: false, entityType: null, entityIdentifier: null })
 
   // Parse vault status data
   const vaultData = useMemo((): { system?: SystemInfo; network?: any; block_devices?: BlockDevice[]; system_containers?: Container[] } | null => {
@@ -608,10 +618,34 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                   />
                 </>
               )}
+              
+              {/* Distributed Storage Section */}
+              {machine && (
+                <DistributedStorageSection 
+                  machine={machine}
+                  onViewDetails={() => {
+                    setAuditTraceModal({
+                      open: true,
+                      entityType: 'Machine',
+                      entityIdentifier: machine.machineName,
+                      entityName: machine.machineName
+                    })
+                  }}
+                />
+              )}
             </>
           )}
         </div>
       </div>
+      
+      {/* Audit Trace Modal */}
+      <AuditTraceModal
+        open={auditTraceModal.open}
+        onCancel={() => setAuditTraceModal({ open: false, entityType: null, entityIdentifier: null })}
+        entityType={auditTraceModal.entityType}
+        entityIdentifier={auditTraceModal.entityIdentifier}
+        entityName={auditTraceModal.entityName}
+      />
     </>
   )
 }
