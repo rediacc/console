@@ -39,6 +39,7 @@ interface ResourceFormWithVaultProps<T extends Record<string, any> = any> {
   bridgeName?: string // For SSH test connection
   onTestConnectionStateChange?: (success: boolean) => void // Callback for test connection state
   beforeVaultContent?: React.ReactNode // Custom content to render before vault configuration
+  isModalOpen?: boolean // Modal open state to handle resets
 }
 
 const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormWithVaultProps<any>>(
@@ -58,6 +59,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     bridgeName,
     onTestConnectionStateChange,
     beforeVaultContent,
+    isModalOpen,
   }, ref) {
     const { t } = useTranslation('common')
     const [vaultData, setVaultData] = useState<Record<string, any>>(initialVaultData)
@@ -70,12 +72,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     useEffect(() => {
       // Vault validation state updated
     }, [isVaultValid, vaultValidationErrors, showVaultValidationErrors, entityType])
-    
-    // Update vault data when initialVaultData prop changes
-    useEffect(() => {
-      setVaultData(initialVaultData || {})
-    }, [initialVaultData])
-    
+
 
     const {
       control,
@@ -317,12 +314,13 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
           <VaultEditor
             entityType={entityType}
-            initialData={vaultData}
+            initialData={initialVaultData}
             onChange={handleVaultChange}
             onValidate={handleVaultValidate}
             teamName={teamName}
             bridgeName={bridgeName}
             onTestConnectionStateChange={onTestConnectionStateChange}
+            isModalOpen={isModalOpen}
             onImportExport={(handlers) => {
               importExportHandlers.current = handlers
               // Pass handlers to parent if callback is provided

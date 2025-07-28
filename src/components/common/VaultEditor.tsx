@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import {
   Form,
   Input,
@@ -50,6 +50,7 @@ interface VaultEditorProps {
   teamName?: string // For SSH test connection
   bridgeName?: string // For SSH test connection
   onTestConnectionStateChange?: (success: boolean) => void // Callback for test connection state
+  isModalOpen?: boolean // Modal open state to handle resets
 }
 
 interface FieldDefinition {
@@ -111,6 +112,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   teamName = 'Default Team',
   bridgeName = 'Default Bridge',
   onTestConnectionStateChange,
+  isModalOpen,
 }) => {
   const { t } = useTranslation(['common', 'storageProviders'])
   const [form] = Form.useForm()
@@ -141,6 +143,51 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   
   // Get teams data for SSH keys
   const { data: teams } = useTeams()
+  
+  // Debounce ref for onChange callback
+  const onChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Debounced onChange callback
+  const debouncedOnChange = useCallback((data: Record<string, any>, hasChanges: boolean) => {
+    // Clear any existing timeout
+    if (onChangeTimeoutRef.current) {
+      clearTimeout(onChangeTimeoutRef.current)
+    }
+    
+    // Set a new timeout
+    onChangeTimeoutRef.current = setTimeout(() => {
+      onChange?.(data, hasChanges)
+    }, 300) // 300ms delay
+  }, [onChange])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (onChangeTimeoutRef.current) {
+        clearTimeout(onChangeTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  // Track previous modal open state
+  const prevModalOpenRef = useRef(isModalOpen)
+  
+  // Reset when modal opens (transitions from closed to open)
+  useEffect(() => {
+    if (isModalOpen && !prevModalOpenRef.current) {
+      // Modal just opened - reset everything
+      setLastInitializedData('')
+      form.resetFields()
+      setExtraFields({})
+      setImportedData({})
+      setRawJsonValue('{}')
+      setRawJsonError(null)
+      setSshKeyConfigured(false)
+      setSelectedProvider(null)
+      setTestConnectionSuccess(false)
+    }
+    prevModalOpenRef.current = isModalOpen
+  }, [isModalOpen, form])
 
   // Get entity definition from JSON
   const entityDef = useMemo(() => {
@@ -588,8 +635,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     // Check if there are any changes
     const hasChanges = JSON.stringify(completeData) !== JSON.stringify(initialData)
     
-    // Always call onChange first to update hasChanges state
-    onChange?.(completeData, hasChanges)
+    // Use debounced onChange to prevent excessive re-renders
+    debouncedOnChange(completeData, hasChanges)
 
     // Then validate
     // If ssh_key_configured just changed, exclude ssh_password from validation
@@ -686,7 +733,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       
       // Trigger change event
       const hasChanges = JSON.stringify(completeData) !== JSON.stringify(initialData)
-      onChange?.(completeData, hasChanges)
+      debouncedOnChange(completeData, hasChanges)
       
       // Validate
       form.validateFields()

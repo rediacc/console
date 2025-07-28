@@ -114,9 +114,6 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   const [showTemplateDetails, setShowTemplateDetails] = useState(false)
   const [templateToView, setTemplateToView] = useState<string | null>(null)
   
-  // State to track modal instance
-  const [modalInstanceId, setModalInstanceId] = useState(() => Date.now())
-  
   // Import/Export handlers ref
   const importExportHandlers = useRef<{ handleImport: (file: any) => boolean; handleExport: () => void } | null>(null)
   
@@ -273,39 +270,38 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     defaultValues: getDefaultValues(),
   })
 
-  // Watch form values for dependent fields
-  const selectedRegion = resourceType === 'machine' ? form.watch('regionName') : null
-  const selectedTeam = resourceType === 'repository' ? form.watch('teamName') : null
-
-  // Get filtered bridges based on selected region
-  const filteredBridges = React.useMemo(() => {
-    if (!selectedRegion || !dropdownData?.bridgesByRegion) return []
+  // Get filtered bridges based on selected region - moved inside getFormFields to avoid unnecessary re-renders
+  const getFilteredBridges = (regionName: string | null) => {
+    if (!regionName || !dropdownData?.bridgesByRegion) return []
     
     const regionData = dropdownData.bridgesByRegion.find(
-      (r: any) => r.regionName === selectedRegion
+      (r: any) => r.regionName === regionName
     )
     return regionData?.bridges?.map((b: any) => ({ 
       value: b.value, 
       label: b.label 
     })) || []
-  }, [selectedRegion, dropdownData])
+  }
 
   // Clear bridge selection when region changes
   useEffect(() => {
-    if (resourceType === 'machine' && selectedRegion) {
-      const currentBridge = form.getValues('bridgeName')
-      if (currentBridge && !filteredBridges.find((b: any) => b.value === currentBridge)) {
-        form.setValue('bridgeName', '')
-      }
+    if (resourceType === 'machine') {
+      const subscription = form.watch((value, { name }) => {
+        if (name === 'regionName' && value.regionName) {
+          const currentBridge = form.getValues('bridgeName')
+          const filteredBridges = getFilteredBridges(value.regionName)
+          if (currentBridge && !filteredBridges.find((b: any) => b.value === currentBridge)) {
+            form.setValue('bridgeName', '')
+          }
+        }
+      })
+      return () => subscription.unsubscribe()
     }
-  }, [selectedRegion, filteredBridges, form, resourceType])
+  }, [form, resourceType, getFilteredBridges])
 
   // Set default values when modal opens
   useEffect(() => {
     if (open && mode === 'create') {
-      // Generate new instance ID when modal opens
-      setModalInstanceId(Date.now())
-      
       // Reset form to default values first
       form.reset(getDefaultValues())
       
@@ -412,15 +408,19 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     options: mapToOptions(dropdownData?.regions),
   })
 
-  const createBridgeField = () => ({
-    name: 'bridgeName',
-    label: t('bridges.bridge'),
-    placeholder: selectedRegion ? t('bridges.placeholders.selectBridge') : t('bridges.placeholders.selectRegionFirst'),
-    required: true,
-    type: 'select' as const,
-    options: filteredBridges,
-    disabled: !selectedRegion,
-  })
+  const createBridgeField = () => {
+    const currentRegion = form.getValues('regionName')
+    const bridgeOptions = getFilteredBridges(currentRegion)
+    return {
+      name: 'bridgeName',
+      label: t('bridges.bridge'),
+      placeholder: currentRegion ? t('bridges.placeholders.selectBridge') : t('bridges.placeholders.selectRegionFirst'),
+      required: true,
+      type: 'select' as const,
+      options: bridgeOptions,
+      disabled: !currentRegion,
+    }
+  }
 
   // Get form fields based on resource type and mode
   const getFormFields = () => {
@@ -506,7 +506,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       const isCredentialOnlyMode = existingData?.repositoryGuid && existingData?.repositoryGuid.trim() !== ''
       
       // Get machines for the selected team
-      const selectedTeamName = form.watch('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
+      const selectedTeamName = form.getValues('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
       const teamMachines = dropdownData?.machinesByTeam?.find(t => t.teamName === selectedTeamName)?.machines || []
       
       // Only show machine selection if not prefilled and not in credential-only mode
@@ -561,7 +561,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       fields.push(nameField)
     } else if (resourceType === 'pool') {
       // Get clusters for the selected team
-      const selectedTeamName = form.watch('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
+      const selectedTeamName = form.getValues('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
       const teamClusters = existingData?.clusters || []
       
       fields.push({
@@ -576,7 +576,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       fields.push(nameField)
     } else if (resourceType === 'image') {
       // Image needs pool selection and machine assignment
-      const selectedTeamName = form.watch('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
+      const selectedTeamName = form.getValues('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
       const teamPools = existingData?.pools || []
       const availableMachines = existingData?.availableMachines || []
       
@@ -610,9 +610,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       }
     } else if (resourceType === 'snapshot') {
       // Snapshot needs pool and image selection
-      const selectedTeamName = form.watch('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
+      const selectedTeamName = form.getValues('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
       const teamPools = existingData?.pools || []
-      const selectedPoolName = form.watch('poolName') || existingData?.poolName
+      const selectedPoolName = form.getValues('poolName') || existingData?.poolName
       const poolImages = existingData?.images || []
       
       if (!existingData?.poolName) {
@@ -639,11 +639,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       fields.push(nameField)
     } else if (resourceType === 'clone') {
       // Clone needs pool, image, and snapshot selection
-      const selectedTeamName = form.watch('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
+      const selectedTeamName = form.getValues('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
       const teamPools = existingData?.pools || []
-      const selectedPoolName = form.watch('poolName') || existingData?.poolName
+      const selectedPoolName = form.getValues('poolName') || existingData?.poolName
       const poolImages = existingData?.images || []
-      const selectedImageName = form.watch('imageName') || existingData?.imageName
+      const selectedImageName = form.getValues('imageName') || existingData?.imageName
       const imageSnapshots = existingData?.snapshots || []
       
       if (!existingData?.poolName) {
@@ -984,7 +984,6 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         )}
         
         <ResourceFormWithVault
-          key={modalInstanceId}
           ref={formRef}
           form={form}
           fields={getFormFields()}
@@ -997,9 +996,10 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           onImportExportRef={(handlers) => {
             importExportHandlers.current = handlers
           }}
-          teamName={form.watch('teamName') || (existingData?.teamName) || (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) || 'Private Team'}
-          bridgeName={form.watch('bridgeName') || 'Global Bridges'}
+          teamName={form.getValues('teamName') || (existingData?.teamName) || (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) || 'Private Team'}
+          bridgeName={form.getValues('bridgeName') || 'Global Bridges'}
           onTestConnectionStateChange={setTestConnectionSuccess}
+          isModalOpen={open}
           beforeVaultContent={
             resourceType === 'repository' && mode === 'create' ? (
               <Collapse 
