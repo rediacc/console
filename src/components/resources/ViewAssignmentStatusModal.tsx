@@ -60,14 +60,16 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
   ]
   
   // Calculate summary statistics
-  const stats = machines.reduce((acc, machine) => {
-    if (machine.distributedStorageClusterName) {
-      acc.cluster++
-    } else {
-      acc.available++
-    }
-    return acc
-  }, { available: 0, cluster: 0, image: 0, clone: 0 })
+  const stats = machines && Array.isArray(machines) 
+    ? machines.reduce((acc, machine) => {
+        if (machine.distributedStorageClusterName) {
+          acc.cluster++
+        } else {
+          acc.available++
+        }
+        return acc
+      }, { available: 0, cluster: 0, image: 0, clone: 0 })
+    : { available: 0, cluster: 0, image: 0, clone: 0 }
   
   return (
     <Modal
@@ -87,7 +89,7 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
         <Space size="large">
           <div>
             <Text type="secondary">{t('common:total')}: </Text>
-            <Text strong>{machines.length}</Text>
+            <Text strong>{machines && Array.isArray(machines) ? machines.length : 0}</Text>
           </div>
           <div>
             <MachineAssignmentStatusBadge assignmentType="AVAILABLE" size="small" />
@@ -102,7 +104,7 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
       
       <Table
         columns={columns}
-        dataSource={machines}
+        dataSource={machines && Array.isArray(machines) ? machines : []}
         rowKey="machineName"
         size="small"
         pagination={{

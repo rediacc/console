@@ -28,7 +28,9 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
   const updateMutation = useUpdateMachineClusterAssignment()
   
   // Filter machines that have cluster assignments
-  const machinesWithClusters = machines.filter(m => m.distributedStorageClusterName)
+  const machinesWithClusters = machines && Array.isArray(machines) 
+    ? machines.filter(m => m.distributedStorageClusterName)
+    : []
   
   const handleOk = async () => {
     if (machinesWithClusters.length === 0) return

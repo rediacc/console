@@ -25,15 +25,15 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
 }) => {
   const { t } = useTranslation(['machines', 'distributedStorage', 'common'])
   const isBulkMode = !!machines && machines.length > 0
-  const targetMachines = isBulkMode ? machines! : (machine ? [machine] : [])
+  const targetMachines = isBulkMode && machines ? machines : (machine ? [machine] : [])
   
   const [selectedCluster, setSelectedCluster] = useState<string | null>(
     machine?.distributedStorageClusterName || null
   )
   
   // Get unique teams from all machines for bulk mode
-  const uniqueTeams = isBulkMode 
-    ? Array.from(new Set(machines!.map(m => m.teamName)))
+  const uniqueTeams = isBulkMode && machines
+    ? Array.from(new Set(machines.map(m => m.teamName)))
     : machine ? [machine.teamName] : []
   
   // Load clusters for the machine's team(s)

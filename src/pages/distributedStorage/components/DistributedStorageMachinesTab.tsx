@@ -286,7 +286,7 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
           setBulkAssignClusterModal(false)
         }}
         machine={assignClusterModal.machine}
-        machines={bulkAssignClusterModal && allMachines ? 
+        machines={bulkAssignClusterModal && allMachines && Array.isArray(allMachines) ? 
           allMachines.filter(m => selectedMachines.includes(m.machineName)) : 
           undefined
         }

@@ -24,6 +24,8 @@
   "pools": {
     "title": "Pools",
     "name": "Pool Name",
+    "create": "Create Pool",
+    "noPools": "No pools found",
     "createPool": "Create Pool",
     "editPool": "Edit Pool",
     "deletePool": "Delete Pool",
