@@ -381,7 +381,7 @@ const LoginPage: React.FC = () => {
         {/* Version display */}
         <div style={{ textAlign: 'center', marginTop: 16 }}>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            {import.meta.env.VITE_APP_VERSION !== 'dev' ? `v${import.meta.env.VITE_APP_VERSION}` : 'Development'}
+            {import.meta.env.VITE_APP_VERSION !== 'dev' ? (import.meta.env.VITE_APP_VERSION.startsWith('v') ? import.meta.env.VITE_APP_VERSION : `v${import.meta.env.VITE_APP_VERSION}`) : 'Development'}
           </Text>
         </div>
       </Space>
