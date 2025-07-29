@@ -286,6 +286,7 @@ const MarketplacePage: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             autoComplete="off"
+            data-testid="marketplace-search-input"
           />
         </Col>
         <Col xs={24} sm={12} md={16}>
@@ -297,6 +298,7 @@ const MarketplacePage: React.FC = () => {
                 { value: 'grid', icon: <AppstoreOutlined /> },
                 { value: 'list', icon: <UnorderedListOutlined /> }
               ]}
+              data-testid="marketplace-view-mode-toggle"
             />
           </Space>
         </Col>
@@ -304,11 +306,11 @@ const MarketplacePage: React.FC = () => {
 
       {/* Main Content - Templates by Category */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px 0' }}>
+        <div style={{ textAlign: 'center', padding: '60px 0' }} data-testid="marketplace-loading">
           <Spin size="large" tip={t('marketplace:loading')} />
         </div>
       ) : categoryGroups.length === 0 ? (
-        <Card>
+        <Card data-testid="marketplace-empty-state">
           <Empty
             description={t('marketplace:noTemplatesFound')}
             image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -317,7 +319,7 @@ const MarketplacePage: React.FC = () => {
       ) : (
         <div>
           {categoryGroups.map((group, index) => (
-            <div key={group.key} style={{ marginBottom: 48 }}>
+            <div key={group.key} style={{ marginBottom: 48 }} data-testid={`marketplace-category-${group.key}`}>
               {/* Category Header */}
               <div style={{ marginBottom: 16 }}>
                 <Space align="center" size="middle">
@@ -347,6 +349,7 @@ const MarketplacePage: React.FC = () => {
                         setPreviewTemplate(template)
                         setShowPreview(true)
                       }}
+                      data-testid={`marketplace-card-${template.name}`}
                     />
                   </Col>
                 ))}

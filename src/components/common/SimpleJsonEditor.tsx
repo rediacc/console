@@ -163,6 +163,7 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
         autoCorrect="off"
         autoCapitalize="off"
         style={textareaStyles}
+        data-testid={dataTestId}
       />
       
       {error && (

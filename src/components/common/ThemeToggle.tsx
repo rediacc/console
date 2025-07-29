@@ -13,6 +13,7 @@ export const ThemeToggle: React.FC = () => {
       onClick={toggleTheme}
       aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
       title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+      data-testid="theme-toggle-button"
       style={{ 
         fontSize: 20,
         display: 'flex',

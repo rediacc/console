@@ -207,7 +207,7 @@ const DistributedStoragePage: React.FC = () => {
     {
       key: 'clusters',
       label: (
-        <span>
+        <span data-testid="ds-tab-clusters">
           <CloudServerOutlined />
           {t('tabs.clusters')}
         </span>
@@ -226,7 +226,7 @@ const DistributedStoragePage: React.FC = () => {
     {
       key: 'pools',
       label: (
-        <span>
+        <span data-testid="ds-tab-pools">
           <DatabaseOutlined />
           {t('tabs.pools')}
         </span>
@@ -246,7 +246,7 @@ const DistributedStoragePage: React.FC = () => {
     {
       key: 'machines',
       label: (
-        <span>
+        <span data-testid="ds-tab-machines">
           <DesktopOutlined />
           {t('tabs.machines')}
         </span>
@@ -324,6 +324,7 @@ const DistributedStoragePage: React.FC = () => {
                       maxWidth: 400,
                       width: '100%'
                     }}
+                    data-testid="ds-team-selector"
                   />
                 </div>
                 
@@ -345,6 +346,7 @@ const DistributedStoragePage: React.FC = () => {
                           }
                         }}
                         style={{ background: '#556b2f', borderColor: '#556b2f' }}
+                        data-testid={activeTab === 'clusters' ? 'ds-create-cluster-button' : 'ds-create-pool-button'}
                       >
                         {activeTab === 'clusters' ? t('clusters.create') : t('pools.create')}
                       </Button>
@@ -359,6 +361,7 @@ const DistributedStoragePage: React.FC = () => {
                         }
                         // Machines tab handles its own refresh
                       }}
+                      data-testid="ds-refresh-button"
                     >
                       {t('common:actions.refresh')}
                     </Button>
@@ -378,6 +381,7 @@ const DistributedStoragePage: React.FC = () => {
                 activeKey={activeTab}
                 onChange={setActiveTab}
                 items={tabItems}
+                data-testid="ds-tabs"
               />
             )}
           </Card>
@@ -390,6 +394,7 @@ const DistributedStoragePage: React.FC = () => {
         onCancel={closeModal}
         resourceType={modalState.type}
         mode={modalState.mode}
+        data-testid="ds-resource-modal"
         existingData={{
           ...modalState.data,
           teamName: selectedTeams[0],
@@ -443,6 +448,7 @@ const DistributedStoragePage: React.FC = () => {
       <QueueItemTraceModal
         taskId={queueTraceModal.taskId}
         visible={queueTraceModal.visible}
+        data-testid="ds-queue-trace-modal"
         onClose={() => {
           setQueueTraceModal({ visible: false, taskId: null })
           // Refresh data when modal closes

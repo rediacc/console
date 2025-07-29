@@ -64,5 +64,6 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify(mode),
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(process.env.TAG || process.env.VITE_APP_VERSION || 'dev'),
   },
 }))

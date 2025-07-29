@@ -163,6 +163,7 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
 
   return (
     <Modal
+      data-testid="marketplace-preview-modal"
       title={
         <Space>
           {template.iconUrl ? (
@@ -201,7 +202,11 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
       style={{ top: 20 }}
       bodyStyle={{ height: 'calc(90vh - 180px)', padding: '12px' }}
       footer={[
-        <Button key="close" onClick={onClose}>
+        <Button 
+          key="close" 
+          onClick={onClose}
+          data-testid="marketplace-preview-close-button"
+        >
           {t('close')}
         </Button>,
         <Button
@@ -209,13 +214,14 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
           type="primary"
           icon={<RocketOutlined />}
           onClick={() => onDeploy(template)}
+          data-testid="marketplace-preview-deploy-button"
         >
           {t('deployNow')}
         </Button>
       ]}
     >
-      <Tabs activeKey={activeTab} onChange={setActiveTab}>
-        <TabPane tab={<span><FileTextOutlined /> {t('overview')}</span>} key="overview">
+      <Tabs activeKey={activeTab} onChange={setActiveTab} data-testid="marketplace-preview-tabs">
+        <TabPane tab={<span><FileTextOutlined /> {t('overview')}</span>} key="overview" data-testid="marketplace-preview-tab-overview">
           <div style={{ height: 'calc(90vh - 340px)', overflow: 'auto' }}>
             <Row gutter={[24, 24]}>
               <Col xs={24} md={16}>
@@ -249,6 +255,7 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
           tab={<span><CodeOutlined /> {t('files')}</span>} 
           key="files"
           disabled={loading || !templateDetails}
+          data-testid="marketplace-preview-tab-files"
         >
           {loading ? (
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
@@ -276,6 +283,7 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
                           transition: 'all 0.2s'
                         }}
                         onClick={() => setSelectedFileIndex(index)}
+                        data-testid={`marketplace-preview-file-item-${index}`}
                       >
                         <Space>
                           <CodeOutlined />
@@ -321,7 +329,7 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
           )}
         </TabPane>
 
-        <TabPane tab={<span><SafetyOutlined /> {t('security')}</span>} key="security">
+        <TabPane tab={<span><SafetyOutlined /> {t('security')}</span>} key="security" data-testid="marketplace-preview-tab-security">
           <div style={{ height: 'calc(90vh - 340px)', overflow: 'auto' }}>
             <Card>
               <Space direction="vertical" size="middle" style={{ width: '100%' }}>

@@ -126,6 +126,7 @@ const UserSessionsTab: React.FC = () => {
           disabled={!record.isActive}
         >
           <Button
+            data-testid={`sessions-terminate-${record.requestId}`}
             type="link"
             danger
             icon={<CloseCircleOutlined />}
@@ -143,7 +144,7 @@ const UserSessionsTab: React.FC = () => {
     <div className="user-sessions-tab">
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col span={6}>
-          <Card>
+          <Card data-testid="sessions-stat-total">
             <Statistic
               title={t('userSessions.totalSessions')}
               value={sessions.length}
@@ -151,7 +152,7 @@ const UserSessionsTab: React.FC = () => {
           </Card>
         </Col>
         <Col span={6}>
-          <Card>
+          <Card data-testid="sessions-stat-active">
             <Statistic
               title={t('userSessions.activeSessions')}
               value={activeSessions.length}
@@ -160,7 +161,7 @@ const UserSessionsTab: React.FC = () => {
           </Card>
         </Col>
         <Col span={6}>
-          <Card>
+          <Card data-testid="sessions-stat-unique-users">
             <Statistic
               title={t('userSessions.uniqueUsers')}
               value={new Set(sessions.map((s: UserRequest) => s.userEmail)).size}
@@ -168,7 +169,7 @@ const UserSessionsTab: React.FC = () => {
           </Card>
         </Col>
         <Col span={6}>
-          <Card>
+          <Card data-testid="sessions-stat-average-duration">
             <Statistic
               title={t('userSessions.averageDuration')}
               value={
@@ -195,6 +196,7 @@ const UserSessionsTab: React.FC = () => {
           <Space>
             <span>{t('userSessions.title')}</span>
             <Button
+              data-testid="sessions-refresh-button"
               icon={<ReloadOutlined />}
               onClick={() => refetch()}
               loading={isLoading}
@@ -205,6 +207,7 @@ const UserSessionsTab: React.FC = () => {
         }
         extra={
           <Input
+            data-testid="sessions-search-input"
             placeholder={t('userSessions.searchPlaceholder')}
             prefix={<SearchOutlined />}
             value={searchTerm}
@@ -215,6 +218,7 @@ const UserSessionsTab: React.FC = () => {
         }
       >
         <Table
+          data-testid="sessions-table"
           columns={columns}
           dataSource={filteredSessions}
           rowKey="requestId"
@@ -225,6 +229,9 @@ const UserSessionsTab: React.FC = () => {
             showTotal: (total) => t('userSessions.totalCount', { count: total }),
           }}
           scroll={{ x: 1500 }}
+          onRow={(record) => ({
+            'data-testid': `sessions-row-${record.requestId}`,
+          })}
         />
       </Card>
     </div>

@@ -960,6 +960,7 @@ const ResourcesPage: React.FC = () => {
             type="primary"
             size="small"
             icon={<EditOutlined />}
+            data-testid={`resources-repository-edit-${record.repositoryName}`}
             onClick={() => {
               setCurrentResource(record);
               openUnifiedModal('repository', 'edit', record);
@@ -971,6 +972,7 @@ const ResourcesPage: React.FC = () => {
             type="primary"
             size="small"
             icon={<HistoryOutlined />}
+            data-testid={`resources-repository-trace-${record.repositoryName}`}
             onClick={() => {
               setAuditTraceModal({
                 open: true,
@@ -987,6 +989,7 @@ const ResourcesPage: React.FC = () => {
             danger
             size="small"
             icon={<DeleteOutlined />}
+            data-testid={`resources-repository-delete-${record.repositoryName}`}
             onClick={() => handleDeleteRepository(record)}
           >
             {t('common:actions.delete')}
@@ -1036,6 +1039,7 @@ const ResourcesPage: React.FC = () => {
             type="primary"
             size="small"
             icon={<EditOutlined />}
+            data-testid={`resources-storage-edit-${record.storageName}`}
             onClick={() => {
               setCurrentResource(record);
               openUnifiedModal('storage', 'edit', record);
@@ -1047,6 +1051,7 @@ const ResourcesPage: React.FC = () => {
             type="primary"
             size="small"
             icon={<FunctionOutlined />}
+            data-testid={`resources-storage-run-${record.storageName}`}
             onClick={() => {
               setCurrentResource(record);
               // Use a special state to show function selection
@@ -1064,6 +1069,7 @@ const ResourcesPage: React.FC = () => {
             type="primary"
             size="small"
             icon={<HistoryOutlined />}
+            data-testid={`resources-storage-trace-${record.storageName}`}
             onClick={() => {
               setAuditTraceModal({
                 open: true,
@@ -1080,6 +1086,7 @@ const ResourcesPage: React.FC = () => {
             danger
             size="small"
             icon={<DeleteOutlined />}
+            data-testid={`resources-storage-delete-${record.storageName}`}
             onClick={() => {
               Modal.confirm({
                 title: t('storage.deleteStorage'),
@@ -1138,6 +1145,7 @@ const ResourcesPage: React.FC = () => {
             type="primary"
             size="small"
             icon={<EditOutlined />}
+            data-testid={`resources-schedule-edit-${record.scheduleName}`}
             onClick={() => {
               setCurrentResource(record);
               openUnifiedModal('schedule', 'edit', record);
@@ -1149,6 +1157,7 @@ const ResourcesPage: React.FC = () => {
             type="primary"
             size="small"
             icon={<HistoryOutlined />}
+            data-testid={`resources-schedule-trace-${record.scheduleName}`}
             onClick={() => {
               setAuditTraceModal({
                 open: true,
@@ -1165,6 +1174,7 @@ const ResourcesPage: React.FC = () => {
             danger
             size="small"
             icon={<DeleteOutlined />}
+            data-testid={`resources-schedule-delete-${record.scheduleName}`}
             onClick={() => {
               Modal.confirm({
                 title: t('schedules.deleteSchedule'),
@@ -1204,7 +1214,7 @@ const ResourcesPage: React.FC = () => {
     {
       key: 'machines',
       label: (
-        <span>
+        <span data-testid="resources-tab-machines">
           <DesktopOutlined />
           {t('resourceTabs.machines')}
         </span>
@@ -1303,7 +1313,7 @@ const ResourcesPage: React.FC = () => {
     {
       key: 'repositories',
       label: (
-        <span>
+        <span data-testid="resources-tab-repositories">
           <InboxOutlined />
           {t('resourceTabs.repositories')}
         </span>
@@ -1321,6 +1331,7 @@ const ResourcesPage: React.FC = () => {
             />
           ) : (
             <Table
+              data-testid="resources-repository-table"
               columns={repositoryColumns}
               dataSource={repositories}
               rowKey="repositoryName"
@@ -1342,7 +1353,7 @@ const ResourcesPage: React.FC = () => {
     {
       key: 'storage',
       label: (
-        <span>
+        <span data-testid="resources-tab-storage">
           <CloudOutlined />
           {t('resourceTabs.storage')}
         </span>
@@ -1360,6 +1371,7 @@ const ResourcesPage: React.FC = () => {
             />
           ) : (
             <Table
+              data-testid="resources-storage-table"
               columns={storageColumns}
               dataSource={storages}
               rowKey="storageName"
@@ -1381,7 +1393,7 @@ const ResourcesPage: React.FC = () => {
     {
       key: 'schedules',
       label: (
-        <span>
+        <span data-testid="resources-tab-schedules">
           <ScheduleOutlined />
           {t('resourceTabs.schedules')}
         </span>
@@ -1399,6 +1411,7 @@ const ResourcesPage: React.FC = () => {
             />
           ) : (
             <Table
+              data-testid="resources-schedule-table"
               columns={scheduleColumns}
               dataSource={schedules}
               rowKey="scheduleName"
@@ -1466,6 +1479,7 @@ const ResourcesPage: React.FC = () => {
                       {t('teams.teamResources')}
                     </Title>
                     <TeamSelector
+                      data-testid="resources-team-selector"
                       teams={teamsList}
                       selectedTeams={selectedTeams}
                       onChange={setSelectedTeams}
@@ -1488,6 +1502,7 @@ const ResourcesPage: React.FC = () => {
                       <Button 
                         type="primary" 
                         icon={<PlusOutlined />}
+                        data-testid={`resources-create-${teamResourcesTab.slice(0, -1)}-button`}
                         onClick={() => {
                           switch(teamResourcesTab) {
                             case 'machines':
@@ -1511,6 +1526,7 @@ const ResourcesPage: React.FC = () => {
                       {teamResourcesTab === 'storage' && (
                         <Button
                           icon={<ImportOutlined />}
+                          data-testid="resources-import-button"
                           onClick={() => setRcloneImportWizardOpen(true)}
                         >
                           {t('resources:storage.import.button')}
@@ -1519,6 +1535,7 @@ const ResourcesPage: React.FC = () => {
                       {teamResourcesTab === 'machines' && (
                         <Button 
                           icon={<WifiOutlined />}
+                          data-testid="resources-connectivity-test-button"
                           onClick={() => setConnectivityTestModal(true)}
                           disabled={machines.length === 0}
                         >
@@ -1527,6 +1544,7 @@ const ResourcesPage: React.FC = () => {
                       )}
                       <Button 
                         icon={<ReloadOutlined />}
+                        data-testid="resources-refresh-button"
                         onClick={() => {
                           switch(teamResourcesTab) {
                             case 'machines':
@@ -1588,6 +1606,7 @@ const ResourcesPage: React.FC = () => {
                   <Button 
                     type="primary" 
                     icon={<PlusOutlined />}
+                    data-testid={`resources-create-${teamResourcesTab.slice(0, -1)}-button`}
                     onClick={() => {
                       switch(teamResourcesTab) {
                         case 'machines':
@@ -1608,6 +1627,7 @@ const ResourcesPage: React.FC = () => {
                   {teamResourcesTab === 'storage' && (
                     <Button
                       icon={<ImportOutlined />}
+                      data-testid="resources-import-button"
                       onClick={() => setRcloneImportWizardOpen(true)}
                     >
                       {t('resources:storage.import.button')}
@@ -1616,6 +1636,7 @@ const ResourcesPage: React.FC = () => {
                   {teamResourcesTab === 'machines' && (
                     <Button 
                       icon={<WifiOutlined />}
+                      data-testid="resources-connectivity-test-button"
                       onClick={() => setConnectivityTestModal(true)}
                       disabled={machines.length === 0}
                     >
@@ -1624,6 +1645,7 @@ const ResourcesPage: React.FC = () => {
                   )}
                   <Button 
                     icon={<ReloadOutlined />}
+                    data-testid="resources-refresh-button"
                     onClick={() => {
                       switch(teamResourcesTab) {
                         case 'machines':
@@ -1666,6 +1688,7 @@ const ResourcesPage: React.FC = () => {
 
       {/* Unified Resource Modal */}
       <UnifiedResourceModal
+        data-testid={`resources-${unifiedModalState.resourceType}-modal`}
         open={unifiedModalState.open}
         onCancel={closeUnifiedModal}
         resourceType={unifiedModalState.resourceType}
@@ -1710,6 +1733,7 @@ const ResourcesPage: React.FC = () => {
 
       {/* Queue Item Trace Modal */}
       <QueueItemTraceModal
+        data-testid="resources-queue-trace-modal"
         taskId={queueTraceModal.taskId}
         visible={queueTraceModal.visible}
         onClose={() => {
@@ -1737,6 +1761,7 @@ const ResourcesPage: React.FC = () => {
 
       {/* Connectivity Test Modal */}
       <ConnectivityTestModal
+        data-testid="resources-connectivity-test-modal"
         open={connectivityTestModal}
         onClose={() => setConnectivityTestModal(false)}
         machines={machines}
@@ -1745,6 +1770,7 @@ const ResourcesPage: React.FC = () => {
 
       {/* Audit Trace Modal */}
       <AuditTraceModal
+        data-testid="resources-audit-trace-modal"
         open={auditTraceModal.open}
         onCancel={() => setAuditTraceModal({ open: false, entityType: null, entityIdentifier: null })}
         entityType={auditTraceModal.entityType}
@@ -1754,6 +1780,7 @@ const ResourcesPage: React.FC = () => {
 
       {/* Rclone Import Wizard */}
       <RcloneImportWizard
+        data-testid="resources-rclone-import-wizard"
         open={rcloneImportWizardOpen}
         onClose={() => setRcloneImportWizardOpen(false)}
         teamName={selectedTeams[0] || ''}

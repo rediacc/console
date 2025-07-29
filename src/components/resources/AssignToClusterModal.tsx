@@ -144,6 +144,7 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
         size="small"
         pagination={false}
         scroll={{ y: 200 }}
+        data-testid="ds-assign-cluster-bulk-table"
       />
     )
   }
@@ -169,8 +170,13 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
       cancelText={t('common:actions.cancel')}
       width={isBulkMode ? 700 : 500}
       okButtonProps={{
-        disabled: !selectedCluster
+        disabled: !selectedCluster,
+        'data-testid': 'ds-assign-cluster-ok-button'
       }}
+      cancelButtonProps={{
+        'data-testid': 'ds-assign-cluster-cancel-button'
+      }}
+      data-testid="ds-assign-cluster-modal"
     >
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         {isBulkMode ? (
@@ -223,6 +229,7 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
                 onChange={setSelectedCluster}
                 showSearch
                 optionFilterProp="children"
+                data-testid="ds-assign-cluster-select"
               >
                 {clusters.map(cluster => (
                   <Select.Option key={cluster.clusterName} value={cluster.clusterName}>

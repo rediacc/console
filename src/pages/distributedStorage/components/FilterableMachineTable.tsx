@@ -90,6 +90,7 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
       rowKey="machineName"
       loading={loading}
       rowSelection={rowSelection}
+      data-testid="ds-machines-table"
       expandable={{
         expandedRowKeys,
         onExpandedRowsChange: (keys) => onExpandedRowsChange?.(keys as string[]),

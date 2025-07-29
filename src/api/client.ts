@@ -8,9 +8,10 @@ import { tokenService } from '@/services/tokenService'
 // API configuration
 const API_PREFIX = '/StoredProcedure'
 
-// Get API URL - will be set dynamically
+// Use relative path in production (served via nginx proxy) and absolute in development
+const MIDDLEWARE_PORT = import.meta.env.VITE_HTTP_PORT
 let API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (import.meta.env.PROD ? '/api' : 'http://localhost:7322/api')
+  (import.meta.env.PROD ? '/api' : `http://localhost:${MIDDLEWARE_PORT}/api`)
 
 export interface ApiResponse<T = any> {
   failure: number

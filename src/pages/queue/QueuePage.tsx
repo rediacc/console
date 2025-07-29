@@ -374,6 +374,7 @@ const QueuePage: React.FC = () => {
             type="primary"
             icon={<HistoryOutlined />}
             onClick={() => handleViewTrace(record.taskId)}
+            data-testid={`queue-trace-button-${record.taskId}`}
           >
             Trace
           </Button>
@@ -384,6 +385,7 @@ const QueuePage: React.FC = () => {
               icon={<CloseCircleOutlined />}
               onClick={() => handleCancelQueueItem(record.taskId)}
               loading={cancelQueueItemMutation.isPending}
+              data-testid={`queue-cancel-button-${record.taskId}`}
             >
               Cancel
             </Button>
@@ -403,14 +405,14 @@ const QueuePage: React.FC = () => {
   }
 
   return (
-    <div style={containerStyle}>
+    <div style={containerStyle} data-testid="queue-page-container">
       <Row gutter={[16, 16]} align="middle" style={{ marginBottom: 16 }}>
         <Col>
           <Title level={2}>Queue Management</Title>
         </Col>
       </Row>
 
-      <Card style={{ marginBottom: 16 }}>
+      <Card style={{ marginBottom: 16 }} data-testid="queue-filters-card">
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} sm={12} md={6}>
             <div style={{ marginBottom: 8 }}>
@@ -430,6 +432,7 @@ const QueuePage: React.FC = () => {
                 (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
               }
               options={dropdownData?.teams || []}
+              data-testid="queue-filter-team"
             />
           </Col>
 
@@ -449,6 +452,7 @@ const QueuePage: React.FC = () => {
                   (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
                 }
                 options={dropdownData?.machinesByTeam?.find(t => t.teamName === viewTeam)?.machines || []}
+                data-testid="queue-filter-machine"
               />
             </Col>
           )}
@@ -464,6 +468,7 @@ const QueuePage: React.FC = () => {
               value={statusFilter}
               onChange={setStatusFilter}
               allowClear
+              data-testid="queue-filter-status"
             >
               <Select.Option value="PENDING">Pending</Select.Option>
               <Select.Option value="ACTIVE">Active</Select.Option>
@@ -493,6 +498,7 @@ const QueuePage: React.FC = () => {
                 { label: 'This Month', value: [dayjs().startOf('month'), dayjs().endOf('month')] },
                 { label: 'Last Month', value: [dayjs().subtract(1, 'month').startOf('month'), dayjs().subtract(1, 'month').endOf('month')] },
               ]}
+              data-testid="queue-filter-date"
             />
           </Col>
         </Row>
@@ -510,6 +516,7 @@ const QueuePage: React.FC = () => {
               allowClear
               status={taskIdFilter && !isValidGuid(taskIdFilter) ? 'error' : undefined}
               autoComplete="off"
+              data-testid="queue-filter-taskid"
             />
             {taskIdFilter && !isValidGuid(taskIdFilter) && (
               <Text type="danger" style={{ fontSize: '12px' }}>
@@ -526,18 +533,21 @@ const QueuePage: React.FC = () => {
               <Checkbox
                 checked={filters.includeCompleted}
                 onChange={(e) => setFilters({ ...filters, includeCompleted: e.target.checked })}
+                data-testid="queue-checkbox-include-completed"
               >
                 Include Completed
               </Checkbox>
               <Checkbox
                 checked={filters.includeCancelled}
                 onChange={(e) => setFilters({ ...filters, includeCancelled: e.target.checked })}
+                data-testid="queue-checkbox-include-cancelled"
               >
                 Include Cancelled
               </Checkbox>
               <Checkbox
                 checked={filters.onlyStale}
                 onChange={(e) => setFilters({ ...filters, onlyStale: e.target.checked })}
+                data-testid="queue-checkbox-only-stale"
               >
                 Only Stale Items
               </Checkbox>
@@ -546,7 +556,7 @@ const QueuePage: React.FC = () => {
 
           <Col style={{ marginLeft: 'auto' }}>
             <Space>
-              <Button icon={<ReloadOutlined />} onClick={() => refetch()} loading={isFetching}>
+              <Button icon={<ReloadOutlined />} onClick={() => refetch()} loading={isFetching} data-testid="queue-refresh-button">
                 Refresh
               </Button>
               <Dropdown
@@ -565,7 +575,7 @@ const QueuePage: React.FC = () => {
                   ]
                 }}
               >
-                <Button icon={<ExportOutlined />}>
+                <Button icon={<ExportOutlined />} data-testid="queue-export-dropdown">
                   Export <DownOutlined />
                 </Button>
               </Dropdown>
@@ -575,7 +585,7 @@ const QueuePage: React.FC = () => {
       </Card>
 
       {/* Queue Statistics */}
-      <Row gutter={16} style={{ marginBottom: 16 }}>
+      <Row gutter={16} style={{ marginBottom: 16 }} data-testid="queue-statistics-row">
             <Col xs={24} sm={12} md={8} lg={4} xl={3}>
               <Card>
                 <Statistic
@@ -676,11 +686,12 @@ const QueuePage: React.FC = () => {
               overflow: 'hidden'
             }}
             className="full-height-tabs"
+            data-testid="queue-tabs"
           >
             <Tabs.TabPane 
               tab={
                 <Tooltip title={t('queue:tabs.active.tooltip')}>
-                  <Space>
+                  <Space data-testid="queue-tab-active">
                     <span style={{ marginRight: 8 }}>{t('queue:tabs.active.title')}</span>
                     <Badge count={queueData?.items?.filter((item: any) => !['COMPLETED', 'CANCELLED', 'FAILED'].includes(item.healthStatus)).length || 0} color="gold" />
                   </Space>
@@ -688,7 +699,7 @@ const QueuePage: React.FC = () => {
               } 
               key="active"
             >
-              <div ref={activeTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <div ref={activeTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }} data-testid="queue-table-active-container">
                 <Alert
                   message={t('queue:tabs.active.description')}
                   type="info"
@@ -726,7 +737,7 @@ const QueuePage: React.FC = () => {
             <Tabs.TabPane 
               tab={
                 <Tooltip title={t('queue:tabs.completed.tooltip')}>
-                  <Space>
+                  <Space data-testid="queue-tab-completed">
                     <span style={{ marginRight: 8 }}>{t('queue:tabs.completed.title')}</span>
                     <Badge count={(queueData?.statistics as any)?.completedCount || 0} showZero color="#52c41a" />
                   </Space>
@@ -734,7 +745,7 @@ const QueuePage: React.FC = () => {
               } 
               key="completed"
             >
-              <div ref={completedTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <div ref={completedTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }} data-testid="queue-table-completed-container">
                 <Alert
                   message={t('queue:tabs.completed.description')}
                   type="success"
@@ -772,7 +783,7 @@ const QueuePage: React.FC = () => {
             <Tabs.TabPane 
               tab={
                 <Tooltip title={t('queue:tabs.cancelled.tooltip')}>
-                  <Space>
+                  <Space data-testid="queue-tab-cancelled">
                     <span style={{ marginRight: 8 }}>{t('queue:tabs.cancelled.title')}</span>
                     <Badge count={(queueData?.statistics as any)?.cancelledCount || 0} showZero color="#ff4d4f" />
                   </Space>
@@ -780,7 +791,7 @@ const QueuePage: React.FC = () => {
               } 
               key="cancelled"
             >
-              <div ref={cancelledTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <div ref={cancelledTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }} data-testid="queue-table-cancelled-container">
                 <Alert
                   message={t('queue:tabs.cancelled.description')}
                   type="warning"
@@ -818,7 +829,7 @@ const QueuePage: React.FC = () => {
             <Tabs.TabPane 
               tab={
                 <Tooltip title={t('queue:tabs.failed.tooltip')}>
-                  <Space>
+                  <Space data-testid="queue-tab-failed">
                     <span style={{ marginRight: 8 }}>{t('queue:tabs.failed.title')}</span>
                     <Badge count={(queueData?.statistics as any)?.failedCount || 0} showZero color="#ff4d4f" />
                   </Space>
@@ -826,7 +837,7 @@ const QueuePage: React.FC = () => {
               } 
               key="failed"
             >
-              <div ref={failedTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <div ref={failedTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }} data-testid="queue-table-failed-container">
                 <Alert
                   message={t('queue:tabs.failed.description')}
                   type="error"

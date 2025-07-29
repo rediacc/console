@@ -109,6 +109,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
           {value && (
             <Button 
               size="small" 
+              data-testid="resource-modal-template-clear-button"
               onClick={() => onChange?.(null)}
             >
               {t('resources:templates.clearSelection')}
@@ -125,6 +126,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             <Col key={template.name} xs={24} sm={12} md={8}>
               <Card
                 hoverable
+                data-testid={`resource-modal-template-card-${template.name}`}
                 className={isSelected ? 'template-card-selected' : 'template-card'}
                 style={{
                   height: '100%',
@@ -166,6 +168,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                   <Button
                     type="link"
                     size="small"
+                    data-testid={`resource-modal-template-details-button-${template.name}`}
                     icon={<InfoCircleOutlined />}
                     onClick={(e) => {
                       e.stopPropagation()
@@ -185,6 +188,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         <Col xs={24} sm={12} md={8}>
           <Card
             hoverable
+            data-testid="resource-modal-template-card-none"
             className={!value ? 'template-card-selected' : 'template-card'}
             style={{
               height: '100%',

@@ -138,6 +138,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
       layout="vertical"
       onFinish={handleRegistration}
       requiredMark={false}
+      data-testid="registration-form"
     >
       <Form.Item
         name="companyName"
@@ -151,6 +152,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
           prefix={<BankOutlined />}
           placeholder={t('auth:registration.companyNamePlaceholder')}
           size="large"
+          data-testid="registration-company-input"
         />
       </Form.Item>
 
@@ -167,6 +169,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
           placeholder={t('auth:registration.emailPlaceholder')}
           size="large"
           autoComplete="email"
+          data-testid="registration-email-input"
         />
       </Form.Item>
 
@@ -183,6 +186,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
           placeholder={t('auth:registration.passwordPlaceholder')}
           size="large"
           autoComplete="new-password"
+          data-testid="registration-password-input"
         />
       </Form.Item>
 
@@ -207,6 +211,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
           placeholder={t('auth:registration.passwordConfirmPlaceholder')}
           size="large"
           autoComplete="new-password"
+          data-testid="registration-password-confirm-input"
         />
       </Form.Item>
 
@@ -222,6 +227,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
             borderColor: '#556b2f',
             height: 48,
           }}
+          data-testid="registration-submit-button"
         >
           {t('auth:registration.createAccount')}
         </Button>
@@ -235,6 +241,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
       layout="vertical"
       onFinish={handleVerification}
       requiredMark={false}
+      data-testid="registration-verification-form"
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         <Alert
@@ -242,6 +249,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
           description={t('auth:registration.verificationDescription')}
           type="info"
           showIcon
+          data-testid="registration-verification-alert"
         />
 
         <Form.Item
@@ -259,6 +267,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
             autoComplete="off"
             maxLength={6}
             style={{ textAlign: 'center', fontSize: '20px', letterSpacing: '8px' }}
+            data-testid="registration-activation-code-input"
           />
         </Form.Item>
 
@@ -274,6 +283,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
               borderColor: '#556b2f',
               height: 48,
             }}
+            data-testid="registration-verify-button"
           >
             {t('auth:registration.verifyAccount')}
           </Button>
@@ -283,12 +293,12 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
   )
 
   const renderSuccess = () => (
-    <div style={{ textAlign: 'center', padding: '40px 0' }}>
-      <CheckCircleOutlined style={{ fontSize: 64, color: '#52c41a' }} />
-      <Typography.Title level={4} style={{ marginTop: 24 }}>
+    <div style={{ textAlign: 'center', padding: '40px 0' }} data-testid="registration-success-container">
+      <CheckCircleOutlined style={{ fontSize: 64, color: '#52c41a' }} data-testid="registration-success-icon" />
+      <Typography.Title level={4} style={{ marginTop: 24 }} data-testid="registration-success-title">
         {t('auth:registration.successTitle')}
       </Typography.Title>
-      <Text type="secondary">
+      <Text type="secondary" data-testid="registration-success-description">
         {t('auth:registration.successDescription')}
       </Text>
     </div>
@@ -315,12 +325,13 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
       footer={null}
       width={480}
       destroyOnClose
+      data-testid="registration-modal"
     >
       <Space direction="vertical" size={24} style={{ width: '100%' }}>
-        <Steps current={currentStep} size="small">
-          <Step title={t('auth:registration.steps.register')} icon={<UserOutlined />} />
-          <Step title={t('auth:registration.steps.verify')} icon={<SafetyCertificateOutlined />} />
-          <Step title={t('auth:registration.steps.complete')} icon={<CheckCircleOutlined />} />
+        <Steps current={currentStep} size="small" data-testid="registration-steps">
+          <Step title={t('auth:registration.steps.register')} icon={<UserOutlined />} data-testid="registration-step-register" />
+          <Step title={t('auth:registration.steps.verify')} icon={<SafetyCertificateOutlined />} data-testid="registration-step-verify" />
+          <Step title={t('auth:registration.steps.complete')} icon={<CheckCircleOutlined />} data-testid="registration-step-complete" />
         </Steps>
 
         {error && (
@@ -330,6 +341,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
             showIcon
             closable
             onClose={() => setError(null)}
+            data-testid="registration-error-alert"
           />
         )}
 

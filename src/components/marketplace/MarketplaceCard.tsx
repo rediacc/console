@@ -27,13 +27,15 @@ interface MarketplaceCardProps {
   viewMode: 'grid' | 'list'
   onDeploy: () => void
   onPreview: () => void
+  'data-testid'?: string
 }
 
 const MarketplaceCard: React.FC<MarketplaceCardProps> = ({
   template,
   viewMode,
   onDeploy,
-  onPreview
+  onPreview,
+  'data-testid': dataTestId
 }) => {
   const { t } = useTranslation(['marketplace', 'resources'])
 
@@ -86,7 +88,7 @@ const MarketplaceCard: React.FC<MarketplaceCardProps> = ({
 
   if (viewMode === 'list') {
     return (
-      <Card hoverable>
+      <Card hoverable data-testid={dataTestId}>
         <Row gutter={16} align="middle">
           <Col flex="auto">
             <Space direction="vertical" size={0} style={{ width: '100%' }}>
@@ -142,13 +144,18 @@ const MarketplaceCard: React.FC<MarketplaceCardProps> = ({
           </Col>
           <Col flex="none">
             <Space>
-              <Button icon={<EyeOutlined />} onClick={onPreview}>
+              <Button 
+                icon={<EyeOutlined />} 
+                onClick={onPreview}
+                data-testid={`${dataTestId}-preview-button`}
+              >
                 {t('marketplace:preview')}
               </Button>
               <Button 
                 type="primary"
                 icon={<RocketOutlined />}
                 onClick={onDeploy}
+                data-testid={`${dataTestId}-deploy-button`}
               >
                 {t('marketplace:deploy')}
               </Button>
@@ -163,6 +170,7 @@ const MarketplaceCard: React.FC<MarketplaceCardProps> = ({
   return (
     <Card
         hoverable
+        data-testid={dataTestId}
         cover={
           <div style={{
             height: 120,
@@ -196,7 +204,13 @@ const MarketplaceCard: React.FC<MarketplaceCardProps> = ({
           </div>
         }
         actions={[
-          <Button key="preview" type="text" icon={<EyeOutlined />} onClick={onPreview}>
+          <Button 
+            key="preview" 
+            type="text" 
+            icon={<EyeOutlined />} 
+            onClick={onPreview}
+            data-testid={`${dataTestId}-preview-button`}
+          >
             {t('marketplace:preview')}
           </Button>,
           <Button 
@@ -205,6 +219,7 @@ const MarketplaceCard: React.FC<MarketplaceCardProps> = ({
             icon={<RocketOutlined />}
             onClick={onDeploy}
             style={{ color: '#1890ff' }}
+            data-testid={`${dataTestId}-deploy-button`}
           >
             {t('marketplace:deploy')}
           </Button>

@@ -141,6 +141,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
           <Button
             type="link"
             size="small"
+            data-testid={`ds-cluster-manage-machines-${record.clusterName}`}
             onClick={(e) => {
               e.stopPropagation()
               setSelectedCluster(record)
@@ -170,6 +171,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
             type="primary"
             size="small"
             icon={<EditOutlined />}
+            data-testid={`ds-cluster-edit-${record.clusterName}`}
             onClick={() => onEditCluster(record)}
           >
             {t('common:actions.edit')}
@@ -192,6 +194,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
               type="primary"
               size="small"
               icon={<FunctionOutlined />}
+              data-testid={`ds-cluster-function-dropdown-${record.clusterName}`}
             >
               {t('common:actions.remote')}
             </Button>
@@ -200,6 +203,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
             type="primary"
             size="small"
             icon={<HistoryOutlined />}
+            data-testid={`ds-cluster-trace-${record.clusterName}`}
             onClick={() => {
               setAuditTraceModal({
                 open: true,
@@ -216,6 +220,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
             danger
             size="small"
             icon={<DeleteOutlined />}
+            data-testid={`ds-cluster-delete-${record.clusterName}`}
             onClick={() => handleDelete(record)}
           >
             {t('common:actions.delete')}
@@ -237,12 +242,13 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
           description={t('clusters.noClusters')}
           style={{ marginTop: 48 }}
         >
-          <Button type="primary" onClick={onCreateCluster}>
+          <Button type="primary" data-testid="ds-create-cluster-empty" onClick={onCreateCluster}>
             {t('clusters.create')}
           </Button>
         </Empty>
       ) : (
         <Table
+          data-testid="ds-cluster-table"
           columns={columns}
           dataSource={clusters}
           rowKey="clusterName"
@@ -260,6 +266,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
             expandRowByClick: false,
           }}
           onRow={(record) => ({
+            'data-testid': `ds-cluster-row-${record.clusterName}`,
             onClick: (e) => {
               const target = e.target as HTMLElement
               if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
@@ -358,12 +365,13 @@ const ClusterMachines: React.FC<{ cluster: DistributedStorageCluster }> = ({ clu
   ]
 
   return (
-    <div style={{ padding: '16px' }}>
+    <div style={{ padding: '16px' }} data-testid={`cluster-expanded-row-${cluster.clusterName}`}>
       <h4>{t('clusters.assignedMachines')}</h4>
       {machines.length === 0 && !isLoading ? (
         <Empty description={t('clusters.noMachinesAssigned')} />
       ) : (
         <Table
+          data-testid={`ds-cluster-machines-table-${cluster.clusterName}`}
           columns={machineColumns}
           dataSource={machines}
           rowKey="machineName"

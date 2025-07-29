@@ -72,11 +72,15 @@ const NotificationBell: React.FC = () => {
   }
 
   const dropdownContent = (
-    <div className="notification-dropdown" style={{ 
-      width: 400, 
-      maxHeight: 500, 
-      borderRadius: 8,
-    }}>
+    <div 
+      className="notification-dropdown" 
+      data-testid="notification-dropdown"
+      style={{ 
+        width: 400, 
+        maxHeight: 500, 
+        borderRadius: 8,
+      }}
+    >
       <div className="notification-dropdown-header" style={{ 
         padding: '12px 16px', 
         display: 'flex',
@@ -93,6 +97,7 @@ const NotificationBell: React.FC = () => {
               size="small" 
               onClick={handleMarkAllAsRead}
               disabled={unreadCount === 0}
+              data-testid="notification-mark-all-read"
             >
               {t('notifications.markAllRead', 'Mark all as read')}
             </Button>
@@ -101,6 +106,7 @@ const NotificationBell: React.FC = () => {
               size="small" 
               danger 
               onClick={handleClearAll}
+              data-testid="notification-clear-all"
             >
               {t('notifications.clearAll', 'Clear all')}
             </Button>
@@ -117,7 +123,7 @@ const NotificationBell: React.FC = () => {
         ) : (
           <List
             dataSource={notifications}
-            renderItem={(notification) => (
+            renderItem={(notification, index) => (
               <List.Item
                 key={notification.id}
                 className={notification.read ? 'ant-list-item-read' : 'ant-list-item-unread'}
@@ -127,6 +133,7 @@ const NotificationBell: React.FC = () => {
                   transition: 'background-color 0.3s'
                 }}
                 onClick={() => handleMarkAsRead(notification.id)}
+                data-testid={`notification-item-${index}`}
               >
                 <List.Item.Meta
                   avatar={getIcon(notification.type)}
@@ -144,6 +151,7 @@ const NotificationBell: React.FC = () => {
                         icon={<CloseOutlined />}
                         onClick={(e) => handleClear(notification.id, e)}
                         style={{ marginLeft: 'auto' }}
+                        data-testid={`notification-close-${index}`}
                       />
                     </Space>
                   }
@@ -191,6 +199,7 @@ const NotificationBell: React.FC = () => {
             alignItems: 'center',
             justifyContent: 'center'
           }}
+          data-testid="notification-bell"
         />
       </Badge>
     </Dropdown>

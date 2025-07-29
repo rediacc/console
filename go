@@ -47,6 +47,7 @@ CONSOLE_PORT=${CONSOLE_PORT:-3000}
 # Export for Vite
 export VITE_HTTP_PORT=$SYSTEM_HTTP_PORT
 export VITE_API_URL="http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}/api"
+export VITE_APP_VERSION=${TAG:-dev}
 
 # Function to run development server
 function dev() {
@@ -152,6 +153,7 @@ function release() {
   # Create version info file
   echo "{
   \"version\": \"${VERSION}\",
+  \"tag\": \"${TAG:-latest}\",
   \"buildDate\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
   \"gitCommit\": \"$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')\",
   \"environment\": \"production\"

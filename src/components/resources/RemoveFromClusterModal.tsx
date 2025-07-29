@@ -10,7 +10,9 @@ const { Text } = Typography
 
 interface RemoveFromClusterModalProps {
   open: boolean
-  machines: Machine[]
+  selectedMachines?: string[]
+  allMachines?: Machine[]
+  machines?: Machine[]
   onCancel: () => void
   onSuccess?: () => void
 }
@@ -18,6 +20,8 @@ interface RemoveFromClusterModalProps {
 export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
   open,
   machines,
+  selectedMachines,
+  allMachines,
   onCancel,
   onSuccess
 }) => {
@@ -27,9 +31,14 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
   // Update mutation
   const updateMutation = useUpdateMachineClusterAssignment()
   
+  // Determine which machines to use
+  const targetMachines = machines || (selectedMachines && allMachines 
+    ? allMachines.filter(m => selectedMachines.includes(m.machineName))
+    : [])
+  
   // Filter machines that have cluster assignments
-  const machinesWithClusters = machines && Array.isArray(machines) 
-    ? machines.filter(m => m.distributedStorageClusterName)
+  const machinesWithClusters = targetMachines && Array.isArray(targetMachines) 
+    ? targetMachines.filter(m => m.distributedStorageClusterName)
     : []
   
   const handleOk = async () => {
@@ -111,9 +120,14 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
       confirmLoading={removing}
       okButtonProps={{ 
         danger: true,
-        disabled: machinesWithClusters.length === 0 
+        disabled: machinesWithClusters.length === 0,
+        'data-testid': 'ds-remove-cluster-ok-button'
+      }}
+      cancelButtonProps={{
+        'data-testid': 'ds-remove-cluster-cancel-button'
       }}
       width={600}
+      data-testid="ds-remove-cluster-modal"
     >
       {machinesWithClusters.length === 0 ? (
         <Alert
@@ -138,6 +152,7 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
             size="small"
             pagination={false}
             scroll={{ y: 300 }}
+            data-testid="ds-remove-cluster-table"
           />
         </>
       )}

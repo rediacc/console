@@ -191,6 +191,7 @@ const DashboardPage = () => {
             type="warning"
             showIcon
             icon={<ClockCircleOutlined />}
+            data-testid="dashboard-alert-subscription-expiring"
           />
         )}
 
@@ -201,6 +202,7 @@ const DashboardPage = () => {
             type="error"
             showIcon
             icon={<ExclamationCircleOutlined />}
+            data-testid="dashboard-alert-resource-limits"
           />
         )}
 
@@ -216,6 +218,7 @@ const DashboardPage = () => {
                 </Space>
               }
               style={{ height: '100%' }}
+              data-testid="dashboard-card-account-health"
             >
               <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -259,9 +262,10 @@ const DashboardPage = () => {
                   </Space>
                 }
                 extra={
-                  <Link to="/queue" style={{ color: token.colorPrimary }}>Manage</Link>
+                  <Link to="/queue" style={{ color: token.colorPrimary }} data-testid="dashboard-queue-manage-link">Manage</Link>
                 }
                 style={{ height: '100%' }}
+                data-testid="dashboard-card-queue-overview"
               >
                 <Space direction="vertical" size="large" style={{ width: '100%' }}>
                   {/* Status Grid */}
@@ -272,6 +276,7 @@ const DashboardPage = () => {
                         value={dashboard.queueStats.pending_count || 0}
                         valueStyle={{ color: token.colorWarning }}
                         prefix={<ClockCircleOutlined />}
+                        data-testid="dashboard-stat-pending"
                       />
                     </Col>
                     <Col span={6}>
@@ -280,6 +285,7 @@ const DashboardPage = () => {
                         value={dashboard.queueStats.active_count || 0}
                         valueStyle={{ color: token.colorInfo }}
                         prefix={<SyncOutlined spin />}
+                        data-testid="dashboard-stat-processing"
                       />
                     </Col>
                     <Col span={6}>
@@ -288,6 +294,7 @@ const DashboardPage = () => {
                         value={dashboard.queueStats.completed_count || 0}
                         valueStyle={{ color: token.colorSuccess }}
                         prefix={<CheckCircleOutlined />}
+                        data-testid="dashboard-stat-completed"
                       />
                     </Col>
                     <Col span={6}>
@@ -296,6 +303,7 @@ const DashboardPage = () => {
                         value={dashboard.queueStats.failed_count || 0}
                         valueStyle={{ color: token.colorError }}
                         prefix={<ExclamationCircleOutlined />}
+                        data-testid="dashboard-stat-failed"
                       />
                     </Col>
                   </Row>
@@ -333,6 +341,7 @@ const DashboardPage = () => {
                   </Space>
                 }
                 style={{ height: '100%' }}
+                data-testid="dashboard-card-queue-overview-empty"
               >
                 <Empty description="No queue data available" />
               </Card>
@@ -344,6 +353,7 @@ const DashboardPage = () => {
         <Card 
           title="Resource Usage"
           extra={<Text type="secondary">Monitor your resource consumption against plan limits</Text>}
+          data-testid="dashboard-card-resource-usage"
         >
           <Row gutter={[16, 24]}>
             {dashboard.resources.map((resource) => (
@@ -364,6 +374,7 @@ const DashboardPage = () => {
                     strokeColor={resource.IsLimitReached === 1 ? 
                       (currentTheme === 'dark' ? '#ff6b6b' : token.colorError) : 
                       (currentTheme === 'dark' ? '#7d9b49' : token.colorPrimary)}
+                    data-testid={`dashboard-progress-${resource.ResourceType.toLowerCase()}`}
                   />
                   {resource.IsLimitReached === 1 && (
                     <Text type="danger" style={{ fontSize: 12 }}>Limit reached</Text>
@@ -383,8 +394,9 @@ const DashboardPage = () => {
             </Space>
           }
           extra={
-            <Link to="/audit" style={{ color: token.colorPrimary }}>View All</Link>
+            <Link to="/audit" style={{ color: token.colorPrimary }} data-testid="dashboard-activity-viewall-link">View All</Link>
           }
+          data-testid="dashboard-card-recent-activity"
         >
           {auditLoading ? (
             <div style={{ textAlign: 'center', padding: '20px' }}>
@@ -439,6 +451,7 @@ const DashboardPage = () => {
                 <span>Queue Details</span>
               </Space>
             }
+            data-testid="dashboard-card-queue-details"
           >
             <Row gutter={[16, 16]}>
               {/* Today's Activity */}
@@ -454,19 +467,19 @@ const DashboardPage = () => {
                   <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Text type="secondary">Created</Text>
-                      <Text strong style={{ fontSize: 18 }}>{dashboard.queueStats.created_today || 0}</Text>
+                      <Text strong style={{ fontSize: 18 }} data-testid="dashboard-stat-created-today">{dashboard.queueStats.created_today || 0}</Text>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Text type="secondary">Completed</Text>
-                      <Text strong style={{ fontSize: 18, color: token.colorSuccess }}>{dashboard.queueStats.completed_today || 0}</Text>
+                      <Text strong style={{ fontSize: 18, color: token.colorSuccess }} data-testid="dashboard-stat-completed-today">{dashboard.queueStats.completed_today || 0}</Text>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Text type="secondary">Cancelled</Text>
-                      <Text strong style={{ fontSize: 18, color: token.colorError }}>{dashboard.queueStats.cancelled_today || 0}</Text>
+                      <Text strong style={{ fontSize: 18, color: token.colorError }} data-testid="dashboard-stat-cancelled-today">{dashboard.queueStats.cancelled_today || 0}</Text>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Text type="secondary">Failed</Text>
-                      <Text strong style={{ fontSize: 18, color: token.colorError }}>{dashboard.queueStats.failed_today || 0}</Text>
+                      <Text strong style={{ fontSize: 18, color: token.colorError }} data-testid="dashboard-stat-failed-today">{dashboard.queueStats.failed_today || 0}</Text>
                     </div>
                   </Space>
                 </div>
@@ -486,6 +499,7 @@ const DashboardPage = () => {
                       <List
                         size="small"
                         dataSource={dashboard.queueStats.team_issues || dashboard.queueStats.TeamIssues}
+                        data-testid="dashboard-list-team-issues"
                         renderItem={(team) => (
                           <List.Item style={{ paddingLeft: 0, paddingRight: 0 }}>
                             <div style={{ width: '100%' }}>
@@ -521,6 +535,7 @@ const DashboardPage = () => {
                           size="small"
                           dataSource={dashboard.queueStats.machine_issues || dashboard.queueStats.MachineIssues}
                           pagination={false}
+                          data-testid="dashboard-table-machine-issues"
                           columns={[
                             {
                               title: 'Machine',
@@ -571,19 +586,19 @@ const DashboardPage = () => {
                       <Space direction="vertical" size="small" style={{ width: '100%' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <Text>Highest Priority</Text>
-                          <Badge count={dashboard.queueStats.highest_priority_pending ?? dashboard.queueStats.HighestPriorityPending ?? 0} style={{ backgroundColor: token.colorError }} />
+                          <Badge count={dashboard.queueStats.highest_priority_pending ?? dashboard.queueStats.HighestPriorityPending ?? 0} style={{ backgroundColor: token.colorError }} data-testid="dashboard-badge-highest-priority" />
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <Text>High Priority</Text>
-                          <Badge count={dashboard.queueStats.high_priority_pending ?? dashboard.queueStats.HighPriorityPending ?? 0} style={{ backgroundColor: token.colorWarning }} />
+                          <Badge count={dashboard.queueStats.high_priority_pending ?? dashboard.queueStats.HighPriorityPending ?? 0} style={{ backgroundColor: token.colorWarning }} data-testid="dashboard-badge-high-priority" />
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <Text>Normal Priority</Text>
-                          <Badge count={dashboard.queueStats.normal_priority_pending ?? dashboard.queueStats.NormalPriorityPending ?? 0} style={{ backgroundColor: token.colorInfo }} />
+                          <Badge count={dashboard.queueStats.normal_priority_pending ?? dashboard.queueStats.NormalPriorityPending ?? 0} style={{ backgroundColor: token.colorInfo }} data-testid="dashboard-badge-normal-priority" />
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <Text>Low Priority</Text>
-                          <Badge count={dashboard.queueStats.low_priority_pending ?? dashboard.queueStats.LowPriorityPending ?? 0} style={{ backgroundColor: token.colorTextSecondary }} />
+                          <Badge count={dashboard.queueStats.low_priority_pending ?? dashboard.queueStats.LowPriorityPending ?? 0} style={{ backgroundColor: token.colorTextSecondary }} data-testid="dashboard-badge-low-priority" />
                         </div>
                       </Space>
                     </div>
@@ -610,6 +625,7 @@ const DashboardPage = () => {
               )}
             </Space>
           }
+          data-testid="dashboard-card-subscription-plans"
         >
           <Row gutter={[24, 24]}>
             {/* Current Subscription Section */}
@@ -629,6 +645,7 @@ const DashboardPage = () => {
                           title="Active Licenses"
                           value={dashboard.activeSubscription.TotalActivePurchases}
                           valueStyle={{ color: token.colorText }}
+                          data-testid="dashboard-stat-active-licenses"
                         />
                       </Col>
                       <Col span={12}>
@@ -636,6 +653,7 @@ const DashboardPage = () => {
                           title="Days Remaining"
                           value={dashboard.activeSubscription.DaysRemaining}
                           valueStyle={{ color: dashboard.activeSubscription.DaysRemaining <= CRITICAL_DAYS_THRESHOLD ? token.colorError : token.colorText }}
+                          data-testid="dashboard-stat-days-remaining"
                         />
                       </Col>
                     </Row>
@@ -652,7 +670,7 @@ const DashboardPage = () => {
                       <Space direction="vertical" size="small" style={{ width: '100%' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <Text strong>Monthly Cost</Text>
-                          <Title level={3} style={{ margin: 0 }}>
+                          <Title level={3} style={{ margin: 0 }} data-testid="dashboard-stat-monthly-cost">
                             ${(() => {
                               let totalMonthlyCost = 0;
                               
@@ -709,7 +727,8 @@ const DashboardPage = () => {
                           backgroundColor: currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout, 
                           borderRadius: 6,
                           border: `1px solid ${token.colorBorder}`
-                        }}>
+                        }}
+                        data-testid={`dashboard-license-item-${index}`}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                             <Space>
                               <Text strong>{sub.planName}</Text>
@@ -722,6 +741,7 @@ const DashboardPage = () => {
                           </div>
                           <Tooltip title={`From ${new Date(sub.startDate).toLocaleDateString()} to ${new Date(sub.endDate).toLocaleDateString()}`}>
                             <Progress 
+                              data-testid={`dashboard-progress-subscription-${sub.planCode}`}
                               percent={(() => {
                                 // Calculate total subscription duration in days
                                 const startDate = new Date(sub.startDate);
@@ -796,6 +816,7 @@ const DashboardPage = () => {
                               ? `2px solid ${token.colorPrimary}` 
                               : `1px solid ${token.colorBorder}`
                           }}
+                          data-testid={`dashboard-plan-item-${plan.PlanCode.toLowerCase()}`}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ flex: 1 }}>

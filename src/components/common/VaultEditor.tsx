@@ -867,7 +867,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           initialValue={field.default}
           valuePropName="checked"
         >
-          <Switch />
+          <Switch data-testid={`vault-editor-field-${fieldName}`} />
         </FieldFormItem>
       )
     }
@@ -881,7 +881,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           rules={rules}
           initialValue={field.default}
         >
-          <Select {...commonProps}>
+          <Select {...commonProps} data-testid={`vault-editor-field-${fieldName}`}>
             {field.enum.map((option) => (
               <Select.Option key={option} value={option}>
                 {option}
@@ -905,6 +905,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
             {...commonProps}
             min={field.minimum}
             max={field.maximum}
+            data-testid={`vault-editor-field-${fieldName}`}
           />
         </FieldFormItem>
       )
@@ -926,6 +927,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               fieldDefinition={field}
               title={fieldLabel}
               description={fieldDescription}
+              data-testid={`vault-editor-field-${fieldName}`}
             />
           </Form.Item>
         )
@@ -944,6 +946,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               {...commonProps}
               rows={4}
               placeholder={field.example ? `${t('vaultEditor.example')} ${JSON.stringify(field.example, null, 2)}` : t('vaultEditor.enterJsonObject')}
+              data-testid={`vault-editor-field-${fieldName}`}
             />
           </Form.Item>
         )
@@ -964,6 +967,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
             {...commonProps}
             rows={4}
             placeholder={field.example ? `${t('vaultEditor.example')} ${JSON.stringify(field.example, null, 2)}` : t('vaultEditor.enterJsonArray')}
+            data-testid={`vault-editor-field-${fieldName}`}
           />
         </Form.Item>
       )
@@ -984,6 +988,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
             min={1}
             max={65535}
             placeholder={t('vaultEditor.portPlaceholder')}
+            data-testid={`vault-editor-field-${fieldName}`}
           />
         </FieldFormItem>
       )
@@ -1061,6 +1066,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                   {...commonProps}
                   type="password"
                   autoComplete="new-password"
+                  data-testid={`vault-editor-field-${fieldName}`}
                 />
               </Form.Item>
             )
@@ -1090,6 +1096,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           {...commonProps}
           type={field.sensitive ? 'password' : 'text'}
           autoComplete={field.sensitive ? 'new-password' : 'off'}
+          data-testid={`vault-editor-field-${fieldName}`}
           addonAfter={isGeneratable ? (
             <FieldGenerator
               fieldType={
@@ -1097,6 +1104,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               }
               onGenerate={handleFieldGeneration}
               entityType={entityType}
+              data-testid={`vault-editor-generate-${fieldName}`}
             />
           ) : undefined}
         />
@@ -1129,6 +1137,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         }}
         autoComplete="off"
         style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}
+        data-testid="vault-editor-form"
       >
         <Collapse 
           defaultActiveKey={[
@@ -1137,6 +1146,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
             (entityType === 'STORAGE' && selectedProvider && providerFields) ? 'provider' : '',
           ].filter(Boolean)}
           style={{ flex: 1 }}
+          data-testid="vault-editor-collapse"
         >
           {requiredFields.length > 0 && (
             <Collapse.Panel
@@ -1147,6 +1157,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 </Space>
               }
               key="required"
+              data-testid="vault-editor-panel-required"
             >
               {requiredFields
                 .map((fieldName) => {
@@ -1181,6 +1192,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                     <Button
                       type="primary"
                       loading={isCreatingQueueItem || isTestingConnection}
+                      data-testid="vault-editor-test-connection"
                       onClick={async () => {
                       // Get current form values
                       const values = form.getFieldsValue()
@@ -1363,6 +1375,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 </Space>
               }
               key="optional"
+              data-testid="vault-editor-panel-optional"
             >
               {optionalFields.map((fieldName) => {
                 const field = fields[fieldName as keyof typeof fields]
@@ -1405,6 +1418,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 </Space>
               }
               key="provider"
+              data-testid="vault-editor-panel-provider"
             >
               {/* Provider help text */}
               <Alert
@@ -1481,6 +1495,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 </Space>
               }
               key="extra"
+              data-testid="vault-editor-panel-extra"
             >
               <Alert
                 message={t('vaultEditor.extraFieldsWarning')}
@@ -1510,6 +1525,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 </Space>
               }
               key="rawjson"
+              data-testid="vault-editor-panel-rawjson"
             >
               <Alert
                 message={t('vaultEditor.expertModeOnly')}
@@ -1534,6 +1550,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 value={rawJsonValue}
                 onChange={handleRawJsonChange}
                 height="400px"
+                data-testid="vault-editor-raw-json"
               />
             </Collapse.Panel>
           )}

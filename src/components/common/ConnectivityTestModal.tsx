@@ -155,11 +155,11 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
       dataIndex: 'machineName',
       key: 'machineName',
       render: (name: string, record: TestResult) => (
-        <Space>
-          {record.status === 'testing' && <SyncOutlined spin style={{ color: '#1890ff' }} />}
-          {record.status === 'success' && <CheckCircleOutlined style={{ color: '#52c41a' }} />}
-          {record.status === 'failed' && <CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
-          {record.status === 'pending' && <ClockCircleOutlined style={{ color: '#8c8c8c' }} />}
+        <Space data-testid={`connectivity-machine-${name}`}>
+          {record.status === 'testing' && <SyncOutlined spin style={{ color: '#1890ff' }} data-testid={`connectivity-status-icon-testing-${name}`} />}
+          {record.status === 'success' && <CheckCircleOutlined style={{ color: '#52c41a' }} data-testid={`connectivity-status-icon-success-${name}`} />}
+          {record.status === 'failed' && <CloseCircleOutlined style={{ color: '#ff4d4f' }} data-testid={`connectivity-status-icon-failed-${name}`} />}
+          {record.status === 'pending' && <ClockCircleOutlined style={{ color: '#8c8c8c' }} data-testid={`connectivity-status-icon-pending-${name}`} />}
           <Text strong>{name}</Text>
         </Space>
       )
@@ -181,14 +181,14 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
       dataIndex: 'status',
       key: 'status',
       width: 120,
-      render: (status: TestResult['status']) => {
+      render: (status: TestResult['status'], record: TestResult) => {
         const config = {
           pending: { color: 'default', text: t('machines:pending') },
           testing: { color: 'processing', text: t('machines:testing') },
           success: { color: 'success', text: t('machines:connected') },
           failed: { color: 'error', text: t('machines:failed') }
         }
-        return <Tag color={config[status].color}>{config[status].text}</Tag>
+        return <Tag color={config[status].color} data-testid={`connectivity-status-tag-${record.machineName}-${status}`}>{config[status].text}</Tag>
       }
     },
     {
@@ -220,6 +220,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
 
   return (
     <Modal
+      data-testid="connectivity-modal"
       title={
         <Space>
           <WifiOutlined />
@@ -237,10 +238,11 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
           onClick={runAllTests}
           disabled={isRunning || machines.length === 0}
           loading={isRunning}
+          data-testid="connectivity-run-test-button"
         >
           {isRunning ? t('machines:testing') : t('machines:runTest')}
         </Button>,
-        <Button key="close" onClick={onClose}>
+        <Button key="close" onClick={onClose} data-testid="connectivity-close-button">
           Close
         </Button>
       ]}
@@ -248,7 +250,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         {/* Progress Bar */}
         {isRunning && (
-          <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 16 }} data-testid="connectivity-progress-container">
             <Progress 
               percent={progress} 
               status="active"
@@ -256,9 +258,10 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
                 '0%': '#108ee9',
                 '100%': '#87d068'
               }}
+              data-testid="connectivity-progress-bar"
             />
             {currentMachineIndex >= 0 && currentMachineIndex < machines.length && (
-              <Text type="secondary" style={{ fontSize: '12px' }}>
+              <Text type="secondary" style={{ fontSize: '12px' }} data-testid="connectivity-progress-text">
                 {t('machines:testingMachine', { machineName: machines[currentMachineIndex].machineName })}
               </Text>
             )}
@@ -271,6 +274,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
           type="info"
           showIcon
           icon={<WifiOutlined />}
+          data-testid="connectivity-info-alert"
         />
 
         {/* Results Table */}
@@ -287,6 +291,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
             if (record.status === 'failed') return 'connectivity-test-failed-row'
             return ''
           }}
+          data-testid="connectivity-results-table"
         />
 
         {/* Summary Statistics */}
@@ -295,25 +300,26 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
             padding: '16px', 
             background: theme === 'dark' ? '#1f1f1f' : '#f0f2f5',
             borderRadius: '8px'
-          }}>
+          }}
+          data-testid="connectivity-summary-statistics">
             <Space size="large">
-              <div>
+              <div data-testid="connectivity-total-machines">
                 <Text type="secondary">{t('machines:totalMachines')}:</Text>{' '}
                 <Text strong>{machines.length}</Text>
               </div>
-              <div>
+              <div data-testid="connectivity-connected-count">
                 <Text type="secondary">{t('machines:connected')}:</Text>{' '}
                 <Text strong style={{ color: '#52c41a' }}>
                   {testResults.filter(r => r.status === 'success').length}
                 </Text>
               </div>
-              <div>
+              <div data-testid="connectivity-failed-count">
                 <Text type="secondary">{t('machines:failed')}:</Text>{' '}
                 <Text strong style={{ color: '#ff4d4f' }}>
                   {testResults.filter(r => r.status === 'failed').length}
                 </Text>
               </div>
-              <div>
+              <div data-testid="connectivity-average-response">
                 <Text type="secondary">{t('machines:averageResponse')}:</Text>{' '}
                 <Text strong>
                   {(() => {

@@ -295,12 +295,15 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           const isExpanded = expandedRowKeys.includes(record.machineName);
           return (
             <Space>
-              <span style={{ 
-                display: 'inline-block',
-                width: 12,
-                transition: 'transform 0.3s ease',
-                transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'
-              }}>
+              <span 
+                style={{ 
+                  display: 'inline-block',
+                  width: 12,
+                  transition: 'transform 0.3s ease',
+                  transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'
+                }}
+                data-testid={`machine-expand-${record.machineName}`}
+              >
                 <RightOutlined style={{ fontSize: 12, color: '#999' }} />
               </span>
               <DesktopOutlined style={{ color: '#556b2f' }} />
@@ -401,17 +404,20 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               size="small"
               icon={<EditOutlined />}
               onClick={() => onEditMachine && onEditMachine(record)}
+              data-testid={`machine-edit-${record.machineName}`}
             >
               {t('common:actions.edit')}
             </Button>
             <Dropdown
+              data-testid={`machine-dropdown-${record.machineName}`}
               menu={{
                 items: [
                   {
                     key: 'createRepo',
                     label: t('machines:createRepo'),
                     icon: <InboxOutlined />,
-                    onClick: () => onCreateRepository && onCreateRepository(record)
+                    onClick: () => onCreateRepository && onCreateRepository(record),
+                    'data-testid': `machine-create-repo-${record.machineName}`
                   },
                   {
                     key: 'pull',
@@ -422,12 +428,14 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                         open: true,
                         machine: record
                       });
-                    }
+                    },
+                    'data-testid': `machine-pull-${record.machineName}`
                   },
                   {
                     key: 'functions',
                     label: t('machines:runAction'),
                     icon: <FunctionOutlined />,
+                    'data-testid': `machine-functions-${record.machineName}`,
                     children: [
                       ...machineFunctions.map((func) => ({
                         key: `function-${func.name}`,
@@ -447,7 +455,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                               }))
                             }
                           }
-                        }
+                        },
+                        'data-testid': `machine-function-${func.name}-${record.machineName}`
                       })),
                       {
                         type: 'divider'
@@ -467,7 +476,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                               }))
                             }
                           }
-                        }
+                        },
+                        'data-testid': `machine-advanced-${record.machineName}`
                       }
                     ]
                   },
@@ -488,7 +498,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                       } else {
                         showMessage('error', result.error || t('machines:connectionFailed'));
                       }
-                    }
+                    },
+                    'data-testid': `machine-test-${record.machineName}`
                   },
                   ...(isExpertMode ? [{
                     key: 'assignCluster',
@@ -501,7 +512,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                         open: true,
                         machine: record
                       });
-                    }
+                    },
+                    'data-testid': `machine-assign-cluster-${record.machineName}`
                   }] : [])
                 ]
               }}
@@ -511,6 +523,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                 type="primary"
                 size="small"
                 icon={<FunctionOutlined />}
+                data-testid={`machine-remote-${record.machineName}`}
               >
                 {t('machines:remote')}
               </Button>
@@ -527,6 +540,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                   entityName: record.machineName
                 });
               }}
+              data-testid={`machine-trace-${record.machineName}`}
             >
               {t('machines:trace')}
             </Button>
@@ -536,6 +550,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               size="small"
               icon={<DeleteOutlined />}
               onClick={() => handleDelete(record)}
+              data-testid={`machine-delete-${record.machineName}`}
             >
               {t('common:actions.delete')}
             </Button>
@@ -555,6 +570,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     },
     getCheckboxProps: (record: Machine) => ({
       disabled: false, // Can be customized based on machine status
+      'data-testid': `machine-checkbox-${record.machineName}`,
     }),
   } : undefined;
 
@@ -579,6 +595,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           <Button
             size="small"
             onClick={() => setSelectedRowKeys([])}
+            data-testid="machine-bulk-clear-selection"
           >
             {t('common:actions.clearSelection')}
           </Button>
@@ -588,18 +605,21 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             type="primary"
             icon={<CloudServerOutlined />}
             onClick={() => setBulkAssignClusterModal(true)}
+            data-testid="machine-bulk-assign-cluster"
           >
             {t('machines:bulkActions.assignToCluster')}
           </Button>
           <Button
             icon={<CloudServerOutlined />}
             onClick={() => setRemoveFromClusterModal(true)}
+            data-testid="machine-bulk-remove-cluster"
           >
             {t('machines:bulkActions.removeFromCluster')}
           </Button>
           <Button
             icon={<InfoCircleOutlined />}
             onClick={() => setViewAssignmentStatusModal(true)}
+            data-testid="machine-bulk-view-status"
           >
             {t('machines:bulkActions.viewAssignmentStatus')}
           </Button>
@@ -624,47 +644,48 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               padding: '2px'
             }}
             className={theme === 'light' ? 'light-mode-radio-group' : ''}
+            data-testid="machine-view-toggle"
           >
-            <Radio.Button value="machine">
+            <Radio.Button value="machine" data-testid="machine-view-toggle-machine">
               <Space>
                 <DesktopOutlined />
                 {t('machines:machine')}
               </Space>
             </Radio.Button>
             <span style={{ marginLeft: 16 }} />
-            <Radio.Button value="bridge">
+            <Radio.Button value="bridge" data-testid="machine-view-toggle-bridge">
               <Space>
                 <CloudServerOutlined />
                 {t('machines:groupByBridge')}
               </Space>
             </Radio.Button>
-            <Radio.Button value="team">
+            <Radio.Button value="team" data-testid="machine-view-toggle-team">
               <Space>
                 <TeamOutlined />
                 {t('machines:groupByTeam')}
               </Space>
             </Radio.Button>
             {isExpertMode && (
-              <Radio.Button value="region">
+              <Radio.Button value="region" data-testid="machine-view-toggle-region">
                 <Space>
                   <GlobalOutlined />
                   {t('machines:groupByRegion')}
                 </Space>
               </Radio.Button>
             )}
-            <Radio.Button value="repository">
+            <Radio.Button value="repository" data-testid="machine-view-toggle-repository">
               <Space>
                 <InboxOutlined />
                 {t('machines:groupByRepository')}
               </Space>
             </Radio.Button>
-            <Radio.Button value="status">
+            <Radio.Button value="status" data-testid="machine-view-toggle-status">
               <Space>
                 <DashboardOutlined />
                 {t('machines:groupByStatus')}
               </Space>
             </Radio.Button>
-            <Radio.Button value="grand">
+            <Radio.Button value="grand" data-testid="machine-view-toggle-grand">
               <Space>
                 <BranchesOutlined />
                 {t('machines:groupByGrand')}
@@ -927,12 +948,14 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               const isSelected = externalSelectedMachine?.machineName === record.machineName;
               return isSelected ? 'ant-table-row-selected' : '';
             }}
+            data-testid="machine-table"
             pagination={{
               pageSize: dynamicPageSize,
               showSizeChanger: false,
               showTotal: (total, range) => t('common:table.showingRecords', { start: range[0], end: range[1], total }),
             }}
             onRow={(record) => ({
+              'data-testid': `machine-row-${record.machineName}`,
               onClick: (e) => {
                 const target = e.target as HTMLElement;
                 // Don't expand if clicking on buttons or dropdowns

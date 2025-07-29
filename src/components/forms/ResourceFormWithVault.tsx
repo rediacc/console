@@ -136,6 +136,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
               render={({ field: controllerField }) => (
                 <Select
                   {...controllerField}
+                  data-testid={`resource-modal-field-${field.name}-select`}
                   placeholder={field.placeholder}
                   options={field.options}
                   disabled={field.disabled}
@@ -158,6 +159,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
               render={({ field: controllerField }) => (
                 <Input.Password
                   {...controllerField}
+                  data-testid={`resource-modal-field-${field.name}-password`}
                   placeholder={field.placeholder}
                   disabled={field.disabled}
                   autoComplete="off"
@@ -191,6 +193,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
                 return (
                   <Space.Compact style={{ width: '100%' }}>
                     <InputNumber
+                      data-testid={`resource-modal-field-${field.name}-size-input`}
                       style={{ width: '65%' }}
                       value={parsedValue}
                       onChange={(value) => {
@@ -229,6 +232,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
                       precision={0}
                     />
                     <Select
+                      data-testid={`resource-modal-field-${field.name}-size-unit`}
                       style={{ width: '35%' }}
                       value={parsedUnit}
                       onChange={(unit) => {
@@ -255,6 +259,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
               render={({ field: controllerField }) => (
                 <Input
                   {...controllerField}
+                  data-testid={`resource-modal-field-${field.name}-input`}
                   type={field.type || 'text'}
                   placeholder={field.placeholder}
                   disabled={field.disabled}
@@ -275,6 +280,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, height: '100%' }}>
         {/* Form Section */}
         <Form 
+          data-testid="resource-modal-form"
           layout={formLayout}
           labelCol={labelCol}
           wrapperCol={wrapperCol}
@@ -297,6 +303,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
                 required={field.required}
                 validateStatus={error ? 'error' : undefined}
                 help={error?.message as string || field.helperText}
+                data-testid={`resource-modal-field-${field.name}`}
               >
                 {renderField(field)}
               </Form.Item>
@@ -311,7 +318,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
         <Divider style={{ margin: '8px 0' }}>{t('vaultEditor.vaultConfiguration')}</Divider>
 
         {/* Vault Editor Section */}
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+        <div data-testid="resource-modal-vault-editor-section" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
           <VaultEditor
             entityType={entityType}
             initialData={initialVaultData}

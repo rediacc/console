@@ -36,6 +36,7 @@ interface NestedObjectEditorProps {
   readOnly?: boolean
   title?: string
   description?: string
+  'data-testid'?: string
 }
 
 interface ObjectEntry {
@@ -91,6 +92,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
   readOnly = false,
   title,
   description,
+  'data-testid': dataTestId,
 }) => {
   const { t } = useTranslation('common')
   const [entries, setEntries] = useState<ObjectEntry[]>([])
@@ -236,6 +238,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                       })}
                       disabled={readOnly}
                       placeholder="e.g., registry/image:tag"
+                      data-testid={dataTestId ? `${dataTestId}-field-${entry.key}-image` : `vault-editor-nested-field-${entry.key}-image`}
                     />
                   </Form.Item>
                 </Col>
@@ -247,6 +250,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                         value: { ...entry.value, active: checked }
                       })}
                       disabled={readOnly}
+                      data-testid={dataTestId ? `${dataTestId}-field-${entry.key}-active` : `vault-editor-nested-field-${entry.key}-active`}
                     />
                   </Form.Item>
                 </Col>
@@ -263,6 +267,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
           onChange={(newValue) => handleUpdateEntry(index, { value: newValue })}
           fieldDefinition={entryDef}
           readOnly={readOnly}
+          data-testid={dataTestId ? `${dataTestId}-nested-${entry.key}` : `vault-editor-nested-nested-${entry.key}`}
         />
       )
     }
@@ -274,6 +279,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
           checked={entry.value}
           onChange={(checked) => handleUpdateEntry(index, { value: checked })}
           disabled={readOnly}
+          data-testid={dataTestId ? `${dataTestId}-field-${entry.key}` : `vault-editor-nested-field-${entry.key}`}
         />
       )
     }
@@ -286,6 +292,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
           onChange={(e) => handleUpdateEntry(index, { value: Number(e.target.value) })}
           disabled={readOnly}
           style={{ width: 200 }}
+          data-testid={dataTestId ? `${dataTestId}-field-${entry.key}` : `vault-editor-nested-field-${entry.key}`}
         />
       )
     }
@@ -296,6 +303,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
         value={entry.value}
         onChange={(e) => handleUpdateEntry(index, { value: e.target.value })}
         disabled={readOnly}
+        data-testid={dataTestId ? `${dataTestId}-field-${entry.key}` : `vault-editor-nested-field-${entry.key}`}
       />
     )
   }
@@ -343,18 +351,21 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                 onPressEnter={handleAddEntry}
                 style={{ width: '70%' }}
                 autoComplete="off"
+                data-testid={dataTestId ? `${dataTestId}-new-key` : 'vault-editor-nested-new-key'}
               />
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
                 onClick={handleAddEntry}
                 disabled={!newKey.trim()}
+                data-testid={dataTestId ? `${dataTestId}-add` : 'vault-editor-nested-add'}
               >
                 {t('nestedObjectEditor.Add')}
               </Button>
               <Button
                 icon={<CodeOutlined />}
                 onClick={() => setShowRawJson(!showRawJson)}
+                data-testid={dataTestId ? `${dataTestId}-toggle-json` : 'vault-editor-nested-toggle-json'}
               >
                 {showRawJson ? t('nestedObjectEditor.Hide JSON') : t('nestedObjectEditor.Show JSON')}
               </Button>
@@ -368,10 +379,11 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
             image={Empty.PRESENTED_IMAGE_SIMPLE}
           />
         ) : (
-          <Collapse defaultActiveKey={entries.map((_, i) => i.toString())}>
+          <Collapse defaultActiveKey={entries.map((_, i) => i.toString())} data-testid={dataTestId ? `${dataTestId}-collapse` : 'vault-editor-nested-collapse'}>
             {entries.map((entry, index) => (
               <Panel
                 key={index}
+                data-testid={dataTestId ? `${dataTestId}-panel-${entry.key}` : `vault-editor-nested-panel-${entry.key}`}
                 header={
                   <Space>
                     <Tag color="blue">{entry.key}</Tag>
@@ -402,6 +414,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                           danger
                           icon={<DeleteOutlined />}
                           size="small"
+                          data-testid={dataTestId ? `${dataTestId}-delete-${entry.key}` : `vault-editor-nested-delete-${entry.key}`}
                         />
                       </Popconfirm>
                     </Space>
@@ -426,6 +439,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
               onChange={handleRawJsonChange}
               readOnly={readOnly}
               height="300px"
+              data-testid={dataTestId ? `${dataTestId}-raw-json` : 'vault-editor-nested-raw-json'}
             />
           </Card>
         )}

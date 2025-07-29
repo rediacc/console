@@ -12,13 +12,15 @@ interface FieldGeneratorProps {
   fieldType: 'ssh_keys' | 'repository_credential'
   onGenerate: (values: Record<string, string>) => void
   entityType?: string
+  'data-testid'?: string
 }
 
-const FieldGenerator: React.FC<FieldGeneratorProps> = ({
-  fieldType,
-  onGenerate,
-  entityType
-}) => {
+const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
+  const {
+    fieldType,
+    onGenerate,
+    entityType
+  } = props
   const { t } = useTranslation('common')
   const [visible, setVisible] = useState(false)
   const [generating, setGenerating] = useState(false)
@@ -81,9 +83,9 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = ({
   const renderRadioGroup = (label: string, value: any, options: any[], onChange: (val: any) => void) => (
     <div>
       <label style={{ fontWeight: 500 }}>{label}</label>
-      <Radio.Group value={value} onChange={(e) => onChange(e.target.value)} style={{ display: 'block', marginTop: 8 }}>
+      <Radio.Group value={value} onChange={(e) => onChange(e.target.value)} style={{ display: 'block', marginTop: 8 }} data-testid={`vault-editor-radio-${label.toLowerCase().replace(/\s+/g, '-')}`}>
         {options.map(opt => 
-          <Radio key={opt.value} value={opt.value} disabled={opt.disabled}>{opt.label}</Radio>
+          <Radio key={opt.value} value={opt.value} disabled={opt.disabled} data-testid={`vault-editor-radio-option-${opt.value}`}>{opt.label}</Radio>
         )}
       </Radio.Group>
     </div>
@@ -122,6 +124,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = ({
               size="small"
               icon={copiedField === field ? <CheckOutlined /> : <CopyOutlined />}
               onClick={() => handleCopy(field, value)}
+              data-testid={`vault-editor-copy-${field.toLowerCase()}`}
             >
               {copiedField === field ? t('fieldGenerator.copied') : t('fieldGenerator.copy')}
             </Button>
@@ -156,18 +159,20 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = ({
             onClick={handleGenerate}
             loading={generating}
             style={{ backgroundColor: 'var(--color-primary)' }}
+            data-testid="vault-editor-generate-button"
           >
             {t('fieldGenerator.generate')}
           </Button>
         ) : (
           <>
-            <Button onClick={() => setGeneratedValues({})}>
+            <Button onClick={() => setGeneratedValues({})} data-testid="vault-editor-generate-cancel">
               {t('fieldGenerator.cancel')}
             </Button>
             <Button 
               icon={<ReloadOutlined />} 
               onClick={handleGenerate}
               loading={generating}
+              data-testid="vault-editor-regenerate-button"
             >
               {t('fieldGenerator.regenerate')}
             </Button>
@@ -175,6 +180,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = ({
               type="primary" 
               onClick={handleApply}
               style={{ backgroundColor: 'var(--color-primary)' }}
+              data-testid="vault-editor-apply-generated"
             >
               {t('fieldGenerator.apply')}
             </Button>
@@ -204,6 +210,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = ({
           icon={<KeyOutlined />} 
           size="small"
           style={{ color: 'var(--color-primary)' }}
+          data-testid={props['data-testid'] || 'vault-editor-field-generator'}
         />
       </Tooltip>
     </Popover>

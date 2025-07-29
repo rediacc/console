@@ -306,6 +306,7 @@ const LoginPage: React.FC = () => {
               placeholder={t('auth:login.emailPlaceholder')}
               size="large"
               autoComplete="email"
+              data-testid="login-email-input"
             />
           </Form.Item>
 
@@ -319,6 +320,7 @@ const LoginPage: React.FC = () => {
               placeholder={t('auth:login.passwordPlaceholder')}
               size="large"
               autoComplete="current-password"
+              data-testid="login-password-input"
             />
           </Form.Item>
 
@@ -340,6 +342,7 @@ const LoginPage: React.FC = () => {
               placeholder={t('auth:login.masterPasswordPlaceholder')}
               size="large"
               autoComplete="off"
+              data-testid="login-master-password-input"
             />
           </Form.Item>
 
@@ -355,6 +358,7 @@ const LoginPage: React.FC = () => {
                 borderColor: '#556b2f',
                 height: 48,
               }}
+              data-testid="login-submit-button"
             >
               {t('auth:login.signIn')}
             </Button>
@@ -368,9 +372,16 @@ const LoginPage: React.FC = () => {
         <div style={{ textAlign: 'center' }}>
           <Text type="secondary">
             {t('auth:login.noAccount')}{' '}
-            <Link onClick={() => setShowRegistration(true)} style={{ color: '#556b2f' }}>
+            <Link onClick={() => setShowRegistration(true)} style={{ color: '#556b2f' }} data-testid="login-register-link">
               {t('auth:login.register')}
             </Link>
+          </Text>
+        </div>
+
+        {/* Version display */}
+        <div style={{ textAlign: 'center', marginTop: 16 }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {import.meta.env.VITE_APP_VERSION !== 'dev' ? `v${import.meta.env.VITE_APP_VERSION}` : 'Development'}
           </Text>
         </div>
       </Space>
@@ -423,6 +434,7 @@ const LoginPage: React.FC = () => {
                 autoComplete="off"
                 maxLength={6}
                 style={{ textAlign: 'center', fontSize: '20px', letterSpacing: '8px' }}
+                data-testid="2fa-code-input"
               />
             </Form.Item>
             
@@ -446,6 +458,7 @@ const LoginPage: React.FC = () => {
                     background: '#556b2f',
                     borderColor: '#556b2f',
                   }}
+                  data-testid="2fa-verify-button"
                 >
                   {t('login.twoFactorAuth.verify')}
                 </Button>

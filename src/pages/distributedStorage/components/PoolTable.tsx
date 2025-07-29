@@ -130,6 +130,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
             size="small"
             icon={<EditOutlined />}
             onClick={() => onEditPool(record)}
+            data-testid={`ds-pool-edit-${record.poolName}`}
           >
             {t('common:actions.edit')}
           </Button>
@@ -151,6 +152,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
               type="primary"
               size="small"
               icon={<FunctionOutlined />}
+              data-testid={`ds-pool-function-dropdown-${record.poolName}`}
             >
               {t('common:actions.remote')}
             </Button>
@@ -159,6 +161,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
             type="primary"
             size="small"
             icon={<HistoryOutlined />}
+            data-testid={`ds-pool-trace-${record.poolName}`}
             onClick={() => {
               setAuditTraceModal({
                 open: true,
@@ -176,6 +179,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
             size="small"
             icon={<DeleteOutlined />}
             onClick={() => handleDelete(record)}
+            data-testid={`ds-pool-delete-${record.poolName}`}
           >
             {t('common:actions.delete')}
           </Button>
@@ -196,7 +200,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
         description={t('pools.noPools')}
         style={{ marginTop: 48 }}
       >
-        <Button type="primary" onClick={onCreatePool}>
+        <Button type="primary" onClick={onCreatePool} data-testid="ds-create-pool-empty">
           {t('pools.create')}
         </Button>
       </Empty>
@@ -228,6 +232,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
               loading={loading}
               scroll={{ x: 'max-content' }}
               pagination={false}
+              data-testid={`ds-pool-table-${clusterName}`}
               expandable={{
                 expandedRowRender,
                 expandedRowKeys,
@@ -236,6 +241,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
                 expandRowByClick: false,
               }}
               onRow={(record) => ({
+                'data-testid': `ds-pool-row-${record.poolName}`,
                 onClick: (e) => {
                   const target = e.target as HTMLElement
                   if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {

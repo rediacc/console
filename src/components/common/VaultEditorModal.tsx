@@ -84,6 +84,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
       width={900}
       footer={null}
       style={{ top: 20 }}
+      data-testid="vault-modal"
     >
       <Space direction="vertical" style={{ width: '100%' }} size={12}>
         <div 
@@ -116,6 +117,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
             // Field movement notifications are already shown by VaultEditor
             // This callback is optional for parent components that need to track movements
           }}
+          data-testid="vault-modal-editor"
         />
       </Space>
 
@@ -131,8 +133,9 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
                 }
                 return false
               }}
+              data-testid="vault-modal-file-upload"
             >
-              <Button size="small" icon={<UploadOutlined />}>{t('vaultEditor.importJson')}</Button>
+              <Button size="small" icon={<UploadOutlined />} data-testid="vault-modal-import-button">{t('vaultEditor.importJson')}</Button>
             </Upload>
             <Button 
               size="small"
@@ -142,6 +145,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
                   importExportHandlers.current.handleExport()
                 }
               }}
+              data-testid="vault-modal-export-button"
             >
               {t('vaultEditor.exportJson')}
             </Button>
@@ -158,13 +162,14 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
                 </Text>
               </Space>
             )}
-            <Button onClick={onCancel}>{t('actions.cancel')}</Button>
+            <Button onClick={onCancel} data-testid="vault-modal-cancel-button">{t('actions.cancel')}</Button>
             <Button
               type="primary"
               onClick={handleSave}
               loading={loading}
               disabled={!isValid}
               style={{ background: '#556b2f', borderColor: '#556b2f' }}
+              data-testid="vault-modal-save-button"
             >
               {t('vaultEditor.saveVaultConfiguration')}
             </Button>

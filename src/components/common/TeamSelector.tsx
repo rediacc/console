@@ -34,7 +34,8 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
           <span>{team.teamName}</span>
         </Space>
       ),
-      value: team.teamName
+      value: team.teamName,
+      'data-testid': `team-selector-option-${team.teamName}`
     }))
   }, [teams, searchValue])
 
@@ -51,6 +52,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
       showSearch
       searchValue={searchValue}
       onSearch={setSearchValue}
+      data-testid="team-selector"
       tagRender={(props) => {
         const { label, value, closable, onClose } = props
         return (
@@ -59,6 +61,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
             closable={closable}
             onClose={onClose}
             style={{ marginRight: 3 }}
+            data-testid={`team-selector-tag-${value}`}
           >
             {value}
           </Tag>
@@ -74,6 +77,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
               onChange={e => setSearchValue(e.target.value)}
               onPressEnter={e => e.stopPropagation()}
               autoComplete="off"
+              data-testid="team-selector-search"
             />
           </div>
           <div style={{ borderTop: '1px solid #f0f0f0' }}>
@@ -83,7 +87,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
       )}
       maxTagCount='responsive'
       maxTagPlaceholder={(omittedValues) => (
-        <Tag color="#8FBC8F">+{omittedValues.length} more</Tag>
+        <Tag color="#8FBC8F" data-testid="team-selector-more-tag">+{omittedValues.length} more</Tag>
       )}
     />
   )

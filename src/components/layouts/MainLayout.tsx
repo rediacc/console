@@ -85,6 +85,7 @@ const MainLayout: React.FC = () => {
       icon: <AppstoreOutlined />,
       label: t('navigation.resources'),
       showInSimple: true,
+      'data-testid': 'main-nav-resources',
     },
     {
       key: '/distributed-storage',
@@ -92,24 +93,28 @@ const MainLayout: React.FC = () => {
       label: t('navigation.distributedStorage'),
       showInSimple: false, // Show in expert mode only
       requiresPlan: ['ELITE', 'PREMIUM', 'Elite', 'Premium'], // Support both uppercase and proper case
+      'data-testid': 'main-nav-distributed-storage',
     },
     {
       key: '/marketplace',
       icon: <ShoppingOutlined />,
       label: t('navigation.marketplace'),
       showInSimple: false,
+      'data-testid': 'main-nav-marketplace',
     },
     {
       key: '/queue',
       icon: <ThunderboltOutlined />,
       label: t('navigation.queue'),
       showInSimple: false,
+      'data-testid': 'main-nav-queue',
     },
     {
       key: '/audit',
       icon: <HistoryOutlined />,
       label: t('navigation.audit'),
       showInSimple: false,
+      'data-testid': 'main-nav-audit',
     },
     {
       key: 'divider-1',
@@ -122,12 +127,14 @@ const MainLayout: React.FC = () => {
       icon: <PartitionOutlined />,
       label: t('navigation.architecture'),
       showInSimple: false,
+      'data-testid': 'main-nav-architecture',
     },
     {
       key: '/system',
       icon: <SettingOutlined />,
       label: t('navigation.system'),
       showInSimple: true,
+      'data-testid': 'main-nav-system',
     },
   ]
 
@@ -246,6 +253,7 @@ const MainLayout: React.FC = () => {
             cursor: 'pointer',
           }}
           onClick={() => navigate('/dashboard')}
+          data-testid="main-logo-home"
         >
           <img
             src={theme === 'dark' ? logoWhite : logoBlack}
@@ -357,6 +365,7 @@ const MainLayout: React.FC = () => {
                     cursor: collapsed ? 'pointer' : 'default',
                   }}
                   onClick={collapsed ? handleModeToggle : undefined}
+                  data-testid="main-mode-icon"
                 >
                   {uiMode === 'simple' ? (
                     <SmileOutlined />
@@ -378,6 +387,7 @@ const MainLayout: React.FC = () => {
                   size="small"
                   checked={uiMode === 'expert'}
                   onChange={handleModeToggle}
+                  data-testid="main-mode-toggle"
                 />
               )}
             </div>
@@ -394,6 +404,7 @@ const MainLayout: React.FC = () => {
                 icon={<LogoutOutlined />}
                 onClick={handleLogout}
                 className="logout-button"
+                data-testid="main-logout-button"
                 style={{
                   width: '100%',
                   display: 'flex',
@@ -428,11 +439,13 @@ const MainLayout: React.FC = () => {
               <MenuUnfoldOutlined
                 style={{ fontSize: 18, cursor: 'pointer' }}
                 onClick={() => setCollapsed(false)}
+                data-testid="main-sidebar-expand"
               />
             ) : (
               <MenuFoldOutlined
                 style={{ fontSize: 18, cursor: 'pointer' }}
                 onClick={() => setCollapsed(true)}
+                data-testid="main-sidebar-collapse"
               />
             )}
             {company && (

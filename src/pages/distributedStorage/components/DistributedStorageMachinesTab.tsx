@@ -182,6 +182,7 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
           <Button
             size="small"
             onClick={() => setSelectedMachines([])}
+            data-testid="ds-machines-clear-selection"
           >
             {t('common:actions.clearSelection')}
           </Button>
@@ -191,18 +192,21 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
             type="primary"
             icon={<CloudServerOutlined />}
             onClick={() => setBulkAssignClusterModal(true)}
+            data-testid="ds-machines-bulk-assign-cluster"
           >
             {t('machines:bulkActions.assignToCluster')}
           </Button>
           <Button
             icon={<CloudServerOutlined />}
             onClick={() => setRemoveFromClusterModal(true)}
+            data-testid="ds-machines-bulk-remove-cluster"
           >
             {t('machines:bulkActions.removeFromCluster')}
           </Button>
           <Button
             icon={<InfoCircleOutlined />}
             onClick={() => setViewAssignmentStatusModal(true)}
+            data-testid="ds-machines-bulk-view-status"
           >
             {t('machines:bulkActions.viewAssignmentStatus')}
           </Button>
@@ -229,6 +233,7 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
               onChange={(e) => setSearchText(e.target.value)}
               prefix={<SearchOutlined />}
               allowClear
+              data-testid="ds-machines-search"
             />
           </Col>
           
@@ -239,6 +244,7 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
               value={assignmentFilter}
               onChange={setAssignmentFilter}
               suffixIcon={<FilterOutlined />}
+              data-testid="ds-machines-filter-assignment"
             >
               <Select.Option value="all">{t('machines.filters.allStatuses')}</Select.Option>
               <Select.Option value="available">{t('assignment.available')}</Select.Option>
@@ -253,6 +259,7 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
               <Button
                 icon={<ExportOutlined />}
                 onClick={handleExport}
+                data-testid="ds-machines-export-button"
               >
                 {t('machines.actions.exportReport')}
               </Button>

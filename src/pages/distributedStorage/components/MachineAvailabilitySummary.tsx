@@ -81,13 +81,15 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
           style={{ cursor: 'pointer' }} 
           onClick={handleRefresh}
           spin={isLoading}
+          data-testid="ds-machines-summary-refresh"
         />
       }
       style={{ marginBottom: 16 }}
+      data-testid="ds-machines-summary-card"
     >
       <Row gutter={16}>
         <Col xs={24} sm={12} md={8} lg={4}>
-          <Card size="small" style={{ textAlign: 'center' }}>
+          <Card size="small" style={{ textAlign: 'center' }} data-testid="ds-machines-summary-total">
             <Statistic
               title={t('machines.summary.total')}
               value={stats.total}
@@ -98,7 +100,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
         </Col>
         
         <Col xs={24} sm={12} md={8} lg={5}>
-          <Card size="small" style={{ textAlign: 'center' }}>
+          <Card size="small" style={{ textAlign: 'center' }} data-testid="ds-machines-summary-available">
             <Statistic
               title={t('machines.summary.available')}
               value={stats.available}
@@ -114,7 +116,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
         </Col>
         
         <Col xs={24} sm={12} md={8} lg={5}>
-          <Card size="small" style={{ textAlign: 'center' }}>
+          <Card size="small" style={{ textAlign: 'center' }} data-testid="ds-machines-summary-clusters">
             <Statistic
               title={t('machines.summary.assignedToClusters')}
               value={stats.cluster}
@@ -130,7 +132,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
         </Col>
         
         <Col xs={24} sm={12} md={8} lg={5}>
-          <Card size="small" style={{ textAlign: 'center' }}>
+          <Card size="small" style={{ textAlign: 'center' }} data-testid="ds-machines-summary-images">
             <Statistic
               title={t('machines.summary.assignedToImages')}
               value={stats.image}
@@ -146,7 +148,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
         </Col>
         
         <Col xs={24} sm={12} md={8} lg={5}>
-          <Card size="small" style={{ textAlign: 'center' }}>
+          <Card size="small" style={{ textAlign: 'center' }} data-testid="ds-machines-summary-clones">
             <Statistic
               title={t('machines.summary.assignedToClones')}
               value={stats.clone}

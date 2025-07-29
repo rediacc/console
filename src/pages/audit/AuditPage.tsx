@@ -219,13 +219,13 @@ const AuditPage = () => {
   const exportMenuItems = [
     {
       key: 'csv',
-      label: 'Export as CSV',
+      label: <span data-testid="audit-export-csv">Export as CSV</span>,
       icon: <FileExcelOutlined />,
       onClick: exportToCSV
     },
     {
       key: 'json',
-      label: 'Export as JSON',
+      label: <span data-testid="audit-export-json">Export as JSON</span>,
       icon: <FileTextOutlined />,
       onClick: exportToJSON
     }
@@ -266,13 +266,14 @@ const AuditPage = () => {
       </div>
 
       {/* Filters */}
-      <Card style={{ marginBottom: 16, flexShrink: 0 }}>
+      <Card data-testid="audit-filter-card" style={{ marginBottom: 16, flexShrink: 0 }}>
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={24} md={8}>
               <Space direction="vertical" style={{ width: '100%' }}>
                 <Text type="secondary">Date Range</Text>
                 <RangePicker
+                  data-testid="audit-filter-date"
                   value={dateRange}
                   onChange={(dates) => setDateRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null])}
                   style={{ width: '100%' }}
@@ -297,6 +298,7 @@ const AuditPage = () => {
               <Space direction="vertical" style={{ width: '100%' }}>
                 <Text type="secondary">Entity Type</Text>
                 <Select
+                  data-testid="audit-filter-entity"
                   placeholder="All entities"
                   allowClear
                   value={entityFilter}
@@ -313,6 +315,7 @@ const AuditPage = () => {
               <Space direction="vertical" style={{ width: '100%' }}>
                 <Text type="secondary">Search</Text>
                 <Input
+                  data-testid="audit-filter-search"
                   placeholder="Search in logs..."
                   prefix={<SearchOutlined />}
                   value={searchText}
@@ -326,6 +329,7 @@ const AuditPage = () => {
               <Space direction="vertical" style={{ width: '100%' }}>
                 <Text type="secondary">&nbsp;</Text>
                 <Button
+                  data-testid="audit-refresh-button"
                   icon={<ReloadOutlined />}
                   onClick={() => refetch()}
                   loading={isLoading}
@@ -343,6 +347,7 @@ const AuditPage = () => {
                   disabled={!filteredLogs || filteredLogs.length === 0}
                 >
                   <Button 
+                    data-testid="audit-export-button"
                     icon={<DownloadOutlined />} 
                     style={{ width: '100%' }}
                   >
@@ -356,9 +361,10 @@ const AuditPage = () => {
       </Card>
 
       {/* Audit Logs Table */}
-      <Card style={cardStyle} bodyStyle={cardBodyStyle}>
+      <Card data-testid="audit-table-card" style={cardStyle} bodyStyle={cardBodyStyle}>
         <div ref={tableRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <Table
+            data-testid="audit-table"
             columns={columns}
             dataSource={filteredLogs}
             loading={isLoading}
@@ -368,7 +374,8 @@ const AuditPage = () => {
               pageSize: pageSize,
               showSizeChanger: false,
               showTotal: (total, range) => `Showing ${range[0]}-${range[1]} of ${total} logs`,
-              position: ['bottomRight']
+              position: ['bottomRight'],
+              className: 'audit-table-pagination'
             }}
             scroll={{ x: 1000 }}
             className="full-height-table"

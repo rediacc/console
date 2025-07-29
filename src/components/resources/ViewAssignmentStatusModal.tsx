@@ -10,16 +10,25 @@ const { Text } = Typography
 
 interface ViewAssignmentStatusModalProps {
   open: boolean
-  machines: Machine[]
+  selectedMachines?: string[]
+  allMachines?: Machine[]
+  machines?: Machine[]
   onCancel: () => void
 }
 
 export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps> = ({
   open,
   machines,
+  selectedMachines,
+  allMachines,
   onCancel
 }) => {
   const { t } = useTranslation(['machines', 'distributedStorage', 'common'])
+  
+  // Determine which machines to use
+  const targetMachines = machines || (selectedMachines && allMachines 
+    ? allMachines.filter(m => selectedMachines.includes(m.machineName))
+    : [])
   
   const columns = [
     {
@@ -60,8 +69,8 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
   ]
   
   // Calculate summary statistics
-  const stats = machines && Array.isArray(machines) 
-    ? machines.reduce((acc, machine) => {
+  const stats = targetMachines && Array.isArray(targetMachines) 
+    ? targetMachines.reduce((acc, machine) => {
         if (machine.distributedStorageClusterName) {
           acc.cluster++
         } else {
@@ -83,13 +92,14 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
       onCancel={onCancel}
       footer={null}
       width={800}
+      data-testid="ds-view-assignment-status-modal"
     >
       {/* Summary statistics */}
       <div style={{ marginBottom: 16 }}>
         <Space size="large">
           <div>
             <Text type="secondary">{t('common:total')}: </Text>
-            <Text strong>{machines && Array.isArray(machines) ? machines.length : 0}</Text>
+            <Text strong>{targetMachines && Array.isArray(targetMachines) ? targetMachines.length : 0}</Text>
           </div>
           <div>
             <MachineAssignmentStatusBadge assignmentType="AVAILABLE" size="small" />
@@ -104,7 +114,7 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
       
       <Table
         columns={columns}
-        dataSource={machines && Array.isArray(machines) ? machines : []}
+        dataSource={targetMachines && Array.isArray(targetMachines) ? targetMachines : []}
         rowKey="machineName"
         size="small"
         pagination={{
@@ -112,6 +122,7 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
           showSizeChanger: false
         }}
         scroll={{ y: 400 }}
+        data-testid="ds-view-assignment-status-table"
       />
     </Modal>
   )

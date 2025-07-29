@@ -939,6 +939,7 @@ const SystemPage: React.FC = () => {
               setSelectedGroup(record)
               setIsManageModalOpen(true)
             }}
+            data-testid={`system-permission-group-manage-button-${record.permissionGroupName}`}
           >
             Permissions
           </Button>
@@ -950,6 +951,7 @@ const SystemPage: React.FC = () => {
               setSelectedGroup(record)
               setIsAssignModalOpen(true)
             }}
+            data-testid={`system-permission-group-assign-user-button-${record.permissionGroupName}`}
           >
             Assign User
           </Button>
@@ -965,6 +967,7 @@ const SystemPage: React.FC = () => {
                 entityName: record.permissionGroupName
               })
             }}
+            data-testid={`system-permission-group-trace-button-${record.permissionGroupName}`}
           >
             Trace
           </Button>
@@ -982,6 +985,7 @@ const SystemPage: React.FC = () => {
               size="small"
               icon={<DeleteOutlined />}
               loading={deleteGroupMutation.isPending}
+              data-testid={`system-permission-group-delete-button-${record.permissionGroupName}`}
             >
               Delete
             </Button>
@@ -1047,6 +1051,7 @@ const SystemPage: React.FC = () => {
               setAssignPermissionModal({ open: true, user: record })
               setSelectedUserGroup(record.permissionGroupName || '')
             }}
+            data-testid={`system-user-permissions-button-${record.userEmail}`}
           >
             Permissions
           </Button>
@@ -1062,6 +1067,7 @@ const SystemPage: React.FC = () => {
                 entityName: record.userEmail
               })
             }}
+            data-testid={`system-user-trace-button-${record.userEmail}`}
           >
             Trace
           </Button>
@@ -1079,6 +1085,7 @@ const SystemPage: React.FC = () => {
                 danger
                 size="small"
                 loading={deactivateUserMutation.isPending}
+                data-testid={`system-user-deactivate-button-${record.userEmail}`}
               >
                 Deactivate
               </Button>
@@ -1182,6 +1189,7 @@ const SystemPage: React.FC = () => {
             size="small"
             icon={<EditOutlined />}
             onClick={() => openUnifiedModal('team', 'edit', record)}
+            data-testid={`system-team-edit-button-${record.teamName}`}
           >
             Edit
           </Button>
@@ -1193,6 +1201,7 @@ const SystemPage: React.FC = () => {
               setSelectedTeam(record)
               setIsManageTeamModalOpen(true)
             }}
+            data-testid={`system-team-members-button-${record.teamName}`}
           >
             Members
           </Button>
@@ -1208,6 +1217,7 @@ const SystemPage: React.FC = () => {
                 entityName: record.teamName
               })
             }}
+            data-testid={`system-team-trace-button-${record.teamName}`}
           >
             Trace
           </Button>
@@ -1225,6 +1235,7 @@ const SystemPage: React.FC = () => {
               size="small"
               icon={<DeleteOutlined />}
               loading={deleteTeamMutation.isPending}
+              data-testid={`system-team-delete-button-${record.teamName}`}
             >
               Delete
             </Button>
@@ -1277,6 +1288,7 @@ const SystemPage: React.FC = () => {
             size="small"
             icon={<EditOutlined />}
             onClick={() => openUnifiedModal('region', 'edit', record)}
+            data-testid={`system-region-edit-button-${record.regionName}`}
           >
             {tOrg('general.edit')}
           </Button>
@@ -1292,6 +1304,7 @@ const SystemPage: React.FC = () => {
                 entityName: record.regionName
               })
             }}
+            data-testid={`system-region-trace-button-${record.regionName}`}
           >
             Trace
           </Button>
@@ -1309,6 +1322,7 @@ const SystemPage: React.FC = () => {
               size="small"
               icon={<DeleteOutlined />}
               loading={deleteRegionMutation.isPending}
+              data-testid={`system-region-delete-button-${record.regionName}`}
             >
               {tOrg('general.delete')}
             </Button>
@@ -1391,6 +1405,7 @@ const SystemPage: React.FC = () => {
             size="small"
             icon={<EditOutlined />}
             onClick={() => openUnifiedModal('bridge', 'edit', record)}
+            data-testid={`system-bridge-edit-button-${record.bridgeName}`}
           >
             {tOrg('general.edit')}
           </Button>
@@ -1399,6 +1414,7 @@ const SystemPage: React.FC = () => {
             size="small"
             icon={<KeyOutlined />}
             onClick={() => setBridgeCredentialsModal({ open: true, bridge: record })}
+            data-testid={`system-bridge-token-button-${record.bridgeName}`}
           >
             Token
           </Button>
@@ -1411,6 +1427,7 @@ const SystemPage: React.FC = () => {
               bridgeName: record.bridgeName, 
               isCloudManaged: false 
             })}
+            data-testid={`system-bridge-reset-auth-button-${record.bridgeName}`}
           >
             Reset Auth
           </Button>
@@ -1426,6 +1443,7 @@ const SystemPage: React.FC = () => {
                 entityName: record.bridgeName
               })
             }}
+            data-testid={`system-bridge-trace-button-${record.bridgeName}`}
           >
             Trace
           </Button>
@@ -1443,6 +1461,7 @@ const SystemPage: React.FC = () => {
               size="small"
               icon={<DeleteOutlined />}
               loading={deleteBridgeMutation.isPending}
+              data-testid={`system-bridge-delete-button-${record.bridgeName}`}
             >
               {tOrg('general.delete')}
             </Button>
@@ -1518,7 +1537,7 @@ const SystemPage: React.FC = () => {
   const usersTab = {
     key: 'users',
     label: (
-      <span>
+      <span data-testid="system-tab-users">
         <UserOutlined />
         Users
       </span>
@@ -1536,11 +1555,13 @@ const SystemPage: React.FC = () => {
         columns={userColumns}
         rowKey="userEmail"
         searchPlaceholder="Search users..."
+        data-testid="system-user-table"
         actions={
           <Button 
             type="primary" 
             icon={<PlusOutlined />}
             onClick={() => setIsCreateUserModalOpen(true)}
+            data-testid="system-create-user-button"
           >
             Create User
           </Button>
@@ -1552,7 +1573,7 @@ const SystemPage: React.FC = () => {
   const permissionsTab = {
     key: 'permissions',
     label: (
-      <span>
+      <span data-testid="system-tab-permissions">
         <SafetyOutlined />
         Permissions
       </span>
@@ -1570,11 +1591,13 @@ const SystemPage: React.FC = () => {
         columns={permissionColumns}
         rowKey="permissionGroupName"
         searchPlaceholder="Search permission groups..."
+        data-testid="system-permission-group-table"
         actions={
           <Button 
             type="primary" 
             icon={<PlusOutlined />}
             onClick={() => setIsCreateModalOpen(true)}
+            data-testid="system-create-permission-group-button"
           >
             Create Group
           </Button>
@@ -1586,7 +1609,7 @@ const SystemPage: React.FC = () => {
   const teamsTab = {
     key: 'teams',
     label: (
-      <span>
+      <span data-testid="system-tab-teams">
         <TeamOutlined />
         Teams
       </span>
@@ -1604,11 +1627,13 @@ const SystemPage: React.FC = () => {
         columns={teamColumns}
         rowKey="teamName"
         searchPlaceholder="Search teams..."
+        data-testid="system-team-table"
         actions={
           <Button 
             type="primary" 
             icon={<PlusOutlined />}
             onClick={() => openUnifiedModal('team', 'create')}
+            data-testid="system-create-team-button"
           >
             Create Team
           </Button>
@@ -1620,7 +1645,7 @@ const SystemPage: React.FC = () => {
   const userSessionsTab = {
     key: 'sessions',
     label: (
-      <span>
+      <span data-testid="system-tab-sessions">
         <DesktopOutlined />
         User Sessions
       </span>
@@ -1659,6 +1684,7 @@ const SystemPage: React.FC = () => {
                   onClick={() => setCompanyVaultModalOpen(true)}
                   size="large"
                   style={{ marginTop: 16 }}
+                  data-testid="system-company-vault-button"
                 >
                   {t('company.configureVault')}
                 </Button>
@@ -1685,6 +1711,7 @@ const SystemPage: React.FC = () => {
                     icon={<SettingOutlined />}
                     onClick={() => setUserVaultModalOpen(true)}
                     size="large"
+                    data-testid="system-user-vault-button"
                   >
                     {t('personal.configureVault')}
                   </Button>
@@ -1693,6 +1720,7 @@ const SystemPage: React.FC = () => {
                     icon={<KeyOutlined />}
                     onClick={() => setChangePasswordModalOpen(true)}
                     size="large"
+                    data-testid="system-change-password-button"
                   >
                     Change Password
                   </Button>
@@ -1701,6 +1729,7 @@ const SystemPage: React.FC = () => {
                     icon={<SafetyCertificateOutlined />}
                     onClick={() => setTwoFactorModalOpen(true)}
                     size="large"
+                    data-testid="system-two-factor-button"
                   >
                     Two-Factor Authentication
                   </Button>
@@ -1737,6 +1766,7 @@ const SystemPage: React.FC = () => {
           placeholder="Enter group name"
           value={newGroupName}
           onChange={(e) => setNewGroupName(e.target.value)}
+          data-testid="system-permission-group-name-input"
           onPressEnter={handleCreateGroup}
           autoComplete="off"
         />
@@ -2053,11 +2083,13 @@ const SystemPage: React.FC = () => {
               columns={regionColumns}
               rowKey="regionName"
               searchPlaceholder={tOrg('regions.searchRegions')}
+              data-testid="system-region-table"
               actions={
                 <Button 
                   type="primary" 
                   icon={<PlusOutlined />}
                   onClick={() => openUnifiedModal('region', 'create')}
+                  data-testid="system-create-region-button"
                 >
                   {tOrg('regions.createRegion')}
                 </Button>
@@ -2097,6 +2129,7 @@ const SystemPage: React.FC = () => {
                     onClick={() => {
                       openUnifiedModal('bridge', 'create', { regionName: selectedRegion })
                     }}
+                    data-testid="system-create-bridge-button"
                   >
                     {tOrg('bridges.createBridge')}
                   </Button>
@@ -2127,6 +2160,7 @@ const SystemPage: React.FC = () => {
                   locale={{
                     emptyText: tOrg('bridges.noBridges'),
                   }}
+                  data-testid="system-bridge-table"
                 />
               )}
             </Card>
@@ -2338,6 +2372,7 @@ const SystemPage: React.FC = () => {
                 icon={<DownloadOutlined />}
                 onClick={handleExportVaults}
                 loading={exportVaultsQuery.isFetching}
+                data-testid="system-export-vaults-button"
               >
                 {tSystem('dangerZone.exportVaults.button')}
               </Button>
@@ -2362,6 +2397,7 @@ const SystemPage: React.FC = () => {
                 icon={<ExportOutlined />}
                 onClick={handleExportCompanyData}
                 loading={exportCompanyDataQuery.isFetching}
+                data-testid="system-export-data-button"
               >
                 {tSystem('dangerZone.exportData.button')}
               </Button>
@@ -2386,6 +2422,7 @@ const SystemPage: React.FC = () => {
                 danger
                 icon={<ImportOutlined />}
                 onClick={() => setImportModalOpen(true)}
+                data-testid="system-import-data-button"
               >
                 {tSystem('dangerZone.importData.button')}
               </Button>
@@ -2418,6 +2455,7 @@ const SystemPage: React.FC = () => {
                 danger
                 icon={<KeyOutlined />}
                 onClick={() => setMasterPasswordModalOpen(true)}
+                data-testid="system-update-master-password-button"
               >
                 {tSystem('dangerZone.updateMasterPassword.button')}
               </Button>
@@ -2548,11 +2586,14 @@ const SystemPage: React.FC = () => {
 
           <Form.Item style={{ marginBottom: 0 }}>
             <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-              <Button onClick={() => {
-                setMasterPasswordModalOpen(false)
-                masterPasswordForm.resetFields()
-                setMasterPasswordOperation(defaultOperation)
-              }}>
+              <Button 
+                onClick={() => {
+                  setMasterPasswordModalOpen(false)
+                  masterPasswordForm.resetFields()
+                  setMasterPasswordOperation(defaultOperation)
+                }}
+                data-testid="system-master-password-cancel-button"
+              >
                 {tSystem('dangerZone.updateMasterPassword.modal.cancel')}
               </Button>
               <Button 
@@ -2561,6 +2602,7 @@ const SystemPage: React.FC = () => {
                 htmlType="submit"
                 loading={updateVaultsMutation.isPending}
                 disabled={updateVaultsMutation.isPending}
+                data-testid="system-master-password-submit-button"
               >
                 {tSystem(`dangerZone.updateMasterPassword.modal.submit${masterPasswordOperation.charAt(0).toUpperCase() + masterPasswordOperation.slice(1)}`)}
               </Button>

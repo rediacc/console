@@ -879,6 +879,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   return (
     <>
       <Modal
+        data-testid="resource-modal"
         title={getModalTitle()}
         open={open}
         onCancel={onCancel}
@@ -888,6 +889,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             <div key="left-buttons" style={{ float: 'left' }}>
               <Space>
                 <Upload
+                  data-testid="resource-modal-upload-json"
                   accept=".json"
                   showUploadList={false}
                   beforeUpload={(file) => {
@@ -897,9 +899,10 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                     return false
                   }}
                 >
-                  <Button icon={<UploadOutlined />}>{t('common:vaultEditor.importJson')}</Button>
+                  <Button data-testid="resource-modal-import-button" icon={<UploadOutlined />}>{t('common:vaultEditor.importJson')}</Button>
                 </Upload>
                 <Button 
+                  data-testid="resource-modal-export-button"
                   icon={<DownloadOutlined />} 
                   onClick={() => {
                     if (importExportHandlers.current) {
@@ -913,12 +916,13 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             </div>
           ] : []),
           // Right side buttons
-          <Button key="cancel" onClick={onCancel}>
+          <Button key="cancel" data-testid="resource-modal-cancel-button" onClick={onCancel}>
             {t('general.cancel')}
           </Button>,
           ...(mode === 'create' && existingData && onUpdateVault ? [
             <Button 
               key="vault"
+              data-testid="resource-modal-vault-button"
               onClick={() => setShowVaultModal(true)}
             >
               {t('general.vault')}
@@ -927,6 +931,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           ...(showFunctions ? [
             <Button 
               key="functions"
+              data-testid="resource-modal-functions-button"
               onClick={() => setShowFunctionModal(true)}
             >
               {t(`${resourceType}s.${resourceType}Functions`)}
@@ -934,6 +939,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           ] : []),
           <Button
             key="submit"
+            data-testid="resource-modal-ok-button"
             type="primary"
             loading={isSubmitting}
             disabled={mode === 'create' && resourceType === 'machine' && !testConnectionSuccess}
@@ -963,6 +969,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         {resourceType === 'machine' && mode === 'create' && (
           <div style={{ marginBottom: 16 }}>
             <Checkbox 
+              data-testid="resource-modal-auto-setup-checkbox"
               checked={autoSetupEnabled} 
               onChange={(e) => setAutoSetupEnabled(e.target.checked)}
             >
@@ -975,6 +982,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         {resourceType === 'repository' && mode === 'create' && !(existingData?.repositoryGuid && existingData?.repositoryGuid.trim() !== '') && (
           <div style={{ marginBottom: 16 }}>
             <Checkbox 
+              data-testid="resource-modal-keep-open-checkbox"
               checked={keepRepositoryOpen} 
               onChange={(e) => setKeepRepositoryOpen(e.target.checked)}
             >
@@ -1003,6 +1011,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           beforeVaultContent={
             resourceType === 'repository' && mode === 'create' ? (
               <Collapse 
+                data-testid="resource-modal-template-collapse"
                 style={{ marginBottom: 16, marginTop: 16 }}
                 items={[
                   {

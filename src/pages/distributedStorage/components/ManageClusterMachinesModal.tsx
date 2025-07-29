@@ -225,6 +225,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
               onClick={handleRemoveMachines}
               loading={removingMachines}
               style={{ marginLeft: 8 }}
+              data-testid="ds-manage-machines-remove-button"
             >
               {t('machines:removeFromCluster')}
             </Button>
@@ -238,6 +239,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
           rowKey="machineName"
           size="small"
           pagination={false}
+          data-testid="ds-manage-machines-assigned-table"
         />
       </Space>
     )
@@ -254,8 +256,9 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
       open={open}
       onCancel={onCancel}
       width={800}
+      data-testid="ds-manage-cluster-machines-modal"
       footer={[
-        <Button key="cancel" onClick={onCancel}>
+        <Button key="cancel" onClick={onCancel} data-testid="ds-manage-machines-cancel">
           {t('common:actions.cancel')}
         </Button>,
         activeTab === 'assign' && (
@@ -266,6 +269,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
             loading={assigningMachines}
             disabled={selectedMachines.length === 0}
             onClick={handleAssignMachines}
+            data-testid="ds-manage-machines-assign-button"
           >
             {t('machines:assignToCluster')}
           </Button>
@@ -275,15 +279,16 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
       <Tabs
         activeKey={activeTab}
         onChange={(key) => setActiveTab(key as 'assign' | 'manage')}
+        data-testid="ds-manage-machines-tabs"
         items={[
           {
             key: 'assign',
-            label: t('machines:assignToCluster'),
+            label: <span data-testid="ds-manage-machines-tab-assign">{t('machines:assignToCluster')}</span>,
             children: renderAssignTab()
           },
           {
             key: 'manage',
-            label: t('clusters.assignedMachines'),
+            label: <span data-testid="ds-manage-machines-tab-manage">{t('clusters.assignedMachines')}</span>,
             children: renderManageTab()
           }
         ]}
