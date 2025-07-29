@@ -60,7 +60,7 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({ command, description, s
   const { isCommand, isComment } = formattedCommands[0]
 
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div style={{ marginBottom: 8 }} data-testid="pip-install-command-display">
       {description && <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>{description}</Text>}
       <div style={{ 
         background: '#f5f5f5', 
@@ -72,7 +72,8 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({ command, description, s
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between'
-      }}>
+      }}
+      data-testid="pip-install-command-text">
         <Text 
           code 
           style={{ 
@@ -89,6 +90,7 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({ command, description, s
             icon={copied ? <CheckOutlined /> : <CopyOutlined />}
             style={{ marginLeft: 8 }}
             onClick={handleCopy}
+            data-testid="pip-install-command-copy"
           />
         )}
       </div>
@@ -150,6 +152,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
         type="info"
         showIcon
         icon={<RocketOutlined />}
+        data-testid="pip-install-quick-alert"
       />
 
       <div>
@@ -163,12 +166,14 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           <Checkbox 
             checked={includeGui} 
             onChange={(e) => setIncludeGui(e.target.checked)}
+            data-testid="pip-install-gui-checkbox"
           >
             {t('resources:pipInstall.includeGuiSupport')}
           </Checkbox>
           <Checkbox 
             checked={useUserInstall} 
             onChange={(e) => setUseUserInstall(e.target.checked)}
+            data-testid="pip-install-user-checkbox"
           >
             {t('resources:pipInstall.userInstallOnly')}
           </Checkbox>
@@ -205,6 +210,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           </ul>
         }
         type="warning"
+        data-testid="pip-install-platform-alert"
       />
 
       <Button 
@@ -212,6 +218,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
         icon={<CopyOutlined />} 
         onClick={handleCopyAllCommands}
         block
+        data-testid="pip-install-copy-all-button"
       >
         {t('resources:pipInstall.copyAllCommands')}
       </Button>
@@ -219,7 +226,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
   )
 
   const renderAdvancedOptions = () => (
-    <Collapse defaultActiveKey={[]}>
+    <Collapse defaultActiveKey={[]} data-testid="pip-install-advanced-collapse">
       <Panel 
         header={t('resources:pipInstall.virtualEnvironment')} 
         key="venv"
@@ -262,9 +269,10 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
         message={t('resources:pipInstall.commonIssues')}
         type="info"
         showIcon
+        data-testid="pip-install-issues-alert"
       />
 
-      <Collapse defaultActiveKey={['pip-not-found']}>
+      <Collapse defaultActiveKey={['pip-not-found']} data-testid="pip-install-troubleshooting-collapse">
         <Panel 
           header={t('resources:pipInstall.pipNotFound')} 
           key="pip-not-found"
@@ -325,19 +333,30 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           <Space direction="vertical">
             <Text>
               {t('resources:pipInstall.checkDocs')}: {' '}
-              <a href="https://docs.rediacc.com/cli/installation" target="_blank" rel="noopener noreferrer">
+              <a 
+                href="https://docs.rediacc.com/cli/installation" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                data-testid="pip-install-docs-link"
+              >
                 {t('resources:pipInstall.installationGuide')}
               </a>
             </Text>
             <Text>
               {t('resources:pipInstall.reportIssue')}: {' '}
-              <a href="https://github.com/rediacc/cli/issues" target="_blank" rel="noopener noreferrer">
+              <a 
+                href="https://github.com/rediacc/cli/issues" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                data-testid="pip-install-github-link"
+              >
                 GitHub Issues
               </a>
             </Text>
           </Space>
         }
         type="info"
+        data-testid="pip-install-help-alert"
       />
     </Space>
   )
@@ -364,15 +383,17 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
       open={visible}
       onCancel={onClose}
       footer={[
-        <Button key="close" onClick={onClose}>
+        <Button key="close" onClick={onClose} data-testid="pip-install-close-button">
           {t('common:close')}
         </Button>
       ]}
       width={700}
+      data-testid="pip-install-modal"
     >
       <Tabs 
         activeKey={activeTab} 
         onChange={setActiveTab}
+        data-testid="pip-install-tabs"
         items={[
           {
             key: 'quick',

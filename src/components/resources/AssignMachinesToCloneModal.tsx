@@ -150,8 +150,9 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
               label: machine.machineName,
               value: machine.machineName
             }))}
+            data-testid="assign-clone-machine-select"
           />
-          <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
+          <Text type="secondary" style={{ display: 'block', marginTop: 8 }} data-testid="assign-clone-selected-count">
             {t('machines:bulkOperations.selectedCount', { count: selectedMachines.length })}
           </Text>
         </div>
@@ -202,7 +203,10 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
         <Table
           rowSelection={{
             selectedRowKeys: removingMachines,
-            onChange: (keys) => setRemovingMachines(keys as string[])
+            onChange: (keys) => setRemovingMachines(keys as string[]),
+            getCheckboxProps: (record) => ({
+              'data-testid': `assign-clone-machine-checkbox-${record.machineName}`
+            })
           }}
           columns={columns}
           dataSource={assignedMachines}
@@ -210,9 +214,10 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
           size="small"
           pagination={false}
           scroll={{ y: 300 }}
+          data-testid="assign-clone-machines-table"
         />
         
-        <Text type="secondary">
+        <Text type="secondary" data-testid="assign-clone-remove-selected-count">
           {t('machines:bulkOperations.selectedCount', { count: removingMachines.length })}
         </Text>
       </Space>
@@ -221,6 +226,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
   
   return (
     <Modal
+      data-testid="assign-clone-modal"
       title={
         <Space>
           <CopyOutlined />
@@ -235,7 +241,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
       width={700}
       footer={
         activeTab === 'assign' ? [
-          <Button key="cancel" onClick={onCancel}>
+          <Button key="cancel" onClick={onCancel} data-testid="assign-clone-cancel">
             {t('common:actions.cancel')}
           </Button>,
           <Button
@@ -244,11 +250,12 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             loading={assignMutation.isPending}
             disabled={selectedMachines.length === 0}
             onClick={handleAssign}
+            data-testid="assign-clone-submit"
           >
             {t('distributedStorage:machines.assignMachine')}
           </Button>
         ] : [
-          <Button key="cancel" onClick={onCancel}>
+          <Button key="cancel" onClick={onCancel} data-testid="assign-clone-cancel">
             {t('common:actions.cancel')}
           </Button>,
           <Button
@@ -258,6 +265,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             loading={removeMutation.isPending}
             disabled={removingMachines.length === 0}
             onClick={handleRemove}
+            data-testid="assign-clone-remove-submit"
           >
             {t('distributedStorage:machines.unassignMachine')}
           </Button>
@@ -267,6 +275,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
       <Tabs
         activeKey={activeTab}
         onChange={(key) => setActiveTab(key as 'assign' | 'manage')}
+        data-testid="assign-clone-tabs"
         items={[
           {
             key: 'assign',

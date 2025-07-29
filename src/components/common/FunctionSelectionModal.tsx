@@ -341,7 +341,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
       onCancel={handleCancel}
       width={900}
       footer={[
-        <Button key="cancel" onClick={handleCancel}>
+        <Button key="cancel" onClick={handleCancel} data-testid="function-modal-cancel">
           {t('common:actions.cancel')}
         </Button>,
         <Button
@@ -351,10 +351,12 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
           disabled={!selectedFunction || (showMachineSelection && !selectedMachine) || !areRequiredParamsFilled}
           loading={loading}
           style={{ background: '#556b2f', borderColor: '#556b2f' }}
+          data-testid="function-modal-submit"
         >
           {t('common:actions.addToQueue')}
         </Button>
       ]}
+      data-testid="function-modal"
     >
       <Row gutter={24}>
         {!preselectedFunction && !isSimpleMode && (
@@ -366,10 +368,11 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
               onChange={(e) => setFunctionSearchTerm(e.target.value)}
               style={{ marginBottom: 16 }}
               autoComplete="off"
+              data-testid="function-modal-search"
             />
             <div style={{ maxHeight: 400, overflow: 'auto' }}>
               {Object.entries(functionsByCategory).map(([category, funcs]) => (
-                <div key={category} style={{ marginBottom: 16 }}>
+                <div key={category} style={{ marginBottom: 16 }} data-testid={`function-modal-category-${category}`}>
                   <Text strong style={{ display: 'block', marginBottom: 8 }}>{categories[category]?.name || category}</Text>
                   {funcs.map(func => (
                     <div
@@ -383,6 +386,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                         backgroundColor: selectedFunction?.name === func.name ? '#f0f5ff' : 'transparent',
                         border: selectedFunction?.name === func.name ? '1px solid #1890ff' : '1px solid transparent'
                       }}
+                      data-testid={`function-modal-item-${func.name}`}
                     >
                       <Text strong>{func.name}</Text>
                       <br />
@@ -494,6 +498,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                         onChange={setSelectedMachine}
                         placeholder={t('machines:selectMachine')}
                         options={machines}
+                        data-testid="function-modal-machine-select"
                       />
                     </Form.Item>
                   )}
@@ -565,6 +570,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                 keyboard={true}
                                 step={1}
                                 precision={0}
+                                data-testid={`function-modal-param-${paramName}-value`}
                               />
                               <Select
                                 style={{ width: '35%' }}
@@ -581,6 +587,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                   value: unit === 'percentage' ? '%' : unit,
                                   label: unit === 'percentage' ? '%' : unit === 'G' ? 'GB' : 'TB'
                                 }))}
+                                data-testid={`function-modal-param-${paramName}-unit`}
                               />
                             </Space.Compact>
                           ) : paramInfo.options && paramInfo.options.length > 0 ? (
@@ -602,6 +609,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                 value: option,
                                 label: option
                               }))}
+                              data-testid={`function-modal-param-${paramName}`}
                             />
                           ) : paramInfo.ui === 'repository-dropdown' ? (
                             <Select
@@ -622,6 +630,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                               filterOption={(input, option) =>
                                 (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                               }
+                              data-testid={`function-modal-param-${paramName}`}
                             />
                           ) : paramInfo.ui === 'destination-dropdown' ? (
                             <Select
@@ -660,6 +669,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                 (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                               }
                               disabled={!functionParams['destinationType']}
+                              data-testid={`function-modal-param-${paramName}`}
                             />
                           ) : paramInfo.ui === 'source-dropdown' ? (
                             <Select
@@ -698,6 +708,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                 (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                               }
                               disabled={!functionParams['sourceType']}
+                              data-testid={`function-modal-param-${paramName}`}
                             />
                           ) : paramInfo.ui === 'checkbox' && paramInfo.checkboxOptions ? (
                             <Space direction="vertical" style={{ width: '100%' }}>
@@ -727,6 +738,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                       [paramName]: values.join(' ')
                                     })
                                   }}
+                                  data-testid={`function-modal-param-${paramName}-${option.value}`}
                                 >
                                   {t(`functions:checkboxOptions.${option.label}`)}
                                 </Checkbox>
@@ -740,6 +752,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                 placeholder={t('functions:additionalOptions')}
                                 autoComplete="off"
                                 style={{ marginTop: 8 }}
+                                data-testid={`function-modal-param-${paramName}-additional`}
                               />
                             </Space>
                           ) : (
@@ -751,6 +764,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                               })}
                               placeholder={paramInfo.help || ''}
                               autoComplete="off"
+                              data-testid={`function-modal-param-${paramName}`}
                             />
                           )}
                         </Form.Item>
@@ -783,6 +797,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                             return value ? `${labels[value as keyof typeof labels]} (${value})` : ''
                           }
                         }}
+                        data-testid="function-modal-priority-slider"
                       />
                       <div style={{ textAlign: 'center', marginTop: 8 }}>
                         <Tag 
@@ -847,6 +862,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                       placeholder={t('functions:descriptionPlaceholder')}
                       rows={2}
                       autoComplete="off"
+                      data-testid="function-modal-description"
                     />
                   </Form.Item>
                 </Form>

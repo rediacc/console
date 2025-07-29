@@ -49,19 +49,31 @@ const MachineRow: React.FC<RowData & {
       style={style} 
       className={styles.row}
       onClick={handleRowClick}
+      data-testid={`virtual-machine-row-${machine.machineName}`}
     >
       <Space className={styles.rowContent}>
         {selectable && (
           <Checkbox
             checked={isSelected}
             onClick={handleCheckboxChange}
+            data-testid={`virtual-machine-checkbox-${machine.machineName}`}
           />
         )}
-        <div className={styles.machineName}>{machine.machineName}</div>
+        <div 
+          className={styles.machineName}
+          data-testid={`virtual-machine-name-${machine.machineName}`}
+        >
+          {machine.machineName}
+        </div>
         <div className={styles.teamName}>{machine.teamName}</div>
-        <MachineAssignmentStatusCell machine={machine} />
+        <div data-testid={`virtual-machine-status-${machine.machineName}`}>
+          <MachineAssignmentStatusCell machine={machine} />
+        </div>
         {renderActions && (
-          <div className={styles.actions}>
+          <div 
+            className={styles.actions}
+            data-testid={`virtual-machine-actions-${machine.machineName}`}
+          >
             {renderActions(machine)}
           </div>
         )}
@@ -103,7 +115,11 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
   const Row = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {
     if (!isItemLoaded(index)) {
       return (
-        <div style={style} className={styles.loadingRow}>
+        <div 
+          style={style} 
+          className={styles.loadingRow}
+          data-testid="virtual-machine-row-loading"
+        >
           <Spin size="small" />
         </div>
       )
@@ -173,6 +189,7 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
               itemSize={rowHeight}
               onItemsRendered={onItemsRendered}
               overscanCount={5}
+              data-testid="virtual-machine-list"
             >
               {Row}
             </List>
@@ -188,6 +205,7 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
         itemCount={machines.length}
         itemSize={rowHeight}
         overscanCount={5}
+        data-testid="virtual-machine-list"
       >
         {Row}
       </List>
@@ -199,8 +217,9 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
       className={styles.virtualTable}
       onKeyDown={handleKeyDown}
       tabIndex={0}
+      data-testid="virtual-machine-table"
     >
-      <div className={styles.header}>
+      <div className={styles.header} data-testid="virtual-machine-header">
         <Space className={styles.headerContent}>
           {selectable && <div className={styles.checkboxColumn} />}
           <div className={styles.machineName}>Machine Name</div>
@@ -209,7 +228,9 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
           {renderActions && <div className={styles.actions}>Actions</div>}
         </Space>
       </div>
-      {content}
+      <div data-testid="virtual-machine-keyboard-navigation">
+        {content}
+      </div>
     </div>
   )
 }

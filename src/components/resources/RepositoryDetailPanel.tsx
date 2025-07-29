@@ -190,6 +190,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
       {/* Panel */}
       <div
         className="repository-detail-panel"
+        data-testid="repo-detail-panel"
         style={splitView ? {
           height: '100%',
           backgroundColor: theme === 'dark' ? '#141414' : '#fff',
@@ -224,67 +225,69 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Space>
               <FolderOutlined style={{ fontSize: 24, color: '#8FBC8F' }} />
-              <Title level={4} style={{ margin: 0 }}>{repository.repositoryName}</Title>
+              <Title level={4} style={{ margin: 0 }} data-testid={`repo-detail-title-${repository.repositoryName}`}>{repository.repositoryName}</Title>
             </Space>
             <Button
               type="text"
               icon={<CloseOutlined />}
               onClick={onClose}
+              data-testid="repo-detail-close"
             />
           </div>
           <Space wrap style={{ marginTop: 8 }}>
-            <Tag color="#8FBC8F" icon={<AppstoreOutlined />}>Team: {repository.teamName}</Tag>
+            <Tag color="#8FBC8F" icon={<AppstoreOutlined />} data-testid={`repo-detail-team-tag-${repository.repositoryName}`}>Team: {repository.teamName}</Tag>
             {repositoryData && (
-              <Tag color="green" icon={<CloudServerOutlined />}>Machine: {repositoryData.machine.machineName}</Tag>
+              <Tag color="green" icon={<CloudServerOutlined />} data-testid={`repo-detail-machine-tag-${repository.repositoryName}`}>Machine: {repositoryData.machine.machineName}</Tag>
             )}
-            <Tag color="blue">{t('resources:repositories.vaultVersion')}: {repository.vaultVersion}</Tag>
+            <Tag color="blue" data-testid={`repo-detail-vault-version-tag-${repository.repositoryName}`}>{t('resources:repositories.vaultVersion')}: {repository.vaultVersion}</Tag>
           </Space>
         </div>
 
         {/* Content */}
-        <div style={{ padding: '24px' }}>
+        <div style={{ padding: '24px' }} data-testid="repo-detail-content">
           {!repositoryData ? (
             <Empty 
               description={t('resources:repositories.noRepositoryData')}
               style={{ marginTop: 48 }}
+              data-testid="repo-detail-empty-state"
             />
           ) : (
             <>
               {/* Repository Information Section */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }} data-testid="repo-detail-info-section">
                 <FolderOutlined style={{ fontSize: 20, color: '#8FBC8F' }} />
                 <Title level={5} style={{ margin: 0 }}>{t('resources:repositories.repositoryInfo')}</Title>
               </div>
               
               <Row gutter={[16, 16]}>
                 <Col span={24}>
-                  <Card size="small">
+                  <Card size="small" data-testid="repo-detail-info-card">
                     <Space direction="vertical" style={{ width: '100%' }} size="small">
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Text type="secondary">{t('resources:repositories.repositoryGuid')}:</Text>
-                        <Text copyable style={{ fontSize: 11, fontFamily: 'monospace' }}>{repository.repositoryGuid}</Text>
+                        <Text copyable style={{ fontSize: 11, fontFamily: 'monospace' }} data-testid={`repo-detail-guid-${repository.repositoryName}`}>{repository.repositoryGuid}</Text>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Text type="secondary">{t('resources:repositories.status')}:</Text>
                         <Space>
                           {repositoryData.repositoryData.mounted ? (
-                            <Tag color="success" icon={<CheckCircleOutlined />}>
+                            <Tag color="success" icon={<CheckCircleOutlined />} data-testid={`repo-detail-status-mounted-${repository.repositoryName}`}>
                               {t('resources:repositories.mounted')}
                             </Tag>
                           ) : (
-                            <Tag color="default" icon={<StopOutlined />}>
+                            <Tag color="default" icon={<StopOutlined />} data-testid={`repo-detail-status-unmounted-${repository.repositoryName}`}>
                               {t('resources:repositories.notMounted')}
                             </Tag>
                           )}
                           {repositoryData.repositoryData.accessible && (
-                            <Tag color="green">{t('resources:repositories.accessible')}</Tag>
+                            <Tag color="green" data-testid={`repo-detail-status-accessible-${repository.repositoryName}`}>{t('resources:repositories.accessible')}</Tag>
                           )}
                         </Space>
                       </div>
                       {repositoryData.repositoryData.has_rediaccfile && (
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <Text type="secondary">{t('resources:repositories.rediaccfile')}:</Text>
-                          <Tag color="purple">{t('resources:repositories.hasRediaccfile')}</Tag>
+                          <Tag color="purple" data-testid={`repo-detail-rediaccfile-${repository.repositoryName}`}>{t('resources:repositories.hasRediaccfile')}</Tag>
                         </div>
                       )}
                     </Space>
@@ -292,7 +295,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
                 </Col>
               </Row>
 
-              <Divider style={{ margin: '24px 0' }}>
+              <Divider style={{ margin: '24px 0' }} data-testid="repo-detail-storage-divider">
                 <Space>
                   <InfoCircleOutlined />
                   {t('resources:repositories.storageInfo')}
@@ -302,7 +305,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
               {/* Storage Information */}
               <Row gutter={[16, 16]}>
                 <Col span={12}>
-                  <Card size="small" style={{ height: '100%' }}>
+                  <Card size="small" style={{ height: '100%' }} data-testid={`repo-detail-image-size-card-${repository.repositoryName}`}>
                     <Statistic
                       title={t('resources:repositories.imageSize')}
                       value={repositoryData.repositoryData.size_human}
@@ -312,7 +315,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
                   </Card>
                 </Col>
                 <Col span={12}>
-                  <Card size="small" style={{ height: '100%' }}>
+                  <Card size="small" style={{ height: '100%' }} data-testid={`repo-detail-last-modified-card-${repository.repositoryName}`}>
                     <Statistic
                       title={t('resources:repositories.lastModified')}
                       value={repositoryData.repositoryData.modified_human}
@@ -325,7 +328,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
                 {/* Disk Usage Card - only show if mounted */}
                 {repositoryData.repositoryData.mounted && repositoryData.repositoryData.disk_space && (
                   <Col span={24}>
-                    <Card size="small">
+                    <Card size="small" data-testid={`repo-detail-disk-usage-card-${repository.repositoryName}`}>
                       <div style={{ marginBottom: 12 }}>
                         <Space>
                           <DatabaseOutlined style={{ color: '#52c41a' }} />
@@ -340,6 +343,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
                         status={parseInt(repositoryData.repositoryData.disk_space.use_percent) > 90 ? 'exception' : 'normal'}
                         strokeColor={parseInt(repositoryData.repositoryData.disk_space.use_percent) > 90 ? '#ff4d4f' : '#52c41a'}
                         trailColor={theme === 'dark' ? 'rgba(255,255,255,0.08)' : undefined}
+                        data-testid={`repo-detail-disk-usage-progress-${repository.repositoryName}`}
                       />
                       <Text type="secondary" style={{ fontSize: 12 }}>
                         {t('resources:repositories.available')}: {repositoryData.repositoryData.disk_space.available}
@@ -350,25 +354,25 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
               </Row>
 
               {/* File Paths Section */}
-              <Divider style={{ margin: '24px 0' }}>
+              <Divider style={{ margin: '24px 0' }} data-testid="repo-detail-file-paths-divider">
                 <Space>
                   <FolderOutlined />
                   {t('resources:repositories.filePaths')}
                 </Space>
               </Divider>
 
-              <Card size="small">
+              <Card size="small" data-testid={`repo-detail-file-paths-card-${repository.repositoryName}`}>
                 <Space direction="vertical" style={{ width: '100%' }} size="small">
                   <div>
                     <Text type="secondary">{t('resources:repositories.imagePath')}:</Text>
-                    <Text copyable style={{ display: 'block', fontSize: 12, wordBreak: 'break-all', marginTop: 4 }}>
+                    <Text copyable style={{ display: 'block', fontSize: 12, wordBreak: 'break-all', marginTop: 4 }} data-testid={`repo-detail-image-path-${repository.repositoryName}`}>
                       {repositoryData.repositoryData.image_path}
                     </Text>
                   </div>
                   {repositoryData.repositoryData.mount_path && (
                     <div>
                       <Text type="secondary">{t('resources:repositories.mountPath')}:</Text>
-                      <Text copyable style={{ display: 'block', fontSize: 12, wordBreak: 'break-all', marginTop: 4 }}>
+                      <Text copyable style={{ display: 'block', fontSize: 12, wordBreak: 'break-all', marginTop: 4 }} data-testid={`repo-detail-mount-path-${repository.repositoryName}`}>
                         {repositoryData.repositoryData.mount_path}
                       </Text>
                     </div>
@@ -379,7 +383,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
               {/* Repository Activity Section */}
               {repositoryData.repositoryData.mounted && (
                 <>
-                  <Divider style={{ margin: '24px 0' }}>
+                  <Divider style={{ margin: '24px 0' }} data-testid="repo-detail-activity-divider">
                     <Space>
                       <FieldTimeOutlined />
                       {t('resources:repositories.activity')}
@@ -389,7 +393,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
                   <Row gutter={[16, 16]}>
                     {repositoryData.repositoryData.docker_running && (
                       <Col span={12}>
-                        <Card size="small" style={{ height: '100%' }}>
+                        <Card size="small" style={{ height: '100%' }} data-testid={`repo-detail-containers-card-${repository.repositoryName}`}>
                           <Statistic
                             title={t('resources:repositories.containers')}
                             value={repositoryData.repositoryData.container_count}
@@ -400,7 +404,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
                     )}
                     {repositoryData.repositoryData.has_services && (
                       <Col span={12}>
-                        <Card size="small" style={{ height: '100%' }}>
+                        <Card size="small" style={{ height: '100%' }} data-testid={`repo-detail-services-card-${repository.repositoryName}`}>
                           <Statistic
                             title={t('resources:repositories.services')}
                             value={repositoryData.repositoryData.service_count}
@@ -416,18 +420,19 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
               {/* Services Section */}
               {repositoryData.services && repositoryData.services.length > 0 && (
                 <>
-                  <Divider style={{ margin: '24px 0' }}>
+                  <Divider style={{ margin: '24px 0' }} data-testid="repo-detail-services-divider">
                     <Space>
                       <CodeOutlined />
                       {t('resources:repositories.servicesSection')}
                     </Space>
                   </Divider>
 
-                  <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                  <Space direction="vertical" style={{ width: '100%' }} size="middle" data-testid="repo-detail-services-list">
                     {repositoryData.services.map((service: ServiceData, index: number) => (
                       <Card 
                         key={`${service.name}-${index}`} 
                         size="small"
+                        data-testid={`repo-detail-service-card-${repository.repositoryName}-${service.name}`}
                         style={{ 
                           borderLeft: `4px solid ${
                             service.active_state === 'active' ? '#52c41a' :
@@ -438,8 +443,8 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
                         <Row gutter={[16, 8]}>
                           <Col span={24}>
                             <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-                              <Text strong>{service.name}</Text>
-                              <Tag color={
+                              <Text strong data-testid={`repo-detail-service-name-${repository.repositoryName}-${service.name}`}>{service.name}</Text>
+                              <Tag data-testid={`repo-detail-service-status-${repository.repositoryName}-${service.name}`} color={
                                 service.active_state === 'active' ? 'success' : 
                                 service.active_state === 'failed' ? 'error' : 'default'
                               }>

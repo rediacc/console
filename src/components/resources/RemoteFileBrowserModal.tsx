@@ -545,11 +545,14 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
             <FileOutlined style={{ color: '#666' }} />
           )}
           {record.isDirectory ? (
-            <a onClick={() => handleNavigate(currentPath ? `${currentPath}/${name}` : name)}>
+            <a 
+              onClick={() => handleNavigate(currentPath ? `${currentPath}/${name}` : name)}
+              data-testid={`file-browser-folder-${name}`}
+            >
               {name}
             </a>
           ) : (
-            <span>{name}</span>
+            <span data-testid={`file-browser-file-${name}`}>{name}</span>
           )}
         </Space>
       ),
@@ -586,7 +589,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
   const breadcrumbItems = useMemo(() => {
     const items = [
       {
-        title: <HomeOutlined />,
+        title: <span data-testid="file-browser-breadcrumb-home"><HomeOutlined /></span>,
         onClick: () => handleNavigate(''),
       }
     ];
@@ -596,7 +599,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       parts.forEach((part, index) => {
         const path = parts.slice(0, index + 1).join('/');
         items.push({
-          title: part,
+          title: <span data-testid={`file-browser-breadcrumb-${part}`}>{part}</span>,
           onClick: () => handleNavigate(path),
         });
       });
@@ -607,6 +610,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
 
   return (
     <Modal
+      data-testid="file-browser-modal"
       title={
         <Space>
           <CloudDownloadOutlined />
@@ -617,7 +621,11 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       onCancel={onCancel}
       width={900}
       footer={[
-        <Button key="cancel" onClick={onCancel}>
+        <Button 
+          key="cancel" 
+          onClick={onCancel}
+          data-testid="file-browser-cancel-button"
+        >
           {t('common:actions.cancel')}
         </Button>,
         <Button
@@ -625,6 +633,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           icon={<ReloadOutlined />}
           onClick={loadFiles}
           loading={loading}
+          data-testid="file-browser-refresh-button"
         >
           {t('common:actions.refresh')}
         </Button>,
@@ -634,6 +643,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           icon={<CloudDownloadOutlined />}
           onClick={handlePull}
           disabled={!selectedFile}
+          data-testid="file-browser-pull-button"
         >
           {t('resources:remoteFiles.pull')}
         </Button>,
@@ -641,8 +651,8 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
     >
       <Space direction="vertical" style={{ width: '100%' }} size="middle">
         {/* Source selector with label */}
-        <div>
-          <div style={{ marginBottom: 8, fontWeight: 500 }}>
+        <div data-testid="file-browser-source-container">
+          <div style={{ marginBottom: 8, fontWeight: 500 }} data-testid="file-browser-source-label">
             {t('resources:remoteFiles.sourceLabel')}
           </div>
           <Space style={{ width: '100%', justifyContent: 'space-between' }}>
@@ -669,12 +679,14 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
                   ) : null
                 }
                 options={storageSources}
+                data-testid="file-browser-source-select"
               />
               <Button
                 icon={<FolderOpenOutlined />}
                 onClick={loadFiles}
                 loading={loading}
                 disabled={!selectedSource}
+                data-testid="file-browser-load-files-button"
               >
                 {t('resources:remoteFiles.loadFiles')}
               </Button>
@@ -684,13 +696,18 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               style={{ width: 250 }}
+              data-testid="file-browser-search-input"
             />
           </Space>
         </div>
 
         {/* Breadcrumb navigation */}
         {currentPath && (
-          <Breadcrumb items={breadcrumbItems} separator={<RightOutlined />} />
+          <Breadcrumb 
+            items={breadcrumbItems} 
+            separator={<RightOutlined />} 
+            data-testid="file-browser-breadcrumb"
+          />
         )}
 
         {/* File list */}
@@ -702,6 +719,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
                   ? t('common:general.loading') 
                   : t('resources:remoteFiles.noFiles')
               } 
+              data-testid="file-browser-empty-state"
             />
           ) : (
             <Table
@@ -727,6 +745,10 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
                 }),
               }}
               scroll={{ y: 400 }}
+              data-testid="file-browser-table"
+              onRow={(record) => ({
+                'data-testid': `file-browser-row-${record.name}`,
+              })}
             />
           )}
         </Spin>
@@ -736,6 +758,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           type="info"
           message={t('resources:remoteFiles.info')}
           showIcon
+          data-testid="file-browser-info-alert"
         />
       </Space>
     </Modal>

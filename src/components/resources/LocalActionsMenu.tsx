@@ -107,7 +107,8 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       key: 'open',
       icon: <DesktopOutlined />,
       label: t('resources:localActions.openInDesktop'),
-      onClick: () => handleOpenInDesktop()
+      onClick: () => handleOpenInDesktop(),
+      'data-testid': `local-actions-open-${repository}`
     },
     {
       type: 'divider'
@@ -116,13 +117,15 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       key: 'sync',
       icon: <SyncOutlined />,
       label: t('resources:localActions.openFileSync'),
-      onClick: () => handleOpenInDesktop('sync')
+      onClick: () => handleOpenInDesktop('sync'),
+      'data-testid': `local-actions-sync-${repository}`
     },
     {
       key: 'terminal',
       icon: <CodeOutlined />,
       label: t('resources:localActions.openTerminal'),
-      onClick: () => handleOpenInDesktop('terminal')
+      onClick: () => handleOpenInDesktop('terminal'),
+      'data-testid': `local-actions-terminal-${repository}`
     },
     {
       key: 'plugin',
@@ -130,17 +133,19 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       label: t('resources:localActions.openPluginManager'),
       onClick: () => handleOpenInDesktop('plugin'),
       disabled: runningPlugins.length === 0,
-      title: runningPlugins.length === 0 ? t('resources:localActions.noPluginsRunning') : undefined
+      title: runningPlugins.length === 0 ? t('resources:localActions.noPluginsRunning') : undefined,
+      'data-testid': `local-actions-plugin-${repository}`
     },
     {
       key: 'browser',
       icon: <FolderOpenOutlined />,
       label: t('resources:localActions.openFileBrowser'),
-      onClick: () => handleOpenInDesktop('browser')
+      onClick: () => handleOpenInDesktop('browser'),
+      'data-testid': `local-actions-browser-${repository}`
     }
   ]
 
-  const menu = <Menu items={menuItems} />
+  const menu = <Menu items={menuItems} data-testid={`local-actions-menu-${repository}`} />
 
   return (
     <>
@@ -148,11 +153,13 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
         overlay={menu} 
         trigger={['click']}
         disabled={disabled || isCheckingProtocol}
+        data-testid={`local-actions-dropdown-container-${repository}`}
       >
         <Button 
           size="small" 
           icon={<DesktopOutlined />}
           loading={isCheckingProtocol}
+          data-testid={`local-actions-dropdown-${repository}`}
         >
           {t('resources:localActions.local')} <DownOutlined />
         </Button>

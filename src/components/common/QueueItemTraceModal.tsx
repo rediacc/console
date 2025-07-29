@@ -94,6 +94,7 @@ const ConsoleOutput: React.FC<ConsoleOutputProps> = ({ content, theme, consoleOu
   return (
     <div 
       ref={consoleOutputRef}
+      data-testid="queue-trace-console-output"
       style={{ 
         backgroundColor: theme === 'dark' ? '#1f1f1f' : '#f5f5f5',
         border: `1px solid ${theme === 'dark' ? '#303030' : '#d9d9d9'}`,
@@ -460,6 +461,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
 
   return (
     <Modal
+      data-testid="queue-trace-modal"
       title={
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <Space>
@@ -468,6 +470,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
           </Space>
           <Space>
             <Switch
+              data-testid="queue-trace-mode-switch"
               checked={!simpleMode}
               onChange={(checked) => setSimpleMode(!checked)}
               checkedChildren="Detailed"
@@ -492,6 +495,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             <Space>
               <BellOutlined />
               <Switch
+                data-testid="queue-trace-monitoring-switch"
                 checked={isMonitoring}
                 onChange={handleToggleMonitoring}
                 disabled={
@@ -519,6 +523,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
          normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PROCESSING')) ? (
           <Button 
             key="cancel"
+            data-testid="queue-trace-cancel-button"
             danger
             icon={<CloseCircleOutlined />} 
             onClick={handleCancelQueueItem}
@@ -534,6 +539,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
         !normalizeProperty(traceData.queueDetails, 'permanentlyFailed', 'PermanentlyFailed')) ? (
           <Button 
             key="retry"
+            data-testid="queue-trace-retry-button"
             type="primary"
             danger
             icon={<RetweetOutlined />} 
@@ -545,13 +551,14 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
         ) : null,
         <Button 
           key="refresh" 
+          data-testid="queue-trace-refresh-button"
           icon={<ReloadOutlined />} 
           onClick={handleRefreshTrace}
           loading={isTraceLoading}
         >
           Refresh
         </Button>,
-        <Button key="close" onClick={handleClose}>
+        <Button key="close" data-testid="queue-trace-close-button" onClick={handleClose}>
           Close
         </Button>
       ].filter(Boolean)}
@@ -565,6 +572,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
           {/* Stale Task Warning */}
           {isTaskStale() && (
             <Alert
+              data-testid="queue-trace-alert-stale"
               message="Task May Be Stale"
               description="This task has been processing for over 5 minutes and may be stuck."
               type="warning"
@@ -577,6 +585,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
           {/* Old Pending Warning */}
           {isStalePending() && (
             <Alert
+              data-testid="queue-trace-alert-old-pending"
               message="Old Pending Task"
               description={`This task has been pending for over 6 hours. It may expire soon if not processed.`}
               type="warning"
@@ -589,6 +598,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
           {/* Cancelling Status Alert */}
           {traceData.queueDetails && normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLING' && (
             <Alert
+              data-testid="queue-trace-alert-cancelling"
               message="Task Being Cancelled"
               description="The task is being cancelled. The bridge will stop execution gracefully."
               type="warning"
@@ -607,6 +617,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
               (normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0) >= 2))
           ) && (
             <Alert
+              data-testid="queue-trace-alert-final-status"
               message={
                 normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' 
                   ? t('queue:taskStatus.completedTitle')
@@ -640,6 +651,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
           {traceData.queueDetails && normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason') && 
            normalizeProperty(traceData.queueDetails, 'status', 'Status') !== 'CANCELLING' && (
             <Alert
+              data-testid="queue-trace-alert-failure"
               message={
                 normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' && 
                 normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') > 0 
@@ -673,6 +685,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
           {/* Simple Progress Overview */}
           {simpleMode && traceData.queueDetails && (
             <Card 
+              data-testid="queue-trace-simple-overview"
               style={{ 
                 marginBottom: 16, 
                 background: theme === 'dark' ? '#1f1f1f' : '#f0f2f5',
@@ -694,6 +707,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
 
                 {/* Progress Bar */}
                 <Progress
+                  data-testid="queue-trace-progress"
                   className="queue-trace-progress" 
                   percent={getProgressPercentage()} 
                   status={
@@ -708,6 +722,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
 
                 {/* Steps */}
                 <Steps
+                  data-testid="queue-trace-steps"
                   className="queue-trace-steps" 
                   current={getCurrentStep()} 
                   status={getCurrentStep() === -1 ? 'error' : undefined}
@@ -757,7 +772,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                 {/* Key Info */}
                 <Row gutter={[16, 16]} style={{ textAlign: 'center' }}>
                   <Col span={8}>
-                    <div className="queue-trace-key-info" style={{ padding: '12px', borderRadius: '8px', background: theme === 'dark' ? '#262626' : '#fafafa' }}>
+                    <div data-testid="queue-trace-info-duration" className="queue-trace-key-info" style={{ padding: '12px', borderRadius: '8px', background: theme === 'dark' ? '#262626' : '#fafafa' }}>
                       <Text type="secondary">Duration</Text>
                       <div>
                         <Text strong style={{ fontSize: '18px' }}>
@@ -767,7 +782,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                     </div>
                   </Col>
                   <Col span={8}>
-                    <div className="queue-trace-key-info" style={{ padding: '12px', borderRadius: '8px', background: theme === 'dark' ? '#262626' : '#fafafa' }}>
+                    <div data-testid="queue-trace-info-machine" className="queue-trace-key-info" style={{ padding: '12px', borderRadius: '8px', background: theme === 'dark' ? '#262626' : '#fafafa' }}>
                       <Text type="secondary">Machine</Text>
                       <div>
                         <Text strong>{traceData.queueDetails.machineName}</Text>
@@ -775,7 +790,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                     </div>
                   </Col>
                   <Col span={8}>
-                    <div className="queue-trace-key-info" style={{ padding: '12px', borderRadius: '8px', background: theme === 'dark' ? '#262626' : '#fafafa' }}>
+                    <div data-testid="queue-trace-info-priority" className="queue-trace-key-info" style={{ padding: '12px', borderRadius: '8px', background: theme === 'dark' ? '#262626' : '#fafafa' }}>
                       <Text type="secondary">Priority</Text>
                       <div>
                         <Tag color={getPriorityInfo(normalizeProperty(traceData.queueDetails, 'priority', 'Priority')).color}>
@@ -793,6 +808,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
           {/* Console Output for Simple Mode */}
           {simpleMode && (
             <Card 
+              data-testid="queue-trace-simple-console"
               title={
                 <Space>
                   <CodeOutlined />
@@ -822,6 +838,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
           {!simpleMode && (
             <div style={{ marginTop: 16 }}>
               <Collapse 
+              data-testid="queue-trace-collapse"
               className="queue-trace-collapse"
               activeKey={activeKeys}
               onChange={setActiveKeys}
@@ -830,6 +847,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             {/* Overview Panel - Combines key information from multiple result sets */}
             {traceData.queueDetails && (
               <Panel 
+                data-testid="queue-trace-panel-overview"
                 header={
                   <Space>
                     <DashboardOutlined />
@@ -855,7 +873,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   {/* Left Column - Task Details */}
                   <Col xs={24} lg={12}>
                     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                      <Card size="small" title="Task Information">
+                      <Card size="small" title="Task Information" data-testid="queue-trace-task-info">
                         <Descriptions column={1} size="small">
                           <Descriptions.Item label="Task ID">
                             <Text code>{normalizeProperty(traceData.queueDetails, 'taskId', 'TaskId')}</Text>
@@ -899,7 +917,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                         </Descriptions>
                       </Card>
 
-                      <Card size="small" title="Processing Information">
+                      <Card size="small" title="Processing Information" data-testid="queue-trace-processing-info">
                         <Descriptions column={1} size="small">
                           <Descriptions.Item label="Machine">
                             <Space>
@@ -952,6 +970,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   {/* Right Column - Response Console */}
                   <Col xs={24} lg={12}>
                     <Card 
+                      data-testid="queue-trace-detailed-console"
                       title={
                         <Space>
                           <CodeOutlined />
@@ -984,6 +1003,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             {/* Result Set 1: Queue Item Details */}
             {traceData.queueDetails && (
               <Panel 
+                data-testid="queue-trace-panel-details"
                 header={
                   <Space>
                     <FileTextOutlined />
@@ -1069,6 +1089,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             {/* Result Set 4: Processing Timeline (Audit Log) */}
             {traceData.traceLogs && traceData.traceLogs.length > 0 && (
               <Panel 
+                data-testid="queue-trace-panel-timeline"
                 header={
                   <Space>
                     <HistoryOutlined />
@@ -1078,7 +1099,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                 } 
                 key="timeline"
               >
-                <Timeline mode="left" className="queue-trace-timeline">
+                <Timeline mode="left" className="queue-trace-timeline" data-testid="queue-trace-timeline">
                 {traceData.traceLogs.map((log: any, index: number) => {
                   const action = normalizeProperty(log, 'action', 'Action')
                   const timestamp = normalizeProperty(log, 'timestamp', 'Timestamp')
@@ -1115,6 +1136,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             {/* Result Sets 2 & 3: Request and Response Vault Content */}
             {(traceData.vaultContent || traceData.responseVaultContent) && (
               <Panel 
+                data-testid="queue-trace-panel-vault"
                 header={
                   <Space>
                     <FileTextOutlined />
@@ -1125,6 +1147,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                 key="vault"
               >
                 <Tabs
+                data-testid="queue-trace-vault-tabs"
                 items={[
                   {
                     key: 'request',
@@ -1246,6 +1269,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                                     
                                     {/* Compatibility Status */}
                                     <Alert
+                                      data-testid="queue-trace-ssh-compatibility-alert"
                                       type={config.type}
                                       icon={config.icon}
                                       message={
@@ -1324,6 +1348,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             {/* Result Set 5: Related Queue Items */}
             {traceData.queuePosition && traceData.queuePosition.length > 0 && (
               <Panel 
+                data-testid="queue-trace-panel-related"
                 header={
                   <Space>
                     <TeamOutlined />
@@ -1397,6 +1422,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             {/* Result Set 6: Performance Metrics */}
             {traceData.machineStats && (
               <Panel 
+                data-testid="queue-trace-panel-performance"
                 header={
                   <Space>
                     <DashboardOutlined />
@@ -1452,6 +1478,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                 </Row>
                 <Divider />
                 <Alert
+                  data-testid="queue-trace-performance-alert"
                   message="Performance Analysis"
                   description={
                     <Space direction="vertical">
@@ -1474,6 +1501,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             {/* Result Set 7: Subscription Context */}
             {traceData.planInfo && (
               <Panel 
+                data-testid="queue-trace-panel-subscription"
                 header={
                   <Space>
                     <CrownOutlined />
@@ -1518,6 +1546,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                     <>
                       <Divider />
                       <Alert
+                        data-testid="queue-trace-premium-alert"
                         message="Premium Features"
                         description={
                           <Space direction="vertical">

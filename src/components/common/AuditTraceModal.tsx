@@ -185,10 +185,10 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       title: t('audit.action'),
       key: 'action',
       width: 150,
-      render: (_: any, record: AuditTraceRecord) => (
-        <Space>
+      render: (_: any, record: AuditTraceRecord, index: number) => (
+        <Space data-testid={`audit-trace-action-${index}`}>
           {getIcon(record.iconHint)}
-          <Tag color={getActionColor(record.actionType)}>
+          <Tag color={getActionColor(record.actionType)} data-testid={`audit-trace-action-tag-${index}`}>
             {record.actionType}
           </Tag>
         </Space>
@@ -205,15 +205,19 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       dataIndex: 'performedBy',
       key: 'performedBy',
       width: 200,
-      render: (user: string) => user || t('audit.system'),
+      render: (user: string, record: AuditTraceRecord, index: number) => (
+        <span data-testid={`audit-trace-performed-by-${index}`}>
+          {user || t('audit.system')}
+        </span>
+      ),
     },
     {
       title: t('audit.timestamp'),
       dataIndex: 'timestamp',
       key: 'timestamp',
       width: 200,
-      render: (timestamp: string, record: AuditTraceRecord) => (
-        <Space direction="vertical" size={0}>
+      render: (timestamp: string, record: AuditTraceRecord, index: number) => (
+        <Space direction="vertical" size={0} data-testid={`audit-trace-timestamp-${index}`}>
           <Text>{new Date(timestamp).toLocaleString()}</Text>
           <Text type="secondary" style={{ fontSize: 12 }}>
             {record.timeAgo}
@@ -225,16 +229,17 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
 
   const renderTimelineView = () => {
     if (!data?.records || data.records.length === 0) {
-      return <Empty description={t('audit.noRecords')} />
+      return <Empty description={t('audit.noRecords')} data-testid="audit-trace-empty-state" />
     }
 
     return (
-      <Timeline mode="left">
+      <Timeline mode="left" data-testid="audit-trace-timeline">
         {data.records.map((record, index) => (
           <Timeline.Item 
             key={index}
             dot={getIcon(record.iconHint)}
             color={getActionColor(record.actionType)}
+            data-testid={`audit-trace-timeline-item-${index}`}
           >
             <Space direction="vertical" size={0}>
               <Space>
@@ -265,9 +270,10 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       width={900}
       footer={null}
       destroyOnClose
+      data-testid="audit-trace-modal"
     >
       {isLoading ? (
-        <div style={{ textAlign: 'center', padding: '50px 0' }}>
+        <div style={{ textAlign: 'center', padding: '50px 0' }} data-testid="audit-trace-loading">
           <Spin size="large" tip={t('common:general.loading')} />
         </div>
       ) : error ? (
@@ -276,25 +282,26 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
           description={error instanceof Error ? error.message : t('audit.errorLoading')}
           type="error"
           showIcon
+          data-testid="audit-trace-error-alert"
         />
       ) : data ? (
         <>
           {/* Summary Section */}
           {data.summary && (
-            <Space direction="vertical" size={16} style={{ width: '100%', marginBottom: 24 }}>
+            <Space direction="vertical" size={16} style={{ width: '100%', marginBottom: 24 }} data-testid="audit-trace-summary">
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Space size={32}>
-                  <Space direction="vertical" size={0}>
+                  <Space direction="vertical" size={0} data-testid="audit-trace-total-records">
                     <Text type="secondary">{t('audit.totalRecords')}</Text>
                     <Text strong style={{ fontSize: 20 }}>{data.summary.totalAuditRecords}</Text>
                   </Space>
-                  <Space direction="vertical" size={0}>
+                  <Space direction="vertical" size={0} data-testid="audit-trace-visible-records">
                     <Text type="secondary">{t('audit.visibleRecords')}</Text>
                     <Text strong style={{ fontSize: 20 }}>{data.summary.visibleAuditRecords}</Text>
                   </Space>
                   {data.summary.lastActivity && (
-                    <Space direction="vertical" size={0}>
+                    <Space direction="vertical" size={0} data-testid="audit-trace-last-activity">
                       <Text type="secondary">{t('audit.lastActivity')}</Text>
                       <Text strong>{new Date(data.summary.lastActivity).toLocaleDateString()}</Text>
                     </Space>
@@ -321,7 +328,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
                   }}
                   placement="bottomRight"
                 >
-                  <Button icon={<DownloadOutlined />}>
+                  <Button icon={<DownloadOutlined />} data-testid="audit-trace-export-button">
                     {t('audit.export')}
                   </Button>
                 </Dropdown>
@@ -332,6 +339,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
                   message={t('audit.olderRecordsNotVisible')}
                   type="warning"
                   showIcon
+                  data-testid="audit-trace-older-records-alert"
                 />
               )}
             </Space>
@@ -354,6 +362,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
             }}
             scroll={{ x: 800 }}
             size="small"
+            data-testid="audit-trace-table"
           />
 
           {/* Alternative Timeline View (could be toggled) */}
@@ -361,7 +370,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
           
           {/* Bottom retention info */}
           {data.summary && (
-            <div style={{ marginTop: 24, textAlign: 'center' }}>
+            <div style={{ marginTop: 24, textAlign: 'center' }} data-testid="audit-trace-retention-info">
               <Text type="secondary">
                 {t('audit.retentionInfo', {
                   days: data.summary.auditRetentionDays,

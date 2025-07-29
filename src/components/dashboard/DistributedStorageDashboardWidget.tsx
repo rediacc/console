@@ -100,6 +100,7 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
 
   return (
     <Card
+      data-testid="ds-widget-card"
       title={
         <Space>
           <CloudServerOutlined />
@@ -118,6 +119,7 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
           {assignmentData.map((item) => (
             <Col key={item.type} xs={12} sm={12} md={6}>
               <Card 
+                data-testid={`ds-widget-stat-${item.type}`}
                 size="small" 
                 style={{ 
                   textAlign: 'center',
@@ -132,6 +134,7 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
                     {item.icon}
                   </div>
                   <Statistic
+                    data-testid={`ds-widget-stat-value-${item.type}`}
                     title={item.label}
                     value={item.count}
                     suffix={
@@ -153,7 +156,9 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
         {/* Cluster Summary */}
         <Row gutter={[16, 16]}>
           <Col xs={24} md={12}>
-            <div style={{ 
+            <div 
+              data-testid="ds-widget-cluster-summary"
+              style={{ 
               padding: '16px', 
               backgroundColor: currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout, 
               borderRadius: 8,
@@ -164,6 +169,7 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
                 <Row gutter={16}>
                   <Col span={12}>
                     <Statistic
+                      data-testid="ds-widget-stat-total-clusters"
                       title={t('distributedStorage:dashboard.totalClusters')}
                       value={stats.total_clusters}
                       valueStyle={{ fontSize: 18 }}
@@ -171,6 +177,7 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
                   </Col>
                   <Col span={12}>
                     <Statistic
+                      data-testid="ds-widget-stat-avg-machines"
                       title={t('distributedStorage:dashboard.avgMachinesPerCluster')}
                       value={stats.avg_machines_per_cluster}
                       precision={1}
@@ -184,7 +191,9 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
 
           {/* Machine Utilization */}
           <Col xs={24} md={12}>
-            <div style={{ 
+            <div 
+              data-testid="ds-widget-machine-utilization"
+              style={{ 
               padding: '16px', 
               backgroundColor: currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout, 
               borderRadius: 8,
@@ -193,6 +202,7 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
               <Space direction="vertical" size="small" style={{ width: '100%' }}>
                 <Text strong>{t('distributedStorage:dashboard.machineUtilization')}</Text>
                 <Progress
+                  data-testid="ds-widget-progress-utilization"
                   percent={Math.round(((stats.total_machines - stats.truly_available_machines) / stats.total_machines) * 100)}
                   strokeColor={{
                     '0%': token.colorPrimary,
@@ -213,16 +223,18 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
 
         {/* Team Breakdown */}
         {stats.team_breakdown && stats.team_breakdown.length > 0 && (
-          <div>
+          <div data-testid="ds-widget-team-breakdown">
             <Space style={{ marginBottom: 12 }}>
               <TeamOutlined />
               <Text strong>{t('distributedStorage:dashboard.teamBreakdown')}</Text>
             </Space>
             <List
+              data-testid="ds-widget-team-list"
               size="small"
               dataSource={stats.team_breakdown}
               renderItem={(team) => (
                 <List.Item
+                  data-testid={`ds-widget-team-item-${team.TeamName.toLowerCase().replace(/\s+/g, '-')}`}
                   style={{ 
                     paddingLeft: 12, 
                     paddingRight: 12,
@@ -241,21 +253,21 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
                     </div>
                     <Space wrap>
                       <Tooltip title={t('distributedStorage:assignmentStatus.available')}>
-                        <Tag color="success">{team.AvailableMachines} available</Tag>
+                        <Tag data-testid={`ds-widget-team-tag-available-${team.TeamName.toLowerCase().replace(/\s+/g, '-')}`} color="success">{team.AvailableMachines} available</Tag>
                       </Tooltip>
                       {team.ClusterMachines > 0 && (
                         <Tooltip title={t('distributedStorage:assignmentStatus.cluster')}>
-                          <Tag color="blue">{team.ClusterMachines} cluster</Tag>
+                          <Tag data-testid={`ds-widget-team-tag-cluster-${team.TeamName.toLowerCase().replace(/\s+/g, '-')}`} color="blue">{team.ClusterMachines} cluster</Tag>
                         </Tooltip>
                       )}
                       {team.ImageMachines > 0 && (
                         <Tooltip title={t('distributedStorage:assignmentStatus.image')}>
-                          <Tag color="purple">{team.ImageMachines} image</Tag>
+                          <Tag data-testid={`ds-widget-team-tag-image-${team.TeamName.toLowerCase().replace(/\s+/g, '-')}`} color="purple">{team.ImageMachines} image</Tag>
                         </Tooltip>
                       )}
                       {team.CloneMachines > 0 && (
                         <Tooltip title={t('distributedStorage:assignmentStatus.clone')}>
-                          <Tag color="orange">{team.CloneMachines} clone</Tag>
+                          <Tag data-testid={`ds-widget-team-tag-clone-${team.TeamName.toLowerCase().replace(/\s+/g, '-')}`} color="orange">{team.CloneMachines} clone</Tag>
                         </Tooltip>
                       )}
                     </Space>
