@@ -36,8 +36,8 @@ Based on a comprehensive search of the codebase, we have identified **64 files w
 - [x] `data-testid="login-master-password-input"`
 - [x] `data-testid="login-submit-button"`
 - [x] `data-testid="login-register-link"`
-- [x] `data-testid="2fa-code-input"`
-- [x] `data-testid="2fa-verify-button"`
+- [x] `data-testid="tfa-code-input"`
+- [x] `data-testid="tfa-verify-button"`
 
 #### RegistrationModal.tsx
 - [ ] `data-testid="registration-company-input"`
@@ -157,10 +157,10 @@ Based on a comprehensive search of the codebase, we have identified **64 files w
 ### 9. Settings Components
 
 #### TwoFactorSettings.tsx
-- [ ] `data-testid="2fa-enable-button"`
-- [ ] `data-testid="2fa-disable-button"`
-- [ ] `data-testid="2fa-qr-code"`
-- [ ] `data-testid="2fa-backup-codes"`
+- [ ] `data-testid="tfa-enable-button"`
+- [ ] `data-testid="tfa-disable-button"`
+- [ ] `data-testid="tfa-qr-code"`
+- [ ] `data-testid="tfa-backup-codes"`
 
 ### 10. Form Components
 

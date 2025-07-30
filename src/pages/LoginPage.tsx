@@ -22,7 +22,7 @@ import {
 } from '@/utils/vaultProtocol'
 import { masterPasswordService } from '@/services/masterPasswordService'
 import { tokenService } from '@/services/tokenService'
-import { useVerify2FA } from '@/api/queries/twoFactor'
+import { useVerifyTFA } from '@/api/queries/twoFactor'
 import RegistrationModal from '@/components/auth/RegistrationModal'
 
 const { Text, Link } = Typography
@@ -88,8 +88,8 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [vaultProtocolState, setVaultProtocolState] = useState<VaultProtocolState | null>(null)
-  const [show2FAModal, setShow2FAModal] = useState(false)
-  const [pending2FAData, setPending2FAData] = useState<any>(null)
+  const [showTFAModal, setShowTFAModal] = useState(false)
+  const [pendingTFAData, setPendingTFAData] = useState<any>(null)
   const [twoFACode, setTwoFACode] = useState('')
   const [showRegistration, setShowRegistration] = useState(false)
   const navigate = useNavigate()
@@ -98,7 +98,7 @@ const LoginPage: React.FC = () => {
   const [twoFAForm] = Form.useForm()
   const { theme } = useTheme()
   const { t } = useTranslation(['auth', 'common'])
-  const verify2FAMutation = useVerify2FA()
+  const verifyTFAMutation = useVerifyTFA()
 
   const handleLogin = async (values: LoginForm) => {
     setLoading(true)
@@ -124,20 +124,20 @@ const LoginPage: React.FC = () => {
         throw new Error('No authentication token received')
       }
 
-      // Check if 2FA is required
+      // Check if TFA is required
       const isAuthorized = userData.isAuthorized
       const authenticationStatus = userData.authenticationStatus
       
-      // If 2FA is required but not authorized, show 2FA modal
-      if (authenticationStatus === '2FA_REQUIRED' && !isAuthorized) {
-        // Store the login data for after 2FA verification
-        setPending2FAData({
+      // If TFA is required but not authorized, show TFA modal
+      if (authenticationStatus === 'TFA_REQUIRED' && !isAuthorized) {
+        // Store the login data for after TFA verification
+        setPendingTFAData({
           token,
           email: values.email,
           userData,
           masterPassword: values.masterPassword
         })
-        setShow2FAModal(true)
+        setShowTFAModal(true)
         setLoading(false)
         return
       }
@@ -196,26 +196,26 @@ const LoginPage: React.FC = () => {
     }
   }
 
-  const handle2FAVerification = async () => {
+  const handleTFAVerification = async () => {
     try {
-      // Set the token temporarily for the 2FA verification request
-      const { token } = pending2FAData
+      // Set the token temporarily for the TFA verification request
+      const { token } = pendingTFAData
       await tokenService.setToken(token)
       
-      // Verify the 2FA code
-      const result = await verify2FAMutation.mutateAsync({ code: twoFACode })
+      // Verify the TFA code
+      const result = await verifyTFAMutation.mutateAsync({ code: twoFACode })
       
       if (result.isAuthorized) {
-        // Check if this is because 2FA is not enabled
-        if (result.has2FAEnabled === false) {
+        // Check if this is because TFA is not enabled
+        if (result.hasTFAEnabled === false) {
           showMessage('info', 'Two-factor authentication is not enabled for this account.')
-          setShow2FAModal(false)
+          setShowTFAModal(false)
           setTwoFACode('')
           return
         }
         
         // Continue with the login process using stored data
-        const { token, email, userData, masterPassword } = pending2FAData
+        const { token, email, userData, masterPassword } = pendingTFAData
         
         // Extract VaultCompany and company name from stored userData
         const vaultCompany = userData.vaultCompany || null
@@ -239,7 +239,7 @@ const LoginPage: React.FC = () => {
         }))
         
         // Close modal and navigate
-        setShow2FAModal(false)
+        setShowTFAModal(false)
         navigate('/dashboard')
       }
     } catch (error: any) {
@@ -388,7 +388,7 @@ const LoginPage: React.FC = () => {
       </Space>
     </Card>
 
-      {/* 2FA Verification Modal */}
+      {/* TFA Verification Modal */}
       <Modal
         title={
           <Space>
@@ -396,11 +396,11 @@ const LoginPage: React.FC = () => {
             <span>{t('login.twoFactorAuth.title')}</span>
           </Space>
         }
-        open={show2FAModal}
+        open={showTFAModal}
         onCancel={() => {
-          setShow2FAModal(false)
+          setShowTFAModal(false)
           setTwoFACode('')
-          setPending2FAData(null)
+          setPendingTFAData(null)
         }}
         footer={null}
         width={400}
@@ -411,12 +411,12 @@ const LoginPage: React.FC = () => {
             description={t('login.twoFactorAuth.description')}
             type="info"
             showIcon
-            data-testid="2fa-info-alert"
+            data-testid="tfa-info-alert"
           />
           
           <Form
             form={twoFAForm}
-            onFinish={() => handle2FAVerification()}
+            onFinish={() => handleTFAVerification()}
             layout="vertical"
           >
             <Form.Item
@@ -436,7 +436,7 @@ const LoginPage: React.FC = () => {
                 autoComplete="off"
                 maxLength={6}
                 style={{ textAlign: 'center', fontSize: '20px', letterSpacing: '8px' }}
-                data-testid="2fa-code-input"
+                data-testid="tfa-code-input"
               />
             </Form.Item>
             
@@ -444,9 +444,9 @@ const LoginPage: React.FC = () => {
               <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
                 <Button
                   onClick={() => {
-                    setShow2FAModal(false)
+                    setShowTFAModal(false)
                     setTwoFACode('')
-                    setPending2FAData(null)
+                    setPendingTFAData(null)
                   }}
                 >
                   {t('common:general.cancel')}
@@ -454,13 +454,13 @@ const LoginPage: React.FC = () => {
                 <Button
                   type="primary"
                   htmlType="submit"
-                  loading={verify2FAMutation.isPending}
+                  loading={verifyTFAMutation.isPending}
                   disabled={twoFACode.length !== 6}
                   style={{
                     background: '#556b2f',
                     borderColor: '#556b2f',
                   }}
-                  data-testid="2fa-verify-button"
+                  data-testid="tfa-verify-button"
                 >
                   {t('login.twoFactorAuth.verify')}
                 </Button>

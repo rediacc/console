@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Modal, Button, Space, Form, Input, Typography, Alert, Spin, Result, Tabs, Card } from 'antd'
 import { SafetyCertificateOutlined, KeyOutlined, CheckCircleOutlined, WarningOutlined, CopyOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
-import { useGet2FAStatus, useEnable2FA, useDisable2FA } from '@/api/queries/twoFactor'
+import { useGetTFAStatus, useEnableTFA, useDisableTFA } from '@/api/queries/twoFactor'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 import QRCode from 'react-qr-code'
@@ -21,10 +21,10 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
   const [disableForm] = Form.useForm()
   const userEmail = useSelector((state: RootState) => state.auth.user?.email)
   
-  const { data: twoFAStatus, isLoading: statusLoading, refetch: refetch2FAStatus } = useGet2FAStatus()
+  const { data: twoFAStatus, isLoading: statusLoading, refetch: refetchTFAStatus } = useGetTFAStatus()
   
-  const enable2FAMutation = useEnable2FA()
-  const disable2FAMutation = useDisable2FA()
+  const enableTFAMutation = useEnableTFA()
+  const disableTFAMutation = useDisableTFA()
   
   const [showEnableModal, setShowEnableModal] = useState(false)
   const [showDisableModal, setShowDisableModal] = useState(false)
@@ -33,7 +33,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
   const [showVerification, setShowVerification] = useState(false)
   const [verificationForm] = Form.useForm()
   
-  // Refresh 2FA status when modal opens and reset states
+  // Refresh TFA status when modal opens and reset states
   useEffect(() => {
     if (open) {
       // Reset states when modal opens
@@ -42,13 +42,13 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
       setTwoFASecret('')
       verificationForm.resetFields()
       // Fetch fresh status
-      refetch2FAStatus()
+      refetchTFAStatus()
     }
-  }, [open, refetch2FAStatus, verificationForm])
+  }, [open, refetchTFAStatus, verificationForm])
 
-  const handleEnable2FA = async (values: { password: string }) => {
+  const handleEnableTFA = async (values: { password: string }) => {
     try {
-      const result = await enable2FAMutation.mutateAsync({ 
+      const result = await enableTFAMutation.mutateAsync({ 
         password: values.password,
         generateOnly: true  // Generate secret without saving
       })
@@ -58,7 +58,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
       passwordForm.resetFields()
     } catch (error: any) {
       // Error is handled by mutation, but we should close the modal
-      // if 2FA is already enabled
+      // if TFA is already enabled
       if (error.message?.includes('already enabled')) {
         setShowEnableModal(false)
         passwordForm.resetFields()
@@ -66,9 +66,9 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
     }
   }
 
-  const handleVerify2FA = async (values: { code: string }) => {
+  const handleVerifyTFA = async (values: { code: string }) => {
     try {
-      await enable2FAMutation.mutateAsync({ 
+      await enableTFAMutation.mutateAsync({ 
         password: '', // Not needed for verification
         verificationCode: values.code,
         secret: twoFASecret,
@@ -82,9 +82,9 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
     }
   }
 
-  const handleDisable2FA = async (values: { password: string; code: string }) => {
+  const handleDisableTFA = async (values: { password: string; code: string }) => {
     try {
-      await disable2FAMutation.mutateAsync({ 
+      await disableTFAMutation.mutateAsync({ 
         password: values.password, 
         currentCode: values.code 
       })
@@ -110,7 +110,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
   const renderMainContent = () => {
     if (statusLoading) {
       return (
-        <div style={{ textAlign: 'center', padding: '40px 0' }} data-testid="2fa-settings-loading">
+        <div style={{ textAlign: 'center', padding: '40px 0' }} data-testid="tfa-settings-loading">
           <Spin size="large" />
         </div>
       )
@@ -130,7 +130,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
           </div>
 
           <Tabs
-            data-testid="2fa-settings-setup-tabs"
+            data-testid="tfa-settings-setup-tabs"
             items={[
               {
                 key: 'qrcode',
@@ -141,7 +141,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
                       <QRCode 
                         value={generateOtpAuthUrl(twoFASecret, userEmail || '')} 
                         size={200}
-                        data-testid="2fa-settings-qr-code"
+                        data-testid="tfa-settings-qr-code"
                       />
                     </div>
                     <Text type="secondary">{t('twoFactorAuth.scanQRCode')}</Text>
@@ -163,18 +163,18 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
                               value={twoFASecret} 
                               readOnly 
                               style={{ fontFamily: 'monospace' }}
-                              data-testid="2fa-settings-secret-key-input"
+                              data-testid="tfa-settings-secret-key-input"
                             />
                             <Button 
                               icon={<CopyOutlined />}
                               onClick={() => copyToClipboard(twoFASecret)}
-                              data-testid="2fa-settings-copy-secret-button"
+                              data-testid="tfa-settings-copy-secret-button"
                             />
                           </Space.Compact>
                         </Space>
                       }
                       type="info"
-                      data-testid="2fa-settings-manual-setup-alert"
+                      data-testid="tfa-settings-manual-setup-alert"
                     />
                   </Space>
                 ),
@@ -185,7 +185,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
           <Form
             form={verificationForm}
             layout="vertical"
-            onFinish={handleVerify2FA}
+            onFinish={handleVerifyTFA}
           >
             <Form.Item
               name="code"
@@ -202,7 +202,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
                 maxLength={6}
                 style={{ textAlign: 'center', fontSize: '20px', letterSpacing: '8px' }}
                 autoComplete="off"
-                data-testid="2fa-settings-verification-input"
+                data-testid="tfa-settings-verification-input"
               />
             </Form.Item>
 
@@ -214,19 +214,19 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
                     setTwoFASecret('')
                     verificationForm.resetFields()
                   }}
-                  data-testid="2fa-settings-verification-cancel-button"
+                  data-testid="tfa-settings-verification-cancel-button"
                 >
                   {t('common:general.cancel')}
                 </Button>
                 <Button
                   type="primary"
                   htmlType="submit"
-                  loading={enable2FAMutation.isPending}
+                  loading={enableTFAMutation.isPending}
                   style={{
                     background: '#556b2f',
                     borderColor: '#556b2f',
                   }}
-                  data-testid="2fa-settings-verification-submit-button"
+                  data-testid="tfa-settings-verification-submit-button"
                 >
                   {t('twoFactorAuth.verification.submit')}
                 </Button>
@@ -243,7 +243,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
           status="success"
           title={t('twoFactorAuth.enableSuccess.title')}
           subTitle={t('twoFactorAuth.enableSuccess.subtitle')}
-          data-testid="2fa-settings-success-result"
+          data-testid="tfa-settings-success-result"
           extra={
             <Space direction="vertical" size={24} style={{ width: '100%' }}>
               <Alert
@@ -252,7 +252,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
                 type="success"
                 showIcon
                 icon={<CheckCircleOutlined />}
-                data-testid="2fa-settings-success-alert"
+                data-testid="tfa-settings-success-alert"
               />
               
               <Button 
@@ -263,13 +263,13 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
                   setShowSuccess(false)
                   setTwoFASecret('')
                   // Refetch to ensure we have the latest status
-                  refetch2FAStatus()
+                  refetchTFAStatus()
                 }}
                 style={{
                   background: '#556b2f',
                   borderColor: '#556b2f',
                 }}
-                data-testid="2fa-settings-success-done-button"
+                data-testid="tfa-settings-success-done-button"
               >
                 {t('twoFactorAuth.done')}
               </Button>
@@ -279,18 +279,18 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
       )
     }
 
-    // Ensure we have a boolean value for is2FAEnabled
-    const is2FAEnabled = Boolean(twoFAStatus?.is2FAEnabled)
+    // Ensure we have a boolean value for isTFAEnabled
+    const isTFAEnabled = Boolean(twoFAStatus?.isTFAEnabled)
 
     return (
       <Space direction="vertical" size={24} style={{ width: '100%' }}>
         <div style={{ textAlign: 'center' }}>
-          <SafetyCertificateOutlined style={{ fontSize: 64, color: is2FAEnabled ? '#52c41a' : '#8c8c8c' }} />
+          <SafetyCertificateOutlined style={{ fontSize: 64, color: isTFAEnabled ? '#52c41a' : '#8c8c8c' }} />
           <Title level={4} style={{ marginTop: 16 }}>
-            {is2FAEnabled ? t('twoFactorAuth.status.enabled') : t('twoFactorAuth.status.disabled')}
+            {isTFAEnabled ? t('twoFactorAuth.status.enabled') : t('twoFactorAuth.status.disabled')}
           </Title>
           <Paragraph type="secondary">
-            {is2FAEnabled 
+            {isTFAEnabled 
               ? t('twoFactorAuth.status.enabledDescription')
               : t('twoFactorAuth.status.disabledDescription')
             }
@@ -311,7 +311,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
           </Space>
         </Card>
 
-        {is2FAEnabled ? (
+        {isTFAEnabled ? (
           <Button
             type="primary"
             danger
@@ -319,7 +319,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
             block
             icon={<WarningOutlined />}
             onClick={() => setShowDisableModal(true)}
-            data-testid="2fa-settings-disable-button"
+            data-testid="tfa-settings-disable-button"
           >
             {t('twoFactorAuth.disable')}
           </Button>
@@ -334,7 +334,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
               background: '#556b2f',
               borderColor: '#556b2f',
             }}
-            data-testid="2fa-settings-enable-button"
+            data-testid="tfa-settings-enable-button"
           >
             {t('twoFactorAuth.enable')}
           </Button>
@@ -356,12 +356,12 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
         onCancel={onCancel}
         footer={null}
         width={600}
-        data-testid="2fa-settings-main-modal"
+        data-testid="tfa-settings-main-modal"
       >
         {renderMainContent()}
       </Modal>
 
-      {/* Enable 2FA Modal */}
+      {/* Enable TFA Modal */}
       <Modal
         title={t('twoFactorAuth.enableModal.title')}
         open={showEnableModal}
@@ -371,12 +371,12 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
         }}
         footer={null}
         width={500}
-        data-testid="2fa-settings-enable-modal"
+        data-testid="tfa-settings-enable-modal"
       >
         <Form
           form={passwordForm}
           layout="vertical"
-          onFinish={handleEnable2FA}
+          onFinish={handleEnableTFA}
         >
           <Alert
             message={t('twoFactorAuth.enableModal.warning')}
@@ -384,7 +384,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
             type="warning"
             showIcon
             style={{ marginBottom: 24 }}
-            data-testid="2fa-settings-enable-warning-alert"
+            data-testid="tfa-settings-enable-warning-alert"
           />
           
           <Form.Item
@@ -399,7 +399,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
               placeholder={t('twoFactorAuth.enableModal.passwordPlaceholder')}
               size="large"
               autoComplete="off"
-              data-testid="2fa-settings-enable-password-input"
+              data-testid="tfa-settings-enable-password-input"
             />
           </Form.Item>
           
@@ -410,19 +410,19 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
                   setShowEnableModal(false)
                   passwordForm.resetFields()
                 }}
-                data-testid="2fa-settings-enable-cancel-button"
+                data-testid="tfa-settings-enable-cancel-button"
               >
                 {t('common:general.cancel')}
               </Button>
               <Button
                 type="primary"
                 htmlType="submit"
-                loading={enable2FAMutation.isPending}
+                loading={enableTFAMutation.isPending}
                 style={{
                   background: '#556b2f',
                   borderColor: '#556b2f',
                 }}
-                data-testid="2fa-settings-enable-submit-button"
+                data-testid="tfa-settings-enable-submit-button"
               >
                 {t('twoFactorAuth.enableModal.submit')}
               </Button>
@@ -431,7 +431,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
         </Form>
       </Modal>
 
-      {/* Disable 2FA Modal */}
+      {/* Disable TFA Modal */}
       <Modal
         title={t('twoFactorAuth.disableModal.title')}
         open={showDisableModal}
@@ -441,12 +441,12 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
         }}
         footer={null}
         width={500}
-        data-testid="2fa-settings-disable-modal"
+        data-testid="tfa-settings-disable-modal"
       >
         <Form
           form={disableForm}
           layout="vertical"
-          onFinish={handleDisable2FA}
+          onFinish={handleDisableTFA}
         >
           <Alert
             message={t('twoFactorAuth.disableModal.warning')}
@@ -454,7 +454,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
             type="error"
             showIcon
             style={{ marginBottom: 24 }}
-            data-testid="2fa-settings-disable-warning-alert"
+            data-testid="tfa-settings-disable-warning-alert"
           />
           
           <Form.Item
@@ -469,7 +469,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
               placeholder={t('twoFactorAuth.disableModal.passwordPlaceholder')}
               size="large"
               autoComplete="off"
-              data-testid="2fa-settings-disable-password-input"
+              data-testid="tfa-settings-disable-password-input"
             />
           </Form.Item>
           
@@ -488,7 +488,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
               maxLength={6}
               style={{ textAlign: 'center', fontSize: '20px', letterSpacing: '8px' }}
               autoComplete="off"
-              data-testid="2fa-settings-disable-code-input"
+              data-testid="tfa-settings-disable-code-input"
             />
           </Form.Item>
           
@@ -499,7 +499,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
                   setShowDisableModal(false)
                   disableForm.resetFields()
                 }}
-                data-testid="2fa-settings-disable-cancel-button"
+                data-testid="tfa-settings-disable-cancel-button"
               >
                 {t('common:general.cancel')}
               </Button>
@@ -507,8 +507,8 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
                 type="primary"
                 danger
                 htmlType="submit"
-                loading={disable2FAMutation.isPending}
-                data-testid="2fa-settings-disable-submit-button"
+                loading={disableTFAMutation.isPending}
+                data-testid="tfa-settings-disable-submit-button"
               >
                 {t('twoFactorAuth.disableModal.submit')}
               </Button>

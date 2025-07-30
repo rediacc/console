@@ -717,7 +717,7 @@
       "name": "Proton Drive",
       "description": "End-to-end encrypted Swiss vault for files",
       "required": ["username", "password"],
-      "optional": ["2fa", "mailbox_password"],
+      "optional": ["tfa", "mailbox_password"],
       "fields": {
         "username": {
           "type": "string",
@@ -728,7 +728,7 @@
           "sensitive": true,
           "description": "Proton account password"
         },
-        "2fa": {
+        "tfa": {
           "type": "string",
           "description": "Two-factor authentication code"
         },
@@ -803,7 +803,7 @@
       "name": "Seafile",
       "description": "Backend for Seafile storage service",
       "required": ["url", "user", "pass"],
-      "optional": ["2fa", "library", "library_key", "auth_token"],
+      "optional": ["tfa", "library", "library_key", "auth_token"],
       "fields": {
         "url": {
           "type": "string",
@@ -819,7 +819,7 @@
           "sensitive": true,
           "description": "Password"
         },
-        "2fa": {
+        "tfa": {
           "type": "boolean",
           "default": false,
           "description": "Two-factor authentication flag"
@@ -1511,7 +1511,7 @@
         "cookies": {
           "type": "string",
           "sensitive": true,
-          "description": "Cookies (if 2FA already completed)"
+          "description": "Cookies (if TFA already completed)"
         },
         "client_id": {
           "type": "string",

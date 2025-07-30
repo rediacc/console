@@ -22,7 +22,7 @@
     },
     "whatIs": {
       "title": "二要素認証とは？",
-      "description": "二要素認証（2FA）は、パスワードに加えて携帯電話からの時間ベースのコードを要求することで、アカウントに追加のセキュリティレイヤーを追加します。",
+      "description": "二要素認証（TFA）は、パスワードに加えて携帯電話からの時間ベースのコードを要求することで、アカウントに追加のセキュリティレイヤーを追加します。",
       "benefit1": "パスワードが侵害されてもアカウントを保護します",
       "benefit2": "業界標準のTOTP（時間ベースのワンタイムパスワード）アルゴリズムを使用",
       "benefit3": "Google Authenticator、Authy、Microsoft Authenticatorなどの人気の認証アプリで動作"
@@ -44,8 +44,8 @@
     "done": "完了",
     "enableSuccess": {
       "title": "二要素認証が有効になりました！",
-      "subtitle": "アカウントが2FAで保護されるようになりました。",
-      "verified": "2FAが正常に検証されました",
+      "subtitle": "アカウントがTFAで保護されるようになりました。",
+      "verified": "TFAが正常に検証されました",
       "verifiedDescription": "認証アプリが正常に設定され、アカウントで二要素認証がアクティブになりました。"
     },
     "verification": {
@@ -56,7 +56,7 @@
       "codeRequired": "確認コードは必須です",
       "codeLength": "コードは正確に6桁である必要があります",
       "codeFormat": "コードは数字のみを含む必要があります",
-      "submit": "確認して2FAを有効化"
+      "submit": "確認してTFAを有効化"
     },
     "enableModal": {
       "title": "二要素認証を有効にする",
@@ -65,21 +65,21 @@
       "passwordLabel": "現在のパスワード",
       "passwordPlaceholder": "現在のパスワードを入力",
       "passwordRequired": "パスワードは必須です",
-      "submit": "2FAを有効化"
+      "submit": "TFAを有効化"
     },
     "disableModal": {
       "title": "二要素認証を無効にする",
       "warning": "セキュリティ警告",
-      "warningDescription": "2FAを無効にすると、アカウントのセキュリティが低下します。続行するには、現在のパスワードと有効な2FAコードを入力する必要があります。",
+      "warningDescription": "TFAを無効にすると、アカウントのセキュリティが低下します。続行するには、現在のパスワードと有効なTFAコードを入力する必要があります。",
       "passwordLabel": "現在のパスワード",
       "passwordPlaceholder": "現在のパスワードを入力",
       "passwordRequired": "パスワードは必須です",
-      "codeLabel": "2FAコード",
+      "codeLabel": "TFAコード",
       "codePlaceholder": "000000",
-      "codeRequired": "2FAコードは必須です",
+      "codeRequired": "TFAコードは必須です",
       "codeLength": "コードは正確に6桁である必要があります",
       "codeFormat": "コードは数字のみを含む必要があります",
-      "submit": "2FAを無効化"
+      "submit": "TFAを無効化"
     }
   }
 }

@@ -649,9 +649,9 @@
           "placeholder": "输入您的密码",
           "helpText": "您的Proton账户密码"
         },
-        "2fa": {
+        "tfa": {
           "label": "双因素代码",
-          "placeholder": "如果启用，输入2FA代码",
+          "placeholder": "如果启用，输入TFA代码",
           "helpText": "双因素身份验证代码（如果启用）"
         }
       },

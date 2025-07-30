@@ -22,7 +22,7 @@
     },
     "whatIs": {
       "title": "Qu'est-ce que l'Authentification à Deux Facteurs ?",
-      "description": "L'Authentification à Deux Facteurs (2FA) ajoute une couche de sécurité supplémentaire à votre compte en exigeant un code temporel de votre téléphone en plus de votre mot de passe.",
+      "description": "L'Authentification à Deux Facteurs (TFA) ajoute une couche de sécurité supplémentaire à votre compte en exigeant un code temporel de votre téléphone en plus de votre mot de passe.",
       "benefit1": "Protège votre compte même si votre mot de passe est compromis",
       "benefit2": "Utilise l'algorithme standard de l'industrie TOTP (Mot de Passe à Usage Unique Basé sur le Temps)",
       "benefit3": "Fonctionne avec les applications d'authentification populaires comme Google Authenticator, Authy ou Microsoft Authenticator"
@@ -44,8 +44,8 @@
     "done": "Terminé",
     "enableSuccess": {
       "title": "Authentification à Deux Facteurs Activée !",
-      "subtitle": "Votre compte est maintenant protégé avec 2FA.",
-      "verified": "2FA Vérifié avec Succès",
+      "subtitle": "Votre compte est maintenant protégé avec TFA.",
+      "verified": "TFA Vérifié avec Succès",
       "verifiedDescription": "Votre application d'authentification a été configurée avec succès et l'authentification à deux facteurs est maintenant active sur votre compte."
     },
     "verification": {
@@ -56,7 +56,7 @@
       "codeRequired": "Le code de vérification est requis",
       "codeLength": "Le code doit comporter exactement 6 chiffres",
       "codeFormat": "Le code ne doit contenir que des chiffres",
-      "submit": "Vérifier et Activer 2FA"
+      "submit": "Vérifier et Activer TFA"
     },
     "enableModal": {
       "title": "Activer l'Authentification à Deux Facteurs",
@@ -65,21 +65,21 @@
       "passwordLabel": "Mot de Passe Actuel",
       "passwordPlaceholder": "Entrez votre mot de passe actuel",
       "passwordRequired": "Le mot de passe est requis",
-      "submit": "Activer 2FA"
+      "submit": "Activer TFA"
     },
     "disableModal": {
       "title": "Désactiver l'Authentification à Deux Facteurs",
       "warning": "Avertissement de Sécurité",
-      "warningDescription": "Désactiver 2FA rendra votre compte moins sécurisé. Vous devrez entrer votre mot de passe actuel et un code 2FA valide pour continuer.",
+      "warningDescription": "Désactiver TFA rendra votre compte moins sécurisé. Vous devrez entrer votre mot de passe actuel et un code TFA valide pour continuer.",
       "passwordLabel": "Mot de Passe Actuel",
       "passwordPlaceholder": "Entrez votre mot de passe actuel",
       "passwordRequired": "Le mot de passe est requis",
-      "codeLabel": "Code 2FA",
+      "codeLabel": "Code TFA",
       "codePlaceholder": "000000",
-      "codeRequired": "Le code 2FA est requis",
+      "codeRequired": "Le code TFA est requis",
       "codeLength": "Le code doit comporter exactement 6 chiffres",
       "codeFormat": "Le code ne doit contenir que des chiffres",
-      "submit": "Désactiver 2FA"
+      "submit": "Désactiver TFA"
     }
   }
 }

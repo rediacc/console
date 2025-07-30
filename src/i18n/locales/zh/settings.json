@@ -22,7 +22,7 @@
     },
     "whatIs": {
       "title": "什么是双因素认证？",
-      "description": "双因素认证（2FA）通过要求除密码外还需要手机上的基于时间的代码，为您的账户添加额外的安全层。",
+      "description": "双因素认证（TFA）通过要求除密码外还需要手机上的基于时间的代码，为您的账户添加额外的安全层。",
       "benefit1": "即使您的密码被泄露，也能保护您的账户",
       "benefit2": "使用行业标准的TOTP（基于时间的一次性密码）算法",
       "benefit3": "与Google Authenticator、Authy或Microsoft Authenticator等流行的身份验证应用程序配合使用"
@@ -44,8 +44,8 @@
     "done": "完成",
     "enableSuccess": {
       "title": "双因素认证已启用！",
-      "subtitle": "您的账户现在受到2FA的保护。",
-      "verified": "2FA验证成功",
+      "subtitle": "您的账户现在受到TFA的保护。",
+      "verified": "TFA验证成功",
       "verifiedDescription": "您的身份验证应用已成功配置，双因素认证现已在您的账户上激活。"
     },
     "verification": {
@@ -56,7 +56,7 @@
       "codeRequired": "验证码是必需的",
       "codeLength": "代码必须正好是6位数字",
       "codeFormat": "代码必须只包含数字",
-      "submit": "验证并启用2FA"
+      "submit": "验证并启用TFA"
     },
     "enableModal": {
       "title": "启用双因素认证",
@@ -65,21 +65,21 @@
       "passwordLabel": "当前密码",
       "passwordPlaceholder": "输入您的当前密码",
       "passwordRequired": "密码是必需的",
-      "submit": "启用2FA"
+      "submit": "启用TFA"
     },
     "disableModal": {
       "title": "禁用双因素认证",
       "warning": "安全警告",
-      "warningDescription": "禁用2FA将使您的账户安全性降低。您需要输入当前密码和有效的2FA代码才能继续。",
+      "warningDescription": "禁用TFA将使您的账户安全性降低。您需要输入当前密码和有效的TFA代码才能继续。",
       "passwordLabel": "当前密码",
       "passwordPlaceholder": "输入您的当前密码",
       "passwordRequired": "密码是必需的",
-      "codeLabel": "2FA代码",
+      "codeLabel": "TFA代码",
       "codePlaceholder": "000000",
-      "codeRequired": "2FA代码是必需的",
+      "codeRequired": "TFA代码是必需的",
       "codeLength": "代码必须正好是6位数字",
       "codeFormat": "代码必须只包含数字",
-      "submit": "禁用2FA"
+      "submit": "禁用TFA"
     }
   }
 }

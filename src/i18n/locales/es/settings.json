@@ -22,7 +22,7 @@
     },
     "whatIs": {
       "title": "¿Qué es la Autenticación de Dos Factores?",
-      "description": "La Autenticación de Dos Factores (2FA) añade una capa extra de seguridad a su cuenta al requerir un código temporal de su teléfono además de su contraseña.",
+      "description": "La Autenticación de Dos Factores (TFA) añade una capa extra de seguridad a su cuenta al requerir un código temporal de su teléfono además de su contraseña.",
       "benefit1": "Protege su cuenta incluso si su contraseña se ve comprometida",
       "benefit2": "Utiliza el algoritmo estándar de la industria TOTP (Contraseña de un Solo Uso Basada en Tiempo)",
       "benefit3": "Funciona con aplicaciones de autenticación populares como Google Authenticator, Authy o Microsoft Authenticator"
@@ -44,8 +44,8 @@
     "done": "Hecho",
     "enableSuccess": {
       "title": "¡Autenticación de Dos Factores Activada!",
-      "subtitle": "Su cuenta ahora está protegida con 2FA.",
-      "verified": "2FA Verificado Exitosamente",
+      "subtitle": "Su cuenta ahora está protegida con TFA.",
+      "verified": "TFA Verificado Exitosamente",
       "verifiedDescription": "Su aplicación de autenticación se ha configurado correctamente y la autenticación de dos factores ahora está activa en su cuenta."
     },
     "verification": {
@@ -56,7 +56,7 @@
       "codeRequired": "El código de verificación es obligatorio",
       "codeLength": "El código debe tener exactamente 6 dígitos",
       "codeFormat": "El código debe contener solo números",
-      "submit": "Verificar y Activar 2FA"
+      "submit": "Verificar y Activar TFA"
     },
     "enableModal": {
       "title": "Activar Autenticación de Dos Factores",
@@ -65,21 +65,21 @@
       "passwordLabel": "Contraseña Actual",
       "passwordPlaceholder": "Ingrese su contraseña actual",
       "passwordRequired": "La contraseña es obligatoria",
-      "submit": "Activar 2FA"
+      "submit": "Activar TFA"
     },
     "disableModal": {
       "title": "Desactivar Autenticación de Dos Factores",
       "warning": "Advertencia de Seguridad",
-      "warningDescription": "Desactivar 2FA hará que su cuenta sea menos segura. Necesitará ingresar su contraseña actual y un código 2FA válido para continuar.",
+      "warningDescription": "Desactivar TFA hará que su cuenta sea menos segura. Necesitará ingresar su contraseña actual y un código TFA válido para continuar.",
       "passwordLabel": "Contraseña Actual",
       "passwordPlaceholder": "Ingrese su contraseña actual",
       "passwordRequired": "La contraseña es obligatoria",
-      "codeLabel": "Código 2FA",
+      "codeLabel": "Código TFA",
       "codePlaceholder": "000000",
-      "codeRequired": "El código 2FA es obligatorio",
+      "codeRequired": "El código TFA es obligatorio",
       "codeLength": "El código debe tener exactamente 6 dígitos",
       "codeFormat": "El código debe contener solo números",
-      "submit": "Desactivar 2FA"
+      "submit": "Desactivar TFA"
     }
   }
 }

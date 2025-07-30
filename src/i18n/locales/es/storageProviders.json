@@ -649,9 +649,9 @@
           "placeholder": "Ingrese su contraseña",
           "helpText": "Su contraseña de cuenta Proton"
         },
-        "2fa": {
+        "tfa": {
           "label": "Código de Dos Factores",
-          "placeholder": "Ingrese código 2FA si está habilitado",
+          "placeholder": "Ingrese código TFA si está habilitado",
           "helpText": "Código de autenticación de dos factores (si está habilitado)"
         }
       },

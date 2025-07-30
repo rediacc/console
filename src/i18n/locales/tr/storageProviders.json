@@ -649,9 +649,9 @@
           "placeholder": "Şifrenizi girin",
           "helpText": "Proton hesap şifreniz"
         },
-        "2fa": {
+        "tfa": {
           "label": "İki Faktörlü Kod",
-          "placeholder": "Etkinse 2FA kodunu girin",
+          "placeholder": "Etkinse TFA kodunu girin",
           "helpText": "İki faktörlü kimlik doğrulama kodu (etkinse)"
         }
       },

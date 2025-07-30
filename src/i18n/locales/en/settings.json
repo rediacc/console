@@ -22,7 +22,7 @@
     },
     "whatIs": {
       "title": "What is Two-Factor Authentication?",
-      "description": "Two-Factor Authentication (2FA) adds an extra layer of security to your account by requiring a time-based code from your phone in addition to your password.",
+      "description": "Two-Factor Authentication (TFA) adds an extra layer of security to your account by requiring a time-based code from your phone in addition to your password.",
       "benefit1": "Protects your account even if your password is compromised",
       "benefit2": "Uses industry-standard TOTP (Time-based One-Time Password) algorithm",
       "benefit3": "Works with popular authenticator apps like Google Authenticator, Authy, or Microsoft Authenticator"
@@ -44,8 +44,8 @@
     "done": "Done",
     "enableSuccess": {
       "title": "Two-Factor Authentication Enabled!",
-      "subtitle": "Your account is now protected with 2FA.",
-      "verified": "2FA Successfully Verified",
+      "subtitle": "Your account is now protected with TFA.",
+      "verified": "TFA Successfully Verified",
       "verifiedDescription": "Your authenticator app has been successfully configured and two-factor authentication is now active on your account."
     },
     "verification": {
@@ -56,7 +56,7 @@
       "codeRequired": "Verification code is required",
       "codeLength": "Code must be exactly 6 digits",
       "codeFormat": "Code must contain only numbers",
-      "submit": "Verify and Enable 2FA"
+      "submit": "Verify and Enable TFA"
     },
     "enableModal": {
       "title": "Enable Two-Factor Authentication",
@@ -65,21 +65,21 @@
       "passwordLabel": "Current Password",
       "passwordPlaceholder": "Enter your current password",
       "passwordRequired": "Password is required",
-      "submit": "Enable 2FA"
+      "submit": "Enable TFA"
     },
     "disableModal": {
       "title": "Disable Two-Factor Authentication",
       "warning": "Security Warning",
-      "warningDescription": "Disabling 2FA will make your account less secure. You'll need to enter your current password and a valid 2FA code to proceed.",
+      "warningDescription": "Disabling TFA will make your account less secure. You'll need to enter your current password and a valid TFA code to proceed.",
       "passwordLabel": "Current Password",
       "passwordPlaceholder": "Enter your current password",
       "passwordRequired": "Password is required",
-      "codeLabel": "2FA Code",
+      "codeLabel": "TFA Code",
       "codePlaceholder": "000000",
-      "codeRequired": "2FA code is required",
+      "codeRequired": "TFA code is required",
       "codeLength": "Code must be exactly 6 digits",
       "codeFormat": "Code must contain only numbers",
-      "submit": "Disable 2FA"
+      "submit": "Disable TFA"
     }
   }
 }

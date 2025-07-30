@@ -22,7 +22,7 @@
     },
     "whatIs": {
       "title": "Was ist Zwei-Faktor-Authentifizierung?",
-      "description": "Die Zwei-Faktor-Authentifizierung (2FA) fügt Ihrem Konto eine zusätzliche Sicherheitsebene hinzu, indem zusätzlich zu Ihrem Passwort ein zeitbasierter Code von Ihrem Telefon erforderlich ist.",
+      "description": "Die Zwei-Faktor-Authentifizierung (TFA) fügt Ihrem Konto eine zusätzliche Sicherheitsebene hinzu, indem zusätzlich zu Ihrem Passwort ein zeitbasierter Code von Ihrem Telefon erforderlich ist.",
       "benefit1": "Schützt Ihr Konto, auch wenn Ihr Passwort kompromittiert wurde",
       "benefit2": "Verwendet den branchenüblichen TOTP-Algorithmus (zeitbasiertes Einmalpasswort)",
       "benefit3": "Funktioniert mit beliebten Authentifizierungs-Apps wie Google Authenticator, Authy oder Microsoft Authenticator"
@@ -44,8 +44,8 @@
     "done": "Fertig",
     "enableSuccess": {
       "title": "Zwei-Faktor-Authentifizierung aktiviert!",
-      "subtitle": "Ihr Konto ist jetzt mit 2FA geschützt.",
-      "verified": "2FA erfolgreich verifiziert",
+      "subtitle": "Ihr Konto ist jetzt mit TFA geschützt.",
+      "verified": "TFA erfolgreich verifiziert",
       "verifiedDescription": "Ihre Authentifizierungs-App wurde erfolgreich konfiguriert und die Zwei-Faktor-Authentifizierung ist jetzt auf Ihrem Konto aktiv."
     },
     "verification": {
@@ -56,7 +56,7 @@
       "codeRequired": "Verifizierungscode ist erforderlich",
       "codeLength": "Der Code muss genau 6 Ziffern lang sein",
       "codeFormat": "Der Code darf nur Zahlen enthalten",
-      "submit": "Verifizieren und 2FA aktivieren"
+      "submit": "Verifizieren und TFA aktivieren"
     },
     "enableModal": {
       "title": "Zwei-Faktor-Authentifizierung aktivieren",
@@ -65,21 +65,21 @@
       "passwordLabel": "Aktuelles Passwort",
       "passwordPlaceholder": "Geben Sie Ihr aktuelles Passwort ein",
       "passwordRequired": "Passwort ist erforderlich",
-      "submit": "2FA aktivieren"
+      "submit": "TFA aktivieren"
     },
     "disableModal": {
       "title": "Zwei-Faktor-Authentifizierung deaktivieren",
       "warning": "Sicherheitswarnung",
-      "warningDescription": "Das Deaktivieren von 2FA macht Ihr Konto weniger sicher. Sie müssen Ihr aktuelles Passwort und einen gültigen 2FA-Code eingeben, um fortzufahren.",
+      "warningDescription": "Das Deaktivieren von TFA macht Ihr Konto weniger sicher. Sie müssen Ihr aktuelles Passwort und einen gültigen TFA-Code eingeben, um fortzufahren.",
       "passwordLabel": "Aktuelles Passwort",
       "passwordPlaceholder": "Geben Sie Ihr aktuelles Passwort ein",
       "passwordRequired": "Passwort ist erforderlich",
-      "codeLabel": "2FA-Code",
+      "codeLabel": "TFA-Code",
       "codePlaceholder": "000000",
-      "codeRequired": "2FA-Code ist erforderlich",
+      "codeRequired": "TFA-Code ist erforderlich",
       "codeLength": "Der Code muss genau 6 Ziffern lang sein",
       "codeFormat": "Der Code darf nur Zahlen enthalten",
-      "submit": "2FA deaktivieren"
+      "submit": "TFA deaktivieren"
     }
   }
 }

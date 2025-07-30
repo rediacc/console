@@ -22,7 +22,7 @@
     },
     "whatIs": {
       "title": "İki Faktörlü Kimlik Doğrulama Nedir?",
-      "description": "İki Faktörlü Kimlik Doğrulama (2FA), şifrenize ek olarak telefonunuzdan zamana dayalı bir kod gerektirerek hesabınıza ekstra bir güvenlik katmanı ekler.",
+      "description": "İki Faktörlü Kimlik Doğrulama (TFA), şifrenize ek olarak telefonunuzdan zamana dayalı bir kod gerektirerek hesabınıza ekstra bir güvenlik katmanı ekler.",
       "benefit1": "Şifreniz ele geçirilse bile hesabınızı korur",
       "benefit2": "Endüstri standardı TOTP (Zamana Dayalı Tek Kullanımlık Şifre) algoritmasını kullanır",
       "benefit3": "Google Authenticator, Authy veya Microsoft Authenticator gibi popüler kimlik doğrulama uygulamalarıyla çalışır"
@@ -44,8 +44,8 @@
     "done": "Tamam",
     "enableSuccess": {
       "title": "İki Faktörlü Kimlik Doğrulama Etkinleştirildi!",
-      "subtitle": "Hesabınız artık 2FA ile korunuyor.",
-      "verified": "2FA Başarıyla Doğrulandı",
+      "subtitle": "Hesabınız artık TFA ile korunuyor.",
+      "verified": "TFA Başarıyla Doğrulandı",
       "verifiedDescription": "Kimlik doğrulama uygulamanız başarıyla yapılandırıldı ve hesabınızda iki faktörlü kimlik doğrulama artık aktif."
     },
     "verification": {
@@ -56,7 +56,7 @@
       "codeRequired": "Doğrulama kodu gerekli",
       "codeLength": "Kod tam olarak 6 haneli olmalıdır",
       "codeFormat": "Kod yalnızca rakam içermelidir",
-      "submit": "Doğrula ve 2FA'yı Etkinleştir"
+      "submit": "Doğrula ve TFA'yı Etkinleştir"
     },
     "enableModal": {
       "title": "İki Faktörlü Kimlik Doğrulamayı Etkinleştir",
@@ -65,21 +65,21 @@
       "passwordLabel": "Mevcut Şifre",
       "passwordPlaceholder": "Mevcut şifrenizi girin",
       "passwordRequired": "Şifre gerekli",
-      "submit": "2FA'yı Etkinleştir"
+      "submit": "TFA'yı Etkinleştir"
     },
     "disableModal": {
       "title": "İki Faktörlü Kimlik Doğrulamayı Devre Dışı Bırak",
       "warning": "Güvenlik Uyarısı",
-      "warningDescription": "2FA'yı devre dışı bırakmak hesabınızı daha az güvenli hale getirecektir. Devam etmek için mevcut şifrenizi ve geçerli bir 2FA kodu girmeniz gerekecek.",
+      "warningDescription": "TFA'yı devre dışı bırakmak hesabınızı daha az güvenli hale getirecektir. Devam etmek için mevcut şifrenizi ve geçerli bir TFA kodu girmeniz gerekecek.",
       "passwordLabel": "Mevcut Şifre",
       "passwordPlaceholder": "Mevcut şifrenizi girin",
       "passwordRequired": "Şifre gerekli",
-      "codeLabel": "2FA Kodu",
+      "codeLabel": "TFA Kodu",
       "codePlaceholder": "000000",
-      "codeRequired": "2FA kodu gerekli",
+      "codeRequired": "TFA kodu gerekli",
       "codeLength": "Kod tam olarak 6 haneli olmalıdır",
       "codeFormat": "Kod yalnızca rakam içermelidir",
-      "submit": "2FA'yı Devre Dışı Bırak"
+      "submit": "TFA'yı Devre Dışı Bırak"
     }
   }
 }
