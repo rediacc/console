@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# Activate virtual environment and run playwright codegen
+source .venv/bin/activate && playwright codegen "$@"

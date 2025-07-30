@@ -29,3 +29,5 @@ Thumbs.db
 
 # Build artifacts
 .build_cache/
+playwright/conf.conf
+playwright/.venv/
