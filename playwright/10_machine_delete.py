@@ -7,8 +7,7 @@ def run(playwright: Playwright) -> None:
     page10 = context.new_page()
     page10.goto("http://localhost:7322/en")
     with page10.expect_popup() as page11_info:
-        # Note: Banner login link doesn't have a test ID, using stable selector
-        page10.locator("header").get_by_text("Login").click()
+        page10.get_by_test_id("banner-login-link").click()
     page11 = page11_info.value
     page11.get_by_test_id("login-email-input").click()
     page11.get_by_test_id("login-email-input").fill("admin@rediacc.io")
@@ -17,8 +16,7 @@ def run(playwright: Playwright) -> None:
     page11.get_by_test_id("login-submit-button").click()
     page11.get_by_test_id("main-nav-resources").click()
     page11.get_by_test_id("machine-delete-rediacc11").click()
-    # Note: Delete confirmation button doesn't have a test ID, using stable selector
-    page11.locator("button").filter(has_text="Delete").nth(0).click()
+    page11.get_by_test_id("confirm-delete-button").click()
 
     # ---------------------
     context.close()

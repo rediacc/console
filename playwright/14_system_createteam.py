@@ -8,14 +8,14 @@ def run(playwright: Playwright) -> None:
     page20 = context.new_page()
     page20.goto("http://localhost:7322/en")
     with page20.expect_popup() as page21_info:
-        page20.get_by_role("banner").get_by_role("link", name="Login").click()
+        page20.get_by_test_id("banner-login-link").click()
     page21 = page21_info.value
     page21.get_by_test_id("login-email-input").click()
     page21.get_by_test_id("login-email-input").fill("admin@rediacc.io")
     page21.get_by_test_id("login-email-input").press("Tab")
     page21.get_by_test_id("login-password-input").fill("admin")
     page21.get_by_test_id("login-submit-button").click()
-    page21.get_by_text("System").click()
+    page21.get_by_test_id("main-nav-system").click()
     page21.get_by_test_id("system-tab-teams").click()
     page21.get_by_test_id("system-create-team-button").click()
     page21.get_by_test_id("resource-modal-field-teamName-input").click()
