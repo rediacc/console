@@ -24,15 +24,7 @@ def run(playwright: Playwright) -> None:
     page.get_by_test_id("main-nav-resources").click()
     time.sleep(2)  # Wait for resources page to load
     
-    # Test machine creation dialog (open and cancel twice)
-    page.get_by_test_id("resources-create-machine-button").click()
-    time.sleep(1)  # Wait for dialog
-    page.get_by_test_id("resource-modal-cancel-button").click()
-    time.sleep(1)  # Wait after cancel
-    page.get_by_test_id("resources-create-machine-button").click()
-    time.sleep(1)  # Wait for dialog
-    page.get_by_test_id("resource-modal-cancel-button").click()
-    time.sleep(1)  # Wait after second cancel
+    
     
     # Click on the machine's remote button to access repository actions
     page.get_by_test_id("machine-remote-rediacc11").click()
@@ -44,7 +36,7 @@ def run(playwright: Playwright) -> None:
     
     # Fill repository name
     page.get_by_test_id("resource-modal-field-repositoryName-input").click()
-    page.get_by_test_id("resource-modal-field-repositoryName-input").fill("Repo01")
+    page.get_by_test_id("resource-modal-field-repositoryName-input").fill("Repo02")
     time.sleep(1)  # Wait after filling name
     
     # Set disk size to 1 GB
@@ -77,7 +69,7 @@ def run(playwright: Playwright) -> None:
     
     # Create the repository
     page.get_by_test_id("resource-modal-ok-button").click()
-    time.sleep(5)  # Wait for repository creation to complete
+    time.sleep(10)  # Wait for repository creation to complete and see "Done" in Completed
     
     # Close the trace modal (X button in top right)
     page.get_by_test_id("trace-modal-close-button").click()

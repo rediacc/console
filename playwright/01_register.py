@@ -10,12 +10,14 @@ def run(playwright: Playwright) -> None:
     page5.goto("http://localhost:7322/en")
     time.sleep(2)  # Wait for page to load
     with page5.expect_popup() as page2_info:
-        page5.get_by_test_id("banner-login-link").click()
+        page5.get_by_role("banner").get_by_role("link", name="Login").click()
     page6 = page2_info.value
     time.sleep(1)  # Wait for popup to load
-    page6.locator("span").filter(has_text="🇬🇧 English").nth(1).click()
+    # Click on language selector
+    page6.get_by_test_id("language-selector").click()
     time.sleep(0.5)
-    page6.get_by_test_id("language-french").click()
+    # Select French language
+    page6.get_by_text("🇫🇷 Français").click()
     time.sleep(0.5)
     page6.get_by_test_id("login-register-link").click()
     time.sleep(1)  # Wait for registration form
