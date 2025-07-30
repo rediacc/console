@@ -104,6 +104,7 @@ const DashboardPage = () => {
           type="error"
           showIcon
           icon={<AlertOutlined />}
+          data-testid="dashboard-error-alert"
         />
       </div>
     );
@@ -211,6 +212,7 @@ const DashboardPage = () => {
           {/* Account Health Card */}
           <Col xs={24} lg={12}>
             <Card 
+              data-testid="dashboard-account-health-card"
               title={
                 <Space>
                   <SafetyCertificateOutlined />
@@ -318,6 +320,7 @@ const DashboardPage = () => {
                           type="warning"
                           showIcon
                           icon={<WarningOutlined />}
+                          data-testid="dashboard-alert-stale-items"
                         />
                       )}
                       {dashboard.queueStats.has_old_pending_items === 1 && (
@@ -326,6 +329,7 @@ const DashboardPage = () => {
                           type="info"
                           showIcon
                           icon={<FieldTimeOutlined />}
+                          data-testid="dashboard-alert-old-pending"
                         />
                       )}
                     </Space>

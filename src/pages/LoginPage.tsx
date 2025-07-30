@@ -283,6 +283,7 @@ const LoginPage: React.FC = () => {
             showIcon
             closable
             onClose={() => setError(null)}
+            data-testid="login-error-alert"
           />
         )}
 
@@ -410,6 +411,7 @@ const LoginPage: React.FC = () => {
             description={t('login.twoFactorAuth.description')}
             type="info"
             showIcon
+            data-testid="2fa-info-alert"
           />
           
           <Form

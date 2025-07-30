@@ -106,10 +106,11 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
   const hasMore = displayedCount < filteredMachines.length
 
   return (
-    <div>
+    <div data-testid="filterable-machine-container">
       <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
         <Space wrap>
           <Input
+            data-testid="filterable-machine-search"
             prefix={<SearchOutlined />}
             placeholder="Search machines..."
             value={searchQuery}
@@ -119,32 +120,33 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
           />
           
           <Select
+            data-testid="filterable-machine-filter-assignment"
             value={assignmentFilter}
             onChange={setAssignmentFilter}
             style={{ width: 200 }}
             placeholder="Filter by assignment"
           >
-            <Option value="ALL">
+            <Option value="ALL" data-testid="filterable-machine-filter-option-all">
               <Badge count={assignmentCounts.ALL} showZero color="blue">
                 <span style={{ paddingRight: 24 }}>All Machines</span>
               </Badge>
             </Option>
-            <Option value="AVAILABLE">
+            <Option value="AVAILABLE" data-testid="filterable-machine-filter-option-available">
               <Badge count={assignmentCounts.AVAILABLE} showZero color="green">
                 <span style={{ paddingRight: 24 }}>Available</span>
               </Badge>
             </Option>
-            <Option value="CLUSTER">
+            <Option value="CLUSTER" data-testid="filterable-machine-filter-option-cluster">
               <Badge count={assignmentCounts.CLUSTER} showZero color="blue">
                 <span style={{ paddingRight: 24 }}>Assigned to Cluster</span>
               </Badge>
             </Option>
-            <Option value="IMAGE">
+            <Option value="IMAGE" data-testid="filterable-machine-filter-option-image">
               <Badge count={assignmentCounts.IMAGE} showZero color="purple">
                 <span style={{ paddingRight: 24 }}>Assigned to Image</span>
               </Badge>
             </Option>
-            <Option value="CLONE">
+            <Option value="CLONE" data-testid="filterable-machine-filter-option-clone">
               <Badge count={assignmentCounts.CLONE} showZero color="orange">
                 <span style={{ paddingRight: 24 }}>Assigned to Clone</span>
               </Badge>
@@ -152,18 +154,20 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
           </Select>
 
           <Select
+            data-testid="filterable-machine-page-size"
             value={pageSize}
             onChange={setPageSize}
             style={{ width: 150 }}
           >
-            <Option value={50}>50 per batch</Option>
-            <Option value={100}>100 per batch</Option>
-            <Option value={200}>200 per batch</Option>
-            <Option value={500}>500 per batch</Option>
+            <Option value={50} data-testid="filterable-machine-page-size-50">50 per batch</Option>
+            <Option value={100} data-testid="filterable-machine-page-size-100">100 per batch</Option>
+            <Option value={200} data-testid="filterable-machine-page-size-200">200 per batch</Option>
+            <Option value={500} data-testid="filterable-machine-page-size-500">500 per batch</Option>
           </Select>
 
           {onRefresh && (
             <Button
+              data-testid="filterable-machine-refresh"
               icon={<ReloadOutlined />}
               onClick={onRefresh}
               loading={loading}
@@ -173,22 +177,24 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
           )}
         </Space>
 
-        <div style={{ color: '#666' }}>
+        <div data-testid="filterable-machine-status" style={{ color: '#666' }}>
           Showing {displayedMachines.length} of {filteredMachines.length} machines
           {hasMore && ' (scroll to load more)'}
         </div>
       </Space>
 
-      <VirtualMachineTable
-        machines={displayedMachines}
-        loading={loading}
-        hasMore={hasMore}
-        loadMore={loadMore}
-        height={height}
-        selectable={selectable}
-        onRowClick={onRowClick}
-        renderActions={renderActions}
-      />
+      <div data-testid="filterable-machine-table">
+        <VirtualMachineTable
+          machines={displayedMachines}
+          loading={loading}
+          hasMore={hasMore}
+          loadMore={loadMore}
+          height={height}
+          selectable={selectable}
+          onRowClick={onRowClick}
+          renderActions={renderActions}
+        />
+      </div>
     </div>
   )
 }

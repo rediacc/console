@@ -232,7 +232,7 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
                 data-testid="ds-assign-cluster-select"
               >
                 {clusters.map(cluster => (
-                  <Select.Option key={cluster.clusterName} value={cluster.clusterName}>
+                  <Select.Option key={cluster.clusterName} value={cluster.clusterName} data-testid={`cluster-option-${cluster.clusterName}`}>
                     {cluster.clusterName}
                   </Select.Option>
                 ))}

@@ -25,12 +25,15 @@ const MarketplacePage = lazy(() => import('@/pages/marketplace/MarketplacePage')
 
 // Loading component
 const PageLoader: React.FC = () => (
-  <div style={{ 
-    display: 'flex', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    minHeight: '400px' 
-  }}>
+  <div 
+    data-testid="page-loader"
+    style={{ 
+      display: 'flex', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      minHeight: '400px' 
+    }}
+  >
     <Spin size="large" />
   </div>
 )

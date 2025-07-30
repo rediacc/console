@@ -57,7 +57,7 @@ export const DistributedStorageSection: React.FC<DistributedStorageSectionProps>
   
   if (isLoading) {
     return (
-      <div style={{ textAlign: 'center', padding: '20px' }}>
+      <div style={{ textAlign: 'center', padding: '20px' }} data-testid="ds-section-loading">
         <Spin />
       </div>
     )
@@ -65,24 +65,25 @@ export const DistributedStorageSection: React.FC<DistributedStorageSectionProps>
   
   return (
     <>
-      <Divider style={{ margin: '24px 0' }}>
+      <Divider style={{ margin: '24px 0' }} data-testid="ds-section-divider">
         <Space>
           <CloudServerOutlined />
           {t('machineSection.title')}
         </Space>
       </Divider>
       
-      <Card size="small">
+      <Card size="small" data-testid="ds-section-card">
         <Space direction="vertical" style={{ width: '100%' }} size="middle">
           {/* Current Assignment Status */}
           <div>
-            <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+            <Text type="secondary" style={{ display: 'block', marginBottom: 8 }} data-testid="ds-section-assignment-label">
               {t('assignment.currentAssignment')}
             </Text>
             <MachineAssignmentStatusBadge 
               assignmentType={assignmentType}
               assignmentDetails={assignmentDetails}
               size="default"
+              data-testid="ds-section-assignment-badge"
             />
           </div>
           
@@ -98,6 +99,7 @@ export const DistributedStorageSection: React.FC<DistributedStorageSectionProps>
                 <CloudServerOutlined />
               }
               showIcon
+              data-testid="ds-section-assignment-alert"
             />
           )}
           
@@ -108,6 +110,7 @@ export const DistributedStorageSection: React.FC<DistributedStorageSectionProps>
                 size="small" 
                 icon={<HistoryOutlined />}
                 onClick={onViewDetails}
+                data-testid="ds-section-history-button"
               >
                 {t('assignment.history')}
               </Button>
@@ -118,6 +121,7 @@ export const DistributedStorageSection: React.FC<DistributedStorageSectionProps>
                 type="primary"
                 icon={<RightOutlined />}
                 onClick={onManageAssignment}
+                data-testid="ds-section-manage-button"
               >
                 {t('machineSection.manageAssignment')}
               </Button>
@@ -131,6 +135,7 @@ export const DistributedStorageSection: React.FC<DistributedStorageSectionProps>
               type="warning"
               showIcon
               style={{ marginTop: 8 }}
+              data-testid="ds-section-exclusivity-warning"
             />
           )}
         </Space>

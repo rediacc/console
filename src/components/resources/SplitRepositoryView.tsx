@@ -89,6 +89,7 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
               height: 'auto',
               fontWeight: selectedRepository?.repositoryGuid === record.repositoryGuid ? 'bold' : 'normal'
             }}
+            data-testid={`split-repo-view-repository-link-${record.repositoryName}`}
           >
             {name}
           </Button>
@@ -163,12 +164,14 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
           <Dropdown
             menu={{ items: menuItems }}
             trigger={['click']}
+            data-testid={`split-repo-view-actions-dropdown-${record.repositoryName}`}
           >
             <Button
               type="primary"
               size="small"
               icon={<FunctionOutlined />}
               onClick={(e) => e.stopPropagation()}
+              data-testid={`split-repo-view-actions-button-${record.repositoryName}`}
             >
               {t('common:actions.actions')}
             </Button>
@@ -187,6 +190,7 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
         position: 'relative',
         overflow: 'hidden',
       }}
+      data-testid="split-repo-view-container"
     >
       {/* Left Panel - Repository Table */}
       <div 
@@ -197,22 +201,26 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
           minWidth: 0,
           backgroundColor: theme === 'dark' ? '#141414' : '#fff',
         }}
+        data-testid="split-repo-view-left-panel"
       >
         {/* Header */}
-        <div style={{ 
-          padding: '16px 24px', 
-          borderBottom: `1px solid ${theme === 'dark' ? '#303030' : '#f0f0f0'}`,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
+        <div 
+          style={{ 
+            padding: '16px 24px', 
+            borderBottom: `1px solid ${theme === 'dark' ? '#303030' : '#f0f0f0'}`,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}
+          data-testid="split-repo-view-header"
+        >
           <Space>
             <FolderOutlined style={{ fontSize: 20, color: '#8FBC8F' }} />
-            <Typography.Title level={4} style={{ margin: 0 }}>
+            <Typography.Title level={4} style={{ margin: 0 }} data-testid="split-repo-view-title">
               {t('resources:repositories.repositories')}
             </Typography.Title>
             {teamFilter && !Array.isArray(teamFilter) && (
-              <Tag color="#8FBC8F" icon={<AppstoreOutlined />}>
+              <Tag color="#8FBC8F" icon={<AppstoreOutlined />} data-testid="split-repo-view-team-filter-tag">
                 {teamFilter}
               </Tag>
             )}
@@ -222,6 +230,7 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
               type="primary"
               icon={<CloudUploadOutlined />}
               onClick={onCreateRepository}
+              data-testid="split-repo-view-create-button"
             >
               {t('resources:repositories.create')}
             </Button>
@@ -238,6 +247,7 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
             pagination={false}
             loading={loading}
             scroll={{ x: 'max-content' }}
+            data-testid="split-repo-view-table"
             onRow={(record) => ({
               onClick: () => handleRowClick(record),
               style: {

@@ -62,21 +62,22 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
         key={machine.machineName} 
         value={machine.machineName}
         disabled={isDisabled}
+        data-testid={`available-machines-option-${machine.machineName}`}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} data-testid={`available-machines-option-content-${machine.machineName}`}>
           <Space>
             <CloudServerOutlined />
             <Text strong={!isDisabled}>{machine.machineName}</Text>
-            <Tag color="#8FBC8F" size="small">{machine.teamName}</Tag>
+            <Tag color="#8FBC8F" size="small" data-testid={`available-machines-team-tag-${machine.machineName}`}>{machine.teamName}</Tag>
             {machine.bridgeName && (
-              <Tag color="green" size="small">{machine.bridgeName}</Tag>
+              <Tag color="green" size="small" data-testid={`available-machines-bridge-tag-${machine.machineName}`}>{machine.bridgeName}</Tag>
             )}
           </Space>
           {showAssignmentStatus && (
             <div style={{ marginLeft: 'auto' }}>
               {isAssigned ? (
                 machine.distributedStorageClusterName ? (
-                  <Tag color="blue" icon={<WarningOutlined />}>
+                  <Tag color="blue" icon={<WarningOutlined />} data-testid={`available-machines-cluster-tag-${machine.machineName}`}>
                     {t('machines:assignmentStatus.cluster')}: {machine.distributedStorageClusterName}
                   </Tag>
                 ) : machine.assignmentStatus ? (
@@ -87,7 +88,7 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
                   />
                 ) : null
               ) : (
-                <Tag color="green" icon={<CheckCircleOutlined />}>
+                <Tag color="green" icon={<CheckCircleOutlined />} data-testid={`available-machines-available-tag-${machine.machineName}`}>
                   {t('machines:assignmentStatus.available')}
                 </Tag>
               )}
@@ -114,6 +115,7 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
       filterOption={filterOption}
       showSearch
       optionLabelProp="label"
+      data-testid="available-machines-selector"
       notFoundContent={
         machines.length === 0 ? (
           <Empty description={t('machines:noAvailableMachines')} />

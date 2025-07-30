@@ -470,13 +470,13 @@ const QueuePage: React.FC = () => {
               allowClear
               data-testid="queue-filter-status"
             >
-              <Select.Option value="PENDING">Pending</Select.Option>
-              <Select.Option value="ACTIVE">Active</Select.Option>
-              <Select.Option value="STALE">Stale</Select.Option>
-              <Select.Option value="CANCELLING">Cancelling</Select.Option>
-              <Select.Option value="COMPLETED">Completed</Select.Option>
-              <Select.Option value="FAILED">Failed</Select.Option>
-              <Select.Option value="CANCELLED">Cancelled</Select.Option>
+              <Select.Option value="PENDING" data-testid="queue-filter-status-option-pending">Pending</Select.Option>
+              <Select.Option value="ACTIVE" data-testid="queue-filter-status-option-active">Active</Select.Option>
+              <Select.Option value="STALE" data-testid="queue-filter-status-option-stale">Stale</Select.Option>
+              <Select.Option value="CANCELLING" data-testid="queue-filter-status-option-cancelling">Cancelling</Select.Option>
+              <Select.Option value="COMPLETED" data-testid="queue-filter-status-option-completed">Completed</Select.Option>
+              <Select.Option value="FAILED" data-testid="queue-filter-status-option-failed">Failed</Select.Option>
+              <Select.Option value="CANCELLED" data-testid="queue-filter-status-option-cancelled">Cancelled</Select.Option>
             </Select>
           </Col>
 
@@ -698,6 +698,7 @@ const QueuePage: React.FC = () => {
                 </Tooltip>
               } 
               key="active"
+              data-testid="queue-tabpane-active"
             >
               <div ref={activeTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }} data-testid="queue-table-active-container">
                 <Alert
@@ -707,6 +708,7 @@ const QueuePage: React.FC = () => {
                   icon={<InfoCircleOutlined />}
                   style={{ marginBottom: 16 }}
                   closable
+                  data-testid="queue-alert-active"
                 />
                 <ResourceListView
                   loading={isLoading || isRefetching}
@@ -744,6 +746,7 @@ const QueuePage: React.FC = () => {
                 </Tooltip>
               } 
               key="completed"
+              data-testid="queue-tabpane-completed"
             >
               <div ref={completedTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }} data-testid="queue-table-completed-container">
                 <Alert
@@ -753,6 +756,7 @@ const QueuePage: React.FC = () => {
                   icon={<CheckCircleOutlined />}
                   style={{ marginBottom: 16 }}
                   closable
+                  data-testid="queue-alert-completed"
                 />
                 <ResourceListView
                   loading={isLoading || isRefetching}
@@ -790,6 +794,7 @@ const QueuePage: React.FC = () => {
                 </Tooltip>
               } 
               key="cancelled"
+              data-testid="queue-tabpane-cancelled"
             >
               <div ref={cancelledTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }} data-testid="queue-table-cancelled-container">
                 <Alert
@@ -799,6 +804,7 @@ const QueuePage: React.FC = () => {
                   icon={<CloseCircleOutlined />}
                   style={{ marginBottom: 16 }}
                   closable
+                  data-testid="queue-alert-cancelled"
                 />
                 <ResourceListView
                   loading={isLoading || isRefetching}
@@ -836,6 +842,7 @@ const QueuePage: React.FC = () => {
                 </Tooltip>
               } 
               key="failed"
+              data-testid="queue-tabpane-failed"
             >
               <div ref={failedTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }} data-testid="queue-table-failed-container">
                 <Alert
@@ -845,6 +852,7 @@ const QueuePage: React.FC = () => {
                   icon={<ExclamationCircleOutlined />}
                   style={{ marginBottom: 16 }}
                   closable
+                  data-testid="queue-alert-failed"
                 />
                 <ResourceListView
                   loading={isLoading || isRefetching}

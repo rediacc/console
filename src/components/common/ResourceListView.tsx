@@ -62,6 +62,7 @@ function ResourceListView<T = any>({
     <Card 
       style={containerStyle} 
       styles={{ body: cardBodyStyle }}
+      data-testid="resource-list-container"
     >
       {(title || onSearch || filters || actions) && (
         <div style={{ marginBottom: 16, flexShrink: 0 }}>
@@ -77,12 +78,15 @@ function ResourceListView<T = any>({
                   prefix={<SearchOutlined />}
                   allowClear
                   autoComplete="off"
+                  data-testid="resource-list-search"
                 />
               )}
-              {filters}
+              <div data-testid="resource-list-filters">
+                {filters}
+              </div>
             </div>
             {actions && (
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8 }} data-testid="resource-list-actions">
                 {actions}
               </div>
             )}
@@ -95,11 +99,11 @@ function ResourceListView<T = any>({
         style={containerStyle?.height ? { flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' } : {}}
       >
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '50px 0' }}>
+          <div style={{ textAlign: 'center', padding: '50px 0' }} data-testid="resource-list-loading">
             <Spin size="large" />
           </div>
         ) : data.length === 0 ? (
-          <Empty description={emptyText} />
+          <Empty description={emptyText} data-testid="resource-list-empty" />
         ) : (
           <Table<T>
             columns={columns}
@@ -113,11 +117,18 @@ function ResourceListView<T = any>({
               defaultPageSize: enableDynamicPageSize ? undefined : 20,
               ...pagination,
             } : false}
-            onRow={onRow}
+            onRow={(record, index) => {
+              const rowId = typeof rowKey === 'function' ? rowKey(record) : (record as any)[rowKey]
+              return {
+                ...onRow?.(record, index),
+                'data-testid': `resource-list-item-${rowId}`
+              }
+            }}
             rowSelection={rowSelection}
             scroll={{ x: 'max-content', y: tableStyle?.height || 400 }}
             style={{ height: '100%' }}
             sticky
+            data-testid="resource-list-table"
           />
         )}
       </div>

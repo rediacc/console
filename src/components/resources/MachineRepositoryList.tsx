@@ -906,6 +906,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 size="small"
                 icon={<FunctionOutlined />}
                 loading={managedQueueMutation.isPending}
+                data-testid={`machine-repo-list-container-actions-${container.id}`}
               >
                 {t('machines:remote')}
               </Button>
@@ -939,12 +940,12 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           </div>
         )}
         
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 16 }} data-testid="machine-repo-list-expanded-header">
           <Typography.Title level={5} style={{ margin: 0 }}>{t('resources:repositories.containersAndPlugins')}</Typography.Title>
         </div>
         
         {/* Regular Containers Table */}
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 24 }} data-testid="machine-repo-list-containers-section">
           <Typography.Title level={5} style={{ marginBottom: 16 }}>
             {t('resources:repositories.containersList')}
           </Typography.Title>
@@ -958,6 +959,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               size="small"
               pagination={false}
               scroll={{ x: 'max-content' }}
+              data-testid="machine-repo-list-containers-table"
               onRow={(container) => ({
                 onClick: (e) => {
                   const target = e.target as HTMLElement
@@ -982,13 +984,13 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               })}
             />
           ) : (
-            <Empty description={t('resources:repositories.noContainers')} />
+            <Empty description={t('resources:repositories.noContainers')} data-testid="machine-repo-list-no-containers" />
           )}
         </div>
         
         {/* Plugin Containers Table */}
         {pluginContainers.length > 0 && (
-          <div>
+          <div data-testid="machine-repo-list-plugins-section">
             <Typography.Title level={5} style={{ marginBottom: 16 }}>
               {t('resources:repositories.pluginsList')}
             </Typography.Title>
@@ -999,6 +1001,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               size="small"
               pagination={false}
               scroll={{ x: 'max-content' }}
+              data-testid="machine-repo-list-plugins-table"
               onRow={(container) => ({
                 onClick: (e) => {
                   const target = e.target as HTMLElement
@@ -1194,6 +1197,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 size="small"
                 icon={<FunctionOutlined />}
                 loading={managedQueueMutation.isPending}
+                data-testid={`machine-repo-list-repo-actions-${record.name}`}
               >
                 {t('machines:remote')}
               </Button>
@@ -1205,6 +1209,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 token={currentToken}
                 teamName={machine.teamName}
                 pluginContainers={containersData[record.name]?.containers || []}
+                data-testid={`machine-repo-list-local-actions-${record.name}`}
               />
             )}
             {record.isUnmapped && onCreateRepository && (
@@ -1213,6 +1218,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 size="small"
                 icon={<KeyOutlined />}
                 onClick={() => onCreateRepository(machine, record.originalGuid || record.name)}
+                data-testid={`machine-repo-list-add-credential-${record.name}`}
               >
                 {t('resources:repositories.addCredential')}
               </Button>
@@ -1225,7 +1231,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
   if (loading) {
     return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
+      <div style={{ padding: '20px', textAlign: 'center' }} data-testid="machine-repo-list-loading">
         <Spin tip={t('resources:repositories.fetchingRepositories')} />
       </div>
     )
@@ -1233,14 +1239,14 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
   if (error) {
     return (
-      <div style={{ padding: '20px' }}>
+      <div style={{ padding: '20px' }} data-testid="machine-repo-list-error">
         <Alert
           message={t('common:messages.error')}
           description={error}
           type="error"
           showIcon
           action={
-            <Button size="small" onClick={handleRefresh}>
+            <Button size="small" onClick={handleRefresh} data-testid="machine-repo-list-retry">
               {t('common:actions.retry')}
             </Button>
           }
@@ -1250,7 +1256,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   }
 
   return (
-    <div style={{ padding: '0 20px 20px 20px', overflowX: 'auto', position: 'relative' }}>
+    <div style={{ padding: '0 20px 20px 20px', overflowX: 'auto', position: 'relative' }} data-testid="machine-repo-list">
       {/* Loading Overlay */}
       {isLoading && (
         <div style={{
@@ -1275,31 +1281,31 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       
       {/* Machine Name Title when in grouped view */}
       {hideSystemInfo && (
-        <div style={{ marginBottom: 16, paddingTop: 16, borderBottom: '1px solid #f0f0f0', paddingBottom: 12 }}>
+        <div style={{ marginBottom: 16, paddingTop: 16, borderBottom: '1px solid #f0f0f0', paddingBottom: 12 }} data-testid="machine-repo-list-machine-header">
           <Space direction="vertical" size={4}>
             <Space>
               <DesktopOutlined style={{ fontSize: 20, color: '#556b2f' }} />
-              <Typography.Title level={4} style={{ margin: 0, color: '#556b2f' }}>
+              <Typography.Title level={4} style={{ margin: 0, color: '#556b2f' }} data-testid="machine-repo-list-machine-name">
                 {machine.machineName}
               </Typography.Title>
             </Space>
             <Space wrap size={8}>
-              <Tag color="#8FBC8F">{machine.teamName}</Tag>
-              <Tag color="green">{machine.bridgeName}</Tag>
-              {machine.regionName && <Tag color="purple">{machine.regionName}</Tag>}
-              <Tag color="blue">{machine.queueCount} {t('machines:queueItems')}</Tag>
+              <Tag color="#8FBC8F" data-testid="machine-repo-list-team-tag">{machine.teamName}</Tag>
+              <Tag color="green" data-testid="machine-repo-list-bridge-tag">{machine.bridgeName}</Tag>
+              {machine.regionName && <Tag color="purple" data-testid="machine-repo-list-region-tag">{machine.regionName}</Tag>}
+              <Tag color="blue" data-testid="machine-repo-list-queue-tag">{machine.queueCount} {t('machines:queueItems')}</Tag>
             </Space>
           </Space>
         </div>
       )}
       
       {/* Repositories Label */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: hideSystemInfo ? 8 : 20 }}>
-        <Typography.Title level={5} style={{ marginBottom: 0 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: hideSystemInfo ? 8 : 20 }} data-testid="machine-repo-list-repos-header">
+        <Typography.Title level={5} style={{ marginBottom: 0 }} data-testid="machine-repo-list-repos-title">
           {t('resources:repositories.repositories')}
         </Typography.Title>
         {machine.vaultStatusTime && !loading && (
-          <Text type="secondary" style={{ fontSize: '12px' }} title={`Raw: ${machine.vaultStatusTime}, Local: ${new Date(machine.vaultStatusTime).toLocaleString()}`}>
+          <Text type="secondary" style={{ fontSize: '12px' }} title={`Raw: ${machine.vaultStatusTime}, Local: ${new Date(machine.vaultStatusTime).toLocaleString()}`} data-testid="machine-repo-list-last-updated">
             {t('machines:lastUpdated')}: {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
           </Text>
         )}
@@ -1313,6 +1319,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         size="small"
         pagination={false}
         scroll={{ x: 'max-content' }}
+        data-testid="machine-repo-list-table"
         expandable={{
           expandedRowRender: renderExpandedRow,
           expandedRowKeys: expandedRows,
@@ -1389,8 +1396,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       
       {/* System Containers Section */}
       {systemContainers.length > 0 && !hideSystemInfo && (
-        <>
-          <Typography.Title level={5} style={{ marginBottom: 16, marginTop: 32 }}>
+        <div data-testid="machine-repo-list-system-containers">
+          <Typography.Title level={5} style={{ marginBottom: 16, marginTop: 32 }} data-testid="machine-repo-list-system-containers-title">
             {t('resources:repositories.systemContainers')}
           </Typography.Title>
           <div style={{ marginBottom: 32 }}>
@@ -1401,9 +1408,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               size="small"
               pagination={false}
               scroll={{ x: 'max-content' }}
+              data-testid="machine-repo-list-system-containers-table"
             />
           </div>
-        </>
+        </div>
       )}
       
       
@@ -1418,6 +1426,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         }}
         onSubmit={handleFunctionSubmit}
         title={t('machines:runFunction')}
+        data-testid="machine-repo-list-function-modal"
         subtitle={
           selectedRepository && (
             <Space direction="vertical" size="small" style={{ width: '100%' }}>
@@ -1511,6 +1520,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             onActionComplete()
           }
         }}
+        data-testid="machine-repo-list-queue-trace-modal"
         onTaskStatusChange={async (status, taskId) => {
           // If push task failed and we created a repository, delete it
           if (status === 'FAILED' && createdRepositoryName) {

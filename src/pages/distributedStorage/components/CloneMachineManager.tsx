@@ -128,6 +128,12 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
       okText: t('common:actions.remove'),
       okType: 'danger',
       cancelText: t('common:actions.cancel'),
+      okButtonProps: {
+        'data-testid': 'clone-manager-confirm-remove-ok'
+      },
+      cancelButtonProps: {
+        'data-testid': 'clone-manager-confirm-remove-cancel'
+      },
       onOk: async () => {
         setIsRemoving(true)
         try {
@@ -176,8 +182,8 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
       title: t('machines:machineName'),
       dataIndex: 'machineName',
       key: 'machineName',
-      render: (name: string) => (
-        <Space>
+      render: (name: string, record: CloneMachine) => (
+        <Space data-testid={`clone-manager-machine-${record.machineName}`}>
           <DesktopOutlined />
           <Text strong>{name}</Text>
         </Space>
@@ -188,14 +194,18 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
       title: t('machines:bridge'),
       dataIndex: 'bridgeName',
       key: 'bridgeName',
-      render: (bridge: string) => <Tag color="green">{bridge}</Tag>,
+      render: (bridge: string, record: CloneMachine) => (
+        <Tag color="green" data-testid={`clone-manager-bridge-${record.machineName}`}>
+          {bridge}
+        </Tag>
+      ),
       sorter: (a, b) => a.bridgeName.localeCompare(b.bridgeName),
     },
     {
       title: t('machines:assignmentStatus.title'),
       key: 'status',
-      render: () => (
-        <Tag color="orange" icon={<CopyOutlined />}>
+      render: (_, record: CloneMachine) => (
+        <Tag color="orange" icon={<CopyOutlined />} data-testid={`clone-manager-status-${record.machineName}`}>
           {t('machines:assignmentStatus.clone')}
         </Tag>
       ),
@@ -210,7 +220,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
   }
   
   return (
-    <Card>
+    <Card data-testid="clone-manager-container">
       {/* Header */}
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col span={16}>
@@ -232,6 +242,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
           <Row gutter={16}>
             <Col span={12}>
               <Statistic
+                data-testid="clone-manager-statistic-total"
                 title={t('machines:totalMachines')}
                 value={assignedMachines.length}
                 prefix={<TeamOutlined />}
@@ -239,6 +250,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
             </Col>
             <Col span={12}>
               <Statistic
+                data-testid="clone-manager-statistic-selected"
                 title={t('machines:bulkActions.selected')}
                 value={selectedMachines.length}
                 valueStyle={{ color: selectedMachines.length > 0 ? '#1890ff' : undefined }}
@@ -256,6 +268,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
               type="primary"
               icon={<PlusOutlined />}
               onClick={handleAddMachines}
+              data-testid="clone-manager-button-add"
             >
               {t('machines:assignToClone')}
             </Button>
@@ -265,6 +278,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
                 icon={<DeleteOutlined />}
                 onClick={handleRemoveMachines}
                 loading={isRemoving}
+                data-testid="clone-manager-button-remove"
               >
                 {t('machines:removeFromClone')} ({selectedMachines.length})
               </Button>
@@ -272,6 +286,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
             <Button
               icon={<ReloadOutlined />}
               onClick={() => refetchMachines()}
+              data-testid="clone-manager-button-refresh"
             >
               {t('common:actions.refresh')}
             </Button>
@@ -279,6 +294,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
               icon={<ExportOutlined />}
               onClick={handleExport}
               disabled={assignedMachines.length === 0}
+              data-testid="clone-manager-button-export"
             >
               {t('common:actions.export')}
             </Button>
@@ -293,6 +309,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
             onSearch={setSearchText}
             onChange={(e) => setSearchText(e.target.value)}
             style={{ width: 300 }}
+            data-testid="clone-manager-search-input"
           />
         </Col>
       </Row>
@@ -305,15 +322,21 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
       
       {/* Table */}
       {loadingMachines ? (
-        <div style={{ textAlign: 'center', padding: '50px 0' }}>
+        <div style={{ textAlign: 'center', padding: '50px 0' }} data-testid="clone-manager-loading">
           <Spin size="large" />
         </div>
       ) : assignedMachines.length === 0 ? (
         <Empty
           description={t('distributedStorage:clones.noMachinesAssigned')}
           style={{ marginTop: 48 }}
+          data-testid="clone-manager-empty-state"
         >
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAddMachines}>
+          <Button 
+            type="primary" 
+            icon={<PlusOutlined />} 
+            onClick={handleAddMachines}
+            data-testid="clone-manager-button-add-empty"
+          >
             {t('distributedStorage:clones.assignMachines')}
           </Button>
         </Empty>
@@ -324,6 +347,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
           dataSource={filteredMachines}
           rowKey="machineName"
           loading={loadingMachines}
+          data-testid="clone-manager-table"
           pagination={{
             showSizeChanger: true,
             showTotal: (total, range) => t('common:table.showingRecords', { 
@@ -349,33 +373,45 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
         okText={t('machines:assignToClone')}
         cancelText={t('common:actions.cancel')}
         confirmLoading={isAdding}
-        okButtonProps={{ disabled: selectedNewMachines.length === 0 }}
+        okButtonProps={{ 
+          disabled: selectedNewMachines.length === 0,
+          'data-testid': 'clone-manager-modal-ok'
+        }}
+        cancelButtonProps={{
+          'data-testid': 'clone-manager-modal-cancel'
+        }}
         width={700}
+        data-testid="clone-manager-modal-add"
       >
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <Alert
             message={t('distributedStorage:clones.assignMachinesInfo')}
             type="info"
             showIcon
+            data-testid="clone-manager-modal-alert"
           />
           
           {loadingAvailable ? (
-            <div style={{ textAlign: 'center', padding: '50px 0' }}>
+            <div style={{ textAlign: 'center', padding: '50px 0' }} data-testid="clone-manager-modal-loading">
               <Spin />
             </div>
           ) : availableMachines.length === 0 ? (
-            <Empty description={t('machines:noAvailableMachinesForClone')} />
+            <Empty 
+              description={t('machines:noAvailableMachinesForClone')} 
+              data-testid="clone-manager-modal-empty"
+            />
           ) : (
             <AvailableMachinesSelector
               availableMachines={availableMachines}
               selectedMachines={selectedNewMachines}
               onSelectionChange={setSelectedNewMachines}
               teamName={teamName}
+              data-testid="clone-manager-modal-selector"
             />
           )}
           
           {selectedNewMachines.length > 0 && (
-            <Tag color="blue">
+            <Tag color="blue" data-testid="clone-manager-modal-selected-count">
               {t('machines:bulkOperations.selectedCount', { count: selectedNewMachines.length })}
             </Tag>
           )}

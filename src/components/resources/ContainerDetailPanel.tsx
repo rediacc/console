@@ -143,8 +143,9 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-      }}>
-        <Title level={4} style={{ margin: 0 }}>
+      }}
+      data-testid="container-detail-header">
+        <Title level={4} style={{ margin: 0 }} data-testid="container-detail-title">
           {isPlugin ? t('resources:containers.pluginDetails') : t('resources:containers.containerDetails')}
         </Title>
         {!splitView && (
@@ -153,6 +154,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             icon={<CloseOutlined />}
             onClick={onClose}
             style={{ marginRight: -8 }}
+            data-testid="container-detail-close"
           />
         )}
       </div>
@@ -165,12 +167,13 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
       }}>
         <div style={{ marginBottom: 16 }}>
           <Space size="small" style={{ marginBottom: 8 }}>
-            <Tag color={isPlugin ? "blue" : "cyan"} icon={isPlugin ? <ApiOutlined /> : <AppstoreOutlined />}>
+            <Tag color={isPlugin ? "blue" : "cyan"} icon={isPlugin ? <ApiOutlined /> : <AppstoreOutlined />} data-testid="container-detail-name-tag">
               {isPlugin ? `Plugin: ${pluginName}` : container.name}
             </Tag>
             <Tag 
               color={container.state === 'running' ? 'success' : 'default'}
               icon={container.state === 'running' ? <PlayCircleOutlined /> : <PauseCircleOutlined />}
+              data-testid="container-detail-state-tag"
             >
               {container.state}
             </Tag>
@@ -180,31 +183,31 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
         {container && (
           <>
             {/* Basic Information */}
-            <Card size="small" style={{ marginBottom: 16 }}>
+            <Card size="small" style={{ marginBottom: 16 }} data-testid="container-detail-basic-info">
               <Row gutter={[16, 16]}>
                 <Col span={24}>
                   <Space direction="vertical" style={{ width: '100%' }} size="small">
                     <div>
                       <Text type="secondary">{t('resources:containers.containerID')}:</Text>
                       <br />
-                      <Text copyable style={{ fontFamily: 'monospace', fontSize: 12 }}>
+                      <Text copyable style={{ fontFamily: 'monospace', fontSize: 12 }} data-testid="container-detail-id">
                         {container.id}
                       </Text>
                     </div>
                     <div>
                       <Text type="secondary">{t('resources:containers.image')}:</Text>
                       <br />
-                      <Text style={{ fontSize: 12, wordBreak: 'break-all' }}>{container.image}</Text>
+                      <Text style={{ fontSize: 12, wordBreak: 'break-all' }} data-testid="container-detail-image">{container.image}</Text>
                     </div>
                     <div>
                       <Text type="secondary">{t('resources:containers.status')}:</Text>
                       <br />
-                      <Text style={{ fontSize: 12 }}>{container.status}</Text>
+                      <Text style={{ fontSize: 12 }} data-testid="container-detail-status">{container.status}</Text>
                     </div>
                     <div>
                       <Text type="secondary">{t('resources:containers.created')}:</Text>
                       <br />
-                      <Text style={{ fontSize: 12 }}>{container.created}</Text>
+                      <Text style={{ fontSize: 12 }} data-testid="container-detail-created">{container.created}</Text>
                     </div>
                   </Space>
                 </Col>
@@ -221,7 +224,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
 
             <Row gutter={[16, 16]}>
               <Col xs={24} sm={12}>
-                <Card size="small">
+                <Card size="small" data-testid="container-detail-cpu-card">
                   <Statistic
                     title={t('resources:containers.cpuUsage')}
                     value={resourceUsage?.cpu || 0}
@@ -238,7 +241,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
                 </Card>
               </Col>
               <Col xs={24} sm={12}>
-                <Card size="small">
+                <Card size="small" data-testid="container-detail-memory-card">
                   <Statistic
                     title={t('resources:containers.memoryUsage')}
                     value={`${resourceUsage?.memoryUsed} / ${resourceUsage?.memoryTotal}`}
@@ -251,7 +254,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
                 </Card>
               </Col>
               <Col xs={24} sm={12}>
-                <Card size="small">
+                <Card size="small" data-testid="container-detail-network-card">
                   <Space direction="vertical" style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Text type="secondary">{t('resources:containers.networkIO')}:</Text>
@@ -266,7 +269,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
                 </Card>
               </Col>
               <Col xs={24} sm={12}>
-                <Card size="small">
+                <Card size="small" data-testid="container-detail-block-io-card">
                   <Space direction="vertical" style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Text type="secondary">{t('resources:containers.blockIO')}:</Text>
@@ -290,13 +293,13 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
               </Space>
             </Divider>
 
-            <Card size="small" style={{ marginBottom: 16 }}>
+            <Card size="small" style={{ marginBottom: 16 }} data-testid="container-detail-configuration">
               <Space direction="vertical" style={{ width: '100%' }} size="middle">
                 {/* Command */}
                 <div>
                   <Text type="secondary">{t('resources:containers.command')}:</Text>
                   <br />
-                  <Text code style={{ fontSize: 11, wordBreak: 'break-all' }}>
+                  <Text code style={{ fontSize: 11, wordBreak: 'break-all' }} data-testid="container-detail-command">
                     {container.command}
                   </Text>
                 </div>
@@ -309,7 +312,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
                     {container.port_mappings && container.port_mappings.length > 0 ? (
                       <Space direction="vertical" size="small" style={{ marginTop: 4 }}>
                         {container.port_mappings.map((mapping, index) => (
-                          <Tag key={index} color="blue">
+                          <Tag key={index} color="blue" data-testid={`container-detail-port-${index}`}>
                             {mapping.host_port ? (
                               `${mapping.host || '0.0.0.0'}:${mapping.host_port} → ${mapping.container_port}/${mapping.protocol}`
                             ) : (
@@ -319,7 +322,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
                         ))}
                       </Space>
                     ) : container.ports ? (
-                      <Text style={{ fontSize: 12 }}>{container.ports}</Text>
+                      <Text style={{ fontSize: 12 }} data-testid="container-detail-ports-text">{container.ports}</Text>
                     ) : null}
                   </div>
                 )}
@@ -328,21 +331,21 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
                 <div>
                   <Text type="secondary">{t('resources:containers.networks')}:</Text>
                   <br />
-                  <Tag color="purple">{container.networks}</Tag>
+                  <Tag color="purple" data-testid="container-detail-network-tag">{container.networks}</Tag>
                 </div>
 
                 {/* Size */}
                 <div>
                   <Text type="secondary">{t('resources:containers.size')}:</Text>
                   <br />
-                  <Text style={{ fontSize: 12 }}>{container.size}</Text>
+                  <Text style={{ fontSize: 12 }} data-testid="container-detail-size">{container.size}</Text>
                 </div>
 
                 {/* PIDs */}
                 <div>
                   <Text type="secondary">{t('resources:containers.processes')}:</Text>
                   <br />
-                  <Tag>{resourceUsage?.pids || 0} {t('resources:containers.pids')}</Tag>
+                  <Tag data-testid="container-detail-pids">{resourceUsage?.pids || 0} {t('resources:containers.pids')}</Tag>
                 </div>
               </Space>
             </Card>
@@ -355,13 +358,13 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
               </Space>
             </Divider>
 
-            <Card size="small">
+            <Card size="small" data-testid="container-detail-environment">
               <Space direction="vertical" style={{ width: '100%' }} size="middle">
                 {/* Mounts */}
                 <div>
                   <Text type="secondary">{t('resources:containers.mounts')}:</Text>
                   <br />
-                  <Text style={{ fontSize: 11, wordBreak: 'break-all' }}>
+                  <Text style={{ fontSize: 11, wordBreak: 'break-all' }} data-testid="container-detail-mounts">
                     {container.mounts}
                   </Text>
                 </div>
@@ -371,7 +374,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
                   <div>
                     <Text type="secondary">{t('resources:containers.labels')}:</Text>
                     <br />
-                    <Text style={{ fontSize: 11, wordBreak: 'break-all' }}>
+                    <Text style={{ fontSize: 11, wordBreak: 'break-all' }} data-testid="container-detail-labels">
                       {container.labels}
                     </Text>
                   </div>

@@ -134,12 +134,14 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool, teamFilter
       label: t('clones.edit'),
       icon: <SettingOutlined />,
       onClick: () => handleEdit(clone),
+      'data-testid': `clone-list-edit-${clone.cloneName}`,
     },
     {
       key: 'manageMachines',
       label: t('clones.manageMachines'),
       icon: <TeamOutlined />,
       onClick: () => handleManageMachines(clone),
+      'data-testid': `clone-list-manage-machines-${clone.cloneName}`,
     },
     { type: 'divider' },
     {
@@ -147,12 +149,14 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool, teamFilter
       label: t('clones.flatten'),
       icon: <SyncOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_flatten', clone),
+      'data-testid': `clone-list-flatten-${clone.cloneName}`,
     },
     {
       key: 'split',
       label: t('clones.split'),
       icon: <ScissorOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_clone_split', clone),
+      'data-testid': `clone-list-split-${clone.cloneName}`,
     },
     { type: 'divider' },
     {
@@ -160,12 +164,14 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool, teamFilter
       label: t('clones.export'),
       icon: <CloudUploadOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_export', clone),
+      'data-testid': `clone-list-export-${clone.cloneName}`,
     },
     {
       key: 'info',
       label: t('clones.info'),
       icon: <InfoCircleOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_info', clone),
+      'data-testid': `clone-list-info-${clone.cloneName}`,
     },
     { type: 'divider' },
     {
@@ -174,6 +180,7 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool, teamFilter
       icon: <DeleteOutlined />,
       danger: true,
       onClick: () => handleDelete(clone),
+      'data-testid': `clone-list-delete-${clone.cloneName}`,
     },
   ]
   
@@ -204,6 +211,7 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool, teamFilter
             icon={<TeamOutlined />}
             onClick={() => handleManageMachines(clone)}
             style={{ marginTop: 16 }}
+            data-testid={`clone-list-assign-machines-empty-${clone.cloneName}`}
           >
             {t('clones.assignMachines')}
           </Button>
@@ -212,17 +220,22 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool, teamFilter
     }
     
     return (
-      <div style={{ padding: '16px' }}>
+      <div style={{ padding: '16px' }} data-testid={`clone-list-machines-container-${clone.cloneName}`}>
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
           <Space>
             <TeamOutlined />
             <Text strong>{t('clones.assignedMachines')}:</Text>
-            <Tag>{machines.length} {t('machines:machines')}</Tag>
+            <Tag data-testid={`clone-list-machine-count-${clone.cloneName}`}>{machines.length} {t('machines:machines')}</Tag>
           </Space>
           
           <Space wrap>
             {machines.map((machine) => (
-              <Tag key={machine.machineName} icon={<CloudServerOutlined />} color="blue">
+              <Tag 
+                key={machine.machineName} 
+                icon={<CloudServerOutlined />} 
+                color="blue"
+                data-testid={`clone-list-machine-tag-${clone.cloneName}-${machine.machineName}`}
+              >
                 {machine.machineName}
               </Tag>
             ))}
@@ -231,6 +244,7 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool, teamFilter
           <Button
             icon={<TeamOutlined />}
             onClick={() => handleManageMachines(clone)}
+            data-testid={`clone-list-manage-machines-button-${clone.cloneName}`}
           >
             {t('clones.manageMachines')}
           </Button>
@@ -251,7 +265,12 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool, teamFilter
     )
     
     return (
-      <Badge count={machines.length} showZero style={{ backgroundColor: machines.length > 0 ? '#52c41a' : '#d9d9d9' }}>
+      <Badge 
+        count={machines.length} 
+        showZero 
+        style={{ backgroundColor: machines.length > 0 ? '#52c41a' : '#d9d9d9' }}
+        data-testid={`clone-list-machine-badge-${clone.cloneName}`}
+      >
         <CloudServerOutlined style={{ fontSize: 16 }} />
       </Badge>
     )
@@ -263,12 +282,12 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool, teamFilter
       dataIndex: 'cloneName',
       key: 'cloneName',
       render: (text: string, record: DistributedStorageRbdClone) => (
-        <Space>
+        <Space data-testid={`clone-list-item-${record.cloneName}`}>
           <CopyOutlined />
           <span>{text}</span>
           {record.vaultContent && (
             <Tooltip title={t('common.hasVault')}>
-              <Tag color="blue">{t('common.vault')}</Tag>
+              <Tag color="blue" data-testid={`clone-list-vault-tag-${record.cloneName}`}>{t('common.vault')}</Tag>
             </Tooltip>
           )}
         </Space>
@@ -304,6 +323,7 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool, teamFilter
             size="small"
             icon={<CloudUploadOutlined />}
             onClick={() => handleRunFunction('distributed_storage_rbd_info', record)}
+            data-testid={`clone-list-remote-${record.cloneName}`}
           >
             {t('common.remote')}
           </Button>
@@ -311,7 +331,11 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool, teamFilter
             menu={{ items: getCloneMenuItems(record) }}
             trigger={['click']}
           >
-            <Button size="small" icon={<EllipsisOutlined />} />
+            <Button 
+              size="small" 
+              icon={<EllipsisOutlined />} 
+              data-testid={`clone-list-actions-${record.cloneName}`}
+            />
           </Dropdown>
         </Space>
       ),
@@ -320,7 +344,7 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool, teamFilter
   
   return (
     <>
-      <div style={{ padding: '16px 16px 16px 32px', backgroundColor: '#fafafa' }}>
+      <div style={{ padding: '16px 16px 16px 32px', backgroundColor: '#fafafa' }} data-testid="clone-list-container">
         <h5>{t('clones.title')}</h5>
         <div style={{ marginBottom: 16 }}>
           <Button 
@@ -328,6 +352,7 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool, teamFilter
             icon={<PlusOutlined />}
             onClick={handleCreate}
             size="small"
+            data-testid="clone-list-create-button"
           >
             {t('clones.create')}
           </Button>
@@ -340,6 +365,7 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool, teamFilter
           loading={isLoading}
           size="small"
           pagination={false}
+          data-testid="clone-list-table"
           expandable={{
             expandedRowRender: (record) => <CloneMachineList clone={record} snapshot={snapshot} image={image} pool={pool} />,
             rowExpandable: () => true,

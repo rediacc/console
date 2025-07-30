@@ -60,15 +60,15 @@ export const MachineExclusivityWarning: React.FC<MachineExclusivityWarningProps>
     <Alert
       message={getWarningMessage()}
       description={
-        <div>
-          <Text>{getDescription()}</Text>
+        <div data-testid="exclusivity-warning-description">
+          <Text data-testid="exclusivity-warning-description-text">{getDescription()}</Text>
           <br />
           <br />
-          <Text strong>{t('distributedStorage:warnings.exclusivityNote')}</Text>
-          <ul style={{ marginTop: 8, marginBottom: 0 }}>
-            <li>{t('distributedStorage:warnings.oneClusterPerMachine')}</li>
-            <li>{t('distributedStorage:warnings.oneImagePerMachine')}</li>
-            <li>{t('distributedStorage:warnings.multipleClonesPossible')}</li>
+          <Text strong data-testid="exclusivity-warning-note">{t('distributedStorage:warnings.exclusivityNote')}</Text>
+          <ul style={{ marginTop: 8, marginBottom: 0 }} data-testid="exclusivity-warning-list">
+            <li data-testid="exclusivity-warning-cluster-rule">{t('distributedStorage:warnings.oneClusterPerMachine')}</li>
+            <li data-testid="exclusivity-warning-image-rule">{t('distributedStorage:warnings.oneImagePerMachine')}</li>
+            <li data-testid="exclusivity-warning-clone-rule">{t('distributedStorage:warnings.multipleClonesPossible')}</li>
           </ul>
         </div>
       }
@@ -76,6 +76,7 @@ export const MachineExclusivityWarning: React.FC<MachineExclusivityWarningProps>
       showIcon
       icon={<InfoCircleOutlined />}
       style={style}
+      data-testid={`exclusivity-warning-${type}`}
     />
   )
 }
@@ -94,6 +95,7 @@ export const MachineExclusivityInlineWarning: React.FC<{
       showIcon
       banner
       style={{ marginBottom: 16, ...style }}
+      data-testid="exclusivity-warning-inline"
     />
   )
 }

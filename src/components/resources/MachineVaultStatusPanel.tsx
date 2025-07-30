@@ -240,30 +240,32 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
             backgroundColor: theme === 'dark' ? '#141414' : '#fff',
             zIndex: splitView ? 0 : 1,
           }}
+          data-testid="vault-status-header"
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Space>
               <CloudServerOutlined style={{ fontSize: 24, color: '#556b2f' }} />
-              <Title level={4} style={{ margin: 0 }}>{machine.machineName}</Title>
+              <Title level={4} style={{ margin: 0 }} data-testid="vault-status-machine-name">{machine.machineName}</Title>
             </Space>
             <Button
               type="text"
               icon={<CloseOutlined />}
               onClick={onClose}
+              data-testid="vault-status-close"
             />
           </div>
           <Space wrap style={{ marginTop: 8 }}>
-            <Tag color="#8FBC8F" icon={<AppstoreOutlined />}>Team: {machine.teamName}</Tag>
-            <Tag color="green" icon={<ApiOutlined />}>Bridge: {machine.bridgeName}</Tag>
-            {machine.regionName && <Tag color="purple" icon={<GlobalOutlined />}>Region: {machine.regionName}</Tag>}
-            <Badge count={machine.queueCount} style={{ backgroundColor: '#52c41a' }}>
+            <Tag color="#8FBC8F" icon={<AppstoreOutlined />} data-testid="vault-status-team-tag">Team: {machine.teamName}</Tag>
+            <Tag color="green" icon={<ApiOutlined />} data-testid="vault-status-bridge-tag">Bridge: {machine.bridgeName}</Tag>
+            {machine.regionName && <Tag color="purple" icon={<GlobalOutlined />} data-testid="vault-status-region-tag">Region: {machine.regionName}</Tag>}
+            <Badge count={machine.queueCount} style={{ backgroundColor: '#52c41a' }} data-testid="vault-status-queue-badge">
               <Tag color="blue">{t('machines:queueItems')}</Tag>
             </Badge>
-            <Tag color="blue">{t('machines:vaultVersion')}: {machine.vaultVersion}</Tag>
+            <Tag color="blue" data-testid="vault-status-version-tag">{t('machines:vaultVersion')}: {machine.vaultVersion}</Tag>
           </Space>
           {machine.vaultStatusTime && (
             <div style={{ marginTop: 8 }}>
-              <Text type="secondary" style={{ fontSize: 12 }} title={new Date(machine.vaultStatusTime).toLocaleString()}>
+              <Text type="secondary" style={{ fontSize: 12 }} title={new Date(machine.vaultStatusTime).toLocaleString()} data-testid="vault-status-last-updated">
                 {t('machines:lastUpdated')}: {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
               </Text>
             </div>
@@ -271,11 +273,12 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
         </div>
 
         {/* Content */}
-        <div style={{ padding: '24px' }}>
+        <div style={{ padding: '24px' }} data-testid="vault-status-content">
           {!vaultData ? (
             <Empty 
               description={t('machines:noVaultData')}
               style={{ marginTop: 48 }}
+              data-testid="vault-status-empty"
             />
           ) : (
             <>
@@ -284,12 +287,12 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                     <DesktopOutlined style={{ fontSize: 20, color: '#556b2f' }} />
-                    <Title level={5} style={{ margin: 0 }}>{t('resources:repositories.systemInfo')}</Title>
+                    <Title level={5} style={{ margin: 0 }} data-testid="vault-status-system-info-title">{t('resources:repositories.systemInfo')}</Title>
                   </div>
                   
                   <Row gutter={[16, 16]}>
                     <Col span={12}>
-                      <Card size="small" style={{ height: '100%' }}>
+                      <Card size="small" style={{ height: '100%' }} data-testid="vault-status-hostname-card">
                         <Statistic
                           title={t('resources:repositories.hostname')}
                           value={vaultData.system.hostname}
@@ -299,7 +302,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                       </Card>
                     </Col>
                     <Col span={12}>
-                      <Card size="small" style={{ height: '100%' }}>
+                      <Card size="small" style={{ height: '100%' }} data-testid="vault-status-uptime-card">
                         <Statistic
                           title={t('resources:repositories.uptime')}
                           value={vaultData.system.uptime}
@@ -309,23 +312,23 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                       </Card>
                     </Col>
                     <Col span={24}>
-                      <Card size="small">
+                      <Card size="small" data-testid="vault-status-os-info-card">
                         <Space direction="vertical" style={{ width: '100%' }} size="small">
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <Text type="secondary">{t('resources:repositories.osName')}:</Text>
-                            <Text strong>{vaultData.system.os_name}</Text>
+                            <Text strong data-testid="vault-status-os-name">{vaultData.system.os_name}</Text>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <Text type="secondary">{t('resources:repositories.kernel')}:</Text>
-                            <Text>{vaultData.system.kernel}</Text>
+                            <Text data-testid="vault-status-kernel">{vaultData.system.kernel}</Text>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <Text type="secondary">{t('resources:repositories.cpu')}:</Text>
-                            <Text>{vaultData.system.cpu_count} × {vaultData.system.cpu_model}</Text>
+                            <Text data-testid="vault-status-cpu">{vaultData.system.cpu_count} × {vaultData.system.cpu_model}</Text>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <Text type="secondary">{t('resources:repositories.systemTime')}:</Text>
-                            <Text>{vaultData.system.system_time_human} ({vaultData.system.timezone})</Text>
+                            <Text data-testid="vault-status-system-time">{vaultData.system.system_time_human} ({vaultData.system.timezone})</Text>
                           </div>
                         </Space>
                       </Card>
@@ -343,7 +346,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                   <Row gutter={[16, 16]}>
                     {/* Memory Card */}
                     <Col span={24}>
-                      <Card size="small">
+                      <Card size="small" data-testid="vault-status-memory-card">
                         <div style={{ marginBottom: 12 }}>
                           <Space>
                             <DatabaseOutlined style={{ color: '#1890ff' }} />
@@ -370,7 +373,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
 
                     {/* Root Disk Card */}
                     <Col span={24}>
-                      <Card size="small">
+                      <Card size="small" data-testid="vault-status-disk-card">
                         <div style={{ marginBottom: 12 }}>
                           <Space>
                             <HddOutlined style={{ color: '#fa8c16' }} />
@@ -405,7 +408,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                     {/* Datastore Card */}
                     {vaultData.system.datastore?.path && (
                       <Col span={24}>
-                        <Card size="small">
+                        <Card size="small" data-testid="vault-status-datastore-card">
                           <div style={{ marginBottom: 12 }}>
                             <Space>
                               <DatabaseOutlined style={{ color: '#52c41a' }} />
@@ -456,16 +459,16 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
 
                   {/* Default Gateway Info */}
                   {vaultData.network.default_gateway && (
-                    <Card size="small" style={{ marginBottom: 16 }}>
+                    <Card size="small" style={{ marginBottom: 16 }} data-testid="vault-status-gateway-card">
                       <Space direction="vertical" style={{ width: '100%' }} size="small">
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <Text type="secondary">{t('resources:repositories.defaultGateway')}:</Text>
-                          <Text strong>{vaultData.network.default_gateway}</Text>
+                          <Text strong data-testid="vault-status-gateway">{vaultData.network.default_gateway}</Text>
                         </div>
                         {vaultData.network.default_interface && (
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <Text type="secondary">{t('resources:repositories.defaultInterface')}:</Text>
-                            <Text>{vaultData.network.default_interface}</Text>
+                            <Text data-testid="vault-status-interface">{vaultData.network.default_interface}</Text>
                           </div>
                         )}
                       </Space>
@@ -477,14 +480,15 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                     dataSource={vaultData.network.interfaces.filter((iface: NetworkInterface) => 
                       iface.state !== 'unknown' && iface.name !== 'lo'
                     )}
+                    data-testid="vault-status-network-list"
                     renderItem={(iface: NetworkInterface) => (
-                      <Card size="small" style={{ marginBottom: 12 }}>
+                      <Card size="small" style={{ marginBottom: 12 }} data-testid={`vault-status-network-${iface.name}`}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                           <Space>
                             <CompassOutlined style={{ color: '#1890ff' }} />
-                            <Text strong>{iface.name}</Text>
+                            <Text strong data-testid={`vault-status-network-name-${iface.name}`}>{iface.name}</Text>
                           </Space>
-                          <Tag color={iface.state === 'UP' ? 'success' : 'default'}>{iface.state}</Tag>
+                          <Tag color={iface.state === 'UP' ? 'success' : 'default'} data-testid={`vault-status-network-state-${iface.name}`}>{iface.state}</Tag>
                         </div>
                         <Space direction="vertical" style={{ width: '100%' }} size="small">
                           {iface.ipv4_addresses.length > 0 && (
@@ -492,7 +496,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                               <Text type="secondary">{t('resources:repositories.ipAddresses')}:</Text>
                               {iface.ipv4_addresses.map((ip, idx) => (
                                 <div key={idx} style={{ marginLeft: 16 }}>
-                                  <Tag color="blue">{ip}</Tag>
+                                  <Tag color="blue" data-testid={`vault-status-ip-${ip}`}>{ip}</Tag>
                                 </div>
                               ))}
                             </div>
@@ -528,16 +532,17 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
 
                   <List
                     dataSource={vaultData.block_devices}
+                    data-testid="vault-status-block-devices-list"
                     renderItem={(device: BlockDevice) => (
-                      <Card size="small" style={{ marginBottom: 12 }}>
+                      <Card size="small" style={{ marginBottom: 12 }} data-testid={`vault-status-block-device-${device.name}`}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                           <Space>
                             <HddOutlined style={{ color: '#fa8c16' }} />
-                            <Text strong>{device.path}</Text>
+                            <Text strong data-testid={`vault-status-device-path-${device.name}`}>{device.path}</Text>
                           </Space>
                           <Space>
-                            <Tag>{device.type}</Tag>
-                            <Tag color="blue">{device.size_human}</Tag>
+                            <Tag data-testid={`vault-status-device-type-${device.name}`}>{device.type}</Tag>
+                            <Tag color="blue" data-testid={`vault-status-device-size-${device.name}`}>{device.size_human}</Tag>
                           </Space>
                         </div>
                         <Space direction="vertical" style={{ width: '100%' }} size="small">
@@ -585,14 +590,15 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
 
                   <List
                     dataSource={vaultData.system_containers}
+                    data-testid="vault-status-containers-list"
                     renderItem={(container: Container) => (
-                      <Card size="small" style={{ marginBottom: 12 }}>
+                      <Card size="small" style={{ marginBottom: 12 }} data-testid={`vault-status-container-${container.id}`}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                           <Space>
                             <ContainerOutlined style={{ color: '#722ed1' }} />
-                            <Text strong>{container.name}</Text>
+                            <Text strong data-testid={`vault-status-container-name-${container.id}`}>{container.name}</Text>
                           </Space>
-                          <Tag color={container.state === 'running' ? 'success' : 'default'}>
+                          <Tag color={container.state === 'running' ? 'success' : 'default'} data-testid={`vault-status-container-state-${container.id}`}>
                             {container.state}
                           </Tag>
                         </div>
@@ -621,17 +627,19 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
               
               {/* Distributed Storage Section */}
               {machine && (
-                <DistributedStorageSection 
-                  machine={machine}
-                  onViewDetails={() => {
-                    setAuditTraceModal({
-                      open: true,
-                      entityType: 'Machine',
-                      entityIdentifier: machine.machineName,
-                      entityName: machine.machineName
-                    })
-                  }}
-                />
+                <div data-testid="vault-status-distributed-storage">
+                  <DistributedStorageSection 
+                    machine={machine}
+                    onViewDetails={() => {
+                      setAuditTraceModal({
+                        open: true,
+                        entityType: 'Machine',
+                        entityIdentifier: machine.machineName,
+                        entityName: machine.machineName
+                      })
+                    }}
+                  />
+                </div>
               )}
             </>
           )}

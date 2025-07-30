@@ -179,11 +179,12 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
 
   return (
     <Modal
+      data-testid="template-details-modal"
       title={
         <Space>
           <Text strong>{t('resources:templates.templateDetails')}</Text>
           {templateName && (
-            <Tag color="blue">{templateName.replace(/^(db_|kick_|route_)/, '')}</Tag>
+            <Tag color="blue" data-testid="template-details-name-tag">{templateName.replace(/^(db_|kick_|route_)/, '')}</Tag>
           )}
         </Space>
       }
@@ -191,7 +192,7 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
       onCancel={onClose}
       width={800}
       footer={[
-        <Button key="cancel" onClick={onClose}>
+        <Button key="cancel" onClick={onClose} data-testid="template-details-close-button">
           {t('common:actions.close')}
         </Button>,
         onUseTemplate && (
@@ -203,6 +204,7 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
               onUseTemplate(templateName!)
               onClose()
             }}
+            data-testid="template-details-select-button"
           >
             {t('resources:templates.useTemplate')}
           </Button>
@@ -210,24 +212,25 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
       ]}
     >
       {loading && (
-        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+        <div style={{ textAlign: 'center', padding: '40px 0' }} data-testid="template-details-loading">
           <Spin tip={t('resources:templates.loadingDetails')} />
         </div>
       )}
 
       {error && (
-        <Empty description={error} />
+        <Empty description={error} data-testid="template-details-error" />
       )}
 
       {!loading && !error && templateData && (
         <Tabs
+          data-testid="template-details-tabs"
           activeKey={activeTab}
           onChange={setActiveTab}
           items={[
             {
               key: 'readme',
               label: (
-                <Space>
+                <Space data-testid="template-details-tab-overview">
                   <FileTextOutlined />
                   {t('resources:templates.overview')}
                 </Space>
@@ -237,31 +240,32 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
                   size="small" 
                   style={{ maxHeight: '500px', overflow: 'auto' }}
                   bodyStyle={{ padding: 0 }}
+                  data-testid="template-details-readme-content"
                 >
                   {renderFileContent(readmeFile)}
                 </Card>
               ) : (
-                <Empty description={t('resources:templates.noReadme')} />
+                <Empty description={t('resources:templates.noReadme')} data-testid="template-details-readme-empty" />
               )
             },
             {
               key: 'files',
               label: (
-                <Space>
+                <Space data-testid="template-details-tab-files">
                   <FolderOutlined />
                   {t('resources:templates.files')} ({otherFiles.length})
                 </Space>
               ),
               children: (
-                <div style={{ maxHeight: '500px', overflow: 'auto' }}>
+                <div style={{ maxHeight: '500px', overflow: 'auto' }} data-testid="template-details-files-content">
                   {Object.keys(groupedFiles).length === 1 && groupedFiles['root'] ? (
                     // If all files are in root, show them directly
-                    <Collapse defaultActiveKey={groupedFiles['root'].map((_, idx) => idx.toString())}>
+                    <Collapse defaultActiveKey={groupedFiles['root'].map((_, idx) => idx.toString())} data-testid="template-details-files-collapse">
                       {groupedFiles['root'].map((file, idx) => (
                         <Panel
                           key={idx}
                           header={
-                            <Space>
+                            <Space data-testid={`template-details-file-header-${idx}`}>
                               {getFileIcon(file.name)}
                               <Text code>{file.name}</Text>
                               <Tag color="blue" style={{ marginLeft: 'auto' }}>
@@ -269,8 +273,9 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
                               </Tag>
                             </Space>
                           }
+                          data-testid={`template-details-file-panel-${idx}`}
                         >
-                          <div style={{ maxHeight: '400px', overflow: 'auto' }}>
+                          <div style={{ maxHeight: '400px', overflow: 'auto' }} data-testid={`template-details-file-content-${idx}`}>
                             {renderFileContent(file)}
                           </div>
                         </Panel>
@@ -278,24 +283,25 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
                     </Collapse>
                   ) : (
                     // If files are in directories, group them
-                    <Collapse defaultActiveKey={['root']}>
+                    <Collapse defaultActiveKey={['root']} data-testid="template-details-folders-collapse">
                       {Object.entries(groupedFiles).map(([dir, files]) => (
                         <Panel
                           key={dir}
                           header={
-                            <Space>
+                            <Space data-testid={`template-details-folder-header-${dir}`}>
                               <FolderOutlined />
                               <Text strong>{dir === 'root' ? t('resources:templates.rootFiles') : dir}</Text>
                               <Tag>{files.length} {t('resources:templates.filesCount')}</Tag>
                             </Space>
                           }
+                          data-testid={`template-details-folder-panel-${dir}`}
                         >
-                          <Collapse>
+                          <Collapse data-testid={`template-details-folder-files-collapse-${dir}`}>
                             {files.map((file, idx) => (
                               <Panel
                                 key={`${dir}-${idx}`}
                                 header={
-                                  <Space>
+                                  <Space data-testid={`template-details-folder-file-header-${dir}-${idx}`}>
                                     {getFileIcon(file.name)}
                                     <Text code>{file.name}</Text>
                                     <Tag color="blue">
@@ -303,8 +309,9 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
                                     </Tag>
                                   </Space>
                                 }
+                                data-testid={`template-details-folder-file-panel-${dir}-${idx}`}
                               >
-                                <div style={{ maxHeight: '400px', overflow: 'auto' }}>
+                                <div style={{ maxHeight: '400px', overflow: 'auto' }} data-testid={`template-details-folder-file-content-${dir}-${idx}`}>
                                   {renderFileContent(file)}
                                 </div>
                               </Panel>

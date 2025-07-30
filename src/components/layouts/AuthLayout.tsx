@@ -14,14 +14,14 @@ const AuthLayout: React.FC = () => {
     : { background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' }
   
   return (
-    <Layout style={{ minHeight: '100vh', ...backgroundStyle }}>
+    <Layout style={{ minHeight: '100vh', ...backgroundStyle }} data-testid="auth-layout-container">
       <div style={{ 
         position: 'absolute', 
         top: 20, 
         right: 20, 
         zIndex: 1000 
-      }}>
-        <ThemeToggle />
+      }} data-testid="auth-layout-theme-toggle-wrapper">
+        <ThemeToggle data-testid="auth-layout-theme-toggle" />
       </div>
       <Content
         style={{
@@ -30,6 +30,7 @@ const AuthLayout: React.FC = () => {
           alignItems: 'center',
           padding: '24px',
         }}
+        data-testid="auth-layout-content"
       >
         <Outlet />
       </Content>

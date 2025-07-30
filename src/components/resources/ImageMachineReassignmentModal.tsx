@@ -75,9 +75,14 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
       cancelText={t('common:actions.cancel')}
       confirmLoading={updateMachineAssignment.isPending}
       okButtonProps={{ 
-        disabled: !selectedMachine || selectedMachine === image?.machineName 
+        disabled: !selectedMachine || selectedMachine === image?.machineName,
+        'data-testid': 'image-reassign-submit'
+      }}
+      cancelButtonProps={{
+        'data-testid': 'image-reassign-cancel'
       }}
       width={600}
+      data-testid="image-reassign-modal"
     >
       {image && (
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
@@ -99,6 +104,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
               type="info"
               showIcon
               icon={<CloudServerOutlined />}
+              data-testid="image-reassign-current-machine-info"
             />
           )}
           
@@ -107,7 +113,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
               {t('distributedStorage:images.selectNewMachine')}:
             </Text>
             {loadingMachines ? (
-              <Spin />
+              <Spin data-testid="image-reassign-loading" />
             ) : (
               <>
                 <Select
@@ -122,6 +128,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
                       ? t('machines:noAvailableMachines')
                       : t('common:noMatchingResults')
                   }
+                  data-testid="image-reassign-machine-select"
                 >
                   {/* Include current machine if it exists */}
                   {image.machineName && (
@@ -129,6 +136,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
                       key={image.machineName} 
                       value={image.machineName}
                       disabled
+                      data-testid={`image-reassign-machine-option-${image.machineName}`}
                     >
                       {image.machineName} ({t('common:current')})
                     </Select.Option>
@@ -139,6 +147,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
                     <Select.Option 
                       key={machine.machineName} 
                       value={machine.machineName}
+                      data-testid={`image-reassign-machine-option-${machine.machineName}`}
                     >
                       {machine.machineName}
                     </Select.Option>
@@ -157,6 +166,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
             description={t('distributedStorage:images.reassignmentWarning')}
             type="warning"
             showIcon
+            data-testid="image-reassign-warning"
           />
         </Space>
       )}

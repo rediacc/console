@@ -160,6 +160,7 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
         opacity,
         transition: 'opacity 0.3s ease',
       }}
+      data-testid="unified-detail-panel"
     >
       {/* Resize Handle */}
       <div
@@ -174,6 +175,7 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
           backgroundColor: 'transparent',
         }}
         onMouseDown={handleMouseDown}
+        data-testid="unified-detail-resize-handle"
       >
         <div
           style={{
@@ -195,7 +197,7 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, overflow: 'hidden' }}>
+      <div style={{ flex: 1, overflow: 'hidden' }} data-testid="unified-detail-content">
         {actualType === 'machine' ? (
           <MachineVaultStatusPanel
             machine={currentData as Machine}

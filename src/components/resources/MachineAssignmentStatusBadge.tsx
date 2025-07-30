@@ -72,6 +72,7 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
         color={config.color} 
         icon={showIcon ? config.icon : undefined}
         style={{ margin: 0 }}
+        data-testid={`machine-status-badge-tag-${assignmentType.toLowerCase()}`}
       >
         {config.text}
       </Tag>
@@ -79,22 +80,29 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
 
     return assignmentDetails ? (
       <Tooltip title={assignmentDetails}>
-        {content}
+        <span data-testid="machine-status-badge-tooltip-wrapper">
+          {content}
+        </span>
       </Tooltip>
     ) : content
   }
 
   return (
     <Tooltip title={assignmentDetails}>
-      <Badge 
-        status={config.badgeStatus} 
-        text={
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            {showIcon && config.icon}
-            {config.text}
-          </span>
-        }
-      />
+      <span data-testid="machine-status-badge-tooltip-wrapper">
+        <Badge 
+          status={config.badgeStatus} 
+          text={
+            <span 
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+              data-testid={`machine-status-badge-${assignmentType.toLowerCase()}`}
+            >
+              {showIcon && config.icon}
+              {config.text}
+            </span>
+          }
+        />
+      </span>
     </Tooltip>
   )
 }

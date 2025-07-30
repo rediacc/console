@@ -612,7 +612,7 @@ const ArchitecturePage: React.FC = () => {
   }
 
   return (
-    <div>
+    <div data-testid="architecture-page">
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         {/* Header */}
         <Card>
@@ -622,21 +622,27 @@ const ArchitecturePage: React.FC = () => {
                 {t('architecture.title')}
               </Title>
               <Space>
-                <Radio.Group value={viewMode} onChange={(e) => setViewMode(e.target.value)}>
-                  <Radio.Button value="hierarchy">{t('architecture.viewHierarchy')}</Radio.Button>
-                  <Radio.Button value="force">{t('architecture.viewForce')}</Radio.Button>
-                  <Radio.Button value="radial">{t('architecture.viewRadial')}</Radio.Button>
+                <Radio.Group 
+                  value={viewMode} 
+                  onChange={(e) => setViewMode(e.target.value)}
+                  data-testid="architecture-view-mode-selector"
+                >
+                  <Radio.Button value="hierarchy" data-testid="architecture-view-hierarchy">{t('architecture.viewHierarchy')}</Radio.Button>
+                  <Radio.Button value="force" data-testid="architecture-view-force">{t('architecture.viewForce')}</Radio.Button>
+                  <Radio.Button value="radial" data-testid="architecture-view-radial">{t('architecture.viewRadial')}</Radio.Button>
                 </Radio.Group>
                 <Tooltip title={t('actions.refresh', { ns: 'common' })}>
                   <Button 
                     icon={<ReloadOutlined />} 
                     onClick={() => refetch()}
+                    data-testid="architecture-refresh-button"
                   />
                 </Tooltip>
                 <Tooltip title={isFullscreen ? t('actions.exitFullscreen', { ns: 'common' }) : t('actions.fullscreen', { ns: 'common' })}>
                   <Button 
                     icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
                     onClick={toggleFullscreen}
+                    data-testid="architecture-fullscreen-button"
                   />
                 </Tooltip>
               </Space>
@@ -657,9 +663,10 @@ const ArchitecturePage: React.FC = () => {
                 style={{ minWidth: 400 }}
                 maxTagCount={3}
                 maxTagPlaceholder={(omittedValues) => `+${omittedValues.length} more`}
+                data-testid="architecture-entity-filter"
               >
                 {entityTypes.map(type => (
-                  <Select.Option key={type.value} value={type.value}>
+                  <Select.Option key={type.value} value={type.value} data-testid={`architecture-filter-${type.value}`}>
                     <Space>
                       <span>{type.icon}</span>
                       <span>{type.label}</span>
@@ -671,12 +678,14 @@ const ArchitecturePage: React.FC = () => {
                 <Button 
                   size="small"
                   onClick={() => setSelectedEntityTypes(entityTypes.map(t => t.value))}
+                  data-testid="architecture-select-all-button"
                 >
                   {t('architecture.selectAll', { ns: 'system' })}
                 </Button>
                 <Button 
                   size="small"
                   onClick={() => setSelectedEntityTypes([])}
+                  data-testid="architecture-clear-all-button"
                 >
                   {t('architecture.clearAll', { ns: 'system' })}
                 </Button>
@@ -747,8 +756,8 @@ const ArchitecturePage: React.FC = () => {
 
         {/* Visualization */}
         <Card>
-          <div ref={containerRef} style={{ width: '100%', height: '600px', overflow: 'hidden' }}>
-            <svg ref={svgRef} style={{ width: '100%', height: '100%' }}></svg>
+          <div ref={containerRef} style={{ width: '100%', height: '600px', overflow: 'hidden' }} data-testid="architecture-visualization-container">
+            <svg ref={svgRef} style={{ width: '100%', height: '100%' }} data-testid="architecture-svg"></svg>
           </div>
         </Card>
 
@@ -766,7 +775,7 @@ const ArchitecturePage: React.FC = () => {
               schedule: t('architecture.nodeSchedule'),
               storage: t('architecture.nodeStorage'),
             }).map(([type, label]) => (
-              <Col span={6} key={type}>
+              <Col span={6} key={type} data-testid={`architecture-legend-${type}`}>
                 <Space>
                   <div
                     style={{

@@ -1761,6 +1761,8 @@ const SystemPage: React.FC = () => {
         }}
         onOk={handleCreateGroup}
         confirmLoading={createGroupMutation.isPending}
+        okButtonProps={{ 'data-testid': 'modal-create-permission-group-ok' }}
+        cancelButtonProps={{ 'data-testid': 'modal-create-permission-group-cancel' }}
       >
         <Input
           placeholder="Enter group name"
@@ -1802,6 +1804,7 @@ const SystemPage: React.FC = () => {
                             size="small"
                             onClick={() => handleRemovePermission(permission)}
                             loading={removePermissionMutation.isPending}
+                            data-testid={`permission-remove-button-${permission}`}
                           >
                             Remove
                           </Button>
@@ -1833,6 +1836,7 @@ const SystemPage: React.FC = () => {
                       filterOption={(input, option) =>
                         String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                       }
+                      data-testid="permission-select-add"
                     >
                       {availablePermissions.map(perm => (
                         <Select.Option 
@@ -1840,6 +1844,7 @@ const SystemPage: React.FC = () => {
                           value={perm.name}
                           label={perm.name}
                           disabled={groupDetails?.permissions?.includes(perm.name)}
+                          data-testid={`permission-option-${perm.name}`}
                         >
                           {perm.name}
                         </Select.Option>
@@ -1850,6 +1855,7 @@ const SystemPage: React.FC = () => {
                       onClick={handleAddPermission}
                       loading={addPermissionMutation.isPending}
                       disabled={!selectedPermission}
+                      data-testid="permission-add-button"
                     >
                       Add Permission
                     </Button>
@@ -1871,6 +1877,8 @@ const SystemPage: React.FC = () => {
         }}
         onOk={handleAssignUser}
         confirmLoading={assignUserMutation.isPending}
+        okButtonProps={{ 'data-testid': 'modal-assign-user-ok' }}
+        cancelButtonProps={{ 'data-testid': 'modal-assign-user-cancel' }}
       >
         <Select
           placeholder="Select user"
@@ -1886,6 +1894,7 @@ const SystemPage: React.FC = () => {
             label: u.label,
             disabled: u.status !== 'active'
           })) || []}
+          data-testid="assign-user-select"
         />
       </Modal>
 
@@ -1923,6 +1932,8 @@ const SystemPage: React.FC = () => {
         onOk={handleAssignUserPermissions}
         okText="Assign"
         confirmLoading={assignUserPermissionsMutation.isPending}
+        okButtonProps={{ 'data-testid': 'modal-assign-permissions-ok' }}
+        cancelButtonProps={{ 'data-testid': 'modal-assign-permissions-cancel' }}
       >
         <Form layout="vertical">
           <Form.Item label="Permission Group">
@@ -1935,6 +1946,7 @@ const SystemPage: React.FC = () => {
                 label: `${group.permissionGroupName} (${group.userCount} users, ${group.permissionCount} permissions)`,
               }))}
               allowClear
+              data-testid="user-permission-group-select"
             />
           </Form.Item>
         </Form>

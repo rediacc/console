@@ -12,11 +12,13 @@ const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = 
   // If machine already has distributedStorageClusterName, we know it's assigned to a cluster
   if (machine.distributedStorageClusterName) {
     return (
-      <MachineAssignmentStatusBadge 
-        assignmentType="CLUSTER"
-        assignmentDetails={`Assigned to cluster: ${machine.distributedStorageClusterName}`}
-        size="small"
-      />
+      <div data-testid="machine-status-cell-cluster">
+        <MachineAssignmentStatusBadge 
+          assignmentType="CLUSTER"
+          assignmentDetails={`Assigned to cluster: ${machine.distributedStorageClusterName}`}
+          size="small"
+        />
+      </div>
     )
   }
 
@@ -28,24 +30,28 @@ const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = 
   )
 
   if (isLoading) {
-    return <Spin size="small" />
+    return <Spin size="small" data-testid="machine-status-cell-loading" />
   }
 
   if (!data) {
     return (
-      <MachineAssignmentStatusBadge 
-        assignmentType="AVAILABLE"
-        size="small"
-      />
+      <div data-testid="machine-status-cell-available">
+        <MachineAssignmentStatusBadge 
+          assignmentType="AVAILABLE"
+          size="small"
+        />
+      </div>
     )
   }
 
   return (
-    <MachineAssignmentStatusBadge 
-      assignmentType={data.assignmentType}
-      assignmentDetails={data.assignmentDetails}
-      size="small"
-    />
+    <div data-testid={`machine-status-cell-${data.assignmentType.toLowerCase()}`}>
+      <MachineAssignmentStatusBadge 
+        assignmentType={data.assignmentType}
+        assignmentDetails={data.assignmentDetails}
+        size="small"
+      />
+    </div>
   )
 }
 

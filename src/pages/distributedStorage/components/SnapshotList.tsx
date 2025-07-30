@@ -113,53 +113,53 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
   const getSnapshotMenuItems = (snapshot: DistributedStorageRbdSnapshot): MenuProps['items'] => [
     {
       key: 'edit',
-      label: t('snapshots.edit'),
+      label: <span data-testid={`snapshot-list-edit-${snapshot.snapshotName}`}>{t('snapshots.edit')}</span>,
       icon: <SettingOutlined />,
       onClick: () => handleEdit(snapshot),
     },
     { type: 'divider' },
     {
       key: 'clone',
-      label: t('snapshots.createClone'),
+      label: <span data-testid={`snapshot-list-clone-${snapshot.snapshotName}`}>{t('snapshots.createClone')}</span>,
       icon: <CopyOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_clone_create', snapshot),
     },
     {
       key: 'rollback',
-      label: t('snapshots.rollback'),
+      label: <span data-testid={`snapshot-list-rollback-${snapshot.snapshotName}`}>{t('snapshots.rollback')}</span>,
       icon: <RollbackOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_snapshot_rollback', snapshot),
     },
     { type: 'divider' },
     {
       key: 'export',
-      label: t('snapshots.export'),
+      label: <span data-testid={`snapshot-list-export-${snapshot.snapshotName}`}>{t('snapshots.export')}</span>,
       icon: <CloudUploadOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_export', snapshot),
     },
     {
       key: 'diff',
-      label: t('snapshots.diff'),
+      label: <span data-testid={`snapshot-list-diff-${snapshot.snapshotName}`}>{t('snapshots.diff')}</span>,
       icon: <InfoCircleOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_diff', snapshot),
     },
     { type: 'divider' },
     {
       key: 'protect',
-      label: t('snapshots.protect'),
+      label: <span data-testid={`snapshot-list-protect-${snapshot.snapshotName}`}>{t('snapshots.protect')}</span>,
       icon: <SecurityScanOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_snapshot_protect', snapshot),
     },
     {
       key: 'unprotect',
-      label: t('snapshots.unprotect'),
+      label: <span data-testid={`snapshot-list-unprotect-${snapshot.snapshotName}`}>{t('snapshots.unprotect')}</span>,
       icon: <SecurityScanOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_snapshot_unprotect', snapshot),
     },
     { type: 'divider' },
     {
       key: 'delete',
-      label: t('snapshots.delete'),
+      label: <span data-testid={`snapshot-list-delete-${snapshot.snapshotName}`}>{t('snapshots.delete')}</span>,
       icon: <DeleteOutlined />,
       danger: true,
       onClick: () => handleDelete(snapshot),
@@ -172,12 +172,12 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
       dataIndex: 'snapshotName',
       key: 'snapshotName',
       render: (text: string, record: DistributedStorageRbdSnapshot) => (
-        <Space>
+        <Space data-testid={`snapshot-list-item-${record.snapshotName}`}>
           <CameraOutlined />
           <span>{text}</span>
           {record.vaultContent && (
             <Tooltip title={t('common.hasVault')}>
-              <Tag color="blue">{t('common.vault')}</Tag>
+              <Tag color="blue" data-testid={`snapshot-list-vault-indicator-${record.snapshotName}`}>{t('common.vault')}</Tag>
             </Tooltip>
           )}
         </Space>
@@ -206,6 +206,7 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
             size="small"
             icon={<CloudUploadOutlined />}
             onClick={() => handleRunFunction('distributed_storage_rbd_snapshot_list', record)}
+            data-testid={`snapshot-list-remote-${record.snapshotName}`}
           >
             {t('common.remote')}
           </Button>
@@ -213,7 +214,11 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
             menu={{ items: getSnapshotMenuItems(record) }}
             trigger={['click']}
           >
-            <Button size="small" icon={<EllipsisOutlined />} />
+            <Button 
+              size="small" 
+              icon={<EllipsisOutlined />} 
+              data-testid={`snapshot-list-menu-${record.snapshotName}`}
+            />
           </Dropdown>
         </Space>
       ),
@@ -231,7 +236,7 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
   
   return (
     <>
-      <div style={{ padding: '16px', backgroundColor: '#f5f5f5' }}>
+      <div style={{ padding: '16px', backgroundColor: '#f5f5f5' }} data-testid="snapshot-list-container">
         <h4>{t('snapshots.title')}</h4>
         <div style={{ marginBottom: 16 }}>
           <Button 
@@ -239,6 +244,7 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
             icon={<PlusOutlined />}
             onClick={handleCreate}
             size="small"
+            data-testid="snapshot-list-create-button"
           >
             {t('snapshots.create')}
           </Button>
@@ -251,6 +257,7 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
           loading={isLoading}
           size="small"
           pagination={false}
+          data-testid="snapshot-list-table"
           expandable={{
             expandedRowRender,
             expandedRowKeys,
@@ -261,6 +268,7 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
                 icon={expanded ? <CopyOutlined /> : <CopyOutlined />}
                 onClick={e => onExpand(record, e)}
                 style={{ marginRight: 8 }}
+                data-testid={`snapshot-list-expand-${record.snapshotName}`}
               />
             ),
           }}
@@ -302,12 +310,14 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
           setModalState({ open: false, mode: 'create' })
         }}
         isSubmitting={createSnapshotMutation.isPending || updateVaultMutation.isPending}
+        data-testid={`snapshot-list-modal-${modalState.mode}`}
       />
       
       <QueueItemTraceModal
         visible={queueModalVisible}
         onCancel={() => setQueueModalVisible(false)}
         taskId={queueModalTaskId}
+        data-testid="snapshot-list-queue-modal"
       />
     </>
   )

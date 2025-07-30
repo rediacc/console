@@ -127,91 +127,91 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
   const getImageMenuItems = (image: DistributedStorageRbdImage): MenuProps['items'] => [
     {
       key: 'edit',
-      label: t('images.edit'),
+      label: <span data-testid={`rbd-edit-action-${image.imageName}`}>{t('images.edit')}</span>,
       icon: <SettingOutlined />,
       onClick: () => handleEdit(image),
     },
     {
       key: 'reassignMachine',
-      label: t('images.reassignMachine'),
+      label: <span data-testid={`rbd-reassign-action-${image.imageName}`}>{t('images.reassignMachine')}</span>,
       icon: <CloudServerOutlined />,
       onClick: () => handleReassignMachine(image),
     },
     { type: 'divider' },
     {
       key: 'snapshot',
-      label: t('images.createSnapshot'),
+      label: <span data-testid={`rbd-snapshot-action-${image.imageName}`}>{t('images.createSnapshot')}</span>,
       icon: <CameraOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_snapshot_create', image),
     },
     {
       key: 'clone',
-      label: t('images.clone'),
+      label: <span data-testid={`rbd-clone-action-${image.imageName}`}>{t('images.clone')}</span>,
       icon: <CopyOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_clone', image),
     },
     {
       key: 'resize',
-      label: t('images.resize'),
+      label: <span data-testid={`rbd-resize-action-${image.imageName}`}>{t('images.resize')}</span>,
       icon: <ExpandOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_resize', image),
     },
     { type: 'divider' },
     {
       key: 'export',
-      label: t('images.export'),
+      label: <span data-testid={`rbd-export-action-${image.imageName}`}>{t('images.export')}</span>,
       icon: <CloudUploadOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_export', image),
     },
     {
       key: 'import',
-      label: t('images.import'),
+      label: <span data-testid={`rbd-import-action-${image.imageName}`}>{t('images.import')}</span>,
       icon: <CloudDownloadOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_import', image),
     },
     { type: 'divider' },
     {
       key: 'info',
-      label: t('images.info'),
+      label: <span data-testid={`rbd-info-action-${image.imageName}`}>{t('images.info')}</span>,
       icon: <InfoCircleOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_info', image),
     },
     {
       key: 'status',
-      label: t('images.status'),
+      label: <span data-testid={`rbd-status-action-${image.imageName}`}>{t('images.status')}</span>,
       icon: <CheckCircleOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_status', image),
     },
     { type: 'divider' },
     {
       key: 'map',
-      label: t('images.map'),
+      label: <span data-testid={`rbd-map-action-${image.imageName}`}>{t('images.map')}</span>,
       icon: <DesktopOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_map', image),
     },
     {
       key: 'unmap',
-      label: t('images.unmap'),
+      label: <span data-testid={`rbd-unmap-action-${image.imageName}`}>{t('images.unmap')}</span>,
       icon: <DesktopOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_unmap', image),
     },
     {
       key: 'showmapped',
-      label: t('images.showMapped'),
+      label: <span data-testid={`rbd-showmapped-action-${image.imageName}`}>{t('images.showMapped')}</span>,
       icon: <DesktopOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_showmapped', image),
     },
     { type: 'divider' },
     {
       key: 'flatten',
-      label: t('images.flatten'),
+      label: <span data-testid={`rbd-flatten-action-${image.imageName}`}>{t('images.flatten')}</span>,
       icon: <SyncOutlined />,
       onClick: () => handleRunFunction('distributed_storage_rbd_flatten', image),
     },
     { type: 'divider' },
     {
       key: 'delete',
-      label: t('images.delete'),
+      label: <span data-testid={`rbd-delete-action-${image.imageName}`}>{t('images.delete')}</span>,
       icon: <DeleteOutlined />,
       danger: true,
       onClick: () => handleDelete(image),
@@ -224,12 +224,12 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
       dataIndex: 'imageName',
       key: 'imageName',
       render: (text: string, record: DistributedStorageRbdImage) => (
-        <Space>
+        <Space data-testid={`rbd-image-name-${record.imageName}`}>
           <FileImageOutlined />
           <span>{text}</span>
           {record.vaultContent && (
             <Tooltip title={t('common.hasVault')}>
-              <Tag color="blue">{t('common.vault')}</Tag>
+              <Tag color="blue" data-testid={`rbd-vault-tag-${record.imageName}`}>{t('common.vault')}</Tag>
             </Tooltip>
           )}
         </Space>
@@ -253,12 +253,12 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
       dataIndex: 'machineName',
       key: 'machineName',
       width: 200,
-      render: (machineName: string) => machineName ? (
-        <Tag icon={<CloudServerOutlined />} color="blue">
+      render: (machineName: string, record: DistributedStorageRbdImage) => machineName ? (
+        <Tag icon={<CloudServerOutlined />} color="blue" data-testid={`rbd-machine-tag-${record.imageName}`}>
           {machineName}
         </Tag>
       ) : (
-        <Tag color="default">
+        <Tag color="default" data-testid={`rbd-machine-none-${record.imageName}`}>
           {t('common.none')}
         </Tag>
       ),
@@ -268,11 +268,12 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
       key: 'actions',
       width: 150,
       render: (_: any, record: DistributedStorageRbdImage) => (
-        <Space>
+        <Space data-testid={`rbd-image-actions-${record.imageName}`}>
           <Button
             size="small"
             icon={<CloudUploadOutlined />}
             onClick={() => handleRunFunction('distributed_storage_rbd_info', record)}
+            data-testid={`rbd-remote-button-${record.imageName}`}
           >
             {t('common.remote')}
           </Button>
@@ -280,7 +281,7 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
             menu={{ items: getImageMenuItems(record) }}
             trigger={['click']}
           >
-            <Button size="small" icon={<EllipsisOutlined />} />
+            <Button size="small" icon={<EllipsisOutlined />} data-testid={`rbd-actions-dropdown-${record.imageName}`} />
           </Dropdown>
         </Space>
       ),
@@ -288,20 +289,23 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
   ]
   
   const expandedRowRender = (record: DistributedStorageRbdImage) => (
-    <SnapshotList 
-      image={record} 
-      pool={pool}
-      teamFilter={teamFilter} 
-    />
+    <div data-testid={`rbd-snapshot-list-${record.imageName}`}>
+      <SnapshotList 
+        image={record} 
+        pool={pool}
+        teamFilter={teamFilter} 
+      />
+    </div>
   )
   
   return (
     <>
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ marginBottom: 16 }} data-testid="rbd-image-list-container">
         <Button 
           type="primary" 
           icon={<PlusOutlined />}
           onClick={handleCreate}
+          data-testid="rbd-create-image-button"
         >
           {t('images.create')}
         </Button>
@@ -314,6 +318,10 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
         loading={isLoading}
         size="small"
         pagination={false}
+        data-testid="rbd-image-table"
+        onRow={(record) => ({
+          'data-testid': `rbd-image-row-${record.imageName}`,
+        })}
         expandable={{
           expandedRowRender,
           expandedRowKeys,
@@ -324,6 +332,7 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
               icon={expanded ? <CameraOutlined /> : <CameraOutlined />}
               onClick={e => onExpand(record, e)}
               style={{ marginRight: 8 }}
+              data-testid={`rbd-expand-snapshots-${record.imageName}`}
             />
           ),
         }}

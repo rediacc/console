@@ -64,6 +64,7 @@ function ResourceForm<T = any>({
                   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                 }
                 style={{ width: '100%' }}
+                data-testid={`resource-form-field-${field.name}`}
               />
             )}
           />
@@ -80,6 +81,7 @@ function ResourceForm<T = any>({
                 placeholder={field.placeholder}
                 disabled={field.disabled}
                 autoComplete="off"
+                data-testid={`resource-form-field-${field.name}`}
               />
             )}
           />
@@ -97,6 +99,7 @@ function ResourceForm<T = any>({
                 placeholder={field.placeholder}
                 disabled={field.disabled}
                 autoComplete="off"
+                data-testid={`resource-form-field-${field.name}`}
               />
             )}
           />
@@ -117,6 +120,7 @@ function ResourceForm<T = any>({
       wrapperCol={wrapperCol}
       labelAlign="right"
       colon={true}
+      data-testid="resource-form"
     >
       {fields.map((field) => {
         if (field.hidden) return null
@@ -142,7 +146,11 @@ function ResourceForm<T = any>({
       >
         <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
           {onCancel && (
-            <Button onClick={onCancel} disabled={loading}>
+            <Button 
+              onClick={onCancel} 
+              disabled={loading}
+              data-testid="resource-form-cancel-button"
+            >
               {cancelText}
             </Button>
           )}
@@ -151,6 +159,7 @@ function ResourceForm<T = any>({
             htmlType="submit"
             loading={loading}
             style={{ background: '#556b2f', borderColor: '#556b2f' }}
+            data-testid="resource-form-submit-button"
           >
             {submitText}
           </Button>

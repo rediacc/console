@@ -317,16 +317,19 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
                         label: t('audit.exportCSV'),
                         icon: <FileExcelOutlined />,
                         onClick: exportToCSV,
+                        'data-testid': 'audit-trace-export-csv',
                       },
                       {
                         key: 'json',
                         label: t('audit.exportJSON'),
                         icon: <FileTextOutlined />,
                         onClick: exportToJSON,
+                        'data-testid': 'audit-trace-export-json',
                       },
                     ],
                   }}
                   placement="bottomRight"
+                  data-testid="audit-trace-export-dropdown"
                 >
                   <Button icon={<DownloadOutlined />} data-testid="audit-trace-export-button">
                     {t('audit.export')}

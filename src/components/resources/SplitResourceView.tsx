@@ -97,6 +97,7 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
           position: 'relative',
           overflow: 'hidden',
         }}
+        data-testid="split-resource-view-container"
       >
         {/* Left Panel - Machine Table */}
         <div 
@@ -107,6 +108,7 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
             minWidth: 300, // Minimum width to prevent crushing the table
             transition: 'width 0.3s ease-in-out',
           }}
+          data-testid="split-resource-view-left-panel"
         >
           <MachineTable
             {...props}

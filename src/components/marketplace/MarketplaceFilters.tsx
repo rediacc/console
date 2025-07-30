@@ -53,7 +53,7 @@ const MarketplaceFilters: React.FC<MarketplaceFiltersProps> = ({
   ]
 
   return (
-    <Card>
+    <Card data-testid="marketplace-filter-container">
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -67,6 +67,7 @@ const MarketplaceFilters: React.FC<MarketplaceFiltersProps> = ({
               size="small" 
               onClick={onClearAll}
               icon={<CloseOutlined />}
+              data-testid="marketplace-filter-clear-all"
             >
               {t('clearAll')}
             </Button>
@@ -82,11 +83,12 @@ const MarketplaceFilters: React.FC<MarketplaceFiltersProps> = ({
             value={selectedCategory} 
             onChange={(e) => onCategoryChange(e.target.value)}
             style={{ width: '100%' }}
+            data-testid="marketplace-filter-category"
           >
             <Space direction="vertical" style={{ width: '100%' }}>
-              <Radio value={null}>{t('allCategories')}</Radio>
+              <Radio value={null} data-testid="marketplace-filter-category-all">{t('allCategories')}</Radio>
               {categoryOptions.map(option => (
-                <Radio key={option.value} value={option.value}>
+                <Radio key={option.value} value={option.value} data-testid={`marketplace-filter-category-${option.value}`}>
                   {option.label}
                 </Radio>
               ))}
@@ -103,11 +105,12 @@ const MarketplaceFilters: React.FC<MarketplaceFiltersProps> = ({
             value={selectedDifficulty} 
             onChange={(e) => onDifficultyChange(e.target.value)}
             style={{ width: '100%' }}
+            data-testid="marketplace-filter-difficulty"
           >
             <Space direction="vertical" style={{ width: '100%' }}>
-              <Radio value={null}>{t('allDifficulties')}</Radio>
+              <Radio value={null} data-testid="marketplace-filter-difficulty-all">{t('allDifficulties')}</Radio>
               {difficultyOptions.map(option => (
-                <Radio key={option.value} value={option.value}>
+                <Radio key={option.value} value={option.value} data-testid={`marketplace-filter-difficulty-${option.value}`}>
                   {option.label}
                 </Radio>
               ))}
@@ -128,6 +131,7 @@ const MarketplaceFilters: React.FC<MarketplaceFiltersProps> = ({
             onChange={onTagsChange}
             options={tags.map(tag => ({ label: tag, value: tag }))}
             maxTagCount="responsive"
+            data-testid="marketplace-filter-tags-select"
           />
           {selectedTags.length > 0 && (
             <div style={{ marginTop: 8 }}>
@@ -137,6 +141,7 @@ const MarketplaceFilters: React.FC<MarketplaceFiltersProps> = ({
                     key={tag}
                     closable
                     onClose={() => onTagsChange(selectedTags.filter(t => t !== tag))}
+                    data-testid={`marketplace-filter-tag-${tag.toLowerCase().replace(/\s+/g, '-')}`}
                   >
                     {tag}
                   </Tag>
@@ -161,6 +166,7 @@ const MarketplaceFilters: React.FC<MarketplaceFiltersProps> = ({
                   onTagsChange(selectedTags.filter(t => t !== 'Production Ready'))
                 }
               }}
+              data-testid="marketplace-filter-popular-production-ready"
             >
               {t('productionReady')}
             </Tag.CheckableTag>
@@ -173,6 +179,7 @@ const MarketplaceFilters: React.FC<MarketplaceFiltersProps> = ({
                   onTagsChange(selectedTags.filter(t => t !== 'Docker'))
                 }
               }}
+              data-testid="marketplace-filter-popular-docker"
             >
               Docker
             </Tag.CheckableTag>
@@ -185,6 +192,7 @@ const MarketplaceFilters: React.FC<MarketplaceFiltersProps> = ({
                   onTagsChange(selectedTags.filter(t => t !== 'HA'))
                 }
               }}
+              data-testid="marketplace-filter-popular-ha"
             >
               {t('highAvailability')}
             </Tag.CheckableTag>

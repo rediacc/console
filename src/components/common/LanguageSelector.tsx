@@ -42,7 +42,7 @@ const LanguageSelector: React.FC = () => {
       data-testid="language-selector"
     >
       {languages.map((lang) => (
-        <Option key={lang.code} value={lang.code}>
+        <Option key={lang.code} value={lang.code} data-testid={`language-option-${lang.code}`}>
           <span>{lang.flag} {lang.name}</span>
         </Option>
       ))}

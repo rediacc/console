@@ -305,6 +305,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
           indeterminate={importStatuses.some(s => s.selected) && !importStatuses.every(s => s.selected)}
           onChange={(e) => selectAll(e.target.checked)}
           disabled={currentStep === 2}
+          data-testid="rclone-wizard-select-all-checkbox"
         />
       ),
       dataIndex: 'selected',
@@ -315,6 +316,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
           checked={record.selected}
           onChange={() => toggleSelection(index)}
           disabled={currentStep === 2}
+          data-testid={`rclone-wizard-config-checkbox-${record.name}`}
         />
       )
     },
@@ -410,6 +412,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
               beforeUpload={handleFileUpload}
               onChange={({ fileList }) => setFileList(fileList)}
               maxCount={1}
+              data-testid="rclone-wizard-upload-dragger"
             >
               <p className="ant-upload-drag-icon">
                 <UploadOutlined />
@@ -450,6 +453,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
               rowKey="name"
               pagination={false}
               size="small"
+              data-testid="rclone-wizard-config-table"
             />
           </div>
         )
@@ -480,6 +484,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
                   rowKey="name"
                   pagination={false}
                   size="small"
+                  data-testid="rclone-wizard-results-table"
                 />
               </>
             )}
@@ -504,13 +509,13 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       width={800}
       footer={
         currentStep === 0 ? (
-          <Button onClick={handleClose}>{t('common:actions.cancel')}</Button>
+          <Button onClick={handleClose} data-testid="rclone-wizard-cancel-button">{t('common:actions.cancel')}</Button>
         ) : currentStep === 1 ? (
           <>
-            <Button onClick={() => setCurrentStep(0)}>
+            <Button onClick={() => setCurrentStep(0)} data-testid="rclone-wizard-back-button">
               {t('common:actions.back')}
             </Button>
-            <Button onClick={handleClose}>
+            <Button onClick={handleClose} data-testid="rclone-wizard-cancel-button">
               {t('common:actions.cancel')}
             </Button>
             <Button
@@ -518,18 +523,19 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
               onClick={handleImport}
               disabled={!importStatuses.some(s => s.selected)}
               loading={isImporting}
+              data-testid="rclone-wizard-import-button"
             >
               {t('resources:storage.import.importSelected')}
             </Button>
           </>
         ) : (
-          <Button type="primary" onClick={handleClose}>
+          <Button type="primary" onClick={handleClose} data-testid="rclone-wizard-close-button">
             {t('common:actions.close')}
           </Button>
         )
       }
     >
-      <Steps current={currentStep} style={{ marginBottom: 24 }}>
+      <Steps current={currentStep} style={{ marginBottom: 24 }} data-testid="rclone-wizard-steps">
         <Step title={t('resources:storage.import.step1')} />
         <Step title={t('resources:storage.import.step2')} />
         <Step title={t('resources:storage.import.step3')} />
