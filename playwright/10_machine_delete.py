@@ -1,5 +1,4 @@
-import re
-from playwright.sync_api import Playwright, sync_playwright, expect
+from playwright.sync_api import Playwright, sync_playwright
 
 
 def run(playwright: Playwright) -> None:
@@ -8,16 +7,18 @@ def run(playwright: Playwright) -> None:
     page10 = context.new_page()
     page10.goto("http://localhost:7322/en")
     with page10.expect_popup() as page11_info:
-        page10.get_by_role("banner").get_by_role("link", name="Login").click()
+        # Note: Banner login link doesn't have a test ID, using stable selector
+        page10.locator("header").get_by_text("Login").click()
     page11 = page11_info.value
-    page11.locator(".ant-input-affix-wrapper").first.click()
+    page11.get_by_test_id("login-email-input").click()
     page11.get_by_test_id("login-email-input").fill("admin@rediacc.io")
     page11.get_by_test_id("login-email-input").press("Tab")
     page11.get_by_test_id("login-password-input").fill("admin")
     page11.get_by_test_id("login-submit-button").click()
-    page11.get_by_test_id("main-nav-resources").get_by_text("Resources").click()
+    page11.get_by_test_id("main-nav-resources").click()
     page11.get_by_test_id("machine-delete-rediacc11").click()
-    page11.get_by_role("button", name="Delete", exact=True).click()
+    # Note: Delete confirmation button doesn't have a test ID, using stable selector
+    page11.locator("button").filter(has_text="Delete").nth(0).click()
 
     # ---------------------
     context.close()

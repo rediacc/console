@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-import re
 import time
-from playwright.sync_api import Playwright, sync_playwright, expect
+from playwright.sync_api import Playwright, sync_playwright
 
 
 def run(playwright: Playwright) -> None:
@@ -10,15 +9,15 @@ def run(playwright: Playwright) -> None:
     page = context.new_page()
     page.goto("http://localhost:7322/console/login")
     time.sleep(1)
-    page.get_by_role("textbox", name="Email").click()
+    page.get_by_test_id("login-email-input").click()
     time.sleep(1)
-    page.get_by_role("textbox", name="Email").fill("anil@rediacc.com")
+    page.get_by_test_id("login-email-input").fill("anil@rediacc.com")
     time.sleep(1)
-    page.get_by_role("textbox", name="Email").press("Tab")
+    page.get_by_test_id("login-email-input").press("Tab")
     time.sleep(1)
-    page.get_by_role("textbox", name="Password", exact=True).fill("87654321i_")
+    page.get_by_test_id("login-password-input").fill("87654321i_")
     time.sleep(1)
-    page.get_by_role("button", name="Sign In").click()
+    page.get_by_test_id("login-submit-button").click()
     time.sleep(7)
 
     # ---------------------
