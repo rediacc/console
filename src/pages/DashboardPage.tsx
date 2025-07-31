@@ -220,7 +220,6 @@ const DashboardPage = () => {
                 </Space>
               }
               style={{ height: '100%' }}
-              data-testid="dashboard-card-account-health"
             >
               <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
