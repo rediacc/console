@@ -1,64 +1,55 @@
-from playwright.sync_api import Playwright, sync_playwright
+import re
 import time
+from playwright.sync_api import Playwright, sync_playwright, expect
 
 
 def run(playwright: Playwright) -> None:
     browser = playwright.chromium.launch(headless=False)
     context = browser.new_context()
-    page11 = context.new_page()
-    page11.goto("http://localhost:7322/en")
+    page1 = context.new_page()
+    page1.goto("http://localhost:7322/en")
     time.sleep(2)  # Wait for page to load
     
-    # Click login link in the main page
-    page11.get_by_test_id("banner-login-link").click()
-    time.sleep(1)  # Wait for login page
+    with page1.expect_popup() as page2_info:
+        page1.get_by_role("banner").get_by_role("link", name="Login").click()
+    page2 = page2_info.value
+    time.sleep(2)  # Wait for login page to fully load
     
-    # Wait for login page and fill credentials
-    page11.get_by_test_id("login-email-input").click()
-    page11.get_by_test_id("login-email-input").fill("admin@rediacc.io")
-    page11.get_by_test_id("login-email-input").press("Tab")
-    page11.get_by_test_id("login-password-input").fill("admin")
-    time.sleep(1)  # Wait before submit
-    page11.get_by_test_id("login-submit-button").click()
-    time.sleep(2)  # Wait for login to complete
+    page2.get_by_test_id("login-email-input").click()
+    time.sleep(0.5)  # Brief pause
+    page2.get_by_test_id("login-email-input").fill("admin@rediacc.io")
+    time.sleep(0.5)  # Pause after entering email
+    page2.get_by_test_id("login-email-input").press("Tab")
+    time.sleep(0.5)  # Pause before password
+    page2.get_by_test_id("login-password-input").fill("admin")
+    time.sleep(0.5)  # Pause after entering password
+    page2.get_by_test_id("login-submit-button").click()
+    time.sleep(3)  # Wait for login to complete and dashboard to load
+    page2.get_by_test_id("main-nav-resources").get_by_text("Resources").click()
+    time.sleep(3)  # Wait for resources page to fully load
     
-    # Navigate to Resources page
-    page11.get_by_test_id("main-nav-resources").click()
-    time.sleep(2)  # Wait for resources page
+    page2.get_by_test_id("machine-expand-rediacc11").locator("svg").click()
+    time.sleep(2)  # Wait for machine expansion and repositories to load
     
-    # Click on a machine row to expand it (rediacc11)
-    page11.get_by_test_id("machine-row-rediacc11").click()
-    time.sleep(1)  # Wait for expansion
+    page2.get_by_test_id("machine-repo-list-repo-actions-Repo001").click()
+    time.sleep(1)  # Wait for menu to appear
     
-    # Click on the Remote button for a repository
-    page11.get_by_test_id("machine-repo-list-repo-actions-push").click()
-    time.sleep(1)  # Wait for menu
+    page2.get_by_text("push").click()
+    time.sleep(2)  # Wait for push dialog to open
+    page2.get_by_text("rediacc11 (Current Machine)").click()
+    time.sleep(1)  # Wait for selection
     
-    # Select push function
-    page11.get_by_test_id("function-push").click()
-    time.sleep(1)  # Wait for push dialog
+    page2.get_by_title("rediacc12").locator("div").click()
+    time.sleep(1)  # Wait for target selection
     
-    # Select current machine (rediacc11)
-    page11.get_by_test_id("push-source-rediacc11").click()
-    time.sleep(0.5)
+    page2.get_by_test_id("function-modal-submit").click()
+    time.sleep(3)  # Wait for push operation to start and queue trace to appear
     
-    # Select target machine (rediacc12)
-    page11.get_by_test_id("push-target-rediacc12").click()
-    time.sleep(0.5)
-    
-    # Click Add to Queue button
-    page11.get_by_test_id("push-add-to-queue-button").click()
-    time.sleep(2)  # Wait for queue action
-    
-    # Close the modal
-    page11.get_by_test_id("modal-close-button").click()
-    time.sleep(1)
-    
-    # Click on another machine row to expand it (rediacc12)
-    page11.get_by_test_id("machine-row-rediacc12").click()
-    time.sleep(1)
+    page2.get_by_test_id("queue-trace-close-button").click()
+    time.sleep(1)  # Wait for dialog to close
 
     # ---------------------
+    time.sleep(2)  # Final pause before closing
     context.close()
     browser.close()
 
