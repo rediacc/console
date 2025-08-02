@@ -10,7 +10,7 @@ def run(playwright: Playwright) -> None:
     page22.goto("http://localhost:7322/en")
     time.sleep(2)  # Wait for page to load
     with page22.expect_popup() as page23_info:
-        page22.get_by_test_id("banner-login-link").click()
+        page22.get_by_role("banner").get_by_role("link", name="Login").click()
     page23 = page23_info.value
     time.sleep(1)  # Wait for login page
     page23.locator(".ant-input-affix-wrapper").first.click()

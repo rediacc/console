@@ -25,10 +25,10 @@ def run(playwright: Playwright) -> None:
     time.sleep(0.5)  # Pause after entering password
     page2.get_by_test_id("login-submit-button").click()
     time.sleep(3)  # Wait for login to complete and dashboard to load
-    page2.get_by_test_id("main-nav-resources").get_by_text("Resources").click()
+    page2.get_by_test_id("main-nav-resources").click()
     time.sleep(3)  # Wait for resources page to fully load
     
-    page2.get_by_test_id("machine-expand-rediacc11").locator("svg").click()
+    page2.get_by_test_id("machine-remote-rediacc11").click()
     time.sleep(2)  # Wait for machine expansion and repositories to load
     
     page2.get_by_test_id("machine-repo-list-repo-actions-Repo001").click()

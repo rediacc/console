@@ -10,7 +10,7 @@ def run(playwright: Playwright) -> None:
     page28.goto("http://localhost:7322/en")
     time.sleep(2)  # Wait for page to load
     with page28.expect_popup() as page29_info:
-        page28.get_by_test_id("banner-login-link").click()
+        page28.get_by_role("banner").get_by_role("link", name="Login").click()
     page29 = page29_info.value
     time.sleep(1)  # Wait for login page
     page29.get_by_test_id("login-email-input").click()

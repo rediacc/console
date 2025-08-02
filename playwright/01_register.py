@@ -13,10 +13,7 @@ def run(playwright: Playwright) -> None:
         page5.get_by_role("banner").get_by_role("link", name="Login").click()
     page6 = page2_info.value
     time.sleep(1)  # Wait for popup to load
-    # Click on language selector
-    page6.get_by_test_id("language-selector").click()
-    time.sleep(0.5)
-    # Select French language
+    # Click on French language option
     page6.get_by_text("🇫🇷 Français").click()
     time.sleep(0.5)
     page6.get_by_test_id("login-register-link").click()

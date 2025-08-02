@@ -28,7 +28,7 @@ def run(playwright: Playwright) -> None:
     time.sleep(3)  # Wait for resources page to fully load
     
     # Expand the rediacc11 machine to see repositories
-    page10.get_by_test_id("machine-expand-rediacc11").get_by_role("img", name="right").click()
+    page10.get_by_test_id("machine-remote-rediacc11").click()
     time.sleep(2)  # Wait for expansion animation and data load
     
     # Look for Repo034 which has a Local down button, or use repo03 after mounting it
