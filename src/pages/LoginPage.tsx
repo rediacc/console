@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { Card, Form, Input, Button, Typography, Space, Alert, Tooltip, Modal } from 'antd'
 import { UserOutlined, LockOutlined, KeyOutlined, InfoCircleOutlined, SafetyCertificateOutlined } from '@/utils/optimizedIcons'
@@ -93,12 +93,27 @@ const LoginPage: React.FC = () => {
   const [twoFACode, setTwoFACode] = useState('')
   const [showRegistration, setShowRegistration] = useState(false)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const dispatch = useDispatch()
   const [form] = Form.useForm<LoginForm>()
   const [twoFAForm] = Form.useForm()
   const { theme } = useTheme()
   const { t } = useTranslation(['auth', 'common'])
   const verifyTFAMutation = useVerifyTFA()
+
+  // Check URL parameters for registration flag
+  useEffect(() => {
+    const shouldRegister = searchParams.get('register') === 'true'
+    if (shouldRegister) {
+      setShowRegistration(true)
+      // Clean up the URL to remove the parameter
+      searchParams.delete('register')
+      const newUrl = searchParams.toString() 
+        ? `${window.location.pathname}?${searchParams.toString()}`
+        : window.location.pathname
+      window.history.replaceState({}, '', newUrl)
+    }
+  }, [searchParams])
 
   const handleLogin = async (values: LoginForm) => {
     setLoading(true)
