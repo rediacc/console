@@ -32,3 +32,6 @@ Thumbs.db
 playwright/conf.conf
 playwright/.venv/
 .venv/
+playwright/venv/
+playwright_venv/
+screenshots/

@@ -1,0 +1,56 @@
+{
+  "baseUrl": "http://localhost:7322",
+  "login": {
+    "credentials": {
+      "email": "admin@rediacc.io",
+      "password": "admin"
+    },
+    "timeouts": {
+      "navigation": 10000,
+      "element": 5000,
+      "network": 5000
+    }
+  },
+  "browser": {
+    "headless": false,
+    "slowMo": 0
+  },
+  "screenshots": {
+    "enabled": true,
+    "path": "./screenshots"
+  },
+  "validation": {
+    "dashboardUrl": "**/console/dashboard",
+    "expectedElements": [
+      {
+        "selector": "h2:has-text('Dashboard')",
+        "description": "Dashboard heading"
+      },
+      {
+        "selector": "text=Account Health",
+        "description": "Account Health section"
+      }
+    ],
+    "userEmailSelector": "text=${email}"
+  },
+  "createRepo": {
+    "machineName": "rediacc11",
+    "repositoryNamePrefix": "repo",
+    "repositorySize": "1",
+    "template": "nginx",
+    "generatePassword": true,
+    "keepOpenAfterCreation": true,
+    "queueTimeout": 120000,
+    "timeouts": {
+      "navigation": 10000,
+      "element": 5000,
+      "modalOpen": 3000,
+      "creation": 15000
+    },
+    "successIndicators": [
+      "Task Completed Successfully",
+      "Repository created successfully",
+      "Repository \".*\" created successfully"
+    ]
+  }
+}
