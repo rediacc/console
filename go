@@ -44,9 +44,9 @@ check_required_env
 # Console port can have a default
 CONSOLE_PORT=${CONSOLE_PORT:-3000}
 
-# Export for Vite
-export VITE_HTTP_PORT=$SYSTEM_HTTP_PORT
-export VITE_API_URL="http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}/api"
+# Export for Vite (use offset port if available)
+export VITE_HTTP_PORT=${SYSTEM_HTTP_PORT_ACTUAL:-$SYSTEM_HTTP_PORT}
+export VITE_API_URL="http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT_ACTUAL:-$SYSTEM_HTTP_PORT}/api"
 export VITE_APP_VERSION=${TAG:-dev}
 
 # Function to run development server
