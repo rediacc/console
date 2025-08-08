@@ -31,7 +31,7 @@ def run(playwright: Playwright) -> None:
     page2.get_by_test_id("machine-remote-rediacc11").click()
     time.sleep(2)  # Wait for machine expansion and repositories to load
     
-    page2.get_by_test_id("machine-repo-list-repo-actions-Repo001").click()
+    page2.get_by_test_id("machine-repo-list-repo-actions-repo006").click()
     time.sleep(1)  # Wait for menu to appear
     
     page2.get_by_text("push").click()
