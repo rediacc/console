@@ -1,0 +1,49 @@
+{
+  "baseUrl": "http://localhost:7322",
+  "registration": {
+    "company": "rediacc",
+    "email": "test_${timestamp}@rediacc.com",
+    "password": "87654321i_",
+    "activationCode": "111111"
+  },
+  "ui": {
+    "languageDropdownSelector": ".ant-select-selector",
+    "languageDropdownOptionsSelector": ".ant-select-dropdown",
+    "languageSelector": "🇫🇷 Français",
+    "loginLinkText": "Login",
+    "registerLinkTestId": "login-register-link",
+    "companyInputTestId": "registration-company-input",
+    "emailInputTestId": "registration-email-input",
+    "passwordInputTestId": "registration-password-input",
+    "passwordConfirmInputTestId": "registration-password-confirm-input",
+    "submitButtonTestId": "registration-submit-button",
+    "activationCodeInputTestId": "registration-activation-code-input",
+    "verifyButtonTestId": "registration-verify-button"
+  },
+  "timeouts": {
+    "pageLoad": 30000,
+    "networkIdle": "networkidle",
+    "elementVisible": 5000,
+    "apiResponse": 10000
+  },
+  "validation": {
+    "successMessages": {
+      "registrationSuccess": "Inscription réussie ! Veuillez vérifier votre courriel pour le code d'activation.",
+      "activationSuccess": "Compte activé avec succès !",
+      "registrationComplete": "Inscription Terminée !"
+    },
+    "errorMessages": {
+      "userExists": "User with email .* already exists.",
+      "invalidCode": "Code d'activation invalide",
+      "networkError": "Erreur de connexion"
+    }
+  },
+  "browser": {
+    "headless": false,
+    "slowMo": 0,
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    }
+  }
+}
