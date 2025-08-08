@@ -17,6 +17,7 @@ class TestBase:
         self.success_indicators: List[str] = []
         self.errors: List[str] = []
         self.screenshots: List[str] = []
+        self.console_errors: List[str] = []
     
     def load_config(self, config_path: str) -> Dict[str, Any]:
         """Load configuration from JSON file."""
@@ -181,16 +182,22 @@ class TestBase:
         except:
             return None
     
-    def get_page_errors(self, page) -> List[str]:
-        """Get console errors from page."""
-        errors = []
-        
-        def handle_console_message(msg):
+    def setup_console_handler(self, page):
+        """Set up console message handler to collect errors."""
+        def handle_console(msg):
             if msg.type == 'error':
-                errors.append(msg.text)
+                error_text = f"{msg.text}"
+                self.console_errors.append(error_text)
+                self.log_error(f"Console error: {error_text}")
         
-        page.on('console', handle_console_message)
-        return errors
+        page.on('console', handle_console)
+    
+    def get_page_errors(self, page) -> List[str]:
+        """Get console errors that have been collected.
+        
+        Note: setup_console_handler should be called on the page first.
+        """
+        return self.console_errors
 
 
 class ConfigBuilder:
