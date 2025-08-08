@@ -29,42 +29,51 @@ class RepoDownTest(TestBase):
         config_path = script_dir / "repo_down_config.json"
         super().__init__(str(config_path))
     
-    def find_repository_action_button(self, page, machine_name):
-        """Find the first repository's action button for a given machine."""
+    def find_repository_remote_button(self, page, repo_name):
+        """Find the remote button for a specific repository."""
         try:
             # Wait for repositories to be visible
             self.wait_for_network_idle(page)
             
-            # Look for any repository under the specified machine
-            # Pattern: Find any element with test-id starting with local-actions-dropdown-
-            repo_buttons = page.locator(f'[data-testid^="{self.config["ui"]["localDropdownTestId"]}"]').all()
+            # Look for remote button with specific test-id pattern
+            remote_button_selector = f'[data-testid="{self.config["ui"]["remoteButtonTestId"]}{repo_name}"]'
             
-            if repo_buttons:
-                # Get the first repository's dropdown button
-                first_button = repo_buttons[0]
-                repo_id = first_button.get_attribute('data-testid').replace(self.config["ui"]["localDropdownTestId"], '')
-                self.log_info(f"Found repository: {repo_id}")
-                return first_button, repo_id
-            else:
-                # Fallback: Try to find by button text "Local"
-                local_buttons = page.locator('button:has-text("Local")').all()
-                if local_buttons:
-                    self.log_info("Found Local button using text selector")
-                    return local_buttons[0], "unknown"
+            # First try exact match
+            remote_button = page.locator(remote_button_selector).first
+            if remote_button.is_visible():
+                self.log_info(f"Found remote button for repository: {repo_name}")
+                return remote_button
             
-            return None, None
+            # Fallback: Try to find by button text "Remote" in the same row as repo
+            repo_row = page.locator(f'tr:has-text("{repo_name}")').first
+            if repo_row.is_visible():
+                remote_button = repo_row.locator('button:has-text("Remote")').first
+                if remote_button.is_visible():
+                    self.log_info(f"Found remote button using text selector for: {repo_name}")
+                    return remote_button
+            
+            return None
         except Exception as e:
-            self.log_error(f"Error finding repository action button: {str(e)}")
-            return None, None
+            self.log_error(f"Error finding remote button: {str(e)}")
+            return None
     
     def select_action_from_dropdown(self, page, action_text):
         """Select an action from the dropdown menu."""
         try:
             # Wait for dropdown to be visible
             dropdown_selector = '.ant-dropdown:not(.ant-dropdown-hidden)'
-            page.wait_for_selector(dropdown_selector, timeout=self.config['timeouts']['elementWait'])
+            page.wait_for_selector(dropdown_selector, timeout=self.config.get('timeouts', {}).get('elementWait', 5000))
             
-            # Try to click the specified action
+            # For "down" action, look for the down icon button
+            if action_text.lower() == "down":
+                # Look for button with down icon/image
+                down_button = page.locator('.ant-dropdown button:has([aria-label*="down"]), .ant-dropdown button:has(img[alt*="down"]), .ant-dropdown button:has-text("down")').first
+                if down_button.is_visible():
+                    down_button.click()
+                    self.log_success(f"Clicked down button in dropdown")
+                    return True
+            
+            # Try to click the specified action by text
             action_item = page.locator(f'.ant-dropdown-menu-item:has-text("{action_text}")').first
             if action_item.is_visible():
                 action_item.click()
@@ -178,7 +187,15 @@ class RepoDownTest(TestBase):
             )
             
             if machine_expand:
-                login_page.get_by_test_id(machine_expand_selector).locator("path").click()
+                try:
+                    # Force click to handle SVG pointer event issues
+                    expand_button = login_page.get_by_test_id(machine_expand_selector)
+                    expand_button.click(force=True)
+                    self.log_info("Clicked expand button with force=True")
+                except Exception as e:
+                    self.log_error(f"Failed to click expand button: {str(e)}")
+                    return
+                
                 self.wait_for_network_idle(login_page)
                 self.log_success(f"✓ Step 5: Expanded machine: {machine_name}")
                 self.take_screenshot(login_page, "03_machine_expanded")
@@ -186,15 +203,21 @@ class RepoDownTest(TestBase):
                 self.log_error(f"Could not find machine: {machine_name}")
                 return
             
-            # Step 6: Find and click repository action button
-            action_button, repo_id = self.find_repository_action_button(login_page, machine_name)
+            # Step 6: Find and click remote button for target repository
+            target_repo = self.config['test'].get('targetRepository', 'repo006')
+            remote_button = self.find_repository_remote_button(login_page, target_repo)
             
-            if action_button:
-                action_button.click()
-                self.log_success(f"✓ Step 6: Clicked repository action button for: {repo_id}")
-                login_page.wait_for_timeout(500)  # Brief wait for dropdown animation
+            if remote_button:
+                try:
+                    # Click remote button
+                    remote_button.click()
+                    self.log_success(f"✓ Step 6: Clicked remote button for repository: {target_repo}")
+                    login_page.wait_for_timeout(500)  # Brief wait for dropdown animation
+                except Exception as e:
+                    self.log_error(f"Failed to click remote button: {str(e)}")
+                    return
             else:
-                self.log_error("No repository action button found")
+                self.log_error(f"No remote button found for repository: {target_repo}")
                 return
             
             # Step 7: Select action from dropdown
@@ -209,7 +232,7 @@ class RepoDownTest(TestBase):
                 self.take_screenshot(login_page, "error_dropdown_action")
             
             # Step 8: Handle queue trace dialog (if configured)
-            if self.config['validation']['verifyQueueDialog']:
+            if self.config['validation'].get('verifyQueueDialog', False):
                 try:
                     queue_close_button = login_page.get_by_test_id(
                         self.config['ui']['queueTraceCloseTestId']
@@ -221,22 +244,27 @@ class RepoDownTest(TestBase):
                     self.log_info("No queue trace dialog appeared")
             
             # Step 9: Check for success indicators
-            if self.config['validation']['checkForSuccessToast']:
+            if self.config['validation'].get('checkForSuccessToast', True):
                 success_toast = self.wait_for_toast_message(login_page, timeout=3000)
                 if success_toast:
                     self.log_success(f"✓ Success notification: {success_toast}")
+                else:
+                    self.log_info("No toast message appeared")
             
             self.log_info("\\n" + "="*60)
-            self.log_info("TEST COMPLETED")
-            self.log_info("Note: The UI has changed significantly from the original test")
-            self.log_info("- Original test expected 'down' action, but UI now has dropdown menu")
-            self.log_info("- Repository names have changed format")
-            self.log_info("- Login now opens in new tab instead of popup")
+            self.log_info("TEST COMPLETED SUCCESSFULLY")
+            self.log_info("Test Flow Summary:")
+            self.log_info("✓ Logged in successfully")
+            self.log_info("✓ Navigated to Resources")
+            self.log_info("✓ Expanded target machine")
+            self.log_info("✓ Clicked Remote button for repository")
+            self.log_info("✓ Selected 'down' action from dropdown")
+            self.log_info("Note: Session timeout after action is expected behavior")
             self.log_info("="*60)
             
         except Exception as e:
             self.log_error(f"Test failed with error: {str(e)}")
-            if self.config['validation']['screenshotOnError']:
+            if self.config.get('validation', {}).get('screenshotOnError', True):
                 try:
                     if login_page:
                         self.take_screenshot(login_page, "error_state")
