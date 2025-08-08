@@ -8,6 +8,7 @@ interface SimpleJsonEditorProps {
   height?: string | number;
   className?: string;
   language?: string;
+  'data-testid'?: string;
 }
 
 export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
@@ -16,7 +17,8 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
   readOnly = false,
   height = '400px',
   className = '',
-  language = 'json'
+  language = 'json',
+  'data-testid': dataTestId
 }) => {
   const { theme } = useTheme();
   const [internalValue, setInternalValue] = useState(value);

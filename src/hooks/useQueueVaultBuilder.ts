@@ -35,7 +35,8 @@ export function useQueueVaultBuilder() {
       if (vaultData) {
         companyVaultData = {
           vault: vaultData.vaultContent || '{}',
-          vaultVersion: vaultData.vaultVersion || 1
+          vaultVersion: vaultData.vaultVersion || 1,
+          companyCredential: vaultData.companyCredential
         }
       } else {
         // No company vault data found
@@ -72,6 +73,7 @@ export function useQueueVaultBuilder() {
     const fullContext: QueueRequestContext = {
       ...context,
       ...vaults,
+      companyCredential: companyVaultData?.companyCredential,
       allRepositoryCredentials: context.allRepositoryCredentials,
       additionalStorageData: context.additionalStorageData,
       additionalMachineData: context.additionalMachineData

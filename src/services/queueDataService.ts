@@ -20,6 +20,7 @@ export interface QueueRequestContext {
   repositoryVault?: any
   bridgeVault?: any
   companyVault?: any
+  companyCredential?: string  // Company's Credential (GUID) for COMPANY_ID
   storageVault?: any
   destinationMachineVault?: any  // For push operations to another machine
   destinationStorageVault?: any  // For push operations to storage systems
@@ -413,6 +414,11 @@ class QueueDataService {
    */
   private buildGeneralSettings(context: QueueRequestContext): any {
     const generalSettings: any = {}
+    
+    // Add COMPANY_ID from the company credential
+    if (context.companyCredential) {
+      generalSettings.COMPANY_ID = context.companyCredential
+    }
     
     if (context.companyVault && typeof context.companyVault === 'object') {
       this.addCompanyVaultToGeneralSettings(generalSettings, context.companyVault)
