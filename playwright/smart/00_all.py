@@ -37,6 +37,7 @@ class AllTestsRunner(TestBase):
             ('01_register.py', 'RegistrationTest', True),   # Uses shared session
             ('03_createrepo.py', 'run_with_page', True),    # Uses existing session
             ('04_Repo_edit.py', 'RepoEditTest', True),      # Uses existing session
+            ('05_repo_down_smart.py', 'RepoDownTest', True), # Uses existing session
         ]
         
         self.test_results = []
