@@ -313,5 +313,46 @@
       "elementWait": 5000,
       "queueCompletion": 30000
     }
+  },
+  "repoDelete": {
+    "test": {
+      "targetRepository": null,
+      "targetIndex": 0,
+      "deleteByName": false
+    },
+    "ui": {
+      "loginEmailTestId": "login-email-input",
+      "loginPasswordTestId": "login-password-input",
+      "loginSubmitButtonTestId": "login-submit-button",
+      "resourcesMenuTestId": "main-nav-resources",
+      "repositoriesTabTestId": "resources-tab-repositories",
+      "deleteButtonPrefix": "resources-repository-delete-",
+      "modalSelector": "div[role='dialog']",
+      "modalContentSelector": "div.ant-modal-confirm-content",
+      "deleteConfirmButtonSelector": "button.ant-btn-dangerous"
+    },
+    "validation": {
+      "successMessages": [
+        "Repository deleted successfully",
+        "Repository '{name}' deleted successfully",
+        "Repository \"{name}\" deleted successfully"
+      ],
+      "notificationSelectors": [
+        ".ant-message",
+        ".ant-notification",
+        "[role='alert']"
+      ],
+      "confirmationTexts": [
+        "Are you sure you want to delete repository",
+        "This action cannot be undone"
+      ]
+    },
+    "timeouts": {
+      "pageLoad": 10000,
+      "elementWait": 5000,
+      "modalWait": 5000,
+      "notificationWait": 5000,
+      "networkIdle": 5000
+    }
   }
 }
