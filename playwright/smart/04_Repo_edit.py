@@ -31,8 +31,22 @@ class RepoEditTest(TestBase):
         super().__init__(str(config_path))
     
     def find_and_click_edit_button(self, page):
-        """Find and click an edit button for any repository."""
-        # Strategy 1: Try data-testid selector
+        """Find and click the edit button for the session repository."""
+        # Get the session repository name
+        session_repo_name = self.get_session_repository_name()
+        
+        # First try to find the specific repository edit button
+        try:
+            specific_edit_button = page.locator(f'[data-testid="resources-repository-edit-{session_repo_name}"]')
+            if specific_edit_button.is_visible():
+                specific_edit_button.click()
+                self.log_info(f"Found and clicked edit button for session repository: {session_repo_name}")
+                return True, session_repo_name
+        except:
+            pass
+        
+        # Fallback strategies if specific repo not found
+        # Strategy 1: Try data-testid selector for any repo
         try:
             edit_buttons = page.locator('[data-testid^="resources-repository-edit-"]').all()
             if edit_buttons:
@@ -40,6 +54,7 @@ class RepoEditTest(TestBase):
                 first_button = edit_buttons[0]
                 repo_id = first_button.get_attribute('data-testid').replace('resources-repository-edit-', '')
                 first_button.click()
+                self.log_warning(f"Session repository {session_repo_name} not found, editing {repo_id} instead")
                 return True, repo_id
         except:
             pass
@@ -250,13 +265,9 @@ class RepoEditTest(TestBase):
                 repo_name_input = login_page.get_by_test_id(self.config['repoEdit']['ui']['repositoryNameInputTestId'])
                 repo_name_input.click()
                 repo_name_input.fill("")  # Clear
-                # Generate unique repository name with timestamp
-                repo_name_template = self.config['repoEdit']['repository']['targetRepoName']
-                if '${timestamp}' in repo_name_template:
-                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                    unique_repo_name = repo_name_template.replace('${timestamp}', timestamp)
-                else:
-                    unique_repo_name = repo_name_template
+                # Use session repository name with "_edited" suffix
+                session_repo_name = self.get_session_repository_name()
+                unique_repo_name = f"{session_repo_name}_edited"
                     
                 repo_name_input.fill(unique_repo_name)
                 self.log_success(f"Repository name changed to: {unique_repo_name}")
@@ -525,13 +536,9 @@ class RepoEditTest(TestBase):
                 repo_name_input = page.get_by_test_id(self.config['repoEdit']['ui']['repositoryNameInputTestId'])
                 repo_name_input.click()
                 repo_name_input.fill("")  # Clear
-                # Generate unique repository name with timestamp
-                repo_name_template = self.config['repoEdit']['repository']['targetRepoName']
-                if '${timestamp}' in repo_name_template:
-                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                    unique_repo_name = repo_name_template.replace('${timestamp}', timestamp)
-                else:
-                    unique_repo_name = repo_name_template
+                # Use session repository name with "_edited" suffix
+                session_repo_name = self.get_session_repository_name()
+                unique_repo_name = f"{session_repo_name}_edited"
                     
                 repo_name_input.fill(unique_repo_name)
                 self.log_success(f"Repository name changed to: {unique_repo_name}")

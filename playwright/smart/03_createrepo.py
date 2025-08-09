@@ -6,6 +6,9 @@ import time
 from pathlib import Path
 from playwright.sync_api import Playwright, sync_playwright, expect
 
+# Add parent directory to path for test_utils import
+sys.path.append(str(Path(__file__).parent.parent))
+
 
 def load_config(config_path="config.json"):
     """Load configuration from JSON file"""
@@ -63,9 +66,14 @@ def create_repository(page, config):
     # Wait for modal to open
     page.wait_for_selector('[role="dialog"]', state="visible", timeout=timeouts["modalOpen"])
     
-    # Generate repository name with prefix and timestamp
-    repo_prefix = repo_config["repositoryNamePrefix"]
-    repo_name = f"{repo_prefix}_{int(time.time())}"
+    # Use session repository name (generated once per test session)
+    # This will be consistent across all tests in a session
+    from test_utils import TestBase
+    repo_name = TestBase._session_repository_name
+    if not repo_name:
+        # Fallback if somehow not initialized
+        repo_name = TestBase.generate_session_repository_name()
+        TestBase._session_repository_name = repo_name
     print(f"📝 Repository name: {repo_name}")
     
     repo_name_input = page.get_by_test_id("resource-modal-field-repositoryName-input")

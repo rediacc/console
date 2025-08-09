@@ -28,6 +28,10 @@ class AllTestsRunner(TestBase):
         config_path = script_dir.parent / "config.json"
         super().__init__(str(config_path))
         
+        # Generate and log the session repository name
+        self.session_repo_name = self.get_session_repository_name()
+        self.log_info(f"Session repository name: {self.session_repo_name}")
+        
         # Test modules to run in order
         self.test_modules = [
             ('01_register.py', 'RegistrationTest', True),   # Uses shared session
@@ -68,7 +72,10 @@ class AllTestsRunner(TestBase):
                 # Call the run_with_page function directly from the module
                 if hasattr(module, 'run_with_page'):
                     repo_name = module.run_with_page(page, self.config)
-                    self.log_success(f"Test completed successfully. Created repo: {repo_name}")
+                    if repo_name:
+                        self.log_success(f"Test completed successfully. Repository: {repo_name}")
+                    else:
+                        self.log_success("Test completed successfully")
                     return True
                 else:
                     self.log_error(f"Function 'run_with_page' not found in {module_file}")
