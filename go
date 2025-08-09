@@ -115,6 +115,75 @@ function clean() {
   echo "Build artifacts cleaned."
 }
 
+# Function to run Playwright tests
+function test_playwright() {
+  echo "Running Playwright tests..."
+  
+  # Check if Python 3 is installed
+  if ! command -v python3 &> /dev/null; then
+    echo "❌ Error: Python 3 is not installed!"
+    echo "Please install Python 3 to run Playwright tests."
+    return 1
+  fi
+  
+  # Check if playwright test script exists
+  if [ ! -f "$ROOT_DIR/playwright/smart/00_all.py" ]; then
+    echo "❌ Error: Playwright test script not found at playwright/smart/00_all.py"
+    return 1
+  fi
+  
+  # Setup virtual environment to avoid system package conflicts
+  local venv_dir="$ROOT_DIR/.venv"
+  local python_cmd="python3"
+  local pip_cmd="pip3"
+  
+  # Create virtual environment if it doesn't exist
+  if [ ! -d "$venv_dir" ]; then
+    echo "Creating Python virtual environment..."
+    python3 -m venv "$venv_dir"
+  fi
+  
+  # Use virtual environment
+  python_cmd="$venv_dir/bin/python"
+  pip_cmd="$venv_dir/bin/pip"
+  
+  # Check if playwright is installed
+  if ! "$python_cmd" -c "import playwright" 2>/dev/null; then
+    echo "⚠️  Warning: Playwright Python package is not installed."
+    echo "Installing dependencies from requirements.txt..."
+    if [ -f "$ROOT_DIR/playwright/requirements.txt" ]; then
+      "$pip_cmd" install -r "$ROOT_DIR/playwright/requirements.txt"
+      # Install playwright browsers
+      "$python_cmd" -m playwright install chromium
+    else
+      echo "❌ Error: requirements.txt not found in playwright directory"
+      echo "Please install manually: $pip_cmd install playwright"
+      return 1
+    fi
+  fi
+  
+  # Check if middleware is running (required for tests)
+  if ! curl -s http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}/api > /dev/null 2>&1; then
+    echo "⚠️  Warning: Middleware API is not running on ${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}"
+    echo "Console tests require the middleware to be running."
+    echo "Start it with: cd ../middleware && ./go start"
+    return 1
+  fi
+  
+  # Run the Playwright test suite
+  echo "Starting Playwright test suite..."
+  "$python_cmd" playwright/smart/00_all.py
+  local test_exit_code=$?
+  
+  if [ $test_exit_code -eq 0 ]; then
+    echo "✅ Playwright tests completed successfully!"
+  else
+    echo "❌ Playwright tests failed with exit code: $test_exit_code"
+  fi
+  
+  return $test_exit_code
+}
+
 # Function to run tests
 function test() {
   echo "Running tests..."
@@ -125,6 +194,12 @@ function test() {
     node test-api.mjs
   else
     echo "No API tests found."
+  fi
+  
+  # Run Playwright tests if available
+  if [ -d "$ROOT_DIR/playwright" ] && [ -f "$ROOT_DIR/playwright/smart/00_all.py" ]; then
+    echo ""
+    test_playwright
   fi
 }
 
@@ -279,7 +354,8 @@ function show_help() {
   echo "  build         Build the application for production"
   echo "  preview       Preview the production build"
   echo "  lint          Run ESLint on the codebase"
-  echo "  test          Run tests"
+  echo "  test          Run tests (API connectivity and Playwright)"
+  echo "  test_playwright  Run only Playwright UI tests"
   echo "  clean         Clean build artifacts"
   echo "  release       Build and create release package in bin/"
   echo "  setup         Setup development environment"
@@ -310,6 +386,9 @@ main() {
         ;;
       test)
         test
+        ;;
+      test_playwright)
+        test_playwright
         ;;
       clean)
         clean

@@ -1,0 +1,21 @@
+# Python dependencies for Console Playwright tests
+# Install with: pip install -r requirements.txt
+
+# Core testing framework
+playwright>=1.40.0
+
+# Test utilities
+pytest>=7.0.0
+pytest-playwright>=0.4.0
+
+# Additional dependencies used by test scripts
+requests>=2.25.0
+python-dateutil>=2.8.0
+
+# Logging and reporting
+structlog>=23.0.0
+colorama>=0.4.0  # For colored console output on Windows
+
+# Optional: For better test reporting
+pytest-html>=3.0.0
+pytest-timeout>=2.0.0

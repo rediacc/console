@@ -8,6 +8,7 @@ import sys
 import os
 import json
 import importlib.util
+import time
 from pathlib import Path
 from playwright.sync_api import Playwright, sync_playwright, Page, Browser, BrowserContext
 from datetime import datetime
@@ -17,6 +18,7 @@ from typing import Dict, Any, Optional, Tuple
 sys.path.append(str(Path(__file__).parent.parent))
 
 from test_utils import TestBase, ConfigBuilder
+from logging_utils import StructuredLogger
 
 
 class AllTestsRunner(TestBase):
@@ -28,9 +30,21 @@ class AllTestsRunner(TestBase):
         config_path = script_dir.parent / "config.json"
         super().__init__(str(config_path))
         
+        # Initialize session logger for orchestration
+        self.session_logger = StructuredLogger(
+            name="AllTestsRunner",
+            session_id=self.logger.session_id,  # Use same session ID
+            config=self.config.get('logging', {})
+        )
+        
         # Generate and log the session repository name
         self.session_repo_name = self.get_session_repository_name()
         self.log_info(f"Session repository name: {self.session_repo_name}")
+        
+        # Log session initialization
+        self.session_logger.info("Test session initialized",
+                                session_repo_name=self.session_repo_name,
+                                category="session_lifecycle")
         
         # Test modules to run in order
         self.test_modules = [
@@ -41,6 +55,12 @@ class AllTestsRunner(TestBase):
         ]
         
         self.test_results = []
+        
+        # Log test plan
+        self.session_logger.info("Test execution plan",
+                                test_count=len(self.test_modules),
+                                test_names=[module[0] for module in self.test_modules],
+                                category="test_plan")
     
     def load_test_module(self, module_file: str):
         """Dynamically load a test module."""
@@ -59,14 +79,22 @@ class AllTestsRunner(TestBase):
     
     def run_test_module(self, module_file: str, test_class_name: str, page: Page, use_run_with_page: bool) -> bool:
         """Run a single test module with the shared page."""
+        start_time = time.time()
+        
         try:
             self.log_info(f"\n{'='*60}")
             self.log_info(f"Running test: {module_file}")
             self.log_info(f"{'='*60}")
             
+            # Log test start
+            self.session_logger.log_test_start(module_file,
+                                             test_class=test_class_name,
+                                             page_url=page.url if not page.is_closed() else "closed")
+            
             # Load the module
             module = self.load_test_module(module_file)
             if not module:
+                self.session_logger.error(f"Failed to load module: {module_file}")
                 return False
             
             if test_class_name == 'run_with_page':
@@ -97,24 +125,40 @@ class AllTestsRunner(TestBase):
                     # Print test summary if available
                     if hasattr(test_instance, 'print_summary'):
                         test_instance.print_summary()
+                    
+                    duration_ms = (time.time() - start_time) * 1000
+                    self.session_logger.log_test_end(module_file, success=success, duration_ms=duration_ms)
                     return success
                 else:
                     self.log_warning(f"Test {module_file} needs run_with_page method")
+                    self.session_logger.warning(f"Test missing run_with_page: {module_file}")
                     return False
             
         except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
             self.log_error(f"Error running test {module_file}: {str(e)}")
+            self.session_logger.error(f"Test failed with exception: {module_file}",
+                                    error=e,
+                                    duration_ms=duration_ms)
             import traceback
             traceback.print_exc()
             return False
+        finally:
+            duration_ms = (time.time() - start_time) * 1000
+            self.session_logger.log_test_end(module_file,
+                                           success=False,
+                                           duration_ms=duration_ms)
     
     def perform_login(self, page: Page) -> bool:
         """Perform login using 02_login_smart.py logic."""
         try:
-            # Navigate to login page
-            login_url = f"{self.config['baseUrl']}/console/login"
-            self.log_info(f"Navigating to: {login_url}")
-            page.goto(login_url, wait_until="networkidle")
+            with self.session_logger.performance_tracker("login_operation"):
+                # Navigate to login page
+                login_url = f"{self.config['baseUrl']}/console/login"
+                self.log_info(f"Navigating to: {login_url}")
+                self.session_logger.info("Navigating to login page", url=login_url)
+                
+                page.goto(login_url, wait_until="networkidle")
             
             # Fill login form
             email = self.config['login']['credentials']['email']
@@ -130,6 +174,9 @@ class AllTestsRunner(TestBase):
             # Fill password
             password_input = page.get_by_test_id("login-password-input")
             password_input.fill(password)
+            
+            self.session_logger.log_test_step("login_credentials_filled", 
+                                            "Login credentials entered")
             
             # Capture login response to get initial token
             with page.expect_response(lambda r: '/api/StoredProcedure/CreateAuthenticationRequest' in r.url) as response_info:
@@ -150,10 +197,14 @@ class AllTestsRunner(TestBase):
             page.wait_for_load_state("networkidle", timeout=10000)
             
             self.log_success("Login successful! Dashboard loaded.")
+            self.session_logger.info("Login completed successfully",
+                                   dashboard_loaded=True,
+                                   category="authentication")
             return True
             
         except Exception as e:
             self.log_error(f"Login failed: {str(e)}")
+            self.session_logger.error("Login failed", error=e, category="authentication")
             return False
     
     
@@ -162,8 +213,13 @@ class AllTestsRunner(TestBase):
         browser = None
         context = None
         page = None
+        session_start_time = time.time()
         
         try:
+            self.session_logger.info("Starting test session",
+                                   test_count=len(self.test_modules),
+                                   category="session_lifecycle")
+            
             # Launch browser
             browser = self.create_browser(playwright)
             
@@ -184,10 +240,16 @@ class AllTestsRunner(TestBase):
             self.log_info("Running Test 1: Registration")
             self.log_info("="*60)
             
+            self.session_logger.log_test_step("registration_phase", "Starting registration test")
+            
             # Run registration test
             reg_module_file, reg_class_name, use_run_with_page = self.test_modules[0]
             reg_success = self.run_test_module(reg_module_file, reg_class_name, page, use_run_with_page)
             self.test_results.append(('01_register', reg_success, "Registration " + ("successful" if reg_success else "failed")))
+            
+            self.session_logger.info("Registration test completed",
+                                   success=reg_success,
+                                   category="test_result")
             
             # If registration failed, try to login anyway
             if not reg_success:
@@ -198,8 +260,14 @@ class AllTestsRunner(TestBase):
             self.log_info("Running Test 2: Login")
             self.log_info("="*60)
             
+            self.session_logger.log_test_step("login_phase", "Starting login test")
+            
             login_success = self.perform_login(page)
             self.test_results.append(('02_login', login_success, "Login " + ("successful" if login_success else "failed")))
+            
+            self.session_logger.info("Login test completed",
+                                   success=login_success,
+                                   category="test_result")
             
             if not login_success:
                 self.log_error("Login failed - cannot continue with other tests")
@@ -214,6 +282,10 @@ class AllTestsRunner(TestBase):
                     # Check if page is still open
                     if page.is_closed():
                         self.log_error(f"Page was closed before running {module_file}. Recreating...")
+                        self.session_logger.warning("Page closed, recreating",
+                                                  test=module_file,
+                                                  category="page_lifecycle")
+                        
                         page = self.create_page_with_cache_disabled(context)
                         # Re-login if page was recreated
                         if not self.perform_login(page):
@@ -228,6 +300,9 @@ class AllTestsRunner(TestBase):
                         # Continue with other tests even if one fails
                 except Exception as e:
                     self.log_error(f"Unexpected error in {module_file}: {str(e)}")
+                    self.session_logger.error(f"Test failed unexpectedly: {module_file}",
+                                            error=e,
+                                            category="test_error")
                     self.test_results.append((module_file.replace('.py', ''), False, f"Failed with error: {str(e)}"))
                     all_passed = False
                     
@@ -253,10 +328,43 @@ class AllTestsRunner(TestBase):
             
             self.log_info(f"\nTotal: {passed_tests}/{total_tests} tests passed")
             
+            # Log session summary
+            session_duration_ms = (time.time() - session_start_time) * 1000
+            self.session_logger.info("Test session completed",
+                                   total_tests=total_tests,
+                                   passed_tests=passed_tests,
+                                   failed_tests=total_tests - passed_tests,
+                                   session_duration_ms=session_duration_ms,
+                                   all_passed=all_passed,
+                                   test_results=self.test_results,
+                                   category="session_summary")
+            
+            # Save session summary to file
+            if hasattr(self.session_logger, 'log_dir'):
+                summary_file = self.session_logger.log_dir / "session_summary.json"
+                with open(summary_file, 'w') as f:
+                    json.dump({
+                        "session_id": self.session_logger.session_id,
+                        "total_tests": total_tests,
+                        "passed_tests": passed_tests,
+                        "failed_tests": total_tests - passed_tests,
+                        "duration_ms": session_duration_ms,
+                        "timestamp": datetime.now().isoformat(),
+                        "test_results": [
+                            {"name": name, "passed": success, "message": msg}
+                            for name, success, msg in self.test_results
+                        ]
+                    }, f, indent=2)
+            
             return all_passed
             
         except Exception as e:
+            session_duration_ms = (time.time() - session_start_time) * 1000
             self.log_error(f"Test runner failed with error: {str(e)}")
+            self.session_logger.critical("Test session failed catastrophically",
+                                       error=e,
+                                       session_duration_ms=session_duration_ms,
+                                       category="session_error")
             import traceback
             traceback.print_exc()
             return False
@@ -266,11 +374,18 @@ class AllTestsRunner(TestBase):
                 # Log any console errors
                 if page_errors:
                     self.log_error(f"Console errors detected: {page_errors}")
+                    self.session_logger.error("Browser console errors detected",
+                                            error_count=len(page_errors),
+                                            errors=page_errors[:10],  # Log first 10 errors
+                                            category="browser_console")
             
             if context:
                 context.close()
             if browser:
                 browser.close()
+            
+            self.session_logger.info("Test session cleanup completed",
+                                   category="session_lifecycle")
             
             # Print test summary
             return self.print_summary()

@@ -9,6 +9,8 @@ from playwright.sync_api import Playwright, sync_playwright, expect
 # Add parent directory to path for test_utils import
 sys.path.append(str(Path(__file__).parent.parent))
 
+from logging_utils import StructuredLogger
+
 
 def load_config(config_path="config.json"):
     """Load configuration from JSON file"""
@@ -234,13 +236,20 @@ def create_repository(page, config):
 
 def run_with_page(page, config: dict) -> str:
     """Run the repository creation with existing page/session"""
+    # Create logger for this test run
+    logger = StructuredLogger("createrepo", config=config.get('logging', {}))
+    logger.log_test_start("CreateRepositoryTest")
+    
     screenshots = config.get("screenshots", {})
+    test_start_time = time.time()
+    repo_name = None  # Initialize repo_name to avoid UnboundLocalError
     
     try:
         # Create repository
         repo_name = create_repository(page, config)
         
         print(f"✅ Repository '{repo_name}' created successfully!")
+        logger.info("Repository created successfully", repo_name=repo_name)
         
         # Take success screenshot if enabled
         if screenshots.get("enabled", False) and not page.is_closed():
@@ -250,11 +259,18 @@ def run_with_page(page, config: dict) -> str:
                 success_path = screenshot_dir / f"createrepo_success_{repo_name}.png"
                 page.screenshot(path=str(success_path))
                 print(f"📸 Screenshot saved as {success_path}")
-            except:
+                logger.info("Success screenshot captured", path=str(success_path))
+            except Exception as e:
                 print("⚠️  Could not take success screenshot - page may be closed")
+                logger.warning("Failed to capture success screenshot", error=str(e))
+        
+        test_duration_ms = (time.time() - test_start_time) * 1000
+        logger.log_test_end("CreateRepositoryTest", success=True, duration_ms=test_duration_ms)
         
     except Exception as e:
         print(f"❌ Error occurred: {e}")
+        test_duration_ms = (time.time() - test_start_time) * 1000
+        logger.error("Repository creation failed", error=e, duration_ms=test_duration_ms)
         
         # Take failure screenshot if enabled
         if screenshots.get("enabled", False) and not page.is_closed():
@@ -264,9 +280,12 @@ def run_with_page(page, config: dict) -> str:
                 failure_path = screenshot_dir / f"createrepo_failed_{int(time.time())}.png"
                 page.screenshot(path=str(failure_path))
                 print(f"📸 Error screenshot saved as {failure_path}")
-            except:
+                logger.info("Error screenshot captured", path=str(failure_path))
+            except Exception as screenshot_error:
                 print("⚠️  Could not take error screenshot - page may be closed")
+                logger.warning("Failed to capture error screenshot", error=str(screenshot_error))
         
+        logger.log_test_end("CreateRepositoryTest", success=False, duration_ms=test_duration_ms)
         raise
     
     finally:

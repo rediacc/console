@@ -43,3 +43,7 @@ playwright/__pycache__/
 
 # Screenshots
 screenshots/
+logs/latest
+
+# Logs
+logs/sessions/

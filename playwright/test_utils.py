@@ -4,10 +4,12 @@ import json
 import re
 import random
 import string
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple, List
 from playwright.sync_api import Browser, BrowserContext, Page, Playwright, Route, Request, Response
+from logging_utils import StructuredLogger, log_playwright_action, log_api_call, log_browser_console
 
 
 class TestBase:
@@ -26,6 +28,12 @@ class TestBase:
         self.screenshots: List[str] = []
         self.console_errors: List[str] = []
         self.token_manager = TokenManager()
+        
+        # Initialize logger
+        self.logger = StructuredLogger(
+            name=self.__class__.__name__,
+            config=self.config.get('logging', {})
+        )
         
         # Initialize session repository name if not already set
         if TestBase._session_repository_name is None:
@@ -55,14 +63,24 @@ class TestBase:
     def wait_for_element(self, page, selector: str, timeout: Optional[int] = None):
         """Wait for element to be visible and return it."""
         timeout = timeout or 5000
+        start_time = time.time()
+        
         try:
             if selector.startswith('data-testid:'):
                 test_id = selector.replace('data-testid:', '')
                 selector = f'[data-testid="{test_id}"]'
             
+            self.logger.debug(f"Waiting for element: {selector}", selector=selector, timeout=timeout)
             element = page.wait_for_selector(selector, state='visible', timeout=timeout)
+            
+            duration_ms = (time.time() - start_time) * 1000
+            log_playwright_action(self.logger, "wait_for_element", selector=selector, 
+                                duration_ms=duration_ms, found=True)
             return element
-        except:
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            log_playwright_action(self.logger, "wait_for_element", selector=selector, 
+                                duration_ms=duration_ms, found=False, error=str(e))
             return None
     
     def wait_for_network_idle(self, page, timeout: Optional[int] = None):
@@ -76,10 +94,23 @@ class TestBase:
     
     def wait_for_api_response(self, page, url_pattern: str, action_func):
         """Execute action and wait for specific API response."""
+        start_time = time.time()
+        
+        self.logger.debug(f"Waiting for API response: {url_pattern}", url_pattern=url_pattern)
+        
         with page.expect_response(lambda response: url_pattern in response.url) as response_info:
             action_func()
         
         response = response_info.value
+        duration_ms = (time.time() - start_time) * 1000
+        
+        # Log API call details
+        log_api_call(self.logger, 
+                    method=response.request.method,
+                    url=response.url,
+                    status_code=response.status,
+                    duration_ms=duration_ms)
+        
         return response
     
     def check_element_text(self, page, selector: str, expected_text: str, timeout: int = 5000) -> bool:
@@ -125,31 +156,51 @@ class TestBase:
             screenshots_dir.mkdir(exist_ok=True)
             filepath = str(screenshots_dir / filename)
             
+            # Also save to log directory if available
+            if hasattr(self.logger, 'log_dir'):
+                log_screenshots_dir = self.logger.log_dir / "screenshots"
+                log_screenshots_dir.mkdir(exist_ok=True)
+                log_filepath = str(log_screenshots_dir / filename)
+                page.screenshot(path=log_filepath)
+            
             page.screenshot(path=filepath)
             self.screenshots.append(filepath)
+            
+            self.logger.info(f"Screenshot captured: {name}", 
+                           screenshot_path=filepath,
+                           page_url=page.url,
+                           category="screenshot")
+            
             return filepath
         except Exception as e:
             self.log_warning(f"Failed to take screenshot '{name}': {str(e)}")
+            self.logger.error(f"Failed to capture screenshot: {name}", 
+                            error=str(e),
+                            category="screenshot")
             return None
     
     def log_success(self, message: str):
         """Log a success message."""
         self.success_indicators.append(f"✓ {message}")
         print(f"✓ {message}")
+        self.logger.info(message, category="success", status="success")
     
     def log_error(self, message: str):
         """Log an error message."""
         self.errors.append(f"✗ {message}")
         print(f"✗ {message}")
+        self.logger.error(message, category="error", status="error")
     
     def log_info(self, message: str):
         """Log an info message."""
         print(f"ℹ {message}")
+        self.logger.info(message, category="info")
     
     def log_warning(self, message: str):
         """Log a warning message."""
         self.warnings.append(f"⚠ {message}")
         print(f"⚠ {message}")
+        self.logger.warning(message, category="warning")
     
     def wait_for_element_enabled(self, page, selector: str, timeout: int = 5000) -> bool:
         """Wait for element to be enabled (not disabled)."""
@@ -168,14 +219,30 @@ class TestBase:
     
     def fill_form_field(self, page, selector: str, value: str, clear_first: bool = True):
         """Fill a form field with proper clearing and validation."""
+        start_time = time.time()
+        
         element = page.locator(selector)
+        
+        # Log click action
         element.click()
+        log_playwright_action(self.logger, "click", selector=selector, 
+                            purpose="focus_field")
         
         if clear_first:
             # Clear existing content
             element.fill("")
         
+        # Fill the field (log sanitized value info)
         element.fill(value)
+        duration_ms = (time.time() - start_time) * 1000
+        
+        # Log fill action without exposing sensitive data
+        is_sensitive = any(field in selector.lower() for field in ['password', 'token', 'secret'])
+        logged_value = "***SANITIZED***" if is_sensitive else f"{len(value)} characters"
+        
+        log_playwright_action(self.logger, "fill", selector=selector,
+                            value_info=logged_value,
+                            duration_ms=duration_ms)
         
         # Trigger change event
         element.dispatch_event("change")
@@ -185,6 +252,14 @@ class TestBase:
         print("\n" + "="*50)
         print("TEST EXECUTION SUMMARY")
         print("="*50)
+        
+        summary_data = {
+            "success_count": len(self.success_indicators),
+            "warning_count": len(self.warnings),
+            "error_count": len(self.errors),
+            "screenshot_count": len(self.screenshots),
+            "console_error_count": len(self.console_errors)
+        }
         
         if self.success_indicators:
             print(f"\n✓ Success Indicators ({len(self.success_indicators)}):")
@@ -208,8 +283,30 @@ class TestBase:
         
         print("\n" + "="*50)
         
+        # Log summary to structured logger
+        test_passed = len(self.errors) == 0
+        self.logger.info("Test execution summary",
+                        category="test_summary",
+                        passed=test_passed,
+                        **summary_data)
+        
+        # Save summary to log directory
+        if hasattr(self.logger, 'log_dir'):
+            summary_file = self.logger.log_dir / "test_summary.json"
+            with open(summary_file, 'w') as f:
+                json.dump({
+                    "test_name": self.__class__.__name__,
+                    "passed": test_passed,
+                    "timestamp": datetime.now().isoformat(),
+                    "summary": summary_data,
+                    "errors": self.errors,
+                    "warnings": self.warnings,
+                    "success_indicators": self.success_indicators,
+                    "screenshots": self.screenshots
+                }, f, indent=2)
+        
         # Return test result
-        return len(self.errors) == 0
+        return test_passed
     
     def wait_for_toast_message(self, page, timeout: int = 5000) -> Optional[str]:
         """Wait for and capture toast/notification messages."""
@@ -239,8 +336,15 @@ class TestBase:
     def setup_console_handler(self, page):
         """Set up console message handler to collect errors."""
         def handle_console(msg):
+            error_text = f"{msg.text}"
+            
+            # Log all console messages to structured logger
+            log_browser_console(self.logger, 
+                              message_type=msg.type,
+                              message_text=error_text,
+                              source=msg.location.get('url', '') if msg.location else '')
+            
             if msg.type == 'error':
-                error_text = f"{msg.text}"
                 self.console_errors.append(error_text)
                 self.log_error(f"Console error: {error_text}")
         
@@ -255,10 +359,17 @@ class TestBase:
     
     def create_browser(self, playwright: Playwright) -> Browser:
         """Create a browser instance with standard configuration."""
-        return playwright.chromium.launch(
+        self.logger.info("Creating browser instance",
+                        headless=self.config['browser']['headless'],
+                        slow_mo=self.config['browser']['slowMo'])
+        
+        browser = playwright.chromium.launch(
             headless=self.config['browser']['headless'],
             slow_mo=self.config['browser']['slowMo']
         )
+        
+        self.logger.info("Browser instance created successfully")
+        return browser
     
     def create_browser_context(self, browser: Browser) -> BrowserContext:
         """Create a browser context with cache disabled and standard configuration."""
@@ -276,11 +387,15 @@ class TestBase:
     
     def create_page_with_cache_disabled(self, context: BrowserContext) -> Page:
         """Create a new page with cache disabled via CDP."""
+        self.logger.info("Creating new page with cache disabled")
+        
         page = context.new_page()
         
         # Disable cache using CDP (Chrome DevTools Protocol)
         cdp_session = context.new_cdp_session(page)
         cdp_session.send("Network.setCacheDisabled", {"cacheDisabled": True})
+        
+        self.logger.debug("Cache disabled via CDP")
         
         # Setup console error handler
         self.setup_console_handler(page)
@@ -288,6 +403,11 @@ class TestBase:
         # Setup request/response interceptors for token management
         self.setup_api_interceptors(page)
         
+        # Log page navigation events
+        page.on('load', lambda: self.logger.info("Page loaded", url=page.url, category="navigation"))
+        page.on('domcontentloaded', lambda: self.logger.debug("DOM content loaded", url=page.url, category="navigation"))
+        
+        self.logger.info("Page created and configured successfully")
         return page
     
     def setup_api_interceptors(self, page: Page):

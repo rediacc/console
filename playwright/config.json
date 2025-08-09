@@ -1,5 +1,31 @@
 {
   "baseUrl": "http://localhost:7322",
+  "logging": {
+    "enabled": true,
+    "level": "INFO",
+    "handlers": ["console", "file"],
+    "file_settings": {
+      "directory": "./logs",
+      "max_size_mb": 50,
+      "rotation_count": 5,
+      "format": "both"
+    },
+    "console_settings": {
+      "format": "text",
+      "colorize": true
+    },
+    "categories": {
+      "playwright_action": "DEBUG",
+      "api_call": "INFO",
+      "browser_console": "WARNING",
+      "test_lifecycle": "INFO",
+      "test_step": "INFO"
+    },
+    "filters": {
+      "exclude_urls": ["/health", "/metrics"],
+      "sanitize_fields": ["password", "token", "credential", "secret"]
+    }
+  },
   "login": {
     "credentials": {
       "email": "admin@rediacc.io",
