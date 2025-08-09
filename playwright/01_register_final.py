@@ -21,7 +21,7 @@ class RegistrationTest(TestBase):
         """Initialize registration test."""
         # Get the directory where this script is located
         script_dir = Path(__file__).parent
-        config_path = script_dir / "register_config.json"
+        config_path = script_dir / "config.json"
         super().__init__(str(config_path))
         
         # Generate unique email for this test run
@@ -118,7 +118,7 @@ class RegistrationTest(TestBase):
         )
         
         # Check for success message
-        success_msg = self.config['validation']['successMessages']['registrationSuccess']
+        success_msg = self.config['registrationValidation']['successMessages']['registrationSuccess']
         found, _ = self.check_for_message(page, success_msg)
         if found:
             self.log_success("Registration success message displayed")
@@ -148,13 +148,13 @@ class RegistrationTest(TestBase):
     def check_final_state(self, page):
         """Check the final state after registration."""
         # Check for activation success message
-        activation_msg = self.config['validation']['successMessages']['activationSuccess']
+        activation_msg = self.config['registrationValidation']['successMessages']['activationSuccess']
         found, _ = self.check_for_message(page, activation_msg)
         if found:
             self.log_success("Account activation confirmed")
         
         # Check for completion message
-        completion_msg = self.config['validation']['successMessages']['registrationComplete']
+        completion_msg = self.config['registrationValidation']['successMessages']['registrationComplete']
         found, _ = self.check_for_message(page, completion_msg, timeout=3000)
         if found:
             self.log_success("Registration completed successfully")
@@ -231,7 +231,7 @@ class RegistrationTest(TestBase):
             # Step 6: Submit registration
             if not self.submit_registration(login_page):
                 # Check for error messages
-                for error_key, error_pattern in self.config['validation']['errorMessages'].items():
+                for error_key, error_pattern in self.config['registrationValidation']['errorMessages'].items():
                     found, error_text = self.check_for_message(login_page, error_pattern, timeout=2000)
                     if found:
                         self.log_error(f"Registration error: {error_text}")

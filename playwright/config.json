@@ -13,7 +13,11 @@
   },
   "browser": {
     "headless": false,
-    "slowMo": 0
+    "slowMo": 0,
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    }
   },
   "screenshots": {
     "enabled": true,
@@ -52,5 +56,262 @@
       "Repository created successfully",
       "Repository \".*\" created successfully"
     ]
+  },
+  "repoActions": {
+    "machineName": "rediacc11",
+    "defaultRepository": "repo03",
+    "actions": {
+      "up": "up",
+      "down": "down",
+      "push": "push"
+    },
+    "timeouts": {
+      "navigation": 10000,
+      "element": 5000,
+      "queueCompletion": 60000
+    },
+    "successIndicators": [
+      "Task Completed Successfully",
+      "Repository started successfully",
+      "Repository services started"
+    ],
+    "failureIndicators": [
+      "Task Failed",
+      "Bridge reported failure",
+      "Failed to start repository"
+    ]
+  },
+  "registration": {
+    "company": "rediacc",
+    "email": "test_${timestamp}@rediacc.com",
+    "password": "87654321i_",
+    "activationCode": "111111"
+  },
+  "ui": {
+    "languageDropdownSelector": ".ant-select-selector",
+    "languageDropdownOptionsSelector": ".ant-select-dropdown",
+    "languageSelector": "🇫🇷 Français",
+    "loginLinkText": "Login",
+    "registerLinkTestId": "login-register-link",
+    "companyInputTestId": "registration-company-input",
+    "emailInputTestId": "registration-email-input",
+    "passwordInputTestId": "registration-password-input",
+    "passwordConfirmInputTestId": "registration-password-confirm-input",
+    "submitButtonTestId": "registration-submit-button",
+    "activationCodeInputTestId": "registration-activation-code-input",
+    "verifyButtonTestId": "registration-verify-button"
+  },
+  "timeouts": {
+    "pageLoad": 30000,
+    "networkIdle": "networkidle",
+    "elementVisible": 5000,
+    "apiResponse": 10000
+  },
+  "registrationValidation": {
+    "successMessages": {
+      "registrationSuccess": "Inscription réussie ! Veuillez vérifier votre courriel pour le code d'activation.",
+      "activationSuccess": "Compte activé avec succès !",
+      "registrationComplete": "Inscription Terminée !"
+    },
+    "errorMessages": {
+      "userExists": "User with email .* already exists.",
+      "invalidCode": "Code d'activation invalide",
+      "networkError": "Erreur de connexion"
+    }
+  },
+  "repoEdit": {
+    "repository": {
+      "targetRepoName": "repo_edited_${timestamp}",
+      "accessPassword": "Test@1234$Pass#2024"
+    },
+    "ui": {
+      "loginEmailTestId": "login-email-input",
+      "loginPasswordTestId": "login-password-input",
+      "loginSubmitButtonTestId": "login-submit-button",
+      "resourcesMenuTestId": "main-nav-resources",
+      "resourcesMenuText": "Resources",
+      "repositoriesTabTestId": "resources-tab-repositories",
+      "repositoryEditButtonPrefix": "resources-repository-edit-",
+      "repositoryNameInputTestId": "resource-modal-field-repositoryName-input",
+      "modalOkButtonTestId": "resource-modal-ok-button",
+      "modalCancelButtonTestId": "resource-modal-cancel-button",
+      "accessPasswordInputSelector": "[data-testid*='credential'] input[type='password'], input[placeholder*='Access Password']"
+    },
+    "validation": {
+      "successMessages": {
+        "repositoryUpdated": "Repository updated successfully",
+        "savedSuccessfully": "Saved successfully",
+        "updateComplete": "Update complete"
+      },
+      "errorMessages": {
+        "validationError": "Validation Errors:",
+        "passwordRequired": "Access Password is required",
+        "networkError": "Network error",
+        "saveError": "Failed to save"
+      },
+      "toastSelectors": [
+        ".ant-message",
+        ".ant-notification",
+        "[role='alert']",
+        ".toast-success",
+        ".notification-success"
+      ]
+    }
+  },
+  "repoDown": {
+    "ui": {
+      "loginEmailTestId": "login-email-input",
+      "loginPasswordTestId": "login-password-input",
+      "loginSubmitButtonTestId": "login-submit-button",
+      "resourcesMenuTestId": "main-nav-resources",
+      "resourcesMenuText": "Resources",
+      "machineExpandTestId": "machine-expand-",
+      "remoteButtonTestId": "remote-actions-",
+      "localDropdownTestId": "local-actions-dropdown-",
+      "queueTraceCloseTestId": "queue-trace-close-button"
+    },
+    "test": {
+      "targetMachine": "rediacc11",
+      "targetRepositoryPattern": "repo_",
+      "targetRepository": "repo006",
+      "targetAction": "down",
+      "alternativeActions": ["Down", "Stop", "Shutdown"]
+    },
+    "timeouts": {
+      "pageLoad": 10000,
+      "networkIdle": 5000,
+      "elementWait": 5000,
+      "actionDelay": 1000
+    },
+    "validation": {
+      "checkForSuccessToast": true,
+      "verifyQueueDialog": false,
+      "screenshotOnError": true
+    }
+  },
+  "repoPush": {
+    "ui": {
+      "loginEmailTestId": "login-email-input",
+      "loginPasswordTestId": "login-password-input",
+      "loginSubmitButtonTestId": "login-submit-button",
+      "resourcesMenuTestId": "main-nav-resources",
+      "machineExpandTestId": "machine-expand-",
+      "remoteButtonTestId": "machine-repo-list-repo-actions-",
+      "functionModalSubmitTestId": "function-modal-submit",
+      "queueTraceCloseTestId": "queue-trace-close-button"
+    },
+    "test": {
+      "sourceMachine": "rediacc11",
+      "targetMachine": "rediacc12",
+      "repositoryName": "repo006",
+      "pushAction": "push",
+      "destinationType": "machine",
+      "pushOptions": {
+        "overrideExisting": false,
+        "requireOnlineState": true
+      }
+    },
+    "timeouts": {
+      "pageLoad": 10000,
+      "networkIdle": 5000,
+      "elementWait": 5000,
+      "actionDelay": 1000,
+      "pushOperation": 60000
+    },
+    "validation": {
+      "checkForSuccessToast": true,
+      "expectedToastMessages": [
+        "Repository creation queued successfully",
+        "Repository \"*\" created successfully"
+      ],
+      "verifyQueueTrace": true,
+      "screenshotOnError": true
+    }
+  },
+  "storageImport": {
+    "confFile": "conf.conf",
+    "targetMachine": "rediacc11",
+    "targetRepository": "repo03",
+    "targetStorage": "microsoft",
+    "pushDestinationType": "storage",
+    "ui": {
+      "loginLink": "header-login-link",
+      "navResources": "nav-resources",
+      "storageTab": "resources-tab-storage",
+      "importButton": "resources-import-button",
+      "uploadDragger": "rclone-wizard-upload-dragger",
+      "importConfirm": "rclone-wizard-import-button",
+      "closeImport": "rclone-wizard-close-button",
+      "navMachines": "nav-machines",
+      "machineRow": "machine-row-",
+      "repoButton": "machine-repositories-button-",
+      "pushAction": "repo-action-push",
+      "storageSelector": "push-storage-selector",
+      "storageSelection": "push-storage-selection",
+      "addToQueue": "push-add-to-queue-button",
+      "queueTraceClose": "queue-trace-modal-close-button"
+    },
+    "validation": {
+      "successMessages": {
+        "importSuccess": "Storage imported successfully",
+        "queueSuccess": "Repository creation queued successfully",
+        "pushConfigured": "Push configured successfully"
+      },
+      "conflictMessages": {
+        "storageExists": "already exists",
+        "importConflict": "conflict"
+      }
+    },
+    "timeouts": {
+      "modalOpen": 3000,
+      "fileUpload": 5000,
+      "importProcess": 10000,
+      "queueCreation": 5000,
+      "elementWait": 5000
+    }
+  },
+  "repoUp": {
+    "test": {
+      "targetMachine": "rediacc11",
+      "targetRepository": "repo03",
+      "action": "up"
+    },
+    "ui": {
+      "loginEmailTestId": "login-email-input",
+      "loginPasswordTestId": "login-password-input",
+      "loginSubmitButtonTestId": "login-submit-button",
+      "resourcesMenuTestId": "main-nav-resources",
+      "resourcesMenuText": "Resources",
+      "machineExpandPrefix": "machine-expand-",
+      "machineRemotePrefix": "machine-remote-",
+      "repoActionsPrefix": "machine-repo-list-repo-actions-",
+      "queueTraceCloseTestId": "queue-trace-close-button",
+      "upActionText": "up",
+      "closeButtonText": "Close"
+    },
+    "validation": {
+      "successMessages": {
+        "queueCreated": "Repository creation queued successfully",
+        "taskCompleted": "Task Completed Successfully",
+        "repositoryStarted": "Repository started successfully"
+      },
+      "failureMessages": {
+        "setupFailed": "Repository setup failed",
+        "exitCode": "exit code"
+      },
+      "taskStates": {
+        "pending": "PENDING",
+        "assigned": "Assigned",
+        "processing": "Processing", 
+        "completed": "Completed",
+        "failed": "Failed"
+      }
+    },
+    "timeouts": {
+      "pageLoad": 10000,
+      "networkIdle": 5000,
+      "elementWait": 5000,
+      "queueCompletion": 30000
+    }
   }
 }

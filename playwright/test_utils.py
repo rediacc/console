@@ -16,6 +16,7 @@ class TestBase:
         self.config = self.load_config(config_path)
         self.success_indicators: List[str] = []
         self.errors: List[str] = []
+        self.warnings: List[str] = []
         self.screenshots: List[str] = []
         self.console_errors: List[str] = []
     
@@ -109,6 +110,11 @@ class TestBase:
         """Log an info message."""
         print(f"ℹ {message}")
     
+    def log_warning(self, message: str):
+        """Log a warning message."""
+        self.warnings.append(f"⚠ {message}")
+        print(f"⚠ {message}")
+    
     def wait_for_element_enabled(self, page, selector: str, timeout: int = 5000) -> bool:
         """Wait for element to be enabled (not disabled)."""
         try:
@@ -148,6 +154,11 @@ class TestBase:
             print(f"\n✓ Success Indicators ({len(self.success_indicators)}):")
             for indicator in self.success_indicators:
                 print(f"  {indicator}")
+        
+        if self.warnings:
+            print(f"\n⚠ Warnings ({len(self.warnings)}):")
+            for warning in self.warnings:
+                print(f"  {warning}")
         
         if self.errors:
             print(f"\n✗ Errors ({len(self.errors)}):")

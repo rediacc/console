@@ -26,7 +26,7 @@ class RepoPushTest(TestBase):
     def __init__(self):
         """Initialize repository push test."""
         script_dir = Path(__file__).parent
-        config_path = script_dir / "repo_push_config.json"
+        config_path = script_dir / "config.json"
         super().__init__(str(config_path))
     
     def select_destination_machine(self, page, machine_name):
@@ -39,7 +39,7 @@ class RepoPushTest(TestBase):
             
             # Wait for dropdown options to be visible
             page.wait_for_selector('.ant-select-dropdown:not(.ant-select-dropdown-hidden)', 
-                                  timeout=self.config['timeouts']['elementWait'])
+                                  timeout=self.config['repoPush']['timeouts']['elementWait'])
             
             # Wait a bit for dropdown animation
             page.wait_for_timeout(500)
@@ -59,7 +59,7 @@ class RepoPushTest(TestBase):
     
     def wait_for_push_completion(self, page, timeout=None):
         """Wait for push operation to complete and capture results."""
-        timeout = timeout or self.config['timeouts']['pushOperation']
+        timeout = timeout or self.config['repoPush']['timeouts']['pushOperation']
         
         try:
             # First wait a bit for the operation to start
@@ -139,16 +139,16 @@ class RepoPushTest(TestBase):
             login_page.wait_for_load_state('domcontentloaded')
             
             # Fill credentials
-            email_input = login_page.get_by_test_id(self.config['ui']['loginEmailTestId'])
+            email_input = login_page.get_by_test_id(self.config['repoPush']['ui']['loginEmailTestId'])
             email_input.click()
-            email_input.fill(self.config['credentials']['email'])
+            email_input.fill(self.config['login']['credentials']['email'])
             
-            password_input = login_page.get_by_test_id(self.config['ui']['loginPasswordTestId'])
+            password_input = login_page.get_by_test_id(self.config['repoPush']['ui']['loginPasswordTestId'])
             password_input.click()
-            password_input.fill(self.config['credentials']['password'])
+            password_input.fill(self.config['login']['credentials']['password'])
             
             # Submit login
-            submit_button = login_page.get_by_test_id(self.config['ui']['loginSubmitButtonTestId'])
+            submit_button = login_page.get_by_test_id(self.config['repoPush']['ui']['loginSubmitButtonTestId'])
             with login_page.expect_response(lambda r: '/api/' in r.url and r.status == 200) as response_info:
                 submit_button.click()
             
@@ -159,7 +159,7 @@ class RepoPushTest(TestBase):
             # Step 4: Navigate to Resources
             resources_menu = self.wait_for_element(
                 login_page, 
-                f"data-testid:{self.config['ui']['resourcesMenuTestId']}", 
+                f"data-testid:{self.config['repoPush']['ui']['resourcesMenuTestId']}", 
                 timeout=10000
             )
             
@@ -169,8 +169,8 @@ class RepoPushTest(TestBase):
                 self.log_success("✓ Step 4: Navigated to Resources")
             
             # Step 5: Expand source machine
-            source_machine = self.config['test']['sourceMachine']
-            machine_expand_selector = f"{self.config['ui']['machineExpandTestId']}{source_machine}"
+            source_machine = self.config['repoPush']['test']['sourceMachine']
+            machine_expand_selector = f"{self.config['repoPush']['ui']['machineExpandTestId']}{source_machine}"
             
             machine_expand = self.wait_for_element(
                 login_page,
@@ -188,13 +188,13 @@ class RepoPushTest(TestBase):
             
             # Step 6: Find repository and click actions
             # Note: The Remote button workflow is used here (click Remote button -> select push from dropdown)
-            repo_name = self.config['test']['repositoryName']
+            repo_name = self.config['repoPush']['test']['repositoryName']
             
             # Wait a bit for repositories to load
             login_page.wait_for_timeout(1000)
             
             # First check if the configured repository exists
-            repo_selector = f"{self.config['ui']['remoteButtonTestId']}{repo_name}"
+            repo_selector = f"{self.config['repoPush']['ui']['remoteButtonTestId']}{repo_name}"
             repo_actions = None
             
             try:
@@ -215,7 +215,7 @@ class RepoPushTest(TestBase):
                     self.log_info(f"Using first available repository with Remote button")
                 else:
                     # Fallback: try to find by test-id pattern
-                    test_id_pattern = self.config['ui']['remoteButtonTestId']
+                    test_id_pattern = self.config['repoPush']['ui']['remoteButtonTestId']
                     all_repo_buttons = login_page.locator(f'[data-testid^="{test_id_pattern}"]').all()
                     if all_repo_buttons:
                         repo_actions = all_repo_buttons[0]
@@ -233,24 +233,24 @@ class RepoPushTest(TestBase):
                 
                 # Wait for dropdown menu
                 login_page.wait_for_selector('.ant-dropdown:not(.ant-dropdown-hidden)', 
-                                           timeout=self.config['timeouts']['elementWait'])
+                                           timeout=self.config['repoPush']['timeouts']['elementWait'])
             else:
                 self.log_error("No repository found for push operation")
                 return
             
             # Step 7: Click push action
-            push_action = login_page.get_by_text(self.config['test']['pushAction'])
+            push_action = login_page.get_by_text(self.config['repoPush']['test']['pushAction'])
             push_action.click()
             self.log_success("✓ Step 7: Selected push action")
             
             # Wait for push dialog to open
             login_page.wait_for_selector('[role="dialog"]:has-text("Run Function")', 
-                                        timeout=self.config['timeouts']['elementWait'])
+                                        timeout=self.config['repoPush']['timeouts']['elementWait'])
             
             # Step 8: Configure push destination
             # The dialog is already configured with the current machine, need to change to target
-            if self.config['test']['destinationType'] == 'machine':
-                target_machine = self.config['test']['targetMachine']
+            if self.config['repoPush']['test']['destinationType'] == 'machine':
+                target_machine = self.config['repoPush']['test']['targetMachine']
                 
                 # Select destination machine
                 if self.select_destination_machine(login_page, target_machine):
@@ -260,7 +260,7 @@ class RepoPushTest(TestBase):
                     return
             
             # Step 9: Submit push operation
-            submit_button = login_page.get_by_test_id(self.config['ui']['functionModalSubmitTestId'])
+            submit_button = login_page.get_by_test_id(self.config['repoPush']['ui']['functionModalSubmitTestId'])
             submit_button.click()
             self.log_success("✓ Step 9: Submitted push operation")
             
@@ -271,8 +271,8 @@ class RepoPushTest(TestBase):
                 self.log_success("✓ Step 10: Push operation completed successfully")
                 
                 # Verify expected toast messages
-                if self.config['validation']['checkForSuccessToast']:
-                    for expected_msg in self.config['validation']['expectedToastMessages']:
+                if self.config['repoPush']['validation']['checkForSuccessToast']:
+                    for expected_msg in self.config['repoPush']['validation']['expectedToastMessages']:
                         found = False
                         for actual_msg in toast_messages:
                             if expected_msg.replace('*', '') in actual_msg or actual_msg in expected_msg:
@@ -305,7 +305,7 @@ class RepoPushTest(TestBase):
                     queue_dialog = login_page.locator(queue_dialog_selector)
                     if queue_dialog.is_visible():
                         # Look for close button
-                        close_button = queue_dialog.get_by_test_id(self.config['ui']['queueTraceCloseTestId'])
+                        close_button = queue_dialog.get_by_test_id(self.config['repoPush']['ui']['queueTraceCloseTestId'])
                         if close_button.is_visible():
                             close_button.click()
                             self.log_success("✓ Step 11: Closed queue trace dialog")
@@ -341,7 +341,7 @@ class RepoPushTest(TestBase):
             self.log_info("TEST COMPLETED SUCCESSFULLY")
             self.log_info("Push Operation Summary:")
             self.log_info(f"✓ Source: {source_machine}/{repo_name}")
-            self.log_info(f"✓ Destination: {self.config['test']['targetMachine']}")
+            self.log_info(f"✓ Destination: {self.config['repoPush']['test']['targetMachine']}")
             self.log_info(f"✓ Toast Messages: {len(toast_messages)}")
             self.log_info("="*60)
             
@@ -350,7 +350,7 @@ class RepoPushTest(TestBase):
             
         except Exception as e:
             self.log_error(f"Test failed with error: {str(e)}")
-            if self.config.get('validation', {}).get('screenshotOnError', True):
+            if self.config.get('repoPush', {}).get('validation', {}).get('screenshotOnError', True):
                 try:
                     if login_page:
                         self.take_screenshot(login_page, "error_state")

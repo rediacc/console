@@ -26,7 +26,7 @@ class RepoDownTest(TestBase):
     def __init__(self):
         """Initialize repository down test."""
         script_dir = Path(__file__).parent
-        config_path = script_dir / "repo_down_config.json"
+        config_path = script_dir / "config.json"
         super().__init__(str(config_path))
     
     def find_repository_remote_button(self, page, repo_name):
@@ -36,7 +36,7 @@ class RepoDownTest(TestBase):
             self.wait_for_network_idle(page)
             
             # Look for remote button with specific test-id pattern
-            remote_button_selector = f'[data-testid="{self.config["ui"]["remoteButtonTestId"]}{repo_name}"]'
+            remote_button_selector = f'[data-testid="{self.config["repoDown"]["ui"]["remoteButtonTestId"]}{repo_name}"]'
             
             # First try exact match
             remote_button = page.locator(remote_button_selector).first
@@ -62,7 +62,7 @@ class RepoDownTest(TestBase):
         try:
             # Wait for dropdown to be visible
             dropdown_selector = '.ant-dropdown:not(.ant-dropdown-hidden)'
-            page.wait_for_selector(dropdown_selector, timeout=self.config.get('timeouts', {}).get('elementWait', 5000))
+            page.wait_for_selector(dropdown_selector, timeout=self.config.get('repoDown', {}).get('timeouts', {}).get('elementWait', 5000))
             
             # For "down" action, look for the down icon button
             if action_text.lower() == "down":
@@ -81,7 +81,7 @@ class RepoDownTest(TestBase):
                 return True
             
             # If primary action not found, try alternative actions
-            for alt_action in self.config['test'].get('alternativeActions', []):
+            for alt_action in self.config['repoDown']['test'].get('alternativeActions', []):
                 alt_item = page.locator(f'.ant-dropdown-menu-item:has-text("{alt_action}")').first
                 if alt_item.is_visible():
                     alt_item.click()
@@ -142,17 +142,17 @@ class RepoDownTest(TestBase):
             login_page.wait_for_load_state('domcontentloaded')
             
             # Fill email
-            email_input = login_page.get_by_test_id(self.config['ui']['loginEmailTestId'])
+            email_input = login_page.get_by_test_id(self.config['repoDown']['ui']['loginEmailTestId'])
             email_input.click()
-            email_input.fill(self.config['credentials']['email'])
+            email_input.fill(self.config['login']['credentials']['email'])
             
             # Fill password
-            password_input = login_page.get_by_test_id(self.config['ui']['loginPasswordTestId'])
+            password_input = login_page.get_by_test_id(self.config['repoDown']['ui']['loginPasswordTestId'])
             password_input.click()
-            password_input.fill(self.config['credentials']['password'])
+            password_input.fill(self.config['login']['credentials']['password'])
             
             # Submit login
-            submit_button = login_page.get_by_test_id(self.config['ui']['loginSubmitButtonTestId'])
+            submit_button = login_page.get_by_test_id(self.config['repoDown']['ui']['loginSubmitButtonTestId'])
             with login_page.expect_response(lambda r: '/api/' in r.url and r.status == 200) as response_info:
                 submit_button.click()
             
@@ -163,13 +163,13 @@ class RepoDownTest(TestBase):
             # Step 4: Navigate to Resources
             resources_menu = self.wait_for_element(
                 login_page, 
-                f"data-testid:{self.config['ui']['resourcesMenuTestId']}", 
+                f"data-testid:{self.config['repoDown']['ui']['resourcesMenuTestId']}", 
                 timeout=10000
             )
             
             if resources_menu:
-                resources_link = login_page.get_by_test_id(self.config['ui']['resourcesMenuTestId']).get_by_text(
-                    self.config['ui']['resourcesMenuText']
+                resources_link = login_page.get_by_test_id(self.config['repoDown']['ui']['resourcesMenuTestId']).get_by_text(
+                    self.config['repoDown']['ui']['resourcesMenuText']
                 )
                 resources_link.click()
                 self.wait_for_network_idle(login_page)
@@ -177,8 +177,8 @@ class RepoDownTest(TestBase):
                 self.take_screenshot(login_page, "02_resources_page")
             
             # Step 5: Expand target machine
-            machine_name = self.config['test']['targetMachine']
-            machine_expand_selector = f"{self.config['ui']['machineExpandTestId']}{machine_name}"
+            machine_name = self.config['repoDown']['test']['targetMachine']
+            machine_expand_selector = f"{self.config['repoDown']['ui']['machineExpandTestId']}{machine_name}"
             
             machine_expand = self.wait_for_element(
                 login_page,
@@ -204,7 +204,7 @@ class RepoDownTest(TestBase):
                 return
             
             # Step 6: Find and click remote button for target repository
-            target_repo = self.config['test'].get('targetRepository', 'repo006')
+            target_repo = self.config['repoDown']['test'].get('targetRepository', 'repo006')
             remote_button = self.find_repository_remote_button(login_page, target_repo)
             
             if remote_button:
@@ -221,7 +221,7 @@ class RepoDownTest(TestBase):
                 return
             
             # Step 7: Select action from dropdown
-            target_action = self.config['test']['targetAction']
+            target_action = self.config['repoDown']['test']['targetAction']
             action_selected = self.select_action_from_dropdown(login_page, target_action)
             
             if action_selected:
@@ -232,10 +232,10 @@ class RepoDownTest(TestBase):
                 self.take_screenshot(login_page, "error_dropdown_action")
             
             # Step 8: Handle queue trace dialog (if configured)
-            if self.config['validation'].get('verifyQueueDialog', False):
+            if self.config['repoDown']['validation'].get('verifyQueueDialog', False):
                 try:
                     queue_close_button = login_page.get_by_test_id(
-                        self.config['ui']['queueTraceCloseTestId']
+                        self.config['repoDown']['ui']['queueTraceCloseTestId']
                     )
                     queue_close_button.wait_for(timeout=5000)
                     queue_close_button.click()
@@ -244,7 +244,7 @@ class RepoDownTest(TestBase):
                     self.log_info("No queue trace dialog appeared")
             
             # Step 9: Check for success indicators
-            if self.config['validation'].get('checkForSuccessToast', True):
+            if self.config['repoDown']['validation'].get('checkForSuccessToast', True):
                 success_toast = self.wait_for_toast_message(login_page, timeout=3000)
                 if success_toast:
                     self.log_success(f"✓ Success notification: {success_toast}")
@@ -264,7 +264,7 @@ class RepoDownTest(TestBase):
             
         except Exception as e:
             self.log_error(f"Test failed with error: {str(e)}")
-            if self.config.get('validation', {}).get('screenshotOnError', True):
+            if self.config.get('repoDown', {}).get('validation', {}).get('screenshotOnError', True):
                 try:
                     if login_page:
                         self.take_screenshot(login_page, "error_state")
