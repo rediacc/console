@@ -9,7 +9,7 @@ from pathlib import Path
 from playwright.sync_api import Playwright, sync_playwright, expect
 
 # Add parent directory to path for imports
-sys.path.append(str(Path(__file__).parent))
+sys.path.append(str(Path(__file__).parent.parent))
 
 from test_utils import TestBase, ConfigBuilder
 
@@ -21,7 +21,7 @@ class RegistrationTest(TestBase):
         """Initialize registration test."""
         # Get the directory where this script is located
         script_dir = Path(__file__).parent
-        config_path = script_dir / "config.json"
+        config_path = script_dir.parent / "config.json"
         super().__init__(str(config_path))
         
         # Generate unique email for this test run

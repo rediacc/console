@@ -12,6 +12,7 @@ def load_config(config_path="config.json"):
     possible_paths = [
         Path(config_path),  # Current directory or absolute path
         Path(__file__).parent / config_path,  # Same directory as script
+        Path(__file__).parent.parent / config_path,  # Parent directory (playwright)
         Path.cwd() / config_path,  # Current working directory
     ]
     

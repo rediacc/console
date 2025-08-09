@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional, Tuple
 
 # Add parent directory to path for imports
-sys.path.append(str(Path(__file__).parent))
+sys.path.append(str(Path(__file__).parent.parent))
 
 from test_utils import TestBase, ConfigBuilder
 
@@ -25,14 +25,14 @@ class AllTestsRunner(TestBase):
     def __init__(self):
         """Initialize test runner."""
         script_dir = Path(__file__).parent
-        config_path = script_dir / "config.json"
+        config_path = script_dir.parent / "config.json"
         super().__init__(str(config_path))
         
         # Test modules to run in order
         self.test_modules = [
-            ('01_register_smart.py', 'RegistrationTest', True),   # Uses shared session
-            ('03_createrepo_smart.py', 'run_with_page', True),    # Uses existing session
-            ('04_Repo_edit_smart.py', 'RepoEditTest', True),      # Uses existing session
+            ('01_register.py', 'RegistrationTest', True),   # Uses shared session
+            ('03_createrepo.py', 'run_with_page', True),    # Uses existing session
+            ('04_Repo_edit.py', 'RepoEditTest', True),      # Uses existing session
         ]
         
         self.test_results = []

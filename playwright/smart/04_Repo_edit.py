@@ -15,7 +15,7 @@ import json
 from datetime import datetime
 
 # Add parent directory to path to import test_utils
-sys.path.append(str(Path(__file__).parent))
+sys.path.append(str(Path(__file__).parent.parent))
 
 from test_utils import TestBase, ConfigBuilder
 
@@ -27,7 +27,7 @@ class RepoEditTest(TestBase):
         """Initialize repository edit test."""
         # Get the directory where this script is located
         script_dir = Path(__file__).parent
-        config_path = script_dir / "config.json"
+        config_path = script_dir.parent / "config.json"
         super().__init__(str(config_path))
     
     def find_and_click_edit_button(self, page):
