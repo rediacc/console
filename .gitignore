@@ -34,4 +34,5 @@ playwright/.venv/
 .venv/
 playwright/venv/
 playwright_venv/
+playwright/__pycache__/
 screenshots/
