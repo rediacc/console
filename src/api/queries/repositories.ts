@@ -38,7 +38,7 @@ export const useCreateRepository = createMutation<{
 }>({
   endpoint: '/CreateRepository',
   method: 'post',
-  invalidateKeys: ['repositories', 'teams'],
+  invalidateKeys: ['repositories', 'teams', 'machines'],
   successMessage: (vars) => `Repository "${vars.repositoryName}" created successfully`,
   errorMessage: 'Failed to create repository',
   transformData: (data) => {
@@ -68,7 +68,7 @@ export const useUpdateRepositoryName = createMutation<{
 }>({
   endpoint: '/UpdateRepositoryName',
   method: 'put',
-  invalidateKeys: ['repositories'],
+  invalidateKeys: ['repositories', 'machines'],
   successMessage: (vars) => `Repository renamed to "${vars.newRepositoryName}"`,
   errorMessage: 'Failed to update repository name',
   transformData: (data) => ({
@@ -105,7 +105,7 @@ export const useDeleteRepository = createMutation<{
 }>({
   endpoint: '/DeleteRepository',
   method: 'delete',
-  invalidateKeys: ['repositories', 'teams'],
+  invalidateKeys: ['repositories', 'teams', 'machines'],
   successMessage: (vars) => `Repository "${vars.repositoryName}" deleted successfully`,
   errorMessage: 'Failed to delete repository',
   transformData: (data) => ({

@@ -110,15 +110,16 @@ class RepoDownTest(TestBase):
                 self.log_success("Navigated to Resources")
             else:
                 self.log_info("Already on Resources page")
-                # We need to make sure we're on the Machines tab
-                try:
-                    # Click on Machines tab to switch from Repositories tab
-                    machines_tab = page.get_by_test_id("resources-nav-machines")
+            
+            # Ensure we're on the Machines tab (previous test might have left us on Repositories tab)
+            try:
+                machines_tab = page.get_by_test_id("resources-tab-machines")
+                if machines_tab.is_visible():
                     machines_tab.click()
+                    self.log_info("Switched to Machines tab")
                     self.wait_for_network_idle(page)
-                    self.log_success("Switched to Machines tab")
-                except Exception as e:
-                    self.log_error(f"Could not switch to Machines tab: {str(e)}")
+            except Exception as e:
+                self.log_info(f"Machines tab not found or already selected: {str(e)}")
             
             # Expand target machine
             machine_name = self.config['repoDown']['test']['targetMachine']
