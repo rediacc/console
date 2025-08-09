@@ -192,7 +192,7 @@
       "resourcesMenuTestId": "main-nav-resources",
       "resourcesMenuText": "Resources",
       "machineExpandTestId": "machine-expand-",
-      "remoteButtonTestId": "remote-actions-",
+      "remoteButtonTestId": "machine-repo-list-repo-actions-",
       "localDropdownTestId": "local-actions-dropdown-",
       "queueTraceCloseTestId": "queue-trace-close-button"
     },
@@ -213,7 +213,8 @@
       "checkForSuccessToast": true,
       "verifyQueueDialog": false,
       "screenshotOnError": true
-    }
+    },
+    "queueTimeout": 10000
   },
   "repoPush": {
     "ui": {

@@ -18,6 +18,8 @@ from datetime import datetime
 sys.path.append(str(Path(__file__).parent.parent))
 
 from test_utils import TestBase, ConfigBuilder
+import time
+from logging_utils import StructuredLogger, log_playwright_action
 
 
 class RepoEditTest(TestBase):
@@ -29,6 +31,8 @@ class RepoEditTest(TestBase):
         script_dir = Path(__file__).parent
         config_path = script_dir.parent / "config.json"
         super().__init__(str(config_path))
+        # Initialize logger
+        self.logger = StructuredLogger("RepoEditTest", config=self.config.get('logging', {}))
     
     def find_and_click_edit_button(self, page):
         """Find and click the edit button for the session repository."""
@@ -125,6 +129,9 @@ class RepoEditTest(TestBase):
     
     def run(self, playwright: Playwright) -> None:
         """Execute the repository edit test."""
+        self.logger.log_test_start("RepoEditTest")
+        test_start_time = time.time()
+        
         # Browser setup
         browser = playwright.chromium.launch(
             headless=self.config['browser']['headless'],
@@ -142,9 +149,12 @@ class RepoEditTest(TestBase):
             main_page = context.new_page()
             self.setup_console_handler(main_page)
             
-            main_page.goto(self.config['baseUrl'] + "/en")
-            self.wait_for_network_idle(main_page)
+            self.logger.log_test_step("navigate_main", "Navigating to main page")
+            with self.logger.performance_tracker("navigate_main_page"):
+                main_page.goto(self.config['baseUrl'] + "/en")
+                self.wait_for_network_idle(main_page)
             self.log_success("Navigated to main page")
+            self.logger.info("Main page loaded", url=self.config['baseUrl'] + "/en")
             
             # Take initial screenshot
             self.take_screenshot(main_page, "01_initial_page")
@@ -182,11 +192,14 @@ class RepoEditTest(TestBase):
             
             # Fill login form
             self.log_info("Filling login form...")
+            self.logger.log_test_step("fill_login", "Filling login credentials")
             
             # Email field
-            email_input = self.wait_for_element(login_page, f"data-testid:{self.config['repoEdit']['ui']['loginEmailTestId']}")
-            self.fill_form_field(login_page, f'[data-testid="{self.config["repoEdit"]["ui"]["loginEmailTestId"]}"]', 
-                               self.config['login']['credentials']['email'])
+            with self.logger.performance_tracker("fill_login_form"):
+                email_input = self.wait_for_element(login_page, f"data-testid:{self.config['repoEdit']['ui']['loginEmailTestId']}")
+                self.fill_form_field(login_page, f'[data-testid="{self.config["repoEdit"]["ui"]["loginEmailTestId"]}"]', 
+                                   self.config['login']['credentials']['email'])
+                log_playwright_action(self.logger, "fill", selector="login-email-input", value_info="email entered")
             
             # Password field
             password_input = login_page.get_by_test_id(self.config['repoEdit']['ui']['loginPasswordTestId'])
@@ -202,11 +215,15 @@ class RepoEditTest(TestBase):
             self.wait_for_element_enabled(login_page, f'[data-testid="{self.config["repoEdit"]["ui"]["loginSubmitButtonTestId"]}"]')
             
             # Submit with API monitoring
-            with login_page.expect_response(lambda r: '/api/' in r.url and r.status == 200) as response_info:
-                submit_button.click()
-            
-            response = response_info.value
-            self.log_success(f"Login successful (API Status: {response.status})")
+            self.logger.log_test_step("submit_login", "Submitting login form")
+            with self.logger.performance_tracker("login_submission"):
+                with login_page.expect_response(lambda r: '/api/' in r.url and r.status == 200) as response_info:
+                    submit_button.click()
+                    log_playwright_action(self.logger, "click", selector="login-submit-button", element_text="Submit")
+                
+                response = response_info.value
+                self.log_success(f"Login successful (API Status: {response.status})")
+                self.logger.info("Login API response received", status=response.status)
             
             # Wait for dashboard to load
             self.wait_for_network_idle(login_page)
@@ -233,11 +250,13 @@ class RepoEditTest(TestBase):
             self.take_screenshot(login_page, "03_repository_list")
             
             # Find and click edit button
+            self.logger.log_test_step("find_edit_button", "Finding and clicking repository edit button")
             edit_clicked, repo_id = self.find_and_click_edit_button(login_page)
             
             if not edit_clicked:
                 self.log_error("No repositories found to edit")
                 self.log_info("This might be because there are no repositories in the system")
+                self.logger.warning("No repositories available for editing")
                 return
             
             self.log_info(f"Editing repository: {repo_id}")
@@ -271,6 +290,7 @@ class RepoEditTest(TestBase):
                     
                 repo_name_input.fill(unique_repo_name)
                 self.log_success(f"Repository name changed to: {unique_repo_name}")
+                log_playwright_action(self.logger, "fill", selector="repository-name-input", value_info=f"repo name: {unique_repo_name}")
             
             # Handle password field by clicking generate button
             self.log_info("Looking for password generate button...")
@@ -455,6 +475,8 @@ class RepoEditTest(TestBase):
             
         except Exception as e:
             self.log_error(f"Test failed with unexpected error: {str(e)}")
+            test_duration_ms = (time.time() - test_start_time) * 1000
+            self.logger.error("Repository edit test failed", error=str(e), duration_ms=test_duration_ms)
             # Take error screenshot
             try:
                 if login_page:
@@ -473,36 +495,48 @@ class RepoEditTest(TestBase):
             
             # Print test summary
             test_passed = self.print_summary()
+            test_duration_ms = (time.time() - test_start_time) * 1000
+            self.logger.log_test_end("RepoEditTest", success=test_passed, duration_ms=test_duration_ms)
             
             # Close browser
             context.close()
             browser.close()
+            self.logger.info("Browser closed")
             
             # Exit with appropriate code
             sys.exit(0 if test_passed else 1)
     
     def run_with_page(self, page) -> bool:
         """Execute the repository edit test with existing page/session."""
+        self.logger.log_test_start("RepoEditTest")
+        test_start_time = time.time()
+        
         try:
             # No need to navigate - we're already logged in
             # Check if we're already on Resources page
             if "/resources" not in page.url:
                 # Navigate to Resources only if not already there
+                self.logger.log_test_step("navigate_resources", "Navigating to Resources page")
                 resources_menu = page.get_by_test_id(self.config['repoEdit']['ui']['resourcesMenuTestId'])
                 resources_menu.get_by_text(self.config['repoEdit']['ui']['resourcesMenuText']).click()
                 self.log_info("Navigating to Resources...")
                 self.wait_for_network_idle(page)
+                self.logger.info("Navigated to Resources page")
             else:
                 self.log_info("Already on Resources page")
+                self.logger.info("Already on Resources page", url=page.url)
             
             # Click repositories tab
+            self.logger.log_test_step("navigate_repositories", "Navigating to repositories tab")
             repo_tab_element = self.wait_for_element(page, f"data-testid:{self.config['repoEdit']['ui']['repositoriesTabTestId']}", timeout=5000)
             if repo_tab_element:
                 page.get_by_test_id(self.config['repoEdit']['ui']['repositoriesTabTestId']).click()
+                log_playwright_action(self.logger, "click", selector="repositories-tab", element_text="Repositories")
             
             # Wait for repository list to load
             self.wait_for_network_idle(page)
             self.log_success("Repository list loaded")
+            self.logger.info("Repository list loaded successfully")
             self.take_screenshot(page, "03_repository_list")
             
             # Find and click edit button
@@ -542,6 +576,7 @@ class RepoEditTest(TestBase):
                     
                 repo_name_input.fill(unique_repo_name)
                 self.log_success(f"Repository name changed to: {unique_repo_name}")
+                log_playwright_action(self.logger, "fill", selector="repository-name-input", value_info=f"repo name: {unique_repo_name}")
             
             # Submit the form
             ok_button = page.get_by_test_id(self.config['repoEdit']['ui']['modalOkButtonTestId'])
@@ -555,6 +590,7 @@ class RepoEditTest(TestBase):
                 
                 if response.status == 200:
                     self.log_success(f"Repository updated successfully (Status: {response.status})")
+                    self.logger.info("Repository update successful", status=response.status)
                     
                     # Wait for modal to close
                     try:
@@ -567,7 +603,10 @@ class RepoEditTest(TestBase):
                     success_message = self.wait_for_toast_message(page, timeout=3000)
                     if success_message:
                         self.log_success(f"Success notification: {success_message}")
+                        self.logger.info("Success notification received", message=success_message)
                     
+                    test_duration_ms = (time.time() - test_start_time) * 1000
+                    self.logger.log_test_end("RepoEditTest", success=True, duration_ms=test_duration_ms)
                     return True
                 else:
                     self.log_error(f"Update failed with status: {response.status}")
@@ -580,6 +619,9 @@ class RepoEditTest(TestBase):
                 
         except Exception as e:
             self.log_error(f"Test failed with unexpected error: {str(e)}")
+            test_duration_ms = (time.time() - test_start_time) * 1000
+            self.logger.error("Repository edit test failed", error=str(e), duration_ms=test_duration_ms)
+            self.logger.log_test_end("RepoEditTest", success=False, duration_ms=test_duration_ms)
             self.take_screenshot(page, "unexpected_error")
             return False
 

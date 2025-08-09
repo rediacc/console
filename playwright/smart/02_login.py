@@ -2,8 +2,14 @@
 import json
 import os
 import sys
+import time
 from pathlib import Path
 from playwright.sync_api import Playwright, sync_playwright, expect
+
+# Add parent directory to path for imports
+sys.path.append(str(Path(__file__).parent.parent))
+
+from logging_utils import StructuredLogger, log_playwright_action
 
 
 def load_config(config_path="config.json"):
@@ -30,6 +36,10 @@ def load_config(config_path="config.json"):
 
 def run(playwright: Playwright, config: dict) -> None:
     """Run the login automation with configuration"""
+    # Create logger for this test
+    logger = StructuredLogger("login_test", config=config.get('logging', {}))
+    logger.log_test_start("LoginTest")
+    test_start_time = time.time()
     
     # Extract configuration values
     base_url = config["baseUrl"]
@@ -39,6 +49,8 @@ def run(playwright: Playwright, config: dict) -> None:
     timeouts = login_config["timeouts"]
     screenshots = config["screenshots"]
     validation = config["validation"]
+    
+    logger.info("Configuration loaded", base_url=base_url)
     
     # Launch browser with config settings
     browser = playwright.chromium.launch(
@@ -58,18 +70,28 @@ def run(playwright: Playwright, config: dict) -> None:
     password = credentials["password"]
     
     print(f"👤 Logging in as: {email}")
+    logger.log_test_step("fill_credentials", "Filling login credentials")
     
-    # Wait for and fill login form
-    email_input = page.get_by_test_id("login-email-input")
-    email_input.wait_for(state="visible", timeout=timeouts["element"])
-    email_input.fill(email)
+    with logger.performance_tracker("fill_login_form"):
+        # Wait for and fill login form
+        email_input = page.get_by_test_id("login-email-input")
+        email_input.wait_for(state="visible", timeout=timeouts["element"])
+        email_input.fill(email)
+        log_playwright_action(logger, "fill", selector="login-email-input", value_info="email entered")
+        
+        password_input = page.get_by_test_id("login-password-input")
+        password_input.fill(password)
+        log_playwright_action(logger, "fill", selector="login-password-input", value_info="***SANITIZED***")
     
-    password_input = page.get_by_test_id("login-password-input")
-    password_input.fill(password)
+    logger.info("Login credentials filled", email=email)
     
     # Submit the form
+    logger.log_test_step("submit_login", "Submitting login form")
     submit_button = page.get_by_test_id("login-submit-button")
-    submit_button.click()
+    
+    with logger.performance_tracker("login_submission"):
+        submit_button.click()
+        log_playwright_action(logger, "click", selector="login-submit-button", element_text="Submit")
     
     # Validate successful login
     try:
@@ -113,6 +135,8 @@ def run(playwright: Playwright, config: dict) -> None:
         
     except Exception as e:
         print(f"❌ Login failed or timeout occurred: {e}")
+        test_duration_ms = (time.time() - test_start_time) * 1000
+        logger.error("Login test failed", error=e, duration_ms=test_duration_ms)
         
         # Take failure screenshot if enabled
         if screenshots["enabled"]:
@@ -121,7 +145,9 @@ def run(playwright: Playwright, config: dict) -> None:
             failure_path = screenshot_dir / "login_failed.png"
             page.screenshot(path=str(failure_path))
             print(f"📸 Error screenshot saved as {failure_path}")
+            logger.info("Error screenshot captured", path=str(failure_path))
         
+        logger.log_test_end("LoginTest", success=False, duration_ms=test_duration_ms)
         # Re-raise the exception
         raise
     
@@ -129,6 +155,7 @@ def run(playwright: Playwright, config: dict) -> None:
         # Clean up
         context.close()
         browser.close()
+        logger.info("Browser closed")
 
 
 def main():
