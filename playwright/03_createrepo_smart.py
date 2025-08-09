@@ -26,43 +26,12 @@ def load_config(config_path="config.json"):
     )
 
 
-def login(page, config):
-    """Login to the application"""
-    base_url = config["baseUrl"]
-    login_config = config["login"]
-    credentials = login_config["credentials"]
-    timeouts = login_config["timeouts"]
-    validation = config["validation"]
-    
-    login_url = f"{base_url}/console/login"
-    print(f"📍 Navigating to: {login_url}")
-    page.goto(login_url, wait_until="networkidle")
-    
-    email = credentials["email"]
-    password = credentials["password"]
-    
-    print(f"👤 Logging in as: {email}")
-    
-    # Fill login form
-    email_input = page.get_by_test_id("login-email-input")
-    email_input.wait_for(state="visible", timeout=timeouts["element"])
-    email_input.fill(email)
-    
-    password_input = page.get_by_test_id("login-password-input")
-    password_input.fill(password)
-    
-    # Submit form
-    submit_button = page.get_by_test_id("login-submit-button")
-    submit_button.click()
-    
-    # Wait for dashboard
-    dashboard_url = validation["dashboardUrl"]
-    page.wait_for_url(dashboard_url, timeout=timeouts["navigation"])
-    print("✅ Login successful!")
 
 
 def create_repository(page, config):
     """Create a new repository"""
+    # No need to navigate - we should already be logged in
+    # Just navigate to Resources using the menu
     repo_config = config["createRepo"]
     timeouts = repo_config["timeouts"]
     
@@ -237,15 +206,14 @@ def create_repository(page, config):
             # Wait a bit to ensure everything is loaded
             page.wait_for_timeout(2000)
             
-            # Close Queue Item Trace dialog if configured
-            if not repo_config.get("keepOpenAfterCreation", True):
-                try:
-                    close_button = page.locator('button:has-text("Close")').last
-                    close_button.wait_for(state="visible", timeout=timeouts["element"])
-                    close_button.click()
-                    print("📊 Closed Queue Item Trace dialog")
-                except:
-                    pass
+            # Always close Queue Item Trace dialog for shared session tests
+            try:
+                close_button = page.locator('button:has-text("Close")').last
+                close_button.wait_for(state="visible", timeout=timeouts["element"])
+                close_button.click()
+                print("📊 Closed Queue Item Trace dialog")
+            except:
+                print("⚠️  Could not find Close button for Queue Item Trace dialog")
         else:
             print("⚠️  Repository creation completed but success message not found")
             
@@ -255,10 +223,52 @@ def create_repository(page, config):
     return repo_name
 
 
+def run_with_page(page, config: dict) -> str:
+    """Run the repository creation with existing page/session"""
+    screenshots = config.get("screenshots", {})
+    
+    try:
+        # Create repository
+        repo_name = create_repository(page, config)
+        
+        print(f"✅ Repository '{repo_name}' created successfully!")
+        
+        # Take success screenshot if enabled
+        if screenshots.get("enabled", False) and not page.is_closed():
+            try:
+                screenshot_dir = Path(screenshots.get("path", "./screenshots"))
+                screenshot_dir.mkdir(exist_ok=True, parents=True)
+                success_path = screenshot_dir / f"createrepo_success_{repo_name}.png"
+                page.screenshot(path=str(success_path))
+                print(f"📸 Screenshot saved as {success_path}")
+            except:
+                print("⚠️  Could not take success screenshot - page may be closed")
+        
+    except Exception as e:
+        print(f"❌ Error occurred: {e}")
+        
+        # Take failure screenshot if enabled
+        if screenshots.get("enabled", False) and not page.is_closed():
+            try:
+                screenshot_dir = Path(screenshots.get("path", "./screenshots"))
+                screenshot_dir.mkdir(exist_ok=True, parents=True)
+                failure_path = screenshot_dir / f"createrepo_failed_{int(time.time())}.png"
+                page.screenshot(path=str(failure_path))
+                print(f"📸 Error screenshot saved as {failure_path}")
+            except:
+                print("⚠️  Could not take error screenshot - page may be closed")
+        
+        raise
+    
+    finally:
+        # Return the created repository name
+        return repo_name
+
+
 def run(playwright: Playwright, config: dict) -> None:
-    """Run the repository creation automation"""
+    """Run the repository creation automation (standalone mode)"""
     browser_config = config["browser"]
-    screenshots = config["screenshots"]
+    screenshots = config.get("screenshots", {})
     
     browser = playwright.chromium.launch(
         headless=browser_config["headless"],
@@ -269,7 +279,36 @@ def run(playwright: Playwright, config: dict) -> None:
     
     try:
         # Login first
-        login(page, config)
+        base_url = config["baseUrl"]
+        login_config = config["login"]
+        credentials = login_config["credentials"]
+        timeouts = login_config["timeouts"]
+        
+        login_url = f"{base_url}/console/login"
+        print(f"📍 Navigating to: {login_url}")
+        page.goto(login_url, wait_until="networkidle")
+        
+        email = credentials["email"]
+        password = credentials["password"]
+        
+        print(f"👤 Logging in as: {email}")
+        
+        # Fill login form
+        email_input = page.get_by_test_id("login-email-input")
+        email_input.wait_for(state="visible", timeout=timeouts["element"])
+        email_input.fill(email)
+        
+        password_input = page.get_by_test_id("login-password-input")
+        password_input.fill(password)
+        
+        # Submit form
+        submit_button = page.get_by_test_id("login-submit-button")
+        submit_button.click()
+        
+        # Wait for dashboard
+        dashboard_url = config["validation"]["dashboardUrl"]
+        page.wait_for_url(dashboard_url, timeout=timeouts["navigation"])
+        print("✅ Login successful!")
         
         # Create repository
         repo_name = create_repository(page, config)
@@ -277,8 +316,8 @@ def run(playwright: Playwright, config: dict) -> None:
         print(f"✅ Repository '{repo_name}' created successfully!")
         
         # Take success screenshot if enabled
-        if screenshots["enabled"]:
-            screenshot_dir = Path(screenshots["path"])
+        if screenshots.get("enabled", False):
+            screenshot_dir = Path(screenshots.get("path", "./screenshots"))
             screenshot_dir.mkdir(exist_ok=True, parents=True)
             success_path = screenshot_dir / f"createrepo_success_{repo_name}.png"
             page.screenshot(path=str(success_path))
@@ -288,8 +327,8 @@ def run(playwright: Playwright, config: dict) -> None:
         print(f"❌ Error occurred: {e}")
         
         # Take failure screenshot if enabled
-        if screenshots["enabled"]:
-            screenshot_dir = Path(screenshots["path"])
+        if screenshots.get("enabled", False):
+            screenshot_dir = Path(screenshots.get("path", "./screenshots"))
             screenshot_dir.mkdir(exist_ok=True, parents=True)
             failure_path = screenshot_dir / f"createrepo_failed_{int(time.time())}.png"
             page.screenshot(path=str(failure_path))

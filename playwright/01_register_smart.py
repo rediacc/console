@@ -166,93 +166,62 @@ class RegistrationTest(TestBase):
     
     def run(self, playwright: Playwright) -> bool:
         """Execute the registration test."""
-        browser = playwright.chromium.launch(
-            headless=self.config['browser']['headless'],
-            slow_mo=self.config['browser']['slowMo']
-        )
-        
-        context = browser.new_context(
-            viewport=self.config['browser']['viewport']
-        )
+        browser = self.create_browser(playwright)
+        context = self.create_browser_context(browser)
         
         # Enable console message capture
         page = None
         
         try:
-            # Step 1: Navigate to main page
-            page = context.new_page()
+            # Step 1: Navigate to console login page directly
+            page = self.create_page_with_cache_disabled(context)
             
             # Capture console errors
             page_errors = self.get_page_errors(page)
             
-            page.goto(f"{self.config['baseUrl']}/en", wait_until='domcontentloaded')
+            page.goto(f"{self.config['baseUrl']}/console/login", wait_until='domcontentloaded')
             self.wait_for_network_idle(page)
-            self.log_success("Navigated to main page")
+            self.log_success("Navigated to console login page")
             
-            # Step 2: Open login popup
-            with page.expect_popup() as popup_info:
-                page.get_by_role("banner").get_by_role("link", name=self.config['ui']['loginLinkText']).click()
-            
-            login_page = popup_info.value
-            login_page.wait_for_load_state('domcontentloaded')
-            self.log_success("Opened login popup")
-            
-            # Step 3: Change language
-            # First click on language dropdown to open it
-            language_dropdown = login_page.locator(self.config['ui']['languageDropdownSelector']).first
-            language_dropdown.wait_for(state='visible')
-            language_dropdown.click()
-            
-            # Wait for dropdown options to appear
-            login_page.wait_for_selector(self.config['ui']['languageDropdownOptionsSelector'], state='visible')
-            
-            # Now click on French option
-            french_option = login_page.get_by_text(self.config['ui']['languageSelector'])
-            french_option.wait_for(state='visible')
-            french_option.click()
-            
-            # Wait for language change to take effect by checking for French text
-            login_page.wait_for_selector('[data-testid="login-register-link"]', state='visible')
-            self.log_success("Changed language to French")
-            
-            # Step 4: Navigate to registration
-            register_link = login_page.get_by_test_id(self.config['ui']['registerLinkTestId'])
+            # Step 2: Click Register to open registration modal
+            register_link = page.get_by_text("Register")
             register_link.click()
+            self.log_success("Opened registration modal")
             
-            # Wait for registration form
-            self.wait_for_registration_form(login_page)
+            # Wait for registration form to appear in modal
+            self.wait_for_element(page, "text:Create New Account", timeout=5000)
             
-            # Step 5: Fill and submit form
-            self.fill_registration_form(login_page)
+            # Step 3: Fill registration form
+            self.fill_registration_form(page)
             
             # Take screenshot before submission
-            self.take_screenshot(login_page, "registration_form_filled")
+            self.take_screenshot(page, "registration_form_filled")
             
-            # Step 6: Submit registration
-            if not self.submit_registration(login_page):
+            # Step 4: Submit registration
+            if not self.submit_registration(page):
                 # Check for error messages
                 for error_key, error_pattern in self.config['registrationValidation']['errorMessages'].items():
-                    found, error_text = self.check_for_message(login_page, error_pattern, timeout=2000)
+                    found, error_text = self.check_for_message(page, error_pattern, timeout=2000)
                     if found:
                         self.log_error(f"Registration error: {error_text}")
                         if "already exists" in error_text:
                             self.log_info("User is already registered")
                         break
                 
-                self.take_screenshot(login_page, "registration_error")
+                self.take_screenshot(page, "registration_error")
                 return False
             
-            # Step 7: Handle activation
-            if not self.handle_activation(login_page):
+            # Step 5: Handle activation
+            if not self.handle_activation(page):
                 self.log_error("Activation failed")
-                self.take_screenshot(login_page, "activation_error")
+                self.take_screenshot(page, "activation_error")
                 return False
             
-            # Step 8: Check final state
-            self.check_final_state(login_page)
+            # Step 6: Check final state
+            self.check_final_state(page)
             
             # Take success screenshot
-            self.take_screenshot(login_page, "registration_success")
+            self.take_screenshot(page, "registration_success")
             
             # Log any console errors
             if page_errors:
@@ -272,6 +241,62 @@ class RegistrationTest(TestBase):
             
             # Print test summary
             return self.print_summary()
+    
+    def run_with_page(self, page) -> bool:
+        """Execute the registration test with existing page/session."""
+        try:
+            # Navigate to console login page
+            login_url = f"{self.config['baseUrl']}/console/login"
+            page.goto(login_url, wait_until='domcontentloaded')
+            self.wait_for_network_idle(page)
+            self.log_success("Navigated to console login page")
+            
+            # Click Register to open registration modal
+            register_link = page.get_by_text("Register")
+            register_link.click()
+            self.log_success("Opened registration modal")
+            
+            # Wait for registration form to appear in modal
+            self.wait_for_element(page, "text:Create New Account", timeout=5000)
+            
+            # Fill and submit form
+            self.fill_registration_form(page)
+            
+            # Take screenshot before submission
+            self.take_screenshot(page, "registration_form_filled")
+            
+            # Submit registration
+            if not self.submit_registration(page):
+                # Check for error messages
+                for error_key, error_pattern in self.config['registrationValidation']['errorMessages'].items():
+                    found, error_text = self.check_for_message(page, error_pattern, timeout=2000)
+                    if found:
+                        self.log_error(f"Registration error: {error_text}")
+                        if "already exists" in error_text:
+                            self.log_info("User is already registered")
+                        break
+                
+                self.take_screenshot(page, "registration_error")
+                return False
+            
+            # Handle activation
+            if not self.handle_activation(page):
+                self.log_error("Activation failed")
+                self.take_screenshot(page, "activation_error")
+                return False
+            
+            # Check final state
+            self.check_final_state(page)
+            
+            # Take success screenshot
+            self.take_screenshot(page, "registration_success")
+            
+            return True
+            
+        except Exception as e:
+            self.log_error(f"Test failed with exception: {str(e)}")
+            self.take_screenshot(page, "test_exception")
+            return False
 
 
 def main():

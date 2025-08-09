@@ -34,5 +34,12 @@ playwright/.venv/
 .venv/
 playwright/venv/
 playwright_venv/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
 playwright/__pycache__/
+
+# Screenshots
 screenshots/

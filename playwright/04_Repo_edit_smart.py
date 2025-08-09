@@ -469,6 +469,112 @@ class RepoEditTest(TestBase):
             
             # Exit with appropriate code
             sys.exit(0 if test_passed else 1)
+    
+    def run_with_page(self, page) -> bool:
+        """Execute the repository edit test with existing page/session."""
+        try:
+            # No need to navigate - we're already logged in
+            # Check if we're already on Resources page
+            if "/resources" not in page.url:
+                # Navigate to Resources only if not already there
+                resources_menu = page.get_by_test_id(self.config['repoEdit']['ui']['resourcesMenuTestId'])
+                resources_menu.get_by_text(self.config['repoEdit']['ui']['resourcesMenuText']).click()
+                self.log_info("Navigating to Resources...")
+                self.wait_for_network_idle(page)
+            else:
+                self.log_info("Already on Resources page")
+            
+            # Click repositories tab
+            repo_tab_element = self.wait_for_element(page, f"data-testid:{self.config['repoEdit']['ui']['repositoriesTabTestId']}", timeout=5000)
+            if repo_tab_element:
+                page.get_by_test_id(self.config['repoEdit']['ui']['repositoriesTabTestId']).click()
+            
+            # Wait for repository list to load
+            self.wait_for_network_idle(page)
+            self.log_success("Repository list loaded")
+            self.take_screenshot(page, "03_repository_list")
+            
+            # Find and click edit button
+            edit_clicked, repo_id = self.find_and_click_edit_button(page)
+            
+            if not edit_clicked:
+                self.log_error("No repositories found to edit")
+                self.log_info("This might be because there are no repositories in the system")
+                return True  # Not a failure if no repos exist
+            
+            self.log_info(f"Editing repository: {repo_id}")
+            
+            # Wait for modal
+            try:
+                page.wait_for_selector('text=Edit Repository Name', timeout=5000)
+                self.log_success("Edit modal opened")
+                self.take_screenshot(page, "04_edit_modal")
+            except:
+                self.log_error("Edit modal did not appear")
+                return False
+            
+            # Fill repository name
+            repo_name_element = self.wait_for_element(
+                page, 
+                f"data-testid:{self.config['repoEdit']['ui']['repositoryNameInputTestId']}",
+                timeout=3000
+            )
+            
+            if repo_name_element:
+                # Use locator to interact with the input
+                repo_name_input = page.get_by_test_id(self.config['repoEdit']['ui']['repositoryNameInputTestId'])
+                repo_name_input.click()
+                repo_name_input.fill("")  # Clear
+                # Generate unique repository name with timestamp
+                repo_name_template = self.config['repoEdit']['repository']['targetRepoName']
+                if '${timestamp}' in repo_name_template:
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    unique_repo_name = repo_name_template.replace('${timestamp}', timestamp)
+                else:
+                    unique_repo_name = repo_name_template
+                    
+                repo_name_input.fill(unique_repo_name)
+                self.log_success(f"Repository name changed to: {unique_repo_name}")
+            
+            # Submit the form
+            ok_button = page.get_by_test_id(self.config['repoEdit']['ui']['modalOkButtonTestId'])
+            
+            try:
+                # Try to submit
+                with page.expect_response(lambda r: '/api/' in r.url, timeout=10000) as response_info:
+                    ok_button.click()
+                
+                response = response_info.value
+                
+                if response.status == 200:
+                    self.log_success(f"Repository updated successfully (Status: {response.status})")
+                    
+                    # Wait for modal to close
+                    try:
+                        page.wait_for_selector('text=Edit Repository Name', state='hidden', timeout=5000)
+                        self.log_success("Modal closed successfully")
+                    except:
+                        self.log_info("Modal may still be visible")
+                    
+                    # Check for success messages
+                    success_message = self.wait_for_toast_message(page, timeout=3000)
+                    if success_message:
+                        self.log_success(f"Success notification: {success_message}")
+                    
+                    return True
+                else:
+                    self.log_error(f"Update failed with status: {response.status}")
+                    return False
+                    
+            except Exception as e:
+                self.log_error(f"Failed to submit form: {str(e)}")
+                self.take_screenshot(page, "error_submit_failed")
+                return False
+                
+        except Exception as e:
+            self.log_error(f"Test failed with unexpected error: {str(e)}")
+            self.take_screenshot(page, "unexpected_error")
+            return False
 
 
 def main():

@@ -5,6 +5,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple, List
+from playwright.sync_api import Browser, BrowserContext, Page, Playwright, Route, Request, Response
 
 
 class TestBase:
@@ -19,6 +20,7 @@ class TestBase:
         self.warnings: List[str] = []
         self.screenshots: List[str] = []
         self.console_errors: List[str] = []
+        self.token_manager = TokenManager()
     
     def load_config(self, config_path: str) -> Dict[str, Any]:
         """Load configuration from JSON file."""
@@ -81,20 +83,29 @@ class TestBase:
     
     def take_screenshot(self, page, name: str) -> str:
         """Take a screenshot with timestamp."""
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f"{name}_{timestamp}.png"
-        
-        # Get the directory where the test script is located
-        test_dir = Path(self.config_path).parent if hasattr(self, 'config_path') else Path.cwd()
-        screenshots_dir = test_dir / "screenshots"
-        
-        # Create screenshots directory if it doesn't exist
-        screenshots_dir.mkdir(exist_ok=True)
-        filepath = str(screenshots_dir / filename)
-        
-        page.screenshot(path=filepath)
-        self.screenshots.append(filepath)
-        return filepath
+        try:
+            # Check if page is still valid
+            if page.is_closed():
+                self.log_warning(f"Cannot take screenshot '{name}' - page is closed")
+                return None
+                
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f"{name}_{timestamp}.png"
+            
+            # Get the directory where the test script is located
+            test_dir = Path(self.config_path).parent if hasattr(self, 'config_path') else Path.cwd()
+            screenshots_dir = test_dir / "screenshots"
+            
+            # Create screenshots directory if it doesn't exist
+            screenshots_dir.mkdir(exist_ok=True)
+            filepath = str(screenshots_dir / filename)
+            
+            page.screenshot(path=filepath)
+            self.screenshots.append(filepath)
+            return filepath
+        except Exception as e:
+            self.log_warning(f"Failed to take screenshot '{name}': {str(e)}")
+            return None
     
     def log_success(self, message: str):
         """Log a success message."""
@@ -216,6 +227,102 @@ class TestBase:
         Note: setup_console_handler should be called on the page first.
         """
         return self.console_errors
+    
+    def create_browser(self, playwright: Playwright) -> Browser:
+        """Create a browser instance with standard configuration."""
+        return playwright.chromium.launch(
+            headless=self.config['browser']['headless'],
+            slow_mo=self.config['browser']['slowMo']
+        )
+    
+    def create_browser_context(self, browser: Browser) -> BrowserContext:
+        """Create a browser context with cache disabled and standard configuration."""
+        return browser.new_context(
+            viewport=self.config['browser']['viewport'],
+            # Disable cache to always get fresh content
+            bypass_csp=True,
+            ignore_https_errors=True,
+            extra_http_headers={
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        )
+    
+    def create_page_with_cache_disabled(self, context: BrowserContext) -> Page:
+        """Create a new page with cache disabled via CDP."""
+        page = context.new_page()
+        
+        # Disable cache using CDP (Chrome DevTools Protocol)
+        cdp_session = context.new_cdp_session(page)
+        cdp_session.send("Network.setCacheDisabled", {"cacheDisabled": True})
+        
+        # Setup console error handler
+        self.setup_console_handler(page)
+        
+        # Setup request/response interceptors for token management
+        self.setup_api_interceptors(page)
+        
+        return page
+    
+    def setup_api_interceptors(self, page: Page):
+        """Setup interceptors to handle API token rotation."""
+        def handle_route(route: Route, request: Request):
+            # Add current token to request headers if available
+            headers = request.headers.copy()
+            token = self.token_manager.get_token()
+            if token and '/api/StoredProcedure' in request.url:
+                headers['rediacc-requesttoken'] = token
+            
+            # Continue with modified headers
+            route.continue_(headers=headers)
+        
+        # Intercept all requests to add token
+        page.route('**/*', handle_route)
+        
+        # Monitor responses for token updates
+        def handle_response(response: Response):
+            try:
+                if '/api/StoredProcedure' in response.url and response.status == 200:
+                    # Try to parse response body
+                    body = response.json()
+                    self.token_manager.update_from_response(body)
+            except Exception:
+                pass
+        
+        page.on('response', handle_response)
+
+
+class TokenManager:
+    """Manages API token rotation for Rediacc API."""
+    
+    def __init__(self):
+        self.current_token: Optional[str] = None
+        self.is_updating = False
+    
+    def set_token(self, token: str):
+        """Set the current token."""
+        self.current_token = token
+    
+    def get_token(self) -> Optional[str]:
+        """Get the current token."""
+        return self.current_token
+    
+    def update_from_response(self, response_body: Dict[str, Any]):
+        """Extract and update token from API response."""
+        try:
+            # Check for nextRequestCredential in the response
+            result_sets = response_body.get('resultSets', [])
+            if result_sets and len(result_sets) > 0:
+                data = result_sets[0].get('data', [])
+                if data and len(data) > 0:
+                    next_token = data[0].get('nextRequestCredential')
+                    if next_token:
+                        self.set_token(next_token)
+                        return True
+        except Exception:
+            pass
+        return False
 
 
 class ConfigBuilder:

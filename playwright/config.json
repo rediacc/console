@@ -109,14 +109,14 @@
   },
   "registrationValidation": {
     "successMessages": {
-      "registrationSuccess": "Inscription réussie ! Veuillez vérifier votre courriel pour le code d'activation.",
-      "activationSuccess": "Compte activé avec succès !",
-      "registrationComplete": "Inscription Terminée !"
+      "registrationSuccess": "Registration successful! Please check your email for the activation code.",
+      "activationSuccess": "Account activated successfully!",
+      "registrationComplete": "Registration Complete!"
     },
     "errorMessages": {
       "userExists": "User with email .* already exists.",
-      "invalidCode": "Code d'activation invalide",
-      "networkError": "Erreur de connexion"
+      "invalidCode": "Invalid activation code",
+      "networkError": "Network error"
     }
   },
   "repoEdit": {
