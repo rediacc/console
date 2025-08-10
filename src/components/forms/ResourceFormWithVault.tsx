@@ -40,6 +40,7 @@ interface ResourceFormWithVaultProps<T extends Record<string, any> = any> {
   onTestConnectionStateChange?: (success: boolean) => void // Callback for test connection state
   beforeVaultContent?: React.ReactNode // Custom content to render before vault configuration
   isModalOpen?: boolean // Modal open state to handle resets
+  isEditMode?: boolean // Whether we're in edit mode
 }
 
 const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormWithVaultProps<any>>(
@@ -60,6 +61,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     onTestConnectionStateChange,
     beforeVaultContent,
     isModalOpen,
+    isEditMode = false,
   }, ref) {
     const { t } = useTranslation('common')
     const [vaultData, setVaultData] = useState<Record<string, any>>(initialVaultData)
@@ -328,6 +330,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
             bridgeName={bridgeName}
             onTestConnectionStateChange={onTestConnectionStateChange}
             isModalOpen={isModalOpen}
+            isEditMode={isEditMode}
             onImportExport={(handlers) => {
               importExportHandlers.current = handlers
               // Pass handlers to parent if callback is provided

@@ -23,7 +23,7 @@ export const usePermissionGroups = () => {
       const data = response.resultSets[1]?.data || []
       
       // Transform the data to match our interface
-      return data.map(group => ({
+      return data.map((group: any) => ({
         permissionGroupName: group.PermissionGroupName || group.permissionGroupName,
         userCount: group.UserCount || group.userCount || 0,
         permissionCount: group.PermissionCount || group.permissionCount || 0,

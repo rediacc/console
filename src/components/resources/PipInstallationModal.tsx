@@ -50,7 +50,8 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({ command, description, s
       await navigator.clipboard.writeText(command)
       setCopied(true)
       message.success('Command copied to clipboard!')
-      setTimeout(() => setCopied(false), 2000)
+      // Reset copy state immediately after user interaction
+      setCopied(false)
     } catch (error) {
       message.error('Failed to copy command')
     }

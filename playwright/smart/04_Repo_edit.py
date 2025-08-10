@@ -20,6 +20,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from test_utils import TestBase, ConfigBuilder
 import time
 from logging_utils import StructuredLogger, log_playwright_action
+from debug_dump import DebugDumper, quick_dump
 
 
 class RepoEditTest(TestBase):
@@ -268,6 +269,15 @@ class RepoEditTest(TestBase):
                 modal_visible = True
                 self.log_success("Edit modal opened")
                 self.take_screenshot(login_page, "04_edit_modal")
+                
+                # DEBUG: Dump state after modal opens
+                self.log_info("🔍 DEBUG: Creating dump after edit modal opens...")
+                dump_file = quick_dump(login_page, "edit_modal_opened", {
+                    "test": "repo_edit",
+                    "step": "modal_opened",
+                    "repo_id": repo_id
+                })
+                self.log_info(f"📁 Debug dump created: {dump_file}")
             except:
                 self.log_error("Edit modal did not appear")
                 return
@@ -291,6 +301,15 @@ class RepoEditTest(TestBase):
                 repo_name_input.fill(unique_repo_name)
                 self.log_success(f"Repository name changed to: {unique_repo_name}")
                 log_playwright_action(self.logger, "fill", selector="repository-name-input", value_info=f"repo name: {unique_repo_name}")
+            
+            # DEBUG: Dump state before password field handling
+            self.log_info("🔍 DEBUG: Creating dump before password field handling...")
+            dump_file = quick_dump(login_page, "before_password_handling", {
+                "test": "repo_edit",
+                "step": "before_password",
+                "repo_name": unique_repo_name
+            })
+            self.log_info(f"📁 Debug dump created: {dump_file}")
             
             # Handle password field by clicking generate button
             self.log_info("Looking for password generate button...")
@@ -373,6 +392,15 @@ class RepoEditTest(TestBase):
             
             # Wait a bit to see if password was generated and form validation updates
             login_page.wait_for_timeout(2000)
+            
+            # DEBUG: Dump state after password generation attempt
+            self.log_info("🔍 DEBUG: Creating dump after password generation attempt...")
+            dump_file = quick_dump(login_page, "after_password_generation", {
+                "test": "repo_edit",
+                "step": "after_password_generation",
+                "generate_clicked": generate_clicked if 'generate_clicked' in locals() else False
+            })
+            self.log_info(f"📁 Debug dump created: {dump_file}")
             
             # Additional check: See if there are other validation errors besides password
             all_errors = login_page.locator('.ant-form-item-explain-error').all()
@@ -554,6 +582,16 @@ class RepoEditTest(TestBase):
                 page.wait_for_selector('text=Edit Repository Name', timeout=5000)
                 self.log_success("Edit modal opened")
                 self.take_screenshot(page, "04_edit_modal")
+                
+                # DEBUG: Dump state after modal opens
+                self.log_info("🔍 DEBUG: Creating dump after edit modal opens...")
+                dump_file = quick_dump(page, "edit_modal_opened_session", {
+                    "test": "repo_edit",
+                    "step": "modal_opened",
+                    "repo_id": repo_id,
+                    "session_mode": True
+                })
+                self.log_info(f"📁 Debug dump created: {dump_file}")
             except:
                 self.log_error("Edit modal did not appear")
                 return False

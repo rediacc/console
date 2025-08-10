@@ -2,9 +2,9 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import type { 
   ValidationResult,
   BulkOperationProgress,
-  BulkOperationResult,
-  MachineAssignmentType 
+  BulkOperationResult
 } from '@/features/distributed-storage'
+import type { MachineAssignmentType } from '@/types'
 
 // Types
 export interface OperationHistoryEntry {

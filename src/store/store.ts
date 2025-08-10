@@ -29,7 +29,7 @@ export const store = configureStore({
     }).concat(
       machineAssignmentMiddleware,
       machineSelectionPersistenceMiddleware,
-      process.env.NODE_ENV === 'development' ? machineAssignmentLoggingMiddleware : []
+      import.meta.env.DEV ? machineAssignmentLoggingMiddleware : []
     ).filter(Boolean),
 })
 

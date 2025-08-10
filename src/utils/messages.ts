@@ -57,7 +57,7 @@ function displayToast(type: MessageType, content: string): void {
   
   if (toastConfig.isCustom) {
     toast(content, toastConfig.options)
-  } else {
+  } else if (toastConfig.handler) {
     toastConfig.handler(content)
   }
 }

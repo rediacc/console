@@ -80,22 +80,10 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
                       'id' in data ? data.id : null
 
     if (prevId !== currentId) {
-      // Data has changed, trigger fade transition
-      setIsTransitioning(true)
-      setOpacity(0)
-
-      // After fade out, switch data
-      setTimeout(() => {
-        setCurrentData(data)
-        // Fade in new content
-        setTimeout(() => {
-          setOpacity(1)
-          setTimeout(() => {
-            setIsTransitioning(false)
-          }, 300)
-        }, 50)
-      }, 300)
-
+      // Data has changed, update immediately without transitions
+      setCurrentData(data)
+      setOpacity(1)
+      setIsTransitioning(false)
       prevDataRef.current = data
     } else {
       // Same entity, just update without transition

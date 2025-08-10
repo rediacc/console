@@ -28,9 +28,6 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return btoa(String.fromCharCode(...new Uint8Array(buffer)))
 }
 
-// Convert ArrayBuffer to hex string
-const arrayBufferToHex = (buffer: ArrayBuffer): string => 
-  Array.from(new Uint8Array(buffer), b => b.toString(16).padStart(2, '0')).join('')
 
 // Generate RSA key pair using Web Crypto API
 async function generateRSAKeyPair(keySize: 2048 | 4096 = 2048): Promise<CryptoKeyPair> {

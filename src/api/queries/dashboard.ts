@@ -196,7 +196,7 @@ export const useCompanyInfo = () => {
       return { companyInfo, activeSubscription };
     },
     staleTime: Infinity, // Never consider stale
-    cacheTime: Infinity, // Keep in cache forever (until logout)
+    gcTime: Infinity, // Keep in cache forever (until logout) - gcTime replaces cacheTime in React Query v5
     refetchOnWindowFocus: false, // Don't refetch when window regains focus
     refetchOnMount: false, // Don't refetch when component mounts
     refetchOnReconnect: false, // Don't refetch when reconnecting

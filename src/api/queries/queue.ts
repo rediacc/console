@@ -98,11 +98,11 @@ export const useQueueItems = (filters: QueueFilters = {}) => {
           const firstItem = table.data[0]
           // Check if this is the statistics table
           if ('totalCount' in firstItem || 'pendingCount' in firstItem) {
-            statistics = firstItem as QueueStatistics
+            statistics = firstItem as unknown as QueueStatistics
           }
           // Check if this is the queue items table (has taskId)
           else if ('taskId' in firstItem || 'TaskId' in firstItem) {
-            items = table.data as QueueItem[]
+            items = table.data as unknown as QueueItem[]
           }
           // Skip resultSets that only have nextRequestCredential
         }

@@ -95,10 +95,8 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
         setInstallModalErrorType('protocol-not-registered')
       }
       
-      // Show modal after a short delay
-      setTimeout(() => {
-        setShowInstallModal(true)
-      }, 500)
+      // Show modal immediately
+      setShowInstallModal(true)
     }
   }, [token, teamName, machine, repository, runningPlugins])
 

@@ -68,7 +68,8 @@ export const useCompanyArchitecture = () => {
       }
       
       // Extract the JSON string from the response
-      const jsonString = extractTableData(response, 1, [])[0]?.companyDataGraph
+      const extractedData = extractTableData(response, 1, []) as any[]
+      const jsonString = extractedData[0]?.companyDataGraph as string | undefined
       if (!jsonString) {
         throw new Error('No architecture data returned')
       }
@@ -84,8 +85,12 @@ export const useCompanyArchitecture = () => {
         fixTripleEncodedFields(nodes, ['users'])
         
         // Ensure all node arrays exist with defaults
-        const nodeDefaults = ['machines', 'repositories', 'schedules', 'storages']
-        nodeDefaults.forEach(field => { nodes[field] = nodes[field] || [] })
+        const nodeDefaults = ['machines', 'repositories', 'schedules', 'storages'] as const
+        nodeDefaults.forEach(field => { 
+          if (!nodes[field]) {
+            (nodes as any)[field] = []
+          }
+        })
         
         return { metadata, nodes, relationships, summary }
       } catch (e) {

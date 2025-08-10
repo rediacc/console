@@ -67,7 +67,7 @@ async function batchStorageOperation(
   if (operation === 'migrate') {
     // Save non-null values to secure storage
     await Promise.all(
-      entries.map(([storageKey, localKey], index) => {
+      entries.map(([storageKey], index) => {
         const value = values[index]
         return value ? secureStorage.setItem(storageKey, value) : null
       }).filter(Boolean)

@@ -257,10 +257,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
   const handlePanelClose = useCallback(() => {
     setVaultPanelVisible(false);
-    // Keep selectedMachine for a bit to avoid UI flicker during close animation
-    setTimeout(() => {
-      setSelectedMachine(null);
-    }, 300);
+    // Clear selected machine immediately - no delays
+    setSelectedMachine(null);
   }, []);
 
 

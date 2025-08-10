@@ -85,6 +85,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
       footer={null}
       style={{ top: 20 }}
       data-testid="vault-modal"
+      destroyOnHidden
     >
       <Space direction="vertical" style={{ width: '100%' }} size={12}>
         <div 

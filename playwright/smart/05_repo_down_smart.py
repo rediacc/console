@@ -20,6 +20,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from test_utils import TestBase
 import time
 from logging_utils import StructuredLogger, log_playwright_action
+from debug_dump import DebugDumper, quick_dump
 
 
 class RepoDownTest(TestBase):
@@ -293,30 +294,23 @@ class RepoDownTest(TestBase):
                 queue_timeout = self.config['repoDown'].get('queueTimeout', 120000)  # Default 120 seconds
                 
                 try:
-                    # First check if the dialog might already be open with different text
-                    dialog_found = False
-                    dialog_selectors = [
-                        '[role="dialog"]:has-text("Queue Item Trace")',
-                        '[role="dialog"]:has-text("Task Progress")',
-                        '[role="dialog"]:has-text("Processing")',
-                        '.ant-modal:has-text("Queue")',
-                        '.ant-modal-wrap:not(.ant-modal-wrap-hidden)'
-                    ]
+                    # Wait for the Queue Item Trace dialog to appear
+                    # First, wait a moment to ensure any previous dialog animations complete
+                    page.wait_for_timeout(500)
                     
-                    for selector in dialog_selectors:
-                        try:
-                            if page.locator(selector).is_visible(timeout=5000):
-                                self.log_info(f"Dialog found with selector: {selector}")
-                                dialog_found = True
-                                break
-                        except:
-                            continue
+                    # DEBUG: Dump state before looking for dialog
+                    self.log_info("🔍 DEBUG: Creating dump before dialog search...")
+                    dump_file = quick_dump(page, "before_queue_dialog_search", {
+                        "test": "repo_down",
+                        "step": "before_dialog_search",
+                        "repo_name": target_repo
+                    })
+                    self.log_info(f"📁 Debug dump created: {dump_file}")
                     
-                    if not dialog_found:
-                        # Wait for the Queue Item Trace dialog to appear
-                        page.wait_for_selector('[role="dialog"]:has-text("Queue Item Trace")', 
-                                               state="visible", 
-                                               timeout=30000)  # Reduced timeout for initial wait
+                    # Use nth selector to get the LAST (newest) visible modal
+                    # This handles cases where old dialogs remain in DOM
+                    visible_dialog = page.locator('.ant-modal-wrap:not(.ant-modal-wrap-hidden):has([role="dialog"]:has-text("Queue Item Trace"))').last
+                    visible_dialog.wait_for(state="visible", timeout=30000)
                     
                     self.log_success("📊 Queue Item Trace dialog opened")
                     
@@ -328,10 +322,11 @@ class RepoDownTest(TestBase):
                     
                     try:
                         # Look for the success alert box specifically
+                        # Use a shorter timeout since down operations complete quickly
                         success_alert = page.wait_for_selector(
                             '.ant-alert-success:has-text("Task Completed Successfully")', 
                             state="visible", 
-                            timeout=queue_timeout
+                            timeout=30000  # 30 seconds for down operation
                         )
                         
                         if success_alert:
@@ -374,8 +369,14 @@ class RepoDownTest(TestBase):
                         
                         # Always close Queue Item Trace dialog for shared session tests
                         try:
-                            close_button = page.locator('button:has-text("Close")').last
-                            close_button.wait_for(state="visible", timeout=self.config['repoDown']['timeouts']['elementWait'])
+                            # Try the test-id first (as shown in dummy test), then fallback to text selector
+                            try:
+                                close_button = page.get_by_test_id("queue-trace-close-button")
+                                close_button.wait_for(state="visible", timeout=2000)
+                            except:
+                                close_button = page.locator('button:has-text("Close")').last
+                                close_button.wait_for(state="visible", timeout=self.config['repoDown']['timeouts']['elementWait'])
+                            
                             close_button.click()
                             self.log_success("📊 Closed Queue Item Trace dialog")
                         except:
@@ -385,6 +386,17 @@ class RepoDownTest(TestBase):
                         
                 except Exception as e:
                     self.log_warning(f"⚠️  Queue Item Trace dialog did not appear or timed out: {e}")
+                    
+                    # DEBUG: Dump state when dialog not found
+                    self.log_info("🔍 DEBUG: Creating dump after dialog timeout...")
+                    dump_file = quick_dump(page, "queue_dialog_timeout", {
+                        "test": "repo_down",
+                        "step": "dialog_timeout",
+                        "error": str(e),
+                        "repo_name": target_repo
+                    })
+                    self.log_info(f"📁 Debug dump created: {dump_file}")
+                    
                     # Take a screenshot to see what's on screen
                     if not page.is_closed():
                         self.take_screenshot(page, "queue_dialog_timeout")
@@ -613,9 +625,22 @@ class RepoDownTest(TestBase):
                 
                 try:
                     # Wait for the Queue Item Trace dialog to appear
-                    login_page.wait_for_selector('[role="dialog"]:has-text("Queue Item Trace")', 
-                                           state="visible", 
-                                           timeout=queue_timeout)
+                    # First, wait a moment to ensure any previous dialog animations complete
+                    login_page.wait_for_timeout(500)
+                    
+                    # DEBUG: Dump state before looking for dialog
+                    self.log_info("🔍 DEBUG: Creating dump before dialog search...")
+                    dump_file = quick_dump(login_page, "before_queue_dialog_search", {
+                        "test": "repo_down",
+                        "step": "before_dialog_search",
+                        "repo_name": target_repo
+                    })
+                    self.log_info(f"📁 Debug dump created: {dump_file}")
+                    
+                    # Use nth selector to get the LAST (newest) visible modal
+                    # This handles cases where old dialogs remain in DOM
+                    visible_dialog = login_page.locator('.ant-modal-wrap:not(.ant-modal-wrap-hidden):has([role="dialog"]:has-text("Queue Item Trace"))').last
+                    visible_dialog.wait_for(state="visible", timeout=queue_timeout)
                     self.log_success("✓ Step 8: Queue Item Trace dialog opened")
                     
                     # Wait for task completion
@@ -626,10 +651,11 @@ class RepoDownTest(TestBase):
                     
                     try:
                         # Look for the success alert box specifically
+                        # Use a shorter timeout since down operations complete quickly
                         success_alert = login_page.wait_for_selector(
                             '.ant-alert-success:has-text("Task Completed Successfully")', 
                             state="visible", 
-                            timeout=queue_timeout
+                            timeout=30000  # 30 seconds for down operation
                         )
                         
                         if success_alert:
@@ -672,8 +698,14 @@ class RepoDownTest(TestBase):
                         
                         # Always close Queue Item Trace dialog for shared session tests
                         try:
-                            close_button = login_page.locator('button:has-text("Close")').last
-                            close_button.wait_for(state="visible", timeout=self.config['repoDown']['timeouts']['elementWait'])
+                            # Try the test-id first (as shown in dummy test), then fallback to text selector
+                            try:
+                                close_button = login_page.get_by_test_id("queue-trace-close-button")
+                                close_button.wait_for(state="visible", timeout=2000)
+                            except:
+                                close_button = login_page.locator('button:has-text("Close")').last
+                                close_button.wait_for(state="visible", timeout=self.config['repoDown']['timeouts']['elementWait'])
+                            
                             close_button.click()
                             self.log_success("✓ Step 8: Closed Queue Item Trace dialog")
                         except:
@@ -683,9 +715,20 @@ class RepoDownTest(TestBase):
                         
                 except Exception as e:
                     self.log_warning(f"⚠️  Queue Item Trace dialog did not appear or timed out: {e}")
+                    
+                    # DEBUG: Dump state when dialog not found
+                    self.log_info("🔍 DEBUG: Creating dump after dialog timeout...")
+                    dump_file = quick_dump(login_page, "queue_dialog_timeout", {
+                        "test": "repo_down",
+                        "step": "dialog_timeout",
+                        "error": str(e),
+                        "repo_name": target_repo
+                    })
+                    self.log_info(f"📁 Debug dump created: {dump_file}")
+                    
                     # Take a screenshot to see what's on screen
-                    if not page.is_closed():
-                        self.take_screenshot(page, "queue_dialog_timeout")
+                    if not login_page.is_closed():
+                        self.take_screenshot(login_page, "queue_dialog_timeout")
                     # Check if the operation completed without showing dialog
                     self.log_info("Checking if operation completed without dialog...")
             

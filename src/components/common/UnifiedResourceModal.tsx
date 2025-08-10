@@ -429,6 +429,12 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     if (mode === 'edit') {
       if (resourceType === 'machine') return [nameField, createRegionField(), createBridgeField()]
       if (resourceType === 'bridge') return [nameField, createRegionField()]
+      // For repositories in edit mode, we still need to show the vault fields
+      // so users can update credentials if needed
+      if (resourceType === 'repository') {
+        // Don't include team field in edit mode since team can't be changed
+        return [nameField]
+      }
       return [nameField]
     }
 
@@ -821,8 +827,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   // Auto-open function modal if we're in create mode with existing data (for repository functions)
   useEffect(() => {
     if (open && mode === 'create' && existingData && showFunctions) {
-      // Small delay to ensure proper modal rendering
-      setTimeout(() => setShowFunctionModal(true), 100)
+      // Open modal immediately (no delay)
+      setShowFunctionModal(true)
     }
   }, [open, mode, existingData, showFunctions])
 
@@ -883,6 +889,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         title={getModalTitle()}
         open={open}
         onCancel={onCancel}
+        destroyOnHidden
         footer={[
           // Left side buttons (only in create mode)
           ...(mode === 'create' ? [
@@ -999,8 +1006,72 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           entityType={getEntityType()}
           vaultFieldName={getVaultFieldName()}
           showDefaultsAlert={mode === 'create' && uiMode === 'simple'}
-          initialVaultData={existingData?.vaultContent ? JSON.parse(existingData.vaultContent) : {}}
+          initialVaultData={(() => {
+            if (existingData?.vaultContent) {
+              try {
+                let parsed = JSON.parse(existingData.vaultContent);
+                console.log('[UnifiedResourceModal] Resource type:', resourceType);
+                console.log('[UnifiedResourceModal] Existing data:', existingData);
+                console.log('[UnifiedResourceModal] Raw vault content:', existingData.vaultContent);
+                console.log('[UnifiedResourceModal] Parsed vault data for edit:', parsed);
+                console.log('[UnifiedResourceModal] Parsed vault keys:', Object.keys(parsed));
+                
+                // Special handling for repositories - map the vault data correctly
+                if (resourceType === 'repository') {
+                  console.log('[UnifiedResourceModal] Repository vault before mapping:', JSON.stringify(parsed, null, 2));
+                  
+                  // The vault data might have the credential at root level or nested
+                  // We need to ensure it's in the format VaultEditor expects
+                  if (!parsed.credential && parsed.repoVault) {
+                    // If repoVault exists, it might contain the credential
+                    try {
+                      const innerVault = typeof parsed.repoVault === 'string' ? 
+                        JSON.parse(parsed.repoVault) : parsed.repoVault;
+                      if (innerVault.credential) {
+                        parsed = { credential: innerVault.credential };
+                      }
+                    } catch (e) {
+                      console.error('[UnifiedResourceModal] Failed to parse inner vault:', e);
+                    }
+                  } else if (parsed.repositoryVault) {
+                    // Or it might be in repositoryVault
+                    try {
+                      const innerVault = typeof parsed.repositoryVault === 'string' ? 
+                        JSON.parse(parsed.repositoryVault) : parsed.repositoryVault;
+                      if (innerVault.credential) {
+                        parsed = { credential: innerVault.credential };
+                      }
+                    } catch (e) {
+                      console.error('[UnifiedResourceModal] Failed to parse repository vault:', e);
+                    }
+                  }
+                  
+                  // If still no credential field but we have other fields, check if any could be the credential
+                  if (!parsed.credential) {
+                    // Check for any 32-character string that might be the credential
+                    for (const [key, value] of Object.entries(parsed)) {
+                      if (typeof value === 'string' && value.length === 32 && 
+                          /^[A-Za-z0-9!@#$%^&*()_+{}|:<>,.?/]+$/.test(value)) {
+                        console.log(`[UnifiedResourceModal] Found potential credential in field '${key}':`, value);
+                        parsed = { credential: value };
+                        break;
+                      }
+                    }
+                  }
+                  
+                  console.log('[UnifiedResourceModal] Repository vault after mapping:', JSON.stringify(parsed, null, 2));
+                }
+                
+                return parsed;
+              } catch (e) {
+                console.error('[UnifiedResourceModal] Failed to parse vault content:', e);
+                return {};
+              }
+            }
+            return {};
+          })()}
           hideImportExport={true}
+          isEditMode={mode === 'edit'}
           onImportExportRef={(handlers) => {
             importExportHandlers.current = handlers
           }}

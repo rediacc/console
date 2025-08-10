@@ -230,6 +230,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
       open={open}
       onCancel={onClose}
       width={1000}
+      destroyOnHidden
       footer={[
         <Button 
           key="run" 

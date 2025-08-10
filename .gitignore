@@ -47,3 +47,4 @@ logs/latest
 
 # Logs
 logs/sessions/
+debug_dumps/

@@ -22,7 +22,7 @@ export const machineAssignmentMiddleware: Middleware<{}, RootState> =
       })
     }
     
-    return (next) => (action) => {
+    return (next) => (action: any) => {
       const result = next(action)
       
       // Handle specific actions
@@ -63,7 +63,7 @@ export const machineAssignmentMiddleware: Middleware<{}, RootState> =
 
 // Middleware for persisting selection across page refreshes (optional)
 export const machineSelectionPersistenceMiddleware: Middleware<{}, RootState> = 
-  (store) => (next) => (action) => {
+  (store) => (next) => (action: any) => {
     const result = next(action)
     
     // Persist selection to sessionStorage
@@ -89,9 +89,9 @@ export const machineSelectionPersistenceMiddleware: Middleware<{}, RootState> =
 
 // Middleware for logging operations (development only)
 export const machineAssignmentLoggingMiddleware: Middleware<{}, RootState> = 
-  (store) => (next) => (action) => {
-    if (process.env.NODE_ENV === 'development') {
-      if (action.type.startsWith('machineAssignment/')) {
+  (store) => (next) => (action: any) => {
+    if (import.meta.env.DEV) {
+      if (action.type?.startsWith('machineAssignment/')) {
         console.group(`🔧 Machine Assignment: ${action.type}`)
         console.log('Action:', action)
         console.log('State before:', store.getState().machineAssignment)
@@ -100,8 +100,8 @@ export const machineAssignmentLoggingMiddleware: Middleware<{}, RootState> =
     
     const result = next(action)
     
-    if (process.env.NODE_ENV === 'development') {
-      if (action.type.startsWith('machineAssignment/')) {
+    if (import.meta.env.DEV) {
+      if (action.type?.startsWith('machineAssignment/')) {
         console.log('State after:', store.getState().machineAssignment)
         console.groupEnd()
       }
@@ -159,8 +159,8 @@ export const validateSelectedMachines = createAsyncThunk<
         vm => vm.machineName === machine.machineName
       )
       
-      const errors = validationResult.errors[machine.machineName] || []
-      const warnings = validationResult.warnings[machine.machineName] || []
+      const errors = (validationResult as any).errors?.[machine.machineName] || []
+      const warnings = (validationResult as any).warnings?.[machine.machineName] || []
       
       return {
         machineName: machine.machineName,

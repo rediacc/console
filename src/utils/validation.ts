@@ -123,14 +123,6 @@ export const queueItemSchema = z.object({
 const createEditSchema = <T extends z.ZodSchema>(schema: T, fieldName: string) => 
   z.object({ [fieldName]: schema })
 
-const editSchemaConfigs = [
-  ['editTeamSchema', teamNameSchema, 'teamName'],
-  ['editRegionSchema', regionNameSchema, 'regionName'],
-  ['editBridgeSchema', bridgeNameSchema, 'bridgeName'],
-  ['editRepositorySchema', repositoryNameSchema, 'repositoryName'],
-  ['editStorageSchema', storageNameSchema, 'storageName'],
-  ['editScheduleSchema', scheduleNameSchema, 'scheduleName']
-] as const
 
 export const editTeamSchema = createEditSchema(teamNameSchema, 'teamName')
 export const editRegionSchema = createEditSchema(regionNameSchema, 'regionName')

@@ -167,10 +167,8 @@ const MainLayout: React.FC = () => {
       }
     }
     
-    // Clear transition state after animation
-    setTimeout(() => {
-      setIsTransitioning(false)
-    }, 600)
+    // Clear transition state immediately
+    setIsTransitioning(false)
   }
 
   const handleLogout = async () => {

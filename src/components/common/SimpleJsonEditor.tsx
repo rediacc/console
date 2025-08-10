@@ -17,7 +17,6 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
   readOnly = false,
   height = '400px',
   className = '',
-  language = 'json',
   'data-testid': dataTestId
 }) => {
   const { theme } = useTheme();
@@ -75,9 +74,8 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
       setInternalValue(newValue);
       onChange?.(newValue);
       
-      setTimeout(() => {
-        target.selectionStart = target.selectionEnd = start + 2;
-      }, 0);
+      // Set cursor position immediately - no async operations
+      target.selectionStart = target.selectionEnd = start + 2;
     }
   };
 

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
 import { showMessage } from '@/utils/messages'
-import { createMutation, createVaultUpdateMutation } from '@/api/utils/mutationFactory'
+import { createMutation } from '@/api/utils/mutationFactory'
 import { useAppSelector } from '@/store/store'
 import { selectCompany } from '@/store/auth/authSelectors'
 import { minifyJSON } from '@/utils/json'
@@ -69,7 +69,7 @@ export const useUpdateCompanyBlockUserRequests = () => {
       queryClient.invalidateQueries({ queryKey: ['company'] })
       queryClient.invalidateQueries({ queryKey: ['users'] })
     },
-    onError: (error: any) => {
+    onError: () => {
       showMessage('error', 'Failed to update user request blocking status')
     }
   })

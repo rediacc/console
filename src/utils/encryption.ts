@@ -205,7 +205,7 @@ function shouldDecryptField(key: string, value: any): boolean {
          value.length > 0;
 }
 
-async function tryDecryptField(key: string, value: string, password: string): Promise<string> {
+async function tryDecryptField(_key: string, value: string, password: string): Promise<string> {
   try {
     if (isBase64Encrypted(value)) {
       return await decryptString(value, password);
@@ -242,7 +242,7 @@ function shouldEncryptField(key: string, value: any): boolean {
          value.length > 0;
 }
 
-async function tryEncryptField(key: string, value: string, password: string): Promise<string> {
+async function tryEncryptField(_key: string, value: string, password: string): Promise<string> {
   try {
     return await encryptString(value, password);
   } catch (error) {

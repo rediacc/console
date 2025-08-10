@@ -110,10 +110,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
       setCurrentStep(2)
       showMessage('success', t('auth:registration.activationSuccess'))
 
-      // Close modal after 2 seconds
-      setTimeout(() => {
-        handleClose()
-      }, 2000)
+      // Close modal immediately after success
+      handleClose()
     } catch (error: any) {
       const errorMessage = error.message || t('auth:registration.activationFailed')
       setError(errorMessage)
@@ -324,7 +322,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
       onCancel={handleClose}
       footer={null}
       width={480}
-      destroyOnClose
+      destroyOnHidden
       data-testid="registration-modal"
     >
       <Space direction="vertical" size={24} style={{ width: '100%' }}>

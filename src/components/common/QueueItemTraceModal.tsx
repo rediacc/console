@@ -488,6 +488,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
       open={visible}
       onCancel={handleClose}
       width={1200}
+      destroyOnHidden
       footer={[
         // Monitor switch - always show on the left if there's queue details
         traceData?.queueDetails ? (

@@ -122,7 +122,7 @@ export const selectFilteredMachines = createSelector(
 export const selectSelectedMachineValidations = createSelector(
   [selectSelectedMachines, selectAssignmentValidation],
   (selectedMachines, validations) => {
-    return selectedMachines.reduce((acc, machineName) => {
+    return selectedMachines.reduce((acc: any, machineName: string) => {
       if (validations[machineName]) {
         acc[machineName] = validations[machineName]
       }
@@ -137,14 +137,14 @@ export const selectAreAllSelectedMachinesValid = createSelector(
   (validations) => {
     const validationResults = Object.values(validations)
     if (validationResults.length === 0) return false
-    return validationResults.every(result => result.isValid)
+    return validationResults.every((result: any) => result.isValid)
   }
 )
 
 // Get recent successful operations
 export const selectRecentSuccessfulOperations = createSelector(
   [selectOperationHistory],
-  (history) => history.filter(op => op.result === 'success').slice(0, 5)
+  (history) => history.filter((op: any) => op.result === 'success').slice(0, 5)
 )
 
 // Get operation statistics
@@ -163,7 +163,7 @@ export const selectOperationStatistics = createSelector(
       }
     }
     
-    history.forEach(op => {
+    history.forEach((op: any) => {
       stats[op.result]++
       stats.byType[op.type]++
     })
@@ -188,8 +188,8 @@ export const selectMachinesBySelectionStatus = createSelector(
     const selectedSet = new Set(selectedMachines)
     
     return {
-      selected: machines.filter(m => selectedSet.has(m.machineName)),
-      unselected: machines.filter(m => !selectedSet.has(m.machineName))
+      selected: machines.filter((m: any) => selectedSet.has(m.machineName)),
+      unselected: machines.filter((m: any) => !selectedSet.has(m.machineName))
     }
   }
 )
@@ -202,15 +202,15 @@ export const selectSelectionSummary = createSelector(
     (_: RootState, machines: Machine[]) => machines
   ],
   (selectedMachines, validations, allMachines) => {
-    const selectedMachineObjects = allMachines.filter(m => 
+    const selectedMachineObjects = allMachines.filter((m: any) => 
       selectedMachines.includes(m.machineName)
     )
     
     const summary = {
       count: selectedMachines.length,
       validated: Object.keys(validations).length,
-      valid: Object.values(validations).filter(v => v.isValid).length,
-      invalid: Object.values(validations).filter(v => !v.isValid).length,
+      valid: Object.values(validations).filter((v: any) => v.isValid).length,
+      invalid: Object.values(validations).filter((v: any) => !v.isValid).length,
       byAssignmentType: {
         AVAILABLE: 0,
         CLUSTER: 0,
@@ -220,7 +220,7 @@ export const selectSelectionSummary = createSelector(
       byTeam: {} as Record<string, number>
     }
     
-    selectedMachineObjects.forEach(machine => {
+    selectedMachineObjects.forEach((machine: any) => {
       const assignmentType = MachineAssignmentService.getMachineAssignmentType(machine)
       summary.byAssignmentType[assignmentType]++
       

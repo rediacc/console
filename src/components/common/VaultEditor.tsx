@@ -51,6 +51,7 @@ interface VaultEditorProps {
   bridgeName?: string // For SSH test connection
   onTestConnectionStateChange?: (success: boolean) => void // Callback for test connection state
   isModalOpen?: boolean // Modal open state to handle resets
+  isEditMode?: boolean // Whether we're in edit mode
 }
 
 interface FieldDefinition {
@@ -113,6 +114,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   bridgeName = 'Default Bridge',
   onTestConnectionStateChange,
   isModalOpen,
+  isEditMode = false,
 }) => {
   const { t } = useTranslation(['common', 'storageProviders'])
   const [form] = Form.useForm()
@@ -144,30 +146,10 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   // Get teams data for SSH keys
   const { data: teams } = useTeams()
   
-  // Debounce ref for onChange callback
-  const onChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-
-  // Debounced onChange callback
-  const debouncedOnChange = useCallback((data: Record<string, any>, hasChanges: boolean) => {
-    // Clear any existing timeout
-    if (onChangeTimeoutRef.current) {
-      clearTimeout(onChangeTimeoutRef.current)
-    }
-    
-    // Set a new timeout
-    onChangeTimeoutRef.current = setTimeout(() => {
-      onChange?.(data, hasChanges)
-    }, 300) // 300ms delay
+  // Direct onChange callback - no debouncing to avoid race conditions
+  const directOnChange = useCallback((data: Record<string, any>, hasChanges: boolean) => {
+    onChange?.(data, hasChanges)
   }, [onChange])
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (onChangeTimeoutRef.current) {
-        clearTimeout(onChangeTimeoutRef.current)
-      }
-    }
-  }, [])
 
   // Track previous modal open state
   const prevModalOpenRef = useRef(isModalOpen)
@@ -537,8 +519,10 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       // Remember what data we initialized with
       setLastInitializedData(currentDataString)
       
-      // Validate initial data
-      setTimeout(() => {
+      // Validate initial data - but skip validation for repositories in edit mode
+      // to avoid race condition with credential field requirements
+      if (!(isEditMode && entityType === 'REPOSITORY')) {
+        // Use immediate validation for non-repository entities or create mode
         form.validateFields()
           .then(() => {
             onValidate?.(true)
@@ -549,7 +533,11 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
             )
             onValidate?.(false, errors)
           })
-      }, 0)
+      } else {
+        // For repositories in edit mode, mark as valid immediately
+        // since credential field is optional in edit mode
+        onValidate?.(true)
+      }
     }
   }, [form, entityDef, entityType, initialData])
 
@@ -635,8 +623,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     // Check if there are any changes
     const hasChanges = JSON.stringify(completeData) !== JSON.stringify(initialData)
     
-    // Use debounced onChange to prevent excessive re-renders
-    debouncedOnChange(completeData, hasChanges)
+    // Use direct onChange for immediate updates (no debouncing)
+    directOnChange(completeData, hasChanges)
 
     // Then validate
     // If ssh_key_configured just changed, exclude ssh_password from validation
@@ -733,7 +721,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       
       // Trigger change event
       const hasChanges = JSON.stringify(completeData) !== JSON.stringify(initialData)
-      debouncedOnChange(completeData, hasChanges)
+      directOnChange(completeData, hasChanges)
       
       // Validate
       form.validateFields()
@@ -783,10 +771,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         })
         form.setFieldsValue(formData)
         
-        // Manually trigger change after import
-        setTimeout(() => {
-          handleFormChange()
-        }, 0)
+        // Manually trigger change after import (no delay)
+        handleFormChange()
       } catch (error) {
         // Failed to parse JSON file
       }
@@ -1008,17 +994,13 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
           SSH_PRIVATE_KEY: values.SSH_PRIVATE_KEY,
           SSH_PUBLIC_KEY: values.SSH_PUBLIC_KEY
         })
-        // Use setTimeout to ensure form state is updated before calling handleFormChange
-        setTimeout(() => {
-          handleFormChange({ SSH_PRIVATE_KEY: values.SSH_PRIVATE_KEY, SSH_PUBLIC_KEY: values.SSH_PUBLIC_KEY })
-        }, 0)
+        // Call handleFormChange immediately (no delay)
+        handleFormChange({ SSH_PRIVATE_KEY: values.SSH_PRIVATE_KEY, SSH_PUBLIC_KEY: values.SSH_PUBLIC_KEY })
       } else {
         // For single field generation
         form.setFieldValue(fieldName, values[fieldName])
-        // Use setTimeout to ensure form state is updated before calling handleFormChange
-        setTimeout(() => {
-          handleFormChange({ [fieldName]: values[fieldName] })
-        }, 0)
+        // Call handleFormChange immediately (no delay)
+        handleFormChange({ [fieldName]: values[fieldName] })
       }
     }
 
@@ -1163,7 +1145,10 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 .map((fieldName) => {
                   const field = fields[fieldName as keyof typeof fields]
                   if (!field) return null
-                  return renderField(fieldName, field as FieldDefinition, true)
+                  // In edit mode for repositories, the credential field should not be required
+                  // since it already exists and user may just want to view it
+                  const isRequired = !(isEditMode && entityType === 'REPOSITORY' && fieldName === 'credential')
+                  return renderField(fieldName, field as FieldDefinition, isRequired)
                 })}
               
               {/* Conditionally show ssh_password in required fields when SSH key is not configured */}

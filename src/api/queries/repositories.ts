@@ -1,5 +1,5 @@
 import { createResourceQuery, dataExtractors, filters, createFieldMapper } from '@/api/utils/queryFactory'
-import { createResourceMutation, createVaultUpdateMutation, createMutation } from '@/api/utils/mutationFactory'
+import { createMutation } from '@/api/utils/mutationFactory'
 import { minifyJSON } from '@/utils/json'
 
 export interface Repository {
