@@ -9,6 +9,7 @@ import { showMessage } from '@/utils/messages'
 import dayjs from 'dayjs'
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize'
 import { useTranslation } from 'react-i18next'
+import { formatTimestampAsIs } from '@/utils/timeUtils'
 
 const { Title, Text } = Typography
 const { RangePicker } = DatePicker
@@ -307,7 +308,7 @@ const QueuePage: React.FC = () => {
               {record.lastFailureReason || 'No failures'}
               {record.lastRetryAt && (
                 <div style={{ marginTop: 4, fontSize: '12px' }}>
-                  Last retry: {new Date(record.lastRetryAt).toLocaleString()}
+                  Last retry: {formatTimestampAsIs(record.lastRetryAt, 'datetime')}
                 </div>
               )}
             </div>

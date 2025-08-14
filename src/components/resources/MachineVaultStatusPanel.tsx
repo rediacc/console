@@ -33,7 +33,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { Machine } from '@/types'
 import { useTheme } from '@/context/ThemeContext'
-import { getLocalizedRelativeTime } from '@/utils/timeUtils'
+import { getLocalizedRelativeTime, formatTimestampAsIs } from '@/utils/timeUtils'
 import { calculateResourcePercent } from '@/utils/sizeUtils'
 import { DistributedStorageSection } from './DistributedStorageSection'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
@@ -265,7 +265,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
           </Space>
           {machine.vaultStatusTime && (
             <div style={{ marginTop: 8 }}>
-              <Text type="secondary" style={{ fontSize: 12 }} title={new Date(machine.vaultStatusTime).toLocaleString()} data-testid="vault-status-last-updated">
+              <Text type="secondary" style={{ fontSize: 12 }} title={formatTimestampAsIs(machine.vaultStatusTime, 'datetime')} data-testid="vault-status-last-updated">
                 {t('machines:lastUpdated')}: {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
               </Text>
             </div>

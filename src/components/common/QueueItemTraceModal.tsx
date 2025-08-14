@@ -11,6 +11,7 @@ import { useTheme } from '@/context/ThemeContext'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
+import { formatTimestampAsIs } from '@/utils/timeUtils'
 import './QueueItemTraceModal.css'
 
 dayjs.extend(relativeTime)
@@ -65,7 +66,7 @@ const getTimelineTimestamp = (traceLogs: any[], action: string, fallbackAction?:
   
   if (log) {
     const timestamp = normalizeProperty(log, 'timestamp', 'Timestamp')
-    return timestamp ? dayjs(timestamp).format('HH:mm:ss') : null
+    return timestamp ? formatTimestampAsIs(timestamp, 'time') : null
   }
   
   return null
@@ -729,8 +730,8 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   status={getCurrentStep() === -1 ? 'error' : undefined}
                   size="small"
                 >
-                  <Step title="Created" description={traceData.queueDetails.createdTime ? dayjs(traceData.queueDetails.createdTime).format('HH:mm:ss') : ''} />
-                  <Step title="Assigned" description={traceData.queueDetails.assignedTime ? dayjs(traceData.queueDetails.assignedTime).format('HH:mm:ss') : 'Waiting'} />
+                  <Step title="Created" description={traceData.queueDetails.createdTime ? formatTimestampAsIs(traceData.queueDetails.createdTime, 'time') : ''} />
+                  <Step title="Assigned" description={traceData.queueDetails.assignedTime ? formatTimestampAsIs(traceData.queueDetails.assignedTime, 'time') : 'Waiting'} />
                   <Step title="Processing" description={
                     (() => {
                       const currentStep = getCurrentStep()
@@ -1047,16 +1048,16 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   {traceData.queueDetails.regionName}
                 </Descriptions.Item>
                 <Descriptions.Item label="Created">
-                  {dayjs(traceData.queueDetails.createdTime).format('YYYY-MM-DD HH:mm:ss')}
+                  {formatTimestampAsIs(traceData.queueDetails.createdTime, 'datetime')}
                 </Descriptions.Item>
                 {traceData.queueDetails.assignedTime && (
                   <Descriptions.Item label="Assigned">
-                    {dayjs(traceData.queueDetails.assignedTime).format('YYYY-MM-DD HH:mm:ss')}
+                    {formatTimestampAsIs(traceData.queueDetails.assignedTime, 'datetime')}
                   </Descriptions.Item>
                 )}
                 {traceData.queueDetails.lastRetryAt && (
                   <Descriptions.Item label="Last Retry">
-                    {dayjs(traceData.queueDetails.lastRetryAt).format('YYYY-MM-DD HH:mm:ss')}
+                    {formatTimestampAsIs(traceData.queueDetails.lastRetryAt, 'datetime')}
                   </Descriptions.Item>
                 )}
                 <Descriptions.Item label="Total Duration">
@@ -1123,7 +1124,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                     <Timeline.Item key={index} color={color}>
                       <Space direction="vertical" size={0}>
                         <Text strong>{action.replace('QUEUE_ITEM_', '').replace(/_/g, ' ')}</Text>
-                        <Text type="secondary">{dayjs(timestamp).format('YYYY-MM-DD HH:mm:ss')}</Text>
+                        <Text type="secondary">{formatTimestampAsIs(timestamp, 'datetime')}</Text>
                         {details && <Text>{details}</Text>}
                         {actionByUser && <Text type="secondary">By: {actionByUser}</Text>}
                       </Space>

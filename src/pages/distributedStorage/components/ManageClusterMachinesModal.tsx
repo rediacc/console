@@ -10,6 +10,7 @@ import {
   useUpdateMachineClusterRemoval
 } from '@/api/queries/distributedStorage'
 import { AvailableMachinesSelector } from '@/components/resources/AvailableMachinesSelector'
+import { formatTimestampAsIs } from '@/utils/timeUtils'
 
 interface ManageClusterMachinesModalProps {
   open: boolean
@@ -163,7 +164,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
       title: t('machines:assignedDate'),
       dataIndex: 'assignedDate',
       key: 'assignedDate',
-      render: (date: string) => date ? new Date(date).toLocaleString() : '-',
+      render: (date: string) => date ? formatTimestampAsIs(date, 'datetime') : '-',
     },
   ]
   

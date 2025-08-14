@@ -21,6 +21,7 @@ import {
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useEntityAuditTrace, AuditTraceRecord } from '@/api/queries/audit'
+import { formatTimestampAsIs } from '@/utils/timeUtils'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -125,7 +126,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
           record.actionType,
           `"${record.details.replace(/"/g, '""')}"`, // Escape quotes in details
           record.performedBy || 'System',
-          new Date(record.timestamp).toLocaleString(),
+          formatTimestampAsIs(record.timestamp, 'datetime'),
           record.timeAgo
         ]
         return row.join(',')
@@ -218,7 +219,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       width: 200,
       render: (timestamp: string, record: AuditTraceRecord, index: number) => (
         <Space direction="vertical" size={0} data-testid={`audit-trace-timestamp-${index}`}>
-          <Text>{new Date(timestamp).toLocaleString()}</Text>
+          <Text>{formatTimestampAsIs(timestamp, 'datetime')}</Text>
           <Text type="secondary" style={{ fontSize: 12 }}>
             {record.timeAgo}
           </Text>

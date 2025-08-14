@@ -10,15 +10,8 @@
 export function getRelativeTimeFromUTC(timestamp: string | null | undefined): string {
   if (!timestamp) return '-';
   
-  // Parse the timestamp and ensure it's treated as UTC if no timezone is specified
-  let date: Date;
-  if (timestamp.endsWith('Z') || timestamp.includes('+') || timestamp.includes('-')) {
-    // Timestamp already has timezone information
-    date = new Date(timestamp);
-  } else {
-    // Assume UTC if no timezone specified
-    date = new Date(timestamp + 'Z');
-  }
+  // Parse the timestamp as-is without forcing timezone conversion
+  let date: Date = new Date(timestamp);
   
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -59,15 +52,8 @@ export function getLocalizedRelativeTime(
 ): string {
   if (!timestamp) return '-';
   
-  // Parse the timestamp and ensure it's treated as UTC if no timezone is specified
-  let date: Date;
-  if (timestamp.endsWith('Z') || timestamp.includes('+') || timestamp.includes('-')) {
-    // Timestamp already has timezone information
-    date = new Date(timestamp);
-  } else {
-    // Assume UTC if no timezone specified
-    date = new Date(timestamp + 'Z');
-  }
+  // Parse the timestamp as-is without forcing timezone conversion
+  let date: Date = new Date(timestamp);
   
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -96,15 +82,46 @@ export function getLocalizedRelativeTime(
 export function formatTimestamp(timestamp: string | null | undefined): string {
   if (!timestamp) return '-';
   
-  // Parse the timestamp and ensure it's treated as UTC if no timezone is specified
-  let date: Date;
-  if (timestamp.endsWith('Z') || timestamp.includes('+') || timestamp.includes('-')) {
-    // Timestamp already has timezone information
-    date = new Date(timestamp);
-  } else {
-    // Assume UTC if no timezone specified
-    date = new Date(timestamp + 'Z');
+  // Use the new formatTimestampAsIs function to avoid timezone conversion
+  return formatTimestampAsIs(timestamp, 'datetime');
+}
+
+/**
+ * Format a timestamp without timezone conversion - displays the time as-is
+ * @param timestamp - ISO 8601 timestamp string
+ * @param format - 'time' for HH:mm:ss, 'datetime' for YYYY-MM-DD HH:mm:ss, 'full' for complete datetime
+ * @returns Formatted timestamp string without timezone conversion
+ */
+export function formatTimestampAsIs(timestamp: string | null | undefined, format: 'time' | 'datetime' | 'full' = 'datetime'): string {
+  if (!timestamp) return '-';
+  
+  // Extract date/time components directly from the ISO string
+  // Expected formats: "2024-01-15T14:30:45.123Z" or "2024-01-15T14:30:45" or "2024-01-15 14:30:45"
+  
+  // Replace 'T' with space if present for easier parsing
+  const normalized = timestamp.replace('T', ' ').replace('Z', '').split('+')[0].split('-')[0];
+  
+  // For timestamps in "YYYY-MM-DD HH:mm:ss.fff" or "YYYY-MM-DD HH:mm:ss" format
+  const match = timestamp.match(/(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2}):(\d{2})/);
+  
+  if (!match) {
+    // If the format doesn't match, return the original timestamp
+    return timestamp;
   }
   
-  return date.toLocaleString();
+  const [, year, month, day, hours, minutes, seconds] = match;
+  
+  switch (format) {
+    case 'time':
+      return `${hours}:${minutes}:${seconds}`;
+    case 'datetime':
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    case 'full':
+      // Include milliseconds if present
+      const msMatch = timestamp.match(/\.\d{3}/);
+      const ms = msMatch ? msMatch[0] : '';
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}${ms}`;
+    default:
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  }
 }

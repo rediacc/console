@@ -18,6 +18,7 @@ import { DistributedStorageCluster } from '@/api/queries/distributedStorage'
 import { useDistributedStorageClusterMachines } from '@/api/queries/distributedStorage'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
 import { ManageClusterMachinesModal } from './ManageClusterMachinesModal'
+import { formatTimestampAsIs } from '@/utils/timeUtils'
 
 interface ClusterTableProps {
   clusters: DistributedStorageCluster[]
@@ -360,7 +361,7 @@ const ClusterMachines: React.FC<{ cluster: DistributedStorageCluster }> = ({ clu
       title: t('machines.assignedDate'),
       dataIndex: 'assignedDate',
       key: 'assignedDate',
-      render: (date: string) => date ? new Date(date).toLocaleString() : '-',
+      render: (date: string) => date ? formatTimestampAsIs(date, 'datetime') : '-',
     },
   ]
 

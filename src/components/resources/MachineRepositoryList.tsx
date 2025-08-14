@@ -17,7 +17,7 @@ import { LocalActionsMenu } from './LocalActionsMenu'
 import { showMessage } from '@/utils/messages'
 import { tokenService } from '@/services/tokenService'
 import { useAppSelector } from '@/store/store'
-import { getLocalizedRelativeTime } from '@/utils/timeUtils'
+import { getLocalizedRelativeTime, formatTimestampAsIs } from '@/utils/timeUtils'
 
 const { Text } = Typography
 
@@ -1151,7 +1151,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           key: 'up',
           label: t('functions:functions.up.name'),
           icon: <PlayCircleOutlined style={{ color: '#52c41a' }} />,
-          onClick: () => handleQuickAction(record, 'up')
+          onClick: () => handleQuickAction(record, 'up', 4, 'mount')
         })
         
         // Down - only when mounted
@@ -1305,7 +1305,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           {t('resources:repositories.repositories')}
         </Typography.Title>
         {machine.vaultStatusTime && !loading && (
-          <Text type="secondary" style={{ fontSize: '12px' }} title={`Raw: ${machine.vaultStatusTime}, Local: ${new Date(machine.vaultStatusTime).toLocaleString()}`} data-testid="machine-repo-list-last-updated">
+          <Text type="secondary" style={{ fontSize: '12px' }} title={`Raw: ${machine.vaultStatusTime}, Local: ${formatTimestampAsIs(machine.vaultStatusTime, 'datetime')}`} data-testid="machine-repo-list-last-updated">
             {t('machines:lastUpdated')}: {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
           </Text>
         )}
