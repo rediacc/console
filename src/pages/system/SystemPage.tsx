@@ -489,12 +489,12 @@ const SystemPage: React.FC = () => {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0]
         
         // Dynamically build export data, excluding special fields
-        const { allVaults, bridgesWithRequestCredential, ...vaultsByType } = result.data
+        const { allVaults, bridgesWithRequestToken, ...vaultsByType } = result.data
         
         const exportData = {
           exportDate: new Date().toISOString(),
           vaults: vaultsByType,
-          bridgesWithRequestCredential: bridgesWithRequestCredential,
+          bridgesWithRequestToken: bridgesWithRequestToken,
           metadata: {
             totalVaults: allVaults.length,
             vaultTypes: Object.keys(vaultsByType).map(type => ({

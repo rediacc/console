@@ -100,7 +100,7 @@
         "confirmPasswordPlaceholder": "Confirm new master password",
         "confirmPasswordRequired": "Please confirm the master password",
         "confirmPasswordMatch": "Passwords do not match",
-        "importantNote": "After updating the encryption password, all users will need to use the new shared password to access vault configurations. This password should be securely distributed to all authorized users. Note: Global Bridges with RequestCredential will need to be manually unblocked.",
+        "importantNote": "After updating the encryption password, all users will need to use the new shared password to access vault configurations. This password should be securely distributed to all authorized users. Note: Global Bridges with RequestToken will need to be manually unblocked.",
         "importantNoteCreate": "After creating the encryption password, all users will need this shared password to access vault configurations. Distribute it securely to all authorized company members - Rediacc does not have access to this password.",
         "importantNoteRemove": "After removing the encryption password, vault configurations will be accessible without client-side encryption. Consider the security implications for your sensitive data.",
         "cancel": "Cancel",

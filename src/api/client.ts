@@ -177,7 +177,7 @@ class ApiClient {
   }
 
   private async handleTokenRotation(responseData: ApiResponse): Promise<void> {
-    const newToken = responseData.resultSets?.[0]?.data?.[0]?.nextRequestCredential
+    const newToken = responseData.resultSets?.[0]?.data?.[0]?.nextRequestToken
     if (!newToken) return
     
     this.isUpdatingToken = true

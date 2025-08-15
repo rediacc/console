@@ -100,7 +100,7 @@
         "confirmPasswordPlaceholder": "确认新主密码",
         "confirmPasswordRequired": "请确认主密码",
         "confirmPasswordMatch": "密码不匹配",
-        "importantNote": "更新加密密码后，所有用户都需要使用新的共享密码来访问保险库配置。此密码应安全地分发给所有授权用户。注意：具有RequestCredential的全局桥接需要手动解除阻止。",
+        "importantNote": "更新加密密码后，所有用户都需要使用新的共享密码来访问保险库配置。此密码应安全地分发给所有授权用户。注意：具有RequestToken的全局桥接需要手动解除阻止。",
         "importantNoteCreate": "创建加密密码后，所有用户都需要此共享密码来访问保险库配置。请将其安全地分发给所有授权的公司成员 - Rediacc无法访问此密码。",
         "importantNoteRemove": "移除加密密码后，保险库配置将可在没有客户端加密的情况下访问。请考虑这对您的敏感数据的安全影响。",
         "cancel": "取消",

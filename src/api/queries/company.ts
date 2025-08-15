@@ -85,8 +85,8 @@ export const useGetCompanyVaults = () => {
       // The main vault data is in table[1]
       const allVaults = response.resultSets[1]?.data || []
       
-      // The bridges with RequestCredential info is in table[2]
-      const bridgesWithRequestCredential = response.resultSets[2]?.data || []
+      // The bridges with RequestToken info is in table[2]
+      const bridgesWithRequestToken = response.resultSets[2]?.data || []
       
       // Dynamically organize vaults by entity type
       const vaultsByType: Record<string, any[]> = {}
@@ -104,10 +104,10 @@ export const useGetCompanyVaults = () => {
         }
       })
       
-      // Return dynamic structure with bridgesWithRequestCredential as a special case
+      // Return dynamic structure with bridgesWithRequestToken as a special case
       return {
         ...vaultsByType,
-        bridgesWithRequestCredential,
+        bridgesWithRequestToken,
         allVaults // Include raw data for maximum flexibility
       }
     },

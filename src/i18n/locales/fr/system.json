@@ -100,7 +100,7 @@
         "confirmPasswordPlaceholder": "Confirmer le nouveau mot de passe principal",
         "confirmPasswordRequired": "Veuillez confirmer le mot de passe principal",
         "confirmPasswordMatch": "Les mots de passe ne correspondent pas",
-        "importantNote": "Après la mise à jour du mot de passe de chiffrement, tous les utilisateurs devront utiliser le nouveau mot de passe partagé pour accéder aux configurations du coffre-fort. Ce mot de passe doit être distribué de manière sécurisée à tous les utilisateurs autorisés. Note : Les ponts globaux avec RequestCredential devront être débloqués manuellement.",
+        "importantNote": "Après la mise à jour du mot de passe de chiffrement, tous les utilisateurs devront utiliser le nouveau mot de passe partagé pour accéder aux configurations du coffre-fort. Ce mot de passe doit être distribué de manière sécurisée à tous les utilisateurs autorisés. Note : Les ponts globaux avec RequestToken devront être débloqués manuellement.",
         "importantNoteCreate": "Après la création du mot de passe de chiffrement, tous les utilisateurs auront besoin de ce mot de passe partagé pour accéder aux configurations du coffre-fort. Distribuez-le de manière sécurisée à tous les membres autorisés de l'entreprise - Rediacc n'a pas accès à ce mot de passe.",
         "importantNoteRemove": "Après la suppression du mot de passe de chiffrement, les configurations du coffre-fort seront accessibles sans chiffrement côté client. Considérez les implications de sécurité pour vos données sensibles.",
         "cancel": "Annuler",

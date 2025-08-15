@@ -100,7 +100,7 @@
         "confirmPasswordPlaceholder": "Yeni ana parolayı onaylayın",
         "confirmPasswordRequired": "Lütfen ana parolayı onaylayın",
         "confirmPasswordMatch": "Parolalar eşleşmiyor",
-        "importantNote": "Şifreleme parolasını güncelledikten sonra, tüm kullanıcıların kasa yapılandırmalarına erişmek için yeni paylaşılan parolayı kullanması gerekecektir. Bu parola tüm yetkili kullanıcılara güvenli bir şekilde dağıtılmalıdır. Not: RequestCredential'lı Global Köprülerin manuel olarak engelden çıkarılması gerekecektir.",
+        "importantNote": "Şifreleme parolasını güncelledikten sonra, tüm kullanıcıların kasa yapılandırmalarına erişmek için yeni paylaşılan parolayı kullanması gerekecektir. Bu parola tüm yetkili kullanıcılara güvenli bir şekilde dağıtılmalıdır. Not: RequestToken'lı Global Köprülerin manuel olarak engelden çıkarılması gerekecektir.",
         "importantNoteCreate": "Şifreleme parolasını oluşturduktan sonra, tüm kullanıcıların kasa yapılandırmalarına erişmek için bu paylaşılan parolaya ihtiyacı olacaktır. Tüm yetkili şirket üyelerine güvenli bir şekilde dağıtın - Rediacc'in bu parolaya erişimi yoktur.",
         "importantNoteRemove": "Şifreleme parolasını kaldırdıktan sonra, kasa yapılandırmaları istemci tarafı şifreleme olmadan erişilebilir olacaktır. Hassas verileriniz için güvenlik etkilerini değerlendirin.",
         "cancel": "İptal",

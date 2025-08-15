@@ -100,7 +100,7 @@
         "confirmPasswordPlaceholder": "Neues Master-Passwort bestätigen",
         "confirmPasswordRequired": "Bitte bestätigen Sie das Master-Passwort",
         "confirmPasswordMatch": "Passwörter stimmen nicht überein",
-        "importantNote": "Nach der Aktualisierung des Verschlüsselungspassworts müssen alle Benutzer das neue gemeinsame Passwort verwenden, um auf Tresor-Konfigurationen zuzugreifen. Dieses Passwort sollte sicher an alle autorisierten Benutzer verteilt werden. Hinweis: Globale Brücken mit RequestCredential müssen manuell entsperrt werden.",
+        "importantNote": "Nach der Aktualisierung des Verschlüsselungspassworts müssen alle Benutzer das neue gemeinsame Passwort verwenden, um auf Tresor-Konfigurationen zuzugreifen. Dieses Passwort sollte sicher an alle autorisierten Benutzer verteilt werden. Hinweis: Globale Brücken mit RequestToken müssen manuell entsperrt werden.",
         "importantNoteCreate": "Nach der Erstellung des Verschlüsselungspassworts benötigen alle Benutzer dieses gemeinsame Passwort, um auf Tresor-Konfigurationen zuzugreifen. Verteilen Sie es sicher an alle autorisierten Firmenmitglieder - Rediacc hat keinen Zugriff auf dieses Passwort.",
         "importantNoteRemove": "Nach dem Entfernen des Verschlüsselungspassworts sind Tresor-Konfigurationen ohne clientseitige Verschlüsselung zugänglich. Berücksichtigen Sie die Sicherheitsauswirkungen für Ihre sensiblen Daten.",
         "cancel": "Abbrechen",

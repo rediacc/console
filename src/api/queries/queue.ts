@@ -88,7 +88,7 @@ export const useQueueItems = (filters: QueueFilters = {}) => {
     queryFn: async () => {
       const response = await apiClient.get<{ items: QueueItem[], statistics: QueueStatistics }>('/GetTeamQueueItems', filters)
       
-      // Find the actual data resultSets (skip the nextRequestCredential table)
+      // Find the actual data resultSets (skip the nextRequestToken table)
       // The queue items table has multiple fields, statistics table has count fields
       let items: QueueItem[] = []
       let statistics: QueueStatistics | null = null
@@ -104,7 +104,7 @@ export const useQueueItems = (filters: QueueFilters = {}) => {
           else if ('taskId' in firstItem || 'TaskId' in firstItem) {
             items = table.data as unknown as QueueItem[]
           }
-          // Skip resultSets that only have nextRequestCredential
+          // Skip resultSets that only have nextRequestToken
         }
       })
       

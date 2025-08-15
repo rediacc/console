@@ -456,12 +456,12 @@ class TokenManager:
     def update_from_response(self, response_body: Dict[str, Any]):
         """Extract and update token from API response."""
         try:
-            # Check for nextRequestCredential in the response
+            # Check for nextRequestToken in the response
             result_sets = response_body.get('resultSets', [])
             if result_sets and len(result_sets) > 0:
                 data = result_sets[0].get('data', [])
                 if data and len(data) > 0:
-                    next_token = data[0].get('nextRequestCredential')
+                    next_token = data[0].get('nextRequestToken')
                     if next_token:
                         self.set_token(next_token)
                         return True

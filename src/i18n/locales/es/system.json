@@ -100,7 +100,7 @@
         "confirmPasswordPlaceholder": "Confirme la nueva contraseña de encriptación",
         "confirmPasswordRequired": "Por favor confirme la contraseña de encriptación",
         "confirmPasswordMatch": "Las contraseñas no coinciden",
-        "importantNote": "Después de actualizar la contraseña de encriptación, todos los usuarios necesitarán usar la nueva contraseña compartida para acceder a las configuraciones de bóvedas. Esta contraseña debe distribuirse de forma segura a todos los usuarios autorizados. Nota: Los Puentes Globales con RequestCredential necesitarán ser desbloqueados manualmente.",
+        "importantNote": "Después de actualizar la contraseña de encriptación, todos los usuarios necesitarán usar la nueva contraseña compartida para acceder a las configuraciones de bóvedas. Esta contraseña debe distribuirse de forma segura a todos los usuarios autorizados. Nota: Los Puentes Globales con RequestToken necesitarán ser desbloqueados manualmente.",
         "importantNoteCreate": "Después de crear la contraseña de encriptación, todos los usuarios necesitarán esta contraseña compartida para acceder a las configuraciones de bóvedas. Distríbuyala de forma segura a todos los miembros autorizados de la empresa - Rediacc no tiene acceso a esta contraseña.",
         "importantNoteRemove": "Después de eliminar la contraseña de encriptación, las configuraciones de bóvedas serán accesibles sin encriptación del lado del cliente. Considere las implicaciones de seguridad para sus datos sensibles.",
         "cancel": "Cancelar",

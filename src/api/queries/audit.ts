@@ -89,7 +89,7 @@ export const getEntityAuditTrace = async (
   });
 
   // The stored procedure returns three result sets:
-  // Table 0: Token rotation (nextRequestCredential)
+  // Table 0: Token rotation (nextRequestToken)
   // Table 1: Audit records
   // Table 2: Summary information
   const records = response.resultSets?.[1]?.data || [];

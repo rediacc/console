@@ -134,7 +134,7 @@ const LoginPage: React.FC = () => {
       // Extract token and company data
       const userData = loginResponse.resultSets[0].data[0]
       
-      const token = userData.nextRequestCredential
+      const token = userData.nextRequestToken
       if (!token) {
         throw new Error('No authentication token received')
       }
