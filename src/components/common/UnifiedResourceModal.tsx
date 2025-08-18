@@ -14,6 +14,8 @@ import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 import TemplateSelector from '@/components/common/TemplateSelector'
 import TemplateDetailsModal from '@/components/common/TemplateDetailsModal'
 import { useDropdownData } from '@/api/queries/useDropdownData'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing, borderRadius, fontSize } from '@/utils/styleConstants'
 import {
   createMachineSchema,
   createRepositorySchema,
@@ -83,6 +85,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   const isExpertMode = uiMode === 'expert'
   const { data: dropdownData } = useDropdownData()
   const formRef = useRef<any>(null)
+  const styles = useComponentStyles()
 
   // State for modal dimensions
   const [modalDimensions, setModalDimensions] = useState({
@@ -906,15 +909,30 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                     return false
                   }}
                 >
-                  <Button data-testid="resource-modal-import-button" icon={<UploadOutlined />}>{t('common:vaultEditor.importJson')}</Button>
+                  <Button 
+                    data-testid="resource-modal-import-button" 
+                    icon={<UploadOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />}
+                    style={{
+                      minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                      borderRadius: borderRadius('LG'),
+                      fontSize: fontSize('SM')
+                    }}
+                  >
+                    {t('common:vaultEditor.importJson')}
+                  </Button>
                 </Upload>
                 <Button 
                   data-testid="resource-modal-export-button"
-                  icon={<DownloadOutlined />} 
+                  icon={<DownloadOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />} 
                   onClick={() => {
                     if (importExportHandlers.current) {
                       importExportHandlers.current.handleExport()
                     }
+                  }}
+                  style={{
+                    minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                    borderRadius: borderRadius('LG'),
+                    fontSize: fontSize('SM')
                   }}
                 >
                   {t('common:vaultEditor.exportJson')}
@@ -923,7 +941,16 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             </div>
           ] : []),
           // Right side buttons
-          <Button key="cancel" data-testid="resource-modal-cancel-button" onClick={onCancel}>
+          <Button 
+            key="cancel" 
+            data-testid="resource-modal-cancel-button" 
+            onClick={onCancel}
+            style={{
+              minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+              borderRadius: borderRadius('LG'),
+              fontSize: fontSize('SM')
+            }}
+          >
             {t('general.cancel')}
           </Button>,
           ...(mode === 'create' && existingData && onUpdateVault ? [
@@ -931,6 +958,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
               key="vault"
               data-testid="resource-modal-vault-button"
               onClick={() => setShowVaultModal(true)}
+              style={{
+                minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                borderRadius: borderRadius('LG'),
+                fontSize: fontSize('SM')
+              }}
             >
               {t('general.vault')}
             </Button>
@@ -940,6 +972,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
               key="functions"
               data-testid="resource-modal-functions-button"
               onClick={() => setShowFunctionModal(true)}
+              style={{
+                minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                borderRadius: borderRadius('LG'),
+                fontSize: fontSize('SM')
+              }}
             >
               {t(`${resourceType}s.${resourceType}Functions`)}
             </Button>
@@ -955,7 +992,12 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                 formRef.current.submit()
               }
             }}
-            style={{ background: '#556b2f', borderColor: '#556b2f' }}
+            style={{ 
+              ...styles.buttonPrimary,
+              background: 'var(--color-primary)', 
+              borderColor: 'var(--color-primary)',
+              minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE
+            }}
           >
             {mode === 'create' ? t('general.create') : t('general.save')}
           </Button>
@@ -974,11 +1016,16 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       >
         {/* Auto-setup checkbox for machine creation */}
         {resourceType === 'machine' && mode === 'create' && (
-          <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: spacing('MD') }}>
             <Checkbox 
               data-testid="resource-modal-auto-setup-checkbox"
               checked={autoSetupEnabled} 
               onChange={(e) => setAutoSetupEnabled(e.target.checked)}
+              style={{
+                fontSize: fontSize('SM'),
+                minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                alignItems: 'center'
+              }}
             >
               {t('machines:autoSetupAfterCreation')}
             </Checkbox>
@@ -987,11 +1034,16 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         
         {/* Keep open checkbox for repository creation - only show when creating physical storage */}
         {resourceType === 'repository' && mode === 'create' && !(existingData?.repositoryGuid && existingData?.repositoryGuid.trim() !== '') && (
-          <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: spacing('MD') }}>
             <Checkbox 
               data-testid="resource-modal-keep-open-checkbox"
               checked={keepRepositoryOpen} 
               onChange={(e) => setKeepRepositoryOpen(e.target.checked)}
+              style={{
+                fontSize: fontSize('SM'),
+                minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                alignItems: 'center'
+              }}
             >
               {t('resources:repositories.keepOpenAfterCreation')}
             </Checkbox>

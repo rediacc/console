@@ -14,6 +14,7 @@ import {
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import type { MenuProps } from 'antd'
+import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
 import { 
   useDistributedStorageRbdSnapshots,
   useDeleteDistributedStorageRbdSnapshot,
@@ -37,6 +38,8 @@ interface SnapshotListProps {
 
 const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) => {
   const { t } = useTranslation('distributedStorage')
+  const tableStyles = useTableStyles()
+  const componentStyles = useComponentStyles()
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
   const [modalState, setModalState] = useState<{
     open: boolean
@@ -173,8 +176,8 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
       key: 'snapshotName',
       render: (text: string, record: DistributedStorageRbdSnapshot) => (
         <Space data-testid={`snapshot-list-item-${record.snapshotName}`}>
-          <CameraOutlined />
-          <span>{text}</span>
+          <CameraOutlined style={{ ...tableStyles.icon.medium, color: 'var(--color-primary)' }} />
+          <span style={{ color: 'var(--color-text-primary)' }}>{text}</span>
           {record.vaultContent && (
             <Tooltip title={t('common.hasVault')}>
               <Tag color="blue" data-testid={`snapshot-list-vault-indicator-${record.snapshotName}`}>{t('common.vault')}</Tag>
@@ -190,7 +193,7 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
       width: 300,
       render: (text: string) => (
         <Tooltip title={text}>
-          <span style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+          <span style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
             {text.substring(0, 8)}...
           </span>
         </Tooltip>
@@ -202,14 +205,16 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
       width: 150,
       render: (_: any, record: DistributedStorageRbdSnapshot) => (
         <Space>
-          <Button
-            size="small"
-            icon={<CloudUploadOutlined />}
-            onClick={() => handleRunFunction('distributed_storage_rbd_snapshot_list', record)}
-            data-testid={`snapshot-list-remote-${record.snapshotName}`}
-          >
-            {t('common.remote')}
-          </Button>
+          <Tooltip title={t('common.remote')}>
+            <Button
+              size="small"
+              icon={<CloudUploadOutlined />}
+              onClick={() => handleRunFunction('distributed_storage_rbd_snapshot_list', record)}
+              data-testid={`snapshot-list-remote-${record.snapshotName}`}
+              style={tableStyles.tableActionButton}
+              aria-label={t('common.remote')}
+            />
+          </Tooltip>
           <Dropdown
             menu={{ items: getSnapshotMenuItems(record) }}
             trigger={['click']}
@@ -218,6 +223,7 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
               size="small" 
               icon={<EllipsisOutlined />} 
               data-testid={`snapshot-list-menu-${record.snapshotName}`}
+              style={tableStyles.tableActionButton}
             />
           </Dropdown>
         </Space>
@@ -236,43 +242,47 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
   
   return (
     <>
-      <div style={{ padding: '16px', backgroundColor: '#f5f5f5' }} data-testid="snapshot-list-container">
-        <h4>{t('snapshots.title')}</h4>
-        <div style={{ marginBottom: 16 }}>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />}
-            onClick={handleCreate}
-            size="small"
-            data-testid="snapshot-list-create-button"
-          >
-            {t('snapshots.create')}
-          </Button>
+      <div style={{ ...componentStyles.padding.md, background: 'var(--color-fill-quaternary)' }} data-testid="snapshot-list-container">
+        <h4 style={{ ...componentStyles.heading4, ...componentStyles.marginBottom.sm }}>{t('snapshots.title')}</h4>
+        <div style={componentStyles.marginBottom.md}>
+          <Tooltip title={t('snapshots.create')}>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
+              onClick={handleCreate}
+              size="small"
+              data-testid="snapshot-list-create-button"
+              style={componentStyles.touchTarget}
+              aria-label={t('snapshots.create')}
+            />
+          </Tooltip>
         </div>
         
-        <Table
-          columns={columns}
-          dataSource={snapshots}
-          rowKey="snapshotGuid"
-          loading={isLoading}
-          size="small"
-          pagination={false}
-          data-testid="snapshot-list-table"
-          expandable={{
-            expandedRowRender,
-            expandedRowKeys,
-            onExpandedRowsChange: setExpandedRowKeys,
-            expandIcon: ({ expanded, onExpand, record }) => (
-              <Button
-                size="small"
-                icon={expanded ? <CopyOutlined /> : <CopyOutlined />}
-                onClick={e => onExpand(record, e)}
-                style={{ marginRight: 8 }}
-                data-testid={`snapshot-list-expand-${record.snapshotName}`}
-              />
-            ),
-          }}
-        />
+        <div style={tableStyles.tableContainer}>
+          <Table
+            columns={columns}
+            dataSource={snapshots}
+            rowKey="snapshotGuid"
+            loading={isLoading}
+            size="small"
+            pagination={false}
+            data-testid="snapshot-list-table"
+            expandable={{
+              expandedRowRender,
+              expandedRowKeys,
+              onExpandedRowsChange: setExpandedRowKeys,
+              expandIcon: ({ expanded, onExpand, record }) => (
+                <Button
+                  size="small"
+                  icon={expanded ? <CopyOutlined /> : <CopyOutlined />}
+                  onClick={e => onExpand(record, e)}
+                  style={{ ...tableStyles.tableActionButton, marginRight: 8 }}
+                  data-testid={`snapshot-list-expand-${record.snapshotName}`}
+                />
+              ),
+            }}
+          />
+        </div>
       </div>
       
       <UnifiedResourceModal

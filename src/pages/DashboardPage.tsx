@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, Col, Row, Progress, Alert, Badge, Tag, Space, Typography, Statistic, Spin, Empty, Divider, Tooltip, theme, Timeline, List, Table } from 'antd';
+import { Card, Col, Row, Progress, Alert, Badge, Tag, Space, Typography, Statistic, Spin, Empty, Divider, Tooltip, theme, Timeline, List, Table, Collapse, Button } from 'antd';
 import { 
   AlertOutlined, 
   CheckCircleOutlined, 
@@ -33,8 +33,12 @@ import {
   ThunderboltOutlined,
   WarningOutlined,
   FieldTimeOutlined,
-  RobotOutlined
+  RobotOutlined,
+  DownOutlined,
+  UpOutlined
 } from '@/utils/optimizedIcons';
+import { useComponentStyles } from '@/hooks/useComponentStyles';
+import { borderRadius } from '@/utils/styleConstants';
 import { useDashboard } from '../api/queries/dashboard';
 import { useRecentAuditLogs } from '../api/queries/audit';
 import { fetchPricingConfig, getPlanPrice, PricingConfig } from '../api/pricingService';
@@ -58,17 +62,45 @@ const resourceIcons: Record<string, React.ReactNode> = {
 // Constants
 const CRITICAL_DAYS_THRESHOLD = 30;
 const MAX_NOTIFICATIONS = 50;
-const RECENT_AUDIT_LOGS_COUNT = 10;
-const DESCRIPTION_TRUNCATE_LENGTH = 100;
+const RECENT_AUDIT_LOGS_COUNT = 6; // Reduced for better information density
+const DESCRIPTION_TRUNCATE_LENGTH = 80; // Shorter for mobile readability
 
 const DashboardPage = () => {
   const { data: dashboard, isLoading, error } = useDashboard();
   const { data: auditLogs, isLoading: auditLoading } = useRecentAuditLogs(RECENT_AUDIT_LOGS_COUNT);
+  const styles = useComponentStyles();
   const [pricing, setPricing] = useState<PricingConfig | null>(null);
   const [pricingLoading, setPricingLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({
+    subscription: true,
+    resources: true,
+    activity: false,
+    usage: false,
+  });
   const { t } = useTranslation('common');
   const { theme: currentTheme } = useTheme();
   const { token } = theme.useToken();
+
+  // Handle responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        // On mobile, collapse non-essential sections by default
+        setExpandedSections(prev => ({
+          ...prev,
+          activity: false,
+          usage: false,
+        }));
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Fetch pricing configuration
   useEffect(() => {
@@ -175,12 +207,26 @@ const DashboardPage = () => {
     return date.toLocaleDateString();
   };
 
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: isMobile ? 16 : 24 }}>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <Title level={2}>Dashboard</Title>
         <Text type="secondary">Welcome to {dashboard.companyInfo.CompanyName}</Text>
+        {isMobile && (
+          <div style={{ marginTop: 8 }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Tap sections below to expand/collapse content
+            </Text>
+          </div>
+        )}
       </div>
 
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
@@ -361,28 +407,38 @@ const DashboardPage = () => {
           <Row gutter={[16, 24]}>
             {dashboard.resources.map((resource) => (
               <Col key={resource.ResourceType} xs={24} sm={12} md={8}>
-                <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Space>
-                      {resourceIcons[resource.ResourceType]}
-                      <Text strong>{resource.ResourceType}s</Text>
-                    </Space>
-                    <Text type="secondary">
-                      {resource.CurrentUsage} / {resource.ResourceLimit === 0 ? '∞' : resource.ResourceLimit}
-                    </Text>
-                  </div>
-                  <Progress 
-                    percent={resource.ResourceLimit === 0 ? 0 : resource.UsagePercentage} 
-                    status={getProgressStatus(resource.UsagePercentage)}
-                    strokeColor={resource.IsLimitReached === 1 ? 
-                      (currentTheme === 'dark' ? '#ff6b6b' : token.colorError) : 
-                      (currentTheme === 'dark' ? '#7d9b49' : token.colorPrimary)}
-                    data-testid={`dashboard-progress-${resource.ResourceType.toLowerCase()}`}
-                  />
-                  {resource.IsLimitReached === 1 && (
-                    <Text type="danger" style={{ fontSize: 12 }}>Limit reached</Text>
-                  )}
-                </Space>
+                <div style={{ 
+                  padding: '16px',
+                  borderRadius: borderRadius('LG'),
+                  border: `1px solid ${token.colorBorderSecondary}`,
+                  backgroundColor: currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout,
+                  height: '100%',
+                  transition: 'all 0.2s ease'
+                }}>
+                  <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Space size="small">
+                        {resourceIcons[resource.ResourceType]}
+                        <Text strong>{resource.ResourceType}s</Text>
+                      </Space>
+                      <Text type="secondary" style={{ fontWeight: 500 }}>
+                        {resource.CurrentUsage} / {resource.ResourceLimit === 0 ? '∞' : resource.ResourceLimit}
+                      </Text>
+                    </div>
+                    <Progress 
+                      percent={resource.ResourceLimit === 0 ? 0 : resource.UsagePercentage} 
+                      status={getProgressStatus(resource.UsagePercentage)}
+                      strokeColor={resource.IsLimitReached === 1 ? 
+                        (currentTheme === 'dark' ? '#ff6b6b' : token.colorError) : 
+                        (currentTheme === 'dark' ? '#7d9b49' : token.colorPrimary)}
+                      data-testid={`dashboard-progress-${resource.ResourceType.toLowerCase()}`}
+                      style={{ margin: '8px 0' }}
+                    />
+                    {resource.IsLimitReached === 1 && (
+                      <Text type="danger" style={{ fontSize: 12, fontWeight: 500 }}>Limit reached</Text>
+                    )}
+                  </Space>
+                </div>
               </Col>
             ))}
           </Row>
@@ -407,25 +463,36 @@ const DashboardPage = () => {
             </div>
           ) : auditLogs && auditLogs.length > 0 ? (
             <Timeline
-              items={auditLogs.map((log, index) => ({
+              items={auditLogs
+                .filter(log => {
+                  // Filter out repetitive low-value activities
+                  const action = log.action.toLowerCase();
+                  const isTokenValidation = action.includes('token') && action.includes('validat');
+                  const isRoutineAuth = action.includes('login') && action.includes('success');
+                  
+                  // Show only meaningful activities, skip routine validations
+                  return !isTokenValidation && !isRoutineAuth;
+                })
+                .slice(0, 5) // Show max 5 meaningful activities
+                .map((log, index) => ({
                 key: index,
                 dot: getActionIcon(log.action),
                 children: (
-                  <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Space>
-                        <Text strong>{log.action.replace(/_/g, ' ')}</Text>
-                        <Tag>{log.entity}</Tag>
+                  <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Space size={8}>
+                        <Text strong style={{ fontSize: 14 }}>{log.action.replace(/_/g, ' ')}</Text>
+                        <Tag size="small">{log.entity}</Tag>
                       </Space>
-                      <Text type="secondary" style={{ fontSize: 12 }}>
+                      <Text type="secondary" style={{ fontSize: 11, flexShrink: 0, marginLeft: 8 }}>
                         {formatTimestamp(log.timestamp)}
                       </Text>
                     </div>
-                    <Text type="secondary" style={{ fontSize: 13 }}>
-                      {log.entityName} • By {log.actionByUser}
+                    <Text type="secondary" style={{ fontSize: 12, lineHeight: 1.4 }}>
+                      {log.entityName} {log.actionByUser && `• ${log.actionByUser}`}
                     </Text>
-                    {log.details && (
-                      <Text type="secondary" style={{ fontSize: 12 }}>
+                    {log.details && log.details.trim() && (
+                      <Text type="secondary" style={{ fontSize: 11, opacity: 0.8 }}>
                         {log.details.length > DESCRIPTION_TRUNCATE_LENGTH ? `${log.details.substring(0, DESCRIPTION_TRUNCATE_LENGTH)}...` : log.details}
                       </Text>
                     )}
@@ -434,7 +501,11 @@ const DashboardPage = () => {
               }))}
             />
           ) : (
-            <Empty description="No recent activity" />
+            <Empty 
+              description="No recent activity" 
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              style={{ padding: '20px 0' }}
+            />
           )}
         </Card>
 
@@ -462,7 +533,7 @@ const DashboardPage = () => {
                 <div style={{ 
                   padding: '16px', 
                   backgroundColor: currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout, 
-                  borderRadius: 8,
+                  borderRadius: borderRadius('LG'),
                   border: `1px solid ${token.colorBorder}`,
                   height: '100%'
                 }}>
@@ -580,7 +651,7 @@ const DashboardPage = () => {
                     <div style={{ 
                       padding: '16px', 
                       backgroundColor: currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout, 
-                      borderRadius: 8,
+                      borderRadius: borderRadius('LG'),
                       border: `1px solid ${token.colorBorder}`
                     }}>
                       <Text strong style={{ display: 'block', marginBottom: 12 }}>
@@ -667,7 +738,7 @@ const DashboardPage = () => {
                     <div style={{ 
                       padding: '16px', 
                       backgroundColor: currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout, 
-                      borderRadius: 8,
+                      borderRadius: borderRadius('LG'),
                       border: `1px solid ${token.colorBorder}`
                     }}>
                       <Space direction="vertical" size="small" style={{ width: '100%' }}>

@@ -10,6 +10,8 @@ import {
   EyeOutlined
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants'
 
 const { Text, Paragraph } = Typography
 
@@ -38,6 +40,7 @@ const MarketplaceCard: React.FC<MarketplaceCardProps> = ({
   'data-testid': dataTestId
 }) => {
   const { t } = useTranslation(['marketplace', 'resources'])
+  const styles = useComponentStyles()
 
   const getTemplateIcon = (name: string) => {
     const lowerName = name.toLowerCase()
@@ -100,18 +103,14 @@ const MarketplaceCard: React.FC<MarketplaceCardProps> = ({
                   {getDifficultyText(template.difficulty)}
                 </Tag>
               </Space>
-              <div style={{ display: 'flex', alignItems: 'center', marginTop: 4 }}>
+              <div style={{ ...styles.flexCenter, justifyContent: 'flex-start', marginTop: spacing('XS') }}>
                 <Paragraph ellipsis={{ rows: 1 }} style={{ marginBottom: 0, flex: 1, marginRight: 8 }}>
                   {getTemplateDescription(template.readme)}
                 </Paragraph>
                 <div style={{ 
-                  width: 40, 
-                  height: 40, 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  background: '#f0f0f0',
-                  borderRadius: 6,
+                  ...styles.touchTarget,
+                  background: 'var(--color-fill-tertiary)',
+                  borderRadius: borderRadius('MD'),
                   overflow: 'hidden',
                   flexShrink: 0
                 }}>
@@ -119,7 +118,7 @@ const MarketplaceCard: React.FC<MarketplaceCardProps> = ({
                     <img 
                       src={template.iconUrl} 
                       alt={template.name}
-                      style={{ width: 40, height: 40, objectFit: 'contain' }}
+                      style={{ width: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE, height: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE, objectFit: 'contain' }}
                       onError={(e) => {
                         e.currentTarget.style.display = 'none'
                         const icon = document.createElement('div')
@@ -132,7 +131,7 @@ const MarketplaceCard: React.FC<MarketplaceCardProps> = ({
                   )}
                 </div>
               </div>
-              <Space wrap style={{ marginTop: 8 }}>
+              <Space wrap style={{ marginTop: spacing('SM') }}>
                 {template.tags?.slice(0, 3).map(tag => (
                   <Tag key={tag}>{tag}</Tag>
                 ))}
@@ -177,7 +176,7 @@ const MarketplaceCard: React.FC<MarketplaceCardProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%)',
+            background: 'var(--color-fill-secondary)',
             position: 'relative',
             overflow: 'hidden'
           }}>
@@ -218,7 +217,7 @@ const MarketplaceCard: React.FC<MarketplaceCardProps> = ({
             type="text"
             icon={<RocketOutlined />}
             onClick={onDeploy}
-            style={{ color: '#1890ff' }}
+            style={{ color: 'var(--color-primary)' }}
             data-testid={`${dataTestId}-deploy-button`}
           >
             {t('marketplace:deploy')}

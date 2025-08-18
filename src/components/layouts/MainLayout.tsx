@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { Layout, Menu, Avatar, Dropdown, Space, Badge, Typography, Switch, Button } from 'antd'
+import { Layout, Menu, Avatar, Dropdown, Space, Badge, Typography, Switch, Button, Segmented, Tooltip } from 'antd'
 import {
   DashboardOutlined,
   TeamOutlined,
@@ -43,6 +43,8 @@ import logoWhite from '@/assets/logo_white.png'
 import { RootState } from '@/store/store'
 import { useCompanyInfo } from '@/api/queries/dashboard'
 import { useQueryClient } from '@tanstack/react-query'
+import { useComponentStyles, useNavigationStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
@@ -50,6 +52,8 @@ const { Text } = Typography
 const MainLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+  const [mobileMenuVisible, setMobileMenuVisible] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
   const dispatch = useDispatch()
@@ -60,6 +64,24 @@ const MainLayout: React.FC = () => {
   const { theme } = useTheme()
   const { t } = useTranslation('common')
   const { data: companyData } = useCompanyInfo()
+  const styles = useComponentStyles()
+  const navStyles = useNavigationStyles()
+
+  // Handle responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768
+      setIsMobile(mobile)
+      if (mobile) {
+        setCollapsed(true)
+        setMobileMenuVisible(false)
+      }
+    }
+
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   // Update company name when company data is loaded
   useEffect(() => {
@@ -223,30 +245,48 @@ const MainLayout: React.FC = () => {
 
   return (
     <Layout style={{ minHeight: '100vh' }} className={isNoScrollPage ? 'no-scroll-page' : ''}>
+      {/* Mobile overlay */}
+      {isMobile && mobileMenuVisible && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: DESIGN_TOKENS.Z_INDEX.DROPDOWN - 2, // 998 - below navigation but above content
+          }}
+          onClick={() => setMobileMenuVisible(false)}
+          aria-hidden="true"
+          role="presentation"
+        />
+      )}
       <Sider
         trigger={null}
         collapsible
-        collapsed={collapsed}
+        collapsed={isMobile ? !mobileMenuVisible : collapsed}
+        role="navigation"
+        aria-label={t('navigation.mainNavigation')}
         style={{
-          background: theme === 'dark' ? '#1a1a1a' : '#fff',
-          boxShadow: theme === 'dark' ? '2px 0 8px rgba(0,0,0,0.3)' : '2px 0 8px rgba(0,0,0,0.06)',
+          ...styles.sidebar,
           position: 'fixed',
-          left: 0,
+          left: isMobile ? (mobileMenuVisible ? 0 : '-200px') : 0,
           top: 0,
           bottom: 0,
           height: '100vh',
           overflow: 'hidden',
-          zIndex: 100,
+          zIndex: DESIGN_TOKENS.Z_INDEX.DROPDOWN - 1, // 999 - below dropdowns and modals
+          width: isMobile ? 200 : (collapsed ? 80 : 200),
+          transition: `left ${DESIGN_TOKENS.TRANSITIONS.SLOW}, width ${DESIGN_TOKENS.TRANSITIONS.DEFAULT}`,
         }}
       >
         <div
           style={{
-            height: 64,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderBottom: '1px solid #f0f0f0',
-            padding: collapsed ? '0 8px' : '0 16px',
+            height: DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT,
+            ...styles.flexCenter,
+            borderBottom: '1px solid var(--color-border-secondary)',
+            padding: collapsed ? `0 ${spacing('SM')}px` : `0 ${spacing('MD')}px`,
             flexShrink: 0,
             cursor: 'pointer',
           }}
@@ -257,78 +297,144 @@ const MainLayout: React.FC = () => {
             src={theme === 'dark' ? logoWhite : logoBlack}
             alt="Rediacc Logo"
             style={{
-              height: 32,
+              height: DESIGN_TOKENS.DIMENSIONS.ICON_XL,
               width: 'auto',
               maxWidth: collapsed ? 64 : 150,
               objectFit: 'contain',
-              transition: 'max-width 0.3s ease',
+              transition: `max-width ${DESIGN_TOKENS.TRANSITIONS.SLOW}`,
             }}
           />
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100% - 64px)', overflow: 'hidden' }}>
+        <div style={{ ...styles.flexColumn, height: `calc(100% - ${DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT}px)`, overflow: 'hidden' }}>
           <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-            <Menu
-              mode="inline"
-              selectedKeys={selectedKeys}
-              defaultOpenKeys={openKeys}
-              items={menuItems}
-              onClick={({ key }) => {
-                if (key.startsWith('/')) {
-                  navigate(key)
-                }
-              }}
-              style={{ 
-                borderRight: 0,
-                transition: 'all 0.3s ease',
-              }}
-            />
+            {menuItems.map((item) => {
+              if (item.type === 'divider') {
+                return <div key={item.key} style={{ height: 1, margin: '12px 16px', background: 'var(--color-border-secondary)', opacity: 0.6 }} />
+              }
+              
+              const isSelected = location.pathname === item.key
+              const menuItemContent = (
+                <div
+                  onClick={() => {
+                    navigate(item.key)
+                    if (isMobile) {
+                      setMobileMenuVisible(false)
+                    }
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: collapsed ? '10px 0' : '10px 24px',
+                    margin: '4px 8px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    minHeight: '44px',
+                    justifyContent: collapsed ? 'center' : 'flex-start',
+                    backgroundColor: isSelected ? 'rgba(85, 107, 47, 0.1)' : 'transparent',
+                    borderRight: isSelected ? '3px solid var(--color-primary)' : 'none',
+                    color: isSelected ? 'var(--color-primary)' : 'var(--color-text-primary)',
+                    fontWeight: isSelected ? 600 : 400,
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = 'transparent'
+                    }
+                  }}
+                  data-testid={item['data-testid']}
+                >
+                  <span style={{ 
+                    fontSize: 20, 
+                    marginRight: collapsed ? 0 : 12,
+                    color: isSelected ? 'var(--color-primary)' : 'inherit',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                  }}>
+                    {item.icon}
+                  </span>
+                  {!collapsed && <span>{item.label}</span>}
+                </div>
+              )
+
+              if (collapsed) {
+                return (
+                  <Tooltip key={item.key} title={item.label} placement="right">
+                    {menuItemContent}
+                  </Tooltip>
+                )
+              }
+              
+              return <div key={item.key}>{menuItemContent}</div>
+            })}
           </div>
           <div
             style={{
-              borderTop: '1px solid #f0f0f0',
-              background: theme === 'dark' ? '#1a1a1a' : '#fff',
+              borderTop: '1px solid var(--color-border-secondary)',
+              background: 'var(--color-bg-secondary)',
             }}
           >
             {/* User info section */}
             <div
               style={{
-                padding: collapsed ? '12px 8px' : '12px 16px',
-                borderBottom: '1px solid #f0f0f0',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
+                padding: collapsed ? `${spacing('SM')}px ${spacing('SM')}px` : `${spacing('SM')}px ${spacing('MD')}px`,
+                borderBottom: '1px solid var(--color-border-secondary)',
+                ...styles.flexStart,
+                gap: spacing('SM'),
               }}
             >
-              <Avatar 
-                icon={<UserOutlined />} 
-                size={collapsed ? 24 : 32}
-                style={{ backgroundColor: '#666666' }} 
-              />
-              {!collapsed && (
-                <div style={{ flex: 1, overflow: 'hidden' }}>
-                  <Text 
-                    ellipsis 
-                    style={{ 
-                      display: 'block', 
-                      fontSize: '14px',
-                      fontWeight: 500,
-                    }}
-                  >
-                    {user?.email}
-                  </Text>
-                  {company && (
+              {collapsed ? (
+                <Tooltip 
+                  title={(
+                    <div>
+                      <div>{user?.email}</div>
+                      {company && <div style={{ fontSize: '12px', marginTop: '4px' }}>{company}</div>}
+                    </div>
+                  )} 
+                  placement="right"
+                >
+                  <Avatar 
+                    icon={<UserOutlined />} 
+                    size={DESIGN_TOKENS.DIMENSIONS.ICON_LG}
+                    style={{ backgroundColor: 'var(--color-text-tertiary)', cursor: 'pointer' }} 
+                  />
+                </Tooltip>
+              ) : (
+                <>
+                  <Avatar 
+                    icon={<UserOutlined />} 
+                    size={DESIGN_TOKENS.DIMENSIONS.ICON_XL}
+                    style={{ backgroundColor: 'var(--color-text-tertiary)' }} 
+                  />
+                  <div style={{ flex: 1, overflow: 'hidden' }}>
                     <Text 
-                      ellipsis
+                      ellipsis 
                       style={{ 
                         display: 'block', 
-                        fontSize: '12px',
-                        color: '#666',
+                        fontSize: '14px',
+                        fontWeight: 500,
                       }}
                     >
-                      {company}
+                      {user?.email}
                     </Text>
-                  )}
-                </div>
+                    {company && (
+                      <Text 
+                        ellipsis
+                        style={{ 
+                          display: 'block', 
+                          fontSize: '12px',
+                          color: 'var(--color-text-secondary)',
+                        }}
+                      >
+                        {company}
+                      </Text>
+                    )}
+                  </div>
+                </>
               )}
             </div>
             
@@ -336,57 +442,82 @@ const MainLayout: React.FC = () => {
             <div
               style={{
                 padding: collapsed ? '16px 8px' : '16px',
-                borderTop: '1px solid #f0f0f0',
+                borderTop: '1px solid var(--color-border-secondary)',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: collapsed ? 'center' : 'space-between',
-                gap: 8,
+                flexDirection: 'column',
+                alignItems: collapsed ? 'center' : 'stretch',
+                gap: 12,
                 transition: 'all 0.3s ease',
               }}
             >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  flex: collapsed ? 0 : 1,
-                  transition: 'all 0.3s ease',
-                }}
-              >
-                <div 
-                  className="ui-mode-icon"
-                  style={{ 
-                    fontSize: 20, 
-                    color: '#556b2f',
-                    display: 'flex',
-                    alignItems: 'center',
-                    cursor: collapsed ? 'pointer' : 'default',
-                  }}
-                  onClick={collapsed ? handleModeToggle : undefined}
-                  data-testid="main-mode-icon"
+              {collapsed ? (
+                <Tooltip 
+                  title={uiMode === 'simple' ? t('uiMode.simple') : t('uiMode.expert')} 
+                  placement="right"
                 >
-                  {uiMode === 'simple' ? (
-                    <SmileOutlined />
-                  ) : (
-                    <SafetyCertificateOutlined />
-                  )}
-                </div>
-                {!collapsed && (
+                  <div 
+                    className="ui-mode-icon"
+                    style={{ 
+                      fontSize: 20, 
+                      color: '#556b2f',
+                      display: 'flex',
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                    }}
+                    onClick={handleModeToggle}
+                    data-testid="main-mode-icon"
+                    aria-label={uiMode === 'simple' ? t('uiMode.simple') : t('uiMode.expert')}
+                  >
+                    {uiMode === 'simple' ? (
+                      <SmileOutlined />
+                    ) : (
+                      <SafetyCertificateOutlined />
+                    )}
+                  </div>
+                </Tooltip>
+              ) : (
+                <>
                   <Text style={{ 
-                    opacity: 1,
-                    transition: 'opacity 0.3s ease',
+                    fontSize: 12,
+                    color: 'var(--color-text-secondary)',
+                    textAlign: 'center',
                   }}>
-                    {uiMode === 'simple' ? t('uiMode.simple') : t('uiMode.expert')}
+                    {t('uiMode.label', { defaultValue: 'Interface Mode' })}
                   </Text>
-                )}
-              </div>
-              {!collapsed && (
-                <Switch
-                  size="small"
-                  checked={uiMode === 'expert'}
-                  onChange={handleModeToggle}
-                  data-testid="main-mode-toggle"
-                />
+                  <Segmented
+                    block
+                    value={uiMode}
+                    onChange={(value) => {
+                      if (value !== uiMode) {
+                        handleModeToggle()
+                      }
+                    }}
+                    options={[
+                      {
+                        label: (
+                          <Space size={4} style={{ padding: '4px 0' }}>
+                            <SmileOutlined />
+                            <span>{t('uiMode.simple')}</span>
+                          </Space>
+                        ),
+                        value: 'simple',
+                      },
+                      {
+                        label: (
+                          <Space size={4} style={{ padding: '4px 0' }}>
+                            <SafetyCertificateOutlined />
+                            <span>{t('uiMode.expert')}</span>
+                          </Space>
+                        ),
+                        value: 'expert',
+                      },
+                    ]}
+                    style={{
+                      background: 'var(--color-bg-tertiary)',
+                    }}
+                    data-testid="main-mode-toggle"
+                  />
+                </>
               )}
             </div>
             
@@ -394,79 +525,123 @@ const MainLayout: React.FC = () => {
             <div
               style={{
                 padding: collapsed ? '8px' : '8px 16px',
-                borderTop: '1px solid #f0f0f0',
+                borderTop: '1px solid var(--color-border-secondary)',
               }}
             >
-              <Button
-                type="text"
-                icon={<LogoutOutlined />}
-                onClick={handleLogout}
-                className="logout-button"
-                data-testid="main-logout-button"
-                style={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: collapsed ? 'center' : 'flex-start',
-                  gap: collapsed ? 0 : 8,
-                  transition: 'all 0.3s ease',
-                  padding: collapsed ? '4px 0' : '4px 12px',
-                }}
-              >
-                {!collapsed && (
+              {collapsed ? (
+                <Tooltip title={t('navigation.logout')} placement="right">
+                  <Button
+                    type="text"
+                    icon={<LogoutOutlined />}
+                    onClick={handleLogout}
+                    className="logout-button"
+                    data-testid="main-logout-button"
+                    aria-label={t('navigation.logout')}
+                    style={{
+                      width: '100%',
+                      ...styles.flexStart,
+                      justifyContent: 'center',
+                      transition: DESIGN_TOKENS.TRANSITIONS.SLOW,
+                      padding: `${spacing('XS')}px 0`,
+                      minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                    }}
+                  />
+                </Tooltip>
+              ) : (
+                <Button
+                  type="text"
+                  icon={<LogoutOutlined />}
+                  onClick={handleLogout}
+                  className="logout-button"
+                  data-testid="main-logout-button"
+                  style={{
+                    width: '100%',
+                    ...styles.flexStart,
+                    justifyContent: 'flex-start',
+                    gap: spacing('SM'),
+                    transition: DESIGN_TOKENS.TRANSITIONS.SLOW,
+                    padding: `${spacing('XS')}px ${spacing('SM')}px`,
+                    minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                  }}
+                >
                   <span style={{ flex: 0 }}>{t('navigation.logout')}</span>
-                )}
-              </Button>
+                </Button>
+              )}
             </div>
           </div>
         </div>
       </Sider>
-      <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'margin-left 0.2s' }}>
+      <Layout style={{ 
+        marginLeft: isMobile ? 0 : (collapsed ? 80 : 200), 
+        transition: 'margin-left 0.2s' 
+      }}>
         <Header
           style={{
-            padding: '0 24px',
-            background: theme === 'dark' ? '#1a1a1a' : '#fff',
-            boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            ...styles.header,
+            padding: isMobile ? `0 ${spacing('MD')}px` : `0 ${spacing('CONTAINER')}px`,
+            ...styles.flexBetween,
           }}
         >
           <Space>
-            {collapsed ? (
-              <MenuUnfoldOutlined
-                style={{ fontSize: 18, cursor: 'pointer' }}
+            {isMobile ? (
+              <Button
+                type="text"
+                icon={<MenuUnfoldOutlined />}
+                onClick={() => setMobileMenuVisible(!mobileMenuVisible)}
+                data-testid="mobile-menu-toggle"
+                aria-label={mobileMenuVisible ? t('navigation.closeMobileMenu') : t('navigation.openMobileMenu')}
+                aria-expanded={mobileMenuVisible}
+                style={{
+                  ...styles.touchTarget,
+                  fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_LG,
+                }}
+              />
+            ) : collapsed ? (
+              <Button
+                type="text"
+                icon={<MenuUnfoldOutlined />}
                 onClick={() => setCollapsed(false)}
                 data-testid="main-sidebar-expand"
+                style={{
+                  ...styles.touchTarget,
+                  fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_LG,
+                }}
               />
             ) : (
-              <MenuFoldOutlined
-                style={{ fontSize: 18, cursor: 'pointer' }}
+              <Button
+                type="text"
+                icon={<MenuFoldOutlined />}
                 onClick={() => setCollapsed(true)}
                 data-testid="main-sidebar-collapse"
+                style={{
+                  ...styles.touchTarget,
+                  fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_LG,
+                }}
               />
             )}
-            {company && (
-              <Text strong style={{ marginLeft: 16 }}>
+            {company && !isMobile && (
+              <Text strong style={{ marginLeft: spacing('MD') }}>
                 {company}
               </Text>
             )}
-            {companyData?.activeSubscription && (
+            {companyData?.activeSubscription && !isMobile && (
               <Badge 
                 count={companyData.activeSubscription.PlanName} 
                 style={{ 
-                  backgroundColor: '#556b2f',
-                  fontSize: '12px',
-                  padding: '0 8px',
-                  height: '22px',
-                  lineHeight: '22px',
-                  borderRadius: '11px',
-                  marginLeft: 8
+                  backgroundColor: 'var(--color-primary)',
+                  fontSize: DESIGN_TOKENS.FONT_SIZE.XS,
+                  fontWeight: DESIGN_TOKENS.FONT_WEIGHT.SEMIBOLD,
+                  padding: `0 ${spacing('SM') + 2}px`,
+                  height: DESIGN_TOKENS.DIMENSIONS.ICON_LG,
+                  lineHeight: `${DESIGN_TOKENS.DIMENSIONS.ICON_LG}px`,
+                  borderRadius: borderRadius('XL'),
+                  marginLeft: spacing('SM'),
+                  boxShadow: DESIGN_TOKENS.SHADOWS.BUTTON_DEFAULT
                 }}
               />
             )}
           </Space>
-          <Space size={16} align="center">
+          <Space size={isMobile ? spacing('SM') : spacing('MD')} align="center">
             <LanguageSelector />
             <ThemeToggle />
             <NotificationBell />
@@ -474,7 +649,7 @@ const MainLayout: React.FC = () => {
         </Header>
         <Content
           style={{
-            margin: '24px',
+            margin: isMobile ? spacing('XS') : spacing('SM'),
             minHeight: 280,
             position: 'relative',
           }}
@@ -490,10 +665,10 @@ const MainLayout: React.FC = () => {
                 textAlign: 'center',
               }}
             >
-              <div style={{ fontSize: 48, color: '#556b2f', marginBottom: 16 }}>
+              <div style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XXXXL, color: 'var(--color-primary)', marginBottom: spacing('MD') }}>
                 {uiMode === 'simple' ? <SafetyCertificateOutlined /> : <SmileOutlined />}
               </div>
-              <Text style={{ fontSize: 18, color: '#666' }}>
+              <Text style={{ fontSize: 18, color: 'var(--color-text-secondary)' }}>
                 {t('uiMode.switching', { mode: uiMode === 'simple' ? t('uiMode.expert') : t('uiMode.simple') })}
               </Text>
             </div>

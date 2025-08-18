@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import type { DistributedStorageRbdImage } from '@/api/queries/distributedStorage'
 import { useGetAvailableMachinesForClone, useUpdateImageMachineAssignment } from '@/api/queries/distributedStorage'
 import { showMessage } from '@/utils/messages'
+import { useComponentStyles, useFormStyles } from '@/hooks/useComponentStyles'
 
 const { Text } = Typography
 
@@ -28,6 +29,9 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
   const { t } = useTranslation(['distributedStorage', 'machines', 'common'])
   const [selectedMachine, setSelectedMachine] = useState<string>('')
   const updateMachineAssignment = useUpdateImageMachineAssignment()
+  
+  const styles = useComponentStyles()
+  const formStyles = useFormStyles()
   
   // Fetch available machines
   const { data: availableMachines = [], isLoading: loadingMachines } = useGetAvailableMachinesForClone(
@@ -63,9 +67,9 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
   return (
     <Modal
       title={
-        <Space>
-          <FileImageOutlined />
-          {t('distributedStorage:images.reassignMachine')}
+        <Space style={styles.flexStart}>
+          <FileImageOutlined style={styles.icon.medium} />
+          <span style={styles.heading4}>{t('distributedStorage:images.reassignMachine')}</span>
         </Space>
       }
       open={open}
@@ -76,48 +80,85 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
       confirmLoading={updateMachineAssignment.isPending}
       okButtonProps={{ 
         disabled: !selectedMachine || selectedMachine === image?.machineName,
-        'data-testid': 'image-reassign-submit'
+        'data-testid': 'image-reassign-submit',
+        style: {
+          ...styles.buttonPrimary,
+          ...styles.touchTarget
+        }
       }}
       cancelButtonProps={{
-        'data-testid': 'image-reassign-cancel'
+        'data-testid': 'image-reassign-cancel',
+        style: {
+          ...styles.buttonSecondary,
+          ...styles.touchTarget
+        }
+      }}
+      style={{
+        ...styles.modal
       }}
       width={600}
       data-testid="image-reassign-modal"
     >
       {image && (
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Space 
+          direction="vertical" 
+          size="large" 
+          style={{ 
+            width: '100%',
+            ...styles.padding.md
+          }}
+        >
           <div>
-            <Text strong>{t('distributedStorage:images.image')}: </Text>
-            <Text>{image.imageName}</Text>
+            <Text strong style={styles.label}>{t('distributedStorage:images.image')}: </Text>
+            <Text style={styles.body}>{image.imageName}</Text>
           </div>
           
           <div>
-            <Text strong>{t('distributedStorage:pools.pool')}: </Text>
-            <Text>{poolName}</Text>
+            <Text strong style={styles.label}>{t('distributedStorage:pools.pool')}: </Text>
+            <Text style={styles.body}>{poolName}</Text>
           </div>
           
           {image.machineName && (
             <Alert
-              message={t('machines:currentMachineAssignment', { 
-                machine: image.machineName 
-              })}
+              message={
+                <span style={styles.body}>
+                  {t('machines:currentMachineAssignment', { 
+                    machine: image.machineName 
+                  })}
+                </span>
+              }
               type="info"
               showIcon
-              icon={<CloudServerOutlined />}
+              icon={<CloudServerOutlined style={styles.icon.small} />}
+              style={{
+                borderRadius: 'var(--border-radius-lg)'
+              }}
               data-testid="image-reassign-current-machine-info"
             />
           )}
           
           <div>
-            <Text strong style={{ display: 'block', marginBottom: 8 }}>
+            <Text 
+              strong 
+              style={{ 
+                display: 'block',
+                ...styles.marginBottom.xs,
+                ...styles.label
+              }}
+            >
               {t('distributedStorage:images.selectNewMachine')}:
             </Text>
             {loadingMachines ? (
-              <Spin data-testid="image-reassign-loading" />
+              <div style={styles.flexCenter}>
+                <Spin data-testid="image-reassign-loading" />
+              </div>
             ) : (
               <>
                 <Select
-                  style={{ width: '100%' }}
+                  style={{
+                    width: '100%',
+                    ...formStyles.formInput
+                  }}
                   placeholder={t('machines:selectMachine')}
                   value={selectedMachine}
                   onChange={setSelectedMachine}
@@ -125,8 +166,8 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
                   optionFilterProp="children"
                   notFoundContent={
                     availableMachines.length === 0 
-                      ? t('machines:noAvailableMachines')
-                      : t('common:noMatchingResults')
+                      ? <span style={styles.body}>{t('machines:noAvailableMachines')}</span>
+                      : <span style={styles.body}>{t('common:noMatchingResults')}</span>
                   }
                   data-testid="image-reassign-machine-select"
                 >
@@ -138,7 +179,12 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
                       disabled
                       data-testid={`image-reassign-machine-option-${image.machineName}`}
                     >
-                      {image.machineName} ({t('common:current')})
+                      <span style={{
+                        ...styles.body,
+                        opacity: 0.6
+                      }}>
+                        {image.machineName} ({t('common:current')})
+                      </span>
                     </Select.Option>
                   )}
                   
@@ -149,12 +195,19 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
                       value={machine.machineName}
                       data-testid={`image-reassign-machine-option-${machine.machineName}`}
                     >
-                      {machine.machineName}
+                      <span style={styles.body}>{machine.machineName}</span>
                     </Select.Option>
                   ))}
                 </Select>
                 
-                <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
+                <Text 
+                  type="secondary" 
+                  style={{ 
+                    display: 'block',
+                    ...styles.marginBottom.xs,
+                    ...styles.caption
+                  }}
+                >
                   {t('distributedStorage:images.reassignmentInfo')}
                 </Text>
               </>
@@ -162,10 +215,17 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
           </div>
           
           <Alert
-            message={t('common:important')}
-            description={t('distributedStorage:images.reassignmentWarning')}
+            message={<span style={styles.label}>{t('common:important')}</span>}
+            description={
+              <span style={styles.body}>
+                {t('distributedStorage:images.reassignmentWarning')}
+              </span>
+            }
             type="warning"
             showIcon
+            style={{
+              borderRadius: 'var(--border-radius-lg)'
+            }}
             data-testid="image-reassign-warning"
           />
         </Space>

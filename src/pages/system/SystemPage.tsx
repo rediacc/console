@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Card, Tabs, Modal, Form, Input, Button, Space, Popconfirm, Tag, Select, Badge, List, Typography, Row, Col, Table, Empty, Spin, Alert, message, Checkbox, Result, Radio, Upload } from 'antd'
+import { Card, Tabs, Modal, Form, Input, Button, Space, Popconfirm, Tag, Select, Badge, List, Typography, Row, Col, Table, Empty, Spin, Alert, message, Checkbox, Result, Radio, Upload, Tooltip } from 'antd'
 import { 
   UserOutlined, 
   SafetyOutlined, 
@@ -47,6 +47,8 @@ import VaultEditorModal from '@/components/common/VaultEditorModal'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
 import UnifiedResourceModal, { ResourceType } from '@/components/common/UnifiedResourceModal'
 import UserSessionsTab from '@/components/system/UserSessionsTab'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing, fontSize, fontWeight } from '@/utils/styleConstants'
 import TwoFactorSettings from '@/components/settings/TwoFactorSettings'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import { 
@@ -131,6 +133,7 @@ const SystemPage: React.FC = () => {
   const { t: tOrg } = useTranslation('resources')
   const { t: tCommon } = useTranslation('common')
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
+  const styles = useComponentStyles()
   const [currentMasterPassword, setCurrentMasterPassword] = useState<string | null>(null)
   const currentUser = useSelector((state: RootState) => state.auth.user)
   const dispatch = useDispatch()
@@ -910,7 +913,7 @@ const SystemPage: React.FC = () => {
       width: 100,
       render: (count: number) => (
         <Badge count={count} showZero>
-          <UserOutlined style={{ fontSize: 16 }} />
+          <UserOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD }} />
         </Badge>
       ),
     },
@@ -921,7 +924,7 @@ const SystemPage: React.FC = () => {
       width: 120,
       render: (count: number) => (
         <Badge count={count} showZero style={{ backgroundColor: '#556b2f' }}>
-          <KeyOutlined style={{ fontSize: 16 }} />
+          <KeyOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD }} />
         </Badge>
       ),
     },
@@ -931,46 +934,49 @@ const SystemPage: React.FC = () => {
       width: 350,
       render: (_: any, record: PermissionGroup) => (
         <Space>
-          <Button
-            type="primary"
-            size="small"
-            icon={<KeyOutlined />}
-            onClick={() => {
-              setSelectedGroup(record)
-              setIsManageModalOpen(true)
-            }}
-            data-testid={`system-permission-group-manage-button-${record.permissionGroupName}`}
-          >
-            Permissions
-          </Button>
-          <Button
-            type="primary"
-            size="small"
-            icon={<UserOutlined />}
-            onClick={() => {
-              setSelectedGroup(record)
-              setIsAssignModalOpen(true)
-            }}
-            data-testid={`system-permission-group-assign-user-button-${record.permissionGroupName}`}
-          >
-            Assign User
-          </Button>
-          <Button
-            type="primary"
-            size="small"
-            icon={<HistoryOutlined />}
-            onClick={() => {
-              setAuditTraceModal({
-                open: true,
-                entityType: 'Permissions',
-                entityIdentifier: record.permissionGroupName,
-                entityName: record.permissionGroupName
-              })
-            }}
-            data-testid={`system-permission-group-trace-button-${record.permissionGroupName}`}
-          >
-            Trace
-          </Button>
+          <Tooltip title="Permissions">
+            <Button
+              type="primary"
+              size="small"
+              icon={<KeyOutlined />}
+              onClick={() => {
+                setSelectedGroup(record)
+                setIsManageModalOpen(true)
+              }}
+              data-testid={`system-permission-group-manage-button-${record.permissionGroupName}`}
+              aria-label="Permissions"
+            />
+          </Tooltip>
+          <Tooltip title="Assign User">
+            <Button
+              type="primary"
+              size="small"
+              icon={<UserOutlined />}
+              onClick={() => {
+                setSelectedGroup(record)
+                setIsAssignModalOpen(true)
+              }}
+              data-testid={`system-permission-group-assign-user-button-${record.permissionGroupName}`}
+              aria-label="Assign User"
+            />
+          </Tooltip>
+          <Tooltip title="Trace">
+            <Button
+              type="primary"
+              size="small"
+              icon={<HistoryOutlined />}
+              onClick={() => {
+                setAuditTraceModal({
+                  open: true,
+                  entityType: 'Permissions',
+                  entityIdentifier: record.permissionGroupName,
+                  entityName: record.permissionGroupName
+                })
+              }}
+              data-testid={`system-permission-group-trace-button-${record.permissionGroupName}`}
+              aria-label="Trace"
+            />
+          </Tooltip>
           <Popconfirm
             title="Delete Permission Group"
             description={`Are you sure you want to delete group "${record.permissionGroupName}"?`}
@@ -979,16 +985,17 @@ const SystemPage: React.FC = () => {
             cancelText="No"
             okButtonProps={{ danger: true }}
           >
-            <Button 
-              type="primary"
-              danger
-              size="small"
-              icon={<DeleteOutlined />}
-              loading={deleteGroupMutation.isPending}
-              data-testid={`system-permission-group-delete-button-${record.permissionGroupName}`}
-            >
-              Delete
-            </Button>
+            <Tooltip title="Delete">
+              <Button 
+                type="primary"
+                danger
+                size="small"
+                icon={<DeleteOutlined />}
+                loading={deleteGroupMutation.isPending}
+                data-testid={`system-permission-group-delete-button-${record.permissionGroupName}`}
+                aria-label="Delete"
+              />
+            </Tooltip>
           </Popconfirm>
         </Space>
       ),
@@ -1043,34 +1050,36 @@ const SystemPage: React.FC = () => {
       width: 300,
       render: (_: any, record: User) => (
         <Space>
-          <Button
-            type="primary"
-            size="small"
-            icon={<SafetyOutlined />}
-            onClick={() => {
-              setAssignPermissionModal({ open: true, user: record })
-              setSelectedUserGroup(record.permissionGroupName || '')
-            }}
-            data-testid={`system-user-permissions-button-${record.userEmail}`}
-          >
-            Permissions
-          </Button>
-          <Button
-            type="primary"
-            size="small"
-            icon={<HistoryOutlined />}
-            onClick={() => {
-              setAuditTraceModal({
-                open: true,
-                entityType: 'User',
-                entityIdentifier: record.userEmail,
-                entityName: record.userEmail
-              })
-            }}
-            data-testid={`system-user-trace-button-${record.userEmail}`}
-          >
-            Trace
-          </Button>
+          <Tooltip title="Permissions">
+            <Button
+              type="primary"
+              size="small"
+              icon={<SafetyOutlined />}
+              onClick={() => {
+                setAssignPermissionModal({ open: true, user: record })
+                setSelectedUserGroup(record.permissionGroupName || '')
+              }}
+              data-testid={`system-user-permissions-button-${record.userEmail}`}
+              aria-label="Permissions"
+            />
+          </Tooltip>
+          <Tooltip title="Trace">
+            <Button
+              type="primary"
+              size="small"
+              icon={<HistoryOutlined />}
+              onClick={() => {
+                setAuditTraceModal({
+                  open: true,
+                  entityType: 'User',
+                  entityIdentifier: record.userEmail,
+                  entityName: record.userEmail
+                })
+              }}
+              data-testid={`system-user-trace-button-${record.userEmail}`}
+              aria-label="Trace"
+            />
+          </Tooltip>
           {record.activated && (
             <Popconfirm
               title="Deactivate User"
@@ -1080,15 +1089,17 @@ const SystemPage: React.FC = () => {
               cancelText="No"
               okButtonProps={{ danger: true }}
             >
-              <Button 
-                type="primary"
-                danger
-                size="small"
-                loading={deactivateUserMutation.isPending}
-                data-testid={`system-user-deactivate-button-${record.userEmail}`}
-              >
-                Deactivate
-              </Button>
+              <Tooltip title="Deactivate">
+                <Button 
+                  type="primary"
+                  danger
+                  size="small"
+                  icon={<StopOutlined />}
+                  loading={deactivateUserMutation.isPending}
+                  data-testid={`system-user-deactivate-button-${record.userEmail}`}
+                  aria-label="Deactivate"
+                />
+              </Tooltip>
             </Popconfirm>
           )}
         </Space>
@@ -1119,7 +1130,7 @@ const SystemPage: React.FC = () => {
       width: 100,
       render: (count: number) => (
         <Badge count={count} showZero>
-          <UserOutlined style={{ fontSize: 16 }} />
+          <UserOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD }} />
         </Badge>
       ),
     },
@@ -1184,43 +1195,46 @@ const SystemPage: React.FC = () => {
       width: 350,
       render: (_: any, record: Team) => (
         <Space>
-          <Button 
-            type="primary" 
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => openUnifiedModal('team', 'edit', record)}
-            data-testid={`system-team-edit-button-${record.teamName}`}
-          >
-            Edit
-          </Button>
-          <Button
-            type="primary"
-            size="small"
-            icon={<UserOutlined />}
-            onClick={() => {
-              setSelectedTeam(record)
-              setIsManageTeamModalOpen(true)
-            }}
-            data-testid={`system-team-members-button-${record.teamName}`}
-          >
-            Members
-          </Button>
-          <Button
-            type="primary"
-            size="small"
-            icon={<HistoryOutlined />}
-            onClick={() => {
-              setAuditTraceModal({
-                open: true,
-                entityType: 'Team',
-                entityIdentifier: record.teamName,
-                entityName: record.teamName
-              })
-            }}
-            data-testid={`system-team-trace-button-${record.teamName}`}
-          >
-            Trace
-          </Button>
+          <Tooltip title="Edit">
+            <Button 
+              type="primary" 
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => openUnifiedModal('team', 'edit', record)}
+              data-testid={`system-team-edit-button-${record.teamName}`}
+              aria-label="Edit"
+            />
+          </Tooltip>
+          <Tooltip title="Members">
+            <Button
+              type="primary"
+              size="small"
+              icon={<UserOutlined />}
+              onClick={() => {
+                setSelectedTeam(record)
+                setIsManageTeamModalOpen(true)
+              }}
+              data-testid={`system-team-members-button-${record.teamName}`}
+              aria-label="Members"
+            />
+          </Tooltip>
+          <Tooltip title="Trace">
+            <Button
+              type="primary"
+              size="small"
+              icon={<HistoryOutlined />}
+              onClick={() => {
+                setAuditTraceModal({
+                  open: true,
+                  entityType: 'Team',
+                  entityIdentifier: record.teamName,
+                  entityName: record.teamName
+                })
+              }}
+              data-testid={`system-team-trace-button-${record.teamName}`}
+              aria-label="Trace"
+            />
+          </Tooltip>
           <Popconfirm
             title="Delete Team"
             description={`Are you sure you want to delete team "${record.teamName}"?`}
@@ -1229,16 +1243,17 @@ const SystemPage: React.FC = () => {
             cancelText="No"
             okButtonProps={{ danger: true }}
           >
-            <Button 
-              type="primary" 
-              danger
-              size="small"
-              icon={<DeleteOutlined />}
-              loading={deleteTeamMutation.isPending}
-              data-testid={`system-team-delete-button-${record.teamName}`}
-            >
-              Delete
-            </Button>
+            <Tooltip title="Delete">
+              <Button 
+                type="primary" 
+                danger
+                size="small"
+                icon={<DeleteOutlined />}
+                loading={deleteTeamMutation.isPending}
+                data-testid={`system-team-delete-button-${record.teamName}`}
+                aria-label="Delete"
+              />
+            </Tooltip>
           </Popconfirm>
         </Space>
       ),
@@ -1283,31 +1298,33 @@ const SystemPage: React.FC = () => {
       width: 300,
       render: (_: any, record: Region) => (
         <Space>
-          <Button 
-            type="primary" 
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => openUnifiedModal('region', 'edit', record)}
-            data-testid={`system-region-edit-button-${record.regionName}`}
-          >
-            {tOrg('general.edit')}
-          </Button>
-          <Button
-            type="primary"
-            size="small"
-            icon={<HistoryOutlined />}
-            onClick={() => {
-              setAuditTraceModal({
-                open: true,
-                entityType: 'Region',
-                entityIdentifier: record.regionName,
-                entityName: record.regionName
-              })
-            }}
-            data-testid={`system-region-trace-button-${record.regionName}`}
-          >
-            Trace
-          </Button>
+          <Tooltip title={tOrg('general.edit')}>
+            <Button 
+              type="primary" 
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => openUnifiedModal('region', 'edit', record)}
+              data-testid={`system-region-edit-button-${record.regionName}`}
+              aria-label={tOrg('general.edit')}
+            />
+          </Tooltip>
+          <Tooltip title="Trace">
+            <Button
+              type="primary"
+              size="small"
+              icon={<HistoryOutlined />}
+              onClick={() => {
+                setAuditTraceModal({
+                  open: true,
+                  entityType: 'Region',
+                  entityIdentifier: record.regionName,
+                  entityName: record.regionName
+                })
+              }}
+              data-testid={`system-region-trace-button-${record.regionName}`}
+              aria-label="Trace"
+            />
+          </Tooltip>
           <Popconfirm
             title={tOrg('regions.deleteRegion')}
             description={tOrg('regions.confirmDelete', { regionName: record.regionName })}
@@ -1316,16 +1333,17 @@ const SystemPage: React.FC = () => {
             cancelText={tOrg('general.no')}
             okButtonProps={{ danger: true }}
           >
-            <Button 
-              type="primary" 
-              danger
-              size="small"
-              icon={<DeleteOutlined />}
-              loading={deleteRegionMutation.isPending}
-              data-testid={`system-region-delete-button-${record.regionName}`}
-            >
-              {tOrg('general.delete')}
-            </Button>
+            <Tooltip title={tOrg('general.delete')}>
+              <Button 
+                type="primary" 
+                danger
+                size="small"
+                icon={<DeleteOutlined />}
+                loading={deleteRegionMutation.isPending}
+                data-testid={`system-region-delete-button-${record.regionName}`}
+                aria-label={tOrg('general.delete')}
+              />
+            </Tooltip>
           </Popconfirm>
         </Space>
       ),
@@ -1397,56 +1415,60 @@ const SystemPage: React.FC = () => {
     {
       title: tOrg('general.actions'),
       key: 'actions',
-      width: 400,
+      width: DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH,
       render: (_: any, record: Bridge) => (
         <Space>
-          <Button 
-            type="primary" 
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => openUnifiedModal('bridge', 'edit', record)}
-            data-testid={`system-bridge-edit-button-${record.bridgeName}`}
-          >
-            {tOrg('general.edit')}
-          </Button>
-          <Button
-            type="primary"
-            size="small"
-            icon={<KeyOutlined />}
-            onClick={() => setBridgeCredentialsModal({ open: true, bridge: record })}
-            data-testid={`system-bridge-token-button-${record.bridgeName}`}
-          >
-            Token
-          </Button>
-          <Button 
-            type="primary" 
-            size="small"
-            icon={<SyncOutlined />}
-            onClick={() => setResetAuthModal({ 
-              open: true, 
-              bridgeName: record.bridgeName, 
-              isCloudManaged: false 
-            })}
-            data-testid={`system-bridge-reset-auth-button-${record.bridgeName}`}
-          >
-            Reset Auth
-          </Button>
-          <Button
-            type="primary"
-            size="small"
-            icon={<HistoryOutlined />}
-            onClick={() => {
-              setAuditTraceModal({
-                open: true,
-                entityType: 'Bridge',
-                entityIdentifier: record.bridgeName,
-                entityName: record.bridgeName
-              })
-            }}
-            data-testid={`system-bridge-trace-button-${record.bridgeName}`}
-          >
-            Trace
-          </Button>
+          <Tooltip title={tOrg('general.edit')}>
+            <Button 
+              type="primary" 
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => openUnifiedModal('bridge', 'edit', record)}
+              data-testid={`system-bridge-edit-button-${record.bridgeName}`}
+              aria-label={tOrg('general.edit')}
+            />
+          </Tooltip>
+          <Tooltip title="Token">
+            <Button
+              type="primary"
+              size="small"
+              icon={<KeyOutlined />}
+              onClick={() => setBridgeCredentialsModal({ open: true, bridge: record })}
+              data-testid={`system-bridge-token-button-${record.bridgeName}`}
+              aria-label="Token"
+            />
+          </Tooltip>
+          <Tooltip title="Reset Auth">
+            <Button 
+              type="primary" 
+              size="small"
+              icon={<SyncOutlined />}
+              onClick={() => setResetAuthModal({ 
+                open: true, 
+                bridgeName: record.bridgeName, 
+                isCloudManaged: false 
+              })}
+              data-testid={`system-bridge-reset-auth-button-${record.bridgeName}`}
+              aria-label="Reset Auth"
+            />
+          </Tooltip>
+          <Tooltip title="Trace">
+            <Button
+              type="primary"
+              size="small"
+              icon={<HistoryOutlined />}
+              onClick={() => {
+                setAuditTraceModal({
+                  open: true,
+                  entityType: 'Bridge',
+                  entityIdentifier: record.bridgeName,
+                  entityName: record.bridgeName
+                })
+              }}
+              data-testid={`system-bridge-trace-button-${record.bridgeName}`}
+              aria-label="Trace"
+            />
+          </Tooltip>
           <Popconfirm
             title={tOrg('bridges.deleteBridge')}
             description={tOrg('bridges.confirmDelete', { bridgeName: record.bridgeName })}
@@ -1455,16 +1477,17 @@ const SystemPage: React.FC = () => {
             cancelText={tOrg('general.no')}
             okButtonProps={{ danger: true }}
           >
-            <Button 
-              type="primary" 
-              danger
-              size="small"
-              icon={<DeleteOutlined />}
-              loading={deleteBridgeMutation.isPending}
-              data-testid={`system-bridge-delete-button-${record.bridgeName}`}
-            >
-              {tOrg('general.delete')}
-            </Button>
+            <Tooltip title={tOrg('general.delete')}>
+              <Button 
+                type="primary" 
+                danger
+                size="small"
+                icon={<DeleteOutlined />}
+                loading={deleteBridgeMutation.isPending}
+                data-testid={`system-bridge-delete-button-${record.bridgeName}`}
+                aria-label={tOrg('general.delete')}
+              />
+            </Tooltip>
           </Popconfirm>
         </Space>
       ),
@@ -1546,7 +1569,7 @@ const SystemPage: React.FC = () => {
       <ResourceListView
         title={
           <Space>
-            <span style={{ fontSize: 16, fontWeight: 500 }}>Users</span>
+            <span style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.BASE, fontWeight: DESIGN_TOKENS.FONT_WEIGHT.MEDIUM }}>Users</span>
             <span style={{ fontSize: 14, color: '#666' }}>Manage users and their permissions</span>
           </Space>
         }
@@ -1557,14 +1580,15 @@ const SystemPage: React.FC = () => {
         searchPlaceholder="Search users..."
         data-testid="system-user-table"
         actions={
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />}
-            onClick={() => setIsCreateUserModalOpen(true)}
-            data-testid="system-create-user-button"
-          >
-            Create User
-          </Button>
+          <Tooltip title={t('system:actions.createUser')}>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
+              onClick={() => setIsCreateUserModalOpen(true)}
+              data-testid="system-create-user-button"
+              aria-label={t('system:actions.createUser')}
+            />
+          </Tooltip>
         }
       />
     ),
@@ -1582,7 +1606,7 @@ const SystemPage: React.FC = () => {
       <ResourceListView
         title={
           <Space>
-            <span style={{ fontSize: 16, fontWeight: 500 }}>Permission Groups</span>
+            <span style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.BASE, fontWeight: DESIGN_TOKENS.FONT_WEIGHT.MEDIUM }}>Permission Groups</span>
             <span style={{ fontSize: 14, color: '#666' }}>Manage permission groups and their assignments</span>
           </Space>
         }
@@ -1593,14 +1617,15 @@ const SystemPage: React.FC = () => {
         searchPlaceholder="Search permission groups..."
         data-testid="system-permission-group-table"
         actions={
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />}
-            onClick={() => setIsCreateModalOpen(true)}
-            data-testid="system-create-permission-group-button"
-          >
-            Create Group
-          </Button>
+          <Tooltip title={t('system:actions.createGroup')}>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
+              onClick={() => setIsCreateModalOpen(true)}
+              data-testid="system-create-permission-group-button"
+              aria-label={t('system:actions.createGroup')}
+            />
+          </Tooltip>
         }
       />
     ),
@@ -1618,7 +1643,7 @@ const SystemPage: React.FC = () => {
       <ResourceListView
         title={
           <Space>
-            <span style={{ fontSize: 16, fontWeight: 500 }}>Teams</span>
+            <span style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.BASE, fontWeight: DESIGN_TOKENS.FONT_WEIGHT.MEDIUM }}>Teams</span>
             <span style={{ fontSize: 14, color: '#666' }}>Manage teams and their members</span>
           </Space>
         }
@@ -1629,14 +1654,15 @@ const SystemPage: React.FC = () => {
         searchPlaceholder="Search teams..."
         data-testid="system-team-table"
         actions={
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />}
-            onClick={() => openUnifiedModal('team', 'create')}
-            data-testid="system-create-team-button"
-          >
-            Create Team
-          </Button>
+          <Tooltip title={t('system:actions.createTeam')}>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
+              onClick={() => openUnifiedModal('team', 'create')}
+              data-testid="system-create-team-button"
+              aria-label={t('system:actions.createTeam')}
+            />
+          </Tooltip>
         }
       />
     ),
@@ -1678,16 +1704,17 @@ const SystemPage: React.FC = () => {
                   {t('company.description')}
                 </Text>
 
-                <Button
-                  type="primary"
-                  icon={<SettingOutlined />}
-                  onClick={() => setCompanyVaultModalOpen(true)}
-                  size="large"
-                  style={{ marginTop: 16 }}
-                  data-testid="system-company-vault-button"
-                >
-                  {t('company.configureVault')}
-                </Button>
+                <Tooltip title={t('company.configureVault')}>
+                  <Button
+                    type="primary"
+                    icon={<SettingOutlined />}
+                    onClick={() => setCompanyVaultModalOpen(true)}
+                    size="large"
+                    style={{ marginTop: 16 }}
+                    data-testid="system-company-vault-button"
+                    aria-label={t('company.configureVault')}
+                  />
+                </Tooltip>
               </Space>
             </Card>
           </Col>
@@ -1706,33 +1733,36 @@ const SystemPage: React.FC = () => {
                 </Text>
 
                 <Space style={{ marginTop: 16 }} wrap>
-                  <Button
-                    type="primary"
-                    icon={<SettingOutlined />}
-                    onClick={() => setUserVaultModalOpen(true)}
-                    size="large"
-                    data-testid="system-user-vault-button"
-                  >
-                    {t('personal.configureVault')}
-                  </Button>
-                  <Button
-                    type="primary"
-                    icon={<KeyOutlined />}
-                    onClick={() => setChangePasswordModalOpen(true)}
-                    size="large"
-                    data-testid="system-change-password-button"
-                  >
-                    Change Password
-                  </Button>
-                  <Button
-                    type="primary"
-                    icon={<SafetyCertificateOutlined />}
-                    onClick={() => setTwoFactorModalOpen(true)}
-                    size="large"
-                    data-testid="system-two-factor-button"
-                  >
-                    Two-Factor Authentication
-                  </Button>
+                  <Tooltip title={t('personal.configureVault')}>
+                    <Button
+                      type="primary"
+                      icon={<SettingOutlined />}
+                      onClick={() => setUserVaultModalOpen(true)}
+                      size="large"
+                      data-testid="system-user-vault-button"
+                      aria-label={t('personal.configureVault')}
+                    />
+                  </Tooltip>
+                  <Tooltip title={t('system:actions.changePassword')}>
+                    <Button
+                      type="primary"
+                      icon={<KeyOutlined />}
+                      onClick={() => setChangePasswordModalOpen(true)}
+                      size="large"
+                      data-testid="system-change-password-button"
+                      aria-label={t('system:actions.changePassword')}
+                    />
+                  </Tooltip>
+                  <Tooltip title={t('system:actions.twoFactorAuth')}>
+                    <Button
+                      type="primary"
+                      icon={<SafetyCertificateOutlined />}
+                      onClick={() => setTwoFactorModalOpen(true)}
+                      size="large"
+                      data-testid="system-two-factor-button"
+                      aria-label={t('system:actions.twoFactorAuth')}
+                    />
+                  </Tooltip>
                 </Space>
               </Space>
             </Card>
@@ -1797,17 +1827,18 @@ const SystemPage: React.FC = () => {
                     renderItem={(permission: string) => (
                       <List.Item
                         actions={[
-                          <Button
-                            key="remove"
-                            type="primary"
-                            danger
-                            size="small"
-                            onClick={() => handleRemovePermission(permission)}
-                            loading={removePermissionMutation.isPending}
-                            data-testid={`permission-remove-button-${permission}`}
-                          >
-                            Remove
-                          </Button>
+                          <Tooltip title={t('common:actions.remove')}>
+                            <Button
+                              key="remove"
+                              type="primary"
+                              danger
+                              size="small"
+                              onClick={() => handleRemovePermission(permission)}
+                              loading={removePermissionMutation.isPending}
+                              data-testid={`permission-remove-button-${permission}`}
+                              aria-label={t('common:actions.remove')}
+                            />
+                          </Tooltip>
                         ]}
                       >
                         <List.Item.Meta
@@ -1829,7 +1860,7 @@ const SystemPage: React.FC = () => {
                   <Space style={{ width: '100%' }}>
                     <Select
                       placeholder="Select permission to add"
-                      style={{ width: 400 }}
+                      style={{ width: DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH }}
                       value={selectedPermission}
                       onChange={setSelectedPermission}
                       showSearch
@@ -1850,15 +1881,17 @@ const SystemPage: React.FC = () => {
                         </Select.Option>
                       ))}
                     </Select>
-                    <Button
-                      type="primary"
-                      onClick={handleAddPermission}
-                      loading={addPermissionMutation.isPending}
-                      disabled={!selectedPermission}
-                      data-testid="permission-add-button"
-                    >
-                      Add Permission
-                    </Button>
+                    <Tooltip title={t('system:actions.addPermission')}>
+                      <Button
+                        type="primary"
+                        onClick={handleAddPermission}
+                        loading={addPermissionMutation.isPending}
+                        disabled={!selectedPermission}
+                        data-testid="permission-add-button"
+                        aria-label={t('system:actions.addPermission')}
+                        icon={<PlusOutlined />}
+                      />
+                    </Tooltip>
                   </Space>
                 </Space>
               ),
@@ -2008,14 +2041,16 @@ const SystemPage: React.FC = () => {
                             cancelText="No"
                             okButtonProps={{ danger: true }}
                           >
-                            <Button
-                              type="primary"
-                              danger
-                              size="small"
-                              loading={removeTeamMemberMutation.isPending}
-                            >
-                              Remove
-                            </Button>
+                            <Tooltip title={t('common:actions.remove')}>
+                              <Button
+                                type="primary"
+                                danger
+                                size="small"
+                                loading={removeTeamMemberMutation.isPending}
+                                icon={<DeleteOutlined />}
+                                aria-label={t('common:actions.remove')}
+                              />
+                            </Tooltip>
                           </Popconfirm>
                         ]}
                       >
@@ -2044,7 +2079,7 @@ const SystemPage: React.FC = () => {
                   <Space style={{ width: '100%' }}>
                     <Select
                       placeholder="Select user to add"
-                      style={{ width: 400 }}
+                      style={{ width: DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH }}
                       value={selectedMemberEmail}
                       onChange={setSelectedMemberEmail}
                       showSearch
@@ -2057,14 +2092,16 @@ const SystemPage: React.FC = () => {
                         disabled: teamMembers.some((m: TeamMember) => m.userEmail === u.value && m.isMember)
                       })) || []}
                     />
-                    <Button
-                      type="primary"
-                      onClick={handleAddTeamMember}
-                      loading={addTeamMemberMutation.isPending}
-                      disabled={!selectedMemberEmail}
-                    >
-                      Add Member
-                    </Button>
+                    <Tooltip title={t('system:actions.addMember')}>
+                      <Button
+                        type="primary"
+                        onClick={handleAddTeamMember}
+                        loading={addTeamMemberMutation.isPending}
+                        disabled={!selectedMemberEmail}
+                        icon={<PlusOutlined />}
+                        aria-label={t('system:actions.addMember')}
+                      />
+                    </Tooltip>
                   </Space>
                 </Space>
               ),
@@ -2086,7 +2123,7 @@ const SystemPage: React.FC = () => {
             <ResourceListView
               title={
                 <Space>
-                  <span style={{ fontSize: 16, fontWeight: 500 }}>{tOrg('regions.title')}</span>
+                  <span style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.BASE, fontWeight: DESIGN_TOKENS.FONT_WEIGHT.MEDIUM }}>{tOrg('regions.title')}</span>
                   <span style={{ fontSize: 14, color: '#666' }}>{tOrg('regions.selectRegionPrompt')}</span>
                 </Space>
               }
@@ -2097,14 +2134,15 @@ const SystemPage: React.FC = () => {
               searchPlaceholder={tOrg('regions.searchRegions')}
               data-testid="system-region-table"
               actions={
-                <Button 
-                  type="primary" 
-                  icon={<PlusOutlined />}
-                  onClick={() => openUnifiedModal('region', 'create')}
-                  data-testid="system-create-region-button"
-                >
-                  {tOrg('regions.createRegion')}
-                </Button>
+                <Tooltip title={tOrg('regions.createRegion')}>
+                  <Button 
+                    type="primary" 
+                    icon={<PlusOutlined />}
+                    onClick={() => openUnifiedModal('region', 'create')}
+                    data-testid="system-create-region-button"
+                    aria-label={tOrg('regions.createRegion')}
+                  />
+                </Tooltip>
               }
               rowSelection={{
                 type: 'radio',
@@ -2135,16 +2173,17 @@ const SystemPage: React.FC = () => {
                   )}
                 </div>
                 {selectedRegion && (
-                  <Button 
-                    type="primary" 
-                    icon={<PlusOutlined />}
-                    onClick={() => {
-                      openUnifiedModal('bridge', 'create', { regionName: selectedRegion })
-                    }}
-                    data-testid="system-create-bridge-button"
-                  >
-                    {tOrg('bridges.createBridge')}
-                  </Button>
+                  <Tooltip title={tOrg('bridges.createBridge')}>
+                    <Button 
+                      type="primary" 
+                      icon={<PlusOutlined />}
+                      onClick={() => {
+                        openUnifiedModal('bridge', 'create', { regionName: selectedRegion })
+                      }}
+                      data-testid="system-create-bridge-button"
+                      aria-label={tOrg('bridges.createBridge')}
+                    />
+                  </Tooltip>
                 )}
               </div>
               
@@ -2338,14 +2377,15 @@ const SystemPage: React.FC = () => {
                   cancelText={tCommon('general.cancel')}
                   okButtonProps={{ danger: true }}
                 >
-                  <Button 
-                    type="primary"
-                    danger
-                    icon={<LockOutlined />}
-                    loading={blockUserRequestsMutation.isPending}
-                  >
-                    {tSystem('dangerZone.blockUserRequests.blockButton')}
-                  </Button>
+                  <Tooltip title={tSystem('dangerZone.blockUserRequests.blockButton')}>
+                    <Button 
+                      type="primary"
+                      danger
+                      icon={<LockOutlined />}
+                      loading={blockUserRequestsMutation.isPending}
+                      aria-label={tSystem('dangerZone.blockUserRequests.blockButton')}
+                    />
+                  </Tooltip>
                 </Popconfirm>
                 <Popconfirm
                   title={tSystem('dangerZone.blockUserRequests.confirmUnblock.title')}
@@ -2354,13 +2394,14 @@ const SystemPage: React.FC = () => {
                   okText={tSystem('dangerZone.blockUserRequests.confirmUnblock.okText')}
                   cancelText={tCommon('general.cancel')}
                 >
-                  <Button 
-                    type="primary"
-                    icon={<UnlockOutlined />}
-                    loading={blockUserRequestsMutation.isPending}
-                  >
-                    {tSystem('dangerZone.blockUserRequests.unblockButton')}
-                  </Button>
+                  <Tooltip title={tSystem('dangerZone.blockUserRequests.unblockButton')}>
+                    <Button 
+                      type="primary"
+                      icon={<UnlockOutlined />}
+                      loading={blockUserRequestsMutation.isPending}
+                      aria-label={tSystem('dangerZone.blockUserRequests.unblockButton')}
+                    />
+                  </Tooltip>
                 </Popconfirm>
               </Space>
             </Col>
@@ -2379,15 +2420,16 @@ const SystemPage: React.FC = () => {
               </Space>
             </Col>
             <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
-              <Button 
-                type="primary"
-                icon={<DownloadOutlined />}
-                onClick={handleExportVaults}
-                loading={exportVaultsQuery.isFetching}
-                data-testid="system-export-vaults-button"
-              >
-                {tSystem('dangerZone.exportVaults.button')}
-              </Button>
+              <Tooltip title={tSystem('dangerZone.exportVaults.button')}>
+                <Button 
+                  type="primary"
+                  icon={<DownloadOutlined />}
+                  onClick={handleExportVaults}
+                  loading={exportVaultsQuery.isFetching}
+                  data-testid="system-export-vaults-button"
+                  aria-label={tSystem('dangerZone.exportVaults.button')}
+                />
+              </Tooltip>
             </Col>
           </Row>
 
@@ -2404,15 +2446,16 @@ const SystemPage: React.FC = () => {
               </Space>
             </Col>
             <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
-              <Button 
-                type="primary"
-                icon={<ExportOutlined />}
-                onClick={handleExportCompanyData}
-                loading={exportCompanyDataQuery.isFetching}
-                data-testid="system-export-data-button"
-              >
-                {tSystem('dangerZone.exportData.button')}
-              </Button>
+              <Tooltip title={tSystem('dangerZone.exportData.button')}>
+                <Button 
+                  type="primary"
+                  icon={<ExportOutlined />}
+                  onClick={handleExportCompanyData}
+                  loading={exportCompanyDataQuery.isFetching}
+                  data-testid="system-export-data-button"
+                  aria-label={tSystem('dangerZone.exportData.button')}
+                />
+              </Tooltip>
             </Col>
           </Row>
 
@@ -2429,15 +2472,16 @@ const SystemPage: React.FC = () => {
               </Space>
             </Col>
             <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
-              <Button 
-                type="primary"
-                danger
-                icon={<ImportOutlined />}
-                onClick={() => setImportModalOpen(true)}
-                data-testid="system-import-data-button"
-              >
-                {tSystem('dangerZone.importData.button')}
-              </Button>
+              <Tooltip title={tSystem('dangerZone.importData.button')}>
+                <Button 
+                  type="primary"
+                  danger
+                  icon={<ImportOutlined />}
+                  onClick={() => setImportModalOpen(true)}
+                  data-testid="system-import-data-button"
+                  aria-label={tSystem('dangerZone.importData.button')}
+                />
+              </Tooltip>
             </Col>
           </Row>
 
@@ -2462,15 +2506,16 @@ const SystemPage: React.FC = () => {
               </Space>
             </Col>
             <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
-              <Button 
-                type="primary"
-                danger
-                icon={<KeyOutlined />}
-                onClick={() => setMasterPasswordModalOpen(true)}
-                data-testid="system-update-master-password-button"
-              >
-                {tSystem('dangerZone.updateMasterPassword.button')}
-              </Button>
+              <Tooltip title={tSystem('dangerZone.updateMasterPassword.button')}>
+                <Button 
+                  type="primary"
+                  danger
+                  icon={<KeyOutlined />}
+                  onClick={() => setMasterPasswordModalOpen(true)}
+                  data-testid="system-update-master-password-button"
+                  aria-label={tSystem('dangerZone.updateMasterPassword.button')}
+                />
+              </Tooltip>
             </Col>
           </Row>
 

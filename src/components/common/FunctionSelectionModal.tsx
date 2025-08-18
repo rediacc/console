@@ -339,7 +339,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
       }
       open={open}
       onCancel={handleCancel}
-      width={900}
+      width={1000}
       footer={[
         <Button key="cancel" onClick={handleCancel} data-testid="function-modal-cancel">
           {t('common:actions.cancel')}
@@ -350,7 +350,11 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
           onClick={handleSubmit}
           disabled={!selectedFunction || (showMachineSelection && !selectedMachine) || !areRequiredParamsFilled}
           loading={loading}
-          style={{ background: '#556b2f', borderColor: '#556b2f' }}
+          style={{ 
+            background: 'var(--color-primary)',
+            borderColor: 'var(--color-primary)',
+            minHeight: '44px'
+          }}
           data-testid="function-modal-submit"
         >
           {t('common:actions.addToQueue')}
@@ -366,25 +370,49 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
               placeholder={t('functions:searchFunctions')}
               value={functionSearchTerm}
               onChange={(e) => setFunctionSearchTerm(e.target.value)}
-              style={{ marginBottom: 16 }}
+              style={{ 
+                marginBottom: 'var(--space-md)',
+                minHeight: '44px'
+              }}
               autoComplete="off"
               data-testid="function-modal-search"
             />
-            <div style={{ maxHeight: 400, overflow: 'auto' }}>
+            <div style={{ 
+              maxHeight: 400, 
+              overflow: 'auto',
+              padding: 'var(--space-xs)',
+              backgroundColor: 'var(--color-bg-secondary)',
+              borderRadius: '8px',
+              border: '1px solid var(--color-border-secondary)'
+            }}>
               {Object.entries(functionsByCategory).map(([category, funcs]) => (
-                <div key={category} style={{ marginBottom: 16 }} data-testid={`function-modal-category-${category}`}>
-                  <Text strong style={{ display: 'block', marginBottom: 8 }}>{categories[category]?.name || category}</Text>
+                <div key={category} style={{ marginBottom: 'var(--space-md)' }} data-testid={`function-modal-category-${category}`}>
+                  <Text strong style={{ 
+                    display: 'block', 
+                    marginBottom: 'var(--space-sm)',
+                    fontSize: '15px',
+                    color: 'var(--color-text-primary)'
+                  }}>{categories[category]?.name || category}</Text>
                   {funcs.map(func => (
                     <div
                       key={func.name}
                       onClick={() => setSelectedFunction(func)}
                       style={{
-                        padding: '8px 12px',
-                        marginBottom: 4,
+                        padding: 'var(--space-sm) var(--space-md)',
+                        marginBottom: 'var(--space-xs)',
                         cursor: 'pointer',
-                        borderRadius: 4,
-                        backgroundColor: selectedFunction?.name === func.name ? '#f0f5ff' : 'transparent',
-                        border: selectedFunction?.name === func.name ? '1px solid #1890ff' : '1px solid transparent'
+                        borderRadius: '6px',
+                        backgroundColor: selectedFunction?.name === func.name 
+                          ? 'var(--color-primary-bg)' 
+                          : 'var(--color-bg-primary)',
+                        border: selectedFunction?.name === func.name 
+                          ? `2px solid var(--color-primary)` 
+                          : `1px solid var(--color-border-secondary)`,
+                        minHeight: '44px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease'
                       }}
                       data-testid={`function-modal-item-${func.name}`}
                     >
@@ -404,7 +432,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
         
         <Col span={preselectedFunction || isSimpleMode ? 24 : 14}>
           {selectedFunction ? (
-            <Space direction="vertical" size={16} style={{ width: '100%' }}>
+            <Space direction="vertical" size={'md'} style={{ width: '100%' }}>
               <Card title={`${t('functions:configure')}: ${selectedFunction.name}`} size="small">
                 <Paragraph>
                   {selectedFunction.description}
@@ -416,7 +444,11 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                     <Alert
                       type="info"
                       showIcon
-                      style={{ marginBottom: 16 }}
+                      style={{ 
+                        marginBottom: 'var(--space-md)',
+                        borderRadius: '8px',
+                        border: '1px solid var(--color-info)'
+                      }}
                       message="Push Operation Details"
                       description={
                         <Space direction="vertical" size="small">
@@ -454,7 +486,11 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                             <Alert
                               type="warning"
                               showIcon
-                              style={{ marginTop: 8 }}
+                              style={{ 
+                                marginTop: 'var(--space-sm)',
+                                borderRadius: '8px',
+                                border: '1px solid var(--color-warning)'
+                              }}
                               message="Online Push Warning"
                               description={
                                 <Space direction="vertical" size="small">

@@ -12,6 +12,8 @@ import { useTranslation } from 'react-i18next'
 import { showMessage } from '@/utils/messages'
 import { hashPassword } from '@/utils/auth'
 import apiClient from '@/api/client'
+import { useFormStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing } from '@/utils/styleConstants'
 
 const { Step } = Steps
 const { Text } = Typography
@@ -34,6 +36,7 @@ interface VerificationForm {
 
 const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose }) => {
   const { t } = useTranslation(['auth', 'common'])
+  const styles = useFormStyles()
   const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -150,6 +153,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
           prefix={<BankOutlined />}
           placeholder={t('auth:registration.companyNamePlaceholder')}
           size="large"
+          // Styles handled by CSS
           data-testid="registration-company-input"
         />
       </Form.Item>
@@ -167,6 +171,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
           placeholder={t('auth:registration.emailPlaceholder')}
           size="large"
           autoComplete="email"
+          // Styles handled by CSS
           data-testid="registration-email-input"
         />
       </Form.Item>
@@ -184,6 +189,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
           placeholder={t('auth:registration.passwordPlaceholder')}
           size="large"
           autoComplete="new-password"
+          // Styles handled by CSS
           data-testid="registration-password-input"
         />
       </Form.Item>
@@ -209,6 +215,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
           placeholder={t('auth:registration.passwordConfirmPlaceholder')}
           size="large"
           autoComplete="new-password"
+          // Styles handled by CSS
           data-testid="registration-password-confirm-input"
         />
       </Form.Item>
@@ -221,9 +228,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
           size="large"
           loading={loading}
           style={{
-            background: '#556b2f',
-            borderColor: '#556b2f',
-            height: 48,
+            // Button styles handled by CSS
+            marginTop: spacing('SM')
           }}
           data-testid="registration-submit-button"
         >
@@ -241,7 +247,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
       requiredMark={false}
       data-testid="registration-verification-form"
     >
-      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <Space direction="vertical" size={spacing('MD')} style={{ width: '100%' }}>
         <Alert
           message={t('auth:registration.verificationRequired')}
           description={t('auth:registration.verificationDescription')}
@@ -264,7 +270,12 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
             placeholder={t('auth:registration.activationCodePlaceholder')}
             autoComplete="off"
             maxLength={6}
-            style={{ textAlign: 'center', fontSize: '20px', letterSpacing: '8px' }}
+            style={{
+              // Base styles handled by CSS
+              textAlign: 'center',
+              fontSize: '20px',
+              letterSpacing: '8px'
+            }}
             data-testid="registration-activation-code-input"
           />
         </Form.Item>
@@ -277,9 +288,9 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
             size="large"
             loading={loading}
             style={{
-              background: '#556b2f',
-              borderColor: '#556b2f',
-              height: 48,
+              ...styles.buttonPrimary,
+              height: DESIGN_TOKENS.DIMENSIONS.INPUT_HEIGHT,
+              marginTop: spacing('SM')
             }}
             data-testid="registration-verify-button"
           >
@@ -291,9 +302,9 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
   )
 
   const renderSuccess = () => (
-    <div style={{ textAlign: 'center', padding: '40px 0' }} data-testid="registration-success-container">
-      <CheckCircleOutlined style={{ fontSize: 64, color: '#52c41a' }} data-testid="registration-success-icon" />
-      <Typography.Title level={4} style={{ marginTop: 24 }} data-testid="registration-success-title">
+    <div style={{ textAlign: 'center', padding: `${spacing('XXXL')}px 0` }} data-testid="registration-success-container">
+      <CheckCircleOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_XXXL, color: '#52c41a' }} data-testid="registration-success-icon" />
+      <Typography.Title level={4} style={{ marginTop: spacing('LG') }} data-testid="registration-success-title">
         {t('auth:registration.successTitle')}
       </Typography.Title>
       <Text type="secondary" data-testid="registration-success-description">
@@ -323,9 +334,20 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
       footer={null}
       width={480}
       destroyOnHidden
+      style={{ 
+        paddingBottom: 0,
+        minHeight: 'calc(100vh - 120px)'
+      }}
+      styles={{
+        body: {
+          padding: spacing('LG'),
+          maxHeight: 'calc(100vh - 200px)',
+          overflowY: 'auto'
+        }
+      }}
       data-testid="registration-modal"
     >
-      <Space direction="vertical" size={24} style={{ width: '100%' }}>
+      <Space direction="vertical" size={spacing('LG')} style={{ width: '100%' }}>
         <Steps current={currentStep} size="small" data-testid="registration-steps">
           <Step title={t('auth:registration.steps.register')} icon={<UserOutlined />} data-testid="registration-step-register" />
           <Step title={t('auth:registration.steps.verify')} icon={<SafetyCertificateOutlined />} data-testid="registration-step-verify" />

@@ -10,6 +10,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { theme } from 'antd';
 import { useTheme } from '@/context/ThemeContext';
+import { useComponentStyles } from '@/hooks/useComponentStyles';
 
 const { Text, Title } = Typography;
 
@@ -47,6 +48,7 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
   const { t } = useTranslation(['common', 'distributedStorage']);
   const { theme: currentTheme } = useTheme();
   const { token } = theme.useToken();
+  const styles = useComponentStyles();
 
   if (!stats) {
     return null;
@@ -102,18 +104,22 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
     <Card
       data-testid="ds-widget-card"
       title={
-        <Space>
-          <CloudServerOutlined />
-          <span>{t('distributedStorage:dashboard.title')}</span>
+        <Space style={styles.flexStart}>
+          <CloudServerOutlined style={styles.icon.medium} />
+          <span style={styles.heading4}>{t('distributedStorage:dashboard.title')}</span>
         </Space>
       }
       extra={
-        <Text type="secondary">
+        <Text type="secondary" style={styles.caption}>
           {t('distributedStorage:dashboard.subtitle', { total: stats.total_machines })}
         </Text>
       }
+      style={{
+        ...styles.card,
+        border: '1px solid var(--color-border-secondary)'
+      }}
     >
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <Space direction="vertical" size="large" style={{ width: '100%', ...styles.padding.md }}>
         {/* Machine Assignment Overview */}
         <Row gutter={[16, 16]}>
           {assignmentData.map((item) => (
@@ -124,26 +130,30 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
                 style={{ 
                   textAlign: 'center',
                   borderColor: getAssignmentColor(item.type as any),
-                  backgroundColor: currentTheme === 'dark' 
-                    ? token.colorBgContainer 
-                    : token.colorBgLayout 
+                  borderRadius: 'var(--border-radius-lg)',
+                  backgroundColor: 'var(--color-bg-container)',
+                  boxShadow: 'var(--shadow-sm)',
+                  ...styles.hoverEffect
                 }}
               >
                 <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                  <div style={{ fontSize: 24, color: getAssignmentColor(item.type as any) }}>
+                  <div style={{ 
+                    fontSize: styles.icon.xlarge.fontSize, 
+                    color: getAssignmentColor(item.type as any) 
+                  }}>
                     {item.icon}
                   </div>
                   <Statistic
                     data-testid={`ds-widget-stat-value-${item.type}`}
-                    title={item.label}
+                    title={<span style={styles.label}>{item.label}</span>}
                     value={item.count}
                     suffix={
-                      <Text type="secondary" style={{ fontSize: 14 }}>
+                      <Text type="secondary" style={styles.caption}>
                         ({item.percentage}%)
                       </Text>
                     }
                     valueStyle={{ 
-                      fontSize: 20,
+                      ...styles.heading3,
                       color: getAssignmentColor(item.type as any)
                     }}
                   />
@@ -159,29 +169,30 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
             <div 
               data-testid="ds-widget-cluster-summary"
               style={{ 
-              padding: '16px', 
-              backgroundColor: currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout, 
-              borderRadius: 8,
-              border: `1px solid ${token.colorBorder}`
-            }}>
+                ...styles.padding.md, 
+                backgroundColor: 'var(--color-bg-container)', 
+                borderRadius: 'var(--border-radius-lg)',
+                border: '1px solid var(--color-border-secondary)',
+                boxShadow: 'var(--shadow-sm)'
+              }}>
               <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                <Text strong>{t('distributedStorage:dashboard.clusterSummary')}</Text>
+                <Text strong style={styles.heading5}>{t('distributedStorage:dashboard.clusterSummary')}</Text>
                 <Row gutter={16}>
                   <Col span={12}>
                     <Statistic
                       data-testid="ds-widget-stat-total-clusters"
-                      title={t('distributedStorage:dashboard.totalClusters')}
+                      title={<span style={styles.label}>{t('distributedStorage:dashboard.totalClusters')}</span>}
                       value={stats.total_clusters}
-                      valueStyle={{ fontSize: 18 }}
+                      valueStyle={styles.heading4}
                     />
                   </Col>
                   <Col span={12}>
                     <Statistic
                       data-testid="ds-widget-stat-avg-machines"
-                      title={t('distributedStorage:dashboard.avgMachinesPerCluster')}
+                      title={<span style={styles.label}>{t('distributedStorage:dashboard.avgMachinesPerCluster')}</span>}
                       value={stats.avg_machines_per_cluster}
                       precision={1}
-                      valueStyle={{ fontSize: 18 }}
+                      valueStyle={styles.heading4}
                     />
                   </Col>
                 </Row>
@@ -194,13 +205,14 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
             <div 
               data-testid="ds-widget-machine-utilization"
               style={{ 
-              padding: '16px', 
-              backgroundColor: currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout, 
-              borderRadius: 8,
-              border: `1px solid ${token.colorBorder}`
-            }}>
+                ...styles.padding.md, 
+                backgroundColor: 'var(--color-bg-container)', 
+                borderRadius: 'var(--border-radius-lg)',
+                border: '1px solid var(--color-border-secondary)',
+                boxShadow: 'var(--shadow-sm)'
+              }}>
               <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                <Text strong>{t('distributedStorage:dashboard.machineUtilization')}</Text>
+                <Text strong style={styles.heading5}>{t('distributedStorage:dashboard.machineUtilization')}</Text>
                 <Progress
                   data-testid="ds-widget-progress-utilization"
                   percent={Math.round(((stats.total_machines - stats.truly_available_machines) / stats.total_machines) * 100)}
@@ -210,7 +222,7 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
                   }}
                   format={(percent) => `${percent}% ${t('common:utilized')}`}
                 />
-                <Text type="secondary" style={{ fontSize: 12 }}>
+                <Text type="secondary" style={styles.caption}>
                   {t('distributedStorage:dashboard.utilizationDetails', {
                     used: stats.total_machines - stats.truly_available_machines,
                     total: stats.total_machines
@@ -224,9 +236,9 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
         {/* Team Breakdown */}
         {stats.team_breakdown && stats.team_breakdown.length > 0 && (
           <div data-testid="ds-widget-team-breakdown">
-            <Space style={{ marginBottom: 12 }}>
-              <TeamOutlined />
-              <Text strong>{t('distributedStorage:dashboard.teamBreakdown')}</Text>
+            <Space style={styles.marginBottom.sm}>
+              <TeamOutlined style={styles.icon.medium} />
+              <Text strong style={styles.heading5}>{t('distributedStorage:dashboard.teamBreakdown')}</Text>
             </Space>
             <List
               data-testid="ds-widget-team-list"
@@ -236,20 +248,21 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
                 <List.Item
                   data-testid={`ds-widget-team-item-${team.TeamName.toLowerCase().replace(/\s+/g, '-')}`}
                   style={{ 
-                    paddingLeft: 12, 
-                    paddingRight: 12,
-                    backgroundColor: currentTheme === 'dark' 
-                      ? token.colorBgContainer 
-                      : token.colorBgLayout,
-                    marginBottom: 8,
-                    borderRadius: 6,
-                    border: `1px solid ${token.colorBorder}`
+                    ...styles.padding.sm,
+                    backgroundColor: 'var(--color-bg-container)',
+                    marginBottom: '8px',
+                    borderRadius: 'var(--border-radius-md)',
+                    border: '1px solid var(--color-border-secondary)',
+                    boxShadow: 'var(--shadow-sm)'
                   }}
                 >
                   <div style={{ width: '100%' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <Text strong>{team.TeamName}</Text>
-                      <Text type="secondary">{team.TotalMachines} machines</Text>
+                    <div style={{ 
+                      ...styles.flexBetween,
+                      ...styles.marginBottom.xs
+                    }}>
+                      <Text strong style={styles.label}>{team.TeamName}</Text>
+                      <Text type="secondary" style={styles.caption}>{team.TotalMachines} machines</Text>
                     </div>
                     <Space wrap>
                       <Tooltip title={t('distributedStorage:assignmentStatus.available')}>

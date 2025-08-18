@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Machine } from '@/types'
 import MachineAssignmentStatusBadge from './MachineAssignmentStatusBadge'
 import MachineAssignmentStatusCell from './MachineAssignmentStatusCell'
+import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
 
 const { Text } = Typography
 
@@ -24,6 +25,8 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
   onCancel
 }) => {
   const { t } = useTranslation(['machines', 'distributedStorage', 'common'])
+  const tableStyles = useTableStyles()
+  const componentStyles = useComponentStyles()
   
   // Determine which machines to use
   const targetMachines = machines || (selectedMachines && allMachines 
@@ -122,6 +125,7 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
           showSizeChanger: false
         }}
         scroll={{ y: 400 }}
+        style={tableStyles.tableContainer}
         data-testid="ds-view-assignment-status-table"
       />
     </Modal>

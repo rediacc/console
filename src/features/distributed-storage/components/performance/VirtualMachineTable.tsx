@@ -5,6 +5,7 @@ import { Checkbox, Space, Spin } from 'antd'
 import { Machine } from '@/types'
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell'
 import { useMachineSelection } from '@/store/distributedStorage/hooks'
+import { useTableStyles } from '@/hooks/useComponentStyles'
 import styles from './VirtualMachineTable.module.css'
 
 interface VirtualMachineTableProps {
@@ -46,7 +47,16 @@ const MachineRow: React.FC<RowData & {
 
   return (
     <div 
-      style={style} 
+      style={{
+        ...style,
+        ...tableStyles.tableCell,
+        cursor: onRowClick ? 'pointer' : 'default',
+        borderBottom: '1px solid var(--color-border-secondary)',
+        transition: 'background-color 0.2s ease',
+        ':hover': {
+          backgroundColor: 'var(--color-fill-quaternary)'
+        }
+      }}
       className={styles.row}
       onClick={handleRowClick}
       data-testid={`virtual-machine-row-${machine.machineName}`}
@@ -95,6 +105,7 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
 }) => {
   const listRef = useRef<List>(null)
   const { selectedMachines } = useMachineSelection()
+  const tableStyles = useTableStyles()
 
   // Create items list with potential placeholders for infinite loading
   const itemCount = hasMore ? machines.length + 1 : machines.length
@@ -214,12 +225,29 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
 
   return (
     <div 
+      style={{
+        ...tableStyles.tableContainer,
+        ':focus': {
+          outline: '2px solid var(--color-primary)',
+          outlineOffset: '-2px'
+        }
+      }}
       className={styles.virtualTable}
       onKeyDown={handleKeyDown}
       tabIndex={0}
       data-testid="virtual-machine-table"
     >
-      <div className={styles.header} data-testid="virtual-machine-header">
+      <div 
+        style={{
+          ...tableStyles.tableHeader,
+          position: 'sticky',
+          top: 0,
+          zIndex: 1,
+          borderBottom: '1px solid var(--color-border-secondary)'
+        }}
+        className={styles.header} 
+        data-testid="virtual-machine-header"
+      >
         <Space className={styles.headerContent}>
           {selectable && <div className={styles.checkboxColumn} />}
           <div className={styles.machineName}>Machine Name</div>

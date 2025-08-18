@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Table, Button, Space, Tag, Modal, Empty, Dropdown, Badge } from 'antd'
+import { Table, Button, Space, Tag, Modal, Empty, Dropdown, Badge, Tooltip } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import {
   EditOutlined,
@@ -19,6 +19,8 @@ import { useDistributedStorageClusterMachines } from '@/api/queries/distributedS
 import AuditTraceModal from '@/components/common/AuditTraceModal'
 import { ManageClusterMachinesModal } from './ManageClusterMachinesModal'
 import { formatTimestampAsIs } from '@/utils/timeUtils'
+import { useTableStyles } from '@/hooks/useComponentStyles'
+import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge'
 
 interface ClusterTableProps {
   clusters: DistributedStorageCluster[]
@@ -35,14 +37,18 @@ const MachineCountBadge: React.FC<{ cluster: DistributedStorageCluster }> = ({ c
     cluster.clusterName,
     true
   )
+  const tableStyles = useTableStyles()
   
   return (
     <Badge 
       count={machines.length} 
       showZero 
-      style={{ backgroundColor: machines.length > 0 ? '#52c41a' : '#d9d9d9' }}
+      style={{ 
+        backgroundColor: machines.length > 0 ? 'var(--color-success)' : 'var(--color-fill-quaternary)',
+        color: machines.length > 0 ? 'var(--color-white)' : 'var(--color-text-secondary)'
+      }}
     >
-      <TeamOutlined style={{ fontSize: 16 }} />
+      <TeamOutlined style={tableStyles.icon.medium} />
     </Badge>
   )
 }
@@ -56,6 +62,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
   onRunFunction
 }) => {
   const { t } = useTranslation(['distributedStorage', 'common', 'machines'])
+  const tableStyles = useTableStyles()
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
   const [selectedCluster, setSelectedCluster] = useState<DistributedStorageCluster | null>(null)
   const [assignModalOpen, setAssignModalOpen] = useState(false)
@@ -115,10 +122,10 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
               transition: 'transform 0.3s ease',
               transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'
             }}>
-              <RightOutlined style={{ fontSize: 12, color: '#999' }} />
+              <RightOutlined style={{ ...tableStyles.icon.small, color: 'var(--color-text-tertiary)' }} />
             </span>
-            <CloudServerOutlined style={{ color: '#556b2f' }} />
-            <strong>{name}</strong>
+            <CloudServerOutlined style={{ ...tableStyles.icon.medium, color: 'var(--color-primary)' }} />
+            <strong style={{ color: 'var(--color-text-primary)' }}>{name}</strong>
           </Space>
         )
       },
@@ -129,7 +136,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
       key: 'teamName',
       width: 150,
       ellipsis: true,
-      render: (teamName: string) => <Tag color="#8FBC8F">{teamName}</Tag>,
+      render: (teamName: string) => <Tag color="green">{teamName}</Tag>,
     },
     {
       title: t('machines:title'),
@@ -160,7 +167,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
       key: 'vaultVersion',
       width: 100,
       align: 'center',
-      render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
+      render: (version: number) => <Tag color="blue">{t('common:general.versionFormat', { version })}</Tag>,
     },
     {
       title: t('common:table.actions'),
@@ -168,15 +175,17 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
       width: 250,
       render: (_: unknown, record: DistributedStorageCluster) => (
         <Space>
-          <Button
-            type="primary"
-            size="small"
-            icon={<EditOutlined />}
-            data-testid={`ds-cluster-edit-${record.clusterName}`}
-            onClick={() => onEditCluster(record)}
-          >
-            {t('common:actions.edit')}
-          </Button>
+          <Tooltip title={t('common:actions.edit')}>
+            <Button
+              type="primary"
+              size="small"
+              icon={<EditOutlined />}
+              data-testid={`ds-cluster-edit-${record.clusterName}`}
+              onClick={() => onEditCluster(record)}
+              style={tableStyles.tableActionButton}
+              aria-label={t('common:actions.edit')}
+            />
+          </Tooltip>
           <Dropdown
             menu={{
               items: getFunctionMenuItems(record),
@@ -191,41 +200,47 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
             }}
             trigger={['click']}
           >
+            <Tooltip title={t('common:actions.remote')}>
+              <Button
+                type="primary"
+                size="small"
+                icon={<FunctionOutlined />}
+                data-testid={`ds-cluster-function-dropdown-${record.clusterName}`}
+                style={tableStyles.tableActionButton}
+                aria-label={t('common:actions.remote')}
+              />
+            </Tooltip>
+          </Dropdown>
+          <Tooltip title={t('common:actions.trace')}>
+            <Button
+              type="default"
+              size="small"
+              icon={<HistoryOutlined />}
+              data-testid={`ds-cluster-trace-${record.clusterName}`}
+              onClick={() => {
+                setAuditTraceModal({
+                  open: true,
+                  entityType: 'DistributedStorageCluster',
+                  entityIdentifier: record.clusterName,
+                  entityName: record.clusterName
+                })
+              }}
+              style={tableStyles.tableActionButton}
+              aria-label={t('common:actions.trace')}
+            />
+          </Tooltip>
+          <Tooltip title={t('common:actions.delete')}>
             <Button
               type="primary"
+              danger
               size="small"
-              icon={<FunctionOutlined />}
-              data-testid={`ds-cluster-function-dropdown-${record.clusterName}`}
-            >
-              {t('common:actions.remote')}
-            </Button>
-          </Dropdown>
-          <Button
-            type="primary"
-            size="small"
-            icon={<HistoryOutlined />}
-            data-testid={`ds-cluster-trace-${record.clusterName}`}
-            onClick={() => {
-              setAuditTraceModal({
-                open: true,
-                entityType: 'DistributedStorageCluster',
-                entityIdentifier: record.clusterName,
-                entityName: record.clusterName
-              })
-            }}
-          >
-            {t('common:actions.trace')}
-          </Button>
-          <Button
-            type="primary"
-            danger
-            size="small"
-            icon={<DeleteOutlined />}
-            data-testid={`ds-cluster-delete-${record.clusterName}`}
-            onClick={() => handleDelete(record)}
-          >
-            {t('common:actions.delete')}
-          </Button>
+              icon={<DeleteOutlined />}
+              data-testid={`ds-cluster-delete-${record.clusterName}`}
+              onClick={() => handleDelete(record)}
+              style={tableStyles.tableActionButton}
+              aria-label={t('common:actions.delete')}
+            />
+          </Tooltip>
         </Space>
       ),
     },
@@ -248,51 +263,53 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
           </Button>
         </Empty>
       ) : (
-        <Table
-          data-testid="ds-cluster-table"
-          columns={columns}
-          dataSource={clusters}
-          rowKey="clusterName"
-          loading={loading}
-          scroll={{ x: 'max-content' }}
-          pagination={{
-            showSizeChanger: true,
-            showTotal: (total, range) => t('common:table.showingRecords', { start: range[0], end: range[1], total }),
-          }}
-          expandable={{
-            expandedRowRender,
-            expandedRowKeys,
-            onExpandedRowsChange: (keys) => setExpandedRowKeys(keys as string[]),
-            expandIcon: () => null,
-            expandRowByClick: false,
-          }}
-          onRow={(record) => ({
-            'data-testid': `ds-cluster-row-${record.clusterName}`,
-            onClick: (e) => {
-              const target = e.target as HTMLElement
-              if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
-                return
+        <div style={tableStyles.tableContainer}>
+          <Table
+            data-testid="ds-cluster-table"
+            columns={columns}
+            dataSource={clusters}
+            rowKey="clusterName"
+            loading={loading}
+            scroll={{ x: 'max-content' }}
+            pagination={{
+              showSizeChanger: true,
+              showTotal: (total, range) => t('common:table.showingRecords', { start: range[0], end: range[1], total }),
+            }}
+            expandable={{
+              expandedRowRender,
+              expandedRowKeys,
+              onExpandedRowsChange: (keys) => setExpandedRowKeys(keys as string[]),
+              expandIcon: () => null,
+              expandRowByClick: false,
+            }}
+            onRow={(record) => ({
+              'data-testid': `ds-cluster-row-${record.clusterName}`,
+              onClick: (e) => {
+                const target = e.target as HTMLElement
+                if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
+                  return
+                }
+                
+                const isExpanded = expandedRowKeys.includes(record.clusterName)
+                if (isExpanded) {
+                  setExpandedRowKeys(expandedRowKeys.filter(key => key !== record.clusterName))
+                } else {
+                  setExpandedRowKeys([...expandedRowKeys, record.clusterName])
+                }
+              },
+              style: { 
+                cursor: 'pointer',
+                transition: 'background-color 0.3s ease'
+              },
+              onMouseEnter: (e) => {
+                e.currentTarget.style.backgroundColor = 'var(--color-fill-tertiary)'
+              },
+              onMouseLeave: (e) => {
+                e.currentTarget.style.backgroundColor = ''
               }
-              
-              const isExpanded = expandedRowKeys.includes(record.clusterName)
-              if (isExpanded) {
-                setExpandedRowKeys(expandedRowKeys.filter(key => key !== record.clusterName))
-              } else {
-                setExpandedRowKeys([...expandedRowKeys, record.clusterName])
-              }
-            },
-            style: { 
-              cursor: 'pointer',
-              transition: 'background-color 0.3s ease'
-            },
-            onMouseEnter: (e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.02)'
-            },
-            onMouseLeave: (e) => {
-              e.currentTarget.style.backgroundColor = ''
-            }
-          })}
-        />
+            })}
+          />
+        </div>
       )}
       
       {/* Audit Trace Modal */}
@@ -334,6 +351,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
 // Sub-component to show machines in a cluster
 const ClusterMachines: React.FC<{ cluster: DistributedStorageCluster }> = ({ cluster }) => {
   const { t } = useTranslation(['distributedStorage', 'common'])
+  const tableStyles = useTableStyles()
   const { data: machines = [], isLoading } = useDistributedStorageClusterMachines(
     cluster.clusterName,
     true
@@ -346,8 +364,8 @@ const ClusterMachines: React.FC<{ cluster: DistributedStorageCluster }> = ({ clu
       key: 'machineName',
       render: (name: string) => (
         <Space>
-          <DesktopOutlined style={{ color: '#556b2f' }} />
-          <strong>{name}</strong>
+          <DesktopOutlined style={{ ...tableStyles.icon.medium, color: 'var(--color-primary)' }} />
+          <strong style={{ color: 'var(--color-text-primary)' }}>{name}</strong>
         </Space>
       ),
     },
@@ -361,25 +379,31 @@ const ClusterMachines: React.FC<{ cluster: DistributedStorageCluster }> = ({ clu
       title: t('machines.assignedDate'),
       dataIndex: 'assignedDate',
       key: 'assignedDate',
-      render: (date: string) => date ? formatTimestampAsIs(date, 'datetime') : '-',
+      render: (date: string) => (
+        <span style={{ color: 'var(--color-text-secondary)' }}>
+          {date ? formatTimestampAsIs(date, 'datetime') : '-'}
+        </span>
+      ),
     },
   ]
 
   return (
-    <div style={{ padding: '16px' }} data-testid={`cluster-expanded-row-${cluster.clusterName}`}>
-      <h4>{t('clusters.assignedMachines')}</h4>
+    <div style={{ ...tableStyles.padding.md, background: 'var(--color-fill-quaternary)' }} data-testid={`cluster-expanded-row-${cluster.clusterName}`}>
+      <h4 style={{ ...tableStyles.heading4, ...tableStyles.marginBottom.sm }}>{t('clusters.assignedMachines')}</h4>
       {machines.length === 0 && !isLoading ? (
         <Empty description={t('clusters.noMachinesAssigned')} />
       ) : (
-        <Table
-          data-testid={`ds-cluster-machines-table-${cluster.clusterName}`}
-          columns={machineColumns}
-          dataSource={machines}
-          rowKey="machineName"
-          loading={isLoading}
-          size="small"
-          pagination={false}
-        />
+        <div style={tableStyles.tableContainer}>
+          <Table
+            data-testid={`ds-cluster-machines-table-${cluster.clusterName}`}
+            columns={machineColumns}
+            dataSource={machines}
+            rowKey="machineName"
+            loading={isLoading}
+            size="small"
+            pagination={false}
+          />
+        </div>
       )}
     </div>
   )

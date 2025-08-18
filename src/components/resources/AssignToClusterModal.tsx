@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next'
 import { Machine } from '@/types'
 import { useDistributedStorageClusters, useUpdateMachineDistributedStorage, useUpdateMachineClusterAssignment } from '@/api/queries/distributedStorage'
 import { showMessage } from '@/utils/messages'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing, createModalStyle } from '@/utils/styleConstants'
 
 const { Text } = Typography
 
@@ -24,6 +26,7 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
   onSuccess
 }) => {
   const { t } = useTranslation(['machines', 'distributedStorage', 'common'])
+  const styles = useComponentStyles()
   const isBulkMode = !!machines && machines.length > 0
   const targetMachines = isBulkMode && machines ? machines : (machine ? [machine] : [])
   
@@ -168,13 +171,15 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
       confirmLoading={updateMutation.isPending || updateClusterMutation.isPending}
       okText={t('common:actions.save')}
       cancelText={t('common:actions.cancel')}
-      width={isBulkMode ? 700 : 500}
+      style={createModalStyle(isBulkMode ? DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH_LG : DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH)}
       okButtonProps={{
         disabled: !selectedCluster,
-        'data-testid': 'ds-assign-cluster-ok-button'
+        'data-testid': 'ds-assign-cluster-ok-button',
+        style: styles.buttonPrimary
       }}
       cancelButtonProps={{
-        'data-testid': 'ds-assign-cluster-cancel-button'
+        'data-testid': 'ds-assign-cluster-cancel-button',
+        style: styles.buttonSecondary
       }}
       data-testid="ds-assign-cluster-modal"
     >
@@ -208,14 +213,14 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
                 })}
                 type="info"
                 showIcon
-                style={{ marginBottom: 16 }}
+                style={{ marginBottom: spacing('MD') }}
               />
             )}
           </>
         )}
         
         <div>
-          <Text strong style={{ display: 'block', marginBottom: 8 }}>
+          <Text strong style={{ display: 'block', marginBottom: spacing('XS') }}>
             {t('distributedStorage:clusters.cluster')}:
           </Text>
           {clustersLoading ? (
@@ -238,7 +243,7 @@ export const AssignToClusterModal: React.FC<AssignToClusterModalProps> = ({
                 ))}
               </Select>
               {!isBulkMode && (
-                <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
+                <Text type="secondary" style={{ display: 'block', marginTop: spacing('XS') }}>
                   {t('machines:clusterAssignmentHelp')}
                 </Text>
               )}

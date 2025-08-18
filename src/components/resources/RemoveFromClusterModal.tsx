@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next'
 import { Machine } from '@/types'
 import { useUpdateMachineClusterAssignment } from '@/api/queries/distributedStorage'
 import { showMessage } from '@/utils/messages'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing, createModalStyle } from '@/utils/styleConstants'
 
 const { Text } = Typography
 
@@ -26,6 +28,7 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
   onSuccess
 }) => {
   const { t } = useTranslation(['machines', 'distributedStorage', 'common'])
+  const styles = useComponentStyles()
   const [removing, setRemoving] = useState(false)
   
   // Update mutation
@@ -121,12 +124,14 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
       okButtonProps={{ 
         danger: true,
         disabled: machinesWithClusters.length === 0,
-        'data-testid': 'ds-remove-cluster-ok-button'
+        'data-testid': 'ds-remove-cluster-ok-button',
+        style: styles.buttonPrimary
       }}
       cancelButtonProps={{
-        'data-testid': 'ds-remove-cluster-cancel-button'
+        'data-testid': 'ds-remove-cluster-cancel-button',
+        style: styles.buttonSecondary
       }}
-      width={600}
+      style={createModalStyle(DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH_LG)}
       data-testid="ds-remove-cluster-modal"
     >
       {machinesWithClusters.length === 0 ? (
@@ -142,7 +147,7 @@ export const RemoveFromClusterModal: React.FC<RemoveFromClusterModalProps> = ({
             description={t('machines:removeFromClusterDescription')}
             type="warning"
             showIcon
-            style={{ marginBottom: 16 }}
+            style={{ marginBottom: spacing('MD') }}
           />
           
           <Table

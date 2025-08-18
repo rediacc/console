@@ -12,6 +12,7 @@ import {
   Divider,
   Statistic
 } from 'antd'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { 
   CloseOutlined,
   DatabaseOutlined,
@@ -81,6 +82,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
   const { t } = useTranslation(['resources', 'common', 'machines'])
   const { theme } = useTheme()
   const { data: machines = [] } = useMachines(repository?.teamName)
+  const componentStyles = useComponentStyles()
 
   // Find the machine that has this repository data
   const repositoryData = useMemo(() => {
@@ -231,6 +233,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
               type="text"
               icon={<CloseOutlined />}
               onClick={onClose}
+              style={componentStyles.touchTarget}
               data-testid="repo-detail-close"
             />
           </div>
@@ -259,9 +262,9 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
                 <Title level={5} style={{ margin: 0 }}>{t('resources:repositories.repositoryInfo')}</Title>
               </div>
               
-              <Row gutter={[16, 16]}>
+              <Row gutter={[16, 16]} style={componentStyles.marginBottom.lg}>
                 <Col span={24}>
-                  <Card size="small" data-testid="repo-detail-info-card">
+                  <Card size="small" style={componentStyles.card} data-testid="repo-detail-info-card">
                     <Space direction="vertical" style={{ width: '100%' }} size="small">
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Text type="secondary">{t('resources:repositories.repositoryGuid')}:</Text>
@@ -303,7 +306,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
               </Divider>
 
               {/* Storage Information */}
-              <Row gutter={[16, 16]}>
+              <Row gutter={[16, 16]} style={componentStyles.marginBottom.lg}>
                 <Col span={12}>
                   <Card size="small" style={{ height: '100%' }} data-testid={`repo-detail-image-size-card-${repository.repositoryName}`}>
                     <Statistic
@@ -361,7 +364,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
                 </Space>
               </Divider>
 
-              <Card size="small" data-testid={`repo-detail-file-paths-card-${repository.repositoryName}`}>
+              <Card size="small" style={componentStyles.card} data-testid={`repo-detail-file-paths-card-${repository.repositoryName}`}>
                 <Space direction="vertical" style={{ width: '100%' }} size="small">
                   <div>
                     <Text type="secondary">{t('resources:repositories.imagePath')}:</Text>
@@ -390,7 +393,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
                     </Space>
                   </Divider>
 
-                  <Row gutter={[16, 16]}>
+                  <Row gutter={[16, 16]} style={componentStyles.marginBottom.lg}>
                     {repositoryData.repositoryData.docker_running && (
                       <Col span={12}>
                         <Card size="small" style={{ height: '100%' }} data-testid={`repo-detail-containers-card-${repository.repositoryName}`}>

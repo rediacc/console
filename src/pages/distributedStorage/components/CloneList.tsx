@@ -15,6 +15,7 @@ import {
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import type { MenuProps } from 'antd'
+import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
 import { 
   useDistributedStorageRbdClones,
   useDeleteDistributedStorageRbdClone,

@@ -7,6 +7,8 @@ import { useCreateStorage } from '@/api/queries/storage'
 import { useStorage } from '@/api/queries/storage'
 import storageProviders from '@/data/storageProviders.json'
 import type { UploadFile } from 'antd/es/upload'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing, createModalStyle } from '@/utils/styleConstants'
 
 const { Step } = Steps
 const { Text, Title, Paragraph } = Typography
@@ -39,6 +41,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
   onImportComplete
 }) => {
   const { t } = useTranslation(['resources', 'common'])
+  const styles = useComponentStyles()
   const [currentStep, setCurrentStep] = useState(0)
   const [fileList, setFileList] = useState<UploadFile[]>([])
   const [parsedConfigs, setParsedConfigs] = useState<RcloneConfig[]>([])
@@ -506,16 +509,30 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       }
       open={open}
       onCancel={handleClose}
-      width={800}
+      style={createModalStyle(DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH_XL)}
       footer={
         currentStep === 0 ? (
-          <Button onClick={handleClose} data-testid="rclone-wizard-cancel-button">{t('common:actions.cancel')}</Button>
+          <Button 
+            onClick={handleClose} 
+            data-testid="rclone-wizard-cancel-button"
+            style={styles.buttonSecondary}
+          >
+            {t('common:actions.cancel')}
+          </Button>
         ) : currentStep === 1 ? (
           <>
-            <Button onClick={() => setCurrentStep(0)} data-testid="rclone-wizard-back-button">
+            <Button 
+              onClick={() => setCurrentStep(0)} 
+              data-testid="rclone-wizard-back-button"
+              style={styles.buttonSecondary}
+            >
               {t('common:actions.back')}
             </Button>
-            <Button onClick={handleClose} data-testid="rclone-wizard-cancel-button">
+            <Button 
+              onClick={handleClose} 
+              data-testid="rclone-wizard-cancel-button"
+              style={styles.buttonSecondary}
+            >
               {t('common:actions.cancel')}
             </Button>
             <Button
@@ -524,18 +541,24 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
               disabled={!importStatuses.some(s => s.selected)}
               loading={isImporting}
               data-testid="rclone-wizard-import-button"
+              style={styles.buttonPrimary}
             >
               {t('resources:storage.import.importSelected')}
             </Button>
           </>
         ) : (
-          <Button type="primary" onClick={handleClose} data-testid="rclone-wizard-close-button">
+          <Button 
+            type="primary" 
+            onClick={handleClose} 
+            data-testid="rclone-wizard-close-button"
+            style={styles.buttonPrimary}
+          >
             {t('common:actions.close')}
           </Button>
         )
       }
     >
-      <Steps current={currentStep} style={{ marginBottom: 24 }} data-testid="rclone-wizard-steps">
+      <Steps current={currentStep} style={{ marginBottom: spacing('LG') }} data-testid="rclone-wizard-steps">
         <Step title={t('resources:storage.import.step1')} />
         <Step title={t('resources:storage.import.step2')} />
         <Step title={t('resources:storage.import.step3')} />

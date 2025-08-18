@@ -17,6 +17,8 @@ import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants'
 
 const { Title, Text, Paragraph } = Typography
 const { TabPane } = Tabs
@@ -54,6 +56,7 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
   onDeploy
 }) => {
   const { t } = useTranslation(['marketplace', 'resources'])
+  const styles = useComponentStyles()
   const [loading, setLoading] = useState(false)
   const [templateDetails, setTemplateDetails] = useState<TemplateDetails | null>(null)
   const [activeTab, setActiveTab] = useState('overview')
@@ -89,18 +92,18 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
   const getTemplateIcon = (name: string) => {
     const lowerName = name.toLowerCase()
     if (lowerName.includes('db_') || lowerName.includes('database') || lowerName.includes('sql')) {
-      return <DatabaseOutlined style={{ fontSize: 48 }} />
+      return <DatabaseOutlined style={styles.icon.xxlarge} />
     }
     if (lowerName.includes('nginx') || lowerName.includes('wordpress') || lowerName.includes('web')) {
-      return <GlobalOutlined style={{ fontSize: 48 }} />
+      return <GlobalOutlined style={styles.icon.xxlarge} />
     }
     if (lowerName.includes('cloud') || lowerName.includes('route')) {
-      return <CloudOutlined style={{ fontSize: 48 }} />
+      return <CloudOutlined style={styles.icon.xxlarge} />
     }
     if (lowerName.includes('monitor') || lowerName.includes('prometheus')) {
-      return <DeploymentUnitOutlined style={{ fontSize: 48 }} />
+      return <DeploymentUnitOutlined style={styles.icon.xxlarge} />
     }
-    return <AppstoreOutlined style={{ fontSize: 48 }} />
+    return <AppstoreOutlined style={styles.icon.xxlarge} />
   }
 
   const getTemplateTitle = (name: string) => {
@@ -165,14 +168,14 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
     <Modal
       data-testid="marketplace-preview-modal"
       title={
-        <Space>
+        <Space size={spacing('MD')}>
           {template.iconUrl ? (
             <img 
               src={template.iconUrl} 
               alt={template.name}
               style={{ 
-                width: 48, 
-                height: 48, 
+                width: DESIGN_TOKENS.DIMENSIONS.ICON_XXL, 
+                height: DESIGN_TOKENS.DIMENSIONS.ICON_XXL, 
                 objectFit: 'contain',
                 filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.1))'
               }}
@@ -187,10 +190,17 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
             getTemplateIcon(template.name)
           )}
           <div>
-            <Title level={4} style={{ margin: 0 }}>
+            <Title level={4} style={{ ...styles.heading4, margin: 0 }}>
               {getTemplateTitle(template.name)}
             </Title>
-            <Tag color={getDifficultyColor(template.difficulty)}>
+            <Tag 
+              color={getDifficultyColor(template.difficulty)}
+              style={{
+                borderRadius: borderRadius('SM'),
+                fontSize: DESIGN_TOKENS.FONT_SIZE.SM,
+                marginTop: spacing('XS')
+              }}
+            >
               {t(`difficulty${template.difficulty?.charAt(0).toUpperCase()}${template.difficulty?.slice(1)}`)}
             </Tag>
           </div>
@@ -199,13 +209,23 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
       visible={visible}
       onCancel={onClose}
       width="90vw"
-      style={{ top: 20 }}
-      bodyStyle={{ height: 'calc(90vh - 180px)', padding: '12px' }}
+      style={{ 
+        top: 20,
+        ...styles.modalXLarge
+      }}
+      bodyStyle={{ 
+        height: 'calc(90vh - 180px)', 
+        padding: spacing('MD')
+      }}
       footer={[
         <Button 
           key="close" 
           onClick={onClose}
           data-testid="marketplace-preview-close-button"
+          style={{
+            ...styles.buttonSecondary,
+            marginRight: spacing('SM')
+          }}
         >
           {t('close')}
         </Button>,
@@ -215,33 +235,73 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
           icon={<RocketOutlined />}
           onClick={() => onDeploy(template)}
           data-testid="marketplace-preview-deploy-button"
+          style={styles.buttonPrimary}
         >
           {t('deployNow')}
         </Button>
       ]}
     >
-      <Tabs activeKey={activeTab} onChange={setActiveTab} data-testid="marketplace-preview-tabs">
-        <TabPane tab={<span><FileTextOutlined /> {t('overview')}</span>} key="overview" data-testid="marketplace-preview-tab-overview">
+      <Tabs 
+        activeKey={activeTab} 
+        onChange={setActiveTab} 
+        data-testid="marketplace-preview-tabs"
+        size="large"
+        style={{
+          '.ant-tabs-tab': {
+            minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+            display: 'flex',
+            alignItems: 'center'
+          }
+        }}
+      >
+        <TabPane 
+          tab={
+            <span style={styles.flexCenter}>
+              <FileTextOutlined style={{ marginRight: spacing('XS') }} /> 
+              {t('overview')}
+            </span>
+          } 
+          key="overview" 
+          data-testid="marketplace-preview-tab-overview"
+        >
           <div style={{ height: 'calc(90vh - 340px)', overflow: 'auto' }}>
-            <Row gutter={[24, 24]}>
+            <Row gutter={[spacing('XL'), spacing('XL')]}>
               <Col xs={24} md={16}>
                 <Card 
-                  title={t('description')}
-                  bodyStyle={{ maxHeight: 'calc(90vh - 420px)', overflow: 'auto' }}
+                  title={<Text strong style={styles.heading5}>{t('description')}</Text>}
+                  bodyStyle={{ 
+                    maxHeight: 'calc(90vh - 420px)', 
+                    overflow: 'auto',
+                    padding: spacing('MD')
+                  }}
+                  style={{
+                    borderRadius: borderRadius('LG'),
+                    boxShadow: DESIGN_TOKENS.SHADOWS.CARD
+                  }}
                 >
-                  <ReactMarkdown>{template.readme}</ReactMarkdown>
+                  <div style={{ ...styles.body, lineHeight: DESIGN_TOKENS.LINE_HEIGHT.RELAXED }}>
+                    <ReactMarkdown>{template.readme}</ReactMarkdown>
+                  </div>
                 </Card>
               </Col>
               <Col xs={24} md={8}>
                 <Card 
-                  title={t('features')}
-                  bodyStyle={{ maxHeight: 'calc(90vh - 420px)', overflow: 'auto' }}
+                  title={<Text strong style={styles.heading5}>{t('features')}</Text>}
+                  bodyStyle={{ 
+                    maxHeight: 'calc(90vh - 420px)', 
+                    overflow: 'auto',
+                    padding: spacing('MD')
+                  }}
+                  style={{
+                    borderRadius: borderRadius('LG'),
+                    boxShadow: DESIGN_TOKENS.SHADOWS.CARD
+                  }}
                 >
-                  <Space direction="vertical" size="small">
+                  <Space direction="vertical" size={spacing('SM')}>
                     {template.tags?.map(tag => (
-                      <Space key={tag}>
-                        <CheckCircleOutlined style={{ color: '#52c41a' }} />
-                        <Text>{tag}</Text>
+                      <Space key={tag} size={spacing('SM')}>
+                        <CheckCircleOutlined style={{ color: 'var(--color-success)', fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD }} />
+                        <Text style={styles.body}>{tag}</Text>
                       </Space>
                     ))}
                   </Space>
@@ -252,46 +312,64 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
         </TabPane>
 
         <TabPane 
-          tab={<span><CodeOutlined /> {t('files')}</span>} 
+          tab={
+            <span style={styles.flexCenter}>
+              <CodeOutlined style={{ marginRight: spacing('XS') }} /> 
+              {t('files')}
+            </span>
+          } 
           key="files"
           disabled={loading || !templateDetails}
           data-testid="marketplace-preview-tab-files"
         >
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <Spin tip={t('loadingFiles')} />
+            <div style={{ ...styles.flexCenter, padding: spacing('XXXL') }}>
+              <Spin tip={t('loadingFiles')} size="large" />
             </div>
           ) : templateDetails && templateDetails.files.length > 0 ? (
-            <Row gutter={16} style={{ height: 'calc(90vh - 340px)' }}>
+            <Row gutter={spacing('MD')} style={{ height: 'calc(90vh - 340px)' }}>
               <Col span={8} style={{ height: '100%' }}>
                 <Card 
-                  size="small" 
-                  title={<span><FileOutlined /> {t('fileList')}</span>}
+                  title={
+                    <Space size={spacing('XS')}>
+                      <FileOutlined style={styles.icon.medium} />
+                      <Text strong style={styles.heading6}>{t('fileList')}</Text>
+                    </Space>
+                  }
                   bodyStyle={{ padding: 0, height: 'calc(100% - 38px)' }}
-                  style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+                  style={{ 
+                    height: '100%', 
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    borderRadius: borderRadius('LG'),
+                    boxShadow: DESIGN_TOKENS.SHADOWS.CARD
+                  }}
                 >
                   <List
-                    size="small"
                     dataSource={templateDetails.files}
                     renderItem={(file, index) => (
                       <List.Item
                         style={{ 
-                          padding: '8px 16px', 
+                          padding: spacing('SM'), 
                           cursor: 'pointer',
-                          backgroundColor: selectedFileIndex === index ? '#1890ff20' : 'transparent',
-                          borderLeft: selectedFileIndex === index ? '3px solid #1890ff' : '3px solid transparent',
-                          transition: 'all 0.2s'
+                          backgroundColor: selectedFileIndex === index ? 'rgba(85, 107, 47, 0.1)' : 'transparent',
+                          borderLeft: selectedFileIndex === index ? '3px solid var(--color-primary)' : '3px solid transparent',
+                          transition: DESIGN_TOKENS.TRANSITIONS.DEFAULT,
+                          minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                          display: 'flex',
+                          alignItems: 'center'
                         }}
                         onClick={() => setSelectedFileIndex(index)}
                         data-testid={`marketplace-preview-file-item-${index}`}
                       >
-                        <Space>
-                          <CodeOutlined />
+                        <Space size={spacing('SM')}>
+                          <CodeOutlined style={styles.icon.medium} />
                           <Text 
                             code 
                             style={{ 
-                              fontWeight: selectedFileIndex === index ? 600 : 400,
-                              color: selectedFileIndex === index ? '#1890ff' : undefined
+                              fontWeight: selectedFileIndex === index ? DESIGN_TOKENS.FONT_WEIGHT.MEDIUM : DESIGN_TOKENS.FONT_WEIGHT.NORMAL,
+                              color: selectedFileIndex === index ? 'var(--color-primary)' : 'var(--color-text-primary)',
+                              fontSize: DESIGN_TOKENS.FONT_SIZE.SM
                             }}
                           >
                             {file.path || file.name}
@@ -305,15 +383,20 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
               </Col>
               <Col span={16} style={{ height: '100%' }}>
                 <Card
-                  size="small"
                   title={
-                    <Space>
-                      <CodeOutlined />
-                      <Text code>{templateDetails.files[selectedFileIndex]?.path || templateDetails.files[selectedFileIndex]?.name}</Text>
+                    <Space size={spacing('SM')}>
+                      <CodeOutlined style={styles.icon.medium} />
+                      <Text code style={styles.body}>{templateDetails.files[selectedFileIndex]?.path || templateDetails.files[selectedFileIndex]?.name}</Text>
                     </Space>
                   }
-                  style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
-                  bodyStyle={{ flex: 1, overflow: 'auto', padding: '12px' }}
+                  style={{ 
+                    height: '100%', 
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    borderRadius: borderRadius('LG'),
+                    boxShadow: DESIGN_TOKENS.SHADOWS.CARD
+                  }}
+                  bodyStyle={{ flex: 1, overflow: 'auto', padding: spacing('MD') }}
                 >
                   {templateDetails.files[selectedFileIndex] && renderFileContent(templateDetails.files[selectedFileIndex])}
                 </Card>
@@ -325,33 +408,56 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
               description={t('noFilesDesc')}
               type="info"
               showIcon
+              style={{
+                borderRadius: borderRadius('LG'),
+                padding: spacing('MD')
+              }}
             />
           )}
         </TabPane>
 
-        <TabPane tab={<span><SafetyOutlined /> {t('security')}</span>} key="security" data-testid="marketplace-preview-tab-security">
+        <TabPane 
+          tab={
+            <span style={styles.flexCenter}>
+              <SafetyOutlined style={{ marginRight: spacing('XS') }} /> 
+              {t('security')}
+            </span>
+          } 
+          key="security" 
+          data-testid="marketplace-preview-tab-security"
+        >
           <div style={{ height: 'calc(90vh - 340px)', overflow: 'auto' }}>
-            <Card>
-              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <Card
+              style={{
+                borderRadius: borderRadius('LG'),
+                boxShadow: DESIGN_TOKENS.SHADOWS.CARD
+              }}
+              bodyStyle={{ padding: spacing('MD') }}
+            >
+              <Space direction="vertical" size={spacing('LG')} style={{ width: '100%' }}>
                 <Alert
-                  message={t('securityReview')}
-                  description={t('securityReviewDesc')}
+                  message={<Text strong style={styles.body}>{t('securityReview')}</Text>}
+                  description={<Text style={styles.body}>{t('securityReviewDesc')}</Text>}
                   type="info"
                   showIcon
+                  style={{
+                    borderRadius: borderRadius('LG'),
+                    padding: spacing('MD')
+                  }}
                 />
                 
-                <Title level={5}>{t('bestPractices')}</Title>
-                <ul>
-                  <li>{t('securityTip1')}</li>
-                  <li>{t('securityTip2')}</li>
-                  <li>{t('securityTip3')}</li>
-                  <li>{t('securityTip4')}</li>
+                <Title level={5} style={styles.heading5}>{t('bestPractices')}</Title>
+                <ul style={{ marginLeft: spacing('MD') }}>
+                  <li style={{ ...styles.body, marginBottom: spacing('XS'), lineHeight: DESIGN_TOKENS.LINE_HEIGHT.RELAXED }}>{t('securityTip1')}</li>
+                  <li style={{ ...styles.body, marginBottom: spacing('XS'), lineHeight: DESIGN_TOKENS.LINE_HEIGHT.RELAXED }}>{t('securityTip2')}</li>
+                  <li style={{ ...styles.body, marginBottom: spacing('XS'), lineHeight: DESIGN_TOKENS.LINE_HEIGHT.RELAXED }}>{t('securityTip3')}</li>
+                  <li style={{ ...styles.body, marginBottom: spacing('XS'), lineHeight: DESIGN_TOKENS.LINE_HEIGHT.RELAXED }}>{t('securityTip4')}</li>
                 </ul>
 
-                <Divider />
+                <Divider style={{ margin: `${spacing('LG')}px 0` }} />
                 
-                <Title level={5}>{t('containerSecurity')}</Title>
-                <Paragraph>
+                <Title level={5} style={styles.heading5}>{t('containerSecurity')}</Title>
+                <Paragraph style={{ ...styles.body, lineHeight: DESIGN_TOKENS.LINE_HEIGHT.RELAXED }}>
                   {t('containerSecurityDesc')}
                 </Paragraph>
               </Space>

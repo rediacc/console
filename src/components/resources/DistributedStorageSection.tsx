@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next'
 import { Machine } from '@/types'
 import { useGetMachineAssignmentStatus } from '@/api/queries/distributedStorage'
 import MachineAssignmentStatusBadge from './MachineAssignmentStatusBadge'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
 
 const { Text, Title } = Typography
 
@@ -38,6 +39,7 @@ export const DistributedStorageSection: React.FC<DistributedStorageSectionProps>
   onManageAssignment
 }) => {
   const { t } = useTranslation(['distributedStorage', 'machines'])
+  const styles = useComponentStyles()
   
   // If machine already has distributedStorageClusterName, we know it's assigned to a cluster
   const hasClusterAssignment = !!machine.distributedStorageClusterName
@@ -57,7 +59,13 @@ export const DistributedStorageSection: React.FC<DistributedStorageSectionProps>
   
   if (isLoading) {
     return (
-      <div style={{ textAlign: 'center', padding: '20px' }} data-testid="ds-section-loading">
+      <div 
+        style={{ 
+          ...styles.flexCenter,
+          ...styles.padding.lg
+        }} 
+        data-testid="ds-section-loading"
+      >
         <Spin />
       </div>
     )
@@ -65,18 +73,40 @@ export const DistributedStorageSection: React.FC<DistributedStorageSectionProps>
   
   return (
     <>
-      <Divider style={{ margin: '24px 0' }} data-testid="ds-section-divider">
-        <Space>
-          <CloudServerOutlined />
-          {t('machineSection.title')}
+      <Divider 
+        style={styles.marginBottom.lg} 
+        data-testid="ds-section-divider"
+      >
+        <Space style={styles.flexCenter}>
+          <CloudServerOutlined style={styles.icon.medium} />
+          <span style={styles.heading5}>{t('machineSection.title')}</span>
         </Space>
       </Divider>
       
-      <Card size="small" data-testid="ds-section-card">
-        <Space direction="vertical" style={{ width: '100%' }} size="middle">
+      <Card 
+        size="small" 
+        data-testid="ds-section-card"
+        style={{
+          ...styles.card,
+          border: '1px solid var(--color-border-secondary)'
+        }}
+      >
+        <Space 
+          direction="vertical" 
+          style={{ width: '100%' }} 
+          size="middle"
+        >
           {/* Current Assignment Status */}
           <div>
-            <Text type="secondary" style={{ display: 'block', marginBottom: 8 }} data-testid="ds-section-assignment-label">
+            <Text 
+              type="secondary" 
+              style={{ 
+                display: 'block',
+                ...styles.marginBottom.xs,
+                ...styles.label
+              }} 
+              data-testid="ds-section-assignment-label"
+            >
               {t('assignment.currentAssignment')}
             </Text>
             <MachineAssignmentStatusBadge 
@@ -90,15 +120,18 @@ export const DistributedStorageSection: React.FC<DistributedStorageSectionProps>
           {/* Assignment Details */}
           {assignmentType !== 'AVAILABLE' && assignmentDetails && (
             <Alert
-              message={assignmentDetails}
+              message={<span style={styles.body}>{assignmentDetails}</span>}
               type="info"
               icon={
-                assignmentType === 'CLUSTER' ? <DatabaseOutlined /> :
-                assignmentType === 'IMAGE' ? <HddOutlined /> :
-                assignmentType === 'CLONE' ? <CopyOutlined /> :
-                <CloudServerOutlined />
+                assignmentType === 'CLUSTER' ? <DatabaseOutlined style={styles.icon.small} /> :
+                assignmentType === 'IMAGE' ? <HddOutlined style={styles.icon.small} /> :
+                assignmentType === 'CLONE' ? <CopyOutlined style={styles.icon.small} /> :
+                <CloudServerOutlined style={styles.icon.small} />
               }
               showIcon
+              style={{
+                borderRadius: 'var(--border-radius-lg)'
+              }}
               data-testid="ds-section-assignment-alert"
             />
           )}
@@ -108,22 +141,30 @@ export const DistributedStorageSection: React.FC<DistributedStorageSectionProps>
             {onViewDetails && (
               <Button 
                 size="small" 
-                icon={<HistoryOutlined />}
+                icon={<HistoryOutlined style={styles.icon.small} />}
                 onClick={onViewDetails}
+                style={{
+                  ...styles.buttonSecondary,
+                  ...styles.touchTargetSmall
+                }}
                 data-testid="ds-section-history-button"
               >
-                {t('assignment.history')}
+                <span style={styles.caption}>{t('assignment.history')}</span>
               </Button>
             )}
             {onManageAssignment && assignmentType !== 'AVAILABLE' && (
               <Button 
                 size="small" 
                 type="primary"
-                icon={<RightOutlined />}
+                icon={<RightOutlined style={styles.icon.small} />}
                 onClick={onManageAssignment}
+                style={{
+                  ...styles.buttonPrimary,
+                  ...styles.touchTargetSmall
+                }}
                 data-testid="ds-section-manage-button"
               >
-                {t('machineSection.manageAssignment')}
+                <span style={styles.caption}>{t('machineSection.manageAssignment')}</span>
               </Button>
             )}
           </Space>
@@ -131,10 +172,13 @@ export const DistributedStorageSection: React.FC<DistributedStorageSectionProps>
           {/* Exclusivity Warning if assigned */}
           {assignmentType !== 'AVAILABLE' && (
             <Alert
-              message={t('warnings.exclusivity')}
+              message={<span style={styles.body}>{t('warnings.exclusivity')}</span>}
               type="warning"
               showIcon
-              style={{ marginTop: 8 }}
+              style={{ 
+                ...styles.marginBottom.xs,
+                borderRadius: 'var(--border-radius-lg)'
+              }}
               data-testid="ds-section-exclusivity-warning"
             />
           )}

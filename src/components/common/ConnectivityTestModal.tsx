@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Modal, Table, Button, Space, Typography, Progress, Tag, Alert } from 'antd'
+import { Modal, Table, Button, Space, Typography, Progress, Tag, Alert, Tooltip } from 'antd'
 import { SyncOutlined, CheckCircleOutlined, CloseCircleOutlined, WifiOutlined, ClockCircleOutlined } from '@/utils/optimizedIcons'
 import type { ColumnsType } from 'antd/es/table/interface'
 import { useTranslation } from 'react-i18next'
@@ -7,6 +7,8 @@ import { useTheme } from '@/context/ThemeContext'
 import { showMessage } from '@/utils/messages'
 import type { Machine } from '@/types'
 import { usePingFunction } from '@/services/pingService'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing, borderRadius, fontSize } from '@/utils/styleConstants'
 import './ConnectivityTestModal.css'
 
 const { Text, Title } = Typography
@@ -41,6 +43,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
   const [isRunning, setIsRunning] = useState(false)
   const [progress, setProgress] = useState(0)
   const [currentMachineIndex, setCurrentMachineIndex] = useState(-1)
+  const styles = useComponentStyles()
   
   const { executePingForMachine, waitForQueueItemCompletion } = usePingFunction()
 
@@ -223,46 +226,75 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
       data-testid="connectivity-modal"
       title={
         <Space>
-          <WifiOutlined />
-          <span>{t('machines:connectivityTest')}</span>
+          <WifiOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD }} />
+          <span style={{ fontSize: fontSize('BASE') }}>{t('machines:connectivityTest')}</span>
         </Space>
       }
       open={open}
       onCancel={onClose}
       width={1000}
       destroyOnHidden
+      style={{
+        borderRadius: borderRadius('XL')
+      }}
       footer={[
         <Button 
           key="run" 
           type="primary" 
-          icon={<SyncOutlined />}
+          icon={<SyncOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />}
           onClick={runAllTests}
           disabled={isRunning || machines.length === 0}
           loading={isRunning}
+          style={{
+            // Button styles handled by CSS
+            fontSize: fontSize('SM')
+          }}
           data-testid="connectivity-run-test-button"
         >
           {isRunning ? t('machines:testing') : t('machines:runTest')}
         </Button>,
-        <Button key="close" onClick={onClose} data-testid="connectivity-close-button">
-          Close
-        </Button>
+        <Tooltip title="Close">
+          <Button 
+            key="close"
+            icon={<CloseCircleOutlined />}
+            onClick={onClose} 
+            style={{
+              // Height managed by CSS
+              borderRadius: borderRadius('LG'),
+              fontSize: fontSize('SM')
+            }}
+            data-testid="connectivity-close-button"
+            aria-label="Close"
+          />
+        </Tooltip>
       ]}
     >
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         {/* Progress Bar */}
         {isRunning && (
-          <div style={{ marginBottom: 16 }} data-testid="connectivity-progress-container">
+          <div style={{ marginBottom: spacing('MD') }} data-testid="connectivity-progress-container">
             <Progress 
               percent={progress} 
               status="active"
               strokeColor={{
-                '0%': '#108ee9',
-                '100%': '#87d068'
+                '0%': 'var(--color-primary)',
+                '100%': 'var(--color-success)'
+              }}
+              style={{
+                borderRadius: borderRadius('LG')
               }}
               data-testid="connectivity-progress-bar"
             />
             {currentMachineIndex >= 0 && currentMachineIndex < machines.length && (
-              <Text type="secondary" style={{ fontSize: '12px' }} data-testid="connectivity-progress-text">
+              <Text 
+                type="secondary" 
+                style={{ 
+                  fontSize: fontSize('XS'),
+                  marginTop: spacing('XS'),
+                  display: 'block'
+                }} 
+                data-testid="connectivity-progress-text"
+              >
                 {t('machines:testingMachine', { machineName: machines[currentMachineIndex].machineName })}
               </Text>
             )}
@@ -274,7 +306,11 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
           message={t('machines:connectivityTestDescription')}
           type="info"
           showIcon
-          icon={<WifiOutlined />}
+          icon={<WifiOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD }} />}
+          style={{
+            borderRadius: borderRadius('LG'),
+            fontSize: fontSize('SM')
+          }}
           data-testid="connectivity-info-alert"
         />
 
@@ -292,15 +328,19 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
             if (record.status === 'failed') return 'connectivity-test-failed-row'
             return ''
           }}
+          style={{
+            borderRadius: borderRadius('LG'),
+            overflow: 'hidden'
+          }}
           data-testid="connectivity-results-table"
         />
 
         {/* Summary Statistics */}
         {!isRunning && testResults.some(r => r.status !== 'pending') && (
           <div style={{ 
-            padding: '16px', 
-            background: theme === 'dark' ? '#1f1f1f' : '#f0f2f5',
-            borderRadius: '8px'
+            padding: spacing('MD'), 
+            background: theme === 'dark' ? 'var(--color-fill-quaternary)' : 'var(--color-fill-tertiary)',
+            borderRadius: borderRadius('LG')
           }}
           data-testid="connectivity-summary-statistics">
             <Space size="large">

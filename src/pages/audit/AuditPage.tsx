@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Card, Space, Typography, DatePicker, Select, Button, Table, Tag, Input, Row, Col, Empty, Dropdown, message } from 'antd';
+import { Card, Space, Typography, DatePicker, Select, Button, Table, Tag, Input, Row, Col, Empty, Dropdown, message, Alert, Tooltip, theme } from 'antd';
 import { 
   HistoryOutlined, 
   FilterOutlined, 
@@ -18,6 +18,7 @@ import {
 import { useAuditLogs, AuditLog } from '../../api/queries/audit';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
+import { useComponentStyles } from '@/hooks/useComponentStyles';
 import type { ColumnsType } from 'antd/es/table';
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
 
@@ -26,6 +27,8 @@ const { RangePicker } = DatePicker;
 
 const AuditPage = () => {
   const { t } = useTranslation('system');
+  const { token } = theme.useToken();
+  const styles = useComponentStyles();
   const tableRef = useRef<HTMLDivElement>(null);
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([
     dayjs().subtract(7, 'days'),
@@ -34,7 +37,7 @@ const AuditPage = () => {
   const [entityFilter, setEntityFilter] = useState<string | undefined>();
   const [searchText, setSearchText] = useState('');
   
-  const { data: auditLogs, isLoading, refetch } = useAuditLogs({
+  const { data: auditLogs, isLoading, refetch, error, isError } = useAuditLogs({
     startDate: dateRange[0]?.startOf('day').format('YYYY-MM-DD HH:mm:ss'),
     endDate: dateRange[1]?.endOf('day').format('YYYY-MM-DD HH:mm:ss'),
     entityFilter,
@@ -50,12 +53,12 @@ const AuditPage = () => {
 
   const getActionIcon = (action: string) => {
     const actionLower = action.toLowerCase();
-    if (actionLower.includes('create')) return <CheckCircleOutlined style={{ color: '#52c41a' }} />;
-    if (actionLower.includes('delete')) return <CloseCircleOutlined style={{ color: '#ff4d4f' }} />;
-    if (actionLower.includes('update') || actionLower.includes('modify')) return <EditOutlined style={{ color: '#faad14' }} />;
-    if (actionLower.includes('login') || actionLower.includes('auth')) return <LoginOutlined style={{ color: '#1890ff' }} />;
-    if (actionLower.includes('export') || actionLower.includes('import')) return <SwapOutlined style={{ color: '#556b2f' }} />;
-    return <InfoCircleOutlined style={{ color: '#8c8c8c' }} />;
+    if (actionLower.includes('create')) return <CheckCircleOutlined style={{ color: token.colorSuccess }} />;
+    if (actionLower.includes('delete')) return <CloseCircleOutlined style={{ color: token.colorError }} />;
+    if (actionLower.includes('update') || actionLower.includes('modify')) return <EditOutlined style={{ color: token.colorWarning }} />;
+    if (actionLower.includes('login') || actionLower.includes('auth')) return <LoginOutlined style={{ color: token.colorPrimary }} />;
+    if (actionLower.includes('export') || actionLower.includes('import')) return <SwapOutlined style={{ color: token.colorInfo }} />;
+    return <InfoCircleOutlined style={{ color: token.colorTextSecondary }} />;
   };
 
   const getActionColor = (action: string) => {
@@ -89,7 +92,12 @@ const AuditPage = () => {
       defaultSortOrder: 'descend'
     },
     {
-      title: 'Action',
+      title: (
+        <Space>
+          Action
+          <FilterOutlined style={{ opacity: 0.6, fontSize: '12px' }} />
+        </Space>
+      ),
       dataIndex: 'action',
       key: 'action',
       width: 200,
@@ -105,10 +113,18 @@ const AuditPage = () => {
         text: action.replace(/_/g, ' '),
         value: action
       })),
-      onFilter: (value, record) => record.action === value
+      onFilter: (value, record) => record.action === value,
+      filterIcon: (filtered: boolean) => (
+        <FilterOutlined style={{ color: filtered ? '#1890ff' : undefined, fontSize: '14px' }} />
+      )
     },
     {
-      title: 'Entity Type',
+      title: (
+        <Space>
+          Entity Type
+          <FilterOutlined style={{ opacity: 0.6, fontSize: '12px' }} />
+        </Space>
+      ),
       dataIndex: 'entity',
       key: 'entity',
       width: 120,
@@ -117,17 +133,32 @@ const AuditPage = () => {
         text: entity,
         value: entity
       })),
-      onFilter: (value, record) => record.entity === value
+      onFilter: (value, record) => record.entity === value,
+      filterIcon: (filtered: boolean) => (
+        <FilterOutlined style={{ color: filtered ? '#1890ff' : undefined, fontSize: '14px' }} />
+      )
     },
     {
       title: 'Entity Name',
       dataIndex: 'entityName',
       key: 'entityName',
       width: 200,
-      ellipsis: true
+      ellipsis: {
+        showTitle: false
+      },
+      render: (entityName: string) => (
+        <Tooltip title={entityName} placement="topLeft">
+          <span>{entityName}</span>
+        </Tooltip>
+      )
     },
     {
-      title: 'User',
+      title: (
+        <Space>
+          User
+          <FilterOutlined style={{ opacity: 0.6, fontSize: '12px' }} />
+        </Space>
+      ),
       dataIndex: 'actionByUser',
       key: 'user',
       width: 180,
@@ -135,17 +166,24 @@ const AuditPage = () => {
         text: user,
         value: user
       })),
-      onFilter: (value, record) => record.actionByUser === value
+      onFilter: (value, record) => record.actionByUser === value,
+      filterIcon: (filtered: boolean) => (
+        <FilterOutlined style={{ color: filtered ? '#1890ff' : undefined, fontSize: '14px' }} />
+      )
     },
     {
       title: 'Details',
       dataIndex: 'details',
       key: 'details',
-      ellipsis: true,
+      ellipsis: {
+        showTitle: false
+      },
       render: (details: string) => (
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          {details}
-        </Text>
+        <Tooltip title={details} placement="topLeft">
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {details}
+          </Text>
+        </Tooltip>
       )
     }
   ];
@@ -231,34 +269,33 @@ const AuditPage = () => {
     }
   ];
 
-  // Calculate container height similar to ResourcesPage
+  // Calculate container height using design system
   const containerStyle: React.CSSProperties = {
+    ...styles.container,
     height: 'calc(100vh - 64px - 48px)', // viewport - header - content margin
     overflow: 'hidden',
-    display: 'flex',
-    flexDirection: 'column'
+    ...styles.flexColumn
   };
 
   const cardStyle: React.CSSProperties = {
+    ...styles.card,
     flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
+    ...styles.flexColumn,
     overflow: 'hidden'
   };
 
   const cardBodyStyle: React.CSSProperties = {
     flex: 1,
     overflow: 'hidden',
-    padding: '16px',
-    display: 'flex',
-    flexDirection: 'column'
+    ...styles.padding.md,
+    ...styles.flexColumn
   };
 
   return (
     <div style={containerStyle}>
       {/* Header */}
       <div style={{ marginBottom: 16, flexShrink: 0 }}>
-        <Title level={2} style={{ marginBottom: 8 }}>
+        <Title level={2} style={{ ...styles.heading2, marginBottom: 8 }}>
           <HistoryOutlined style={{ marginRight: 8 }} />
           Audit Logs
         </Title>
@@ -267,11 +304,11 @@ const AuditPage = () => {
 
       {/* Filters */}
       <Card data-testid="audit-filter-card" style={{ marginBottom: 16, flexShrink: 0 }}>
-        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-          <Row gutter={[16, 16]}>
+        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          <Row gutter={[24, 16]}>
             <Col xs={24} sm={24} md={8}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Text type="secondary">Date Range</Text>
+              <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                <Text strong style={{ fontSize: '14px', color: token.colorText }}>Date Range</Text>
                 <RangePicker
                   data-testid="audit-filter-date"
                   value={dateRange}
@@ -295,8 +332,8 @@ const AuditPage = () => {
               </Space>
             </Col>
             <Col xs={24} sm={12} md={6}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Text type="secondary">Entity Type</Text>
+              <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                <Text strong style={{ fontSize: '14px', color: token.colorText }}>Entity Type</Text>
                 <Select
                   data-testid="audit-filter-entity"
                   placeholder="All entities"
@@ -312,8 +349,8 @@ const AuditPage = () => {
               </Space>
             </Col>
             <Col xs={24} sm={12} md={6}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Text type="secondary">Search</Text>
+              <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                <Text strong style={{ fontSize: '14px', color: token.colorText }}>Search</Text>
                 <Input
                   data-testid="audit-filter-search"
                   placeholder="Search in logs..."
@@ -326,39 +363,69 @@ const AuditPage = () => {
               </Space>
             </Col>
             <Col xs={24} sm={12} md={2}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Text type="secondary">&nbsp;</Text>
+              <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                <Text strong style={{ fontSize: '14px', color: 'transparent' }}>Actions</Text>
                 <Button
                   data-testid="audit-refresh-button"
                   icon={<ReloadOutlined />}
                   onClick={() => refetch()}
                   loading={isLoading}
-                  style={{ width: '100%' }}
+                  style={{ ...styles.touchTarget, width: '100%' }}
                 >
                   Refresh
                 </Button>
               </Space>
             </Col>
             <Col xs={24} sm={12} md={2}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Text type="secondary">&nbsp;</Text>
-                <Dropdown
-                  menu={{ items: exportMenuItems }}
-                  disabled={!filteredLogs || filteredLogs.length === 0}
+              <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                <Text strong style={{ fontSize: '14px', color: 'transparent' }}>Export</Text>
+                <Tooltip 
+                  title={
+                    !filteredLogs || filteredLogs.length === 0 
+                      ? "No data available to export" 
+                      : "Export audit logs as CSV or JSON"
+                  }
                 >
-                  <Button 
-                    data-testid="audit-export-button"
-                    icon={<DownloadOutlined />} 
-                    style={{ width: '100%' }}
+                  <Dropdown
+                    menu={{ items: exportMenuItems }}
+                    disabled={!filteredLogs || filteredLogs.length === 0}
                   >
-                    Export
-                  </Button>
-                </Dropdown>
+                    <Button 
+                      data-testid="audit-export-button"
+                      icon={<DownloadOutlined />} 
+                      style={{ ...styles.touchTarget, width: '100%' }}
+                    >
+                      Export
+                    </Button>
+                  </Dropdown>
+                </Tooltip>
               </Space>
             </Col>
           </Row>
         </Space>
       </Card>
+
+      {/* Error Display */}
+      {isError && (
+        <Alert
+          message="Unable to Load Audit Logs"
+          description={error?.message || "There was an error loading audit logs. Please try refreshing or adjusting your date range."}
+          type="error"
+          closable
+          showIcon
+          style={{ marginBottom: 16 }}
+          action={
+            <Button 
+              size="small" 
+              style={styles.touchTargetSmall}
+              onClick={() => refetch()} 
+              loading={isLoading}
+            >
+              Try Again
+            </Button>
+          }
+        />
+      )}
 
       {/* Audit Logs Table */}
       <Card data-testid="audit-table-card" style={cardStyle} bodyStyle={cardBodyStyle}>
@@ -377,12 +444,40 @@ const AuditPage = () => {
               position: ['bottomRight'],
               className: 'audit-table-pagination'
             }}
-            scroll={{ x: 1000 }}
+            scroll={{ x: 'max-content' }}
             className="full-height-table"
             style={{ flex: 1 }}
             sticky
             locale={{
-              emptyText: <Empty description="No audit logs found" />
+              emptyText: (
+                <Empty 
+                  description={
+                    <Space direction="vertical" align="center">
+                      <Text type="secondary">
+                        {isError 
+                          ? "Unable to load audit logs" 
+                          : filteredLogs?.length === 0 && auditLogs?.length > 0 
+                            ? "No logs match your current filters"
+                            : "No audit logs found for the selected date range"
+                        }
+                      </Text>
+                      {!isError && (
+                        <Button 
+                          type="link" 
+                          style={styles.touchTarget}
+                          onClick={() => {
+                            setSearchText('');
+                            setEntityFilter(undefined);
+                            setDateRange([dayjs().subtract(30, 'days'), dayjs()]);
+                          }}
+                        >
+                          Clear filters and expand date range
+                        </Button>
+                      )}
+                    </Space>
+                  }
+                />
+              )
             }}
           />
         </div>

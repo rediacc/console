@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Empty, Card, Row, Col, Progress } from 'antd'
+import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Empty, Card, Row, Col, Progress, Tooltip } from 'antd'
+import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
 import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, CloudDownloadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined, GlobalOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { type QueueFunction } from '@/api/queries/queue'
@@ -94,6 +95,8 @@ interface MachineRepositoryListProps {
 export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete, hideSystemInfo = false, onCreateRepository, onRepositoryClick, highlightedRepository, onContainerClick, highlightedContainer, isLoading, onRefreshMachines }) => {
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
   const userEmail = useAppSelector((state) => state.auth.user?.email || '')
+  const tableStyles = useTableStyles()
+  const componentStyles = useComponentStyles()
   const [currentToken, setCurrentToken] = useState<string>('')
   const [repositories, setRepositories] = useState<Repository[]>([])
   const [systemContainers, setSystemContainers] = useState<any[]>([])
@@ -836,19 +839,19 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             menuItems.push({
               key: 'stop',
               label: t('functions:functions.container_stop.name'),
-              icon: <StopOutlined />,
+              icon: <StopOutlined style={componentStyles.icon.small} />,
               onClick: () => handleContainerAction(record, container, 'container_stop')
             })
             menuItems.push({
               key: 'restart',
               label: t('functions:functions.container_restart.name'),
-              icon: <ReloadOutlined />,
+              icon: <ReloadOutlined style={componentStyles.icon.small} />,
               onClick: () => handleContainerAction(record, container, 'container_restart')
             })
             menuItems.push({
               key: 'pause',
               label: t('functions:functions.container_pause.name'),
-              icon: <PauseCircleOutlined />,
+              icon: <PauseCircleOutlined style={componentStyles.icon.small} />,
               onClick: () => handleContainerAction(record, container, 'container_pause')
             })
           } else if (container.state === 'paused') {
@@ -856,7 +859,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             menuItems.push({
               key: 'unpause',
               label: t('functions:functions.container_unpause.name'),
-              icon: <PlayCircleOutlined />,
+              icon: <PlayCircleOutlined style={componentStyles.icon.small} />,
               onClick: () => handleContainerAction(record, container, 'container_unpause')
             })
           } else {
@@ -864,13 +867,13 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             menuItems.push({
               key: 'start',
               label: t('functions:functions.container_start.name'),
-              icon: <PlayCircleOutlined />,
+              icon: <PlayCircleOutlined style={componentStyles.icon.small} />,
               onClick: () => handleContainerAction(record, container, 'container_start')
             })
             menuItems.push({
               key: 'remove',
               label: t('functions:functions.container_remove.name'),
-              icon: <DeleteOutlined />,
+              icon: <DeleteOutlined style={componentStyles.icon.small} />,
               onClick: () => handleContainerAction(record, container, 'container_remove')
             })
           }
@@ -880,19 +883,19 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           menuItems.push({
             key: 'logs',
             label: t('functions:functions.container_logs.name'),
-            icon: <FileTextOutlined />,
+            icon: <FileTextOutlined style={componentStyles.icon.small} />,
             onClick: () => handleContainerAction(record, container, 'container_logs')
           })
           menuItems.push({
             key: 'inspect',
             label: t('functions:functions.container_inspect.name'),
-            icon: <LineChartOutlined />,
+            icon: <LineChartOutlined style={componentStyles.icon.small} />,
             onClick: () => handleContainerAction(record, container, 'container_inspect')
           })
           menuItems.push({
             key: 'stats',
             label: t('functions:functions.container_stats.name'),
-            icon: <LineChartOutlined />,
+            icon: <LineChartOutlined style={componentStyles.icon.small} />,
             onClick: () => handleContainerAction(record, container, 'container_stats')
           })
           
@@ -901,15 +904,17 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               menu={{ items: menuItems }}
               trigger={['click']}
             >
-              <Button
-                type="primary"
-                size="small"
-                icon={<FunctionOutlined />}
-                loading={managedQueueMutation.isPending}
-                data-testid={`machine-repo-list-container-actions-${container.id}`}
-              >
-                {t('machines:remote')}
-              </Button>
+              <Tooltip title={t('machines:remote')}>
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<FunctionOutlined />}
+                  loading={managedQueueMutation.isPending}
+                  style={componentStyles.touchTarget}
+                  data-testid={`machine-repo-list-container-actions-${container.id}`}
+                  aria-label={t('machines:remote')}
+                />
+              </Tooltip>
             </Dropdown>
           )
         },
@@ -959,6 +964,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               size="small"
               pagination={false}
               scroll={{ x: 'max-content' }}
+              style={tableStyles.tableContainer}
               data-testid="machine-repo-list-containers-table"
               onRow={(container) => ({
                 onClick: (e) => {
@@ -1001,6 +1007,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               size="small"
               pagination={false}
               scroll={{ x: 'max-content' }}
+              style={tableStyles.tableContainer}
               data-testid="machine-repo-list-plugins-table"
               onRow={(container) => ({
                 onClick: (e) => {
@@ -1150,7 +1157,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         menuItems.push({
           key: 'up',
           label: t('functions:functions.up.name'),
-          icon: <PlayCircleOutlined style={{ color: '#52c41a' }} />,
+          icon: <PlayCircleOutlined style={componentStyles.icon.small} />,
           onClick: () => handleQuickAction(record, 'up', 4, 'mount')
         })
         
@@ -1159,7 +1166,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           menuItems.push({
             key: 'down',
             label: t('functions:functions.down.name'),
-            icon: <PauseCircleOutlined style={{ color: '#ff4d4f' }} />,
+            icon: <PauseCircleOutlined style={componentStyles.icon.small} />,
             onClick: () => handleQuickAction(record, 'down', 4, 'unmount')
           })
         }
@@ -1168,7 +1175,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         menuItems.push({
           key: 'push',
           label: t('functions:functions.push.name'),
-          icon: <CloudUploadOutlined />,
+          icon: <CloudUploadOutlined style={componentStyles.icon.small} />,
           onClick: () => handleRunFunction(record, 'push')
         })
         
@@ -1182,7 +1189,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         menuItems.push({
           key: 'advanced',
           label: t('machines:advanced'),
-          icon: <FunctionOutlined />,
+          icon: <FunctionOutlined style={componentStyles.icon.small} />,
           onClick: () => handleRunFunction(record)
         })
         
@@ -1192,15 +1199,17 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               menu={{ items: menuItems }}
               trigger={['click']}
             >
-              <Button
-                type="primary"
-                size="small"
-                icon={<FunctionOutlined />}
-                loading={managedQueueMutation.isPending}
-                data-testid={`machine-repo-list-repo-actions-${record.name}`}
-              >
-                {t('machines:remote')}
-              </Button>
+              <Tooltip title={t('machines:remote')}>
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<FunctionOutlined />}
+                  loading={managedQueueMutation.isPending}
+                  style={componentStyles.touchTarget}
+                  data-testid={`machine-repo-list-repo-actions-${record.name}`}
+                  aria-label={t('machines:remote')}
+                />
+              </Tooltip>
             </Dropdown>
             {record.mounted && (
               <LocalActionsMenu
@@ -1218,6 +1227,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 size="small"
                 icon={<KeyOutlined />}
                 onClick={() => onCreateRepository(machine, record.originalGuid || record.name)}
+                style={componentStyles.touchTarget}
                 data-testid={`machine-repo-list-add-credential-${record.name}`}
               >
                 {t('resources:repositories.addCredential')}
@@ -1246,9 +1256,14 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           type="error"
           showIcon
           action={
-            <Button size="small" onClick={handleRefresh} data-testid="machine-repo-list-retry">
-              {t('common:actions.retry')}
-            </Button>
+            <Tooltip title={t('common:actions.retry')}>
+              <Button 
+                size="small" 
+                onClick={handleRefresh} 
+                data-testid="machine-repo-list-retry"
+                aria-label={t('common:actions.retry')}
+              />
+            </Tooltip>
           }
         />
       </div>
@@ -1319,6 +1334,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         size="small"
         pagination={false}
         scroll={{ x: 'max-content' }}
+        style={tableStyles.tableContainer}
         data-testid="machine-repo-list-table"
         expandable={{
           expandedRowRender: renderExpandedRow,
@@ -1408,6 +1424,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               size="small"
               pagination={false}
               scroll={{ x: 'max-content' }}
+              style={tableStyles.tableContainer}
               data-testid="machine-repo-list-system-containers-table"
             />
           </div>

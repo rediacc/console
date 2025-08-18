@@ -9,6 +9,7 @@ import {
   ReloadOutlined
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { useMachines } from '@/api/queries/machines'
 import { useGetMachineAssignmentStatus } from '@/api/queries/distributedStorage'
 import { Machine } from '@/types'
@@ -31,6 +32,7 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
   onRefresh
 }) => {
   const { t } = useTranslation(['distributedStorage', 'machines'])
+  const componentStyles = useComponentStyles()
   const { data: machines = [], isLoading, refetch } = useMachines(teamFilter)
 
   // Calculate statistics

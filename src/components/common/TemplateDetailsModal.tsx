@@ -99,7 +99,7 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
       // Simple markdown rendering for README
       const lines = file.content.split('\n')
       return (
-        <div style={{ padding: '16px', lineHeight: 1.6 }}>
+        <div style={{ padding: 'var(--space-md)', lineHeight: 1.6 }}>
           {lines.map((line, idx) => {
             // Basic markdown parsing
             if (line.startsWith('# ')) {
@@ -112,7 +112,7 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
               return <Title key={idx} level={5}>{line.substring(4)}</Title>
             }
             if (line.startsWith('- ')) {
-              return <li key={idx} style={{ marginLeft: 20 }}>{line.substring(2)}</li>
+              return <li key={idx} style={{ marginLeft: 'var(--space-lg)' }}>{line.substring(2)}</li>
             }
             if (line.startsWith('```')) {
               return null // Skip code blocks for now
@@ -124,7 +124,7 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
             const codeRegex = /`([^`]+)`/g
             const parts = line.split(codeRegex)
             return (
-              <Paragraph key={idx} style={{ marginBottom: 8 }}>
+              <Paragraph key={idx} style={{ marginBottom: 'var(--space-sm)' }}>
                 {parts.map((part, i) => 
                   i % 2 === 1 ? <Text key={i} code>{part}</Text> : part
                 )}
@@ -152,12 +152,15 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
         <pre
           style={{
             margin: 0,
-            padding: '16px',
-            backgroundColor: '#f5f5f5',
+            padding: 'var(--space-md)',
+            backgroundColor: 'var(--color-bg-tertiary)',
             overflow: 'auto',
             fontSize: '13px',
             lineHeight: 1.5,
-            fontFamily: 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace'
+            fontFamily: 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace',
+            borderRadius: '6px',
+            border: '1px solid var(--color-border-secondary)',
+            color: 'var(--color-text-primary)'
           }}
         >
           <code>{file.content}</code>
@@ -190,7 +193,7 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
       }
       open={visible}
       onCancel={onClose}
-      width={800}
+      width={900}
       footer={[
         <Button key="cancel" onClick={onClose} data-testid="template-details-close-button">
           {t('common:actions.close')}
@@ -212,7 +215,7 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
       ]}
     >
       {loading && (
-        <div style={{ textAlign: 'center', padding: '40px 0' }} data-testid="template-details-loading">
+        <div style={{ textAlign: 'center', padding: 'var(--space-5xl) 0' }} data-testid="template-details-loading">
           <Spin tip={t('resources:templates.loadingDetails')} />
         </div>
       )}
@@ -238,7 +241,13 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
               children: readmeFile ? (
                 <Card 
                   size="small" 
-                  style={{ maxHeight: '500px', overflow: 'auto' }}
+                  style={{ 
+                    maxHeight: '500px', 
+                    overflow: 'auto',
+                    border: '1px solid var(--color-border-secondary)',
+                    borderRadius: '8px',
+                    boxShadow: 'var(--shadow-sm)'
+                  }}
                   bodyStyle={{ padding: 0 }}
                   data-testid="template-details-readme-content"
                 >
@@ -257,7 +266,14 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
                 </Space>
               ),
               children: (
-                <div style={{ maxHeight: '500px', overflow: 'auto' }} data-testid="template-details-files-content">
+                <div style={{ 
+                  maxHeight: '500px', 
+                  overflow: 'auto',
+                  padding: 'var(--space-sm)',
+                  backgroundColor: 'var(--color-bg-secondary)',
+                  borderRadius: '8px',
+                  border: '1px solid var(--color-border-secondary)'
+                }} data-testid="template-details-files-content">
                   {Object.keys(groupedFiles).length === 1 && groupedFiles['root'] ? (
                     // If all files are in root, show them directly
                     <Collapse defaultActiveKey={groupedFiles['root'].map((_, idx) => idx.toString())} data-testid="template-details-files-collapse">
@@ -275,7 +291,14 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
                           }
                           data-testid={`template-details-file-panel-${idx}`}
                         >
-                          <div style={{ maxHeight: '400px', overflow: 'auto' }} data-testid={`template-details-file-content-${idx}`}>
+                          <div style={{ 
+                            maxHeight: '400px', 
+                            overflow: 'auto',
+                            padding: 'var(--space-xs)',
+                            backgroundColor: 'var(--color-bg-primary)',
+                            borderRadius: '6px',
+                            border: '1px solid var(--color-border-primary)'
+                          }} data-testid={`template-details-file-content-${idx}`}>
                             {renderFileContent(file)}
                           </div>
                         </Panel>
@@ -311,7 +334,14 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
                                 }
                                 data-testid={`template-details-folder-file-panel-${dir}-${idx}`}
                               >
-                                <div style={{ maxHeight: '400px', overflow: 'auto' }} data-testid={`template-details-folder-file-content-${dir}-${idx}`}>
+                                <div style={{ 
+                                  maxHeight: '400px', 
+                                  overflow: 'auto',
+                                  padding: 'var(--space-xs)',
+                                  backgroundColor: 'var(--color-bg-primary)',
+                                  borderRadius: '6px',
+                                  border: '1px solid var(--color-border-primary)'
+                                }} data-testid={`template-details-folder-file-content-${dir}-${idx}`}>
                                   {renderFileContent(file)}
                                 </div>
                               </Panel>

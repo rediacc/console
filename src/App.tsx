@@ -11,6 +11,7 @@ import { initializeApiClient } from '@/api/init'
 import AuthLayout from '@/components/layouts/AuthLayout'
 import MainLayout from '@/components/layouts/MainLayout'
 import LoginPage from '@/pages/LoginPage'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
 
 // Lazy load heavy pages
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
@@ -23,19 +24,21 @@ const AuditPage = lazy(() => import('@/pages/audit/AuditPage'))
 const MarketplacePage = lazy(() => import('@/pages/marketplace/MarketplacePage'))
 
 // Loading component
-const PageLoader: React.FC = () => (
-  <div 
-    data-testid="page-loader"
-    style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      minHeight: '400px' 
-    }}
-  >
-    <Spin size="large" />
-  </div>
-)
+const PageLoader: React.FC = () => {
+  const styles = useComponentStyles()
+  
+  return (
+    <div 
+      data-testid="page-loader"
+      style={{ 
+        ...styles.flexCenter, 
+        minHeight: '400px' 
+      }}
+    >
+      <Spin size="large" />
+    </div>
+  )
+}
 
 const AppContent: React.FC = () => {
   const dispatch = useDispatch()

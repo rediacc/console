@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Modal, Button, Space, message, Typography, Tag, Upload } from 'antd'
-import { InfoCircleOutlined, UploadOutlined, DownloadOutlined } from '@/utils/optimizedIcons'
+import { Modal, Button, Space, message, Typography, Tag, Upload, Tooltip } from 'antd'
+import { InfoCircleOutlined, UploadOutlined, DownloadOutlined, CloseOutlined, SaveOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import VaultEditor from './VaultEditor'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing, borderRadius, fontSize } from '@/utils/styleConstants'
 
 const { Text } = Typography
 
@@ -35,6 +37,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [showValidationErrors, setShowValidationErrors] = useState(false)
   const importExportHandlers = useRef<{ handleImport: (file: any) => boolean; handleExport: () => void } | null>(null)
+  const styles = useComponentStyles()
 
   useEffect(() => {
     try {
@@ -83,25 +86,38 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
       onCancel={onCancel}
       width={900}
       footer={null}
-      style={{ top: 20 }}
+      style={{ 
+        top: spacing('LG'),
+        borderRadius: borderRadius('XL')
+      }}
       data-testid="vault-modal"
       destroyOnHidden
     >
-      <Space direction="vertical" style={{ width: '100%' }} size={12}>
+      <Space direction="vertical" style={{ width: '100%' }} size={spacing('SM')}>
         <div 
           className="bg-tertiary"
           style={{ 
-            padding: '8px 16px', 
-            borderRadius: 8,
+            padding: spacing('SM'), 
+            borderRadius: borderRadius('LG'),
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'center'
+            alignItems: 'center',
+            backgroundColor: 'var(--color-fill-quaternary)'
           }}>
           <Space size="small">
-            <Text strong>{t('vaultEditor.vaultVersion')}</Text>
-            <Tag color="processing" style={{ margin: 0, fontSize: 12 }}>{vaultVersion}</Tag>
+            <Text strong style={{ fontSize: fontSize('SM') }}>{t('vaultEditor.vaultVersion')}</Text>
+            <Tag 
+              color="processing" 
+              style={{ 
+                margin: 0, 
+                fontSize: fontSize('XS'),
+                borderRadius: borderRadius('SM')
+              }}
+            >
+              {vaultVersion}
+            </Tag>
           </Space>
-          <Text type="secondary" style={{ fontSize: 11 }}>
+          <Text type="secondary" style={{ fontSize: fontSize('XS') }}>
             {t('vaultEditor.versionAutoIncrement')}
           </Text>
         </div>
@@ -122,7 +138,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
         />
       </Space>
 
-      <div style={{ marginTop: 16 }}>
+      <div style={{ marginTop: spacing('MD') }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Space size="small">
             <Upload
@@ -136,15 +152,31 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
               }}
               data-testid="vault-modal-file-upload"
             >
-              <Button size="small" icon={<UploadOutlined />} data-testid="vault-modal-import-button">{t('vaultEditor.importJson')}</Button>
+              <Button 
+                size="small" 
+                icon={<UploadOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />} 
+                style={{
+                  // Height managed by CSS
+                  borderRadius: borderRadius('MD'),
+                  fontSize: fontSize('SM')
+                }}
+                data-testid="vault-modal-import-button"
+              >
+                {t('vaultEditor.importJson')}
+              </Button>
             </Upload>
             <Button 
               size="small"
-              icon={<DownloadOutlined />} 
+              icon={<DownloadOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />} 
               onClick={() => {
                 if (importExportHandlers.current) {
                   importExportHandlers.current.handleExport()
                 }
+              }}
+              style={{
+                // Height managed by CSS
+                borderRadius: borderRadius('MD'),
+                fontSize: fontSize('SM')
               }}
               data-testid="vault-modal-export-button"
             >
@@ -155,33 +187,65 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
           <Space size="small">
             {hasChanges && (
               <Space size="small">
-                <span style={{ color: '#faad14', fontSize: 12 }}>
-                  <InfoCircleOutlined style={{ fontSize: 12 }} /> {t('vaultEditor.unsavedChanges')}
+                <span style={{ 
+                  color: 'var(--color-warning)', 
+                  fontSize: fontSize('XS'),
+                  display: 'flex',
+                  alignItems: 'center'
+                }}>
+                  <InfoCircleOutlined style={{ 
+                    fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM,
+                    marginRight: spacing('XS')
+                  }} /> 
+                  {t('vaultEditor.unsavedChanges')}
                 </span>
-                <Text type="secondary" style={{ fontSize: 11 }}>
+                <Text type="secondary" style={{ fontSize: fontSize('XS') }}>
                   • {t('vaultEditor.versionWillIncrement', { version: vaultVersion + 1 })}
                 </Text>
               </Space>
             )}
-            <Button onClick={onCancel} data-testid="vault-modal-cancel-button">{t('actions.cancel')}</Button>
-            <Button
-              type="primary"
-              onClick={handleSave}
-              loading={loading}
-              disabled={!isValid}
-              style={{ background: '#556b2f', borderColor: '#556b2f' }}
-              data-testid="vault-modal-save-button"
-            >
-              {t('vaultEditor.saveVaultConfiguration')}
-            </Button>
+            <Tooltip title={t('actions.cancel')}>
+              <Button 
+                icon={<CloseOutlined />}
+                onClick={onCancel} 
+                style={{
+                  // Height managed by CSS
+                  borderRadius: borderRadius('LG'),
+                  fontSize: fontSize('SM')
+                }}
+                data-testid="vault-modal-cancel-button"
+                aria-label={t('actions.cancel')}
+              />
+            </Tooltip>
+            <Tooltip title={t('vaultEditor.saveVaultConfiguration')}>
+              <Button
+                type="primary"
+                icon={<SaveOutlined />}
+                onClick={handleSave}
+                loading={loading}
+                disabled={!isValid}
+                style={{ 
+                  ...styles.buttonPrimary,
+                  background: 'var(--color-primary)', 
+                  borderColor: 'var(--color-primary)'
+                  // Height managed by CSS
+                }}
+                data-testid="vault-modal-save-button"
+                aria-label={t('vaultEditor.saveVaultConfiguration')}
+              />
+            </Tooltip>
           </Space>
         </div>
       </div>
 
       {showValidationErrors && validationErrors.length > 0 && (
-        <div style={{ marginTop: 16, color: '#ff4d4f' }}>
+        <div style={{ 
+          marginTop: spacing('MD'), 
+          color: 'var(--color-error)',
+          fontSize: fontSize('SM')
+        }}>
           <strong>{t('vaultEditor.validationErrors')}</strong>
-          <ul style={{ marginTop: 8 }}>
+          <ul style={{ marginTop: spacing('XS') }}>
             {validationErrors.map((error, index) => (
               <li key={index}>{error}</li>
             ))}

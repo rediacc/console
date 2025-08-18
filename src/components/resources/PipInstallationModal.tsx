@@ -26,6 +26,8 @@ import {
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { pipInstallationService, InstallOptions } from '@/services/pipInstallationService'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing, createModalStyle } from '@/utils/styleConstants'
 
 const { Text, Title, Paragraph } = Typography
 const { Panel } = Collapse
@@ -61,15 +63,15 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({ command, description, s
   const { isCommand, isComment } = formattedCommands[0]
 
   return (
-    <div style={{ marginBottom: 8 }} data-testid="pip-install-command-display">
-      {description && <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>{description}</Text>}
+    <div style={{ marginBottom: spacing('XS') }} data-testid="pip-install-command-display">
+      {description && <Text type="secondary" style={{ display: 'block', marginBottom: spacing('MICRO') }}>{description}</Text>}
       <div style={{ 
         background: '#f5f5f5', 
         border: '1px solid #d9d9d9',
-        borderRadius: 4,
-        padding: '8px 12px',
+        borderRadius: DESIGN_TOKENS.BORDER_RADIUS.SM,
+        padding: `${spacing('XS')}px ${spacing('SM')}px`,
         fontFamily: 'monospace',
-        fontSize: 14,
+        fontSize: DESIGN_TOKENS.FONT_SIZE.SM,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between'
@@ -89,7 +91,7 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({ command, description, s
           <Button 
             size="small" 
             icon={copied ? <CheckOutlined /> : <CopyOutlined />}
-            style={{ marginLeft: 8 }}
+            style={{ marginLeft: spacing('XS') }}
             onClick={handleCopy}
             data-testid="pip-install-command-copy"
           />
@@ -105,6 +107,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
   errorType = 'not-installed'
 }) => {
   const { t } = useTranslation()
+  const styles = useComponentStyles()
   const [includeGui, setIncludeGui] = useState(true)
   const [useUserInstall, setUseUserInstall] = useState(false)
   const [activeTab, setActiveTab] = useState('quick')
@@ -163,7 +166,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           description={t('resources:pipInstall.installCommandDesc')}
         />
         
-        <Space style={{ marginTop: 8 }}>
+        <Space style={{ marginTop: spacing('XS') }}>
           <Checkbox 
             checked={includeGui} 
             onChange={(e) => setIncludeGui(e.target.checked)}
@@ -220,6 +223,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
         onClick={handleCopyAllCommands}
         block
         data-testid="pip-install-copy-all-button"
+        style={styles.buttonPrimary}
       >
         {t('resources:pipInstall.copyAllCommands')}
       </Button>
@@ -384,11 +388,16 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
       open={visible}
       onCancel={onClose}
       footer={[
-        <Button key="close" onClick={onClose} data-testid="pip-install-close-button">
+        <Button 
+          key="close" 
+          onClick={onClose} 
+          data-testid="pip-install-close-button"
+          style={styles.buttonSecondary}
+        >
           {t('common:close')}
         </Button>
       ]}
-      width={700}
+      style={createModalStyle(DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH_LG)}
       data-testid="pip-install-modal"
     >
       <Tabs 

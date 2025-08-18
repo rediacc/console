@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { Machine } from '@/types'
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell'
 import { MachineRepositoryList } from '@/components/resources/MachineRepositoryList'
+import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
 
 interface FilterableMachineTableProps {
   machines: Machine[]
@@ -29,6 +30,8 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
   refreshKeys = {}
 }) => {
   const { t } = useTranslation(['machines', 'distributedStorage'])
+  const tableStyles = useTableStyles()
+  const componentStyles = useComponentStyles()
   
   const columns: ColumnsType<Machine> = [
     {
@@ -44,7 +47,7 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
       key: 'teamName',
       width: 150,
       ellipsis: true,
-      render: (teamName: string) => <Tag color="#8FBC8F">{teamName}</Tag>,
+      render: (teamName: string) => <Tag color="green">{teamName}</Tag>,
       sorter: (a: Machine, b: Machine) => a.teamName.localeCompare(b.teamName),
     },
     {
@@ -71,7 +74,14 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
       align: 'center' as const,
       sorter: (a: Machine, b: Machine) => a.queueCount - b.queueCount,
       render: (count: number) => (
-        <Badge count={count} showZero style={{ backgroundColor: count > 0 ? '#52c41a' : '#d9d9d9' }} />
+        <Badge 
+          count={count} 
+          showZero 
+          style={{ 
+            backgroundColor: count > 0 ? 'var(--color-success)' : 'var(--color-fill-quaternary)',
+            color: count > 0 ? 'var(--color-white)' : 'var(--color-text-secondary)'
+          }} 
+        />
       ),
     },
   ]
@@ -84,30 +94,34 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
   } : undefined
   
   return (
-    <Table
-      columns={columns}
-      dataSource={machines}
-      rowKey="machineName"
-      loading={loading}
-      rowSelection={rowSelection}
-      data-testid="ds-machines-table"
-      expandable={{
-        expandedRowKeys,
-        onExpandedRowsChange: (keys) => onExpandedRowsChange?.(keys as string[]),
-        expandedRowRender: (machine) => (
-          <MachineRepositoryList
-            machine={machine}
-            refreshKey={refreshKeys[machine.machineName]}
-          />
-        ),
-        rowExpandable: (machine) => machine.queueCount > 0,
-      }}
-      scroll={{ x: 800 }}
-      pagination={{
-        showSizeChanger: true,
-        showTotal: (total, range) => 
-          t('machines:showingMachines', { start: range[0], end: range[1], total }),
-      }}
-    />
+    <div style={tableStyles.tableContainer}>
+      <Table
+        columns={columns}
+        dataSource={machines}
+        rowKey="machineName"
+        loading={loading}
+        rowSelection={rowSelection}
+        data-testid="ds-machines-table"
+        expandable={{
+          expandedRowKeys,
+          onExpandedRowsChange: (keys) => onExpandedRowsChange?.(keys as string[]),
+          expandedRowRender: (machine) => (
+            <div style={{ ...componentStyles.padding.md, background: 'var(--color-fill-quaternary)' }}>
+              <MachineRepositoryList
+                machine={machine}
+                refreshKey={refreshKeys[machine.machineName]}
+              />
+            </div>
+          ),
+          rowExpandable: (machine) => machine.queueCount > 0,
+        }}
+        scroll={{ x: 800 }}
+        pagination={{
+          showSizeChanger: true,
+          showTotal: (total, range) => 
+            t('machines:showingMachines', { start: range[0], end: range[1], total }),
+        }}
+      />
+    </div>
   )
 }

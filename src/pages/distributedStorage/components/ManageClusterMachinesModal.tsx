@@ -3,6 +3,7 @@ import { Modal, Tabs, Table, Button, Space, Tag, Empty, Spin, message } from 'an
 import type { ColumnsType } from 'antd/es/table'
 import { CloudServerOutlined, DesktopOutlined, PlusOutlined, DeleteOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
+import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
 import { 
   useDistributedStorageClusterMachines,
   useGetAvailableMachinesForClone,

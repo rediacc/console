@@ -19,6 +19,8 @@ import {
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import type { MenuProps } from 'antd'
+import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
+import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge'
 import { 
   useDistributedStorageRbdImages, 
   useDeleteDistributedStorageRbdImage,
@@ -42,6 +44,8 @@ interface RbdImageListProps {
 
 const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
   const { t } = useTranslation('distributedStorage')
+  const tableStyles = useTableStyles()
+  const componentStyles = useComponentStyles()
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
   const [modalState, setModalState] = useState<{
     open: boolean
@@ -225,8 +229,8 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
       key: 'imageName',
       render: (text: string, record: DistributedStorageRbdImage) => (
         <Space data-testid={`rbd-image-name-${record.imageName}`}>
-          <FileImageOutlined />
-          <span>{text}</span>
+          <FileImageOutlined style={{ ...tableStyles.icon.medium, color: 'var(--color-primary)' }} />
+          <span style={{ color: 'var(--color-text-primary)' }}>{text}</span>
           {record.vaultContent && (
             <Tooltip title={t('common.hasVault')}>
               <Tag color="blue" data-testid={`rbd-vault-tag-${record.imageName}`}>{t('common.vault')}</Tag>
@@ -242,7 +246,7 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
       width: 300,
       render: (text: string) => (
         <Tooltip title={text}>
-          <span style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+          <span style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
             {text.substring(0, 8)}...
           </span>
         </Tooltip>
@@ -269,19 +273,26 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
       width: 150,
       render: (_: any, record: DistributedStorageRbdImage) => (
         <Space data-testid={`rbd-image-actions-${record.imageName}`}>
-          <Button
-            size="small"
-            icon={<CloudUploadOutlined />}
-            onClick={() => handleRunFunction('distributed_storage_rbd_info', record)}
-            data-testid={`rbd-remote-button-${record.imageName}`}
-          >
-            {t('common.remote')}
-          </Button>
+          <Tooltip title={t('common.remote')}>
+            <Button
+              size="small"
+              icon={<CloudUploadOutlined />}
+              onClick={() => handleRunFunction('distributed_storage_rbd_info', record)}
+              data-testid={`rbd-remote-button-${record.imageName}`}
+              style={tableStyles.tableActionButton}
+              aria-label={t('common.remote')}
+            />
+          </Tooltip>
           <Dropdown
             menu={{ items: getImageMenuItems(record) }}
             trigger={['click']}
           >
-            <Button size="small" icon={<EllipsisOutlined />} data-testid={`rbd-actions-dropdown-${record.imageName}`} />
+            <Button 
+              size="small" 
+              icon={<EllipsisOutlined />} 
+              data-testid={`rbd-actions-dropdown-${record.imageName}`}
+              style={tableStyles.tableActionButton}
+            />
           </Dropdown>
         </Space>
       ),
@@ -300,43 +311,46 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
   
   return (
     <>
-      <div style={{ marginBottom: 16 }} data-testid="rbd-image-list-container">
+      <div style={componentStyles.marginBottom.md} data-testid="rbd-image-list-container">
         <Button 
           type="primary" 
           icon={<PlusOutlined />}
           onClick={handleCreate}
           data-testid="rbd-create-image-button"
+          style={componentStyles.touchTarget}
         >
           {t('images.create')}
         </Button>
       </div>
       
-      <Table
-        columns={columns}
-        dataSource={images}
-        rowKey="imageGuid"
-        loading={isLoading}
-        size="small"
-        pagination={false}
-        data-testid="rbd-image-table"
-        onRow={(record) => ({
-          'data-testid': `rbd-image-row-${record.imageName}`,
-        })}
-        expandable={{
-          expandedRowRender,
-          expandedRowKeys,
-          onExpandedRowsChange: setExpandedRowKeys,
-          expandIcon: ({ expanded, onExpand, record }) => (
-            <Button
-              size="small"
-              icon={expanded ? <CameraOutlined /> : <CameraOutlined />}
-              onClick={e => onExpand(record, e)}
-              style={{ marginRight: 8 }}
-              data-testid={`rbd-expand-snapshots-${record.imageName}`}
-            />
-          ),
-        }}
-      />
+      <div style={tableStyles.tableContainer}>
+        <Table
+          columns={columns}
+          dataSource={images}
+          rowKey="imageGuid"
+          loading={isLoading}
+          size="small"
+          pagination={false}
+          data-testid="rbd-image-table"
+          onRow={(record) => ({
+            'data-testid': `rbd-image-row-${record.imageName}`,
+          })}
+          expandable={{
+            expandedRowRender,
+            expandedRowKeys,
+            onExpandedRowsChange: setExpandedRowKeys,
+            expandIcon: ({ expanded, onExpand, record }) => (
+              <Button
+                size="small"
+                icon={expanded ? <CameraOutlined /> : <CameraOutlined />}
+                onClick={e => onExpand(record, e)}
+                style={{ ...tableStyles.tableActionButton, marginRight: 8 }}
+                data-testid={`rbd-expand-snapshots-${record.imageName}`}
+              />
+            ),
+          }}
+        />
+      </div>
       
       <UnifiedResourceModal
         open={modalState.open}

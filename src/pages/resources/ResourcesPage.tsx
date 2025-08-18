@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { Card, Tabs, Button, Space, Modal, Tag, Typography, Table, Row, Col, Empty, Spin } from 'antd'
+import { Card, Tabs, Button, Space, Modal, Tag, Typography, Table, Row, Col, Empty, Spin, Tooltip } from 'antd'
 import { useLocation } from 'react-router-dom'
 import { 
   PlusOutlined, 
@@ -18,6 +18,8 @@ import {
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing } from '@/utils/styleConstants'
 import UnifiedResourceModal, { ResourceType } from '@/components/common/UnifiedResourceModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import ConnectivityTestModal from '@/components/common/ConnectivityTestModal'
@@ -87,6 +89,7 @@ const ResourcesPage: React.FC = () => {
   const { t } = useTranslation(['resources', 'machines', 'common'])
   const location = useLocation()
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
+  const styles = useComponentStyles()
   const [selectedTeams, setSelectedTeams] = useState<string[]>([])
   const [teamResourcesTab, setTeamResourcesTab] = useState('machines')
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null)
@@ -956,44 +959,50 @@ const ResourcesPage: React.FC = () => {
       width: 250,
       render: (_: any, record: Repository) => (
         <Space>
-          <Button
-            type="primary"
-            size="small"
-            icon={<EditOutlined />}
-            data-testid={`resources-repository-edit-${record.repositoryName}`}
-            onClick={() => {
-              setCurrentResource(record);
-              openUnifiedModal('repository', 'edit', record);
-            }}
-          >
-            {t('common:actions.edit')}
-          </Button>
-          <Button
-            type="primary"
-            size="small"
-            icon={<HistoryOutlined />}
-            data-testid={`resources-repository-trace-${record.repositoryName}`}
-            onClick={() => {
-              setAuditTraceModal({
-                open: true,
-                entityType: 'Repo',
-                entityIdentifier: record.repositoryName,
-                entityName: record.repositoryName
-              });
-            }}
-          >
-            {t('machines:trace')}
-          </Button>
-          <Button
-            type="primary"
-            danger
-            size="small"
-            icon={<DeleteOutlined />}
-            data-testid={`resources-repository-delete-${record.repositoryName}`}
-            onClick={() => handleDeleteRepository(record)}
-          >
-            {t('common:actions.delete')}
-          </Button>
+          <Tooltip title={t('common:actions.edit')}>
+            <Button
+              type="primary"
+              size="small"
+              icon={<EditOutlined />}
+              style={styles.touchTargetSmall}
+              data-testid={`resources-repository-edit-${record.repositoryName}`}
+              onClick={() => {
+                setCurrentResource(record);
+                openUnifiedModal('repository', 'edit', record);
+              }}
+              aria-label={t('common:actions.edit')}
+            />
+          </Tooltip>
+          <Tooltip title={t('machines:trace')}>
+            <Button
+              type="primary"
+              size="small"
+              icon={<HistoryOutlined />}
+              style={styles.touchTargetSmall}
+              data-testid={`resources-repository-trace-${record.repositoryName}`}
+              onClick={() => {
+                setAuditTraceModal({
+                  open: true,
+                  entityType: 'Repo',
+                  entityIdentifier: record.repositoryName,
+                  entityName: record.repositoryName
+                });
+              }}
+              aria-label={t('machines:trace')}
+            />
+          </Tooltip>
+          <Tooltip title={t('common:actions.delete')}>
+            <Button
+              type="primary"
+              danger
+              size="small"
+              icon={<DeleteOutlined />}
+              style={styles.touchTargetSmall}
+              data-testid={`resources-repository-delete-${record.repositoryName}`}
+              onClick={() => handleDeleteRepository(record)}
+              aria-label={t('common:actions.delete')}
+            />
+          </Tooltip>
         </Space>
       ),
     },
@@ -1035,71 +1044,79 @@ const ResourcesPage: React.FC = () => {
       width: 350,
       render: (_: any, record: Storage) => (
         <Space>
-          <Button
-            type="primary"
-            size="small"
-            icon={<EditOutlined />}
-            data-testid={`resources-storage-edit-${record.storageName}`}
-            onClick={() => {
-              setCurrentResource(record);
-              openUnifiedModal('storage', 'edit', record);
-            }}
-          >
-            {t('common:actions.edit')}
-          </Button>
-          <Button
-            type="primary"
-            size="small"
-            icon={<FunctionOutlined />}
-            data-testid={`resources-storage-run-${record.storageName}`}
-            onClick={() => {
-              setCurrentResource(record);
-              // Use a special state to show function selection
-              setUnifiedModalState({
-                open: true,
-                resourceType: 'storage',
-                mode: 'create',
-                data: record
-              });
-            }}
-          >
-            Run
-          </Button>
-          <Button
-            type="primary"
-            size="small"
-            icon={<HistoryOutlined />}
-            data-testid={`resources-storage-trace-${record.storageName}`}
-            onClick={() => {
-              setAuditTraceModal({
-                open: true,
-                entityType: 'Storage',
-                entityIdentifier: record.storageName,
-                entityName: record.storageName
-              });
-            }}
-          >
-            {t('machines:trace')}
-          </Button>
-          <Button
-            type="primary"
-            danger
-            size="small"
-            icon={<DeleteOutlined />}
-            data-testid={`resources-storage-delete-${record.storageName}`}
-            onClick={() => {
-              Modal.confirm({
-                title: t('storage.deleteStorage'),
-                content: t('storage.confirmDelete', { storageName: record.storageName }),
-                okText: t('general.yes'),
-                okType: 'danger',
-                cancelText: t('general.no'),
-                onOk: () => handleDeleteStorage(record),
-              });
-            }}
-          >
-            {t('common:actions.delete')}
-          </Button>
+          <Tooltip title={t('common:actions.edit')}>
+            <Button
+              type="primary"
+              size="small"
+              icon={<EditOutlined />}
+              style={styles.touchTargetSmall}
+              data-testid={`resources-storage-edit-${record.storageName}`}
+              onClick={() => {
+                setCurrentResource(record);
+                openUnifiedModal('storage', 'edit', record);
+              }}
+              aria-label={t('common:actions.edit')}
+            />
+          </Tooltip>
+          <Tooltip title="Run">
+            <Button
+              type="primary"
+              size="small"
+              icon={<FunctionOutlined />}
+              style={styles.touchTargetSmall}
+              data-testid={`resources-storage-run-${record.storageName}`}
+              onClick={() => {
+                setCurrentResource(record);
+                // Use a special state to show function selection
+                setUnifiedModalState({
+                  open: true,
+                  resourceType: 'storage',
+                  mode: 'create',
+                  data: record
+                });
+              }}
+              aria-label="Run"
+            />
+          </Tooltip>
+          <Tooltip title={t('machines:trace')}>
+            <Button
+              type="primary"
+              size="small"
+              icon={<HistoryOutlined />}
+              style={styles.touchTargetSmall}
+              data-testid={`resources-storage-trace-${record.storageName}`}
+              onClick={() => {
+                setAuditTraceModal({
+                  open: true,
+                  entityType: 'Storage',
+                  entityIdentifier: record.storageName,
+                  entityName: record.storageName
+                });
+              }}
+              aria-label={t('machines:trace')}
+            />
+          </Tooltip>
+          <Tooltip title={t('common:actions.delete')}>
+            <Button
+              type="primary"
+              danger
+              size="small"
+              icon={<DeleteOutlined />}
+              style={styles.touchTargetSmall}
+              data-testid={`resources-storage-delete-${record.storageName}`}
+              onClick={() => {
+                Modal.confirm({
+                  title: t('storage.deleteStorage'),
+                  content: t('storage.confirmDelete', { storageName: record.storageName }),
+                  okText: t('general.yes'),
+                  okType: 'danger',
+                  cancelText: t('general.no'),
+                  onOk: () => handleDeleteStorage(record),
+                });
+              }}
+              aria-label={t('common:actions.delete')}
+            />
+          </Tooltip>
         </Space>
       ),
     },
@@ -1141,53 +1158,59 @@ const ResourcesPage: React.FC = () => {
       width: 250,
       render: (_: any, record: Schedule) => (
         <Space>
-          <Button
-            type="primary"
-            size="small"
-            icon={<EditOutlined />}
-            data-testid={`resources-schedule-edit-${record.scheduleName}`}
-            onClick={() => {
-              setCurrentResource(record);
-              openUnifiedModal('schedule', 'edit', record);
-            }}
-          >
-            {t('common:actions.edit')}
-          </Button>
-          <Button
-            type="primary"
-            size="small"
-            icon={<HistoryOutlined />}
-            data-testid={`resources-schedule-trace-${record.scheduleName}`}
-            onClick={() => {
-              setAuditTraceModal({
-                open: true,
-                entityType: 'Schedule',
-                entityIdentifier: record.scheduleName,
-                entityName: record.scheduleName
-              });
-            }}
-          >
-            {t('machines:trace')}
-          </Button>
-          <Button
-            type="primary"
-            danger
-            size="small"
-            icon={<DeleteOutlined />}
-            data-testid={`resources-schedule-delete-${record.scheduleName}`}
-            onClick={() => {
-              Modal.confirm({
-                title: t('schedules.deleteSchedule'),
-                content: t('schedules.confirmDelete', { scheduleName: record.scheduleName }),
-                okText: t('general.yes'),
-                okType: 'danger',
-                cancelText: t('general.no'),
-                onOk: () => handleDeleteSchedule(record),
-              });
-            }}
-          >
-            {t('common:actions.delete')}
-          </Button>
+          <Tooltip title={t('common:actions.edit')}>
+            <Button
+              type="primary"
+              size="small"
+              icon={<EditOutlined />}
+              style={styles.touchTargetSmall}
+              data-testid={`resources-schedule-edit-${record.scheduleName}`}
+              onClick={() => {
+                setCurrentResource(record);
+                openUnifiedModal('schedule', 'edit', record);
+              }}
+              aria-label={t('common:actions.edit')}
+            />
+          </Tooltip>
+          <Tooltip title={t('machines:trace')}>
+            <Button
+              type="primary"
+              size="small"
+              icon={<HistoryOutlined />}
+              style={styles.touchTargetSmall}
+              data-testid={`resources-schedule-trace-${record.scheduleName}`}
+              onClick={() => {
+                setAuditTraceModal({
+                  open: true,
+                  entityType: 'Schedule',
+                  entityIdentifier: record.scheduleName,
+                  entityName: record.scheduleName
+                });
+              }}
+              aria-label={t('machines:trace')}
+            />
+          </Tooltip>
+          <Tooltip title={t('common:actions.delete')}>
+            <Button
+              type="primary"
+              danger
+              size="small"
+              icon={<DeleteOutlined />}
+              style={styles.touchTargetSmall}
+              data-testid={`resources-schedule-delete-${record.scheduleName}`}
+              onClick={() => {
+                Modal.confirm({
+                  title: t('schedules.deleteSchedule'),
+                  content: t('schedules.confirmDelete', { scheduleName: record.scheduleName }),
+                  okText: t('general.yes'),
+                  okType: 'danger',
+                  cancelText: t('general.no'),
+                  onOk: () => handleDeleteSchedule(record),
+                });
+              }}
+              aria-label={t('common:actions.delete')}
+            />
+          </Tooltip>
         </Space>
       ),
     },
@@ -1214,10 +1237,11 @@ const ResourcesPage: React.FC = () => {
     {
       key: 'machines',
       label: (
-        <span data-testid="resources-tab-machines">
-          <DesktopOutlined />
-          {t('resourceTabs.machines')}
-        </span>
+        <Tooltip title={t('resourceTabs.machines')} placement="top">
+          <span data-testid="resources-tab-machines">
+            <DesktopOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD }} />
+          </span>
+        </Tooltip>
       ),
       children: (
         <SplitResourceView
@@ -1313,10 +1337,11 @@ const ResourcesPage: React.FC = () => {
     {
       key: 'repositories',
       label: (
-        <span data-testid="resources-tab-repositories">
-          <InboxOutlined />
-          {t('resourceTabs.repositories')}
-        </span>
+        <Tooltip title={t('resourceTabs.repositories')} placement="top">
+          <span data-testid="resources-tab-repositories">
+            <InboxOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD }} />
+          </span>
+        </Tooltip>
       ),
       children: (
         <div ref={repositoryTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -1353,10 +1378,11 @@ const ResourcesPage: React.FC = () => {
     {
       key: 'storage',
       label: (
-        <span data-testid="resources-tab-storage">
-          <CloudOutlined />
-          {t('resourceTabs.storage')}
-        </span>
+        <Tooltip title={t('resourceTabs.storage')} placement="top">
+          <span data-testid="resources-tab-storage">
+            <CloudOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD }} />
+          </span>
+        </Tooltip>
       ),
       children: (
         <div ref={storageTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -1393,10 +1419,11 @@ const ResourcesPage: React.FC = () => {
     {
       key: 'schedules',
       label: (
-        <span data-testid="resources-tab-schedules">
-          <ScheduleOutlined />
-          {t('resourceTabs.schedules')}
-        </span>
+        <Tooltip title={t('resourceTabs.schedules')} placement="top">
+          <span data-testid="resources-tab-schedules">
+            <ScheduleOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD }} />
+          </span>
+        </Tooltip>
       ),
       children: (
         <div ref={scheduleTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -1432,32 +1459,50 @@ const ResourcesPage: React.FC = () => {
     },
   ]
 
-  // Calculate available height for full-height layout
+  // Calculate available height for full-height layout using design system
   const containerStyle: React.CSSProperties = {
+    ...styles.container,
     height: 'calc(100vh - 64px - 48px)', // viewport - header - content margin
     overflow: 'hidden',
-    display: 'flex',
-    flexDirection: 'column'
+    ...styles.flexColumn
   }
 
   const cardStyle: React.CSSProperties = {
+    ...styles.card,
     height: '100%',
-    display: 'flex',
-    flexDirection: 'column'
+    ...styles.flexColumn
   }
 
   const cardBodyStyle: React.CSSProperties = {
     flex: 1,
     overflow: 'hidden',
-    padding: '16px',
-    display: 'flex',
-    flexDirection: 'column'
+    ...styles.padding.md,
+    ...styles.flexColumn
+  }
+
+  // Enhanced tab navigation with arrow keys for accessibility
+  const handleTabKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      event.preventDefault()
+      const tabOrder = uiMode === 'simple' 
+        ? ['machines', 'repositories', 'storage'] 
+        : ['machines', 'repositories', 'storage', 'schedules']
+      const currentIndex = tabOrder.indexOf(teamResourcesTab)
+      
+      if (event.key === 'ArrowLeft') {
+        const newIndex = currentIndex > 0 ? currentIndex - 1 : tabOrder.length - 1
+        setTeamResourcesTab(tabOrder[newIndex])
+      } else {
+        const newIndex = currentIndex < tabOrder.length - 1 ? currentIndex + 1 : 0
+        setTeamResourcesTab(tabOrder[newIndex])
+      }
+    }
   }
 
   return (
     <>
       {uiMode !== 'simple' ? (
-        <Row gutter={24} style={containerStyle}>
+        <Row gutter={0} style={containerStyle}>
           <Col span={24} style={{ height: '100%' }}>
             <Card style={cardStyle} bodyStyle={cardBodyStyle}>
               <div style={{ marginBottom: 16 }}>
@@ -1475,7 +1520,7 @@ const ResourcesPage: React.FC = () => {
                     flex: '1 1 auto',
                     minWidth: 0
                   }}>
-                    <Title level={4} style={{ margin: 0, flexShrink: 0 }}>
+                    <Title level={4} style={{ ...styles.heading4, margin: 0, flexShrink: 0 }}>
                       {t('teams.teamResources')}
                     </Title>
                     <TeamSelector
@@ -1499,76 +1544,88 @@ const ResourcesPage: React.FC = () => {
                       gap: 8,
                       flexShrink: 0
                     }}>
-                      <Button 
-                        type="primary" 
-                        icon={<PlusOutlined />}
-                        data-testid={`resources-create-${teamResourcesTab.slice(0, -1)}-button`}
-                        onClick={() => {
-                          switch(teamResourcesTab) {
-                            case 'machines':
-                              openUnifiedModal('machine', 'create')
-                              break
-                            case 'repositories':
-                              openUnifiedModal('repository', 'create')
-                              break
-                            case 'storage':
-                              openUnifiedModal('storage', 'create')
-                              break
-                            case 'schedules':
-                              openUnifiedModal('schedule', 'create')
-                              break
-                          }
-                        }}
-                        style={{ background: '#556b2f', borderColor: '#556b2f' }}
-                      >
-                        {getCreateButtonText()}
-                      </Button>
+                      <Tooltip title={getCreateButtonText()}>
+                        <Button 
+                          type="primary" 
+                          icon={<PlusOutlined />}
+                          style={{
+                            ...styles.buttonPrimary,
+                            ...styles.touchTarget,
+                            background: '#556b2f',
+                            borderColor: '#556b2f'
+                          }}
+                          data-testid={`resources-create-${teamResourcesTab.slice(0, -1)}-button`}
+                          onClick={() => {
+                            switch(teamResourcesTab) {
+                              case 'machines':
+                                openUnifiedModal('machine', 'create')
+                                break
+                              case 'repositories':
+                                openUnifiedModal('repository', 'create')
+                                break
+                              case 'storage':
+                                openUnifiedModal('storage', 'create')
+                                break
+                              case 'schedules':
+                                openUnifiedModal('schedule', 'create')
+                                break
+                            }
+                          }}
+                          aria-label={getCreateButtonText()}
+                        />
+                      </Tooltip>
                       {teamResourcesTab === 'storage' && (
-                        <Button
-                          icon={<ImportOutlined />}
-                          data-testid="resources-import-button"
-                          onClick={() => setRcloneImportWizardOpen(true)}
-                        >
-                          {t('resources:storage.import.button')}
-                        </Button>
+                        <Tooltip title={t('resources:storage.import.button')}>
+                          <Button
+                            icon={<ImportOutlined />}
+                            style={styles.touchTarget}
+                            data-testid="resources-import-button"
+                            onClick={() => setRcloneImportWizardOpen(true)}
+                            aria-label={t('resources:storage.import.button')}
+                          />
+                        </Tooltip>
                       )}
                       {teamResourcesTab === 'machines' && (
-                        <Button 
-                          icon={<WifiOutlined />}
-                          data-testid="resources-connectivity-test-button"
-                          onClick={() => setConnectivityTestModal(true)}
-                          disabled={machines.length === 0}
-                        >
-                          {t('machines:connectivityTest')}
-                        </Button>
+                        <Tooltip title={t('machines:connectivityTest')}>
+                          <Button 
+                            icon={<WifiOutlined />}
+                            style={styles.touchTarget}
+                            data-testid="resources-connectivity-test-button"
+                            onClick={() => setConnectivityTestModal(true)}
+                            disabled={machines.length === 0}
+                            aria-label={t('machines:connectivityTest')}
+                          />
+                        </Tooltip>
                       )}
-                      <Button 
-                        icon={<ReloadOutlined />}
-                        data-testid="resources-refresh-button"
-                        onClick={() => {
-                          switch(teamResourcesTab) {
-                            case 'machines':
-                              refetchMachines()
-                              // Also update refresh keys for expanded rows
-                              setRefreshKeys(prev => ({
-                                ...prev,
-                                _global: Date.now()
-                              }))
-                              break
-                            case 'repositories':
-                              refetchRepositories()
-                              break
-                            case 'storage':
-                              refetchStorage()
-                              break
-                            case 'schedules':
-                              refetchSchedules()
-                              break
-                          }
-                        }}
-                      >
-                        {t('common:actions.refresh')}
-                      </Button>
+                      <Tooltip title={t('common:actions.refresh')}>
+                        <Button 
+                          icon={<ReloadOutlined />}
+                          style={styles.touchTarget}
+                          data-testid="resources-refresh-button"
+                          onClick={() => {
+                            switch(teamResourcesTab) {
+                              case 'machines':
+                                refetchMachines()
+                                // Also update refresh keys for expanded rows
+                                setRefreshKeys(prev => ({
+                                  ...prev,
+                                  _global: Date.now()
+                                }))
+                                break
+                              case 'repositories':
+                                refetchRepositories()
+                                break
+                              case 'storage':
+                                refetchStorage()
+                                break
+                              case 'schedules':
+                                refetchSchedules()
+                                break
+                            }
+                          }}
+                          aria-label={t('common:actions.refresh')}
+                        />
+                      </Tooltip>
                     </div>
                   )}
                 </div>
@@ -1587,86 +1644,100 @@ const ResourcesPage: React.FC = () => {
                   items={teamResourcesTabs}
                   style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
                   className="full-height-tabs"
+                  onKeyDown={handleTabKeyDown}
+                  tabIndex={0}
                 />
               )}
             </Card>
           </Col>
         </Row>
       ) : (
-        <Row gutter={24} style={containerStyle}>
+        <Row gutter={0} style={containerStyle}>
           <Col span={24} style={{ height: '100%' }}>
             <Card style={cardStyle} bodyStyle={cardBodyStyle}>
               <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
                 <div>
-                  <Title level={4} style={{ margin: 0 }}>
+                  <Title level={4} style={{ ...styles.heading4, margin: 0 }}>
                     {t('teams.teamResources')}
                   </Title>
                 </div>
                 <Space>
-                  <Button 
-                    type="primary" 
-                    icon={<PlusOutlined />}
-                    data-testid={`resources-create-${teamResourcesTab.slice(0, -1)}-button`}
-                    onClick={() => {
-                      switch(teamResourcesTab) {
-                        case 'machines':
-                          openUnifiedModal('machine', 'create')
-                          break
-                        case 'repositories':
-                          openUnifiedModal('repository', 'create')
-                          break
-                        case 'storage':
-                          openUnifiedModal('storage', 'create')
-                          break
-                      }
-                    }}
-                    style={{ background: '#556b2f', borderColor: '#556b2f' }}
-                  >
-                    {getCreateButtonText()}
-                  </Button>
+                  <Tooltip title={getCreateButtonText()}>
+                    <Button 
+                      type="primary" 
+                      icon={<PlusOutlined />}
+                      style={{
+                        ...styles.buttonPrimary,
+                        ...styles.touchTarget,
+                        background: '#556b2f',
+                        borderColor: '#556b2f'
+                      }}
+                      data-testid={`resources-create-${teamResourcesTab.slice(0, -1)}-button`}
+                      onClick={() => {
+                        switch(teamResourcesTab) {
+                          case 'machines':
+                            openUnifiedModal('machine', 'create')
+                            break
+                          case 'repositories':
+                            openUnifiedModal('repository', 'create')
+                            break
+                          case 'storage':
+                            openUnifiedModal('storage', 'create')
+                            break
+                        }
+                      }}
+                      aria-label={getCreateButtonText()}
+                    />
+                  </Tooltip>
                   {teamResourcesTab === 'storage' && (
-                    <Button
-                      icon={<ImportOutlined />}
-                      data-testid="resources-import-button"
-                      onClick={() => setRcloneImportWizardOpen(true)}
-                    >
-                      {t('resources:storage.import.button')}
-                    </Button>
+                    <Tooltip title={t('resources:storage.import.button')}>
+                      <Button
+                        icon={<ImportOutlined />}
+                        style={styles.touchTarget}
+                        data-testid="resources-import-button"
+                        onClick={() => setRcloneImportWizardOpen(true)}
+                        aria-label={t('resources:storage.import.button')}
+                      />
+                    </Tooltip>
                   )}
                   {teamResourcesTab === 'machines' && (
-                    <Button 
-                      icon={<WifiOutlined />}
-                      data-testid="resources-connectivity-test-button"
-                      onClick={() => setConnectivityTestModal(true)}
-                      disabled={machines.length === 0}
-                    >
-                      {t('machines:connectivityTest')}
-                    </Button>
+                    <Tooltip title={t('machines:connectivityTest')}>
+                      <Button 
+                        icon={<WifiOutlined />}
+                        style={styles.touchTarget}
+                        data-testid="resources-connectivity-test-button"
+                        onClick={() => setConnectivityTestModal(true)}
+                        disabled={machines.length === 0}
+                        aria-label={t('machines:connectivityTest')}
+                      />
+                    </Tooltip>
                   )}
-                  <Button 
-                    icon={<ReloadOutlined />}
-                    data-testid="resources-refresh-button"
-                    onClick={() => {
-                      switch(teamResourcesTab) {
-                        case 'machines':
-                          refetchMachines()
-                          // Also update refresh keys for expanded rows
-                          setRefreshKeys(prev => ({
-                            ...prev,
-                            _global: Date.now()
-                          }))
-                          break
-                        case 'repositories':
-                          refetchRepositories()
-                          break
-                        case 'storage':
-                          refetchStorage()
-                          break
-                      }
-                    }}
-                  >
-                    {t('common:actions.refresh')}
-                  </Button>
+                  <Tooltip title={t('common:actions.refresh')}>
+                    <Button 
+                      icon={<ReloadOutlined />}
+                      style={styles.touchTarget}
+                      data-testid="resources-refresh-button"
+                      onClick={() => {
+                        switch(teamResourcesTab) {
+                          case 'machines':
+                            refetchMachines()
+                            // Also update refresh keys for expanded rows
+                            setRefreshKeys(prev => ({
+                              ...prev,
+                              _global: Date.now()
+                            }))
+                            break
+                          case 'repositories':
+                            refetchRepositories()
+                            break
+                          case 'storage':
+                            refetchStorage()
+                            break
+                        }
+                      }}
+                      aria-label={t('common:actions.refresh')}
+                    />
+                  </Tooltip>
                 </Space>
               </div>
               
@@ -1676,6 +1747,8 @@ const ResourcesPage: React.FC = () => {
                 items={teamResourcesTabs.filter(tab => tab.key !== 'schedules')}
                 style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
                 className="full-height-tabs"
+                onKeyDown={handleTabKeyDown}
+                tabIndex={0}
               />
             </Card>
           </Col>

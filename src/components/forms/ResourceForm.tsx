@@ -3,6 +3,8 @@ import { Form, Input, Select, Button, Space } from 'antd'
 import { Controller, UseFormReturn } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ZodSchema } from 'zod'
+import { useFormStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing } from '@/utils/styleConstants'
 
 interface FormFieldConfig {
   name: string
@@ -42,6 +44,7 @@ function ResourceForm<T = any>({
     handleSubmit,
     formState: { errors },
   } = form
+  const styles = useFormStyles()
 
   const renderField = (field: FormFieldConfig) => {
     const error = errors[field.name as keyof typeof errors]
@@ -63,7 +66,10 @@ function ResourceForm<T = any>({
                 filterOption={(input, option) =>
                   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                 }
-                style={{ width: '100%' }}
+                style={{ 
+                  // Don't apply formInput styles to Select - different DOM structure
+                  width: '100%'
+                }}
                 data-testid={`resource-form-field-${field.name}`}
               />
             )}
@@ -81,6 +87,7 @@ function ResourceForm<T = any>({
                 placeholder={field.placeholder}
                 disabled={field.disabled}
                 autoComplete="off"
+                // Styles handled by CSS
                 data-testid={`resource-form-field-${field.name}`}
               />
             )}
@@ -99,6 +106,7 @@ function ResourceForm<T = any>({
                 placeholder={field.placeholder}
                 disabled={field.disabled}
                 autoComplete="off"
+                // Styles handled by CSS
                 data-testid={`resource-form-field-${field.name}`}
               />
             )}
@@ -141,7 +149,7 @@ function ResourceForm<T = any>({
       })}
 
       <Form.Item 
-        style={{ marginBottom: 0, marginTop: 24 }}
+        style={{ marginBottom: 0, marginTop: spacing('CONTAINER') }}
         wrapperCol={{ offset: labelCol.span, span: wrapperCol.span }}
       >
         <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
@@ -158,7 +166,7 @@ function ResourceForm<T = any>({
             type="primary"
             htmlType="submit"
             loading={loading}
-            style={{ background: '#556b2f', borderColor: '#556b2f' }}
+            // Styles handled by CSS
             data-testid="resource-form-submit-button"
           >
             {submitText}

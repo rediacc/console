@@ -20,6 +20,8 @@ import {
 import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing } from '@/utils/styleConstants'
 
 dayjs.extend(relativeTime)
 
@@ -29,19 +31,20 @@ const NotificationBell: React.FC = () => {
   const dispatch = useDispatch()
   const { t } = useTranslation('common')
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const styles = useComponentStyles()
   
   const { notifications, unreadCount } = useSelector((state: RootState) => state.notifications)
 
   const getIcon = (type: NotificationType) => {
     switch (type) {
       case 'success':
-        return <CheckCircleOutlined style={{ color: '#52c41a' }} />
+        return <CheckCircleOutlined style={{ color: 'var(--color-success)' }} />
       case 'error':
-        return <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
+        return <ExclamationCircleOutlined style={{ color: 'var(--color-error)' }} />
       case 'warning':
-        return <WarningOutlined style={{ color: '#faad14' }} />
+        return <WarningOutlined style={{ color: 'var(--color-warning)' }} />
       case 'info':
-        return <InfoCircleOutlined style={{ color: '#1890ff' }} />
+        return <InfoCircleOutlined style={{ color: 'var(--color-info)' }} />
     }
   }
 
@@ -76,18 +79,15 @@ const NotificationBell: React.FC = () => {
       className="notification-dropdown" 
       data-testid="notification-dropdown"
       style={{ 
-        width: 400, 
+        ...styles.modal,
         maxHeight: 500, 
-        borderRadius: 8,
       }}
     >
       <div className="notification-dropdown-header" style={{ 
-        padding: '12px 16px', 
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
+        ...styles.flexBetween,
+        padding: `${spacing('SM')}px ${spacing('MD')}px`, 
       }}>
-        <Text strong style={{ fontSize: 16 }}>
+        <Text strong style={styles.heading4}>
           {t('notifications.title', 'Notifications')}
         </Text>
         {notifications.length > 0 && (
@@ -118,7 +118,7 @@ const NotificationBell: React.FC = () => {
         {notifications.length === 0 ? (
           <Empty 
             description={t('notifications.empty', 'No notifications')}
-            style={{ padding: '40px 0' }}
+            style={{ padding: `${spacing('XXL')}px 0` }}
           />
         ) : (
           <List
@@ -128,9 +128,9 @@ const NotificationBell: React.FC = () => {
                 key={notification.id}
                 className={notification.read ? 'ant-list-item-read' : 'ant-list-item-unread'}
                 style={{ 
-                  padding: '12px 16px',
+                  padding: `${spacing('SM')}px ${spacing('MD')}px`,
                   cursor: 'pointer',
-                  transition: 'background-color 0.3s'
+                  transition: DESIGN_TOKENS.TRANSITIONS.DEFAULT
                 }}
                 onClick={() => handleMarkAsRead(notification.id)}
                 data-testid={`notification-item-${index}`}
@@ -141,7 +141,7 @@ const NotificationBell: React.FC = () => {
                     <Space style={{ width: '100%', justifyContent: 'space-between' }}>
                       <Space>
                         <Text strong={!notification.read}>{notification.title}</Text>
-                        <Tag color={getTypeColor(notification.type)} style={{ marginLeft: 8 }}>
+                        <Tag color={getTypeColor(notification.type)} style={{ marginLeft: spacing('XS') }}>
                           {notification.type.toUpperCase()}
                         </Tag>
                       </Space>
@@ -158,14 +158,14 @@ const NotificationBell: React.FC = () => {
                   description={
                     <div>
                       <Text className="notification-message" style={{ 
-                        fontSize: 13, 
+                        ...styles.body,
                         display: 'block',
-                        marginBottom: 4,
+                        marginBottom: spacing('XS'),
                         wordBreak: 'break-word'
                       }}>
                         {notification.message}
                       </Text>
-                      <Text type="secondary" style={{ fontSize: 12 }}>
+                      <Text type="secondary" style={styles.caption}>
                         {dayjs(notification.timestamp).fromNow()}
                       </Text>
                     </div>
@@ -191,14 +191,8 @@ const NotificationBell: React.FC = () => {
       <Badge count={unreadCount} size="small">
         <Button
           type="text"
-          icon={<BellOutlined style={{ fontSize: 20 }} />}
-          style={{ 
-            height: 40,
-            width: 40,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
+          icon={<BellOutlined style={styles.icon.medium} />}
+          style={styles.touchTarget}
           data-testid="notification-bell"
         />
       </Badge>

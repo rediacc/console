@@ -1,7 +1,9 @@
 import React, { useRef } from 'react'
-import { Card, Table, Input, Spin, Empty, TableProps } from 'antd'
-import { SearchOutlined } from '@/utils/optimizedIcons'
+import { Card, Table, Input, Spin, Empty, TableProps, Space, Typography, Button, Tooltip } from 'antd'
+import { SearchOutlined, PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons'
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize'
+
+const { Text } = Typography
 
 const { Search } = Input
 
@@ -22,6 +24,12 @@ interface ResourceListViewProps<T = any> {
   tableStyle?: React.CSSProperties
   containerStyle?: React.CSSProperties
   enableDynamicPageSize?: boolean
+  // Enhanced empty state props
+  onCreateNew?: () => void
+  onRefresh?: () => void
+  createButtonText?: string
+  emptyDescription?: string
+  resourceType?: string
 }
 
 function ResourceListView<T = any>({
@@ -41,6 +49,11 @@ function ResourceListView<T = any>({
   tableStyle,
   containerStyle,
   enableDynamicPageSize = false,
+  onCreateNew,
+  onRefresh,
+  createButtonText = 'Create New',
+  emptyDescription,
+  resourceType = 'items',
 }: ResourceListViewProps<T>) {
   const tableContainerRef = useRef<HTMLDivElement>(null)
   
@@ -51,7 +64,7 @@ function ResourceListView<T = any>({
     maxRows: 50
   })
   const cardBodyStyle = containerStyle?.height ? {
-    padding: '16px',
+    padding: 'var(--space-md)', // Design system spacing
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
@@ -65,16 +78,30 @@ function ResourceListView<T = any>({
       data-testid="resource-list-container"
     >
       {(title || onSearch || filters || actions) && (
-        <div style={{ marginBottom: 16, flexShrink: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
+        <div style={{ marginBottom: 'var(--space-md)', flexShrink: 0 }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            flexWrap: 'wrap', 
+            gap: 'var(--space-md)'
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 'var(--space-md)', 
+              flex: 1 
+            }}>
               {title}
               {onSearch && (
                 <Search
                   key={searchPlaceholder}
                   placeholder={searchPlaceholder}
                   onSearch={onSearch}
-                  style={{ width: 300 }}
+                  style={{ 
+                    width: 300,
+                    minHeight: '44px' // Accessibility compliance
+                  }}
                   prefix={<SearchOutlined />}
                   allowClear
                   autoComplete="off"
@@ -86,7 +113,10 @@ function ResourceListView<T = any>({
               </div>
             </div>
             {actions && (
-              <div style={{ display: 'flex', gap: 8 }} data-testid="resource-list-actions">
+              <div style={{ 
+                display: 'flex', 
+                gap: 'var(--space-sm)' 
+              }} data-testid="resource-list-actions">
                 {actions}
               </div>
             )}
@@ -103,7 +133,59 @@ function ResourceListView<T = any>({
             <Spin size="large" />
           </div>
         ) : data.length === 0 ? (
-          <Empty description={emptyText} data-testid="resource-list-empty" />
+          <Empty 
+            description={
+              <Space direction="vertical" align="center" size="middle" style={{ 
+                textAlign: 'center',
+                padding: 'var(--space-lg)'
+              }}>
+                <Text>{emptyDescription || emptyText}</Text>
+                <Text type="secondary" style={{ 
+                  fontSize: 14,
+                  color: 'var(--color-text-secondary)'
+                }}>
+                  {onCreateNew ? `Get started by creating your first ${resourceType.slice(0, -1)}` : 
+                   `No ${resourceType} found. Try adjusting your search criteria.`}
+                </Text>
+                <Space>
+                  {onCreateNew && (
+                    <Tooltip title={createButtonText}>
+                      <Button 
+                        type="primary" 
+                        icon={<PlusOutlined />}
+                        onClick={onCreateNew}
+                        data-testid="resource-list-create-new"
+                        style={{ 
+                          minHeight: '44px',
+                          backgroundColor: 'var(--color-primary)',
+                          borderColor: 'var(--color-primary)',
+                          borderRadius: '8px'
+                        }}
+                        aria-label={createButtonText}
+                      />
+                    </Tooltip>
+                  )}
+                  {onRefresh && (
+                    <Tooltip title="Refresh">
+                      <Button 
+                        icon={<ReloadOutlined />}
+                        onClick={onRefresh}
+                        data-testid="resource-list-refresh"
+                        style={{ 
+                          minHeight: '44px',
+                          borderRadius: '8px',
+                          borderColor: 'var(--color-border-primary)'
+                        }}
+                        aria-label="Refresh"
+                      />
+                    </Tooltip>
+                  )}
+                </Space>
+              </Space>
+            }
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            data-testid="resource-list-empty" 
+          />
         ) : (
           <Table<T>
             columns={columns}
@@ -125,7 +207,7 @@ function ResourceListView<T = any>({
               }
             }}
             rowSelection={rowSelection}
-            scroll={{ x: 'max-content', y: tableStyle?.height || 400 }}
+            scroll={{ x: 'max-content', y: tableStyle?.height || 450 }}
             style={{ height: '100%' }}
             sticky
             data-testid="resource-list-table"

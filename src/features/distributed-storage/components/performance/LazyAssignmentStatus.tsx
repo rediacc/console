@@ -3,6 +3,7 @@ import { Skeleton, Tag } from 'antd'
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge'
 import { MachineAssignmentService } from '../../services'
 import { useGetMachineAssignmentStatus } from '@/api/queries/distributedStorage'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
 import type { Machine } from '@/types'
 
 interface LazyAssignmentStatusProps {
@@ -32,6 +33,7 @@ export const LazyAssignmentStatus: React.FC<LazyAssignmentStatusProps> = ({
   const containerRef = useRef<HTMLDivElement>(null)
   const [isVisible, setIsVisible] = useState(false)
   const [hasLoaded, setHasLoaded] = useState(false)
+  const styles = useComponentStyles()
   
   // Quick check for immediate status (no API call needed)
   const immediateStatus = MachineAssignmentService.getMachineAssignmentType(machine)
@@ -79,11 +81,23 @@ export const LazyAssignmentStatus: React.FC<LazyAssignmentStatusProps> = ({
   // Render loading skeleton
   if (!isVisible) {
     return (
-      <div ref={containerRef} style={{ height: 22, width: 120 }} data-testid="lazy-status-loading-container">
+      <div 
+        ref={containerRef} 
+        style={{ 
+          height: 22, 
+          width: 120,
+          ...styles.flexCenter
+        }} 
+        data-testid="lazy-status-loading-container"
+      >
         <Skeleton.Input 
           active 
           size="small" 
-          style={{ width: 120, height: 22 }} 
+          style={{ 
+            width: 120, 
+            height: 22,
+            borderRadius: 'var(--border-radius-sm)',
+          }} 
           data-testid="lazy-status-skeleton"
         />
       </div>
@@ -107,11 +121,19 @@ export const LazyAssignmentStatus: React.FC<LazyAssignmentStatusProps> = ({
   // Loading state for API call
   if (isLoading && !hasLoaded) {
     return (
-      <div ref={containerRef} data-testid="lazy-status-api-loading-container">
+      <div 
+        ref={containerRef} 
+        style={styles.flexCenter}
+        data-testid="lazy-status-api-loading-container"
+      >
         <Skeleton.Input 
           active 
           size="small" 
-          style={{ width: 120, height: 22 }} 
+          style={{ 
+            width: 120, 
+            height: 22,
+            borderRadius: 'var(--border-radius-sm)',
+          }} 
           data-testid="lazy-status-api-skeleton"
         />
       </div>
@@ -144,6 +166,7 @@ export const ProgressiveMachineStatusLoader: React.FC<{
 }> = ({ machines, teamName, batchSize = 10, batchDelay = 100 }) => {
   const [loadedCount, setLoadedCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
+  const styles = useComponentStyles()
   
   // Load next batch
   const loadNextBatch = useCallback(() => {
@@ -174,8 +197,21 @@ export const ProgressiveMachineStatusLoader: React.FC<{
         />
       ))}
       {loadedCount < machines.length && (
-        <div style={{ padding: '8px', textAlign: 'center' }} data-testid="lazy-status-loading-more">
-          <Skeleton.Button active size="small" data-testid="lazy-status-loading-button" />
+        <div 
+          style={{ 
+            ...styles.padding.sm,
+            ...styles.flexCenter
+          }} 
+          data-testid="lazy-status-loading-more"
+        >
+          <Skeleton.Button 
+            active 
+            size="small" 
+            style={{
+              borderRadius: 'var(--border-radius-sm)'
+            }}
+            data-testid="lazy-status-loading-button" 
+          />
         </div>
       )}
     </div>

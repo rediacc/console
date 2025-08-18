@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { Dropdown, Button, Menu, message } from 'antd'
+import { Dropdown, Button, Menu, message, Tooltip } from 'antd'
 import { 
   DesktopOutlined, 
   SyncOutlined, 
@@ -11,6 +11,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { protocolUrlService, ProtocolAction } from '@/services/protocolUrlService'
 import { PipInstallationModal } from './PipInstallationModal'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
 
 interface LocalActionsMenuProps {
   machine: string
@@ -37,6 +38,8 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
   const [showInstallModal, setShowInstallModal] = useState(false)
   const [installModalErrorType, setInstallModalErrorType] = useState<'not-installed' | 'protocol-not-registered' | 'permission-denied'>('not-installed')
   const [isCheckingProtocol, setIsCheckingProtocol] = useState(false)
+  
+  const styles = useComponentStyles()
 
   // Filter running plugin containers
   const runningPlugins = pluginContainers.filter(container => 
@@ -103,8 +106,12 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
   const menuItems: any[] = [
     {
       key: 'open',
-      icon: <DesktopOutlined />,
-      label: t('resources:localActions.openInDesktop'),
+      icon: <DesktopOutlined style={styles.icon.small} />,
+      label: (
+        <span style={styles.body}>
+          {t('resources:localActions.openInDesktop')}
+        </span>
+      ),
       onClick: () => handleOpenInDesktop(),
       'data-testid': `local-actions-open-${repository}`
     },
@@ -113,22 +120,34 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
     },
     {
       key: 'sync',
-      icon: <SyncOutlined />,
-      label: t('resources:localActions.openFileSync'),
+      icon: <SyncOutlined style={styles.icon.small} />,
+      label: (
+        <span style={styles.body}>
+          {t('resources:localActions.openFileSync')}
+        </span>
+      ),
       onClick: () => handleOpenInDesktop('sync'),
       'data-testid': `local-actions-sync-${repository}`
     },
     {
       key: 'terminal',
-      icon: <CodeOutlined />,
-      label: t('resources:localActions.openTerminal'),
+      icon: <CodeOutlined style={styles.icon.small} />,
+      label: (
+        <span style={styles.body}>
+          {t('resources:localActions.openTerminal')}
+        </span>
+      ),
       onClick: () => handleOpenInDesktop('terminal'),
       'data-testid': `local-actions-terminal-${repository}`
     },
     {
       key: 'plugin',
-      icon: <ApiOutlined />,
-      label: t('resources:localActions.openPluginManager'),
+      icon: <ApiOutlined style={styles.icon.small} />,
+      label: (
+        <span style={styles.body}>
+          {t('resources:localActions.openPluginManager')}
+        </span>
+      ),
       onClick: () => handleOpenInDesktop('plugin'),
       disabled: runningPlugins.length === 0,
       title: runningPlugins.length === 0 ? t('resources:localActions.noPluginsRunning') : undefined,
@@ -136,8 +155,12 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
     },
     {
       key: 'browser',
-      icon: <FolderOpenOutlined />,
-      label: t('resources:localActions.openFileBrowser'),
+      icon: <FolderOpenOutlined style={styles.icon.small} />,
+      label: (
+        <span style={styles.body}>
+          {t('resources:localActions.openFileBrowser')}
+        </span>
+      ),
       onClick: () => handleOpenInDesktop('browser'),
       'data-testid': `local-actions-browser-${repository}`
     }
@@ -153,14 +176,22 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
         disabled={disabled || isCheckingProtocol}
         data-testid={`local-actions-dropdown-container-${repository}`}
       >
-        <Button 
-          size="small" 
-          icon={<DesktopOutlined />}
-          loading={isCheckingProtocol}
-          data-testid={`local-actions-dropdown-${repository}`}
-        >
-          {t('resources:localActions.local')} <DownOutlined />
-        </Button>
+        <Tooltip title={t('resources:localActions.local')}>
+          <Button 
+            size="small" 
+            icon={<DesktopOutlined style={styles.icon.small} />}
+            loading={isCheckingProtocol}
+            style={{
+              ...styles.buttonSecondary,
+              ...styles.touchTargetSmall,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+            data-testid={`local-actions-dropdown-${repository}`}
+            aria-label={t('resources:localActions.local')}
+          />
+        </Tooltip>
       </Dropdown>
 
       <PipInstallationModal

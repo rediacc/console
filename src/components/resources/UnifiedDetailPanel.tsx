@@ -4,6 +4,7 @@ import { RepositoryDetailPanel } from './RepositoryDetailPanel'
 import { ContainerDetailPanel } from './ContainerDetailPanel'
 import { Machine, Repository } from '@/types'
 import { useTheme } from '@/context/ThemeContext'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
 
 interface ContainerData {
   id: string
@@ -51,6 +52,7 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
   onSplitWidthChange
 }) => {
   const { theme } = useTheme()
+  const componentStyles = useComponentStyles()
   const isDragging = useRef(false)
   const dragStartX = useRef(0)
   const dragStartWidth = useRef(0)

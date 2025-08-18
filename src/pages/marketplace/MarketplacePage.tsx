@@ -18,6 +18,7 @@ import {
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
 import MarketplaceCard from '@/components/marketplace/MarketplaceCard'
 import MarketplacePreview from '@/components/marketplace/MarketplacePreview'
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
@@ -47,6 +48,7 @@ interface CategoryGroup {
 const MarketplacePage: React.FC = () => {
   const { t } = useTranslation(['marketplace', 'resources', 'common'])
   const navigate = useNavigate()
+  const styles = useComponentStyles()
   const { data: dropdownData } = useDropdownData()
   const createRepositoryMutation = useCreateRepository()
   
@@ -265,7 +267,7 @@ const MarketplacePage: React.FC = () => {
       <Row gutter={[24, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24}>
           <Space direction="vertical" size="small" style={{ width: '100%' }}>
-            <Title level={2} style={{ margin: 0 }}>
+            <Title level={2} style={{ ...styles.heading2, margin: 0 }}>
               {t('marketplace:title')}
             </Title>
             <Text type="secondary">
@@ -282,6 +284,7 @@ const MarketplacePage: React.FC = () => {
             placeholder={t('marketplace:searchPlaceholder')}
             allowClear
             size="large"
+            style={styles.inputLarge}
             prefix={<SearchOutlined />}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -310,9 +313,85 @@ const MarketplacePage: React.FC = () => {
           <Spin size="large" tip={t('marketplace:loading')} />
         </div>
       ) : categoryGroups.length === 0 ? (
-        <Card data-testid="marketplace-empty-state">
+        <Card style={styles.card} data-testid="marketplace-empty-state">
           <Empty
-            description={t('marketplace:noTemplatesFound')}
+            description={
+              searchTerm ? (
+                <Space direction="vertical" align="center" size="middle" style={{ textAlign: 'center' }}>
+                  <Text>{t('marketplace:noTemplatesFound')}</Text>
+                  <Text type="secondary" style={{ fontSize: 14 }}>
+                    Try adjusting your search terms or browse all available templates
+                  </Text>
+                  <Space>
+                    <button 
+                      type="button"
+                      onClick={() => setSearchTerm('')}
+                      style={{
+                        ...styles.buttonPrimary,
+                        ...styles.touchTarget,
+                        background: 'var(--color-primary)',
+                        color: 'white',
+                        border: 'none'
+                      }}
+                      data-testid="marketplace-clear-search"
+                    >
+                      Clear Search
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => navigate('/resources')}
+                      style={{
+                        ...styles.buttonSecondary,
+                        ...styles.touchTarget,
+                        background: 'transparent',
+                        color: 'var(--color-primary)',
+                        border: '1px solid var(--color-primary)'
+                      }}
+                      data-testid="marketplace-view-resources"
+                    >
+                      View My Resources
+                    </button>
+                  </Space>
+                </Space>
+              ) : (
+                <Space direction="vertical" align="center" size="middle" style={{ textAlign: 'center' }}>
+                  <Text>No templates available at this time</Text>
+                  <Text type="secondary" style={{ fontSize: 14 }}>
+                    Marketplace templates are currently being loaded or configured
+                  </Text>
+                  <Space>
+                    <button 
+                      type="button"
+                      onClick={() => fetchTemplates()}
+                      style={{
+                        ...styles.buttonPrimary,
+                        ...styles.touchTarget,
+                        background: 'var(--color-primary)',
+                        color: 'white',
+                        border: 'none'
+                      }}
+                      data-testid="marketplace-refresh"
+                    >
+                      Refresh Templates
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => navigate('/resources')}
+                      style={{
+                        ...styles.buttonSecondary,
+                        ...styles.touchTarget,
+                        background: 'transparent',
+                        color: 'var(--color-primary)',
+                        border: '1px solid var(--color-primary)'
+                      }}
+                      data-testid="marketplace-create-resource"
+                    >
+                      Create Custom Resource
+                    </button>
+                  </Space>
+                </Space>
+              )
+            }
             image={Empty.PRESENTED_IMAGE_SIMPLE}
           />
         </Card>

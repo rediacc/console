@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import type { Machine } from '@/types'
 import { useGetAvailableMachinesForClone } from '@/api/queries/distributedStorage'
 import MachineAssignmentStatusBadge from './MachineAssignmentStatusBadge'
+import { useComponentStyles, useFormStyles } from '@/hooks/useComponentStyles'
 
 const { Text } = Typography
 const { Option } = Select
@@ -35,6 +36,8 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
   style
 }) => {
   const { t } = useTranslation(['machines', 'common'])
+  const styles = useComponentStyles()
+  const formStyles = useFormStyles()
   
   const handleChange = (selectedValues: string[]) => {
     if (maxSelection && selectedValues.length > maxSelection) {
@@ -64,21 +67,65 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
         disabled={isDisabled}
         data-testid={`available-machines-option-${machine.machineName}`}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} data-testid={`available-machines-option-content-${machine.machineName}`}>
+        <div 
+          style={{
+            ...styles.flexBetween,
+            width: '100%'
+          }} 
+          data-testid={`available-machines-option-content-${machine.machineName}`}
+        >
           <Space>
-            <CloudServerOutlined />
-            <Text strong={!isDisabled}>{machine.machineName}</Text>
-            <Tag color="#8FBC8F" size="small" data-testid={`available-machines-team-tag-${machine.machineName}`}>{machine.teamName}</Tag>
+            <CloudServerOutlined style={styles.icon.small} />
+            <Text 
+              strong={!isDisabled}
+              style={{
+                ...styles.body,
+                opacity: isDisabled ? 0.6 : 1
+              }}
+            >
+              {machine.machineName}
+            </Text>
+            <Tag 
+              color="#8FBC8F" 
+              size="small" 
+              style={{
+                borderRadius: 'var(--border-radius-sm)',
+                ...styles.caption
+              }}
+              data-testid={`available-machines-team-tag-${machine.machineName}`}
+            >
+              {machine.teamName}
+            </Tag>
             {machine.bridgeName && (
-              <Tag color="green" size="small" data-testid={`available-machines-bridge-tag-${machine.machineName}`}>{machine.bridgeName}</Tag>
+              <Tag 
+                color="green" 
+                size="small" 
+                style={{
+                  borderRadius: 'var(--border-radius-sm)',
+                  ...styles.caption
+                }}
+                data-testid={`available-machines-bridge-tag-${machine.machineName}`}
+              >
+                {machine.bridgeName}
+              </Tag>
             )}
           </Space>
           {showAssignmentStatus && (
             <div style={{ marginLeft: 'auto' }}>
               {isAssigned ? (
                 machine.distributedStorageClusterName ? (
-                  <Tag color="blue" icon={<WarningOutlined />} data-testid={`available-machines-cluster-tag-${machine.machineName}`}>
-                    {t('machines:assignmentStatus.cluster')}: {machine.distributedStorageClusterName}
+                  <Tag 
+                    color="blue" 
+                    icon={<WarningOutlined style={styles.icon.small} />} 
+                    style={{
+                      borderRadius: 'var(--border-radius-sm)',
+                      ...styles.caption
+                    }}
+                    data-testid={`available-machines-cluster-tag-${machine.machineName}`}
+                  >
+                    <span style={styles.caption}>
+                      {t('machines:assignmentStatus.cluster')}: {machine.distributedStorageClusterName}
+                    </span>
                   </Tag>
                 ) : machine.assignmentStatus ? (
                   <MachineAssignmentStatusBadge 
@@ -88,8 +135,16 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
                   />
                 ) : null
               ) : (
-                <Tag color="green" icon={<CheckCircleOutlined />} data-testid={`available-machines-available-tag-${machine.machineName}`}>
-                  {t('machines:assignmentStatus.available')}
+                <Tag 
+                  color="green" 
+                  icon={<CheckCircleOutlined style={styles.icon.small} />} 
+                  style={{
+                    borderRadius: 'var(--border-radius-sm)',
+                    ...styles.caption
+                  }}
+                  data-testid={`available-machines-available-tag-${machine.machineName}`}
+                >
+                  <span style={styles.caption}>{t('machines:assignmentStatus.available')}</span>
                 </Tag>
               )}
             </div>
@@ -100,13 +155,21 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
   }
   
   if (loading) {
-    return <Spin />
+    return (
+      <div style={styles.flexCenter}>
+        <Spin />
+      </div>
+    )
   }
   
   return (
     <Select
       mode="multiple"
-      style={style || { width: '100%' }}
+      style={{
+        width: '100%',
+        ...formStyles.formInput,
+        ...style
+      }}
       placeholder={placeholder || t('machines:selectMachines')}
       value={value}
       onChange={handleChange}
@@ -118,9 +181,17 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
       data-testid="available-machines-selector"
       notFoundContent={
         machines.length === 0 ? (
-          <Empty description={t('machines:noAvailableMachines')} />
+          <Empty 
+            description={
+              <span style={styles.body}>{t('machines:noAvailableMachines')}</span>
+            } 
+          />
         ) : (
-          <Empty description={t('common:noMatchingResults')} />
+          <Empty 
+            description={
+              <span style={styles.body}>{t('common:noMatchingResults')}</span>
+            } 
+          />
         )
       }
     >
@@ -140,6 +211,7 @@ export const SimpleMachineSelector: React.FC<{
 }> = ({ teamName, value, onChange, placeholder, disabled, style }) => {
   const { t } = useTranslation(['machines'])
   const { data: machines = [], isLoading } = useGetAvailableMachinesForClone(teamName, !disabled)
+  const styles = useComponentStyles()
   
   return (
     <AvailableMachinesSelector

@@ -11,7 +11,7 @@ export function getRelativeTimeFromUTC(timestamp: string | null | undefined): st
   if (!timestamp) return '-';
   
   // Parse the timestamp as-is without forcing timezone conversion
-  let date: Date = new Date(timestamp);
+  const date: Date = new Date(timestamp);
   
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -53,7 +53,7 @@ export function getLocalizedRelativeTime(
   if (!timestamp) return '-';
   
   // Parse the timestamp as-is without forcing timezone conversion
-  let date: Date = new Date(timestamp);
+  const date: Date = new Date(timestamp);
   
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -116,11 +116,12 @@ export function formatTimestampAsIs(timestamp: string | null | undefined, format
       return `${hours}:${minutes}:${seconds}`;
     case 'datetime':
       return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-    case 'full':
+    case 'full': {
       // Include milliseconds if present
       const msMatch = timestamp.match(/\.\d{3}/);
       const ms = msMatch ? msMatch[0] : '';
       return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}${ms}`;
+    }
     default:
       return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   }

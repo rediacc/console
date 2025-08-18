@@ -21,15 +21,29 @@ export const useAuditLogs = (params?: AuditLogsParams) => {
   return useQuery({
     queryKey: ['auditLogs', params],
     queryFn: async () => {
-      const response = await apiClient.post('/GetAuditLogs', {
-        startDate: params?.startDate,
-        endDate: params?.endDate,
-        entityFilter: params?.entityFilter,
-        maxRecords: params?.maxRecords || 100
-      });
-      
-      return response.resultSets?.[1]?.data as AuditLog[] || [];
-    }
+      try {
+        const response = await apiClient.post('/GetAuditLogs', {
+          startDate: params?.startDate,
+          endDate: params?.endDate,
+          entityFilter: params?.entityFilter,
+          maxRecords: params?.maxRecords || 100
+        });
+        
+        return response.resultSets?.[1]?.data as AuditLog[] || [];
+      } catch (error) {
+        console.error('Failed to fetch audit logs:', error);
+        throw new Error('Unable to load audit logs. Please check your date range and try again.');
+      }
+    },
+    retry: (failureCount, error) => {
+      // Don't retry if it's a 400 Bad Request (user input error)
+      if (error?.message?.includes('400')) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+    staleTime: 30000, // 30 seconds
+    gcTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 

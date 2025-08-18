@@ -194,5 +194,20 @@
       "duration": "Duration",
       "actions": "Actions"
     }
+  },
+  "actions": {
+    "createUser": "Create User",
+    "createGroup": "Create Group", 
+    "createTeam": "Create Team",
+    "changePassword": "Change Password",
+    "twoFactorAuth": "Two-Factor Authentication",
+    "addPermission": "Add Permission",
+    "addMember": "Add Member",
+    "permissions": "Permissions",
+    "members": "Members",
+    "token": "Token",
+    "resetAuth": "Reset Auth",
+    "deactivate": "Deactivate",
+    "configureVault": "Configure Vault"
   }
 }

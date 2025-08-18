@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Spin, Row, Col, Tabs, Switch, Collapse, Steps, Progress, Statistic, Alert, Divider, Badge, Tooltip } from 'antd'
+import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Spin, Row, Col, Tabs, Switch, Collapse, Steps, Progress, Statistic, Alert, Divider, Badge, Tooltip, Segmented } from 'antd'
 import { ReloadOutlined, HistoryOutlined, FileTextOutlined, BellOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, RightOutlined, UserOutlined, RetweetOutlined, WarningOutlined, RocketOutlined, TeamOutlined, DashboardOutlined, ThunderboltOutlined, HourglassOutlined, ExclamationCircleOutlined, CrownOutlined, CodeOutlined, QuestionCircleOutlined } from '@/utils/optimizedIcons'
 import { useQueueItemTrace, useRetryFailedQueueItem, useCancelQueueItem } from '@/api/queries/queue'
 import dayjs from 'dayjs'
@@ -12,6 +12,8 @@ import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 import { formatTimestampAsIs } from '@/utils/timeUtils'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing, createModalStyle, createButtonStyle } from '@/utils/styleConstants'
 import './QueueItemTraceModal.css'
 
 dayjs.extend(relativeTime)
@@ -117,6 +119,7 @@ const ConsoleOutput: React.FC<ConsoleOutputProps> = ({ content, theme, consoleOu
 const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visible, onClose, onTaskStatusChange }) => {
   const { t } = useTranslation(['queue', 'common'])
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
+  const styles = useComponentStyles()
   const [lastTraceFetchTime, setLastTraceFetchTime] = useState<dayjs.Dayjs | null>(null)
   const [isMonitoring, setIsMonitoring] = useState(false)
   const [activeKeys, setActiveKeys] = useState<string[]>(['overview']) // Start with overview panel open
@@ -469,17 +472,19 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             <HistoryOutlined />
             {`Queue Item Trace - ${taskId || ''}`}
           </Space>
-          <Space>
-            <Switch
+          <Space direction="vertical" size={8} align="end">
+            <Segmented
               data-testid="queue-trace-mode-switch"
-              checked={!simpleMode}
-              onChange={(checked) => setSimpleMode(!checked)}
-              checkedChildren="Detailed"
-              unCheckedChildren="Simple"
-              style={{ marginRight: 16 }}
+              value={simpleMode ? 'simple' : 'detailed'}
+              onChange={(value) => setSimpleMode(value === 'simple')}
+              options={[
+                { label: 'Simple', value: 'simple' },
+                { label: 'Detailed', value: 'detailed' }
+              ]}
+              style={{ minHeight: 32 }}
             />
             {lastTraceFetchTime && (
-              <Text type="secondary" style={{ fontSize: '14px' }}>
+              <Text type="secondary" style={{ fontSize: '12px' }}>
                 Last fetched: {lastTraceFetchTime.format('HH:mm:ss')}
               </Text>
             )}
@@ -488,18 +493,18 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
       }
       open={visible}
       onCancel={handleClose}
-      width={1200}
+      style={createModalStyle(1200)}
       destroyOnHidden
       footer={[
-        // Monitor switch - always show on the left if there's queue details
+        // Monitor control - always show on the left if there's queue details
         traceData?.queueDetails ? (
           <div key="monitor-switch" style={{ float: 'left', marginRight: 'auto' }}>
-            <Space>
-              <BellOutlined />
-              <Switch
+            <Space align="center" size={12}>
+              <Text type="secondary">Notifications:</Text>
+              <Segmented
                 data-testid="queue-trace-monitoring-switch"
-                checked={isMonitoring}
-                onChange={handleToggleMonitoring}
+                value={isMonitoring ? 'on' : 'off'}
+                onChange={(value) => handleToggleMonitoring(value === 'on')}
                 disabled={
                   !traceData?.queueDetails ||
                   normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' ||
@@ -512,8 +517,32 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                    (normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0) >= 2 &&
                    normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason'))
                 }
+                options={[
+                  {
+                    label: (
+                      <Tooltip title="Get notified when task status changes">
+                        <Space size={4}>
+                          <BellOutlined style={{ fontSize: 14 }} />
+                          <span>Monitor</span>
+                        </Space>
+                      </Tooltip>
+                    ),
+                    value: 'on'
+                  },
+                  {
+                    label: (
+                      <Tooltip title="No notifications for this task">
+                        <Space size={4}>
+                          <span style={{ opacity: 0.5 }}>🔕</span>
+                          <span>Off</span>
+                        </Space>
+                      </Tooltip>
+                    ),
+                    value: 'off'
+                  }
+                ]}
+                style={{ minHeight: 32 }}
               />
-              <Text type="secondary">Background Monitoring</Text>
             </Space>
           </div>
         ) : null,
@@ -530,6 +559,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             icon={<CloseCircleOutlined />} 
             onClick={handleCancelQueueItem}
             loading={isCancelling}
+            style={styles.buttonPrimary}
           >
             Cancel
           </Button>
@@ -547,6 +577,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             icon={<RetweetOutlined />} 
             onClick={handleRetryFailedItem}
             loading={isRetrying}
+            style={styles.buttonPrimary}
           >
             Retry Again
           </Button>
@@ -557,10 +588,16 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
           icon={<ReloadOutlined />} 
           onClick={handleRefreshTrace}
           loading={isTraceLoading}
+          style={styles.buttonSecondary}
         >
           Refresh
         </Button>,
-        <Button key="close" data-testid="queue-trace-close-button" onClick={handleClose}>
+        <Button 
+          key="close" 
+          data-testid="queue-trace-close-button" 
+          onClick={handleClose}
+          style={styles.buttonSecondary}
+        >
           Close
         </Button>
       ].filter(Boolean)}
@@ -689,7 +726,8 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             <Card 
               data-testid="queue-trace-simple-overview"
               style={{ 
-                marginBottom: 16, 
+                ...styles.card,
+                marginBottom: spacing('MD'), 
                 background: theme === 'dark' ? '#1f1f1f' : '#f0f2f5',
                 border: `1px solid ${theme === 'dark' ? '#303030' : '#e8e8e8'}`
               }}
@@ -772,19 +810,19 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                 </Steps>
 
                 {/* Key Info */}
-                <Row gutter={[16, 16]} style={{ textAlign: 'center' }}>
+                <Row gutter={[spacing('MD'), spacing('MD')]} style={{ textAlign: 'center' }}>
                   <Col span={8}>
-                    <div data-testid="queue-trace-info-duration" className="queue-trace-key-info" style={{ padding: '12px', borderRadius: '8px', background: theme === 'dark' ? '#262626' : '#fafafa' }}>
+                    <div data-testid="queue-trace-info-duration" className="queue-trace-key-info" style={{ padding: spacing('SM'), borderRadius: DESIGN_TOKENS.BORDER_RADIUS.LG, background: theme === 'dark' ? '#262626' : '#fafafa' }}>
                       <Text type="secondary">Duration</Text>
                       <div>
-                        <Text strong style={{ fontSize: '18px' }}>
+                        <Text strong style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.LG }}>
                           {formatDuration(traceData.queueDetails.totalDurationSeconds)}
                         </Text>
                       </div>
                     </div>
                   </Col>
                   <Col span={8}>
-                    <div data-testid="queue-trace-info-machine" className="queue-trace-key-info" style={{ padding: '12px', borderRadius: '8px', background: theme === 'dark' ? '#262626' : '#fafafa' }}>
+                    <div data-testid="queue-trace-info-machine" className="queue-trace-key-info" style={{ padding: spacing('SM'), borderRadius: DESIGN_TOKENS.BORDER_RADIUS.LG, background: theme === 'dark' ? '#262626' : '#fafafa' }}>
                       <Text type="secondary">Machine</Text>
                       <div>
                         <Text strong>{traceData.queueDetails.machineName}</Text>
@@ -792,7 +830,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                     </div>
                   </Col>
                   <Col span={8}>
-                    <div data-testid="queue-trace-info-priority" className="queue-trace-key-info" style={{ padding: '12px', borderRadius: '8px', background: theme === 'dark' ? '#262626' : '#fafafa' }}>
+                    <div data-testid="queue-trace-info-priority" className="queue-trace-key-info" style={{ padding: spacing('SM'), borderRadius: DESIGN_TOKENS.BORDER_RADIUS.LG, background: theme === 'dark' ? '#262626' : '#fafafa' }}>
                       <Text type="secondary">Priority</Text>
                       <div>
                         <Tag color={getPriorityInfo(normalizeProperty(traceData.queueDetails, 'priority', 'Priority')).color}>
@@ -822,7 +860,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   )}
                 </Space>
               }
-              style={{ marginTop: 16 }}
+              style={{ ...styles.card, marginTop: spacing('MD') }}
             >
               <ConsoleOutput
                 content={accumulatedOutput
@@ -838,7 +876,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
 
           {/* Detailed View with All 7 Result Sets */}
           {!simpleMode && (
-            <div style={{ marginTop: 16 }}>
+            <div style={{ marginTop: spacing('MD') }}>
               <Collapse 
               data-testid="queue-trace-collapse"
               className="queue-trace-collapse"

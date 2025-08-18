@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Table, Button, Card, Statistic, Row, Col, Tag, Input, Space, Popconfirm, message } from 'antd'
+import { Table, Button, Card, Statistic, Row, Col, Tag, Input, Space, Popconfirm, message, Tooltip } from 'antd'
 import { SearchOutlined, CloseCircleOutlined, ReloadOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useUserRequests, useDeleteUserRequest, type UserRequest } from '@/api/queries/users'
@@ -9,6 +9,7 @@ import { RootState } from '@/store/store'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
+import { useComponentStyles, useTableStyles, useFormStyles } from '@/hooks/useComponentStyles'
 
 dayjs.extend(relativeTime)
 
@@ -16,6 +17,10 @@ const UserSessionsTab: React.FC = () => {
   const { t } = useTranslation('system')
   const user = useSelector(selectUser)
   const [searchTerm, setSearchTerm] = useState('')
+  
+  const styles = useComponentStyles()
+  const tableStyles = useTableStyles()
+  const formStyles = useFormStyles()
   
   const { data: sessions = [], isLoading, refetch } = useUserRequests()
   const deleteUserRequestMutation = useDeleteUserRequest()
@@ -47,8 +52,18 @@ const UserSessionsTab: React.FC = () => {
       width: 200,
       render: (email: string) => (
         <Space>
-          <span>{email}</span>
-          {email === user?.email && <Tag color="blue">{t('userSessions.currentSession')}</Tag>}
+          <span style={styles.body}>{email}</span>
+          {email === user?.email && (
+            <Tag 
+              color="blue" 
+              style={{
+                borderRadius: 'var(--border-radius-sm)',
+                ...styles.caption
+              }}
+            >
+              {t('userSessions.currentSession')}
+            </Tag>
+          )}
         </Space>
       ),
     },
@@ -77,7 +92,13 @@ const UserSessionsTab: React.FC = () => {
       key: 'isActive',
       width: 100,
       render: (isActive: boolean) => (
-        <Tag color={isActive ? 'green' : 'red'}>
+        <Tag 
+          color={isActive ? 'green' : 'red'}
+          style={{
+            borderRadius: 'var(--border-radius-sm)',
+            ...styles.caption
+          }}
+        >
           {isActive ? t('userSessions.active') : t('userSessions.inactive')}
         </Tag>
       ),
@@ -114,64 +135,104 @@ const UserSessionsTab: React.FC = () => {
       fixed: 'right',
       render: (_, record) => (
         <Popconfirm
-          title={t('userSessions.confirmTerminate')}
+          title={<span style={styles.label}>{t('userSessions.confirmTerminate')}</span>}
           description={
-            record.userEmail === user?.email
-              ? t('userSessions.confirmTerminateSelf')
-              : t('userSessions.confirmTerminateOther', { email: record.userEmail })
+            <span style={styles.body}>
+              {record.userEmail === user?.email
+                ? t('userSessions.confirmTerminateSelf')
+                : t('userSessions.confirmTerminateOther', { email: record.userEmail })}
+            </span>
           }
           onConfirm={() => handleTerminateSession(record)}
           okText={t('common:yes')}
           cancelText={t('common:no')}
           disabled={!record.isActive}
         >
-          <Button
-            data-testid={`sessions-terminate-${record.requestId}`}
-            type="link"
-            danger
-            icon={<CloseCircleOutlined />}
-            disabled={!record.isActive}
-            loading={deleteUserRequestMutation.isPending}
-          >
-            {t('userSessions.terminate')}
-          </Button>
+          <Tooltip title={t('userSessions.terminate')}>
+            <Button
+              data-testid={`sessions-terminate-${record.requestId}`}
+              type="link"
+              danger
+              icon={<CloseCircleOutlined style={styles.icon.small} />}
+              disabled={!record.isActive}
+              loading={deleteUserRequestMutation.isPending}
+              style={{
+                ...tableStyles.tableActionButton,
+                ...styles.touchTargetSmall
+              }}
+              aria-label={t('userSessions.terminate')}
+            />
+          </Tooltip>
         </Popconfirm>
       ),
     },
   ]
 
   return (
-    <div className="user-sessions-tab">
-      <Row gutter={16} style={{ marginBottom: 24 }}>
+    <div className="user-sessions-tab" style={styles.container}>
+      <Row gutter={16} style={styles.marginBottom.lg}>
         <Col span={6}>
-          <Card data-testid="sessions-stat-total">
+          <Card 
+            data-testid="sessions-stat-total"
+            style={{
+              ...styles.card,
+              boxShadow: 'var(--shadow-sm)',
+              border: '1px solid var(--color-border-secondary)'
+            }}
+          >
             <Statistic
-              title={t('userSessions.totalSessions')}
+              title={<span style={styles.label}>{t('userSessions.totalSessions')}</span>}
               value={sessions.length}
+              valueStyle={styles.heading3}
             />
           </Card>
         </Col>
         <Col span={6}>
-          <Card data-testid="sessions-stat-active">
+          <Card 
+            data-testid="sessions-stat-active"
+            style={{
+              ...styles.card,
+              boxShadow: 'var(--shadow-sm)',
+              border: '1px solid var(--color-border-secondary)'
+            }}
+          >
             <Statistic
-              title={t('userSessions.activeSessions')}
+              title={<span style={styles.label}>{t('userSessions.activeSessions')}</span>}
               value={activeSessions.length}
-              valueStyle={{ color: '#3f8600' }}
+              valueStyle={{ 
+                ...styles.heading3,
+                color: 'var(--color-success)'
+              }}
             />
           </Card>
         </Col>
         <Col span={6}>
-          <Card data-testid="sessions-stat-unique-users">
+          <Card 
+            data-testid="sessions-stat-unique-users"
+            style={{
+              ...styles.card,
+              boxShadow: 'var(--shadow-sm)',
+              border: '1px solid var(--color-border-secondary)'
+            }}
+          >
             <Statistic
-              title={t('userSessions.uniqueUsers')}
+              title={<span style={styles.label}>{t('userSessions.uniqueUsers')}</span>}
               value={new Set(sessions.map((s: UserRequest) => s.userEmail)).size}
+              valueStyle={styles.heading3}
             />
           </Card>
         </Col>
         <Col span={6}>
-          <Card data-testid="sessions-stat-average-duration">
+          <Card 
+            data-testid="sessions-stat-average-duration"
+            style={{
+              ...styles.card,
+              boxShadow: 'var(--shadow-sm)',
+              border: '1px solid var(--color-border-secondary)'
+            }}
+          >
             <Statistic
-              title={t('userSessions.averageDuration')}
+              title={<span style={styles.label}>{t('userSessions.averageDuration')}</span>}
               value={
                 sessions.length > 0
                   ? Math.round(
@@ -185,7 +246,8 @@ const UserSessionsTab: React.FC = () => {
                     )
                   : 0
               }
-              suffix={t('userSessions.minutes')}
+              suffix={<span style={styles.caption}>{t('userSessions.minutes')}</span>}
+              valueStyle={styles.heading3}
             />
           </Card>
         </Col>
@@ -193,46 +255,64 @@ const UserSessionsTab: React.FC = () => {
 
       <Card
         title={
-          <Space>
-            <span>{t('userSessions.title')}</span>
-            <Button
-              data-testid="sessions-refresh-button"
-              icon={<ReloadOutlined />}
-              onClick={() => refetch()}
-              loading={isLoading}
-            >
-              {t('common:actions.refresh')}
-            </Button>
+          <Space style={styles.flexStart}>
+            <span style={styles.heading4}>{t('userSessions.title')}</span>
+            <Tooltip title={t('common:actions.refresh')}>
+              <Button
+                data-testid="sessions-refresh-button"
+                icon={<ReloadOutlined style={styles.icon.small} />}
+                onClick={() => refetch()}
+                loading={isLoading}
+                style={{
+                  ...styles.buttonSecondary,
+                  ...styles.touchTargetSmall
+                }}
+                aria-label={t('common:actions.refresh')}
+              />
+            </Tooltip>
           </Space>
         }
         extra={
           <Input
             data-testid="sessions-search-input"
             placeholder={t('userSessions.searchPlaceholder')}
-            prefix={<SearchOutlined />}
+            prefix={<SearchOutlined style={styles.icon.small} />}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ width: 300 }}
+            style={{ 
+              width: 300,
+              ...formStyles.formInput
+            }}
             autoComplete="off"
           />
         }
+        style={{
+          ...styles.card,
+          border: '1px solid var(--color-border-secondary)'
+        }}
       >
-        <Table
-          data-testid="sessions-table"
-          columns={columns}
-          dataSource={filteredSessions}
-          rowKey="requestId"
-          loading={isLoading}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => t('userSessions.totalCount', { count: total }),
-          }}
-          scroll={{ x: 1500 }}
-          onRow={(record) => ({
-            'data-testid': `sessions-row-${record.requestId}`,
-          })}
-        />
+        <div style={tableStyles.tableContainer}>
+          <Table
+            data-testid="sessions-table"
+            columns={columns}
+            dataSource={filteredSessions}
+            rowKey="requestId"
+            loading={isLoading}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total) => (
+                <span style={styles.caption}>
+                  {t('userSessions.totalCount', { count: total })}
+                </span>
+              ),
+            }}
+            scroll={{ x: 1500 }}
+            onRow={(record) => ({
+              'data-testid': `sessions-row-${record.requestId}`,
+            })}
+          />
+        </div>
       </Card>
     </div>
   )

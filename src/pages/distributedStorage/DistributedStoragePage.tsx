@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { Card, Tabs, Button, Empty, Row, Col, Alert, Typography } from 'antd'
+import { Card, Tabs, Button, Empty, Row, Col, Alert, Typography, Tooltip } from 'antd'
 import { 
   PlusOutlined, 
   DatabaseOutlined,
@@ -10,6 +10,7 @@ import {
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useCompanyInfo } from '@/api/queries/dashboard'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { useTeams } from '@/api/queries/teams'
 import TeamSelector from '@/components/common/TeamSelector'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
@@ -35,6 +36,7 @@ const { Title } = Typography
 
 const DistributedStoragePage: React.FC = () => {
   const { t } = useTranslation(['distributedStorage', 'common'])
+  const styles = useComponentStyles()
   const [selectedTeams, setSelectedTeams] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState('clusters')
   const [modalState, setModalState] = useState<{
@@ -74,7 +76,7 @@ const DistributedStoragePage: React.FC = () => {
     return (
       <Row gutter={24}>
         <Col span={24}>
-          <Card>
+          <Card style={styles.card}>
             <Alert
               message="Loading company data..."
               type="info"
@@ -264,7 +266,7 @@ const DistributedStoragePage: React.FC = () => {
     return (
       <Row gutter={24}>
         <Col span={24}>
-          <Card>
+          <Card style={styles.card}>
             <Alert
               message={t('accessDenied.title')}
               description={
@@ -294,7 +296,7 @@ const DistributedStoragePage: React.FC = () => {
     <>
       <Row gutter={24}>
         <Col span={24}>
-          <Card>
+          <Card style={styles.card}>
             <div style={{ marginBottom: 16 }}>
               <div style={{ 
                 display: 'flex', 
@@ -310,7 +312,7 @@ const DistributedStoragePage: React.FC = () => {
                   flex: '1 1 auto',
                   minWidth: 0
                 }}>
-                  <Title level={4} style={{ margin: 0, flexShrink: 0 }}>
+                  <Title level={4} style={{ ...styles.heading4, margin: 0, flexShrink: 0 }}>
                     {t('title')}
                   </Title>
                   <TeamSelector
@@ -335,36 +337,44 @@ const DistributedStoragePage: React.FC = () => {
                     flexShrink: 0
                   }}>
                     {activeTab !== 'machines' && (
+                      <Tooltip title={activeTab === 'clusters' ? t('clusters.create') : t('pools.create')}>
+                        <Button 
+                          type="primary" 
+                          icon={<PlusOutlined />}
+                          style={{
+                            ...styles.buttonPrimary,
+                            ...styles.touchTarget,
+                            background: '#556b2f',
+                            borderColor: '#556b2f'
+                          }}
+                          onClick={() => {
+                            if (activeTab === 'clusters') {
+                              openModal('cluster', 'create')
+                            } else if (activeTab === 'pools') {
+                              openModal('pool', 'create')
+                            }
+                          }}
+                          data-testid={activeTab === 'clusters' ? 'ds-create-cluster-button' : 'ds-create-pool-button'}
+                          aria-label={activeTab === 'clusters' ? t('clusters.create') : t('pools.create')}
+                        />
+                      </Tooltip>
+                    )}
+                    <Tooltip title={t('common:actions.refresh')}>
                       <Button 
-                        type="primary" 
-                        icon={<PlusOutlined />}
+                        icon={<ReloadOutlined />}
+                        style={styles.touchTarget}
                         onClick={() => {
                           if (activeTab === 'clusters') {
-                            openModal('cluster', 'create')
+                            refetchClusters()
                           } else if (activeTab === 'pools') {
-                            openModal('pool', 'create')
+                            refetchPools()
                           }
+                          // Machines tab handles its own refresh
                         }}
-                        style={{ background: '#556b2f', borderColor: '#556b2f' }}
-                        data-testid={activeTab === 'clusters' ? 'ds-create-cluster-button' : 'ds-create-pool-button'}
-                      >
-                        {activeTab === 'clusters' ? t('clusters.create') : t('pools.create')}
-                      </Button>
-                    )}
-                    <Button 
-                      icon={<ReloadOutlined />}
-                      onClick={() => {
-                        if (activeTab === 'clusters') {
-                          refetchClusters()
-                        } else if (activeTab === 'pools') {
-                          refetchPools()
-                        }
-                        // Machines tab handles its own refresh
-                      }}
-                      data-testid="ds-refresh-button"
-                    >
-                      {t('common:actions.refresh')}
-                    </Button>
+                        data-testid="ds-refresh-button"
+                        aria-label={t('common:actions.refresh')}
+                      />
+                    </Tooltip>
                   </div>
                 )}
               </div>

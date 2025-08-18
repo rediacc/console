@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { Card, Table, Button, Space, Tag, Empty, Spin, Input, Row, Col, Statistic, message, Modal, Typography, Alert } from 'antd'
+import { Card, Table, Button, Space, Tag, Empty, Spin, Input, Row, Col, Statistic, message, Modal, Typography, Alert, Tooltip } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { 
   CloudServerOutlined, 
@@ -13,6 +13,8 @@ import {
   ExportOutlined
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
+import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
+import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge'
 import { 
   useGetCloneMachines,
   useGetAvailableMachinesForClone,
@@ -47,6 +49,8 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
   teamName
 }) => {
   const { t } = useTranslation(['distributedStorage', 'machines', 'common'])
+  const tableStyles = useTableStyles()
+  const componentStyles = useComponentStyles()
   const [searchText, setSearchText] = useState('')
   const [selectedMachines, setSelectedMachines] = useState<string[]>([])
   const [addModalOpen, setAddModalOpen] = useState(false)
@@ -184,8 +188,8 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
       key: 'machineName',
       render: (name: string, record: CloneMachine) => (
         <Space data-testid={`clone-manager-machine-${record.machineName}`}>
-          <DesktopOutlined />
-          <Text strong>{name}</Text>
+          <DesktopOutlined style={{ ...tableStyles.icon.medium, color: 'var(--color-primary)' }} />
+          <Text strong style={{ color: 'var(--color-text-primary)' }}>{name}</Text>
         </Space>
       ),
       sorter: (a, b) => a.machineName.localeCompare(b.machineName),
@@ -205,9 +209,11 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
       title: t('machines:assignmentStatus.title'),
       key: 'status',
       render: (_, record: CloneMachine) => (
-        <Tag color="orange" icon={<CopyOutlined />} data-testid={`clone-manager-status-${record.machineName}`}>
-          {t('machines:assignmentStatus.clone')}
-        </Tag>
+        <MachineAssignmentStatusBadge
+          assignmentType="CLONE"
+          assignmentDetails={t('machines:assignmentStatus.cloneDetails', { clone: clone.cloneName })}
+          size="small"
+        />
       ),
     },
   ]
@@ -220,18 +226,18 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
   }
   
   return (
-    <Card data-testid="clone-manager-container">
+    <Card data-testid="clone-manager-container" style={componentStyles.card}>
       {/* Header */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
+      <Row gutter={16} style={componentStyles.marginBottom.lg}>
         <Col span={16}>
           <Space direction="vertical" size="small">
-            <Title level={4} style={{ margin: 0 }}>
+            <Title level={4} style={{ ...componentStyles.heading4, margin: 0 }}>
               <Space>
-                <CopyOutlined />
-                {t('distributedStorage:clones.clone')}: {clone.cloneName}
+                <CopyOutlined style={{ ...tableStyles.icon.medium, color: 'var(--color-primary)' }} />
+                {t('distributedStorage:clones.clone')}: <span style={{ color: 'var(--color-text-primary)' }}>{clone.cloneName}</span>
               </Space>
             </Title>
-            <Text type="secondary">
+            <Text type="secondary" style={{ color: 'var(--color-text-secondary)' }}>
               {t('distributedStorage:pools.pool')}: {pool.poolName} | 
               {t('distributedStorage:images.image')}: {image.imageName} | 
               {t('distributedStorage:snapshots.snapshot')}: {snapshot.snapshotName}
@@ -245,7 +251,8 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
                 data-testid="clone-manager-statistic-total"
                 title={t('machines:totalMachines')}
                 value={assignedMachines.length}
-                prefix={<TeamOutlined />}
+                prefix={<TeamOutlined style={tableStyles.icon.medium} />}
+                valueStyle={{ color: 'var(--color-text-primary)' }}
               />
             </Col>
             <Col span={12}>
@@ -253,7 +260,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
                 data-testid="clone-manager-statistic-selected"
                 title={t('machines:bulkActions.selected')}
                 value={selectedMachines.length}
-                valueStyle={{ color: selectedMachines.length > 0 ? '#1890ff' : undefined }}
+                valueStyle={{ color: selectedMachines.length > 0 ? 'var(--color-primary)' : 'var(--color-text-primary)' }}
               />
             </Col>
           </Row>
@@ -261,43 +268,51 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
       </Row>
       
       {/* Toolbar */}
-      <Row gutter={16} style={{ marginBottom: 16 }}>
+      <Row gutter={16} style={componentStyles.marginBottom.md}>
         <Col flex="auto">
           <Space wrap>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleAddMachines}
-              data-testid="clone-manager-button-add"
-            >
-              {t('machines:assignToClone')}
-            </Button>
-            {selectedMachines.length > 0 && (
+            <Tooltip title={t('machines:assignToClone')}>
               <Button
-                danger
-                icon={<DeleteOutlined />}
-                onClick={handleRemoveMachines}
-                loading={isRemoving}
-                data-testid="clone-manager-button-remove"
-              >
-                {t('machines:removeFromClone')} ({selectedMachines.length})
-              </Button>
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleAddMachines}
+                data-testid="clone-manager-button-add"
+                style={componentStyles.touchTarget}
+                aria-label={t('machines:assignToClone')}
+              />
+            </Tooltip>
+            {selectedMachines.length > 0 && (
+              <Tooltip title={`${t('machines:removeFromClone')} (${selectedMachines.length})`}>
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={handleRemoveMachines}
+                  loading={isRemoving}
+                  data-testid="clone-manager-button-remove"
+                  style={componentStyles.touchTarget}
+                  aria-label={`${t('machines:removeFromClone')} (${selectedMachines.length})`}
+                />
+              </Tooltip>
             )}
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => refetchMachines()}
-              data-testid="clone-manager-button-refresh"
-            >
-              {t('common:actions.refresh')}
-            </Button>
-            <Button
-              icon={<ExportOutlined />}
-              onClick={handleExport}
-              disabled={assignedMachines.length === 0}
-              data-testid="clone-manager-button-export"
-            >
-              {t('common:actions.export')}
-            </Button>
+            <Tooltip title={t('common:actions.refresh')}>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={() => refetchMachines()}
+                data-testid="clone-manager-button-refresh"
+                style={componentStyles.touchTarget}
+                aria-label={t('common:actions.refresh')}
+              />
+            </Tooltip>
+            <Tooltip title={t('common:actions.export')}>
+              <Button
+                icon={<ExportOutlined />}
+                onClick={handleExport}
+                disabled={assignedMachines.length === 0}
+                data-testid="clone-manager-button-export"
+                style={componentStyles.touchTarget}
+                aria-label={t('common:actions.export')}
+              />
+            </Tooltip>
           </Space>
         </Col>
         <Col>
@@ -308,7 +323,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
             size="middle"
             onSearch={setSearchText}
             onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 300 }}
+            style={{ width: 300, ...componentStyles.input }}
             data-testid="clone-manager-search-input"
           />
         </Col>
@@ -317,18 +332,18 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
       {/* Info Alert */}
       <MachineExclusivityWarning
         type="clone"
-        style={{ marginBottom: 16 }}
+        style={componentStyles.marginBottom.md}
       />
       
       {/* Table */}
       {loadingMachines ? (
-        <div style={{ textAlign: 'center', padding: '50px 0' }} data-testid="clone-manager-loading">
+        <div style={{ textAlign: 'center', ...componentStyles.padding.xl }} data-testid="clone-manager-loading">
           <Spin size="large" />
         </div>
       ) : assignedMachines.length === 0 ? (
         <Empty
           description={t('distributedStorage:clones.noMachinesAssigned')}
-          style={{ marginTop: 48 }}
+          style={componentStyles.marginBottom.xl}
           data-testid="clone-manager-empty-state"
         >
           <Button 
@@ -336,34 +351,37 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
             icon={<PlusOutlined />} 
             onClick={handleAddMachines}
             data-testid="clone-manager-button-add-empty"
+            style={componentStyles.touchTarget}
           >
             {t('distributedStorage:clones.assignMachines')}
           </Button>
         </Empty>
       ) : (
-        <Table
-          rowSelection={rowSelection}
-          columns={columns}
-          dataSource={filteredMachines}
-          rowKey="machineName"
-          loading={loadingMachines}
-          data-testid="clone-manager-table"
-          pagination={{
-            showSizeChanger: true,
-            showTotal: (total, range) => t('common:table.showingRecords', { 
-              start: range[0], 
-              end: range[1], 
-              total 
-            }),
-          }}
-        />
+        <div style={tableStyles.tableContainer}>
+          <Table
+            rowSelection={rowSelection}
+            columns={columns}
+            dataSource={filteredMachines}
+            rowKey="machineName"
+            loading={loadingMachines}
+            data-testid="clone-manager-table"
+            pagination={{
+              showSizeChanger: true,
+              showTotal: (total, range) => t('common:table.showingRecords', { 
+                start: range[0], 
+                end: range[1], 
+                total 
+              }),
+            }}
+          />
+        </div>
       )}
       
       {/* Add Machines Modal */}
       <Modal
         title={
           <Space>
-            <TeamOutlined />
+            <TeamOutlined style={tableStyles.icon.medium} />
             {t('distributedStorage:clones.assignMachines')}
           </Space>
         }
@@ -382,6 +400,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
         }}
         width={700}
         data-testid="clone-manager-modal-add"
+        style={componentStyles.modal}
       >
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <Alert
@@ -392,7 +411,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
           />
           
           {loadingAvailable ? (
-            <div style={{ textAlign: 'center', padding: '50px 0' }} data-testid="clone-manager-modal-loading">
+            <div style={{ textAlign: 'center', ...componentStyles.padding.xl }} data-testid="clone-manager-modal-loading">
               <Spin />
             </div>
           ) : availableMachines.length === 0 ? (

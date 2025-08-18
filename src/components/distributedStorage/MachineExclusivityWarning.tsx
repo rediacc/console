@@ -2,6 +2,7 @@ import React from 'react'
 import { Alert, Typography } from 'antd'
 import { InfoCircleOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
 
 const { Text } = Typography
 
@@ -22,6 +23,7 @@ export const MachineExclusivityWarning: React.FC<MachineExclusivityWarningProps>
   style
 }) => {
   const { t } = useTranslation(['distributedStorage', 'machines'])
+  const styles = useComponentStyles()
   
   const getWarningMessage = () => {
     if (currentAssignment && machineName) {
@@ -58,24 +60,53 @@ export const MachineExclusivityWarning: React.FC<MachineExclusivityWarningProps>
   
   return (
     <Alert
-      message={getWarningMessage()}
+      message={
+        <span style={styles.body}>{getWarningMessage()}</span>
+      }
       description={
-        <div data-testid="exclusivity-warning-description">
-          <Text data-testid="exclusivity-warning-description-text">{getDescription()}</Text>
+        <div data-testid="exclusivity-warning-description" style={styles.spacer}>
+          <Text 
+            data-testid="exclusivity-warning-description-text"
+            style={styles.body}
+          >
+            {getDescription()}
+          </Text>
           <br />
           <br />
-          <Text strong data-testid="exclusivity-warning-note">{t('distributedStorage:warnings.exclusivityNote')}</Text>
-          <ul style={{ marginTop: 8, marginBottom: 0 }} data-testid="exclusivity-warning-list">
-            <li data-testid="exclusivity-warning-cluster-rule">{t('distributedStorage:warnings.oneClusterPerMachine')}</li>
-            <li data-testid="exclusivity-warning-image-rule">{t('distributedStorage:warnings.oneImagePerMachine')}</li>
-            <li data-testid="exclusivity-warning-clone-rule">{t('distributedStorage:warnings.multipleClonesPossible')}</li>
+          <Text 
+            strong 
+            data-testid="exclusivity-warning-note"
+            style={styles.label}
+          >
+            {t('distributedStorage:warnings.exclusivityNote')}
+          </Text>
+          <ul 
+            style={{ 
+              ...styles.marginBottom.sm,
+              marginTop: '8px',
+              paddingLeft: '20px'
+            }} 
+            data-testid="exclusivity-warning-list"
+          >
+            <li data-testid="exclusivity-warning-cluster-rule">
+              <span style={styles.body}>{t('distributedStorage:warnings.oneClusterPerMachine')}</span>
+            </li>
+            <li data-testid="exclusivity-warning-image-rule">
+              <span style={styles.body}>{t('distributedStorage:warnings.oneImagePerMachine')}</span>
+            </li>
+            <li data-testid="exclusivity-warning-clone-rule">
+              <span style={styles.body}>{t('distributedStorage:warnings.multipleClonesPossible')}</span>
+            </li>
           </ul>
         </div>
       }
       type="warning"
       showIcon
-      icon={<InfoCircleOutlined />}
-      style={style}
+      icon={<InfoCircleOutlined style={styles.icon.medium} />}
+      style={{
+        borderRadius: 'var(--border-radius-lg)',
+        ...style
+      }}
       data-testid={`exclusivity-warning-${type}`}
     />
   )
@@ -87,14 +118,23 @@ export const MachineExclusivityInlineWarning: React.FC<{
   style?: React.CSSProperties
 }> = ({ message, style }) => {
   const { t } = useTranslation('distributedStorage')
+  const styles = useComponentStyles()
   
   return (
     <Alert
-      message={message || t('warnings.machineExclusivity')}
+      message={
+        <span style={styles.body}>
+          {message || t('warnings.machineExclusivity')}
+        </span>
+      }
       type="warning"
       showIcon
       banner
-      style={{ marginBottom: 16, ...style }}
+      style={{ 
+        ...styles.marginBottom.md,
+        borderRadius: 'var(--border-radius-md)',
+        ...style 
+      }}
       data-testid="exclusivity-warning-inline"
     />
   )

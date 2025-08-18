@@ -22,6 +22,8 @@ import {
 import { useTranslation } from 'react-i18next'
 import { useEntityAuditTrace, AuditTraceRecord } from '@/api/queries/audit'
 import { formatTimestampAsIs } from '@/utils/timeUtils'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing, createModalStyle } from '@/utils/styleConstants'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -41,6 +43,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
   entityName
 }) => {
   const { t } = useTranslation(['resources', 'common'])
+  const styles = useComponentStyles()
   
   const { data, isLoading, error } = useEntityAuditTrace(
     entityType,
@@ -268,13 +271,13 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       }
       open={open}
       onCancel={onCancel}
-      width={900}
+      style={createModalStyle(DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH_XL)}
       footer={null}
       destroyOnHidden
       data-testid="audit-trace-modal"
     >
       {isLoading ? (
-        <div style={{ textAlign: 'center', padding: '50px 0' }} data-testid="audit-trace-loading">
+        <div style={{ textAlign: 'center', padding: `${spacing('XXXL')}px 0` }} data-testid="audit-trace-loading">
           <Spin size="large" tip={t('common:general.loading')} />
         </div>
       ) : error ? (
@@ -289,17 +292,17 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
         <>
           {/* Summary Section */}
           {data.summary && (
-            <Space direction="vertical" size={16} style={{ width: '100%', marginBottom: 24 }} data-testid="audit-trace-summary">
+            <Space direction="vertical" size={spacing('MD')} style={{ width: '100%', marginBottom: spacing('LG') }} data-testid="audit-trace-summary">
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Space size={32}>
+                <Space size={spacing('XL')}>
                   <Space direction="vertical" size={0} data-testid="audit-trace-total-records">
                     <Text type="secondary">{t('audit.totalRecords')}</Text>
-                    <Text strong style={{ fontSize: 20 }}>{data.summary.totalAuditRecords}</Text>
+                    <Text strong style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XL }}>{data.summary.totalAuditRecords}</Text>
                   </Space>
                   <Space direction="vertical" size={0} data-testid="audit-trace-visible-records">
                     <Text type="secondary">{t('audit.visibleRecords')}</Text>
-                    <Text strong style={{ fontSize: 20 }}>{data.summary.visibleAuditRecords}</Text>
+                    <Text strong style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XL }}>{data.summary.visibleAuditRecords}</Text>
                   </Space>
                   {data.summary.lastActivity && (
                     <Space direction="vertical" size={0} data-testid="audit-trace-last-activity">
@@ -332,7 +335,11 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
                   placement="bottomRight"
                   data-testid="audit-trace-export-dropdown"
                 >
-                  <Button icon={<DownloadOutlined />} data-testid="audit-trace-export-button">
+                  <Button 
+                    icon={<DownloadOutlined />} 
+                    data-testid="audit-trace-export-button"
+                    style={styles.buttonSecondary}
+                  >
                     {t('audit.export')}
                   </Button>
                 </Dropdown>
@@ -374,7 +381,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
           
           {/* Bottom retention info */}
           {data.summary && (
-            <div style={{ marginTop: 24, textAlign: 'center' }} data-testid="audit-trace-retention-info">
+            <div style={{ marginTop: spacing('LG'), textAlign: 'center' }} data-testid="audit-trace-retention-info">
               <Text type="secondary">
                 {t('audit.retentionInfo', {
                   days: data.summary.auditRetentionDays,

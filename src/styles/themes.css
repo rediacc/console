@@ -1,14 +1,19 @@
 /* Root variables - consistent across themes */
 :root {
-  /* Brand colors */
-  --color-brand-primary: #ff6b6b;
-  --color-brand-secondary: #4ecdc4;
+  /* Primary brand colors - unified system */
+  --color-primary: #556b2f;
+  --color-primary-hover: #4c6029;
+  --color-primary-bg: rgba(85, 107, 47, 0.1);
+  --color-secondary: #808000;
+  --color-secondary-hover: #6e6e00;
+  --color-accent: #7d9b49;
   
-  /* Status colors */
-  --color-success: #51cf66;
-  --color-warning: #ffd43b;
-  --color-error: #ff6b6b;
-  --color-info: #74c0fc;
+  
+  /* Status colors - semantic palette (WCAG AA compliant) */
+  --color-success: #28a745;
+  --color-warning: #fd7e14;
+  --color-error: #dc3545;
+  --color-info: #007bff;
 }
 
 /* Body styles for themes */
@@ -31,11 +36,11 @@ body[data-theme="dark"] {
   --color-bg-hover: #f1f3f5;
   --color-bg-active: #e9ecef;
   
-  /* Text colors */
-  --color-text-primary: #212529;
-  --color-text-secondary: #495057;
-  --color-text-tertiary: #6c757d;
-  --color-text-muted: #adb5bd;
+  /* Text colors - enhanced contrast for WCAG AA */
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #3d4852;
+  --color-text-tertiary: #5a6570;
+  --color-text-muted: #9ca3af;
   --color-text-inverse: #ffffff;
   
   /* Border colors */
@@ -47,14 +52,9 @@ body[data-theme="dark"] {
   --color-shadow: rgba(0, 0, 0, 0.1);
   --color-shadow-strong: rgba(0, 0, 0, 0.15);
   
-  /* Component specific */
-  --color-input-bg: #ffffff;
-  --color-input-border: #ced4da;
-  --color-input-focus-border: #80bdff;
-  --color-button-primary-bg: #007bff;
-  --color-button-primary-hover: #0056b3;
-  --color-button-secondary-bg: #6c757d;
-  --color-button-secondary-hover: #545b62;
+  /* Component specific - simplified */
+  --color-input-bg: var(--color-bg-primary);
+  --color-input-border: var(--color-border-secondary);
   
   /* Status backgrounds */
   --color-bg-success: #d3f9d8;
@@ -72,11 +72,11 @@ body[data-theme="dark"] {
   --color-bg-hover: #3a3a3a;
   --color-bg-active: #4a4a4a;
   
-  /* Text colors */
-  --color-text-primary: #fafafa;
-  --color-text-secondary: #e4e4e7;
-  --color-text-tertiary: #a1a1aa;
-  --color-text-muted: #71717a;
+  /* Text colors - enhanced contrast for WCAG AA */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #e5e7eb;
+  --color-text-tertiary: #d1d5db;
+  --color-text-muted: #9ca3af;
   --color-text-inverse: #0a0a0a;
   
   /* Border colors */
@@ -88,20 +88,15 @@ body[data-theme="dark"] {
   --color-shadow: rgba(0, 0, 0, 0.3);
   --color-shadow-strong: rgba(0, 0, 0, 0.5);
   
-  /* Component specific */
-  --color-input-bg: #1a1a1a;
-  --color-input-border: #3f3f46;
-  --color-input-focus-border: #60a5fa;
-  --color-button-primary-bg: #3b82f6;
-  --color-button-primary-hover: #2563eb;
-  --color-button-secondary-bg: #52525b;
-  --color-button-secondary-hover: #71717a;
+  /* Component specific - simplified */
+  --color-input-bg: var(--color-bg-secondary);
+  --color-input-border: var(--color-border-secondary);
   
   /* Status backgrounds */
-  --color-bg-success: #064e3b;
-  --color-bg-warning: #78350f;
-  --color-bg-error: #7f1d1d;
-  --color-bg-info: #1e3a8a;
+  --color-bg-success: #155724;
+  --color-bg-warning: #856404;
+  --color-bg-error: #721c24;
+  --color-bg-info: #004085;
 }
 
 /* Theme toggle button styles - removed, now using Ant Design Button */
@@ -475,4 +470,173 @@ body[data-theme="dark"] .ant-typography-secondary {
 
 [data-theme="dark"] .ant-btn-text:hover {
   background: var(--color-bg-hover);
+}
+
+/* Enhanced focus states for better accessibility */
+:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.ant-btn:focus-visible {
+  outline: 3px solid var(--color-primary) !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(85, 107, 47, 0.25) !important;
+  border-color: var(--color-primary) !important;
+}
+
+.ant-input:focus-visible,
+.ant-input-password:focus-visible,
+.ant-input:focus,
+.ant-input-password:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px var(--color-primary), 0 0 0 4px rgba(85, 107, 47, 0.25) !important;
+  border-color: var(--color-primary) !important;
+}
+
+/* Ensure high contrast focus states for links and interactive elements */
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--color-primary) !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(85, 107, 47, 0.25);
+  border-radius: 4px;
+}
+
+/* Language selector and other dropdown elements */
+.ant-select:focus-visible,
+.ant-select-focused {
+  outline: 3px solid var(--color-primary) !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(85, 107, 47, 0.25) !important;
+}
+
+/* Improved interactive states */
+.ant-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(85, 107, 47, 0.35);
+}
+
+/* Enhanced form validation error styling */
+.ant-form-item-has-error .ant-input,
+.ant-form-item-has-error .ant-input-password,
+.ant-form-item-has-error .ant-select-selector {
+  border-color: var(--color-error) !important;
+  border-width: 2px !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.15) !important;
+  background-color: rgba(255, 107, 107, 0.02);
+}
+
+.ant-form-item-has-error .ant-form-item-explain-error {
+  color: var(--color-error);
+  font-weight: 500;
+  font-size: 13px;
+  margin-top: 6px;
+  padding: 6px 12px;
+  background-color: rgba(255, 107, 107, 0.08);
+  border-radius: 6px;
+  border-left: 3px solid var(--color-error);
+}
+
+/* Error state for dark theme */
+[data-theme="dark"] .ant-form-item-has-error .ant-input,
+[data-theme="dark"] .ant-form-item-has-error .ant-input-password,
+[data-theme="dark"] .ant-form-item-has-error .ant-select-selector {
+  background-color: rgba(255, 107, 107, 0.05);
+}
+
+[data-theme="dark"] .ant-form-item-has-error .ant-form-item-explain-error {
+  background-color: rgba(255, 107, 107, 0.1);
+  color: #ff9999;
+}
+
+/* Enhanced touch targets for mobile accessibility */
+.ant-btn {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 16px;
+  touch-action: manipulation;
+}
+
+.ant-input,
+.ant-input-password {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.ant-select {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.ant-select-selection-item {
+  /* Remove fixed line-height to prevent double-centering with flexbox */
+  /* Content will be centered by parent's flex display */
+  line-height: normal;
+}
+
+/* Additional interactive elements */
+.ant-dropdown-trigger,
+.ant-switch,
+.ant-checkbox-wrapper,
+.ant-radio-wrapper,
+.ant-menu-item,
+.ant-tabs-tab,
+[role="button"],
+[data-testid^="main-"],
+.ant-avatar {
+  min-height: 44px;
+  min-width: 44px;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Language selector touch targets */
+.ant-dropdown-menu-item {
+  min-height: 44px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+}
+
+/* Register link and interactive elements */
+a[role="button"],
+[role="button"] {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+}
+
+/* Ant Design Segmented component for dark theme */
+[data-theme="dark"] .ant-segmented {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-segmented-item {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .ant-segmented-item:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-hover);
+}
+
+[data-theme="dark"] .ant-segmented-item-selected {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .ant-segmented-thumb {
+  background: var(--color-bg-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }

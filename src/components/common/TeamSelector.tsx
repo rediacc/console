@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react'
 import { Select, Space, Tag, Input } from 'antd'
 import { TeamOutlined, SearchOutlined } from '@/utils/optimizedIcons'
 import type { Team } from '@/api/queries/teams'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants'
 
 interface TeamSelectorProps {
   teams: Team[]
@@ -21,6 +23,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
   style
 }) => {
   const [searchValue, setSearchValue] = useState('')
+  const styles = useComponentStyles()
 
   const filteredOptions = useMemo(() => {
     const filtered = teams.filter(team =>
@@ -42,7 +45,11 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
   return (
     <Select
       mode="multiple"
-      style={{ width: '100%', ...style }}
+      style={{ 
+        width: '100%',
+        // Don't apply input styles to Select - it has different DOM structure
+        ...style 
+      }}
       placeholder={placeholder}
       value={selectedTeams}
       onChange={onChange}
@@ -57,10 +64,16 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
         const { label, value, closable, onClose } = props
         return (
           <Tag
-            color="#8FBC8F"
+            color="var(--color-primary)"
             closable={closable}
             onClose={onClose}
-            style={{ marginRight: 3 }}
+            style={{ 
+              marginRight: spacing('XS'),
+              borderRadius: borderRadius('SM'),
+              // Remove minHeight - let content determine height
+              display: 'inline-flex',
+              alignItems: 'center'
+            }}
             data-testid={`team-selector-tag-${value}`}
           >
             {value}
@@ -69,25 +82,39 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
       }}
       dropdownRender={(menu) => (
         <>
-          <div style={{ padding: '8px 12px' }}>
+          <div style={{ padding: spacing('SM') }}>
             <Input
               placeholder="Search teams by name..."
-              prefix={<SearchOutlined />}
+              prefix={<SearchOutlined style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.BASE }} />}
               value={searchValue}
               onChange={e => setSearchValue(e.target.value)}
               onPressEnter={e => e.stopPropagation()}
               autoComplete="off"
+              style={{
+                // Input inside dropdown - let it use default styles
+              }}
               data-testid="team-selector-search"
             />
           </div>
-          <div style={{ borderTop: '1px solid #f0f0f0' }}>
+          <div style={{ borderTop: '1px solid var(--color-border-secondary)' }}>
             {menu}
           </div>
         </>
       )}
       maxTagCount='responsive'
       maxTagPlaceholder={(omittedValues) => (
-        <Tag color="#8FBC8F" data-testid="team-selector-more-tag">+{omittedValues.length} more</Tag>
+        <Tag 
+          color="var(--color-primary)" 
+          style={{ 
+            borderRadius: borderRadius('SM'),
+            // Remove minHeight - let content determine height
+            display: 'inline-flex',
+            alignItems: 'center'
+          }}
+          data-testid="team-selector-more-tag"
+        >
+          +{omittedValues.length} more
+        </Tag>
       )}
     />
   )

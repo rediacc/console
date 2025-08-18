@@ -13,6 +13,7 @@ import {
   Empty,
   Row,
   Col,
+  Segmented,
 } from 'antd'
 import {
   PlusOutlined,
@@ -226,11 +227,27 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
       
       if (hasImageAndActive && (structureInfo.hasImagePattern || isImageLike)) {
         return (
-          <Card size="small" style={{ marginTop: 8 }}>
+          <Card 
+            size="small" 
+            style={{ 
+              marginTop: 'var(--space-sm)', 
+              backgroundColor: 'var(--color-bg-tertiary)',
+              border: '1px solid var(--color-border-secondary)',
+              borderRadius: '8px',
+              boxShadow: 'var(--shadow-sm)'
+            }}
+          >
             <Space direction="vertical" style={{ width: '100%' }}>
               <Row gutter={16}>
                 <Col span={18}>
-                  <Form.Item label={t('nestedObjectEditor.Image')} style={{ marginBottom: 8 }}>
+                  <Form.Item 
+                    label={
+                      <Text strong style={{ fontSize: '13px', color: 'var(--color-text)' }}>
+                        {t('nestedObjectEditor.Image')}
+                      </Text>
+                    } 
+                    style={{ marginBottom: 'var(--space-sm)' }}
+                  >
                     <Input
                       value={entry.value.image}
                       onChange={(e) => handleUpdateEntry(index, {
@@ -243,7 +260,14 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                   </Form.Item>
                 </Col>
                 <Col span={6}>
-                  <Form.Item label={t('nestedObjectEditor.Active')} style={{ marginBottom: 8 }}>
+                  <Form.Item 
+                    label={
+                      <Text strong style={{ fontSize: '13px', color: 'var(--color-text)' }}>
+                        {t('nestedObjectEditor.Active')}
+                      </Text>
+                    } 
+                    style={{ marginBottom: 'var(--space-sm)' }}
+                  >
                     <Switch
                       checked={entry.value.active}
                       onChange={(checked) => handleUpdateEntry(index, {
@@ -291,7 +315,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
           value={entry.value}
           onChange={(e) => handleUpdateEntry(index, { value: Number(e.target.value) })}
           disabled={readOnly}
-          style={{ width: 200 }}
+          style={{ width: '100%', maxWidth: '200px' }}
           data-testid={dataTestId ? `${dataTestId}-field-${entry.key}` : `vault-editor-nested-field-${entry.key}`}
         />
       )
@@ -311,26 +335,38 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
   return (
     <div>
       {(title || description || structureInfo.isUniform) && (
-        <div style={{ marginBottom: 16 }}>
-          {title && <Title level={5}>{title}</Title>}
+        <div style={{ 
+          marginBottom: 'var(--space-md)', 
+          padding: 'var(--space-md)', 
+          backgroundColor: 'var(--color-bg-tertiary)', 
+          borderRadius: '8px', 
+          border: '1px solid var(--color-border-secondary)',
+          boxShadow: 'var(--shadow-sm)'
+        }}>
+          {title && <Title level={5} style={{ 
+            margin: 0, 
+            marginBottom: 'var(--space-xs)', 
+            color: 'var(--color-text-primary)', 
+            fontWeight: 600 
+          }}>{title}</Title>}
           {description && (
-            <Text type="secondary">
-              <InfoCircleOutlined /> {description}
+            <Text type="secondary" style={{ fontSize: '14px', lineHeight: '1.5' }}>
+              <InfoCircleOutlined style={{ marginRight: 'var(--space-xs)', color: 'var(--color-primary)' }} /> {description}
             </Text>
           )}
           {structureInfo.isUniform && (
-            <div style={{ marginTop: 8 }}>
+            <div style={{ marginTop: 'var(--space-sm)' }}>
               <Space>
-                <Tag color="green">
+                <Tag color="success" style={{ fontWeight: 500 }}>
                   {t('nestedObjectEditor.Uniform Structure')}
                 </Tag>
                 {structureInfo.keys && (
-                  <Text type="secondary" style={{ fontSize: '12px' }}>
+                  <Text type="secondary" style={{ fontSize: '12px', fontFamily: 'monospace', backgroundColor: 'var(--color-fill-quaternary)', padding: '2px 6px', borderRadius: '4px' }}>
                     {t('nestedObjectEditor.Fields')}: {structureInfo.keys.join(', ')}
                   </Text>
                 )}
                 {structureInfo.hasImagePattern && (
-                  <Tag color="blue">
+                  <Tag color="processing" style={{ fontWeight: 500 }}>
                     {t('nestedObjectEditor.Container Images Detected')}
                   </Tag>
                 )}
@@ -342,14 +378,28 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
 
       <Space direction="vertical" style={{ width: '100%' }}>
         {!readOnly && (
-          <Card size="small">
+          <Card 
+            size="small" 
+            style={{ 
+              backgroundColor: 'var(--color-bg-secondary)', 
+              border: '1px solid var(--color-border-primary)',
+              borderRadius: '8px',
+              marginBottom: 'var(--space-md)',
+              boxShadow: 'var(--shadow-sm)'
+            }}
+            title={
+              <Text strong style={{ color: 'var(--color-text-primary)', fontSize: '14px' }}>
+                {t('nestedObjectEditor.Add New Entry')}
+              </Text>
+            }
+          >
             <Space.Compact style={{ width: '100%' }}>
               <Input
                 placeholder={t('nestedObjectEditor.Enter key name')}
                 value={newKey}
                 onChange={(e) => setNewKey(e.target.value)}
                 onPressEnter={handleAddEntry}
-                style={{ width: '70%' }}
+                style={{ width: '70%', fontSize: '14px' }}
                 autoComplete="off"
                 data-testid={dataTestId ? `${dataTestId}-new-key` : 'vault-editor-nested-new-key'}
               />
@@ -358,6 +408,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                 icon={<PlusOutlined />}
                 onClick={handleAddEntry}
                 disabled={!newKey.trim()}
+                style={{ fontWeight: 500, minHeight: '36px' }}
                 data-testid={dataTestId ? `${dataTestId}-add` : 'vault-editor-nested-add'}
               >
                 {t('nestedObjectEditor.Add')}
@@ -365,6 +416,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
               <Button
                 icon={<CodeOutlined />}
                 onClick={() => setShowRawJson(!showRawJson)}
+                style={{ minHeight: '36px' }}
                 data-testid={dataTestId ? `${dataTestId}-toggle-json` : 'vault-editor-nested-toggle-json'}
               >
                 {showRawJson ? t('nestedObjectEditor.Hide JSON') : t('nestedObjectEditor.Show JSON')}
@@ -379,22 +431,46 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
             image={Empty.PRESENTED_IMAGE_SIMPLE}
           />
         ) : (
-          <Collapse defaultActiveKey={entries.map((_, i) => i.toString())} data-testid={dataTestId ? `${dataTestId}-collapse` : 'vault-editor-nested-collapse'}>
+          <Collapse 
+            defaultActiveKey={entries.map((_, i) => i.toString())} 
+            style={{ 
+              backgroundColor: 'transparent',
+              border: 'none'
+            }}
+            data-testid={dataTestId ? `${dataTestId}-collapse` : 'vault-editor-nested-collapse'}
+          >
             {entries.map((entry, index) => (
               <Panel
                 key={index}
                 data-testid={dataTestId ? `${dataTestId}-panel-${entry.key}` : `vault-editor-nested-panel-${entry.key}`}
                 header={
-                  <Space>
-                    <Tag color="blue">{entry.key}</Tag>
+                  <Space style={{ alignItems: 'center' }}>
+                    <Tag 
+                      color="processing" 
+                      style={{ 
+                        fontFamily: 'monospace', 
+                        fontWeight: 600,
+                        fontSize: '13px',
+                        padding: '4px 8px'
+                      }}
+                    >
+                      {entry.key}
+                    </Tag>
                     {typeof entry.value === 'object' && !Array.isArray(entry.value) && (
-                      <Tag color="green">{t('nestedObjectEditor.Object')}</Tag>
+                      <Tag color="success" style={{ fontSize: '11px', fontWeight: 500 }}>
+                        {t('nestedObjectEditor.Object')}
+                      </Tag>
                     )}
                     {Array.isArray(entry.value) && (
-                      <Tag color="orange">{t('nestedObjectEditor.Array')}</Tag>
+                      <Tag color="warning" style={{ fontSize: '11px', fontWeight: 500 }}>
+                        {t('nestedObjectEditor.Array')}
+                      </Tag>
                     )}
                     {typeof entry.value === 'boolean' && (
-                      <Tag color={entry.value ? 'success' : 'default'}>
+                      <Tag 
+                        color={entry.value ? 'success' : 'default'} 
+                        style={{ fontSize: '11px', fontWeight: 500 }}
+                      >
                         {entry.value ? t('nestedObjectEditor.True') : t('nestedObjectEditor.False')}
                       </Tag>
                     )}
@@ -428,7 +504,22 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
         )}
 
         {showRawJson && (
-          <Card title={t('nestedObjectEditor.Raw JSON Editor')} size="small">
+          <Card 
+            title={
+              <Text strong style={{ color: 'var(--color-text-primary)', fontSize: '14px' }}>
+                <CodeOutlined style={{ marginRight: 'var(--space-xs)' }} />
+                {t('nestedObjectEditor.Raw JSON Editor')}
+              </Text>
+            }
+            size="small"
+            style={{
+              backgroundColor: 'var(--color-bg-secondary)',
+              border: '1px solid var(--color-border-primary)',
+              borderRadius: '8px',
+              marginTop: 'var(--space-md)',
+              boxShadow: 'var(--shadow-sm)'
+            }}
+          >
             {rawJsonError && (
               <Text type="danger" style={{ display: 'block', marginBottom: 8 }}>
                 {t('nestedObjectEditor.JSON Error')}: {rawJsonError}

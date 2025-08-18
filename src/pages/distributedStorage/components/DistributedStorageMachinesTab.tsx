@@ -22,6 +22,7 @@ import {
   DeleteOutlined
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
+import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
 import { FilterableMachineTable } from './FilterableMachineTable'
 import { MachineAvailabilitySummary } from './MachineAvailabilitySummary'
 import { useMachines } from '@/api/queries/machines'
@@ -45,6 +46,8 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
   teamFilter
 }) => {
   const { t } = useTranslation(['distributedStorage', 'machines', 'common'])
+  const tableStyles = useTableStyles()
+  const componentStyles = useComponentStyles()
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const isExpertMode = uiMode === 'expert'
   
@@ -167,22 +170,23 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
     
     return (
       <div style={{ 
-        marginBottom: 16, 
-        padding: '12px 16px', 
-        backgroundColor: '#f0f2f5',
-        borderRadius: 8,
+        ...componentStyles.marginBottom.md,
+        ...componentStyles.padding.md,
+        background: 'var(--color-fill-quaternary)',
+        borderRadius: '8px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between'
       }}>
         <Space>
-          <span style={{ fontWeight: 500 }}>
+          <span style={{ ...componentStyles.label, fontWeight: 500 }}>
             {t('machines:bulkActions.selected', { count: selectedMachines.length })}
           </span>
           <Button
             size="small"
             onClick={() => setSelectedMachines([])}
             data-testid="ds-machines-clear-selection"
+            style={componentStyles.touchTarget}
           >
             {t('common:actions.clearSelection')}
           </Button>
@@ -193,6 +197,7 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
             icon={<CloudServerOutlined />}
             onClick={() => setBulkAssignClusterModal(true)}
             data-testid="ds-machines-bulk-assign-cluster"
+            style={componentStyles.touchTarget}
           >
             {t('machines:bulkActions.assignToCluster')}
           </Button>
@@ -200,6 +205,7 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
             icon={<CloudServerOutlined />}
             onClick={() => setRemoveFromClusterModal(true)}
             data-testid="ds-machines-bulk-remove-cluster"
+            style={componentStyles.touchTarget}
           >
             {t('machines:bulkActions.removeFromCluster')}
           </Button>
@@ -207,6 +213,7 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
             icon={<InfoCircleOutlined />}
             onClick={() => setViewAssignmentStatusModal(true)}
             data-testid="ds-machines-bulk-view-status"
+            style={componentStyles.touchTarget}
           >
             {t('machines:bulkActions.viewAssignmentStatus')}
           </Button>
@@ -224,7 +231,7 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
       />
       
       {/* Filters and Actions */}
-      <Card style={{ marginBottom: 16 }}>
+      <Card style={{ ...componentStyles.card, ...componentStyles.marginBottom.md }}>
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} sm={12} lg={8}>
             <Search
@@ -234,12 +241,13 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
               prefix={<SearchOutlined />}
               allowClear
               data-testid="ds-machines-search"
+              style={componentStyles.input}
             />
           </Col>
           
           <Col xs={24} sm={12} lg={8}>
             <Select
-              style={{ width: '100%' }}
+              style={{ width: '100%', ...componentStyles.input }}
               placeholder={t('machines.filters.assignmentStatus')}
               value={assignmentFilter}
               onChange={setAssignmentFilter}
@@ -260,6 +268,7 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
                 icon={<ExportOutlined />}
                 onClick={handleExport}
                 data-testid="ds-machines-export-button"
+                style={componentStyles.touchTarget}
               >
                 {t('machines.actions.exportReport')}
               </Button>
@@ -272,7 +281,7 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
       {renderBulkActionsToolbar()}
       
       {/* Machine Table */}
-      <Card>
+      <Card style={componentStyles.card}>
         <FilterableMachineTable
           machines={filteredMachines}
           loading={isLoading}

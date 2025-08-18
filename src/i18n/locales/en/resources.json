@@ -289,7 +289,11 @@
     "machines": "Machines",
     "repositories": "Repo (Credentials)",
     "storage": "Storage",
-    "schedules": "Schedules"
+    "schedules": "Schedules",
+    "machinesDescription": "Manage and monitor your machines",
+    "repositoriesDescription": "Manage repository credentials and configurations",
+    "storageDescription": "Configure cloud storage connections",
+    "schedulesDescription": "Manage automated task schedules"
   },
   "audit": {
     "title": "Audit History - {{name}}",

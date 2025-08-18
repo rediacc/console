@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { store } from './store/store'
 import App from './App'
 import { AppProviders } from './components/common/AppProviders'
-import './index.css'
+import './index.css' // Includes design system CSS variables and theme definitions
 import i18n from './i18n/config'
 
 const queryClient = new QueryClient({

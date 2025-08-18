@@ -9,6 +9,8 @@ import {
   AppstoreOutlined
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing, borderRadius, fontSize } from '@/utils/styleConstants'
 
 const { Text, Paragraph } = Typography
 
@@ -32,6 +34,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   const [templates, setTemplates] = useState<Template[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const styles = useComponentStyles()
 
   useEffect(() => {
     fetchTemplates()
@@ -58,17 +61,18 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   }
 
   const getTemplateIcon = (name: string) => {
+    const iconStyle = { fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_LG }
     const lowerName = name.toLowerCase()
     if (lowerName.includes('db_') || lowerName.includes('database') || lowerName.includes('sql')) {
-      return <DatabaseOutlined style={{ fontSize: 24 }} />
+      return <DatabaseOutlined style={iconStyle} />
     }
     if (lowerName.includes('nginx') || lowerName.includes('wordpress') || lowerName.includes('web')) {
-      return <GlobalOutlined style={{ fontSize: 24 }} />
+      return <GlobalOutlined style={iconStyle} />
     }
     if (lowerName.includes('cloud') || lowerName.includes('route')) {
-      return <CloudOutlined style={{ fontSize: 24 }} />
+      return <CloudOutlined style={iconStyle} />
     }
-    return <AppstoreOutlined style={{ fontSize: 24 }} />
+    return <AppstoreOutlined style={iconStyle} />
   }
 
   const getTemplateTitle = (name: string) => {
@@ -101,14 +105,24 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
   return (
     <div>
-      <Space direction="vertical" size="middle" style={{ width: '100%', marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text type="secondary">
+      <Space direction="vertical" size="middle" style={{ width: '100%', marginBottom: spacing('MD') }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          marginBottom: spacing('SM')
+        }}>
+          <Text type="secondary" style={{ fontSize: fontSize('SM') }}>
             {t('resources:templates.selectOptional')}
           </Text>
           {value && (
             <Button 
               size="small" 
+              style={{
+                // Height managed by CSS
+                borderRadius: borderRadius('MD'),
+                fontSize: fontSize('SM')
+              }}
               data-testid="resource-modal-template-clear-button"
               onClick={() => onChange?.(null)}
             >
@@ -118,7 +132,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         </div>
       </Space>
 
-      <Row gutter={[16, 16]}>
+      <Row gutter={[spacing('MD'), spacing('MD')]}>
         {templates.map((template) => {
           const isSelected = value === template.name
           
@@ -130,9 +144,13 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                 className={isSelected ? 'template-card-selected' : 'template-card'}
                 style={{
                   height: '100%',
-                  borderColor: isSelected ? '#1890ff' : undefined,
+                  borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border-secondary)',
                   borderWidth: isSelected ? 2 : 1,
-                  position: 'relative'
+                  borderRadius: borderRadius('LG'),
+                  position: 'relative',
+                  cursor: 'pointer',
+                  transition: DESIGN_TOKENS.TRANSITIONS.HOVER,
+                  padding: spacing('MD')
                 }}
                 onClick={() => onChange?.(isSelected ? null : template.name)}
               >
@@ -140,27 +158,36 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                   <CheckCircleOutlined 
                     style={{ 
                       position: 'absolute', 
-                      top: 8, 
-                      right: 8, 
-                      color: '#1890ff',
-                      fontSize: 20
+                      top: spacing('SM'), 
+                      right: spacing('SM'), 
+                      color: 'var(--color-primary)',
+                      fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD
                     }} 
                   />
                 )}
                 
                 <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                  <div style={{ textAlign: 'center', marginBottom: 8 }}>
+                  <div style={{ 
+                    textAlign: 'center', 
+                    marginBottom: spacing('XS'),
+                    padding: spacing('SM')
+                  }}>
                     {getTemplateIcon(template.name)}
                   </div>
                   
-                  <Text strong style={{ fontSize: 16 }}>
+                  <Text strong style={{ fontSize: fontSize('BASE') }}>
                     {getTemplateTitle(template.name)}
                   </Text>
                   
                   <Paragraph 
                     ellipsis={{ rows: 2 }} 
                     type="secondary"
-                    style={{ marginBottom: 12, minHeight: 44 }}
+                    style={{ 
+                      marginBottom: spacing('SM'), 
+                      // Height managed by CSS
+                      fontSize: fontSize('SM'),
+                      lineHeight: DESIGN_TOKENS.LINE_HEIGHT.RELAXED
+                    }}
                   >
                     {getTemplateDescription(template.readme)}
                   </Paragraph>
@@ -169,12 +196,16 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                     type="link"
                     size="small"
                     data-testid={`resource-modal-template-details-button-${template.name}`}
-                    icon={<InfoCircleOutlined />}
+                    icon={<InfoCircleOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />}
                     onClick={(e) => {
                       e.stopPropagation()
                       onViewDetails?.(template.name)
                     }}
-                    style={{ padding: 0 }}
+                    style={{ 
+                      padding: 0,
+                      // Height managed by CSS
+                      fontSize: fontSize('SM')
+                    }}
                   >
                     {t('resources:templates.viewDetails')}
                   </Button>
@@ -192,10 +223,14 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             className={!value ? 'template-card-selected' : 'template-card'}
             style={{
               height: '100%',
-              borderColor: !value ? '#52c41a' : undefined,
+              borderColor: !value ? 'var(--color-success)' : 'var(--color-border-secondary)',
               borderWidth: !value ? 2 : 1,
               borderStyle: 'dashed',
-              position: 'relative'
+              borderRadius: borderRadius('LG'),
+              position: 'relative',
+              cursor: 'pointer',
+              transition: DESIGN_TOKENS.TRANSITIONS.HOVER,
+              padding: spacing('MD')
             }}
             onClick={() => onChange?.(null)}
           >
@@ -203,46 +238,56 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
               <CheckCircleOutlined 
                 style={{ 
                   position: 'absolute', 
-                  top: 8, 
-                  right: 8, 
-                  color: '#52c41a',
-                  fontSize: 20
+                  top: spacing('SM'), 
+                  right: spacing('SM'), 
+                  color: 'var(--color-success)',
+                  fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD
                 }} 
               />
             )}
             
             <Space direction="vertical" size="small" style={{ width: '100%' }}>
-              <div style={{ textAlign: 'center', marginBottom: 8 }}>
-                <AppstoreOutlined style={{ fontSize: 24, color: '#999' }} />
+              <div style={{ 
+                textAlign: 'center', 
+                marginBottom: spacing('XS'),
+                padding: spacing('SM')
+              }}>
+                <AppstoreOutlined style={{ 
+                  fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_LG, 
+                  color: 'var(--color-text-tertiary)' 
+                }} />
               </div>
               
-              <Text strong style={{ fontSize: 16 }}>
+              <Text strong style={{ fontSize: fontSize('BASE') }}>
                 {t('resources:templates.noTemplate')}
               </Text>
               
               <Paragraph 
                 type="secondary"
-                style={{ marginBottom: 12, minHeight: 44 }}
+                style={{ 
+                  marginBottom: spacing('SM'), 
+                  // Height managed by CSS
+                  fontSize: fontSize('SM'),
+                  lineHeight: DESIGN_TOKENS.LINE_HEIGHT.RELAXED
+                }}
               >
                 {t('resources:templates.startEmpty')}
               </Paragraph>
               
-              <Tag color="default" style={{ margin: 0 }}>
+              <Tag 
+                color="default" 
+                style={{ 
+                  margin: 0,
+                  borderRadius: borderRadius('SM'),
+                  fontSize: fontSize('XS')
+                }}
+              >
                 {t('resources:templates.default')}
               </Tag>
             </Space>
           </Card>
         </Col>
       </Row>
-      
-      <style jsx>{`
-        .template-card:hover {
-          border-color: #40a9ff;
-        }
-        .template-card-selected {
-          background-color: #f0f5ff;
-        }
-      `}</style>
     </div>
   )
 }

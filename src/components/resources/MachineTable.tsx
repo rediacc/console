@@ -62,6 +62,8 @@ import { ViewAssignmentStatusModal } from './ViewAssignmentStatusModal';
 import MachineAssignmentStatusBadge from './MachineAssignmentStatusBadge';
 import MachineAssignmentStatusCell from './MachineAssignmentStatusCell';
 import { useGetMachineAssignmentStatus } from '@/api/queries/distributedStorage';
+import { useComponentStyles, useTableStyles } from '@/hooks/useComponentStyles';
+import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants';
 
 
 interface MachineTableProps {
@@ -112,6 +114,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const isExpertMode = uiMode === 'expert';
   const { executePingForMachineAndWait } = usePingFunction();
   const { theme } = useTheme();
+  const styles = useComponentStyles();
+  const tableStyles = useTableStyles();
   
   // Ref for table container
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -394,18 +398,19 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       baseColumns.push({
         title: t('common:table.actions'),
         key: 'actions',
-        width: 320,
+        width: DESIGN_TOKENS.DIMENSIONS.CARD_WIDTH,
         render: (_: unknown, record: Machine) => (
           <Space>
-            <Button
-              type="primary"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => onEditMachine && onEditMachine(record)}
-              data-testid={`machine-edit-${record.machineName}`}
-            >
-              {t('common:actions.edit')}
-            </Button>
+            <Tooltip title={t('common:actions.edit')}>
+              <Button
+                type="primary"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => onEditMachine && onEditMachine(record)}
+                data-testid={`machine-edit-${record.machineName}`}
+                aria-label={t('common:actions.edit')}
+              />
+            </Tooltip>
             <Dropdown
               data-testid={`machine-dropdown-${record.machineName}`}
               menu={{
@@ -517,41 +522,44 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               }}
               trigger={['click']}
             >
+              <Tooltip title={t('machines:remote')}>
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<FunctionOutlined />}
+                  data-testid={`machine-remote-${record.machineName}`}
+                  aria-label={t('machines:remote')}
+                />
+              </Tooltip>
+            </Dropdown>
+            <Tooltip title={t('machines:trace')}>
               <Button
                 type="primary"
                 size="small"
-                icon={<FunctionOutlined />}
-                data-testid={`machine-remote-${record.machineName}`}
-              >
-                {t('machines:remote')}
-              </Button>
-            </Dropdown>
-            <Button
-              type="primary"
-              size="small"
-              icon={<HistoryOutlined />}
-              onClick={() => {
-                setAuditTraceModal({
-                  open: true,
-                  entityType: 'Machine',
-                  entityIdentifier: record.machineName,
-                  entityName: record.machineName
-                });
-              }}
-              data-testid={`machine-trace-${record.machineName}`}
-            >
-              {t('machines:trace')}
-            </Button>
-            <Button
-              type="primary"
-              danger
-              size="small"
-              icon={<DeleteOutlined />}
-              onClick={() => handleDelete(record)}
-              data-testid={`machine-delete-${record.machineName}`}
-            >
-              {t('common:actions.delete')}
-            </Button>
+                icon={<HistoryOutlined />}
+                onClick={() => {
+                  setAuditTraceModal({
+                    open: true,
+                    entityType: 'Machine',
+                    entityIdentifier: record.machineName,
+                    entityName: record.machineName
+                  });
+                }}
+                data-testid={`machine-trace-${record.machineName}`}
+                aria-label={t('machines:trace')}
+              />
+            </Tooltip>
+            <Tooltip title={t('common:actions.delete')}>
+              <Button
+                type="primary"
+                danger
+                size="small"
+                icon={<DeleteOutlined />}
+                onClick={() => handleDelete(record)}
+                data-testid={`machine-delete-${record.machineName}`}
+                aria-label={t('common:actions.delete')}
+              />
+            </Tooltip>
           </Space>
         ),
       });
@@ -590,37 +598,41 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           <span style={{ fontWeight: 500 }}>
             {t('machines:bulkActions.selected', { count: selectedRowKeys.length })}
           </span>
-          <Button
-            size="small"
-            onClick={() => setSelectedRowKeys([])}
-            data-testid="machine-bulk-clear-selection"
-          >
-            {t('common:actions.clearSelection')}
-          </Button>
+          <Tooltip title={t('common:actions.clearSelection')}>
+            <Button
+              size="small"
+              onClick={() => setSelectedRowKeys([])}
+              data-testid="machine-bulk-clear-selection"
+              aria-label={t('common:actions.clearSelection')}
+            />
+          </Tooltip>
         </Space>
         <Space>
-          <Button
-            type="primary"
-            icon={<CloudServerOutlined />}
-            onClick={() => setBulkAssignClusterModal(true)}
-            data-testid="machine-bulk-assign-cluster"
-          >
-            {t('machines:bulkActions.assignToCluster')}
-          </Button>
-          <Button
-            icon={<CloudServerOutlined />}
-            onClick={() => setRemoveFromClusterModal(true)}
-            data-testid="machine-bulk-remove-cluster"
-          >
-            {t('machines:bulkActions.removeFromCluster')}
-          </Button>
-          <Button
-            icon={<InfoCircleOutlined />}
-            onClick={() => setViewAssignmentStatusModal(true)}
-            data-testid="machine-bulk-view-status"
-          >
-            {t('machines:bulkActions.viewAssignmentStatus')}
-          </Button>
+          <Tooltip title={t('machines:bulkActions.assignToCluster')}>
+            <Button
+              type="primary"
+              icon={<CloudServerOutlined />}
+              onClick={() => setBulkAssignClusterModal(true)}
+              data-testid="machine-bulk-assign-cluster"
+              aria-label={t('machines:bulkActions.assignToCluster')}
+            />
+          </Tooltip>
+          <Tooltip title={t('machines:bulkActions.removeFromCluster')}>
+            <Button
+              icon={<CloudServerOutlined />}
+              onClick={() => setRemoveFromClusterModal(true)}
+              data-testid="machine-bulk-remove-cluster"
+              aria-label={t('machines:bulkActions.removeFromCluster')}
+            />
+          </Tooltip>
+          <Tooltip title={t('machines:bulkActions.viewAssignmentStatus')}>
+            <Button
+              icon={<InfoCircleOutlined />}
+              onClick={() => setViewAssignmentStatusModal(true)}
+              data-testid="machine-bulk-view-status"
+              aria-label={t('machines:bulkActions.viewAssignmentStatus')}
+            />
+          </Tooltip>
         </Space>
       </div>
     );
@@ -631,65 +643,86 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     return (
       <div style={{ marginBottom: 16 }}>
         <Space wrap size="small">
-          <span style={{ marginRight: 8, fontWeight: 500 }}>{t('machines:groupBy')}:</span>
-          <Radio.Group 
-            value={groupBy} 
-            onChange={(e) => setGroupBy(e.target.value)}
-            buttonStyle="solid"
-            style={{
-              backgroundColor: theme === 'light' ? '#f5f5f5' : undefined,
-              borderRadius: '6px',
-              padding: '2px'
-            }}
-            className={theme === 'light' ? 'light-mode-radio-group' : ''}
-            data-testid="machine-view-toggle"
-          >
-            <Radio.Button value="machine" data-testid="machine-view-toggle-machine">
-              <Space>
-                <DesktopOutlined />
-                {t('machines:machine')}
-              </Space>
-            </Radio.Button>
-            <span style={{ marginLeft: 16 }} />
-            <Radio.Button value="bridge" data-testid="machine-view-toggle-bridge">
-              <Space>
-                <CloudServerOutlined />
-                {t('machines:groupByBridge')}
-              </Space>
-            </Radio.Button>
-            <Radio.Button value="team" data-testid="machine-view-toggle-team">
-              <Space>
-                <TeamOutlined />
-                {t('machines:groupByTeam')}
-              </Space>
-            </Radio.Button>
-            {isExpertMode && (
-              <Radio.Button value="region" data-testid="machine-view-toggle-region">
-                <Space>
-                  <GlobalOutlined />
-                  {t('machines:groupByRegion')}
-                </Space>
-              </Radio.Button>
-            )}
-            <Radio.Button value="repository" data-testid="machine-view-toggle-repository">
-              <Space>
-                <InboxOutlined />
-                {t('machines:groupByRepository')}
-              </Space>
-            </Radio.Button>
-            <Radio.Button value="status" data-testid="machine-view-toggle-status">
-              <Space>
-                <DashboardOutlined />
-                {t('machines:groupByStatus')}
-              </Space>
-            </Radio.Button>
-            <Radio.Button value="grand" data-testid="machine-view-toggle-grand">
-              <Space>
-                <BranchesOutlined />
-                {t('machines:groupByGrand')}
-              </Space>
-            </Radio.Button>
-          </Radio.Group>
+          <Tooltip title={t('machines:machine')}>
+            <Button
+              type={groupBy === 'machine' ? 'primary' : 'default'}
+              icon={<DesktopOutlined />}
+              onClick={() => setGroupBy('machine')}
+              style={styles.touchTargetSmall}
+              data-testid="machine-view-toggle-machine"
+              aria-label={t('machines:machine')}
+            />
+          </Tooltip>
+          
+          <div style={{ width: 1, height: 24, backgroundColor: 'var(--color-border)', margin: '0 8px' }} />
+          
+          <Tooltip title={t('machines:groupByBridge')}>
+            <Button
+              type={groupBy === 'bridge' ? 'primary' : 'default'}
+              icon={<CloudServerOutlined />}
+              onClick={() => setGroupBy('bridge')}
+              style={styles.touchTargetSmall}
+              data-testid="machine-view-toggle-bridge"
+              aria-label={t('machines:groupByBridge')}
+            />
+          </Tooltip>
+          
+          <Tooltip title={t('machines:groupByTeam')}>
+            <Button
+              type={groupBy === 'team' ? 'primary' : 'default'}
+              icon={<TeamOutlined />}
+              onClick={() => setGroupBy('team')}
+              style={styles.touchTargetSmall}
+              data-testid="machine-view-toggle-team"
+              aria-label={t('machines:groupByTeam')}
+            />
+          </Tooltip>
+          
+          {isExpertMode && (
+            <Tooltip title={t('machines:groupByRegion')}>
+              <Button
+                type={groupBy === 'region' ? 'primary' : 'default'}
+                icon={<GlobalOutlined />}
+                onClick={() => setGroupBy('region')}
+                style={styles.touchTargetSmall}
+                data-testid="machine-view-toggle-region"
+                aria-label={t('machines:groupByRegion')}
+              />
+            </Tooltip>
+          )}
+          
+          <Tooltip title={t('machines:groupByRepository')}>
+            <Button
+              type={groupBy === 'repository' ? 'primary' : 'default'}
+              icon={<InboxOutlined />}
+              onClick={() => setGroupBy('repository')}
+              style={styles.touchTargetSmall}
+              data-testid="machine-view-toggle-repository"
+              aria-label={t('machines:groupByRepository')}
+            />
+          </Tooltip>
+          
+          <Tooltip title={t('machines:groupByStatus')}>
+            <Button
+              type={groupBy === 'status' ? 'primary' : 'default'}
+              icon={<DashboardOutlined />}
+              onClick={() => setGroupBy('status')}
+              style={styles.touchTargetSmall}
+              data-testid="machine-view-toggle-status"
+              aria-label={t('machines:groupByStatus')}
+            />
+          </Tooltip>
+          
+          <Tooltip title={t('machines:groupByGrand')}>
+            <Button
+              type={groupBy === 'grand' ? 'primary' : 'default'}
+              icon={<BranchesOutlined />}
+              onClick={() => setGroupBy('grand')}
+              style={styles.touchTargetSmall}
+              data-testid="machine-view-toggle-grand"
+              aria-label={t('machines:groupByGrand')}
+            />
+          </Tooltip>
         </Space>
       </div>
     );
@@ -838,7 +871,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                 {groupIndex % 2 === 0 && (
                   <div style={{
                     width: 4,
-                    height: 32,
+                    height: DESIGN_TOKENS.DIMENSIONS.ICON_XL,
                     backgroundColor: getGroupHeaderColor(groupIndex),
                     borderRadius: 2
                   }} />

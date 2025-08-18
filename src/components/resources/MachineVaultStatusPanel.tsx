@@ -14,6 +14,7 @@ import {
   Statistic,
   Badge
 } from 'antd'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { 
   CloseOutlined,
   DesktopOutlined,
@@ -133,6 +134,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
 }) => {
   const { t } = useTranslation(['machines', 'resources', 'common', 'distributedStorage'])
   const { theme } = useTheme()
+  const componentStyles = useComponentStyles()
   
   // State for audit trace modal
   const [auditTraceModal, setAuditTraceModal] = useState<{
@@ -251,6 +253,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
               type="text"
               icon={<CloseOutlined />}
               onClick={onClose}
+              style={componentStyles.touchTarget}
               data-testid="vault-status-close"
             />
           </div>
@@ -290,7 +293,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                     <Title level={5} style={{ margin: 0 }} data-testid="vault-status-system-info-title">{t('resources:repositories.systemInfo')}</Title>
                   </div>
                   
-                  <Row gutter={[16, 16]}>
+                  <Row gutter={[16, 16]} style={componentStyles.marginBottom.md}>
                     <Col span={12}>
                       <Card size="small" style={{ height: '100%' }} data-testid="vault-status-hostname-card">
                         <Statistic
@@ -343,7 +346,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                   </Divider>
 
                   {/* Resource Usage Cards */}
-                  <Row gutter={[16, 16]}>
+                  <Row gutter={[16, 16]} style={componentStyles.marginBottom.lg}>
                     {/* Memory Card */}
                     <Col span={24}>
                       <Card size="small" data-testid="vault-status-memory-card">
@@ -480,6 +483,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                     dataSource={vaultData.network.interfaces.filter((iface: NetworkInterface) => 
                       iface.state !== 'unknown' && iface.name !== 'lo'
                     )}
+                    style={componentStyles.marginBottom.lg}
                     data-testid="vault-status-network-list"
                     renderItem={(iface: NetworkInterface) => (
                       <Card size="small" style={{ marginBottom: 12 }} data-testid={`vault-status-network-${iface.name}`}>
@@ -532,6 +536,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
 
                   <List
                     dataSource={vaultData.block_devices}
+                    style={componentStyles.marginBottom.lg}
                     data-testid="vault-status-block-devices-list"
                     renderItem={(device: BlockDevice) => (
                       <Card size="small" style={{ marginBottom: 12 }} data-testid={`vault-status-block-device-${device.name}`}>
@@ -590,6 +595,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
 
                   <List
                     dataSource={vaultData.system_containers}
+                    style={componentStyles.marginBottom.lg}
                     data-testid="vault-status-containers-list"
                     renderItem={(container: Container) => (
                       <Card size="small" style={{ marginBottom: 12 }} data-testid={`vault-status-container-${container.id}`}>

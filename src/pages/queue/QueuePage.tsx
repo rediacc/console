@@ -10,12 +10,14 @@ import dayjs from 'dayjs'
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize'
 import { useTranslation } from 'react-i18next'
 import { formatTimestampAsIs } from '@/utils/timeUtils'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
 
 const { Title, Text } = Typography
 const { RangePicker } = DatePicker
 
 const QueuePage: React.FC = () => {
   const { t } = useTranslation(['queue'])
+  const styles = useComponentStyles()
   const [viewTeam, setViewTeam] = useState<string>('') // Team for viewing queue items
   const [filters, setFilters] = useState<QueueFilters>({
     teamName: '',
@@ -370,26 +372,30 @@ const QueuePage: React.FC = () => {
       width: 180,
       render: (_: any, record: any) => (
         <Space size="small">
-          <Button
-            size="small"
-            type="primary"
-            icon={<HistoryOutlined />}
-            onClick={() => handleViewTrace(record.taskId)}
-            data-testid={`queue-trace-button-${record.taskId}`}
-          >
-            Trace
-          </Button>
-          {record.canBeCancelled && record.healthStatus !== 'CANCELLED' && record.healthStatus !== 'CANCELLING' && (
+          <Tooltip title="Trace">
             <Button
               size="small"
-              danger
-              icon={<CloseCircleOutlined />}
-              onClick={() => handleCancelQueueItem(record.taskId)}
-              loading={cancelQueueItemMutation.isPending}
-              data-testid={`queue-cancel-button-${record.taskId}`}
-            >
-              Cancel
-            </Button>
+              type="primary"
+              icon={<HistoryOutlined />}
+              style={styles.touchTargetSmall}
+              onClick={() => handleViewTrace(record.taskId)}
+              data-testid={`queue-trace-button-${record.taskId}`}
+              aria-label="Trace"
+            />
+          </Tooltip>
+          {record.canBeCancelled && record.healthStatus !== 'CANCELLED' && record.healthStatus !== 'CANCELLING' && (
+            <Tooltip title="Cancel">
+              <Button
+                size="small"
+                danger
+                icon={<CloseCircleOutlined />}
+                style={styles.touchTargetSmall}
+                onClick={() => handleCancelQueueItem(record.taskId)}
+                loading={cancelQueueItemMutation.isPending}
+                data-testid={`queue-cancel-button-${record.taskId}`}
+                aria-label="Cancel"
+              />
+            </Tooltip>
           )}
         </Space>
       )
@@ -397,11 +403,11 @@ const QueuePage: React.FC = () => {
   ]
 
 
-  // Calculate container style for full height layout
+  // Calculate container style for full height layout using design system
   const containerStyle: React.CSSProperties = {
+    ...styles.container,
     height: 'calc(100vh - 64px - 48px)', // viewport - header - content margin
-    display: 'flex',
-    flexDirection: 'column',
+    ...styles.flexColumn,
     overflow: 'hidden'
   }
 
@@ -409,17 +415,18 @@ const QueuePage: React.FC = () => {
     <div style={containerStyle} data-testid="queue-page-container">
       <Row gutter={[16, 16]} align="middle" style={{ marginBottom: 16 }}>
         <Col>
-          <Title level={2}>Queue Management</Title>
+          <Title level={2} style={styles.heading2}>Queue Management</Title>
         </Col>
       </Row>
 
-      <Card style={{ marginBottom: 16 }} data-testid="queue-filters-card">
+      <Card style={{ ...styles.card, ...styles.marginBottom.md }} data-testid="queue-filters-card">
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} sm={12} md={6}>
-            <div style={{ marginBottom: 8 }}>
+            <label htmlFor="queue-filter-team" style={{ display: 'block', marginBottom: 8 }}>
               <Text type="secondary">Team</Text>
-            </div>
+            </label>
             <Select
+              id="queue-filter-team"
               style={{ width: '100%' }}
               placeholder="Select a team to view queue items"
               value={viewTeam || undefined}
@@ -434,15 +441,17 @@ const QueuePage: React.FC = () => {
               }
               options={dropdownData?.teams || []}
               data-testid="queue-filter-team"
+              aria-label="Select team to filter queue items"
             />
           </Col>
 
           {viewTeam && (
             <Col xs={24} sm={12} md={6}>
-              <div style={{ marginBottom: 8 }}>
+              <label htmlFor="queue-filter-machine" style={{ display: 'block', marginBottom: 8 }}>
                 <Text type="secondary">Machine</Text>
-              </div>
+              </label>
               <Select
+                id="queue-filter-machine"
                 style={{ width: '100%' }}
                 placeholder="All machines"
                 value={filters.machineName || undefined}
@@ -454,15 +463,17 @@ const QueuePage: React.FC = () => {
                 }
                 options={dropdownData?.machinesByTeam?.find(t => t.teamName === viewTeam)?.machines || []}
                 data-testid="queue-filter-machine"
+                aria-label="Select machine to filter queue items"
               />
             </Col>
           )}
 
           <Col xs={24} sm={12} md={6}>
-            <div style={{ marginBottom: 8 }}>
+            <label htmlFor="queue-filter-status" style={{ display: 'block', marginBottom: 8 }}>
               <Text type="secondary">Status</Text>
-            </div>
+            </label>
             <Select
+              id="queue-filter-status"
               mode="multiple"
               style={{ width: '100%' }}
               placeholder="All statuses"
@@ -470,6 +481,7 @@ const QueuePage: React.FC = () => {
               onChange={setStatusFilter}
               allowClear
               data-testid="queue-filter-status"
+              aria-label="Select statuses to filter queue items"
             >
               <Select.Option value="PENDING" data-testid="queue-filter-status-option-pending">Pending</Select.Option>
               <Select.Option value="ACTIVE" data-testid="queue-filter-status-option-active">Active</Select.Option>
@@ -482,10 +494,11 @@ const QueuePage: React.FC = () => {
           </Col>
 
           <Col xs={24} sm={12} md={6}>
-            <div style={{ marginBottom: 8 }}>
+            <label htmlFor="queue-filter-date" style={{ display: 'block', marginBottom: 8 }}>
               <Text type="secondary">Date Range</Text>
-            </div>
+            </label>
             <RangePicker
+              id="queue-filter-date"
               style={{ width: '100%' }}
               showTime
               format="YYYY-MM-DD HH:mm:ss"
@@ -500,16 +513,18 @@ const QueuePage: React.FC = () => {
                 { label: 'Last Month', value: [dayjs().subtract(1, 'month').startOf('month'), dayjs().subtract(1, 'month').endOf('month')] },
               ]}
               data-testid="queue-filter-date"
+              aria-label="Select date range to filter queue items"
             />
           </Col>
         </Row>
 
         <Row gutter={[16, 16]} style={{ marginTop: 16 }} align="middle">
           <Col xs={24} sm={12} md={6}>
-            <div style={{ marginBottom: 8 }}>
+            <label htmlFor="queue-filter-taskid" style={{ display: 'block', marginBottom: 8 }}>
               <Text type="secondary">Task ID</Text>
-            </div>
+            </label>
             <Input
+              id="queue-filter-taskid"
               placeholder="Filter by Task ID (GUID format)"
               value={taskIdFilter}
               onChange={(e) => setTaskIdFilter(e.target.value)}
@@ -518,9 +533,11 @@ const QueuePage: React.FC = () => {
               status={taskIdFilter && !isValidGuid(taskIdFilter) ? 'error' : undefined}
               autoComplete="off"
               data-testid="queue-filter-taskid"
+              aria-label="Filter queue items by Task ID"
+              aria-describedby={taskIdFilter && !isValidGuid(taskIdFilter) ? 'taskid-error' : undefined}
             />
             {taskIdFilter && !isValidGuid(taskIdFilter) && (
-              <Text type="danger" style={{ fontSize: '12px' }}>
+              <Text id="taskid-error" type="danger" style={{ fontSize: '12px' }}>
                 Invalid GUID format
               </Text>
             )}
@@ -557,7 +574,13 @@ const QueuePage: React.FC = () => {
 
           <Col style={{ marginLeft: 'auto' }}>
             <Space>
-              <Button icon={<ReloadOutlined />} onClick={() => refetch()} loading={isFetching} data-testid="queue-refresh-button">
+              <Button 
+                icon={<ReloadOutlined />} 
+                style={styles.touchTarget}
+                onClick={() => refetch()} 
+                loading={isFetching} 
+                data-testid="queue-refresh-button"
+              >
                 Refresh
               </Button>
               <Dropdown
@@ -576,7 +599,11 @@ const QueuePage: React.FC = () => {
                   ]
                 }}
               >
-                <Button icon={<ExportOutlined />} data-testid="queue-export-dropdown">
+                <Button 
+                  icon={<ExportOutlined />} 
+                  style={styles.touchTarget}
+                  data-testid="queue-export-dropdown"
+                >
                   Export <DownOutlined />
                 </Button>
               </Dropdown>
@@ -586,9 +613,9 @@ const QueuePage: React.FC = () => {
       </Card>
 
       {/* Queue Statistics */}
-      <Row gutter={16} style={{ marginBottom: 16 }} data-testid="queue-statistics-row">
+      <Row gutter={16} style={styles.marginBottom.md} data-testid="queue-statistics-row">
             <Col xs={24} sm={12} md={8} lg={4} xl={3}>
-              <Card>
+              <Card style={styles.card}>
                 <Statistic
                   title="Total"
                   value={(queueData?.statistics as any)?.totalCount || 0}
@@ -597,7 +624,7 @@ const QueuePage: React.FC = () => {
               </Card>
             </Col>
             <Col xs={24} sm={12} md={8} lg={4} xl={3}>
-              <Card>
+              <Card style={styles.card}>
                 <Statistic
                   title="Pending"
                   value={(queueData?.statistics as any)?.pendingCount || 0}
@@ -607,7 +634,7 @@ const QueuePage: React.FC = () => {
               </Card>
             </Col>
             <Col xs={24} sm={12} md={8} lg={4} xl={3}>
-              <Card>
+              <Card style={styles.card}>
                 <Statistic
                   title="Assigned"
                   value={(queueData?.statistics as any)?.assignedCount || 0}
@@ -616,7 +643,7 @@ const QueuePage: React.FC = () => {
               </Card>
             </Col>
             <Col xs={24} sm={12} md={8} lg={4} xl={3}>
-              <Card>
+              <Card style={styles.card}>
                 <Statistic
                   title="Processing"
                   value={(queueData?.statistics as any)?.processingCount || 0}
@@ -626,7 +653,7 @@ const QueuePage: React.FC = () => {
               </Card>
             </Col>
             <Col xs={24} sm={12} md={8} lg={4} xl={3}>
-              <Card>
+              <Card style={styles.card}>
                 <Statistic
                   title="Completed"
                   value={(queueData?.statistics as any)?.completedCount || 0}
@@ -636,7 +663,7 @@ const QueuePage: React.FC = () => {
               </Card>
             </Col>
             <Col xs={24} sm={12} md={8} lg={4} xl={3}>
-              <Card>
+              <Card style={styles.card}>
                 <Statistic
                   title="Failed"
                   value={(queueData?.statistics as any)?.failedCount || 0}
@@ -646,7 +673,7 @@ const QueuePage: React.FC = () => {
               </Card>
             </Col>
             <Col xs={24} sm={12} md={8} lg={4} xl={3}>
-              <Card>
+              <Card style={styles.card}>
                 <Statistic
                   title="Cancelling"
                   value={(queueData?.statistics as any)?.cancellingCount || 0}
@@ -656,7 +683,7 @@ const QueuePage: React.FC = () => {
               </Card>
             </Col>
             <Col xs={24} sm={12} md={8} lg={4} xl={3}>
-              <Card>
+              <Card style={styles.card}>
                 <Statistic
                   title="Cancelled"
                   value={(queueData?.statistics as any)?.cancelledCount || 0}
@@ -666,7 +693,7 @@ const QueuePage: React.FC = () => {
               </Card>
             </Col>
             <Col xs={24} sm={12} md={8} lg={4} xl={3}>
-              <Card>
+              <Card style={styles.card}>
                 <Statistic
                   title="Stale"
                   value={(queueData?.statistics as any)?.staleCount || 0}

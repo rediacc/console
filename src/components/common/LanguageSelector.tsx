@@ -2,6 +2,8 @@ import React from 'react';
 import { Select } from 'antd';
 import { GlobalOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
+import { useComponentStyles } from '@/hooks/useComponentStyles';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 const { Option } = Select;
 
@@ -25,6 +27,7 @@ const languages: Language[] = [
 
 const LanguageSelector: React.FC = () => {
   const { i18n, t } = useTranslation();
+  const styles = useComponentStyles();
 
   const handleChange = async (value: string) => {
     await i18n.changeLanguage(value);
@@ -32,11 +35,16 @@ const LanguageSelector: React.FC = () => {
     document.documentElement.dir = value === 'ar' ? 'rtl' : 'ltr';
   };
 
+  const selectorStyle = {
+    // Don't apply input styles to Select - it has different DOM structure
+    width: 140
+  };
+
   return (
     <Select
       value={i18n.language}
       onChange={handleChange}
-      style={{ width: 140 }}
+      style={selectorStyle}
       suffixIcon={<GlobalOutlined />}
       dropdownMatchSelectWidth={false}
       data-testid="language-selector"

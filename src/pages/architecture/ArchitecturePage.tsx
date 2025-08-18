@@ -11,11 +11,14 @@ import {
   GlobalOutlined,
   InboxOutlined,
   ScheduleOutlined,
-  FilterOutlined
+  FilterOutlined,
+  CheckOutlined,
+  MinusCircleOutlined
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useCompanyArchitecture } from '@/api/queries/architecture'
 import { useTheme } from '@/context/ThemeContext'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
 import * as d3 from 'd3'
 
 const { Title, Text } = Typography
@@ -42,9 +45,11 @@ const ArchitecturePage: React.FC = () => {
   const [selectedEntityTypes, setSelectedEntityTypes] = useState<string[]>([
     'company', 'user', 'team', 'region', 'bridge', 'machine', 'repository', 'schedule', 'storage'
   ])
+  const [isVisualizationLoading, setIsVisualizationLoading] = useState(false)
   const svgRef = useRef<SVGSVGElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const { theme } = useTheme()
+  const styles = useComponentStyles()
 
   // Available entity types for filtering
   const entityTypes = [
@@ -160,6 +165,8 @@ const ArchitecturePage: React.FC = () => {
   // Render D3 visualization
   useEffect(() => {
     if (!data || !svgRef.current || !containerRef.current) return
+    
+    setIsVisualizationLoading(true)
 
     const width = containerRef.current.clientWidth || 800
     const height = 600
@@ -284,6 +291,20 @@ const ArchitecturePage: React.FC = () => {
         .attr('fill', (d) => getNodeColor(d.nodeType))
         .attr('stroke', '#333')
         .attr('stroke-width', 2)
+        .style('cursor', 'pointer')
+        .style('transition', 'all 0.2s ease')
+        .on('mouseenter', function(event, d) {
+          d3.select(this)
+            .attr('r', 24)
+            .attr('stroke-width', 3)
+            .style('filter', 'brightness(1.1)')
+        })
+        .on('mouseleave', function(event, d) {
+          d3.select(this)
+            .attr('r', 20)
+            .attr('stroke-width', 2)
+            .style('filter', 'none')
+        })
 
       // Add icons
       node.append('text')
@@ -297,7 +318,9 @@ const ArchitecturePage: React.FC = () => {
         .attr('dy', 35)
         .attr('text-anchor', 'middle')
         .style('font-size', '12px')
-        .style('fill', '#333')
+        .style('fill', theme === 'dark' ? '#e8e8e8' : '#1a1a1a')
+        .style('font-weight', '500')
+        .style('text-shadow', theme === 'dark' ? '1px 1px 2px rgba(0,0,0,0.8)' : '1px 1px 2px rgba(255,255,255,0.8)')
         .text((d) => d.name)
 
       // Add tooltips
@@ -443,6 +466,24 @@ const ArchitecturePage: React.FC = () => {
         .attr('fill', (d: any) => d.data.nodeType === 'placeholder' ? '#ccc' : getNodeColor(d.data.nodeType))
         .attr('stroke', '#333')
         .attr('stroke-width', 2)
+        .style('cursor', (d: any) => d.data.nodeType === 'placeholder' ? 'default' : 'pointer')
+        .style('transition', 'all 0.2s ease')
+        .on('mouseenter', function(event, d: any) {
+          if (d.data.nodeType !== 'placeholder') {
+            d3.select(this)
+              .attr('r', 24)
+              .attr('stroke-width', 3)
+              .style('filter', 'brightness(1.1)')
+          }
+        })
+        .on('mouseleave', function(event, d: any) {
+          if (d.data.nodeType !== 'placeholder') {
+            d3.select(this)
+              .attr('r', 20)
+              .attr('stroke-width', 2)
+              .style('filter', 'none')
+          }
+        })
 
       node.append('text')
         .attr('text-anchor', 'middle')
@@ -454,7 +495,9 @@ const ArchitecturePage: React.FC = () => {
         .attr('dy', 35)
         .attr('text-anchor', 'middle')
         .style('font-size', '12px')
-        .style('fill', '#333')
+        .style('fill', theme === 'dark' ? '#e8e8e8' : '#1a1a1a')
+        .style('font-weight', '500')
+        .style('text-shadow', theme === 'dark' ? '1px 1px 2px rgba(0,0,0,0.8)' : '1px 1px 2px rgba(255,255,255,0.8)')
         .text((d: any) => d.data.name)
         
       // Add tooltips
@@ -521,6 +564,20 @@ const ArchitecturePage: React.FC = () => {
         .attr('fill', (d) => getNodeColor(d.nodeType))
         .attr('stroke', '#333')
         .attr('stroke-width', 2)
+        .style('cursor', 'pointer')
+        .style('transition', 'all 0.2s ease')
+        .on('mouseenter', function(event, d) {
+          d3.select(this)
+            .attr('r', 24)
+            .attr('stroke-width', 3)
+            .style('filter', 'brightness(1.1)')
+        })
+        .on('mouseleave', function(event, d) {
+          d3.select(this)
+            .attr('r', 20)
+            .attr('stroke-width', 2)
+            .style('filter', 'none')
+        })
 
       node.append('text')
         .attr('text-anchor', 'middle')
@@ -532,7 +589,9 @@ const ArchitecturePage: React.FC = () => {
         .attr('dy', 35)
         .attr('text-anchor', 'middle')
         .style('font-size', '12px')
-        .style('fill', '#333')
+        .style('fill', theme === 'dark' ? '#e8e8e8' : '#1a1a1a')
+        .style('font-weight', '500')
+        .style('text-shadow', theme === 'dark' ? '1px 1px 2px rgba(0,0,0,0.8)' : '1px 1px 2px rgba(255,255,255,0.8)')
         .text((d) => d.name)
     }
 
@@ -556,6 +615,11 @@ const ArchitecturePage: React.FC = () => {
         )
       }
     }, viewMode === 'force' ? 1000 : 100) // Wait longer for force simulation
+    
+    // Set loading to false after rendering is complete
+    setTimeout(() => {
+      setIsVisualizationLoading(false)
+    }, viewMode === 'force' ? 1100 : 200)
 
   }, [data, viewMode, isFullscreen, selectedEntityTypes, t])
 
@@ -587,9 +651,14 @@ const ArchitecturePage: React.FC = () => {
         type="error"
         showIcon
         action={
-          <Button size="small" onClick={() => refetch()}>
-            {t('actions.retry', { ns: 'common' })}
-          </Button>
+          <Tooltip title={t('actions.retry', { ns: 'common' })}>
+            <Button 
+              size="small" 
+              icon={<ReloadOutlined />}
+              onClick={() => refetch()}
+              aria-label={t('actions.retry', { ns: 'common' })}
+            />
+          </Tooltip>
         }
       />
     )
@@ -615,10 +684,10 @@ const ArchitecturePage: React.FC = () => {
     <div data-testid="architecture-page">
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         {/* Header */}
-        <Card>
+        <Card style={styles.card}>
           <Space direction="vertical" size="middle" style={{ width: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Title level={4} style={{ margin: 0 }}>
+              <Title level={4} style={{ ...styles.heading4, margin: 0 }}>
                 {t('architecture.title')}
               </Title>
               <Space>
@@ -634,6 +703,7 @@ const ArchitecturePage: React.FC = () => {
                 <Tooltip title={t('actions.refresh', { ns: 'common' })}>
                   <Button 
                     icon={<ReloadOutlined />} 
+                    style={styles.touchTarget}
                     onClick={() => refetch()}
                     data-testid="architecture-refresh-button"
                   />
@@ -641,6 +711,7 @@ const ArchitecturePage: React.FC = () => {
                 <Tooltip title={isFullscreen ? t('actions.exitFullscreen', { ns: 'common' }) : t('actions.fullscreen', { ns: 'common' })}>
                   <Button 
                     icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+                    style={styles.touchTarget}
                     onClick={toggleFullscreen}
                     data-testid="architecture-fullscreen-button"
                   />
@@ -649,8 +720,13 @@ const ArchitecturePage: React.FC = () => {
             </div>
 
             {/* Filter Controls */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <Space align="center">
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: window.innerWidth < 768 ? 'column' : 'row',
+              alignItems: window.innerWidth < 768 ? 'stretch' : 'center', 
+              gap: window.innerWidth < 768 ? '12px' : '16px' 
+            }}>
+              <Space align="center" style={{ marginBottom: window.innerWidth < 768 ? '8px' : '0' }}>
                 <FilterOutlined style={{ color: '#556b2f' }} />
                 <Text strong>{t('architecture.filterEntities', { ns: 'system' })}</Text>
               </Space>
@@ -660,8 +736,11 @@ const ArchitecturePage: React.FC = () => {
                 placeholder={t('architecture.selectEntities', { ns: 'system' })}
                 value={selectedEntityTypes}
                 onChange={setSelectedEntityTypes}
-                style={{ minWidth: 400 }}
-                maxTagCount={3}
+                style={{ 
+                  minWidth: window.innerWidth < 768 ? '100%' : 400,
+                  minHeight: window.innerWidth < 768 ? '44px' : 'auto'
+                }}
+                maxTagCount={window.innerWidth < 768 ? 2 : 3}
                 maxTagPlaceholder={(omittedValues) => `+${omittedValues.length} more`}
                 data-testid="architecture-entity-filter"
               >
@@ -674,21 +753,37 @@ const ArchitecturePage: React.FC = () => {
                   </Select.Option>
                 ))}
               </Select>
-              <Space>
-                <Button 
-                  size="small"
-                  onClick={() => setSelectedEntityTypes(entityTypes.map(t => t.value))}
-                  data-testid="architecture-select-all-button"
-                >
-                  {t('architecture.selectAll', { ns: 'system' })}
-                </Button>
-                <Button 
-                  size="small"
-                  onClick={() => setSelectedEntityTypes([])}
-                  data-testid="architecture-clear-all-button"
-                >
-                  {t('architecture.clearAll', { ns: 'system' })}
-                </Button>
+              <Space style={{ 
+                justifyContent: window.innerWidth < 768 ? 'space-between' : 'flex-start',
+                width: window.innerWidth < 768 ? '100%' : 'auto'
+              }}>
+                <Tooltip title={t('architecture.selectAll', { ns: 'system' })}>
+                  <Button 
+                    icon={<CheckOutlined />}
+                    size={window.innerWidth < 768 ? 'default' : 'small'}
+                    style={{ 
+                      ...(window.innerWidth < 768 ? styles.touchTarget : styles.touchTargetSmall),
+                      flex: window.innerWidth < 768 ? '1' : 'none'
+                    }}
+                    onClick={() => setSelectedEntityTypes(entityTypes.map(t => t.value))}
+                    data-testid="architecture-select-all-button"
+                    aria-label={t('architecture.selectAll', { ns: 'system' })}
+                  />
+                </Tooltip>
+                <Tooltip title={t('architecture.clearAll', { ns: 'system' })}>
+                  <Button 
+                    icon={<MinusCircleOutlined />}
+                    size={window.innerWidth < 768 ? 'default' : 'small'}
+                    style={{ 
+                      ...(window.innerWidth < 768 ? styles.touchTarget : styles.touchTargetSmall),
+                      flex: window.innerWidth < 768 ? '1' : 'none',
+                      marginLeft: window.innerWidth < 768 ? '8px' : '0'
+                    }}
+                    onClick={() => setSelectedEntityTypes([])}
+                    data-testid="architecture-clear-all-button"
+                    aria-label={t('architecture.clearAll', { ns: 'system' })}
+                  />
+                </Tooltip>
               </Space>
             </div>
 
@@ -755,14 +850,30 @@ const ArchitecturePage: React.FC = () => {
         </Card>
 
         {/* Visualization */}
-        <Card>
-          <div ref={containerRef} style={{ width: '100%', height: '600px', overflow: 'hidden' }} data-testid="architecture-visualization-container">
+        <Card style={styles.card}>
+          <div ref={containerRef} style={{ width: '100%', height: '600px', overflow: 'hidden', position: 'relative' }} data-testid="architecture-visualization-container">
+            {isVisualizationLoading && (
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 10
+              }}>
+                <Spin size="large" tip={t('messages.loading', { ns: 'common' })} />
+              </div>
+            )}
             <svg ref={svgRef} style={{ width: '100%', height: '100%' }} data-testid="architecture-svg"></svg>
           </div>
         </Card>
 
         {/* Legend */}
-        <Card title={t('architecture.legend')}>
+        <Card title={t('architecture.legend')} style={styles.card}>
           <Row gutter={[16, 16]}>
             {Object.entries({
               company: t('architecture.nodeCompany'),

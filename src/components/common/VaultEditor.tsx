@@ -15,6 +15,7 @@ import {
   Divider,
   Typography,
   Button,
+  Segmented,
 } from 'antd'
 import {
   InfoCircleOutlined,
@@ -24,6 +25,7 @@ import {
   QuestionCircleOutlined,
   BulbOutlined,
   CheckCircleOutlined,
+  WifiOutlined,
 } from '@/utils/optimizedIcons'
 import { SimpleJsonEditor } from './SimpleJsonEditor'
 import { NestedObjectEditor } from './NestedObjectEditor'
@@ -37,6 +39,8 @@ import { useTheme } from '@/context/ThemeContext'
 import { useCreateQueueItem, useQueueItemTrace } from '@/api/queries/queue'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import { useTeams } from '@/api/queries/teams'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing, borderRadius, fontSize } from '@/utils/styleConstants'
 
 const { Text } = Typography
 
@@ -133,6 +137,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   
   const uiMode = useAppSelector((state) => state.ui.uiMode)
   const { theme } = useTheme()
+  const styles = useComponentStyles()
   
   // Queue vault builder
   const { buildQueueVault } = useQueueVaultBuilder()
@@ -840,11 +845,75 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 
     const commonProps = {
       placeholder: fieldPlaceholder,
-      style: { width: '100%' },
+      style: { 
+        // Don't apply input styles to Select - different DOM structure
+        width: '100%' 
+      },
     }
 
     // Render based on type using helper components
     if (field.type === 'boolean') {
+      // Special rendering for ssh_key_configured field with vertical segmented control
+      if (fieldName === 'ssh_key_configured') {
+        return (
+          <Form.Item
+            noStyle
+            shouldUpdate
+          >
+            {({ getFieldValue, setFieldValue }) => {
+              const currentValue = getFieldValue(fieldName)
+              
+              return (
+                <FieldFormItem
+                  name={fieldName}
+                  label={fieldLabel}
+                  description={fieldDescription}
+                  initialValue={field.default === true}
+                  normalize={(value) => value === true || value === 'true'}
+                >
+                  <Segmented
+                    block
+                    data-testid={`vault-editor-field-${fieldName}`}
+                    value={currentValue === true}
+                    onChange={(value) => {
+                      // Update the form field value
+                      setFieldValue(fieldName, value === true)
+                      // Trigger form change to update dependent fields
+                      handleFormChange({ [fieldName]: value === true })
+                    }}
+                    options={[
+                      { 
+                        label: (
+                          <Space direction="vertical" align="center" size={spacing('XS')}>
+                            <CheckCircleOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD }} />
+                            <span style={{ fontSize: fontSize('SM') }}>Configured</span>
+                          </Space>
+                        ), 
+                        value: true 
+                      },
+                      { 
+                        label: (
+                          <Space direction="vertical" align="center" size={spacing('XS')}>
+                            <ExclamationCircleOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD }} />
+                            <span style={{ fontSize: fontSize('SM') }}>Not Configured</span>
+                          </Space>
+                        ), 
+                        value: false 
+                      }
+                    ]}
+                    style={{ 
+                      // Height managed by Radio.Group default styles
+                      borderRadius: borderRadius('LG')
+                    }}
+                  />
+                </FieldFormItem>
+              )
+            }}
+          </Form.Item>
+        )
+      }
+      
+      // Default Switch for other boolean fields
       return (
         <FieldFormItem
           name={fieldName}
@@ -1066,19 +1135,25 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
             {fieldLabel}
             {fieldDescription && (
               <Tooltip title={fieldDescription}>
-                <InfoCircleOutlined />
+                <InfoCircleOutlined style={{ fontSize: 12 }} />
               </Tooltip>
             )}
           </Space>
         }
         rules={rules}
         initialValue={field.default}
+        style={{ marginBottom: spacing('MD') }}
       >
         <Input
           {...commonProps}
           type={field.sensitive ? 'password' : 'text'}
           autoComplete={field.sensitive ? 'new-password' : 'off'}
           data-testid={`vault-editor-field-${fieldName}`}
+          style={{ 
+            // Base styles handled by CSS
+            width: '100%', 
+            minWidth: 0 
+          }}
           addonAfter={isGeneratable ? (
             <FieldGenerator
               fieldType={
@@ -1104,21 +1179,32 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         message={t(`vaultEditor.${entityDef.descriptionKey}`)}
         type="info"
         showIcon
-        style={{ marginBottom: 12, flexShrink: 0 }}
+        style={{ 
+          marginBottom: spacing('SM'), 
+          flexShrink: 0,
+          borderRadius: borderRadius('LG'),
+          fontSize: fontSize('SM')
+        }}
       />
 
       <Form
         form={form}
         layout="horizontal"
-        labelCol={{ span: 6 }}
-        wrapperCol={{ span: 18 }}
+        labelCol={{ xs: { span: 24 }, sm: { span: 6 } }}
+        wrapperCol={{ xs: { span: 24 }, sm: { span: 18 } }}
         labelAlign="right"
         colon={true}
         onValuesChange={(changedValues, allValues) => {
           handleFormChange(changedValues)
         }}
         autoComplete="off"
-        style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}
+        style={{ 
+          flex: 1, 
+          minHeight: 0, 
+          overflowY: 'auto',
+          overflowX: 'hidden'
+        }}
+        className="vault-editor-form"
         data-testid="vault-editor-form"
       >
         <Collapse 
@@ -1171,14 +1257,23 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               {entityType === 'MACHINE' && (
                 <Form.Item 
                   wrapperCol={{ offset: 6, span: 18 }}
-                  style={{ marginTop: 16 }}
+                  style={{ marginTop: spacing('MD') }}
                 >
-                  <Space>
-                    <Button
-                      type="primary"
-                      loading={isCreatingQueueItem || isTestingConnection}
-                      data-testid="vault-editor-test-connection"
-                      onClick={async () => {
+                  <Space size="middle" wrap style={{ width: '100%' }}>
+                    <Tooltip title={t('vaultEditor.testConnection.button')}>
+                      <Button
+                        type="primary"
+                        icon={<WifiOutlined />}
+                        loading={isCreatingQueueItem || isTestingConnection}
+                        data-testid="vault-editor-test-connection"
+                        aria-label={t('vaultEditor.testConnection.button')}
+                        style={{ 
+                          ...styles.touchTarget,
+                          borderRadius: borderRadius('LG'),
+                          fontSize: fontSize('SM'),
+                          padding: `0 ${spacing('LG')}px`
+                        }}
+                        onClick={async () => {
                       // Get current form values
                       const values = form.getFieldsValue()
                       const { ip, user, ssh_password, port, datastore } = values
@@ -1252,11 +1347,18 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                         message.error(t('vaultEditor.testConnection.failed'))
                       }
                     }}
-                  >
-                    {t('vaultEditor.testConnection.button')}
-                    </Button>
+                  />
+                    </Tooltip>
                     {testConnectionSuccess && (
-                      <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 20 }} />
+                      <CheckCircleOutlined 
+                        style={{ 
+                          color: '#52c41a', 
+                          fontSize: 20,
+                          marginLeft: 8,
+                          display: 'flex',
+                          alignItems: 'center'
+                        }} 
+                      />
                     )}
                   </Space>
                 </Form.Item>
@@ -1487,7 +1589,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 description={t('vaultEditor.extraFieldsWarningDescription')}
                 type="warning"
                 showIcon
-                style={{ marginBottom: 16 }}
+                style={{ marginBottom: 'var(--space-md)' }}
               />
               <Card size="small">
                 <pre style={{ margin: 0, overflow: 'auto' }}>

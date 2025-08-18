@@ -84,24 +84,25 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
   const containerStyles: React.CSSProperties = {
     height: typeof height === 'number' ? `${height}px` : height,
     position: 'relative',
-    border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
-    borderRadius: '0.375rem',
+    border: `1px solid var(--color-border-primary)`,
+    borderRadius: '8px', // Design system border radius
     overflow: 'hidden',
-    backgroundColor: isDark ? '#1f2937' : '#ffffff',
+    backgroundColor: 'var(--color-bg-primary)',
     fontFamily: 'Consolas, Monaco, "Courier New", monospace',
     fontSize: '14px',
-    lineHeight: '1.5'
+    lineHeight: '1.5',
+    boxShadow: 'var(--shadow-sm)'
   };
 
   const textareaStyles: React.CSSProperties = {
     width: '100%',
     height: '100%',
-    padding: '12px',
+    padding: 'var(--space-md)', // Design system spacing
     border: 'none',
     outline: 'none',
     resize: 'none',
     backgroundColor: 'transparent',
-    color: isDark ? '#e5e7eb' : '#1f2937',
+    color: 'var(--color-text-primary)', // Design system text color
     fontFamily: 'inherit',
     fontSize: 'inherit',
     lineHeight: 'inherit',
@@ -113,25 +114,32 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: '4px 8px',
-    backgroundColor: isDark ? '#991b1b' : '#fee2e2',
-    color: isDark ? '#fca5a5' : '#dc2626',
+    padding: 'var(--space-xs) var(--space-sm)', // Design system spacing
+    backgroundColor: isDark ? 'var(--color-bg-error)' : '#fee2e2',
+    color: 'var(--color-error)', // Design system error color
     fontSize: '12px',
-    borderTop: `1px solid ${isDark ? '#dc2626' : '#fca5a5'}`
+    fontWeight: '500',
+    borderTop: `1px solid var(--color-error)`,
+    borderRadius: '0 0 8px 8px'
   };
 
   const buttonStyles: React.CSSProperties = {
     position: 'absolute',
-    top: '8px',
-    right: '8px',
-    padding: '4px 12px',
-    backgroundColor: isDark ? '#374151' : '#e5e7eb',
-    color: isDark ? '#e5e7eb' : '#1f2937',
-    border: 'none',
-    borderRadius: '0.25rem',
+    top: 'var(--space-sm)',
+    right: 'var(--space-sm)',
+    padding: 'var(--space-xs) var(--space-md)', // Design system spacing
+    backgroundColor: 'var(--color-bg-secondary)',
+    color: 'var(--color-text-primary)',
+    border: `1px solid var(--color-border-primary)`,
+    borderRadius: '6px', // Design system border radius
     fontSize: '12px',
+    fontWeight: '500',
     cursor: 'pointer',
-    zIndex: 10
+    zIndex: 10,
+    minHeight: '32px',
+    minWidth: '60px',
+    transition: 'all 0.2s ease',
+    boxShadow: 'var(--shadow-sm)'
   };
 
   return (
@@ -142,10 +150,14 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
           onClick={formatJson}
           style={buttonStyles}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = isDark ? '#4b5563' : '#d1d5db';
+            e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+            e.currentTarget.style.boxShadow = 'var(--shadow-md)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = isDark ? '#374151' : '#e5e7eb';
+            e.currentTarget.style.backgroundColor = 'var(--color-bg-secondary)';
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
           }}
         >
           Format

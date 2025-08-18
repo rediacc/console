@@ -7,6 +7,8 @@ import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 import QRCode from 'react-qr-code'
 import { message } from 'antd'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing, fontSize } from '@/utils/styleConstants'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -17,6 +19,7 @@ interface TwoFactorSettingsProps {
 
 const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel }) => {
   const { t } = useTranslation('settings')
+  const styles = useComponentStyles()
   const [passwordForm] = Form.useForm()
   const [disableForm] = Form.useForm()
   const userEmail = useSelector((state: RootState) => state.auth.user?.email)
@@ -110,7 +113,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
   const renderMainContent = () => {
     if (statusLoading) {
       return (
-        <div style={{ textAlign: 'center', padding: '40px 0' }} data-testid="tfa-settings-loading">
+        <div style={{ textAlign: 'center', padding: `${spacing('XXXL')}px 0` }} data-testid="tfa-settings-loading">
           <Spin size="large" />
         </div>
       )
@@ -118,10 +121,10 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
 
     if (showVerification && twoFASecret) {
       return (
-        <Space direction="vertical" size={24} style={{ width: '100%' }}>
+        <Space direction="vertical" size={spacing('LG')} style={{ width: '100%' }}>
           <div style={{ textAlign: 'center' }}>
-            <SafetyCertificateOutlined style={{ fontSize: 48, color: '#556b2f' }} />
-            <Title level={4} style={{ marginTop: 16 }}>
+            <SafetyCertificateOutlined style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XXXXL, color: 'var(--color-primary)' }} />
+            <Title level={4} style={{ marginTop: spacing('MD') }}>
               {t('twoFactorAuth.verification.title')}
             </Title>
             <Paragraph type="secondary">
@@ -137,7 +140,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
                 label: t('twoFactorAuth.setupMethods.qrCode'),
                 children: (
                   <Space direction="vertical" align="center" style={{ width: '100%' }}>
-                    <div style={{ background: 'white', padding: 16, borderRadius: 8 }}>
+                    <div style={{ background: 'white', padding: spacing('MD'), borderRadius: DESIGN_TOKENS.BORDER_RADIUS.LG }}>
                       <QRCode 
                         value={generateOtpAuthUrl(twoFASecret, userEmail || '')} 
                         size={200}
@@ -158,7 +161,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
                       description={
                         <Space direction="vertical" style={{ width: '100%' }}>
                           <Text>{t('twoFactorAuth.manualSetup.instructions')}</Text>
-                          <Space.Compact style={{ width: '100%', marginTop: 8 }}>
+                          <Space.Compact style={{ width: '100%', marginTop: spacing('SM') }}>
                             <Input 
                               value={twoFASecret} 
                               readOnly 
@@ -200,7 +203,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
                 size="large"
                 placeholder={t('twoFactorAuth.verification.codePlaceholder')}
                 maxLength={6}
-                style={{ textAlign: 'center', fontSize: '20px', letterSpacing: '8px' }}
+                style={{ textAlign: 'center', fontSize: DESIGN_TOKENS.FONT_SIZE.XL, letterSpacing: DESIGN_TOKENS.LETTER_SPACING.WIDER }}
                 autoComplete="off"
                 data-testid="tfa-settings-verification-input"
               />
@@ -223,8 +226,8 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
                   htmlType="submit"
                   loading={enableTFAMutation.isPending}
                   style={{
-                    background: '#556b2f',
-                    borderColor: '#556b2f',
+                    background: 'var(--color-primary)',
+                    borderColor: 'var(--color-primary)',
                   }}
                   data-testid="tfa-settings-verification-submit-button"
                 >
@@ -245,7 +248,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
           subTitle={t('twoFactorAuth.enableSuccess.subtitle')}
           data-testid="tfa-settings-success-result"
           extra={
-            <Space direction="vertical" size={24} style={{ width: '100%' }}>
+            <Space direction="vertical" size={spacing('LG')} style={{ width: '100%' }}>
               <Alert
                 message={t('twoFactorAuth.enableSuccess.verified')}
                 description={t('twoFactorAuth.enableSuccess.verifiedDescription')}
@@ -266,8 +269,8 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
                   refetchTFAStatus()
                 }}
                 style={{
-                  background: '#556b2f',
-                  borderColor: '#556b2f',
+                  background: 'var(--color-primary)',
+                  borderColor: 'var(--color-primary)',
                 }}
                 data-testid="tfa-settings-success-done-button"
               >
@@ -283,10 +286,10 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
     const isTFAEnabled = Boolean(twoFAStatus?.isTFAEnabled)
 
     return (
-      <Space direction="vertical" size={24} style={{ width: '100%' }}>
+      <Space direction="vertical" size={spacing('LG')} style={{ width: '100%' }}>
         <div style={{ textAlign: 'center' }}>
-          <SafetyCertificateOutlined style={{ fontSize: 64, color: isTFAEnabled ? '#52c41a' : '#8c8c8c' }} />
-          <Title level={4} style={{ marginTop: 16 }}>
+          <SafetyCertificateOutlined style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XXXXXXL, color: isTFAEnabled ? 'var(--color-success)' : 'var(--color-text-quaternary)' }} />
+          <Title level={4} style={{ marginTop: spacing('MD') }}>
             {isTFAEnabled ? t('twoFactorAuth.status.enabled') : t('twoFactorAuth.status.disabled')}
           </Title>
           <Paragraph type="secondary">
@@ -298,7 +301,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
         </div>
 
         <Card>
-          <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <Space direction="vertical" size={spacing('MD')} style={{ width: '100%' }}>
             <Title level={5}>{t('twoFactorAuth.whatIs.title')}</Title>
             <Paragraph>
               {t('twoFactorAuth.whatIs.description')}
@@ -331,8 +334,8 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
             icon={<CheckCircleOutlined />}
             onClick={() => setShowEnableModal(true)}
             style={{
-              background: '#556b2f',
-              borderColor: '#556b2f',
+              background: 'var(--color-primary)',
+              borderColor: 'var(--color-primary)',
             }}
             data-testid="tfa-settings-enable-button"
           >
@@ -348,7 +351,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
       <Modal
         title={
           <Space>
-            <SafetyCertificateOutlined style={{ color: '#556b2f' }} />
+            <SafetyCertificateOutlined style={{ color: 'var(--color-primary)' }} />
             <span>{t('twoFactorAuth.title')}</span>
           </Space>
         }
@@ -383,7 +386,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
             description={t('twoFactorAuth.enableModal.warningDescription')}
             type="warning"
             showIcon
-            style={{ marginBottom: 24 }}
+            style={{ marginBottom: spacing('LG') }}
             data-testid="tfa-settings-enable-warning-alert"
           />
           
@@ -419,8 +422,8 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
                 htmlType="submit"
                 loading={enableTFAMutation.isPending}
                 style={{
-                  background: '#556b2f',
-                  borderColor: '#556b2f',
+                  background: 'var(--color-primary)',
+                  borderColor: 'var(--color-primary)',
                 }}
                 data-testid="tfa-settings-enable-submit-button"
               >
@@ -453,7 +456,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
             description={t('twoFactorAuth.disableModal.warningDescription')}
             type="error"
             showIcon
-            style={{ marginBottom: 24 }}
+            style={{ marginBottom: spacing('LG') }}
             data-testid="tfa-settings-disable-warning-alert"
           />
           
@@ -486,7 +489,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
               size="large"
               placeholder={t('twoFactorAuth.disableModal.codePlaceholder')}
               maxLength={6}
-              style={{ textAlign: 'center', fontSize: '20px', letterSpacing: '8px' }}
+              style={{ textAlign: 'center', fontSize: DESIGN_TOKENS.FONT_SIZE.XL, letterSpacing: DESIGN_TOKENS.LETTER_SPACING.WIDER }}
               autoComplete="off"
               data-testid="tfa-settings-disable-code-input"
             />

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Repository } from '@/api/queries/repositories'
 import { Table, Button, Tag, Space, Empty, Typography, Dropdown } from 'antd'
+import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
 import { 
   FolderOutlined, 
   CloudUploadOutlined, 
@@ -42,6 +43,8 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
 }) => {
   const { t } = useTranslation(['resources', 'common'])
   const { theme } = useTheme()
+  const tableStyles = useTableStyles()
+  const componentStyles = useComponentStyles()
   
   // Calculate 25% of window width for the panel
   const calculatePanelWidth = () => {
@@ -85,6 +88,7 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
             type="link" 
             onClick={() => handleRowClick(record)}
             style={{ 
+              ...componentStyles.touchTarget,
               padding: 0, 
               height: 'auto',
               fontWeight: selectedRepository?.repositoryGuid === record.repositoryGuid ? 'bold' : 'normal'
@@ -171,6 +175,7 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
               size="small"
               icon={<FunctionOutlined />}
               onClick={(e) => e.stopPropagation()}
+              style={componentStyles.touchTarget}
               data-testid={`split-repo-view-actions-button-${record.repositoryName}`}
             >
               {t('common:actions.actions')}
@@ -230,6 +235,7 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
               type="primary"
               icon={<CloudUploadOutlined />}
               onClick={onCreateRepository}
+              style={componentStyles.touchTarget}
               data-testid="split-repo-view-create-button"
             >
               {t('resources:repositories.create')}
@@ -247,6 +253,7 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
             pagination={false}
             loading={loading}
             scroll={{ x: 'max-content' }}
+            style={tableStyles.tableContainer}
             data-testid="split-repo-view-table"
             onRow={(record) => ({
               onClick: () => handleRowClick(record),

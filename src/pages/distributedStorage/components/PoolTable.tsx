@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next'
 import { DistributedStoragePool, DistributedStorageCluster } from '@/api/queries/distributedStorage'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
 import RbdImageList from './RbdImageList'
+import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
 
 interface PoolTableProps {
   pools: DistributedStoragePool[]
@@ -37,6 +38,8 @@ export const PoolTable: React.FC<PoolTableProps> = ({
   onRunFunction
 }) => {
   const { t } = useTranslation(['distributedStorage', 'common'])
+  const tableStyles = useTableStyles()
+  const componentStyles = useComponentStyles()
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
   const [auditTraceModal, setAuditTraceModal] = useState<{
     open: boolean
@@ -103,10 +106,10 @@ export const PoolTable: React.FC<PoolTableProps> = ({
               transition: 'transform 0.3s ease',
               transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'
             }}>
-              <RightOutlined style={{ fontSize: 12, color: '#999' }} />
+              <RightOutlined style={{ ...tableStyles.icon.small, color: 'var(--color-text-tertiary)' }} />
             </span>
-            <DatabaseOutlined style={{ color: '#1890ff' }} />
-            <strong>{name}</strong>
+            <DatabaseOutlined style={{ ...tableStyles.icon.medium, color: 'var(--color-primary)' }} />
+            <strong style={{ color: 'var(--color-text-primary)' }}>{name}</strong>
           </Space>
         )
       },
@@ -117,7 +120,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
       key: 'vaultVersion',
       width: 100,
       align: 'center',
-      render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
+      render: (version: number) => <Tag color="blue">{t('common:general.versionFormat', { version })}</Tag>,
     },
     {
       title: t('common:table.actions'),
@@ -131,6 +134,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
             icon={<EditOutlined />}
             onClick={() => onEditPool(record)}
             data-testid={`ds-pool-edit-${record.poolName}`}
+            style={tableStyles.tableActionButton}
           >
             {t('common:actions.edit')}
           </Button>
@@ -153,12 +157,13 @@ export const PoolTable: React.FC<PoolTableProps> = ({
               size="small"
               icon={<FunctionOutlined />}
               data-testid={`ds-pool-function-dropdown-${record.poolName}`}
+              style={tableStyles.tableActionButton}
             >
               {t('common:actions.remote')}
             </Button>
           </Dropdown>
           <Button
-            type="primary"
+            type="default"
             size="small"
             icon={<HistoryOutlined />}
             data-testid={`ds-pool-trace-${record.poolName}`}
@@ -170,6 +175,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
                 entityName: record.poolName
               })
             }}
+            style={tableStyles.tableActionButton}
           >
             {t('common:actions.trace')}
           </Button>
@@ -180,6 +186,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
             icon={<DeleteOutlined />}
             onClick={() => handleDelete(record)}
             data-testid={`ds-pool-delete-${record.poolName}`}
+            style={tableStyles.tableActionButton}
           >
             {t('common:actions.delete')}
           </Button>
@@ -198,9 +205,9 @@ export const PoolTable: React.FC<PoolTableProps> = ({
     return (
       <Empty
         description={t('pools.noPools')}
-        style={{ marginTop: 48 }}
+        style={componentStyles.marginBottom.xl}
       >
-        <Button type="primary" onClick={onCreatePool} data-testid="ds-create-pool-empty">
+        <Button type="primary" onClick={onCreatePool} data-testid="ds-create-pool-empty" style={componentStyles.touchTarget}>
           {t('pools.create')}
         </Button>
       </Empty>
@@ -218,55 +225,57 @@ export const PoolTable: React.FC<PoolTableProps> = ({
             key={clusterName}
             title={
               <Space>
-                <CloudServerOutlined style={{ color: '#556b2f' }} />
-                <span>{t('pools.clusterPrefix')}: <strong>{clusterName}</strong></span>
-                {cluster && <Tag color="#8FBC8F">{cluster.teamName}</Tag>}
+                <CloudServerOutlined style={{ ...tableStyles.icon.medium, color: 'var(--color-primary)' }} />
+                <span>{t('pools.clusterPrefix')}: <strong style={{ color: 'var(--color-text-primary)' }}>{clusterName}</strong></span>
+                {cluster && <Tag color="green">{cluster.teamName}</Tag>}
               </Space>
             }
-            style={{ marginBottom: 16 }}
+            style={{ ...componentStyles.card, ...componentStyles.marginBottom.md }}
           >
-            <Table
-              columns={columns}
-              dataSource={clusterPools}
-              rowKey="poolGuid"
-              loading={loading}
-              scroll={{ x: 'max-content' }}
-              pagination={false}
-              data-testid={`ds-pool-table-${clusterName}`}
-              expandable={{
-                expandedRowRender,
-                expandedRowKeys,
-                onExpandedRowsChange: (keys) => setExpandedRowKeys(keys as string[]),
-                expandIcon: () => null,
-                expandRowByClick: false,
-              }}
-              onRow={(record) => ({
-                'data-testid': `ds-pool-row-${record.poolName}`,
-                onClick: (e) => {
-                  const target = e.target as HTMLElement
-                  if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
-                    return
+            <div style={tableStyles.tableContainer}>
+              <Table
+                columns={columns}
+                dataSource={clusterPools}
+                rowKey="poolGuid"
+                loading={loading}
+                scroll={{ x: 'max-content' }}
+                pagination={false}
+                data-testid={`ds-pool-table-${clusterName}`}
+                expandable={{
+                  expandedRowRender,
+                  expandedRowKeys,
+                  onExpandedRowsChange: (keys) => setExpandedRowKeys(keys as string[]),
+                  expandIcon: () => null,
+                  expandRowByClick: false,
+                }}
+                onRow={(record) => ({
+                  'data-testid': `ds-pool-row-${record.poolName}`,
+                  onClick: (e) => {
+                    const target = e.target as HTMLElement
+                    if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
+                      return
+                    }
+                    
+                    const isExpanded = expandedRowKeys.includes(record.poolGuid)
+                    if (isExpanded) {
+                      setExpandedRowKeys(expandedRowKeys.filter(key => key !== record.poolGuid))
+                    } else {
+                      setExpandedRowKeys([...expandedRowKeys, record.poolGuid])
+                    }
+                  },
+                  style: { 
+                    cursor: 'pointer',
+                    transition: 'background-color 0.3s ease'
+                  },
+                  onMouseEnter: (e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--color-fill-tertiary)'
+                  },
+                  onMouseLeave: (e) => {
+                    e.currentTarget.style.backgroundColor = ''
                   }
-                  
-                  const isExpanded = expandedRowKeys.includes(record.poolGuid)
-                  if (isExpanded) {
-                    setExpandedRowKeys(expandedRowKeys.filter(key => key !== record.poolGuid))
-                  } else {
-                    setExpandedRowKeys([...expandedRowKeys, record.poolGuid])
-                  }
-                },
-                style: { 
-                  cursor: 'pointer',
-                  transition: 'background-color 0.3s ease'
-                },
-                onMouseEnter: (e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.02)'
-                },
-                onMouseLeave: (e) => {
-                  e.currentTarget.style.backgroundColor = ''
-                }
-              })}
-            />
+                })}
+              />
+            </div>
           </Card>
         )
       })}

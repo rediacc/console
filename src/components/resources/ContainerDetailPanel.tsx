@@ -12,6 +12,7 @@ import {
   Divider,
   Statistic
 } from 'antd'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { 
   CloseOutlined,
   ClockCircleOutlined,
@@ -75,6 +76,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
 }) => {
   const { t } = useTranslation(['resources', 'common'])
   const { theme } = useTheme()
+  const componentStyles = useComponentStyles()
 
   // Handle escape key
   useEffect(() => {
@@ -153,7 +155,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             type="text"
             icon={<CloseOutlined />}
             onClick={onClose}
-            style={{ marginRight: -8 }}
+            style={{ ...componentStyles.touchTarget, marginRight: -8 }}
             data-testid="container-detail-close"
           />
         )}
@@ -183,8 +185,8 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
         {container && (
           <>
             {/* Basic Information */}
-            <Card size="small" style={{ marginBottom: 16 }} data-testid="container-detail-basic-info">
-              <Row gutter={[16, 16]}>
+            <Card size="small" style={{ ...componentStyles.card, marginBottom: 16 }} data-testid="container-detail-basic-info">
+              <Row gutter={[16, 16]} style={componentStyles.marginBottom.lg}>
                 <Col span={24}>
                   <Space direction="vertical" style={{ width: '100%' }} size="small">
                     <div>
@@ -222,7 +224,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
               </Space>
             </Divider>
 
-            <Row gutter={[16, 16]}>
+            <Row gutter={[16, 16]} style={componentStyles.marginBottom.lg}>
               <Col xs={24} sm={12}>
                 <Card size="small" data-testid="container-detail-cpu-card">
                   <Statistic
@@ -293,7 +295,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
               </Space>
             </Divider>
 
-            <Card size="small" style={{ marginBottom: 16 }} data-testid="container-detail-configuration">
+            <Card size="small" style={{ ...componentStyles.card, marginBottom: 16 }} data-testid="container-detail-configuration">
               <Space direction="vertical" style={{ width: '100%' }} size="middle">
                 {/* Command */}
                 <div>
@@ -358,7 +360,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
               </Space>
             </Divider>
 
-            <Card size="small" data-testid="container-detail-environment">
+            <Card size="small" style={componentStyles.card} data-testid="container-detail-environment">
               <Space direction="vertical" style={{ width: '100%' }} size="middle">
                 {/* Mounts */}
                 <div>

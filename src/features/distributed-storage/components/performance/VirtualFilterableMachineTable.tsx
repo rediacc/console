@@ -5,6 +5,7 @@ import { VirtualMachineTable } from './VirtualMachineTable'
 import { Machine, MachineAssignmentType } from '@/types'
 import { MachineAssignmentService } from '@/features/distributed-storage'
 import { useDebounce } from '@/features/distributed-storage/utils/useDebounce'
+import { useComponentStyles, useFormStyles } from '@/hooks/useComponentStyles'
 
 const { Option } = Select
 
@@ -33,6 +34,9 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
   const [assignmentFilter, setAssignmentFilter] = useState<MachineAssignmentType | 'ALL'>('ALL')
   const [pageSize, setPageSize] = useState(100)
   const [displayedCount, setDisplayedCount] = useState(100)
+  
+  const styles = useComponentStyles()
+  const formStyles = useFormStyles()
   
   // Use debounced search for better performance
   const debouncedSearch = useDebounce(searchQuery, 300)
@@ -106,16 +110,19 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
   const hasMore = displayedCount < filteredMachines.length
 
   return (
-    <div data-testid="filterable-machine-container">
-      <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
-        <Space wrap>
+    <div data-testid="filterable-machine-container" style={styles.container}>
+      <Space direction="vertical" style={{ width: '100%', ...styles.marginBottom.md }}>
+        <Space wrap style={{ gap: styles.padding.sm.padding }}>
           <Input
             data-testid="filterable-machine-search"
             prefix={<SearchOutlined />}
             placeholder="Search machines..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            style={{ width: 300 }}
+            style={{ 
+              width: 300,
+              ...formStyles.formInput
+            }}
             allowClear
           />
           
@@ -123,7 +130,10 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
             data-testid="filterable-machine-filter-assignment"
             value={assignmentFilter}
             onChange={setAssignmentFilter}
-            style={{ width: 200 }}
+            style={{ 
+              width: 200,
+              ...formStyles.formInput
+            }}
             placeholder="Filter by assignment"
           >
             <Option value="ALL" data-testid="filterable-machine-filter-option-all">
@@ -157,7 +167,10 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
             data-testid="filterable-machine-page-size"
             value={pageSize}
             onChange={setPageSize}
-            style={{ width: 150 }}
+            style={{ 
+              width: 150,
+              ...formStyles.formInput
+            }}
           >
             <Option value={50} data-testid="filterable-machine-page-size-50">50 per batch</Option>
             <Option value={100} data-testid="filterable-machine-page-size-100">100 per batch</Option>
@@ -171,13 +184,23 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
               icon={<ReloadOutlined />}
               onClick={onRefresh}
               loading={loading}
+              style={{
+                ...styles.buttonSecondary,
+                ...styles.touchTarget
+              }}
             >
               Refresh
             </Button>
           )}
         </Space>
 
-        <div data-testid="filterable-machine-status" style={{ color: '#666' }}>
+        <div 
+          data-testid="filterable-machine-status" 
+          style={{ 
+            ...styles.caption,
+            color: 'var(--color-text-secondary)'
+          }}
+        >
           Showing {displayedMachines.length} of {filteredMachines.length} machines
           {hasMore && ' (scroll to load more)'}
         </div>

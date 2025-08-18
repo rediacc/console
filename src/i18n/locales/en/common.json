@@ -8,7 +8,10 @@
     "queue": "Queue",
     "system": "System",
     "audit": "Audit",
-    "logout": "Logout"
+    "logout": "Logout",
+    "mainNavigation": "Main navigation",
+    "openMobileMenu": "Open mobile menu",
+    "closeMobileMenu": "Close mobile menu"
   },
   "actions": {
     "edit": "Edit",

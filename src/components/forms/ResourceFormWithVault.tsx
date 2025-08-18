@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react'
-import { Divider, Alert, Button, Space, Upload, message, Form, Input, Select, InputNumber } from 'antd'
+import { Divider, Alert, Button, Space, Upload, message, Form, Input, Select, InputNumber, Tooltip } from 'antd'
 import { UploadOutlined, DownloadOutlined } from '@/utils/optimizedIcons'
 import { UseFormReturn, Controller } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import VaultEditor from '../common/VaultEditor'
+import { useFormStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants'
 
 export interface ResourceFormWithVaultRef {
   submit: () => Promise<void>
@@ -64,6 +66,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     isEditMode = false,
   }, ref) {
     const { t } = useTranslation('common')
+    const styles = useFormStyles()
     const [vaultData, setVaultData] = useState<Record<string, any>>(initialVaultData)
     const [isVaultValid, setIsVaultValid] = useState(true)
     const [vaultValidationErrors, setVaultValidationErrors] = useState<string[]>([])
@@ -147,7 +150,10 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
                   filterOption={(input, option) =>
                     (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                   }
-                  style={{ width: '100%' }}
+                  style={{ 
+                    // Don't apply formInput styles to Select - different DOM structure
+                    width: '100%' 
+                  }}
                 />
               )}
             />
@@ -196,7 +202,10 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
                   <Space.Compact style={{ width: '100%' }}>
                     <InputNumber
                       data-testid={`resource-modal-field-${field.name}-size-input`}
-                      style={{ width: '65%' }}
+                      style={{ 
+                        // Base styles handled by CSS
+                        width: '65%' 
+                      }}
                       value={parsedValue}
                       onChange={(value) => {
                         // Ensure only numbers are accepted
@@ -235,7 +244,10 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
                     />
                     <Select
                       data-testid={`resource-modal-field-${field.name}-size-unit`}
-                      style={{ width: '35%' }}
+                      style={{ 
+                        // Don't apply formInput styles to Select - different DOM structure
+                        width: '35%' 
+                      }}
                       value={parsedUnit}
                       onChange={(unit) => {
                         const newValue = parsedValue ? `${parsedValue}${unit}` : ''
@@ -279,7 +291,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     const wrapperCol = { span: 18 }
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, height: '100%' }}>
+      <div style={{ ...styles.flexColumn, gap: spacing('SM'), height: '100%' }}>
         {/* Form Section */}
         <Form 
           data-testid="resource-modal-form"
@@ -317,7 +329,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
         {beforeVaultContent}
 
         {/* Divider */}
-        <Divider style={{ margin: '8px 0' }}>{t('vaultEditor.vaultConfiguration')}</Divider>
+        <Divider style={{ margin: `${spacing('SM')}px 0` }}>{t('vaultEditor.vaultConfiguration')}</Divider>
 
         {/* Vault Editor Section */}
         <div data-testid="resource-modal-vault-editor-section" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
@@ -361,19 +373,22 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
                   return false
                 }}
               >
-                <Button size="small" icon={<UploadOutlined />}>{t('vaultEditor.importJson')}</Button>
+                <Tooltip title={t('vaultEditor.importJson')}>
+                  <Button size="small" icon={<UploadOutlined />} aria-label={t('vaultEditor.importJson')} />
+                </Tooltip>
               </Upload>
-              <Button 
-                size="small"
-                icon={<DownloadOutlined />} 
-                onClick={() => {
-                  if (importExportHandlers.current) {
-                    importExportHandlers.current.handleExport()
-                  }
-                }}
-              >
-                {t('vaultEditor.exportJson')}
-              </Button>
+              <Tooltip title={t('vaultEditor.exportJson')}>
+                <Button 
+                  size="small"
+                  icon={<DownloadOutlined />} 
+                  onClick={() => {
+                    if (importExportHandlers.current) {
+                      importExportHandlers.current.handleExport()
+                    }
+                  }}
+                  aria-label={t('vaultEditor.exportJson')}
+                />
+              </Tooltip>
             </Space>
           </div>
         )}
@@ -383,7 +398,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
           <Alert
             message={t('vaultEditor.validationErrors')}
             description={
-              <ul style={{ margin: 0, paddingLeft: 20 }}>
+              <ul style={{ margin: 0, paddingLeft: spacing('LG') }}>
                 {vaultValidationErrors.map((error, index) => (
                   <li key={index}>{error}</li>
                 ))}

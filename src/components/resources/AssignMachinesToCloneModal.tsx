@@ -10,6 +10,8 @@ import {
   type DistributedStorageRbdClone
 } from '@/api/queries/distributedStorage'
 import { showMessage } from '@/utils/messages'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing, createModalStyle } from '@/utils/styleConstants'
 
 const { Text } = Typography
 
@@ -35,6 +37,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
   onSuccess
 }) => {
   const { t } = useTranslation(['distributedStorage', 'machines', 'common'])
+  const styles = useComponentStyles()
   const [selectedMachines, setSelectedMachines] = useState<string[]>([])
   const [removingMachines, setRemovingMachines] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState<'assign' | 'manage'>('assign')
@@ -119,7 +122,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
       return (
         <Empty
           description={t('machines:noAvailableMachinesForClone')}
-          style={{ marginTop: 32 }}
+          style={{ marginTop: spacing('XL') }}
         />
       )
     }
@@ -133,7 +136,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
         />
         
         <div>
-          <Text strong style={{ display: 'block', marginBottom: 8 }}>
+          <Text strong style={{ display: 'block', marginBottom: spacing('XS') }}>
             {t('distributedStorage:machines.selectMachines')}:
           </Text>
           <Select
@@ -152,7 +155,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             }))}
             data-testid="assign-clone-machine-select"
           />
-          <Text type="secondary" style={{ display: 'block', marginTop: 8 }} data-testid="assign-clone-selected-count">
+          <Text type="secondary" style={{ display: 'block', marginTop: spacing('XS') }} data-testid="assign-clone-selected-count">
             {t('machines:bulkOperations.selectedCount', { count: selectedMachines.length })}
           </Text>
         </div>
@@ -167,7 +170,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
       return (
         <Empty
           description={t('distributedStorage:clones.noMachinesAssigned')}
-          style={{ marginTop: 32 }}
+          style={{ marginTop: spacing('XL') }}
         />
       )
     }
@@ -238,10 +241,15 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
       }
       open={open}
       onCancel={onCancel}
-      width={700}
+      style={createModalStyle(DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH_LG)}
       footer={
         activeTab === 'assign' ? [
-          <Button key="cancel" onClick={onCancel} data-testid="assign-clone-cancel">
+          <Button 
+            key="cancel" 
+            onClick={onCancel} 
+            data-testid="assign-clone-cancel"
+            style={styles.buttonSecondary}
+          >
             {t('common:actions.cancel')}
           </Button>,
           <Button
@@ -251,11 +259,17 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             disabled={selectedMachines.length === 0}
             onClick={handleAssign}
             data-testid="assign-clone-submit"
+            style={styles.buttonPrimary}
           >
             {t('distributedStorage:machines.assignMachine')}
           </Button>
         ] : [
-          <Button key="cancel" onClick={onCancel} data-testid="assign-clone-cancel">
+          <Button 
+            key="cancel" 
+            onClick={onCancel} 
+            data-testid="assign-clone-cancel"
+            style={styles.buttonSecondary}
+          >
             {t('common:actions.cancel')}
           </Button>,
           <Button
@@ -266,6 +280,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             disabled={removingMachines.length === 0}
             onClick={handleRemove}
             data-testid="assign-clone-remove-submit"
+            style={styles.buttonPrimary}
           >
             {t('distributedStorage:machines.unassignMachine')}
           </Button>
