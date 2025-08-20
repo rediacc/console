@@ -136,10 +136,12 @@ class RepoEditTest(TestBase):
         # Browser setup
         browser = playwright.chromium.launch(
             headless=self.config['browser']['headless'],
-            slow_mo=self.config['browser']['slowMo']
+            slow_mo=self.config['browser']['slowMo'],
+            args=['--start-maximized']  # Tam ekran başlatma argümanı
         )
         context = browser.new_context(
-            viewport=self.config['browser']['viewport']
+            viewport=None,  # Viewport kısıtlamasını kaldır
+            no_viewport=True  # Browser pencere boyutunu kullan
         )
         
         main_page = None

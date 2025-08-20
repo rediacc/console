@@ -300,9 +300,13 @@ def run(playwright: Playwright, config: dict) -> None:
     
     browser = playwright.chromium.launch(
         headless=browser_config["headless"],
-        slow_mo=browser_config["slowMo"]
+        slow_mo=browser_config["slowMo"],
+        args=['--start-maximized']  # Tam ekran başlatma argümanı
     )
-    context = browser.new_context()
+    context = browser.new_context(
+        viewport=None,  # Viewport kısıtlamasını kaldır
+        no_viewport=True  # Browser pencere boyutunu kullan
+    )
     page = context.new_page()
     
     try:

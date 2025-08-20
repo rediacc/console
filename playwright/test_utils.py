@@ -365,7 +365,8 @@ class TestBase:
         
         browser = playwright.chromium.launch(
             headless=self.config['browser']['headless'],
-            slow_mo=self.config['browser']['slowMo']
+            slow_mo=self.config['browser']['slowMo'],
+            args=['--start-maximized']  # Tam ekran başlatma argümanı
         )
         
         self.logger.info("Browser instance created successfully")
@@ -374,7 +375,8 @@ class TestBase:
     def create_browser_context(self, browser: Browser) -> BrowserContext:
         """Create a browser context with cache disabled and standard configuration."""
         return browser.new_context(
-            viewport=self.config['browser']['viewport'],
+            viewport=None,  # Viewport kısıtlamasını kaldır
+            no_viewport=True,  # Browser pencere boyutunu kullan
             # Disable cache to always get fresh content
             bypass_csp=True,
             ignore_https_errors=True,
