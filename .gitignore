@@ -41,10 +41,9 @@ __pycache__/
 *.pyc
 playwright/__pycache__/
 
-# Screenshots
-screenshots/
-logs/latest
+# Test artifacts (consolidated)
+playwright/artifacts/
+logs/
 
-# Logs
-logs/sessions/
-debug_dumps/
+# Docker volume artifacts (prevent accidental directory creation)
+playwright/*.py/

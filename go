@@ -112,19 +112,32 @@ function clean() {
   echo "Cleaning build artifacts..."
   rm -rf dist/
   rm -rf node_modules/.vite
+  sudo rm -rf playwright/artifacts/ 2>/dev/null || true
   echo "Build artifacts cleaned."
 }
 
-# Function to run Playwright tests
+# Function to run Playwright tests using Docker
 function test_playwright() {
-  echo "Running Playwright tests..."
+  local HEADED_MODE=true
+  local SLOW_MO=""
   
-  # Check if Python 3 is installed
-  if ! command -v python3 &> /dev/null; then
-    echo "❌ Error: Python 3 is not installed!"
-    echo "Please install Python 3 to run Playwright tests."
-    return 1
-  fi
+  # Parse arguments
+  for arg in "$@"; do
+    case $arg in
+      --headless)
+        HEADED_MODE=false
+        ;;
+      --slow)
+        SLOW_MO="500"
+        ;;
+      --slow=*)
+        SLOW_MO="${arg#*=}"
+        ;;
+    esac
+  done
+  
+  echo "Starting Console Playwright Tests..."
+  echo "===================================="
   
   # Check if playwright test script exists
   if [ ! -f "$ROOT_DIR/playwright/smart/00_all.py" ]; then
@@ -132,56 +145,89 @@ function test_playwright() {
     return 1
   fi
   
-  # Setup virtual environment to avoid system package conflicts
-  local venv_dir="$ROOT_DIR/.venv"
-  local python_cmd="python3"
-  local pip_cmd="pip3"
-  
-  # Create virtual environment if it doesn't exist
-  if [ ! -d "$venv_dir" ]; then
-    echo "Creating Python virtual environment..."
-    python3 -m venv "$venv_dir"
-  fi
-  
-  # Use virtual environment
-  python_cmd="$venv_dir/bin/python"
-  pip_cmd="$venv_dir/bin/pip"
-  
-  # Check if playwright is installed
-  if ! "$python_cmd" -c "import playwright" 2>/dev/null; then
-    echo "⚠️  Warning: Playwright Python package is not installed."
-    echo "Installing dependencies from requirements.txt..."
-    if [ -f "$ROOT_DIR/playwright/requirements.txt" ]; then
-      "$pip_cmd" install -r "$ROOT_DIR/playwright/requirements.txt"
-      # Install playwright browsers
-      "$python_cmd" -m playwright install chromium
+  # Check X11 for headed mode
+  if [ "$HEADED_MODE" = true ]; then
+    echo "Running in headed mode (with GUI)..."
+    export DISPLAY=${DISPLAY:-:0}
+    
+    if [ -e /tmp/.X11-unix/X0 ]; then
+      echo "✓ X11 socket detected"
+      export HEADED=true
     else
-      echo "❌ Error: requirements.txt not found in playwright directory"
-      echo "Please install manually: $pip_cmd install playwright"
-      return 1
+      echo "⚠️  X11 socket not found - falling back to headless"
+      HEADED_MODE=false
     fi
+  else
+    echo "Running in headless mode..."
   fi
   
-  # Check if middleware is running (required for tests)
-  if ! curl -s http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}/api > /dev/null 2>&1; then
-    echo "⚠️  Warning: Middleware API is not running on ${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}"
-    echo "Console tests require the middleware to be running."
-    echo "Start it with: cd ../middleware && ./go start"
-    return 1
+  # Show slow mode if enabled
+  [ -n "$SLOW_MO" ] && [ "$SLOW_MO" != "0" ] && echo "Slow motion: ${SLOW_MO}ms delay"
+  
+  # Create artifacts directory structure
+  mkdir -p "$ROOT_DIR/playwright/artifacts/{screenshots,logs,reports,debug}"
+  
+  echo -e "\nBuilding Docker image..."
+  cd "$ROOT_DIR/playwright"
+  docker compose build
+  
+  # Wait for API to be available
+  echo -n "Waiting for API at localhost:$SYSTEM_HTTP_PORT"
+  for i in {1..30}; do
+    if curl -f -s http://localhost:$SYSTEM_HTTP_PORT/api > /dev/null 2>&1; then
+      echo " ✓"
+      break
+    elif [ $i -eq 30 ]; then
+      echo " ⚠️"
+      echo "Warning: API not detected at localhost:$SYSTEM_HTTP_PORT"
+      echo "Tests may fail if the middleware is not running"
+      echo "Make sure to start the middleware first with: cd ../middleware && ./go start"
+      read -p "Continue anyway? (y/N): " -n 1 -r
+      echo
+      if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        return 1
+      fi
+      break
+    fi
+    echo -n "."
+    sleep 1
+  done
+  
+  # Run tests
+  echo -e "\nRunning tests..."
+  echo "Running main test suite: smart/00_all.py"
+  
+  if [ "$HEADED_MODE" = true ]; then
+    docker compose run --rm -e HEADED=true playwright python3 smart/00_all.py
+  else
+    docker compose run --rm playwright python3 smart/00_all.py
   fi
   
-  # Run the Playwright test suite
-  echo "Starting Playwright test suite..."
-  "$python_cmd" playwright/smart/00_all.py
   local test_exit_code=$?
   
+  # Results
   if [ $test_exit_code -eq 0 ]; then
-    echo "✅ Playwright tests completed successfully!"
+    echo -e "\n✅ All tests passed!"
   else
-    echo "❌ Playwright tests failed with exit code: $test_exit_code"
+    echo -e "\n❌ Some tests failed (exit code: $test_exit_code)"
   fi
   
+  cd "$ROOT_DIR"
   return $test_exit_code
+}
+
+# Function to run Playwright tests in headless mode
+function test_playwright_headless() {
+  test_playwright --headless "$@"
+}
+
+# Function to clean Playwright test artifacts
+function test_playwright_clean() {
+  echo "Cleaning up Playwright test artifacts..."
+  sudo rm -rf "$ROOT_DIR/playwright/artifacts/"
+  cd "$ROOT_DIR/playwright" && docker compose down -v 2>/dev/null || true
+  cd "$ROOT_DIR"
+  echo "✅ Playwright cleanup completed"
 }
 
 # Function to run tests
@@ -355,7 +401,9 @@ function show_help() {
   echo "  preview       Preview the production build"
   echo "  lint          Run ESLint on the codebase"
   echo "  test          Run tests (API connectivity and Playwright)"
-  echo "  test_playwright  Run only Playwright UI tests"
+  echo "  test_playwright  Run Playwright UI tests with GUI (Docker)"
+  echo "  test_playwright_headless  Run Playwright tests headless (Docker)"
+  echo "  test_playwright_clean  Clean Playwright test artifacts"
   echo "  clean         Clean build artifacts"
   echo "  release       Build and create release package in bin/"
   echo "  setup         Setup development environment"
@@ -388,7 +436,13 @@ main() {
         test
         ;;
       test_playwright)
-        test_playwright
+        test_playwright "$@"
+        ;;
+      test_playwright_headless)
+        test_playwright_headless "$@"
+        ;;
+      test_playwright_clean)
+        test_playwright_clean
         ;;
       clean)
         clean

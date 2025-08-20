@@ -1,0 +1,31 @@
+services:
+  playwright:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rediacc-console-playwright
+    environment:
+      - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+      - HEADED=${HEADED:-false}
+      - DISPLAY=${DISPLAY:-:0}
+      - SLOW_MO=${SLOW_MO:-0}
+      - SYSTEM_HTTP_PORT=${SYSTEM_HTTP_PORT:-7322}
+      - SYSTEM_DOMAIN=${SYSTEM_DOMAIN:-localhost}
+      - SYSTEM_ADMIN_EMAIL=${SYSTEM_ADMIN_EMAIL:-admin@rediacc.io}
+      - SYSTEM_ADMIN_PASSWORD=${SYSTEM_ADMIN_PASSWORD:-admin}
+      - SYSTEM_COMPANY_NAME=${SYSTEM_COMPANY_NAME:-REDIACC.IO}
+    volumes:
+      # Mount test files for development
+      - ./smart:/console/playwright/smart
+      - ./*.py:/console/playwright/
+      - ./config.json:/console/playwright/config.json
+      - ./requirements.txt:/console/playwright/requirements.txt
+      - ./logging_utils.py:/console/playwright/logging_utils.py
+      - ./test_utils.py:/console/playwright/test_utils.py
+      # Mount artifacts directory
+      - ./artifacts:/console/playwright/artifacts
+      # X11 socket for GUI display
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    network_mode: host
+    stdin_open: true
+    tty: true
