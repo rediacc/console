@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://www.rediacc.com/docs/intro
+    about: Check the documentation first
+  - name: Community Discussions
+    url: https://github.com/rediacc/console/discussions
+    about: Ask questions and discuss with the community
+  - name: Security Contact
+    url: mailto:security@rediacc.com
+    about: For sensitive security issues, contact us directly

@@ -1,0 +1,128 @@
+name: Bug Report
+description: Report a bug in the Rediacc Console
+title: "[Bug] "
+labels: ["bug", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug in the Rediacc Console! Please provide detailed information to help us reproduce and fix the issue.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected Area
+      description: Which area of the console is affected?
+      options:
+        - Authentication/Login
+        - Dashboard
+        - Repositories Management
+        - Machines Management  
+        - Distributed Storage
+        - Queue Management
+        - System Settings
+        - Audit/Logs
+        - Marketplace
+        - Architecture View
+        - UI/Theme
+        - API Client
+        - State Management
+        - Other
+      multiple: true
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: Clear description of the bug
+      placeholder: When I try to..., ... happens instead of ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      value: |
+        1. Navigate to...
+        2. Click on...
+        3. Enter/Select...
+        4. Observe error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should happen
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happens
+    validations:
+      required: true
+
+  - type: dropdown
+    id: browsers
+    attributes:
+      label: Browser
+      description: Which browsers are affected?
+      options:
+        - Chrome
+        - Firefox
+        - Safari
+        - Edge
+        - Other
+      multiple: true
+    validations:
+      required: true
+
+  - type: input
+    id: browser-version
+    attributes:
+      label: Browser Version
+      description: Browser version number
+      placeholder: e.g., Chrome 120.0.6099.129
+
+  - type: textarea
+    id: console-errors
+    attributes:
+      label: Console Errors
+      description: Browser console errors (F12 > Console tab)
+      render: javascript
+      placeholder: Paste any JavaScript errors here
+
+  - type: textarea
+    id: network-errors
+    attributes:
+      label: Network Errors
+      description: Failed API calls (F12 > Network tab)
+      render: shell
+      placeholder: Failed requests, status codes, error responses
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots/Videos
+      description: Visual evidence of the issue (drag and drop files here)
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched for existing issues
+          required: true
+        - label: I can reproduce this consistently
+          required: false
+        - label: I included console/network errors
+          required: false

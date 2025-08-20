@@ -1,0 +1,108 @@
+name: Feature Request
+description: Suggest a new feature for the Rediacc Console
+title: "[Feature] "
+labels: ["enhancement", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please provide details about your use case and proposed solution.
+
+  - type: dropdown
+    id: feature-area
+    attributes:
+      label: Feature Area
+      description: Which area would this feature affect?
+      options:
+        - Dashboard
+        - Repositories Management
+        - Machines Management
+        - Distributed Storage
+        - Queue Management
+        - System Settings
+        - Audit/Logs
+        - Marketplace
+        - Architecture View
+        - User Experience
+        - Performance
+        - Security
+        - API Integration
+        - New Module
+      multiple: true
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve?
+      placeholder: |
+        Currently, when I try to..., I have to...
+        It would be helpful if...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How would you like this to work?
+      placeholder: |
+        Add a button/option that...
+        The interface should allow...
+        This would enable users to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Other solutions you've considered
+      placeholder: |
+        I've also thought about...
+        Another approach could be...
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Critical - Blocking my work
+        - High - Significant improvement
+        - Medium - Nice to have
+        - Low - Minor enhancement
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: Describe your specific use case
+      placeholder: |
+        In my workflow, I need to...
+        This would help our team to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: Mockups/Examples
+      description: Any visual examples or mockups (drag and drop images)
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I'm willing to implement this feature
+          required: false
+        - label: I can provide design mockups
+          required: false
+        - label: I can help test this feature
+          required: false

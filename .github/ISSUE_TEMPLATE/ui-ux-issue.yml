@@ -1,0 +1,181 @@
+name: UI/UX Issue
+description: Report user interface, design, or user experience issues
+title: "[UI/UX] "
+labels: ["ui-ux", "design", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help us improve the Rediacc Console user experience! Report any UI/UX issues, design inconsistencies, or accessibility problems.
+
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: Issue Type
+      description: What kind of UI/UX issue is this?
+      options:
+        - Visual Bug (layout, styling, rendering)
+        - Accessibility Issue
+        - Responsive Design Problem
+        - Dark/Light Theme Issue
+        - Navigation/Flow Problem
+        - Inconsistent Design
+        - Performance (UI lag, slow rendering)
+        - Internationalization (i18n)
+        - Typography/Readability
+        - Color/Contrast Issue
+        - Animation/Transition Problem
+        - Component Behavior
+        - Other
+      multiple: true
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Issue Description
+      description: Describe the UI/UX problem
+      placeholder: |
+        The button appears...
+        The layout breaks when...
+        Users cannot find...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: affected-pages
+    attributes:
+      label: Affected Pages/Components
+      description: Where does this issue occur?
+      options:
+        - Login/Registration
+        - Dashboard
+        - Repositories Page
+        - Machines Page
+        - Distributed Storage
+        - Queue Management
+        - System Settings
+        - Audit Logs
+        - Marketplace
+        - Architecture View
+        - Modals/Dialogs
+        - Navigation/Menu
+        - Forms
+        - Tables/Lists
+        - All Pages
+      multiple: true
+    validations:
+      required: true
+
+  - type: dropdown
+    id: screen-size
+    attributes:
+      label: Screen Size
+      description: At what screen size does this occur?
+      options:
+        - Mobile (<768px)
+        - Tablet (768px-1024px)
+        - Desktop (1024px-1440px)
+        - Large Desktop (>1440px)
+        - All Sizes
+      multiple: true
+    validations:
+      required: true
+
+  - type: dropdown
+    id: theme
+    attributes:
+      label: Theme
+      description: Which theme is affected?
+      options:
+        - Light Theme
+        - Dark Theme
+        - Both Themes
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-behavior
+    attributes:
+      label: Current Behavior
+      description: What currently happens?
+      placeholder: |
+        The sidebar overlaps content...
+        Text is unreadable because...
+        The animation stutters when...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What should happen instead?
+      placeholder: |
+        The sidebar should...
+        Text should be...
+        The animation should...
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots/Videos
+      description: Visual evidence is crucial for UI issues (drag and drop files)
+      placeholder: Please include screenshots showing the issue
+    validations:
+      required: true
+
+  - type: textarea
+    id: browser-info
+    attributes:
+      label: Browser Information
+      description: Browser and version details
+      value: |
+        - Browser: 
+        - Version: 
+        - OS: 
+        - Screen Resolution: 
+        - Zoom Level: 100%
+        - Extensions that might affect UI:
+
+  - type: dropdown
+    id: accessibility
+    attributes:
+      label: Accessibility Impact
+      description: Does this affect accessibility?
+      options:
+        - High - Prevents usage for users with disabilities
+        - Medium - Makes it difficult for some users
+        - Low - Minor inconvenience
+        - None - No accessibility impact
+        - Not Sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggested-fix
+    attributes:
+      label: Suggested Solution
+      description: How would you fix this UI/UX issue?
+      placeholder: |
+        Change the CSS to...
+        Adjust the component to...
+        Consider using...
+
+  - type: checkboxes
+    id: testing
+    attributes:
+      label: Testing Checklist
+      options:
+        - label: Tested in multiple browsers
+          required: false
+        - label: Tested at different screen sizes
+          required: false
+        - label: Tested with keyboard navigation
+          required: false
+        - label: Tested with screen reader
+          required: false

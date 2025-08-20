@@ -1,0 +1,179 @@
+name: Performance Issue
+description: Report performance problems, slow loading, or optimization needs
+title: "[Performance] "
+labels: ["performance", "optimization", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help us optimize the Rediacc Console! Report any performance issues, slow loading times, or areas that need optimization.
+
+  - type: dropdown
+    id: performance-type
+    attributes:
+      label: Performance Issue Type
+      description: What kind of performance issue?
+      options:
+        - Initial Page Load
+        - API Response Time
+        - UI Rendering/Re-rendering
+        - Memory Leak
+        - Bundle Size
+        - Animation/Transition Lag
+        - State Management Performance
+        - Table/List Virtualization
+        - Search/Filter Performance
+        - WebSocket/Real-time Updates
+        - Other
+      multiple: true
+    validations:
+      required: true
+
+  - type: dropdown
+    id: affected-area
+    attributes:
+      label: Affected Area
+      description: Where is the performance issue?
+      options:
+        - Dashboard (Widget Loading)
+        - Repositories List
+        - Machines Table
+        - Distributed Storage
+        - Queue Management
+        - Audit Logs
+        - System Settings
+        - Search/Filters
+        - Modal Dialogs
+        - Data Tables
+        - Charts/Visualizations
+      multiple: true
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Issue Description
+      description: Describe the performance problem
+      placeholder: |
+        The page takes X seconds to load...
+        The table becomes unresponsive when...
+        Memory usage increases to X GB when...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: How to observe the performance issue
+      value: |
+        1. Navigate to...
+        2. Load X amount of data
+        3. Perform action...
+        4. Observe performance issue
+    validations:
+      required: true
+
+  - type: input
+    id: data-scale
+    attributes:
+      label: Data Scale
+      description: How much data triggers the issue?
+      placeholder: e.g., 1000+ machines, 500+ repositories
+
+  - type: textarea
+    id: performance-metrics
+    attributes:
+      label: Performance Metrics
+      description: Measured performance data
+      placeholder: |
+        - Page Load Time: X seconds
+        - Time to Interactive: X seconds
+        - First Contentful Paint: X ms
+        - API Response Time: X ms
+        - Memory Usage: X MB
+        - CPU Usage: X%
+      render: yaml
+
+  - type: textarea
+    id: browser-profiling
+    attributes:
+      label: Browser Profiling Data
+      description: Performance profiling results (Chrome DevTools)
+      placeholder: |
+        Include screenshots of:
+        - Performance timeline
+        - Memory snapshots
+        - Network waterfall
+        - React DevTools profiler
+
+  - type: textarea
+    id: console-warnings
+    attributes:
+      label: Console Warnings
+      description: Performance-related console messages
+      render: javascript
+      placeholder: React re-render warnings, memory warnings, etc.
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Details
+      description: System specifications
+      value: |
+        **Browser:** 
+        **OS:** 
+        **RAM:** 
+        **CPU:** 
+        **Network Speed:** 
+        **Console Version:** 
+
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: Frequency
+      description: How often does this occur?
+      options:
+        - Always/Consistently
+        - Frequently (>50% of the time)
+        - Sometimes (10-50%)
+        - Rarely (<10%)
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Current Workaround
+      description: Any temporary solutions?
+      placeholder: |
+        Refreshing the page helps...
+        Limiting data to X items...
+        Using pagination instead of...
+
+  - type: textarea
+    id: optimization-suggestions
+    attributes:
+      label: Optimization Suggestions
+      description: Ideas for improvement
+      placeholder: |
+        - Implement virtualization for large lists
+        - Add pagination/lazy loading
+        - Optimize React re-renders
+        - Cache API responses
+
+  - type: checkboxes
+    id: impact
+    attributes:
+      label: Impact Assessment
+      options:
+        - label: Blocks normal usage
+          required: false
+        - label: Affects multiple users
+          required: false
+        - label: Increases infrastructure costs
+          required: false
+        - label: Impacts user experience significantly
+          required: false
