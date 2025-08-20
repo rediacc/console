@@ -366,7 +366,18 @@ class TestBase:
         browser = playwright.chromium.launch(
             headless=self.config['browser']['headless'],
             slow_mo=self.config['browser']['slowMo'],
-            args=['--start-maximized']  # Tam ekran başlatma argümanı
+            args=[
+                '--start-maximized',  # Tam ekran başlatma argümanı
+                '--disable-application-cache',  # Disable application cache
+                '--disable-offline-load-stale-cache',  # Disable offline cache
+                '--disable-gpu-shader-disk-cache',  # Disable GPU shader cache
+                '--disable-dev-shm-usage',  # Disable /dev/shm usage
+                '--aggressive-cache-discard',  # Aggressively discard cache
+                '--disable-features=BackForwardCache',  # Disable back/forward cache
+                '--disk-cache-size=1',  # Set disk cache to minimal size (1 byte)
+                '--media-cache-size=1',  # Set media cache to minimal size
+                '--memory-pressure-off'  # Disable memory pressure handling that might cache
+            ]
         )
         
         self.logger.info("Browser instance created successfully")
@@ -380,11 +391,16 @@ class TestBase:
             # Disable cache to always get fresh content
             bypass_csp=True,
             ignore_https_errors=True,
+            # Force no caching via headers
             extra_http_headers={
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
                 'Pragma': 'no-cache',
-                'Expires': '0'
-            }
+                'Expires': '0',
+                'If-Modified-Since': '0',
+                'If-None-Match': ''
+            },
+            # Disable service workers which can cache
+            service_workers='block'
         )
     
     def create_page_with_cache_disabled(self, context: BrowserContext) -> Page:
@@ -395,9 +411,20 @@ class TestBase:
         
         # Disable cache using CDP (Chrome DevTools Protocol)
         cdp_session = context.new_cdp_session(page)
+        
+        # Disable network cache
         cdp_session.send("Network.setCacheDisabled", {"cacheDisabled": True})
         
-        self.logger.debug("Cache disabled via CDP")
+        # Clear browser cache
+        cdp_session.send("Network.clearBrowserCache")
+        
+        # Clear browser cookies (optional, uncomment if needed)
+        # cdp_session.send("Network.clearBrowserCookies")
+        
+        # Set cache storage to bypass
+        cdp_session.send("Network.setBypassServiceWorker", {"bypass": True})
+        
+        self.logger.debug("Cache disabled via CDP with multiple strategies")
         
         # Setup console error handler
         self.setup_console_handler(page)
