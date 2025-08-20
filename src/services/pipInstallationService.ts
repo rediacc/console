@@ -44,7 +44,7 @@ class PipInstallationService {
     }
     
     // Package name with optional extras
-    let packageName = 'rediacc-cli'
+    let packageName = 'rediacc'
     if (options.includeGui) {
       packageName += '[gui]'
     }
@@ -191,7 +191,7 @@ class PipInstallationService {
             'python -m pip install --upgrade pip',
             '',
             '# 2. Install with verbose output',
-            'pip install -v rediacc-cli',
+            'pip install -v rediacc',
             '',
             '# 3. Check for errors in the output above'
           ]
@@ -238,7 +238,7 @@ class PipInstallationService {
         'rediacc --unregister-protocol',
         '',
         '# Uninstall package',
-        'pip uninstall rediacc-cli',
+        'pip uninstall rediacc',
         '',
         '# Remove configuration (optional)',
         '# Linux/macOS: rm -rf ~/.rediacc',

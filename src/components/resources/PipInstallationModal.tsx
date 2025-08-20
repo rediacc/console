@@ -248,10 +248,10 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
       <Panel header={t('resources:pipInstall.specificVersion')} key="version">
         <Space direction="vertical" style={{ width: '100%' }}>
           <Text>{t('resources:pipInstall.versionDesc')}</Text>
-          <CommandDisplay command="pip install rediacc-cli==1.0.0" />
-          <CommandDisplay command="pip install rediacc-cli>=1.0.0,<2.0.0" />
+          <CommandDisplay command="pip install rediacc==1.0.0" />
+          <CommandDisplay command="pip install rediacc>=1.0.0,<2.0.0" />
           <CommandDisplay 
-            command="pip install --upgrade rediacc-cli" 
+            command="pip install --upgrade rediacc" 
             description={t('resources:pipInstall.upgradeDesc')}
           />
         </Space>

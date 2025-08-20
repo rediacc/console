@@ -133,3 +133,45 @@ export function isValidRepositoryCredential(credential: string): boolean {
   const pattern = /^[A-Za-z0-9!@#$%^&*()_+{}|:<>,.?/]{32}$/
   return pattern.test(credential)
 }
+
+// Generate random email for sandbox quick registration
+export function generateRandomEmail(): string {
+  const timestamp = Date.now()
+  const randomNum = Math.floor(Math.random() * 10000)
+  return `user_${timestamp}_${randomNum}@sandbox.test`
+}
+
+// Generate random company name for sandbox quick registration
+export function generateRandomCompanyName(): string {
+  const adjectives = ['Test', 'Demo', 'Sample', 'Trial', 'Sandbox']
+  const nouns = ['Company', 'Organization', 'Enterprise', 'Corp', 'Inc']
+  const adjective = adjectives[Math.floor(Math.random() * adjectives.length)]
+  const noun = nouns[Math.floor(Math.random() * nouns.length)]
+  const randomNum = Math.floor(Math.random() * 100000)
+  return `${adjective} ${noun} ${randomNum}`
+}
+
+// Generate random password for sandbox quick registration
+export function generateRandomPassword(): string {
+  // Generate a secure password that meets typical requirements
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz'
+  const numbers = '0123456789'
+  const special = '!@#$%^&*'
+  
+  // Ensure at least one of each type
+  let password = ''
+  password += uppercase[Math.floor(Math.random() * uppercase.length)]
+  password += lowercase[Math.floor(Math.random() * lowercase.length)]
+  password += numbers[Math.floor(Math.random() * numbers.length)]
+  password += special[Math.floor(Math.random() * special.length)]
+  
+  // Fill the rest with random characters
+  const allChars = uppercase + lowercase + numbers + special
+  for (let i = 4; i < 12; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)]
+  }
+  
+  // Shuffle the password
+  return password.split('').sort(() => Math.random() - 0.5).join('')
+}

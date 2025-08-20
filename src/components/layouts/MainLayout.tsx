@@ -45,6 +45,7 @@ import { useCompanyInfo } from '@/api/queries/dashboard'
 import { useQueryClient } from '@tanstack/react-query'
 import { useComponentStyles, useNavigationStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants'
+import SandboxWarning from '@/components/common/SandboxWarning'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
@@ -244,9 +245,11 @@ const MainLayout: React.FC = () => {
   const isNoScrollPage = noScrollPages.includes(location.pathname)
 
   return (
-    <Layout style={{ minHeight: '100vh' }} className={isNoScrollPage ? 'no-scroll-page' : ''}>
-      {/* Mobile overlay */}
-      {isMobile && mobileMenuVisible && (
+    <>
+      <SandboxWarning />
+      <Layout style={{ minHeight: '100vh' }} className={isNoScrollPage ? 'no-scroll-page' : ''}>
+        {/* Mobile overlay */}
+        {isMobile && mobileMenuVisible && (
         <div
           style={{
             position: 'fixed',
@@ -680,6 +683,7 @@ const MainLayout: React.FC = () => {
         </Content>
       </Layout>
     </Layout>
+    </>
   )
 }
 

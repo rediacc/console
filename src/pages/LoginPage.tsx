@@ -26,6 +26,8 @@ import { masterPasswordService } from '@/services/masterPasswordService'
 import { tokenService } from '@/services/tokenService'
 import { useVerifyTFA } from '@/api/queries/twoFactor'
 import RegistrationModal from '@/components/auth/RegistrationModal'
+import { generateRandomEmail, generateRandomCompanyName, generateRandomPassword } from '@/utils/cryptoGenerators'
+import { configService } from '@/services/configService'
 
 const { Text, Link } = Typography
 
@@ -95,6 +97,13 @@ const LoginPage: React.FC = () => {
   const [twoFACode, setTwoFACode] = useState('')
   const [showRegistration, setShowRegistration] = useState(false)
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
+  const [quickRegistrationData, setQuickRegistrationData] = useState<{
+    email: string
+    password: string
+    companyName: string
+    activationCode: string
+  } | undefined>(undefined)
+  const [isQuickRegistration, setIsQuickRegistration] = useState(false)
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const dispatch = useDispatch()
@@ -107,16 +116,53 @@ const LoginPage: React.FC = () => {
 
   // Check URL parameters for registration flag
   useEffect(() => {
-    const shouldRegister = searchParams.get('register') === 'true'
-    if (shouldRegister) {
-      setShowRegistration(true)
+    const checkRegistrationMode = async () => {
+      const registerParam = searchParams.get('register')
+      
+      if (registerParam === 'quick') {
+        // Check if we're in sandbox mode
+        const instanceName = await configService.getInstanceName()
+        
+        if (instanceName.toLowerCase() === 'sandbox') {
+          // Generate random registration data for quick registration
+          const randomData = {
+            email: generateRandomEmail(),
+            password: generateRandomPassword(),
+            companyName: generateRandomCompanyName(),
+            activationCode: '111111' // Fixed code for sandbox quick registration
+          }
+          
+          console.log('🚀 Quick Registration Mode (Sandbox Only)', {
+            email: randomData.email,
+            company: randomData.companyName,
+            message: 'Using verification code: 111111'
+          })
+          
+          setQuickRegistrationData(randomData)
+          setIsQuickRegistration(true)
+          setShowRegistration(true)
+        } else {
+          // Not in sandbox, fall back to normal registration
+          console.warn('Quick registration is only available in sandbox instances')
+          showMessage('warning', 'Quick registration is only available in sandbox environments')
+          setShowRegistration(true)
+        }
+      } else if (registerParam === 'manual') {
+        // Manual registration mode
+        setShowRegistration(true)
+      }
+      
       // Clean up the URL to remove the parameter
-      searchParams.delete('register')
-      const newUrl = searchParams.toString() 
-        ? `${window.location.pathname}?${searchParams.toString()}`
-        : window.location.pathname
-      window.history.replaceState({}, '', newUrl)
+      if (registerParam) {
+        searchParams.delete('register')
+        const newUrl = searchParams.toString() 
+          ? `${window.location.pathname}?${searchParams.toString()}`
+          : window.location.pathname
+        window.history.replaceState({}, '', newUrl)
+      }
     }
+    
+    checkRegistrationMode()
   }, [searchParams])
 
   const handleLogin = async (values: LoginForm) => {
@@ -642,7 +688,26 @@ const LoginPage: React.FC = () => {
       {/* Registration Modal */}
       <RegistrationModal
         visible={showRegistration}
-        onClose={() => setShowRegistration(false)}
+        onClose={() => {
+          setShowRegistration(false)
+          setIsQuickRegistration(false)
+          setQuickRegistrationData(undefined)
+        }}
+        autoFillData={quickRegistrationData}
+        autoSubmit={isQuickRegistration}
+        onRegistrationComplete={async (credentials) => {
+          // Auto-login after quick registration
+          if (isQuickRegistration) {
+            console.log('🔐 Auto-login after quick registration...')
+            setShowRegistration(false)
+            
+            // Perform login with the registration credentials
+            await handleLogin({
+              email: credentials.email,
+              password: credentials.password
+            })
+          }
+        }}
       />
     </>
   )

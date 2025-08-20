@@ -515,6 +515,10 @@
     "markAllRead": "Mark all as read",
     "clearAll": "Clear all"
   },
+  "warnings": {
+    "sandboxEnvironment": "Sandbox Environment",
+    "sandboxMessage": "Data may be reset during updates. For testing only."
+  },
   "nestedObjectEditor": {
     "Image": "Image",
     "Active": "Active",

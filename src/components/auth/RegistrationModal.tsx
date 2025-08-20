@@ -21,6 +21,14 @@ const { Text } = Typography
 interface RegistrationModalProps {
   visible: boolean
   onClose: () => void
+  autoFillData?: {
+    email: string
+    password: string
+    companyName: string
+    activationCode?: string
+  }
+  autoSubmit?: boolean
+  onRegistrationComplete?: (credentials: { email: string; password: string }) => void
 }
 
 interface RegistrationForm {
@@ -34,7 +42,13 @@ interface VerificationForm {
   activationCode: string
 }
 
-const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose }) => {
+const RegistrationModal: React.FC<RegistrationModalProps> = ({ 
+  visible, 
+  onClose, 
+  autoFillData,
+  autoSubmit = false,
+  onRegistrationComplete 
+}) => {
   const { t } = useTranslation(['auth', 'common'])
   const styles = useFormStyles()
   const [currentStep, setCurrentStep] = useState(0)
@@ -44,10 +58,43 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
     email: string
     companyName: string
     passwordHash: string
+    password?: string // Store password for auto-login
   } | null>(null)
   
   const [registrationForm] = Form.useForm<RegistrationForm>()
   const [verificationForm] = Form.useForm<VerificationForm>()
+
+  // Auto-fill and auto-submit logic
+  React.useEffect(() => {
+    if (visible && autoFillData && autoSubmit) {
+      // Auto-fill registration form
+      registrationForm.setFieldsValue({
+        email: autoFillData.email,
+        password: autoFillData.password,
+        passwordConfirm: autoFillData.password,
+        companyName: autoFillData.companyName
+      })
+      
+      // Auto-submit registration form after a short delay
+      setTimeout(() => {
+        registrationForm.submit()
+      }, 500)
+    }
+  }, [visible, autoFillData, autoSubmit, registrationForm])
+
+  // Auto-fill and auto-submit verification code
+  React.useEffect(() => {
+    if (currentStep === 1 && autoFillData?.activationCode && autoSubmit) {
+      verificationForm.setFieldsValue({
+        activationCode: autoFillData.activationCode
+      })
+      
+      // Auto-submit verification form after a short delay
+      setTimeout(() => {
+        verificationForm.submit()
+      }, 500)
+    }
+  }, [currentStep, autoFillData, autoSubmit, verificationForm])
 
   const handleRegistration = async (values: RegistrationForm) => {
     setLoading(true)
@@ -76,7 +123,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
       setRegistrationData({
         email: values.email,
         companyName: values.companyName,
-        passwordHash: passwordHash
+        passwordHash: passwordHash,
+        password: values.password // Store for auto-login if needed
       })
 
       // Move to verification step
@@ -112,6 +160,14 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ visible, onClose 
       // Move to success step
       setCurrentStep(2)
       showMessage('success', t('auth:registration.activationSuccess'))
+
+      // Call completion callback if provided (for auto-login)
+      if (onRegistrationComplete && registrationData?.password) {
+        onRegistrationComplete({
+          email: registrationData.email,
+          password: registrationData.password
+        })
+      }
 
       // Close modal immediately after success
       handleClose()
