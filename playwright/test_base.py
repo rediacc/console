@@ -94,8 +94,8 @@ class PlaywrightTestBase:
         if not page:
             return
         
-        screenshot_dir = Path(self.get_config_value('screenshots', 'path', default='./screenshots'))
-        screenshot_dir.mkdir(exist_ok=True)
+        screenshot_dir = Path(self.get_config_value('screenshots', 'path', default='./artifacts/screenshots'))
+        screenshot_dir.mkdir(exist_ok=True, parents=True)
         
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"{name}_{timestamp}.png"

@@ -15,7 +15,7 @@ import traceback
 class DebugDumper:
     """Comprehensive debug information dumper for Playwright tests"""
     
-    def __init__(self, output_dir: str = "debug_dumps"):
+    def __init__(self, output_dir: str = "artifacts/debug_dumps"):
         """Initialize the debug dumper with output directory"""
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True, parents=True)

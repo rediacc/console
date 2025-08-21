@@ -254,7 +254,7 @@ def run_with_page(page, config: dict) -> str:
         # Take success screenshot if enabled
         if screenshots.get("enabled", False) and not page.is_closed():
             try:
-                screenshot_dir = Path(screenshots.get("path", "./screenshots"))
+                screenshot_dir = Path(screenshots.get("path", "./artifacts/screenshots"))
                 screenshot_dir.mkdir(exist_ok=True, parents=True)
                 success_path = screenshot_dir / f"createrepo_success_{repo_name}.png"
                 page.screenshot(path=str(success_path))
@@ -275,7 +275,7 @@ def run_with_page(page, config: dict) -> str:
         # Take failure screenshot if enabled
         if screenshots.get("enabled", False) and not page.is_closed():
             try:
-                screenshot_dir = Path(screenshots.get("path", "./screenshots"))
+                screenshot_dir = Path(screenshots.get("path", "./artifacts/screenshots"))
                 screenshot_dir.mkdir(exist_ok=True, parents=True)
                 failure_path = screenshot_dir / f"createrepo_failed_{int(time.time())}.png"
                 page.screenshot(path=str(failure_path))
@@ -349,7 +349,7 @@ def run(playwright: Playwright, config: dict) -> None:
         
         # Take success screenshot if enabled
         if screenshots.get("enabled", False):
-            screenshot_dir = Path(screenshots.get("path", "./screenshots"))
+            screenshot_dir = Path(screenshots.get("path", "./artifacts/screenshots"))
             screenshot_dir.mkdir(exist_ok=True, parents=True)
             success_path = screenshot_dir / f"createrepo_success_{repo_name}.png"
             page.screenshot(path=str(success_path))
@@ -360,7 +360,7 @@ def run(playwright: Playwright, config: dict) -> None:
         
         # Take failure screenshot if enabled
         if screenshots.get("enabled", False):
-            screenshot_dir = Path(screenshots.get("path", "./screenshots"))
+            screenshot_dir = Path(screenshots.get("path", "./artifacts/screenshots"))
             screenshot_dir.mkdir(exist_ok=True, parents=True)
             failure_path = screenshot_dir / f"createrepo_failed_{int(time.time())}.png"
             page.screenshot(path=str(failure_path))

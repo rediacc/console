@@ -120,6 +120,7 @@ function clean() {
 function test_playwright() {
   local HEADED_MODE=true
   local SLOW_MO=""
+  local TEST_FILE=""
   
   # Parse arguments
   for arg in "$@"; do
@@ -133,16 +134,48 @@ function test_playwright() {
       --slow=*)
         SLOW_MO="${arg#*=}"
         ;;
+      --file=*)
+        TEST_FILE="${arg#*=}"
+        ;;
     esac
   done
   
   echo "Starting Console Playwright Tests..."
   echo "===================================="
   
-  # Check if playwright test script exists
-  if [ ! -f "$ROOT_DIR/playwright/smart/00_all.py" ]; then
-    echo "❌ Error: Playwright test script not found at playwright/smart/00_all.py"
-    return 1
+  # Determine which test file to run
+  if [ -n "$TEST_FILE" ]; then
+    # Running specific test file
+    local TEST_PATH=""
+    
+    # Check if it's just a filename or a path
+    if [[ "$TEST_FILE" == *"/"* ]]; then
+      # Full or relative path provided
+      TEST_PATH="$TEST_FILE"
+    else
+      # Just filename - check common locations
+      if [ -f "$ROOT_DIR/playwright/$TEST_FILE" ]; then
+        TEST_PATH="$TEST_FILE"
+      elif [ -f "$ROOT_DIR/playwright/smart/$TEST_FILE" ]; then
+        TEST_PATH="smart/$TEST_FILE"
+      else
+        echo "❌ Error: Test file not found: $TEST_FILE"
+        echo "Searched in:"
+        echo "  - playwright/$TEST_FILE"
+        echo "  - playwright/smart/$TEST_FILE"
+        return 1
+      fi
+    fi
+    
+    echo "Running specific test file: $TEST_PATH"
+  else
+    # Default to running all tests
+    local TEST_PATH="smart/00_all.py"
+    if [ ! -f "$ROOT_DIR/playwright/$TEST_PATH" ]; then
+      echo "❌ Error: Default test script not found at playwright/$TEST_PATH"
+      return 1
+    fi
+    echo "Running main test suite: $TEST_PATH"
   fi
   
   # Check X11 for headed mode
@@ -165,7 +198,10 @@ function test_playwright() {
   [ -n "$SLOW_MO" ] && [ "$SLOW_MO" != "0" ] && echo "Slow motion: ${SLOW_MO}ms delay"
   
   # Create artifacts directory structure
-  mkdir -p "$ROOT_DIR/playwright/artifacts/{screenshots,logs,reports,debug}"
+  mkdir -p "$ROOT_DIR/playwright/artifacts/screenshots"
+  mkdir -p "$ROOT_DIR/playwright/artifacts/logs"
+  mkdir -p "$ROOT_DIR/playwright/artifacts/reports"
+  mkdir -p "$ROOT_DIR/playwright/artifacts/debug_dumps"
   
   echo -e "\nBuilding Docker image..."
   cd "$ROOT_DIR/playwright"
@@ -195,12 +231,11 @@ function test_playwright() {
   
   # Run tests
   echo -e "\nRunning tests..."
-  echo "Running main test suite: smart/00_all.py"
   
   if [ "$HEADED_MODE" = true ]; then
-    docker compose run --rm -e HEADED=true playwright python3 smart/00_all.py
+    docker compose run --rm -e HEADED=true playwright python3 $TEST_PATH
   else
-    docker compose run --rm playwright python3 smart/00_all.py
+    docker compose run --rm playwright python3 $TEST_PATH
   fi
   
   local test_exit_code=$?
@@ -252,6 +287,9 @@ function test() {
         PLAYWRIGHT_ARGS="$PLAYWRIGHT_ARGS --slow"
         ;;
       --slow=*)
+        PLAYWRIGHT_ARGS="$PLAYWRIGHT_ARGS $arg"
+        ;;
+      --file=*)
         PLAYWRIGHT_ARGS="$PLAYWRIGHT_ARGS $arg"
         ;;
     esac
@@ -444,8 +482,11 @@ function show_help() {
   echo "    --browser   Run only browser (Playwright) tests"
   echo "    --headless  Run browser tests in headless mode"
   echo "    --slow[=ms] Run browser tests with slow motion"
+  echo "    --file=<path>  Run specific test file (e.g., --file=06_repo_push_smart.py)"
   echo "  test_playwright  Run Playwright UI tests with GUI (Docker)"
+  echo "    --file=<path>  Run specific test file"
   echo "  test_playwright_headless  Run Playwright tests headless (Docker)"
+  echo "    --file=<path>  Run specific test file"
   echo "  test_playwright_clean  Clean Playwright test artifacts"
   echo "  clean         Clean build artifacts"
   echo "  release       Build and create release package in bin/"
