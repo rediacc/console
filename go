@@ -232,20 +232,59 @@ function test_playwright_clean() {
 
 # Function to run tests
 function test() {
-  echo "Running tests..."
+  local RUN_API=false
+  local RUN_BROWSER=false
+  local PLAYWRIGHT_ARGS=""
   
-  # Test API connectivity
-  if [ -f "$ROOT_DIR/test-api.mjs" ]; then
-    echo "Testing API connectivity..."
-    node test-api.mjs
-  else
-    echo "No API tests found."
+  # Parse arguments
+  for arg in "$@"; do
+    case $arg in
+      --api)
+        RUN_API=true
+        ;;
+      --browser)
+        RUN_BROWSER=true
+        ;;
+      --headless)
+        PLAYWRIGHT_ARGS="$PLAYWRIGHT_ARGS --headless"
+        ;;
+      --slow)
+        PLAYWRIGHT_ARGS="$PLAYWRIGHT_ARGS --slow"
+        ;;
+      --slow=*)
+        PLAYWRIGHT_ARGS="$PLAYWRIGHT_ARGS $arg"
+        ;;
+    esac
+  done
+  
+  # If no specific flags, run both
+  if [ "$RUN_API" = false ] && [ "$RUN_BROWSER" = false ]; then
+    RUN_API=true
+    RUN_BROWSER=true
   fi
   
-  # Run Playwright tests if available
-  if [ -d "$ROOT_DIR/playwright" ] && [ -f "$ROOT_DIR/playwright/smart/00_all.py" ]; then
-    echo ""
-    test_playwright
+  echo "Running tests..."
+  
+  # Run API tests if requested
+  if [ "$RUN_API" = true ]; then
+    if [ -f "$ROOT_DIR/test-api.mjs" ]; then
+      echo "Testing API connectivity..."
+      node test-api.mjs
+    else
+      echo "No API tests found (test-api.mjs not present)."
+      echo "API test suite placeholder - implement API tests in test-api.mjs"
+    fi
+  fi
+  
+  # Run browser/Playwright tests if requested
+  if [ "$RUN_BROWSER" = true ]; then
+    if [ -d "$ROOT_DIR/playwright" ] && [ -f "$ROOT_DIR/playwright/smart/00_all.py" ]; then
+      echo ""
+      echo "Running browser tests (Playwright)..."
+      test_playwright $PLAYWRIGHT_ARGS
+    else
+      echo "No browser tests found (Playwright tests not available)."
+    fi
   fi
 }
 
@@ -400,7 +439,11 @@ function show_help() {
   echo "  build         Build the application for production"
   echo "  preview       Preview the production build"
   echo "  lint          Run ESLint on the codebase"
-  echo "  test          Run tests (API connectivity and Playwright)"
+  echo "  test          Run all tests (API and browser tests)"
+  echo "    --api       Run only API tests"
+  echo "    --browser   Run only browser (Playwright) tests"
+  echo "    --headless  Run browser tests in headless mode"
+  echo "    --slow[=ms] Run browser tests with slow motion"
   echo "  test_playwright  Run Playwright UI tests with GUI (Docker)"
   echo "  test_playwright_headless  Run Playwright tests headless (Docker)"
   echo "  test_playwright_clean  Clean Playwright test artifacts"
@@ -433,7 +476,8 @@ main() {
         lint
         ;;
       test)
-        test
+        shift  # Remove 'test' from arguments
+        test "$@"
         ;;
       test_playwright)
         test_playwright "$@"
