@@ -341,6 +341,27 @@
       "queueCompletion": 30000
     }
   },
+  "createMachine": {
+    "machineName": "rediacc21",
+    "ip": "192.168.111.21",
+    "user": "anl",
+    "testConnection": true,
+    "runSetupAfterCreation": true,
+    "generateUniqueName": true,
+    "timeouts": {
+      "navigation": 10000,
+      "element": 5000,
+      "connectionTest": 15000,
+      "creation": 20000
+    },
+    "successIndicators": [
+      "SSH connection successful",
+      "Machine created successfully",
+      "Machine '.*' created successfully",
+      "Setup has been queued",
+      "Task Completed Successfully"
+    ]
+  },
   "repoDelete": {
     "test": {
       "targetRepository": null,

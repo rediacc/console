@@ -116,24 +116,39 @@ class RepoPushTest(TestBase):
             self.log_success("✓ Step 1: Navigated to main page")
             
             # Step 2: Handle login
-            initial_pages = context.pages
-            login_link = main_page.get_by_role("banner").get_by_role("link", name=self.config['ui']['loginLinkText'])
-            login_link.click()
-            
-            # Wait for new page/tab
-            main_page.wait_for_timeout(1000)
-            
-            current_pages = context.pages
-            if len(current_pages) > len(initial_pages):
-                login_page = current_pages[-1]
-                self.setup_console_handler(login_page)
-                self.log_success("✓ Step 2: Login opened in new tab")
+            # Check if we're already on the login page (redirected)
+            if "/login" in main_page.url or "login" in main_page.url.lower():
+                login_page = main_page
+                self.log_success("✓ Step 2: Already on login page (redirected)")
             else:
-                if "login" in main_page.url:
-                    login_page = main_page
-                else:
-                    self.log_error("Failed to open login page")
-                    return
+                # Try to find login link if not already on login page
+                try:
+                    initial_pages = context.pages
+                    login_link = main_page.get_by_role("banner").get_by_role("link", name=self.config['ui']['loginLinkText'])
+                    login_link.click()
+                    
+                    # Wait for new page/tab
+                    main_page.wait_for_timeout(1000)
+                    
+                    current_pages = context.pages
+                    if len(current_pages) > len(initial_pages):
+                        login_page = current_pages[-1]
+                        self.setup_console_handler(login_page)
+                        self.log_success("✓ Step 2: Login opened in new tab")
+                    else:
+                        if "login" in main_page.url:
+                            login_page = main_page
+                        else:
+                            self.log_error("Failed to open login page")
+                            return
+                except:
+                    # If we can't find login link, check if we're on login page
+                    if "/login" in main_page.url or "login" in main_page.url.lower():
+                        login_page = main_page
+                        self.log_success("✓ Step 2: On login page")
+                    else:
+                        self.log_error("Failed to navigate to login page")
+                        return
             
             # Step 3: Perform login
             login_page.wait_for_load_state('domcontentloaded')
