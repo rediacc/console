@@ -119,8 +119,88 @@ def run(playwright: Playwright) -> None:
         page.wait_for_load_state("networkidle")
         time.sleep(1)
         
+        # Check for Simple/Expert mode and switch to Expert if needed
+        print("7. Checking for Simple/Expert mode...")
+        
+        # Take screenshot to see current state
+        screenshot_path = Path(__file__).parent / "screenshots" / "system_page_before_mode_switch.png"
+        screenshot_path.parent.mkdir(exist_ok=True)
+        page.screenshot(path=str(screenshot_path))
+        print(f"   Screenshot saved: {screenshot_path}")
+        
+        try:
+            # Look for the Expert radio button/label
+            # The UI shows radio buttons with labels, not regular buttons
+            expert_radio_selectors = [
+                'label:has-text("Expert")',
+                'span:has-text("Expert")',
+                'input[type="radio"][value="expert"]',
+                '.ant-radio-wrapper:has-text("Expert")',
+                '[role="radio"]:has-text("Expert")',
+                'text=Expert'
+            ]
+            
+            expert_clicked = False
+            for selector in expert_radio_selectors:
+                try:
+                    expert_element = page.locator(selector).first
+                    if expert_element.is_visible():
+                        print(f"   Found Expert mode selector: {selector}")
+                        expert_element.click()
+                        expert_clicked = True
+                        time.sleep(1)  # Wait for mode switch
+                        print("   Switched to Expert mode")
+                        
+                        # Take screenshot after mode switch
+                        screenshot_path_after = Path(__file__).parent / "screenshots" / "system_page_after_mode_switch.png"
+                        page.screenshot(path=str(screenshot_path_after))
+                        print(f"   Screenshot after switch: {screenshot_path_after}")
+                        break
+                except:
+                    continue
+            
+            if not expert_clicked:
+                # Check if already in Expert mode
+                try:
+                    # Check if Expert is already selected
+                    expert_checked = page.locator('input[type="radio"][checked]:has-text("Expert")').first
+                    if expert_checked.is_visible():
+                        print("   Already in Expert mode")
+                    else:
+                        print("   Could not find or click Expert mode selector")
+                except:
+                    print("   Mode selection status unclear, continuing...")
+        except Exception as e:
+            print(f"   Could not check/switch mode: {str(e)}")
+        
+        # First, navigate to Regions tab if needed
+        print("8. Looking for Regions tab...")
+        try:
+            # Look for Regions tab
+            regions_tab_selectors = [
+                'button:has-text("Regions")',
+                'a:has-text("Regions")',
+                '[role="tab"]:has-text("Regions")',
+                '.ant-tabs-tab:has-text("Regions")',
+                'text=Regions'
+            ]
+            
+            for selector in regions_tab_selectors:
+                try:
+                    regions_tab = page.locator(selector).first
+                    if regions_tab.is_visible():
+                        print(f"   Found Regions tab with selector: {selector}")
+                        regions_tab.click()
+                        time.sleep(1)  # Wait for tab content to load
+                        print("   Clicked on Regions tab")
+                        break
+                except:
+                    continue
+        except Exception as e:
+            print(f"   Could not find/click Regions tab: {str(e)}")
+        
         # Find and click delete button for specific region
-        print("7. Looking for region delete button...")
+        print("9. Looking for region delete button...")
         delete_found = False
         region_name = "region004"
         
@@ -183,7 +263,7 @@ def run(playwright: Playwright) -> None:
             time.sleep(1)  # Wait for confirmation dialog
             
             # Confirm deletion
-            print("8. Confirming deletion...")
+            print("10. Confirming deletion...")
             confirm_found = False
             
             try:

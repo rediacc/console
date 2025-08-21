@@ -117,9 +117,64 @@ def run(playwright: Playwright) -> None:
             system_link.click()
         
         page.wait_for_load_state("networkidle")
+        time.sleep(1)
+        
+        # Check for Simple/Expert mode and switch to Expert if needed
+        print("7. Checking for Simple/Expert mode...")
+        
+        # Take screenshot to see current state
+        screenshot_path = Path(__file__).parent / "screenshots" / "system_permissionsdelete_before_mode_switch.png"
+        screenshot_path.parent.mkdir(exist_ok=True)
+        page.screenshot(path=str(screenshot_path))
+        print(f"   Screenshot saved: {screenshot_path}")
+        
+        try:
+            # Look for the Expert radio button/label
+            # The UI shows radio buttons with labels, not regular buttons
+            expert_radio_selectors = [
+                'label:has-text("Expert")',
+                'span:has-text("Expert")',
+                'input[type="radio"][value="expert"]',
+                '.ant-radio-wrapper:has-text("Expert")',
+                '[role="radio"]:has-text("Expert")',
+                'text=Expert'
+            ]
+            
+            expert_clicked = False
+            for selector in expert_radio_selectors:
+                try:
+                    expert_element = page.locator(selector).first
+                    if expert_element.is_visible():
+                        print(f"   Found Expert mode selector: {selector}")
+                        expert_element.click()
+                        expert_clicked = True
+                        time.sleep(1)  # Wait for mode switch
+                        print("   Switched to Expert mode")
+                        
+                        # Take screenshot after mode switch
+                        screenshot_path_after = Path(__file__).parent / "screenshots" / "system_permissionsdelete_after_mode_switch.png"
+                        page.screenshot(path=str(screenshot_path_after))
+                        print(f"   Screenshot after switch: {screenshot_path_after}")
+                        break
+                except:
+                    continue
+            
+            if not expert_clicked:
+                # Check if already in Expert mode
+                try:
+                    # Check if Expert is already selected
+                    expert_checked = page.locator('input[type="radio"][checked]:has-text("Expert")').first
+                    if expert_checked.is_visible():
+                        print("   Already in Expert mode")
+                    else:
+                        print("   Could not find or click Expert mode selector")
+                except:
+                    print("   Mode selection status unclear, continuing...")
+        except Exception as e:
+            print(f"   Could not check/switch mode: {str(e)}")
         
         # Click on Permissions tab
-        print("7. Navigating to Permissions tab...")
+        print("8. Navigating to Permissions tab...")
         permissions_tab_found = False
         
         try:
@@ -137,8 +192,11 @@ def run(playwright: Playwright) -> None:
             try:
                 permissions_selectors = [
                     'button:has-text("Permissions")',
+                    'a:has-text("Permissions")',
                     'div[role="tab"]:has-text("Permissions")',
                     '.ant-tabs-tab:has-text("Permissions")',
+                    '[role="tab"]:has-text("Permissions")',
+                    'text=Permissions',
                     '[data-testid*="permissions"]'
                 ]
                 
@@ -161,7 +219,7 @@ def run(playwright: Playwright) -> None:
         time.sleep(1)  # Wait for permissions tab to load
         
         # Find and click delete button for specific permission group
-        print("8. Looking for permission group delete button...")
+        print("9. Looking for permission group delete button...")
         delete_found = False
         group_name = "testgroup"
         
@@ -224,7 +282,7 @@ def run(playwright: Playwright) -> None:
             time.sleep(1)  # Wait for confirmation dialog
             
             # Confirm deletion
-            print("9. Confirming deletion...")
+            print("10. Confirming deletion...")
             confirm_found = False
             
             try:

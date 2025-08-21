@@ -119,8 +119,88 @@ def run(playwright: Playwright) -> None:
         page.wait_for_load_state("networkidle")
         time.sleep(1)
         
+        # Check for Simple/Expert mode and switch to Expert if needed
+        print("7. Checking for Simple/Expert mode...")
+        
+        # Take screenshot to see current state
+        screenshot_path = Path(__file__).parent / "screenshots" / "system_createbridge_before_mode_switch.png"
+        screenshot_path.parent.mkdir(exist_ok=True)
+        page.screenshot(path=str(screenshot_path))
+        print(f"   Screenshot saved: {screenshot_path}")
+        
+        try:
+            # Look for the Expert radio button/label
+            # The UI shows radio buttons with labels, not regular buttons
+            expert_radio_selectors = [
+                'label:has-text("Expert")',
+                'span:has-text("Expert")',
+                'input[type="radio"][value="expert"]',
+                '.ant-radio-wrapper:has-text("Expert")',
+                '[role="radio"]:has-text("Expert")',
+                'text=Expert'
+            ]
+            
+            expert_clicked = False
+            for selector in expert_radio_selectors:
+                try:
+                    expert_element = page.locator(selector).first
+                    if expert_element.is_visible():
+                        print(f"   Found Expert mode selector: {selector}")
+                        expert_element.click()
+                        expert_clicked = True
+                        time.sleep(1)  # Wait for mode switch
+                        print("   Switched to Expert mode")
+                        
+                        # Take screenshot after mode switch
+                        screenshot_path_after = Path(__file__).parent / "screenshots" / "system_createbridge_after_mode_switch.png"
+                        page.screenshot(path=str(screenshot_path_after))
+                        print(f"   Screenshot after switch: {screenshot_path_after}")
+                        break
+                except:
+                    continue
+            
+            if not expert_clicked:
+                # Check if already in Expert mode
+                try:
+                    # Check if Expert is already selected
+                    expert_checked = page.locator('input[type="radio"][checked]:has-text("Expert")').first
+                    if expert_checked.is_visible():
+                        print("   Already in Expert mode")
+                    else:
+                        print("   Could not find or click Expert mode selector")
+                except:
+                    print("   Mode selection status unclear, continuing...")
+        except Exception as e:
+            print(f"   Could not check/switch mode: {str(e)}")
+        
+        # First, navigate to Bridges tab if needed
+        print("8. Looking for Bridges tab...")
+        try:
+            # Look for Bridges tab
+            bridges_tab_selectors = [
+                'button:has-text("Bridges")',
+                'a:has-text("Bridges")',
+                '[role="tab"]:has-text("Bridges")',
+                '.ant-tabs-tab:has-text("Bridges")',
+                'text=Bridges'
+            ]
+            
+            for selector in bridges_tab_selectors:
+                try:
+                    bridges_tab = page.locator(selector).first
+                    if bridges_tab.is_visible():
+                        print(f"   Found Bridges tab with selector: {selector}")
+                        bridges_tab.click()
+                        time.sleep(1)  # Wait for tab content to load
+                        print("   Clicked on Bridges tab")
+                        break
+                except:
+                    continue
+        except Exception as e:
+            print(f"   Could not find/click Bridges tab: {str(e)}")
+        
         # Click create bridge button
-        print("7. Opening create bridge dialog...")
+        print("9. Opening create bridge dialog...")
         create_bridge_found = False
         
         try:
@@ -137,13 +217,20 @@ def run(playwright: Playwright) -> None:
             print("   Trying alternative selector for create bridge button...")
             try:
                 create_selectors = [
+                    'button:has-text("Create")',
+                    'button:has-text("Add")',
                     'button:has-text("Create Bridge")',
                     'button:has-text("Add Bridge")',
                     'button:has-text("New Bridge")',
+                    'button[title*="Create"]',
+                    'button[title*="Add"]',
                     'button[title*="bridge"]',
                     'button[title*="Bridge"]',
+                    '[data-testid*="create"]',
+                    '[data-testid*="add"]',
                     '[data-testid*="create-bridge"]',
-                    'button.ant-btn-primary:has-text("Bridge")'
+                    'button.ant-btn-primary',
+                    'button[type="button"].ant-btn-primary'
                 ]
                 
                 for selector in create_selectors:
@@ -165,7 +252,7 @@ def run(playwright: Playwright) -> None:
             time.sleep(1)  # Wait for dialog to open
             
             # Select team
-            print("8. Selecting team...")
+            print("10. Selecting team...")
             team_selected = False
             
             try:
@@ -225,7 +312,7 @@ def run(playwright: Playwright) -> None:
                 print("   Warning: Could not select team")
             
             # Enter bridge name
-            print("9. Entering bridge name...")
+            print("11. Entering bridge name...")
             bridge_name_filled = False
             
             try:
@@ -258,7 +345,7 @@ def run(playwright: Playwright) -> None:
                 print("   Warning: Could not enter bridge name")
             
             # Submit bridge creation
-            print("10. Submitting bridge creation...")
+            print("12. Submitting bridge creation...")
             submit_found = False
             
             try:

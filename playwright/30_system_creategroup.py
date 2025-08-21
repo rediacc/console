@@ -119,8 +119,62 @@ def run(playwright: Playwright) -> None:
         page.wait_for_load_state("networkidle")
         time.sleep(1)
         
+        # Check for Simple/Expert mode and switch to Expert if needed
+        print("7. Checking for Simple/Expert mode...")
+        
+        # Take screenshot to see current state
+        screenshot_path = Path(__file__).parent / "screenshots" / "system_creategroup_before_mode_switch.png"
+        screenshot_path.parent.mkdir(exist_ok=True)
+        page.screenshot(path=str(screenshot_path))
+        print(f"   Screenshot saved: {screenshot_path}")
+        
+        try:
+            # Look for the Expert radio button/label
+            # The UI shows radio buttons with labels, not regular buttons
+            expert_radio_selectors = [
+                'label:has-text("Expert")',
+                'span:has-text("Expert")',
+                'input[type="radio"][value="expert"]',
+                '.ant-radio-wrapper:has-text("Expert")',
+                '[role="radio"]:has-text("Expert")',
+                'text=Expert'
+            ]
+            
+            expert_clicked = False
+            for selector in expert_radio_selectors:
+                try:
+                    expert_element = page.locator(selector).first
+                    if expert_element.is_visible():
+                        print(f"   Found Expert mode selector: {selector}")
+                        expert_element.click()
+                        expert_clicked = True
+                        time.sleep(1)  # Wait for mode switch
+                        print("   Switched to Expert mode")
+                        
+                        # Take screenshot after mode switch
+                        screenshot_path_after = Path(__file__).parent / "screenshots" / "system_creategroup_after_mode_switch.png"
+                        page.screenshot(path=str(screenshot_path_after))
+                        print(f"   Screenshot after switch: {screenshot_path_after}")
+                        break
+                except:
+                    continue
+            
+            if not expert_clicked:
+                # Check if already in Expert mode
+                try:
+                    # Check if Expert is already selected
+                    expert_checked = page.locator('input[type="radio"][checked]:has-text("Expert")').first
+                    if expert_checked.is_visible():
+                        print("   Already in Expert mode")
+                    else:
+                        print("   Could not find or click Expert mode selector")
+                except:
+                    print("   Mode selection status unclear, continuing...")
+        except Exception as e:
+            print(f"   Could not check/switch mode: {str(e)}")
+        
         # Click on Permissions tab
-        print("7. Navigating to Permissions tab...")
+        print("8. Navigating to Permissions tab...")
         permissions_tab_found = False
         
         try:
@@ -138,8 +192,11 @@ def run(playwright: Playwright) -> None:
             try:
                 permissions_selectors = [
                     'button:has-text("Permissions")',
+                    'a:has-text("Permissions")',
                     'div[role="tab"]:has-text("Permissions")',
                     '.ant-tabs-tab:has-text("Permissions")',
+                    '[role="tab"]:has-text("Permissions")',
+                    'text=Permissions',
                     '[data-testid*="permissions"]'
                 ]
                 
@@ -149,7 +206,7 @@ def run(playwright: Playwright) -> None:
                         if permissions_tab.is_visible():
                             permissions_tab.click()
                             permissions_tab_found = True
-                            print("   Permissions tab opened using alternative selector")
+                            print(f"   Permissions tab opened using selector: {selector}")
                             break
                     except:
                         continue
@@ -162,7 +219,7 @@ def run(playwright: Playwright) -> None:
         time.sleep(1)  # Wait for permissions tab to load
         
         # Click create permission group button
-        print("8. Opening create permission group dialog...")
+        print("9. Opening create permission group dialog...")
         create_group_found = False
         
         try:
@@ -179,14 +236,21 @@ def run(playwright: Playwright) -> None:
             print("   Trying alternative selector for create permission group button...")
             try:
                 create_selectors = [
+                    'button:has-text("Create")',
+                    'button:has-text("Add")',
                     'button:has-text("Create Permission Group")',
                     'button:has-text("Add Permission Group")',
                     'button:has-text("New Permission Group")',
                     'button:has-text("Create Group")',
                     'button:has-text("Add Group")',
+                    'button[title*="Create"]',
+                    'button[title*="Add"]',
                     'button[title*="permission"]',
+                    '[data-testid*="create"]',
+                    '[data-testid*="add"]',
                     '[data-testid*="create-permission"]',
-                    'button.ant-btn-primary'
+                    'button.ant-btn-primary',
+                    'button[type="button"].ant-btn-primary'
                 ]
                 
                 for selector in create_selectors:
@@ -208,7 +272,7 @@ def run(playwright: Playwright) -> None:
             time.sleep(1)  # Wait for dialog to open
             
             # Enter group name
-            print("9. Entering permission group name...")
+            print("10. Entering permission group name...")
             group_name_filled = False
             
             try:
@@ -242,7 +306,7 @@ def run(playwright: Playwright) -> None:
                 print("   Warning: Could not enter permission group name")
             
             # Submit permission group creation
-            print("10. Submitting permission group creation...")
+            print("11. Submitting permission group creation...")
             submit_found = False
             
             try:

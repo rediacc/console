@@ -119,8 +119,88 @@ def run(playwright: Playwright) -> None:
         page.wait_for_load_state("networkidle")
         time.sleep(1)
         
+        # Check for Simple/Expert mode and switch to Expert if needed
+        print("7. Checking for Simple/Expert mode...")
+        
+        # Take screenshot to see current state
+        screenshot_path = Path(__file__).parent / "screenshots" / "system_bridgeedit_before_mode_switch.png"
+        screenshot_path.parent.mkdir(exist_ok=True)
+        page.screenshot(path=str(screenshot_path))
+        print(f"   Screenshot saved: {screenshot_path}")
+        
+        try:
+            # Look for the Expert radio button/label
+            # The UI shows radio buttons with labels, not regular buttons
+            expert_radio_selectors = [
+                'label:has-text("Expert")',
+                'span:has-text("Expert")',
+                'input[type="radio"][value="expert"]',
+                '.ant-radio-wrapper:has-text("Expert")',
+                '[role="radio"]:has-text("Expert")',
+                'text=Expert'
+            ]
+            
+            expert_clicked = False
+            for selector in expert_radio_selectors:
+                try:
+                    expert_element = page.locator(selector).first
+                    if expert_element.is_visible():
+                        print(f"   Found Expert mode selector: {selector}")
+                        expert_element.click()
+                        expert_clicked = True
+                        time.sleep(1)  # Wait for mode switch
+                        print("   Switched to Expert mode")
+                        
+                        # Take screenshot after mode switch
+                        screenshot_path_after = Path(__file__).parent / "screenshots" / "system_bridgeedit_after_mode_switch.png"
+                        page.screenshot(path=str(screenshot_path_after))
+                        print(f"   Screenshot after switch: {screenshot_path_after}")
+                        break
+                except:
+                    continue
+            
+            if not expert_clicked:
+                # Check if already in Expert mode
+                try:
+                    # Check if Expert is already selected
+                    expert_checked = page.locator('input[type="radio"][checked]:has-text("Expert")').first
+                    if expert_checked.is_visible():
+                        print("   Already in Expert mode")
+                    else:
+                        print("   Could not find or click Expert mode selector")
+                except:
+                    print("   Mode selection status unclear, continuing...")
+        except Exception as e:
+            print(f"   Could not check/switch mode: {str(e)}")
+        
+        # First, navigate to Bridges tab if needed
+        print("8. Looking for Bridges tab...")
+        try:
+            # Look for Bridges tab
+            bridges_tab_selectors = [
+                'button:has-text("Bridges")',
+                'a:has-text("Bridges")',
+                '[role="tab"]:has-text("Bridges")',
+                '.ant-tabs-tab:has-text("Bridges")',
+                'text=Bridges'
+            ]
+            
+            for selector in bridges_tab_selectors:
+                try:
+                    bridges_tab = page.locator(selector).first
+                    if bridges_tab.is_visible():
+                        print(f"   Found Bridges tab with selector: {selector}")
+                        bridges_tab.click()
+                        time.sleep(1)  # Wait for tab content to load
+                        print("   Clicked on Bridges tab")
+                        break
+                except:
+                    continue
+        except Exception as e:
+            print(f"   Could not find/click Bridges tab: {str(e)}")
+        
         # Click edit button for specific bridge
-        print("7. Looking for bridge edit button...")
+        print("9. Looking for bridge edit button...")
         edit_button_found = False
         bridge_name = "testbridge01"
         
@@ -181,15 +261,22 @@ def run(playwright: Playwright) -> None:
         else:
             time.sleep(1)  # Wait for edit dialog to open
             
+            # Take screenshot of edit dialog
+            screenshot_dialog = Path(__file__).parent / "screenshots" / "system_bridgeedit_dialog.png"
+            page.screenshot(path=str(screenshot_dialog))
+            print(f"   Dialog screenshot: {screenshot_dialog}")
+            
             # Edit bridge name
-            print("8. Editing bridge name...")
+            print("10. Editing bridge name...")
             bridge_name_edited = False
             
             try:
                 bridge_name_input = page.get_by_test_id("resource-modal-field-bridgeName-input")
                 if bridge_name_input.is_visible():
-                    bridge_name_input.clear()
-                    bridge_name_input.fill("testbridge012")
+                    # Clear and fill with new value
+                    bridge_name_input.click()
+                    bridge_name_input.press("Control+a")
+                    bridge_name_input.type("testbridge012")
                     bridge_name_edited = True
                     print("   Bridge name changed to: testbridge012")
             except:
@@ -198,17 +285,21 @@ def run(playwright: Playwright) -> None:
                     'input[placeholder*="bridge" i]',
                     'input[placeholder*="name" i]',
                     'input[id*="bridgeName"]',
+                    'input[name="bridgeName"]',
                     '.ant-form-item:has-text("Bridge Name") input',
-                    '.ant-modal input[type="text"]'
+                    '.ant-modal input[type="text"]',
+                    '.ant-modal .ant-input'
                 ]
                 for selector in bridge_name_selectors:
                     try:
                         bridge_name_input = page.locator(selector).first
                         if bridge_name_input.is_visible():
-                            bridge_name_input.clear()
-                            bridge_name_input.fill("testbridge012")
+                            # Clear and fill with new value
+                            bridge_name_input.click()
+                            bridge_name_input.press("Control+a")
+                            bridge_name_input.type("testbridge012")
                             bridge_name_edited = True
-                            print("   Bridge name changed using alternative selector: testbridge012")
+                            print(f"   Bridge name changed using selector: {selector}")
                             break
                     except:
                         continue
@@ -217,7 +308,7 @@ def run(playwright: Playwright) -> None:
                 print("   Warning: Could not edit bridge name")
             
             # Submit bridge edit
-            print("9. Submitting bridge edit...")
+            print("11. Submitting bridge edit...")
             submit_found = False
             
             try:
