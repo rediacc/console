@@ -28,6 +28,7 @@ import { useVerifyTFA } from '@/api/queries/twoFactor'
 import RegistrationModal from '@/components/auth/RegistrationModal'
 import { generateRandomEmail, generateRandomCompanyName, generateRandomPassword } from '@/utils/cryptoGenerators'
 import { configService } from '@/services/configService'
+import SandboxWarning from '@/components/common/SandboxWarning'
 
 const { Text, Link } = Typography
 
@@ -316,6 +317,7 @@ const LoginPage: React.FC = () => {
 
   return (
     <>
+      <SandboxWarning />
       <Card
         style={{
           ...styles.card,

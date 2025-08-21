@@ -5,13 +5,14 @@ import { useTranslation } from 'react-i18next'
 import { configService } from '@/services/configService'
 
 const SandboxWarning: React.FC = () => {
-  const { t } = useTranslation()
+  const { t } = useTranslation('common')
   const [instanceName, setInstanceName] = useState<string>('')
   const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
     const loadInstanceName = async () => {
       const name = await configService.getInstanceName()
+      console.log('SandboxWarning: Instance name loaded:', name)
       setInstanceName(name)
       // Show warning only for sandbox instances
       setIsVisible(name.toLowerCase() === 'sandbox')
@@ -42,7 +43,7 @@ const SandboxWarning: React.FC = () => {
       message={
         <div style={{ textAlign: 'center', padding: '2px 0' }}>
           <ExclamationCircleOutlined style={{ marginRight: 8 }} />
-          <strong>{t('common:warnings.sandboxEnvironment')}:</strong> {t('common:warnings.sandboxMessage')}
+          <strong>{t('warnings.sandboxEnvironment')}:</strong> {t('warnings.sandboxMessage')}
         </div>
       }
       style={{

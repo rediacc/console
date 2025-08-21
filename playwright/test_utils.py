@@ -150,10 +150,10 @@ class TestBase:
             
             # Get the directory where the test script is located
             test_dir = Path(self.config_path).parent if hasattr(self, 'config_path') else Path.cwd()
-            screenshots_dir = test_dir / "screenshots"
+            screenshots_dir = test_dir / "artifacts" / "screenshots"
             
             # Create screenshots directory if it doesn't exist
-            screenshots_dir.mkdir(exist_ok=True)
+            screenshots_dir.mkdir(exist_ok=True, parents=True)
             filepath = str(screenshots_dir / filename)
             
             # Also save to log directory if available
