@@ -134,15 +134,30 @@ class PlaywrightTestBase:
         page.goto(f"{base_url}/console")
         self.wait_for_navigation(page)
         
-        # Click login link and wait for new page
-        with page.expect_popup() as popup_info:
-            login_link = page.get_by_role("banner").get_by_role("link", name="Login")
-            login_link.click()
+        # Check if we're already on the login page or need to click login link
+        current_url = page.url
+        if '/login' in current_url or 'signin' in current_url:
+            # We're already on the login page, use the current page
+            login_page = page
+            self.log("Already on login page, proceeding with login...")
+        else:
+            # Try to find and click login link
+            try:
+                # Try to find login link and handle popup
+                with page.expect_popup() as popup_info:
+                    login_link = page.get_by_role("banner").get_by_role("link", name="Login")
+                    login_link.click()
+                login_page = popup_info.value
+            except:
+                # No popup, we might be redirected to login page
+                login_page = page
         
-        login_page = popup_info.value
+        # Wait for login form to be ready - check for email input field
+        email_input = self.wait_for_element(login_page, 'input[type="email"], input[placeholder*="email" i], input[name="email"]', timeout=10000)
+        if not email_input:
+            # Try with data-testid
+            email_input = self.wait_for_element(login_page, '[data-testid="login-email-input"]')
         
-        # Wait for login form to be ready
-        email_input = self.wait_for_element(login_page, '[data-testid="login-email-input"]')
         if not email_input:
             raise Exception("Login form not found")
         
@@ -151,12 +166,49 @@ class PlaywrightTestBase:
         email_input.click()
         email_input.fill(credentials['email'])
         
-        password_input = login_page.get_by_test_id("login-password-input")
+        # Find password input - try multiple selectors
+        password_input = None
+        password_selectors = [
+            '[data-testid="login-password-input"]',
+            'input[type="password"]',
+            'input[placeholder*="password" i]',
+            'input[name="password"]'
+        ]
+        
+        for selector in password_selectors:
+            try:
+                password_input = login_page.locator(selector).first
+                if password_input.is_visible():
+                    break
+            except:
+                continue
+        
+        if not password_input:
+            raise Exception("Password input not found")
+        
         password_input.click()
         password_input.fill(credentials['password'])
         
-        # Submit login
-        login_button = login_page.get_by_test_id("login-submit-button")
+        # Submit login - try multiple selectors for submit button
+        login_button = None
+        button_selectors = [
+            '[data-testid="login-submit-button"]',
+            'button[type="submit"]',
+            'button:has-text("Sign In")',
+            'button:has-text("Login")'
+        ]
+        
+        for selector in button_selectors:
+            try:
+                login_button = login_page.locator(selector).first
+                if login_button.is_visible():
+                    break
+            except:
+                continue
+        
+        if not login_button:
+            raise Exception("Login button not found")
+        
         login_button.click()
         
         # Wait for dashboard to load

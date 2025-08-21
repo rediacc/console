@@ -48,16 +48,28 @@ class RepositoryDeleter:
         base_url = self.config.get('baseUrl', 'http://localhost:7322')
         self.page.goto(f"{base_url}/console")
         
-        # Wait for page to load and click login
-        login_link = self.page.get_by_role("link", name="Sign In")
-        login_link.wait_for(state="visible")
+        # Check if we're already on the login page
+        self.page.wait_for_load_state("domcontentloaded")
+        current_url = self.page.url
         
-        # Handle new tab/popup
-        with self.page.expect_popup() as popup_info:
-            login_link.click()
-        
-        self.page = popup_info.value
-        logger.info("Navigated to login page")
+        if '/login' in current_url or 'signin' in current_url:
+            # We're already on the login page
+            logger.info("Already on login page")
+        else:
+            # Try to find and click login link
+            try:
+                login_link = self.page.get_by_role("link", name="Sign In")
+                login_link.wait_for(state="visible", timeout=3000)
+                
+                # Handle new tab/popup
+                with self.page.expect_popup() as popup_info:
+                    login_link.click()
+                
+                self.page = popup_info.value
+                logger.info("Navigated to login page via popup")
+            except:
+                # No login link found, we might already be on login page
+                logger.info("No login link found, assuming already on login page")
         
     def login(self):
         """Login using credentials from config"""
@@ -65,16 +77,72 @@ class RepositoryDeleter:
         email = credentials.get('email', 'admin@rediacc.io')
         password = credentials.get('password', 'admin')
         
-        # Wait for login form to be ready
-        email_input = self.page.get_by_test_id("login-email-input")
-        email_input.wait_for(state="visible")
+        # Try multiple selectors for email input
+        email_input = None
+        email_selectors = [
+            '[data-testid="login-email-input"]',
+            'input[type="email"]',
+            'input[placeholder*="email" i]',
+            'input[name="email"]'
+        ]
         
-        # Fill login form
+        for selector in email_selectors:
+            try:
+                email_input = self.page.locator(selector).first
+                if email_input.is_visible():
+                    break
+            except:
+                continue
+        
+        if not email_input:
+            raise Exception("Email input not found")
+        
+        # Fill email
         email_input.fill(email)
-        self.page.get_by_test_id("login-password-input").fill(password)
         
-        # Submit login
-        self.page.get_by_test_id("login-submit-button").click()
+        # Try multiple selectors for password input
+        password_input = None
+        password_selectors = [
+            '[data-testid="login-password-input"]',
+            'input[type="password"]',
+            'input[placeholder*="password" i]',
+            'input[name="password"]'
+        ]
+        
+        for selector in password_selectors:
+            try:
+                password_input = self.page.locator(selector).first
+                if password_input.is_visible():
+                    break
+            except:
+                continue
+        
+        if not password_input:
+            raise Exception("Password input not found")
+        
+        password_input.fill(password)
+        
+        # Try multiple selectors for submit button
+        submit_button = None
+        button_selectors = [
+            '[data-testid="login-submit-button"]',
+            'button[type="submit"]',
+            'button:has-text("Sign In")',
+            'button:has-text("Login")'
+        ]
+        
+        for selector in button_selectors:
+            try:
+                submit_button = self.page.locator(selector).first
+                if submit_button.is_visible():
+                    break
+            except:
+                continue
+        
+        if not submit_button:
+            raise Exception("Submit button not found")
+        
+        submit_button.click()
         
         # Wait for dashboard to load
         self.page.wait_for_url("**/console/dashboard", timeout=10000)

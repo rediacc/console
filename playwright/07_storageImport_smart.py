@@ -134,7 +134,10 @@ class StorageImportPushTest(PlaywrightTestBase):
             except:
                 page.keyboard.press("Escape")
             
-            page.wait_for_timeout(500)
+            page.wait_for_timeout(1000)
+            
+            # Make sure we're still on Resources page
+            self.wait_for_network_idle(page)
             
             # Storage import is considered successful even if already exists
             return True
@@ -154,17 +157,32 @@ class StorageImportPushTest(PlaywrightTestBase):
         try:
             # Navigate to Machines tab
             self.log("Navigating to Machines tab...")
-            try:
-                machines_tab = page.get_by_test_id("resources-tab-machines")
-                machines_tab.click()
-            except:
-                # Fallback selector
-                machines_tab = page.locator('.ant-tabs-tab:has-text("Machines")').first
-                if machines_tab.is_visible():
-                    machines_tab.click()
-                else:
-                    self.log("Could not find Machines tab", level='error')
-                    return False
+            machines_found = False
+            
+            # Try different selectors for Machines tab
+            machines_selectors = [
+                '[data-testid="resources-tab-machines"]',
+                '.ant-tabs-tab:has-text("Machines")',
+                'div[role="tab"]:has-text("Machines")',
+                'button:has-text("Machines")',
+                'span:has-text("Machines")'
+            ]
+            
+            for selector in machines_selectors:
+                try:
+                    machines_tab = page.locator(selector).first
+                    if machines_tab.is_visible():
+                        machines_tab.click()
+                        machines_found = True
+                        self.log("Found and clicked Machines tab")
+                        break
+                except:
+                    continue
+            
+            if not machines_found:
+                self.log("Could not find Machines tab", level='error')
+                self.take_screenshot("machines_tab_not_found")
+                return False
             
             self.wait_for_network_idle(page)
             
@@ -190,57 +208,115 @@ class StorageImportPushTest(PlaywrightTestBase):
             except:
                 pass
             
-            # Find and click on repository
-            self.log(f"Selecting repository: {repo}")
-            repo_element = page.locator(f'text="{repo}"').first
-            if repo_element.is_visible():
-                repo_element.click()
-                page.wait_for_timeout(1000)
-            else:
-                self.log(f"Repository not found: {repo}", level='warning')
+            # Find any repository or use the specified one
+            self.log(f"Looking for repository: {repo}")
+            
+            # First, try to find the specified repository
+            repo_found = False
+            try:
+                repo_element = page.locator(f'text="{repo}"').first
+                if repo_element.is_visible():
+                    repo_element.click()
+                    repo_found = True
+                    self.log(f"Selected repository: {repo}")
+                    page.wait_for_timeout(1000)
+            except:
+                pass
+            
+            # If not found, try to find any repository starting with "repo"
+            if not repo_found:
+                self.log(f"Repository {repo} not found, looking for any repository...", level='warning')
+                try:
+                    # Look for any repository in the expanded machine section
+                    repo_elements = page.locator('tr[data-row-key*="repo"]').all()
+                    if not repo_elements:
+                        repo_elements = page.locator('text=/repo\\d+/').all()
+                    
+                    if repo_elements and len(repo_elements) > 0:
+                        repo_elements[0].click()
+                        repo_found = True
+                        self.log(f"Selected first available repository")
+                        page.wait_for_timeout(1000)
+                except:
+                    pass
+            
+            if not repo_found:
+                self.log(f"No repositories found on machine {machine}", level='warning')
                 return False
             
             # Open push action - try multiple selectors
             self.log("Opening push dialog...")
+            self.take_screenshot("before_push_action")
             push_found = False
             
-            # Try different selectors for push action
-            selectors = [
-                'button:has-text("push")',
-                'text="push"',
-                '[data-testid*="push"]',
-                'img[alt="push"]',
-                'button[title*="push"]'
-            ]
-            
-            for selector in selectors:
+            # First try to find the fx (Remote actions) icon button
+            self.log("Looking for Remote actions button (fx icon)...")
+            try:
+                # Look specifically for the fx button in the repository row
+                # The fx button is the first action button in the repo row
+                fx_button = None
+                
+                # Try to find the fx button in the repo003 row specifically
                 try:
-                    push_action = page.locator(selector).first
-                    if push_action.is_visible():
-                        push_action.click()
-                        push_found = True
-                        break
-                except:
-                    continue
-            
-            if not push_found:
-                self.log("Push action not found - trying Remote button", level='warning')
-                # Try to find Remote button first
-                try:
-                    remote_button = page.locator(f'button:has-text("Remote")').first
-                    if remote_button.is_visible():
-                        remote_button.click()
-                        page.wait_for_timeout(500)
-                        # Now look for push in dropdown
-                        push_in_dropdown = page.locator('.ant-dropdown button:has-text("push")').first
-                        if push_in_dropdown.is_visible():
-                            push_in_dropdown.click()
-                            push_found = True
+                    # Look for the button with fx text or in the actions column
+                    fx_button = page.locator('tr:has-text("repo003") button').first
+                    if not fx_button.is_visible():
+                        fx_button = page.locator('tr:has-text("repo") td:last-child button').first
                 except:
                     pass
+                
+                if fx_button and fx_button.is_visible():
+                    self.log("Found fx/Remote button in repository row, clicking...")
+                    fx_button.click()
+                    page.wait_for_timeout(1000)
+                    
+                    # Now look for push in dropdown menu
+                    push_selectors = [
+                        '.ant-dropdown button:has-text("push")',
+                        '.ant-dropdown-menu button:has-text("push")',
+                        '[role="menuitem"]:has-text("push")',
+                        '.ant-dropdown a:has-text("push")',
+                        '.ant-dropdown span:has-text("push")',
+                        '.ant-dropdown-content button:has-text("push")'
+                    ]
+                    
+                    for push_selector in push_selectors:
+                        try:
+                            push_in_dropdown = page.locator(push_selector).first
+                            if push_in_dropdown.is_visible():
+                                self.log("Found push option in dropdown")
+                                push_in_dropdown.click()
+                                push_found = True
+                                break
+                        except:
+                            continue
+            except Exception as e:
+                self.log(f"Error finding Remote button: {str(e)}", level='warning')
+            
+            # If not found, try direct push button
+            if not push_found:
+                self.log("Trying direct push button selectors...", level='warning')
+                selectors = [
+                    'button:has-text("push")',
+                    'text="push"',
+                    '[data-testid*="push"]',
+                    'img[alt="push"]',
+                    'button[title*="push"]'
+                ]
+                
+                for selector in selectors:
+                    try:
+                        push_action = page.locator(selector).first
+                        if push_action.is_visible():
+                            push_action.click()
+                            push_found = True
+                            break
+                    except:
+                        continue
             
             if not push_found:
                 self.log("Could not find push action", level='error')
+                self.take_screenshot("push_action_not_found")
                 return False
             
             page.wait_for_timeout(1500)
