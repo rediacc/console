@@ -111,7 +111,7 @@ class RepoPushTest(TestBase):
             main_page = context.new_page()
             self.setup_console_handler(main_page)
             
-            main_page.goto(f"{self.config['baseUrl']}/en")
+            main_page.goto(f"{self.config['baseUrl']}/console")
             self.wait_for_network_idle(main_page)
             self.log_success("✓ Step 1: Navigated to main page")
             

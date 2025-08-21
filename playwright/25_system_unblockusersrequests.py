@@ -8,7 +8,7 @@ def run(playwright: Playwright) -> None:
     context = browser.new_context()
     page = context.new_page()
     page1 = context.new_page()
-    page1.goto("http://localhost:7322/en")
+    page1.goto("http://localhost:7322/console")
     time.sleep(2)
     with page1.expect_popup() as page2_info:
         page1.get_by_role("banner").get_by_role("link", name="Login").click()

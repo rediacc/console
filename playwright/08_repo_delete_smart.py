@@ -46,7 +46,7 @@ class RepositoryDeleter:
     def navigate_to_login(self):
         """Navigate to login page"""
         base_url = self.config.get('baseUrl', 'http://localhost:7322')
-        self.page.goto(f"{base_url}/en")
+        self.page.goto(f"{base_url}/console")
         
         # Wait for page to load and click login
         login_link = self.page.get_by_role("link", name="Sign In")

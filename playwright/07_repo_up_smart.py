@@ -93,7 +93,7 @@ class RepoUpTest(TestBase):
         """Execute the repository up test."""
         try:
             # Navigate to main page
-            page.goto(self.config['baseUrl'] + "/en")
+            page.goto(self.config['baseUrl'] + "/console")
             page.wait_for_load_state('networkidle')
             self.log_success("Navigated to main page")
             self.take_screenshot(page, "01_main_page")

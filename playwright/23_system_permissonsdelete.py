@@ -7,7 +7,7 @@ def run(playwright: Playwright) -> None:
     browser = playwright.chromium.launch(headless=False)
     context = browser.new_context()
     page28 = context.new_page()
-    page28.goto("http://localhost:7322/en")
+    page28.goto("http://localhost:7322/console")
     time.sleep(2)  # Wait for page to load
     with page28.expect_popup() as page29_info:
         page28.get_by_role("banner").get_by_role("link", name="Login").click()

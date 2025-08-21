@@ -154,10 +154,10 @@ class RepoEditTest(TestBase):
             
             self.logger.log_test_step("navigate_main", "Navigating to main page")
             with self.logger.performance_tracker("navigate_main_page"):
-                main_page.goto(self.config['baseUrl'] + "/en")
+                main_page.goto(self.config['baseUrl'] + "/console")
                 self.wait_for_network_idle(main_page)
             self.log_success("Navigated to main page")
-            self.logger.info("Main page loaded", url=self.config['baseUrl'] + "/en")
+            self.logger.info("Main page loaded", url=self.config['baseUrl'] + "/console")
             
             # Take initial screenshot
             self.take_screenshot(main_page, "01_initial_page")

@@ -131,7 +131,7 @@ class PlaywrightTestBase:
         credentials = self.get_config_value('login', 'credentials')
         
         # Navigate to base URL
-        page.goto(f"{base_url}/en")
+        page.goto(f"{base_url}/console")
         self.wait_for_navigation(page)
         
         # Click login link and wait for new page
