@@ -123,7 +123,7 @@ def run(playwright: Playwright) -> None:
         print("7. Checking for Simple/Expert mode...")
         
         # Take screenshot to see current state
-        screenshot_path = Path(__file__).parent / "screenshots" / "system_createbridge_before_mode_switch.png"
+        screenshot_path = Path(__file__).parent / "artifacts" / "screenshots" / "system_createbridge_before_mode_switch.png"
         screenshot_path.parent.mkdir(exist_ok=True)
         page.screenshot(path=str(screenshot_path))
         print(f"   Screenshot saved: {screenshot_path}")
@@ -152,7 +152,7 @@ def run(playwright: Playwright) -> None:
                         print("   Switched to Expert mode")
                         
                         # Take screenshot after mode switch
-                        screenshot_path_after = Path(__file__).parent / "screenshots" / "system_createbridge_after_mode_switch.png"
+                        screenshot_path_after = Path(__file__).parent / "artifacts" / "screenshots" / "system_createbridge_after_mode_switch.png"
                         page.screenshot(path=str(screenshot_path_after))
                         print(f"   Screenshot after switch: {screenshot_path_after}")
                         break
@@ -390,7 +390,7 @@ def run(playwright: Playwright) -> None:
         print(f"\nError during test: {str(e)}")
         if 'page' in locals():
             # Take screenshot on error
-            screenshot_path = Path(__file__).parent / "error_screenshot_createbridge.png"
+            screenshot_path = Path(__file__).parent / "artifacts" / "screenshots" / "error_screenshot_createbridge.png"
             page.screenshot(path=str(screenshot_path))
             print(f"Screenshot saved to: {screenshot_path}")
         raise

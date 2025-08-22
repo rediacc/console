@@ -207,7 +207,7 @@ def run(playwright: Playwright) -> None:
         print(f"\nError during test: {str(e)}")
         if 'page' in locals():
             # Take screenshot on error
-            screenshot_path = Path(__file__).parent / "error_screenshot_delete.png"
+            screenshot_path = Path(__file__).parent / "artifacts" / "screenshots" / "error_screenshot_delete.png"
             page.screenshot(path=str(screenshot_path))
             print(f"Screenshot saved to: {screenshot_path}")
         raise

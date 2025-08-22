@@ -343,7 +343,7 @@ def run(playwright: Playwright) -> None:
         logger.error(f"An error occurred: {str(e)}")
         # Take screenshot on error
         if deleter.page:
-            screenshot_path = Path(__file__).parent / "error_screenshot.png"
+            screenshot_path = Path(__file__).parent / "artifacts" / "screenshots" / "error_screenshot.png"
             deleter.page.screenshot(path=str(screenshot_path))
             logger.info(f"Error screenshot saved to: {screenshot_path}")
     finally:

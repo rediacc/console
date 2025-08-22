@@ -84,7 +84,7 @@ def wait_and_capture_messages(page, wait_time=2000, step_name=""):
     page.wait_for_timeout(wait_time)
     return capture_all_messages(page, step_name)
 
-def take_screenshot(page, filename_suffix, base_path="./screenshots"):
+def take_screenshot(page, filename_suffix, base_path="./playwright/artifacts/screenshots"):
     """Take a screenshot with timestamp"""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     screenshot_dir = Path(base_path)

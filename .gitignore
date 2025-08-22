@@ -45,5 +45,13 @@ playwright/__pycache__/
 playwright/artifacts/
 logs/
 
+# Screenshots (removed from tracking)
+error_screenshot.png
+debug_screenshot.png
+repositories_screenshot.png
+playwright/screenshots/
+artifacts/
+screenshots/
+
 # Docker volume artifacts (prevent accidental directory creation)
 playwright/*.py/
