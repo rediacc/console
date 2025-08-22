@@ -26,4 +26,4 @@ ENV PYTHONPATH=/console/playwright
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 # Default command - run the main test suite
-CMD ["python3", "smart/00_all.py"]
+CMD ["python3", "smart/test_suite_runner.py"]

@@ -170,7 +170,7 @@ function test_playwright() {
     echo "Running specific test file: $TEST_PATH"
   else
     # Default to running all tests
-    local TEST_PATH="smart/00_all.py"
+    local TEST_PATH="smart/test_suite_runner.py"
     if [ ! -f "$ROOT_DIR/playwright/$TEST_PATH" ]; then
       echo "❌ Error: Default test script not found at playwright/$TEST_PATH"
       return 1
@@ -316,7 +316,7 @@ function test() {
   
   # Run browser/Playwright tests if requested
   if [ "$RUN_BROWSER" = true ]; then
-    if [ -d "$ROOT_DIR/playwright" ] && [ -f "$ROOT_DIR/playwright/smart/00_all.py" ]; then
+    if [ -d "$ROOT_DIR/playwright" ] && [ -f "$ROOT_DIR/playwright/smart/test_suite_runner.py" ]; then
       echo ""
       echo "Running browser tests (Playwright)..."
       test_playwright $PLAYWRIGHT_ARGS
@@ -482,7 +482,7 @@ function show_help() {
   echo "    --browser   Run only browser (Playwright) tests"
   echo "    --headless  Run browser tests in headless mode"
   echo "    --slow[=ms] Run browser tests with slow motion"
-  echo "    --file=<path>  Run specific test file (e.g., --file=06_repo_push_smart.py)"
+  echo "    --file=<path>  Run specific test file (e.g., --file=test_repository_push.py)"
   echo "  test_playwright  Run Playwright UI tests with GUI (Docker)"
   echo "    --file=<path>  Run specific test file"
   echo "  test_playwright_headless  Run Playwright tests headless (Docker)"

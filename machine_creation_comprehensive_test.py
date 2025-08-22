@@ -131,7 +131,7 @@ def run_comprehensive_machine_creation_test():
             page.get_by_test_id("login-password-input").fill("admin")
             messages = wait_and_capture_messages(page, 1000, "login_form_filled")
             all_messages.extend(messages)
-            screenshots.append(take_screenshot(page, "02_login_filled"))
+            screenshots.append(take_screenshot(page, "login_filled"))
             
             # Step 3: Submit login
             print("\n📍 Step 3: Submitting login...")

@@ -48,10 +48,11 @@ class AllTestsRunner(TestBase):
         
         # Test modules to run in order
         self.test_modules = [
-            ('01_register.py', 'RegistrationTest', True),   # Uses shared session
-            ('03_createrepo.py', 'run_with_page', True),    # Uses existing session
-            ('04_Repo_edit.py', 'RepoEditTest', True),      # Uses existing session
-            ('05_repo_down_smart.py', 'RepoDownTest', True), # Uses existing session
+            ('test_user_registration.py', 'RegistrationTest', True),   # Uses shared session
+            ('test_repository_creation.py', 'run_with_page', True),    # Uses existing session
+            ('test_repository_edit.py', 'RepoEditTest', True),      # Uses existing session
+            ('test_repository_down.py', 'RepoDownTest', True), # Uses existing session
+            ('test_repository_push.py', 'RepoPushTest', True), # Uses existing session
         ]
         
         self.test_results = []
@@ -150,7 +151,7 @@ class AllTestsRunner(TestBase):
                                            duration_ms=duration_ms)
     
     def perform_login(self, page: Page) -> bool:
-        """Perform login using 02_login_smart.py logic."""
+        """Perform login using test_user_login.py logic."""
         try:
             with self.session_logger.performance_tracker("login_operation"):
                 # Navigate to login page
@@ -245,7 +246,7 @@ class AllTestsRunner(TestBase):
             # Run registration test
             reg_module_file, reg_class_name, use_run_with_page = self.test_modules[0]
             reg_success = self.run_test_module(reg_module_file, reg_class_name, page, use_run_with_page)
-            self.test_results.append(('01_register', reg_success, "Registration " + ("successful" if reg_success else "failed")))
+            self.test_results.append(('test_user_registration', reg_success, "Registration " + ("successful" if reg_success else "failed")))
             
             self.session_logger.info("Registration test completed",
                                    success=reg_success,
@@ -263,7 +264,7 @@ class AllTestsRunner(TestBase):
             self.session_logger.log_test_step("login_phase", "Starting login test")
             
             login_success = self.perform_login(page)
-            self.test_results.append(('02_login', login_success, "Login " + ("successful" if login_success else "failed")))
+            self.test_results.append(('test_user_login', login_success, "Login " + ("successful" if login_success else "failed")))
             
             self.session_logger.info("Login test completed",
                                    success=login_success,
@@ -274,7 +275,7 @@ class AllTestsRunner(TestBase):
                 return False
             
             # Take screenshot after login
-            self.take_screenshot(page, "02_login_success")
+            self.take_screenshot(page, "test_login_success")
             
             # Run remaining tests using their run_with_page methods
             for module_file, test_class_name, use_run_with_page in self.test_modules[1:]:

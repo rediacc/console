@@ -376,16 +376,4 @@ class RegistrationTest(TestBase):
             return False
 
 
-def main():
-    """Main entry point for the test."""
-    test = RegistrationTest()
-    
-    with sync_playwright() as playwright:
-        success = test.run(playwright)
-        
-        # Exit with appropriate code
-        sys.exit(0 if success else 1)
-
-
-if __name__ == "__main__":
-    main()
+# Standalone execution removed - use test_suite_runner.py to run tests

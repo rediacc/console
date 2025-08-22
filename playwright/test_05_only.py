@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test only 05_repo_down_smart.py with proper login"""
+"""Test only test_repository_down.py with proper login"""
 
 import sys
 from pathlib import Path
@@ -12,7 +12,7 @@ from test_utils import TestBase
 
 # Import the specific test module
 import importlib.util
-spec = importlib.util.spec_from_file_location("05_repo_down_smart", Path(__file__).parent / "smart" / "05_repo_down_smart.py")
+spec = importlib.util.spec_from_file_location("test_repository_down", Path(__file__).parent / "smart" / "test_repository_down.py")
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 RepoDownTest = module.RepoDownTest
