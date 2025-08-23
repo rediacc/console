@@ -15,6 +15,7 @@ import logoBlack from '@/assets/logo_black.png'
 import logoWhite from '@/assets/logo_white.png'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, borderRadius, fontSize } from '@/utils/styleConstants'
+import { ModalSize } from '@/types/modal'
 import { 
   isEncrypted, 
   validateMasterPassword, 
@@ -619,7 +620,7 @@ const LoginPage: React.FC = () => {
           setPendingTFAData(null)
         }}
         footer={null}
-        width={DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH}
+        className={ModalSize.Medium}
       >
         <Space direction="vertical" size={spacing('MD')} style={{ width: '100%' }}>
           <Alert

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import VaultEditor from './VaultEditor'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, borderRadius, fontSize } from '@/utils/styleConstants'
+import { ModalSize } from '@/types/modal'
 
 const { Text } = Typography
 
@@ -84,12 +85,8 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
       title={`${title} - ${entityType}`}
       open={open}
       onCancel={onCancel}
-      width={900}
+      className={ModalSize.Large}
       footer={null}
-      style={{ 
-        top: spacing('LG'),
-        borderRadius: borderRadius('XL')
-      }}
       data-testid="vault-modal"
       destroyOnHidden
     >

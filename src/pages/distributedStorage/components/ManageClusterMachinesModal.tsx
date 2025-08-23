@@ -12,6 +12,7 @@ import {
 } from '@/api/queries/distributedStorage'
 import { AvailableMachinesSelector } from '@/components/resources/AvailableMachinesSelector'
 import { formatTimestampAsIs } from '@/utils/timeUtils'
+import { ModalSize } from '@/types/modal'
 
 interface ManageClusterMachinesModalProps {
   open: boolean
@@ -257,7 +258,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
       }
       open={open}
       onCancel={onCancel}
-      width={800}
+      className={ModalSize.Large}
       data-testid="ds-manage-cluster-machines-modal"
       footer={[
         <Button key="cancel" onClick={onCancel} data-testid="ds-manage-machines-cancel">

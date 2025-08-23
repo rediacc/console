@@ -49,6 +49,7 @@ import UnifiedResourceModal, { ResourceType } from '@/components/common/UnifiedR
 import UserSessionsTab from '@/components/system/UserSessionsTab'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, fontSize, fontWeight } from '@/utils/styleConstants'
+import { ModalSize } from '@/types/modal'
 import TwoFactorSettings from '@/components/settings/TwoFactorSettings'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import { 
@@ -1813,7 +1814,7 @@ const SystemPage: React.FC = () => {
           setSelectedPermission('')
         }}
         footer={null}
-        width={800}
+        className={ModalSize.Large}
       >
         <Tabs
           items={[
@@ -1860,7 +1861,7 @@ const SystemPage: React.FC = () => {
                   <Space style={{ width: '100%' }}>
                     <Select
                       placeholder="Select permission to add"
-                      style={{ width: DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH }}
+                      style={{ width: '100%' }}
                       value={selectedPermission}
                       onChange={setSelectedPermission}
                       showSearch
@@ -2018,7 +2019,7 @@ const SystemPage: React.FC = () => {
           setSelectedMemberEmail('')
         }}
         footer={null}
-        width={800}
+        className={ModalSize.Large}
       >
         <Tabs
           items={[
@@ -2079,7 +2080,7 @@ const SystemPage: React.FC = () => {
                   <Space style={{ width: '100%' }}>
                     <Select
                       placeholder="Select user to add"
-                      style={{ width: DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH }}
+                      style={{ width: '100%' }}
                       value={selectedMemberEmail}
                       onChange={setSelectedMemberEmail}
                       showSearch
@@ -2233,7 +2234,7 @@ const SystemPage: React.FC = () => {
             Close
           </Button>
         ]}
-        width={600}
+        className={ModalSize.Medium}
       >
         {(() => {
           const bridge = bridgeCredentialsModal.bridge
@@ -2534,7 +2535,7 @@ const SystemPage: React.FC = () => {
           setMasterPasswordOperation(defaultOperation)
         }}
         footer={null}
-        width={600}
+        className={ModalSize.Medium}
       >
         <Form
           layout="vertical"
@@ -2723,7 +2724,7 @@ const SystemPage: React.FC = () => {
         open={successModalOpen}
         closable={false}
         footer={null}
-        width={500}
+        className={ModalSize.Medium}
       >
         <Result
           status="success"
@@ -2779,7 +2780,7 @@ const SystemPage: React.FC = () => {
           changePasswordForm.resetFields()
         }}
         footer={null}
-        width={500}
+        className={ModalSize.Medium}
       >
         <Form
           form={changePasswordForm}
@@ -2884,7 +2885,7 @@ const SystemPage: React.FC = () => {
           setImportMode('skip')
         }}
         footer={null}
-        width={600}
+        className={ModalSize.Medium}
       >
         <Form
           form={importForm}

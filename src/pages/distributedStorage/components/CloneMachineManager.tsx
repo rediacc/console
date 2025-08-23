@@ -14,6 +14,7 @@ import {
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
+import { ModalSize } from '@/types/modal'
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge'
 import { 
   useGetCloneMachines,
@@ -398,9 +399,8 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
         cancelButtonProps={{
           'data-testid': 'clone-manager-modal-cancel'
         }}
-        width={700}
+        className={ModalSize.Large}
         data-testid="clone-manager-modal-add"
-        style={componentStyles.modal}
       >
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <Alert

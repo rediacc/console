@@ -40,6 +40,7 @@ import {
   CreateCloneForm,
 } from '@/utils/validation'
 import { z } from 'zod'
+import { ModalSize } from '@/types/modal'
 
 const { Text } = Typography
 
@@ -86,13 +87,6 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   const { data: dropdownData } = useDropdownData()
   const formRef = useRef<any>(null)
   const styles = useComponentStyles()
-
-  // State for modal dimensions
-  const [modalDimensions, setModalDimensions] = useState({
-    width: '90vw',
-    height: '85vh',
-    top: '5vh'
-  })
 
   // State for sub-modals
   const [showVaultModal, setShowVaultModal] = useState(false)
@@ -146,40 +140,6 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       // Modal opened with resource configuration
     }
   }, [open, resourceType, mode, uiMode, existingData, teamFilter])
-  
-  // Calculate modal dimensions based on viewport
-  useEffect(() => {
-    const calculateModalDimensions = () => {
-      const vw = window.innerWidth
-      
-      let widthPercent = 90
-      let heightPercent = 85
-      let topPercent = 5
-      
-      if (vw >= 3840) { // 4K
-        widthPercent = 95
-        heightPercent = 92
-        topPercent = 3
-      } else if (vw >= 2560) { // 2K
-        widthPercent = 92
-        heightPercent = 88
-        topPercent = 4
-      }
-      
-      setModalDimensions({
-        width: `${widthPercent}vw`,
-        height: `${heightPercent}vh`,
-        top: `${topPercent}vh`
-      })
-    }
-    
-    calculateModalDimensions()
-    window.addEventListener('resize', calculateModalDimensions)
-    
-    return () => {
-      window.removeEventListener('resize', calculateModalDimensions)
-    }
-  }, [])
 
   // Schema mapping
   const SCHEMA_MAP = {
@@ -1002,17 +962,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             {mode === 'create' ? t('general.create') : t('general.save')}
           </Button>
         ]}
-        width={modalDimensions.width}
-        style={{ 
-          top: modalDimensions.top,
-          maxHeight: modalDimensions.height
-        }}
-        styles={{
-          body: {
-            height: `calc(${modalDimensions.height} - 120px)`,
-            overflowY: 'auto'
-          }
-        }}
+        className={ModalSize.ExtraLarge}
       >
         {/* Auto-setup checkbox for machine creation */}
         {resourceType === 'machine' && mode === 'create' && (

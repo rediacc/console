@@ -6,6 +6,7 @@ import { Machine } from '@/types'
 import MachineAssignmentStatusBadge from './MachineAssignmentStatusBadge'
 import MachineAssignmentStatusCell from './MachineAssignmentStatusCell'
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
+import { ModalSize } from '@/types/modal'
 
 const { Text } = Typography
 
@@ -94,7 +95,7 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
       open={open}
       onCancel={onCancel}
       footer={null}
-      width={800}
+      className={ModalSize.Large}
       data-testid="ds-view-assignment-status-modal"
     >
       {/* Summary statistics */}

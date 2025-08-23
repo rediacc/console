@@ -6,6 +6,7 @@ import type { DistributedStorageRbdImage } from '@/api/queries/distributedStorag
 import { useGetAvailableMachinesForClone, useUpdateImageMachineAssignment } from '@/api/queries/distributedStorage'
 import { showMessage } from '@/utils/messages'
 import { useComponentStyles, useFormStyles } from '@/hooks/useComponentStyles'
+import { ModalSize } from '@/types/modal'
 
 const { Text } = Typography
 
@@ -93,10 +94,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
           ...styles.touchTarget
         }
       }}
-      style={{
-        ...styles.modal
-      }}
-      width={600}
+      className={ModalSize.Medium}
       data-testid="image-reassign-modal"
     >
       {image && (

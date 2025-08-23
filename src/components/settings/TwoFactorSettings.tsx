@@ -9,6 +9,7 @@ import QRCode from 'react-qr-code'
 import { message } from 'antd'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, fontSize } from '@/utils/styleConstants'
+import { ModalSize } from '@/types/modal'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -358,7 +359,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
         open={open}
         onCancel={onCancel}
         footer={null}
-        width={600}
+        className={ModalSize.Medium}
         data-testid="tfa-settings-main-modal"
       >
         {renderMainContent()}
@@ -373,7 +374,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
           passwordForm.resetFields()
         }}
         footer={null}
-        width={500}
+        className={ModalSize.Medium}
         data-testid="tfa-settings-enable-modal"
       >
         <Form
@@ -443,7 +444,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
           disableForm.resetFields()
         }}
         footer={null}
-        width={500}
+        className={ModalSize.Medium}
         data-testid="tfa-settings-disable-modal"
       >
         <Form

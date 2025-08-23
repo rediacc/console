@@ -1,5 +1,6 @@
 @import 'antd/dist/reset.css';
 @import './styles/themes.css';
+@import './styles/modals.css';
 
 :root {
   /* Design system shadows - matching style-guide.md */

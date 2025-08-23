@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Modal, Tabs, Typography, Space, Tag, Button, Alert, Spin, Row, Col, Card, Divider, List } from 'antd'
+import { ModalSize } from '@/types/modal'
 import {
   RocketOutlined,
   FileTextOutlined,
@@ -208,7 +209,7 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
       }
       visible={visible}
       onCancel={onClose}
-      width="90vw"
+      className={ModalSize.ExtraLarge}
       style={{ 
         top: 20,
         ...styles.modalXLarge

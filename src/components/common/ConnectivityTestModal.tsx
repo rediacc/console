@@ -9,6 +9,7 @@ import type { Machine } from '@/types'
 import { usePingFunction } from '@/services/pingService'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, borderRadius, fontSize } from '@/utils/styleConstants'
+import { ModalSize } from '@/types/modal'
 import './ConnectivityTestModal.css'
 
 const { Text, Title } = Typography
@@ -232,11 +233,8 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
       }
       open={open}
       onCancel={onClose}
-      width={1000}
+      className={ModalSize.ExtraLarge}
       destroyOnHidden
-      style={{
-        borderRadius: borderRadius('XL')
-      }}
       footer={[
         <Button 
           key="run" 

@@ -17,6 +17,7 @@ import {
   message,
 } from 'antd';
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles';
+import { ModalSize } from '@/types/modal';
 import type { ColumnsType } from 'antd/es/table/interface';
 import {
   FolderOutlined,
@@ -622,7 +623,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       }
       open={open}
       onCancel={onCancel}
-      width={900}
+      className={ModalSize.Large}
       footer={[
         <Button 
           key="cancel" 

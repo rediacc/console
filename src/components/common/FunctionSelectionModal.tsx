@@ -9,6 +9,7 @@ import { useLocalizedFunctions } from '@/services/functionsService'
 import { useRepositories } from '@/api/queries/repositories'
 import { useMachines } from '@/api/queries/machines'
 import { useStorage } from '@/api/queries/storage'
+import { ModalSize } from '@/types/modal'
 
 const { Search } = Input
 const { Text, Paragraph } = Typography
@@ -339,7 +340,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
       }
       open={open}
       onCancel={handleCancel}
-      width={1000}
+      className={ModalSize.ExtraLarge}
       footer={[
         <Button key="cancel" onClick={handleCancel} data-testid="function-modal-cancel">
           {t('common:actions.cancel')}

@@ -7,6 +7,7 @@ import {
   CheckCircleOutlined 
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
+import { ModalSize } from '@/types/modal'
 
 const { Text, Title, Paragraph } = Typography
 const { Panel } = Collapse
@@ -193,7 +194,7 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
       }
       open={visible}
       onCancel={onClose}
-      width={900}
+      className={ModalSize.Large}
       footer={[
         <Button key="cancel" onClick={onClose} data-testid="template-details-close-button">
           {t('common:actions.close')}

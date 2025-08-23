@@ -14,6 +14,7 @@ import { hashPassword } from '@/utils/auth'
 import apiClient from '@/api/client'
 import { useFormStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing } from '@/utils/styleConstants'
+import { ModalSize } from '@/types/modal'
 
 const { Step } = Steps
 const { Text } = Typography
@@ -388,19 +389,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       open={visible}
       onCancel={handleClose}
       footer={null}
-      width={480}
+      className={ModalSize.Medium}
       destroyOnHidden
-      style={{ 
-        paddingBottom: 0,
-        minHeight: 'calc(100vh - 120px)'
-      }}
-      styles={{
-        body: {
-          padding: spacing('LG'),
-          maxHeight: 'calc(100vh - 200px)',
-          overflowY: 'auto'
-        }
-      }}
       data-testid="registration-modal"
     >
       <Space direction="vertical" size={spacing('LG')} style={{ width: '100%' }}>
