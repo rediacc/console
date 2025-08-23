@@ -339,7 +339,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
             <Text>
               {t('resources:pipInstall.checkDocs')}: {' '}
               <a 
-                href="https://docs.rediacc.com/cli/installation" 
+                href="https://www.rediacc.com/docs/cli/installation" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 data-testid="pip-install-docs-link"
