@@ -55,3 +55,6 @@ screenshots/
 
 # Docker volume artifacts (prevent accidental directory creation)
 playwright/*.py/
+playwright/**/*.png
+playwright_env/
+*.png

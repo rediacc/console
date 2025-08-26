@@ -402,5 +402,307 @@
       "notificationWait": 5000,
       "networkIdle": 5000
     }
+  },
+  "systemCreateUser": {
+    "ui": {
+      "systemNavTestId": "main-nav-system",
+      "usersTabSelector": ".ant-tabs-tab:has-text(\"Users\")",
+      "createUserButtonTestId": "system-create-user-button",
+      "modalSelector": ".ant-modal",
+      "emailInputTestId": "resource-form-field-newUserEmail",
+      "passwordInputTestId": "resource-form-field-newUserPassword",
+      "submitButtonTestId": "resource-form-submit-button",
+      "cancelButtonTestId": "resource-form-cancel-button",
+      "closeButtonSelector": ".ant-modal-close"
+    },
+    "testData": {
+      "emailPrefix": "testuser_",
+      "emailDomain": "@example.com",
+      "defaultPassword": "TestPassword123!",
+      "generateUniqueEmail": true
+    },
+    "validation": {
+      "successIndicators": {
+        "modalCloses": true,
+        "userAppearsInTable": true,
+        "notificationSelectors": [
+          ".ant-message-success",
+          ".ant-notification-notice-success",
+          ".ant-message",
+          ".ant-notification"
+        ]
+      },
+      "successMessages": [
+        "User created successfully",
+        "User added successfully", 
+        "Created successfully",
+        "Success"
+      ],
+      "errorSelectors": [
+        ".ant-message-error",
+        ".ant-notification-notice-error",
+        ".error-message"
+      ]
+    },
+    "timeouts": {
+      "pageLoad": 10000,
+      "elementWait": 5000,
+      "modalOpen": 3000,
+      "modalClose": 10000,
+      "tableRefresh": 5000,
+      "notificationWait": 3000
+    }
+  },
+  "systemCreateTeam": {
+    "ui": {
+      "systemNavTestId": "main-nav-system",
+      "teamsTabTestId": "system-tab-teams",
+      "createTeamButtonTestId": "system-create-team-button",
+      "teamNameInputTestId": "resource-modal-field-teamName-input",
+      "sshKeyGenerateButtonTestId": "vault-editor-generate-SSH_PRIVATE_KEY",
+      "generateButtonTestId": "vault-editor-generate-button",
+      "applyGeneratedButtonTestId": "vault-editor-apply-generated",
+      "submitButtonTestId": "resource-modal-ok-button",
+      "cancelButtonTestId": "resource-modal-cancel-button",
+      "teamsTableSelector": "table.ant-table",
+      "modalSelector": ".ant-modal",
+      "keyTypeSelector": "input[value='RSA']",
+      "keySizeSelector": "input[value='4096']"
+    },
+    "testData": {
+      "teamNamePrefix": "TestTeam",
+      "generateUnique": true,
+      "sshKeyType": "RSA",
+      "sshKeySize": "4096"
+    },
+    "validation": {
+      "successIndicators": [
+        "Team created successfully",
+        "Team '.*' created successfully",
+        "Successfully created team"
+      ],
+      "errorMessages": [
+        "Team already exists",
+        "Team name is required",
+        "SSH key generation failed"
+      ],
+      "notificationSelectors": [
+        ".ant-message",
+        ".ant-notification",
+        "[role='alert']"
+      ]
+    },
+    "timeouts": {
+      "navigation": 10000,
+      "element": 5000,
+      "modalOpen": 3000,
+      "sshKeyGeneration": 5000,
+      "creation": 10000,
+      "validation": 5000
+    }
+  },
+  "systemDeactivateUser": {
+    "ui": {
+      "systemNavTestId": "main-nav-system",
+      "usersTabSelector": ".ant-tabs-tab:has-text('Users')",
+      "deactivateButtonPrefix": "system-user-deactivate-button-",
+      "activateButtonPrefix": "system-user-activate-button-",
+      "confirmDialogSelector": ".ant-popconfirm",
+      "confirmYesButton": ".ant-popconfirm button.ant-btn-dangerous:has-text('Yes')",
+      "confirmNoButton": ".ant-popconfirm button:has-text('No')",
+      "usersTableSelector": "table.ant-table",
+      "statusActiveTag": ".ant-tag-green",
+      "statusInactiveTag": ".ant-tag-default",
+      "userRowSelector": "tr.ant-table-row"
+    },
+    "testData": {
+      "targetUserEmail": null,
+      "preferNonAdminUsers": true,
+      "skipProtectedUsers": ["admin@rediacc.io", "bridge"],
+      "testMode": "first_available"
+    },
+    "validation": {
+      "successIndicators": [
+        "User deactivated successfully",
+        "User '.*' deactivated successfully",
+        "Successfully deactivated user",
+        "User status updated"
+      ],
+      "errorMessages": [
+        "Cannot deactivate admin user",
+        "User not found",
+        "Deactivation failed",
+        "Protected user"
+      ],
+      "notificationSelectors": [
+        ".ant-message",
+        ".ant-notification",
+        "[role='alert']"
+      ],
+      "statusChangeVerification": true
+    },
+    "timeouts": {
+      "navigation": 10000,
+      "element": 5000,
+      "confirmDialog": 3000,
+      "deactivation": 5000,
+      "statusUpdate": 3000,
+      "validation": 5000
+    }
+  },
+  "systemPermissions": {
+    "ui": {
+      "systemNavTestId": "main-nav-system",
+      "expertModeSelector": ".ant-segmented-item:has-text('Expert')",
+      "simpleModeSelector": ".ant-segmented-item:has-text('Simple')",
+      "permissionsTabTestId": "system-tab-permissions",
+      "createButtonTestId": "system-create-permission-group-button",
+      "groupNameInputTestId": "system-permission-group-name-input",
+      "submitButtonTestId": "modal-create-permission-group-ok",
+      "cancelButtonTestId": "modal-create-permission-group-cancel",
+      "permissionsTableSelector": "table.ant-table",
+      "modalSelector": ".ant-modal",
+      "modeToggleSelector": ".ant-segmented",
+      "permissionCheckboxPrefix": "permission-checkbox-",
+      "userDropdownSelector": ".ant-select-selector"
+    },
+    "testData": {
+      "groupNamePrefix": "TestPermGroup",
+      "generateUnique": true,
+      "requireExpertMode": true,
+      "defaultPermissions": []
+    },
+    "validation": {
+      "successIndicators": [
+        "Permission group created successfully",
+        "Permission group '.*' created successfully",
+        "Successfully created permission group"
+      ],
+      "errorMessages": [
+        "Permission group already exists",
+        "Group name is required",
+        "Invalid permissions"
+      ],
+      "notificationSelectors": [
+        ".ant-message",
+        ".ant-notification",
+        "[role='alert']"
+      ],
+      "checkTableEntry": true,
+      "checkDropdownAvailability": true
+    },
+    "timeouts": {
+      "navigation": 10000,
+      "element": 5000,
+      "modalOpen": 3000,
+      "creation": 5000,
+      "validation": 5000,
+      "modeSwitch": 3000
+    }
+  },
+  "systemVaultConfiguration": {
+    "ui": {
+      "systemNavTestId": "main-nav-system",
+      "companyVaultButtonTestId": "system-company-vault-button",
+      "userVaultButtonPrefix": "system-user-vault-button",
+      "teamsTabTestId": "system-tab-teams",
+      "teamVaultButtonPrefix": "system-team-vault-button",
+      "sshGenerateButtonTestId": "vault-editor-generate-SSH_PRIVATE_KEY",
+      "generateButtonTestId": "vault-editor-generate-button",
+      "applyGeneratedButtonTestId": "vault-editor-apply-generated",
+      "saveButtonTestId": "vault-modal-save-button",
+      "cancelButtonTestId": "vault-modal-cancel-button",
+      "modalSelector": ".ant-modal",
+      "vaultFieldPrefix": "vault-editor-field-",
+      "keyTypeSelector": "input[value='RSA']",
+      "keySizeSelector": "input[value='4096']",
+      "universalUserIdField": "vault-editor-field-UNIVERSAL_USER_ID",
+      "universalUserNameField": "vault-editor-field-UNIVERSAL_USER_NAME"
+    },
+    "testData": {
+      "vaultType": "company",
+      "targetUser": null,
+      "targetTeam": null,
+      "sshKeyType": "RSA",
+      "sshKeySize": "4096",
+      "universalUserId": "universal_user_001",
+      "universalUserName": "Universal User",
+      "dockerConfig": null,
+      "plugins": null
+    },
+    "validation": {
+      "successIndicators": [
+        "Vault configuration saved successfully",
+        "Vault updated successfully",
+        "Configuration saved"
+      ],
+      "errorMessages": [
+        "Required fields missing",
+        "Invalid configuration",
+        "Save failed"
+      ],
+      "notificationSelectors": [
+        ".ant-message",
+        ".ant-notification",
+        "[role='alert']"
+      ],
+      "checkRequiredFields": true
+    },
+    "timeouts": {
+      "navigation": 10000,
+      "element": 5000,
+      "modalOpen": 3000,
+      "sshKeyGeneration": 5000,
+      "save": 5000,
+      "validation": 5000
+    }
+  },
+  "systemTeamsDelete": {
+    "ui": {
+      "systemNavTestId": "main-nav-system",
+      "teamsTabTestId": "system-tab-teams",
+      "deleteButtonPrefix": "system-team-delete-button-",
+      "confirmDialogSelector": ".ant-popconfirm",
+      "confirmYesButton": ".ant-popconfirm button.ant-btn-dangerous:has-text('Yes')",
+      "confirmNoButton": ".ant-popconfirm button:has-text('No')",
+      "teamsTableSelector": "table.ant-table",
+      "teamRowSelector": "tr.ant-table-row",
+      "modalSelector": ".ant-modal",
+      "createTeamButtonTestId": "system-create-team-button",
+      "teamNameInputTestId": "resource-modal-field-teamName-input"
+    },
+    "testData": {
+      "targetTeamName": null,
+      "skipSystemTeams": ["Default", "Private Team"],
+      "deleteMode": "first_available",
+      "createTestTeamIfNeeded": true,
+      "testTeamPrefix": "TestDeleteTeam"
+    },
+    "validation": {
+      "successIndicators": [
+        "Team deleted successfully",
+        "Team '.*' deleted successfully",
+        "Successfully deleted team"
+      ],
+      "errorMessages": [
+        "Cannot delete the default",
+        "This is a system-required entity",
+        "Team not found",
+        "Deletion failed"
+      ],
+      "notificationSelectors": [
+        ".ant-message",
+        ".ant-notification",
+        "[role='alert']"
+      ],
+      "checkTableAfterDeletion": true
+    },
+    "timeouts": {
+      "navigation": 10000,
+      "element": 5000,
+      "confirmDialog": 3000,
+      "deletion": 5000,
+      "validation": 5000
+    }
   }
 }

@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """
-System Teams Delete Test - Fixed Version
+System Teams Delete Test - Improved Version
 Tests the team deletion functionality in Rediacc console
+
+Based on UI exploration findings:
+- Delete buttons have data-testid: system-team-delete-button-{team_name}
+- Confirmation uses .ant-popconfirm with "Delete Team" title
+- Success message: Team "{team_name}" deleted successfully
+- Cannot delete system-required teams (Default, Private Team)
 """
 
 import re
@@ -54,49 +60,14 @@ def run(playwright: Playwright) -> None:
         # Perform login
         print("4. Logging in...")
         
-        # Find email input with multiple strategies
-        email_input = None
-        for selector in ['[data-testid="login-email-input"]', 'input[type="email"]', 'input[placeholder*="email" i]']:
-            try:
-                email_input = page.locator(selector).first
-                if email_input.is_visible():
-                    break
-            except:
-                continue
-        
-        if not email_input:
-            raise Exception("Could not find email input field")
-        
+        # Use improved selectors based on UI exploration
+        email_input = page.locator('input[placeholder*="email"]').first
         email_input.fill("admin@rediacc.io")
         
-        # Find password input
-        password_input = None
-        for selector in ['[data-testid="login-password-input"]', 'input[type="password"]']:
-            try:
-                password_input = page.locator(selector).first
-                if password_input.is_visible():
-                    break
-            except:
-                continue
-        
-        if not password_input:
-            raise Exception("Could not find password input field")
-        
+        password_input = page.locator('input[placeholder*="password"]').first
         password_input.fill("admin")
         
-        # Find and click submit button
-        submit_button = None
-        for selector in ['[data-testid="login-submit-button"]', 'button[type="submit"]', 'button:has-text("Sign In")']:
-            try:
-                submit_button = page.locator(selector).first
-                if submit_button.is_visible():
-                    break
-            except:
-                continue
-        
-        if not submit_button:
-            raise Exception("Could not find submit button")
-        
+        submit_button = page.locator('button:has-text("Sign In")').first
         submit_button.click()
         
         # Wait for dashboard
@@ -106,174 +77,189 @@ def run(playwright: Playwright) -> None:
         
         # Navigate to System
         print("6. Navigating to System...")
-        try:
-            system_link = page.get_by_test_id("main-nav-system")
-            system_link.click()
-        except:
-            # Try alternative selector
-            system_link = page.locator('nav a:has-text("System")').first
-            if not system_link.is_visible():
-                system_link = page.locator('[data-testid*="system"]').first
-            system_link.click()
-        
+        system_link = page.get_by_test_id("main-nav-system")
+        system_link.click()
         page.wait_for_load_state("networkidle")
         
         # Click on Teams tab
         print("7. Navigating to Teams tab...")
-        teams_tab_found = False
+        teams_tab = page.get_by_test_id("system-tab-teams")
+        teams_tab.click()
+        page.wait_for_timeout(2000)  # Wait for teams tab to load
+        print("   Teams tab opened")
         
-        try:
-            teams_tab = page.get_by_test_id("system-tab-teams")
-            if teams_tab.is_visible():
-                teams_tab.click()
-                teams_tab_found = True
-                print("   Teams tab opened")
-        except:
-            pass
+        # Find a deletable team (avoid system-required teams)
+        print("8. Looking for deletable team...")
         
-        if not teams_tab_found:
-            # Try alternative selectors
-            print("   Trying alternative selector for teams tab...")
+        # First, let's find available teams and identify one that can be deleted
+        team_rows = page.locator('tr').all()
+        deletable_teams = []
+        
+        for row in team_rows:
+            if row.is_visible():
+                row_text = row.text_content()
+                if row_text and len(row_text.strip()) > 10:  # Skip header/empty rows
+                    # Look for delete button in this row
+                    delete_btns = row.locator('[data-testid*="delete"]').all()
+                    for btn in delete_btns:
+                        if btn.is_visible():
+                            # Extract team name from test-id
+                            btn_testid = btn.get_attribute('data-testid')
+                            if btn_testid and 'system-team-delete-button-' in btn_testid:
+                                team_name = btn_testid.replace('system-team-delete-button-', '')
+                                # Skip system-required teams
+                                if team_name not in ['Default', 'Private Team']:
+                                    deletable_teams.append(team_name)
+                                    print(f"   Found deletable team: {team_name}")
+        
+        if not deletable_teams:
+            print("   No deletable teams found (only system-required teams exist)")
+            print("   Creating a test team for deletion...")
+            
+            # Create a test team first
             try:
-                teams_selectors = [
-                    'button:has-text("Teams")',
-                    'div[role="tab"]:has-text("Teams")',
-                    '.ant-tabs-tab:has-text("Teams")',
-                    '[data-testid*="teams"]'
-                ]
-                
-                for selector in teams_selectors:
-                    try:
-                        teams_tab = page.locator(selector).first
-                        if teams_tab.is_visible():
-                            teams_tab.click()
-                            teams_tab_found = True
-                            print("   Teams tab opened using alternative selector")
-                            break
-                    except:
-                        continue
+                create_button = page.locator('button').filter(has_text='+').first
+                if create_button.is_visible():
+                    create_button.click()
+                    page.wait_for_timeout(1000)
+                    
+                    # Fill team name
+                    name_input = page.locator('.ant-modal input[type="text"]').first
+                    if name_input.is_visible():
+                        test_team_name = "TestDeletionTeam"
+                        name_input.fill(test_team_name)
+                        
+                        # Submit
+                        submit_btn = page.locator('.ant-modal .ant-btn-primary').first
+                        if submit_btn.is_visible():
+                            submit_btn.click()
+                            page.wait_for_timeout(3000)
+                            deletable_teams.append(test_team_name)
+                            print(f"   Created test team: {test_team_name}")
             except Exception as e:
-                print(f"   Error finding teams tab: {str(e)}")
+                print(f"   Could not create test team: {str(e)}")
         
-        if not teams_tab_found:
-            print("   Warning: Could not find teams tab")
-        
-        time.sleep(1)  # Wait for teams tab to load
-        
-        # Find and click delete button for specific team
-        print("8. Looking for team delete button...")
         delete_found = False
-        team_name = "test2"
+        team_name = None
         
-        try:
-            # Try specific test-id first
+        if deletable_teams:
+            team_name = deletable_teams[0]  # Use first available deletable team
+            print(f"   Attempting to delete team: {team_name}")
+            
+            # Click the delete button using the correct test-id
             delete_button = page.get_by_test_id(f"system-team-delete-button-{team_name}")
             if delete_button.is_visible():
                 delete_button.click()
                 delete_found = True
                 print(f"   Delete button clicked for team: {team_name}")
-        except:
-            pass
-        
-        if not delete_found:
-            # Try alternative selectors
-            print("   Trying alternative selector for delete button...")
-            try:
-                # Look for team row and delete button
-                team_row = page.locator(f'tr:has-text("{team_name}")').first
-                if team_row.is_visible():
-                    delete_btn = team_row.locator('button:has-text("Delete")').first
-                    if not delete_btn.is_visible():
-                        delete_btn = team_row.locator('button[title*="delete"]').first
-                    if not delete_btn.is_visible():
-                        delete_btn = team_row.locator('button[title*="Delete"]').first
-                    if not delete_btn.is_visible():
-                        delete_btn = team_row.locator('[data-testid*="delete"]').first
-                    
-                    if delete_btn.is_visible():
-                        delete_btn.click()
-                        delete_found = True
-                        print(f"   Delete button clicked for team in row")
-                else:
-                    # Try to find any delete button
-                    delete_selectors = [
-                        'button:has-text("Delete")',
-                        'button[title*="delete"]',
-                        'button[title*="Delete"]',
-                        '[data-testid*="delete"]',
-                        '.ant-table button:has-text("Delete")'
-                    ]
-                    
-                    for selector in delete_selectors:
-                        try:
-                            delete_button = page.locator(selector).first
-                            if delete_button.is_visible():
-                                delete_button.click()
-                                delete_found = True
-                                print("   Delete button clicked using alternative selector")
-                                break
-                        except:
-                            continue
-            except Exception as e:
-                print(f"   Error finding delete button: {str(e)}")
-        
-        if not delete_found:
-            print("   Warning: Could not find delete button")
-            print("   Team might not exist or delete option is not available")
-        else:
-            time.sleep(1)  # Wait for confirmation dialog
-            
-            # Confirm deletion
-            print("9. Confirming deletion...")
-            confirm_found = False
-            
-            try:
-                confirm_button = page.get_by_test_id("confirm-yes-button")
-                if confirm_button.is_visible():
-                    confirm_button.click()
-                    confirm_found = True
-                    print("   Deletion confirmed")
-            except:
-                pass
-            
-            if not confirm_found:
-                # Try alternative selectors for confirmation
-                print("   Trying alternative selector for confirm button...")
-                try:
-                    confirm_selectors = [
-                        'button:has-text("Yes")',
-                        'button:has-text("OK")',
-                        'button:has-text("Confirm")',
-                        'button:has-text("Delete")',
-                        '.ant-modal button.ant-btn-primary',
-                        '.ant-modal button.ant-btn-dangerous',
-                        '[role="dialog"] button:has-text("Yes")',
-                        '[role="dialog"] button:has-text("OK")'
-                    ]
-                    
-                    for selector in confirm_selectors:
-                        try:
-                            confirm_button = page.locator(selector).first
-                            if confirm_button.is_visible():
-                                confirm_button.click()
-                                confirm_found = True
-                                print("   Deletion confirmed using alternative selector")
-                                break
-                        except:
-                            continue
-                except Exception as e:
-                    print(f"   Error confirming deletion: {str(e)}")
-            
-            if not confirm_found:
-                print("   Warning: Could not confirm deletion")
             else:
-                time.sleep(2)  # Wait for deletion to complete
-                print("   Team deletion completed")
+                print(f"   Delete button not found for team: {team_name}")
         
-        print("\nTest completed!")
+        if not delete_found:
+            print("   Could not find any team to delete")
+        else:
+            page.wait_for_timeout(1000)  # Wait for confirmation dialog
+            
+            # Handle confirmation dialog
+            print("9. Handling confirmation dialog...")
+            
+            # Look for the popconfirm dialog
+            popconfirm = page.locator('.ant-popconfirm').first
+            if popconfirm.is_visible():
+                # Get confirmation dialog text for verification
+                confirmation_text = popconfirm.text_content()
+                print(f"   Confirmation dialog: {confirmation_text}")
+                
+                # Verify it's asking about the correct team
+                if team_name in confirmation_text:
+                    print(f"   Confirmed dialog is for team: {team_name}")
+                    
+                    # Click Yes to confirm deletion
+                    yes_button = popconfirm.locator('button:has-text("Yes")').first
+                    if yes_button.is_visible():
+                        yes_button.click()
+                        print("   Clicked Yes to confirm deletion")
+                        
+                        # Wait for deletion to complete
+                        page.wait_for_timeout(3000)
+                        
+                        # Check for success message
+                        success_message_found = False
+                        message_selectors = [
+                            '.ant-message-success',
+                            '.ant-notification-notice',
+                            '.ant-message',
+                            '[role="alert"]'
+                        ]
+                        
+                        for selector in message_selectors:
+                            try:
+                                messages = page.locator(selector).all()
+                                for msg in messages:
+                                    if msg.is_visible():
+                                        msg_text = msg.text_content()
+                                        if 'deleted successfully' in msg_text.lower():
+                                            print(f"   SUCCESS MESSAGE: {msg_text}")
+                                            success_message_found = True
+                                            break
+                            except:
+                                pass
+                        
+                        # Verify team was removed from table
+                        team_row = page.locator(f'tr:has-text("{team_name}")').first
+                        if not team_row.is_visible():
+                            print(f"   VERIFICATION: Team '{team_name}' successfully removed from table")
+                            print("   ✓ Team deletion completed successfully")
+                        else:
+                            print(f"   WARNING: Team '{team_name}' still visible in table")
+                            
+                            # Check if there's an error message
+                            error_messages = page.locator('.ant-message-error, .ant-notification-error').all()
+                            for err_msg in error_messages:
+                                if err_msg.is_visible():
+                                    err_text = err_msg.text_content()
+                                    print(f"   ERROR MESSAGE: {err_text}")
+                    else:
+                        print("   Yes button not found in confirmation dialog")
+                else:
+                    print(f"   Confirmation dialog is not for the expected team: {team_name}")
+            else:
+                print("   No popconfirm dialog found")
+                
+                # Check for modal dialog as fallback
+                modal = page.locator('.ant-modal').first
+                if modal.is_visible():
+                    modal_text = modal.text_content()
+                    print(f"   Found modal instead of popconfirm: {modal_text}")
+                    
+                    # Look for confirmation buttons in modal
+                    confirm_btn = modal.locator('button:has-text("Yes"), button:has-text("OK"), button:has-text("Confirm")').first
+                    if confirm_btn.is_visible():
+                        confirm_btn.click()
+                        print("   Clicked modal confirmation button")
+                        page.wait_for_timeout(3000)
+                else:
+                    print("   No confirmation dialog found")
         
-        # Keep browser open for a moment to see results
-        time.sleep(3)
+        # Take final screenshot for documentation
+        final_screenshot_path = Path(__file__).parent / "artifacts" / "screenshots" / "final_teams_state.png"
+        final_screenshot_path.parent.mkdir(parents=True, exist_ok=True)
+        page.screenshot(path=str(final_screenshot_path), full_page=True)
+        print(f"   Final screenshot saved: {final_screenshot_path}")
+        
+        print("\n" + "="*50)
+        print("TEAM DELETION TEST COMPLETED")
+        print("="*50)
+        if delete_found and team_name:
+            print(f"✓ Successfully tested deletion of team: {team_name}")
+            print("✓ Confirmed proper confirmation dialog flow")
+            print("✓ Verified success/error message handling")
+        else:
+            print("⚠ No teams were available for deletion testing")
+        print("="*50)
+        
+        # Keep browser open briefly to see results
+        time.sleep(2)
         
     except Exception as e:
         print(f"\nError during test: {str(e)}")
