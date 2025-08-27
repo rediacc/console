@@ -58,6 +58,66 @@ class SmartTestBase(TestBase):
             self.log_error(f"Failed to navigate to resources: {str(e)}")
             return False
     
+    def navigate_to_system(self, page: Page) -> bool:
+        """Navigate to system page using consistent approach."""
+        try:
+            self.logger.log_test_step("navigate_system", "Navigating to System page")
+            
+            # Click System in navigation
+            system_nav = page.get_by_test_id("main-nav-system")
+            if not system_nav.is_visible():
+                # Fallback to text selector
+                system_nav = page.get_by_text("System")
+            
+            system_nav.wait_for(state="visible", timeout=5000)
+            system_nav.click()
+            
+            # Wait for page load
+            page.wait_for_url("**/console/system", timeout=10000)
+            self.wait_for_network_idle(page)
+            
+            self.log_success("Navigated to System page")
+            return True
+            
+        except Exception as e:
+            self.log_error(f"Failed to navigate to system: {str(e)}")
+            return False
+    
+    def switch_to_expert_mode(self, page: Page) -> bool:
+        """Switch to Expert mode in System page."""
+        try:
+            self.log_info("Checking for Expert mode...")
+            
+            # Try multiple selectors for Expert mode
+            expert_selectors = [
+                'label:has-text("Expert")',
+                '.ant-radio-wrapper:has-text("Expert")',
+                'span:has-text("Expert")',
+                'input[type="radio"][value="expert"]'
+            ]
+            
+            for selector in expert_selectors:
+                try:
+                    expert_element = page.locator(selector).first
+                    if expert_element.is_visible():
+                        expert_element.click()
+                        self.log_info("Switched to Expert mode")
+                        return True
+                except:
+                    continue
+            
+            # Check if already in Expert mode
+            if page.locator('input[type="radio"][checked]:has-text("Expert")').is_visible():
+                self.log_info("Already in Expert mode")
+                return True
+                
+            self.log_warning("Could not switch to Expert mode")
+            return False
+            
+        except Exception as e:
+            self.log_warning(f"Error checking/switching mode: {str(e)}")
+            return False
+    
     def find_repository_by_name(self, page: Page, repo_name: Optional[str] = None) -> Optional[str]:
         """Find repository by name or use session repository."""
         if repo_name is None:

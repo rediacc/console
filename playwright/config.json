@@ -735,6 +735,51 @@
       "validation": 5000
     }
   },
+  "systemCreateBridge": {
+    "ui": {
+      "systemNavTestId": "main-nav-system",
+      "expertModeSelector": "label:has-text('Expert')",
+      "simpleModeSelector": "label:has-text('Simple')",
+      "bridgesTabSelector": ".ant-tabs-tab:has-text('Bridges')",
+      "createBridgeButtonTestId": "system-create-bridge-button",
+      "teamSelectTestId": "resource-modal-field-teamName-select",
+      "bridgeNameInputTestId": "resource-modal-field-bridgeName-input",
+      "submitButtonTestId": "resource-modal-ok-button",
+      "cancelButtonTestId": "resource-modal-cancel-button",
+      "modalSelector": ".ant-modal"
+    },
+    "testData": {
+      "teamName": "Private Team",
+      "bridgeNamePrefix": "testbridge",
+      "generateUniqueName": true,
+      "requireExpertMode": true
+    },
+    "validation": {
+      "successIndicators": [
+        "Bridge created successfully",
+        "Bridge '.*' created successfully",
+        "Successfully created bridge"
+      ],
+      "errorMessages": [
+        "Bridge already exists",
+        "Bridge name is required",
+        "Team selection is required"
+      ],
+      "notificationSelectors": [
+        ".ant-message",
+        ".ant-notification",
+        "[role='alert']"
+      ]
+    },
+    "timeouts": {
+      "navigation": 10000,
+      "element": 5000,
+      "modalOpen": 3000,
+      "creation": 5000,
+      "validation": 5000,
+      "modeSwitch": 3000
+    }
+  },
   "systemTeamsDelete": {
     "ui": {
       "systemNavTestId": "main-nav-system",
