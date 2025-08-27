@@ -30,6 +30,7 @@ import RegistrationModal from '@/components/auth/RegistrationModal'
 import { generateRandomEmail, generateRandomCompanyName, generateRandomPassword } from '@/utils/cryptoGenerators'
 import { configService } from '@/services/configService'
 import SandboxWarning from '@/components/common/SandboxWarning'
+import { apiConnectionService } from '@/services/apiConnectionService'
 
 const { Text, Link } = Typography
 
@@ -596,8 +597,26 @@ const LoginPage: React.FC = () => {
           </Text>
         </div>
 
-        {/* Version display */}
+        {/* Endpoint and Version display */}
         <div style={{ textAlign: 'center', marginTop: spacing('LG') }}>
+          {(() => {
+            const endpointInfo = apiConnectionService.getEndpointInfo()
+            return endpointInfo ? (
+              <Text 
+                type={endpointInfo.warning ? "warning" : "secondary"} 
+                style={{ 
+                  fontSize: DESIGN_TOKENS.FONT_SIZE.XS, 
+                  opacity: endpointInfo.warning ? 0.9 : 0.7,
+                  display: 'block',
+                  marginBottom: spacing('XS'),
+                  fontWeight: endpointInfo.warning ? DESIGN_TOKENS.FONT_WEIGHT.MEDIUM : 'normal'
+                }}
+              >
+                {endpointInfo.warning && '⚠️ '}
+                {endpointInfo.label}
+              </Text>
+            ) : null
+          })()}
           <Text type="secondary" style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XS, opacity: 0.6 }}>
             {import.meta.env.VITE_APP_VERSION !== 'dev' ? (import.meta.env.VITE_APP_VERSION.startsWith('v') ? import.meta.env.VITE_APP_VERSION : `v${import.meta.env.VITE_APP_VERSION}`) : 'Development'}
           </Text>

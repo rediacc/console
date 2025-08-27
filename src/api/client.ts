@@ -4,14 +4,13 @@ import { logout } from '@/store/auth/authSlice'
 import { showMessage } from '@/utils/messages'
 import { encryptRequestData, decryptResponseData, hasVaultFields } from './encryptionMiddleware'
 import { tokenService } from '@/services/tokenService'
+import { apiConnectionService } from '@/services/apiConnectionService'
 
 // API configuration
 const API_PREFIX = '/StoredProcedure'
 
-// Use relative path in production (served via nginx proxy) and absolute in development
-const MIDDLEWARE_PORT = import.meta.env.VITE_HTTP_PORT
-let API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (import.meta.env.PROD ? '/api' : `http://localhost:${MIDDLEWARE_PORT}/api`)
+// API URL will be determined dynamically based on connection health check
+let API_BASE_URL = ''
 
 export interface ApiResponse<T = any> {
   failure: number
@@ -40,8 +39,9 @@ class ApiClient {
   private readonly REDIRECT_DELAY_MS = 1500
 
   constructor() {
+    // Initialize with empty baseURL, will be set after health check
     this.client = axios.create({
-      baseURL: `${API_BASE_URL}${API_PREFIX}`,
+      baseURL: '',
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
@@ -49,6 +49,14 @@ class ApiClient {
     })
 
     this.setupInterceptors()
+    this.initializeBaseUrl()
+  }
+
+  private async initializeBaseUrl() {
+    // Get the API URL from connection service (will perform health check if needed)
+    const apiUrl = await apiConnectionService.getApiUrl()
+    API_BASE_URL = apiUrl
+    this.client.defaults.baseURL = `${API_BASE_URL}${API_PREFIX}`
   }
 
   private setupInterceptors() {
@@ -83,6 +91,11 @@ class ApiClient {
   }
 
   async login(email: string, passwordHash: string, sessionName = 'Web Session') {
+    // Ensure API URL is initialized before login
+    if (!API_BASE_URL) {
+      await this.initializeBaseUrl()
+    }
+    
     const response = await axios.post<ApiResponse>(
       `${API_BASE_URL}${API_PREFIX}/CreateAuthenticationRequest`,
       { name: sessionName },

@@ -1,11 +1,13 @@
 
 import { RediaccConfig } from '@/types'
+import { apiConnectionService } from './apiConnectionService'
 
 interface AppConfig {
   apiUrl: string
   domain: string
   httpPort: number
   environment: 'development' | 'production'
+  buildType: 'DEBUG' | 'RELEASE'
   // Extended configuration from nginx
   instanceName?: string
   enableDebug?: boolean
@@ -68,12 +70,16 @@ class ConfigService {
     // First, try to get config from window.REDIACC_CONFIG (nginx runtime config)
     const runtimeConfig = this.parseRediaccConfig()
     
+    // Get the selected API endpoint from the connection service
+    const selectedEndpoint = await apiConnectionService.performStartupHealthCheck()
+    
     // Then fall back to Vite environment variables
     const viteConfig = {
-      apiUrl: import.meta.env.VITE_API_URL || this.getDefaultConfig().apiUrl,
+      apiUrl: selectedEndpoint.url,
       domain: import.meta.env.VITE_SYSTEM_DOMAIN || 'localhost',
       httpPort: parseInt(import.meta.env.VITE_HTTP_PORT || '7322'),
-      environment: import.meta.env.MODE as 'development' | 'production'
+      environment: import.meta.env.MODE as 'development' | 'production',
+      buildType: apiConnectionService.getBuildType()
     }
 
     // Merge configs: runtime config takes precedence over vite config
@@ -84,9 +90,10 @@ class ConfigService {
     } as AppConfig
 
     // Log configuration source in debug mode
-    if (this.config.enableDebug) {
+    if (this.config.enableDebug || this.config.buildType === 'DEBUG') {
       console.log('Configuration loaded:', {
         source: runtimeConfig ? 'Runtime (nginx)' : 'Build-time (Vite)',
+        endpoint: selectedEndpoint,
         config: this.config
       })
     }
@@ -100,7 +107,8 @@ class ConfigService {
       apiUrl: 'http://localhost:7322/api',
       domain: 'localhost',
       httpPort: 7322,
-      environment: 'production'
+      environment: 'production',
+      buildType: 'DEBUG'
     }
   }
 

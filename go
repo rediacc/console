@@ -14,6 +14,11 @@ ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Function to check required environment variables
 check_required_env() {
+    # For sandbox mode, we don't need these variables
+    if [ "$1" = "sandbox" ] || [ "$SANDBOX_MODE" = "true" ]; then
+        return 0
+    fi
+    
     if [ -z "$SYSTEM_HTTP_PORT" ] || [ -z "$SYSTEM_DOMAIN" ]; then
         echo "❌ Error: Required environment variables are not set!"
         echo ""
@@ -26,6 +31,9 @@ check_required_env() {
         echo "Please ensure the following variables are defined:"
         echo "  - SYSTEM_HTTP_PORT (e.g., 7322)"
         echo "  - SYSTEM_DOMAIN (e.g., localhost)"
+        echo ""
+        echo "Or run in sandbox mode for open-source development:"
+        echo "  ./go sandbox    # Use sandbox backend (no local setup needed)"
         exit 1
     fi
 }
@@ -33,20 +41,26 @@ check_required_env() {
 # Load environment variables if .env exists in parent directory
 if [ -f "$ROOT_DIR/../.env" ]; then
     source "$ROOT_DIR/../.env"
-else
-    # No .env file found
-    check_required_env
 fi
 
-# Check if required environment variables are set after loading
-check_required_env
+# Check command to determine if we need env vars
+COMMAND="$1"
+if [ "$COMMAND" = "sandbox" ] || [ "$COMMAND" = "help" ] || [ "$COMMAND" = "--help" ] || [ "$COMMAND" = "-h" ] || [ -z "$COMMAND" ]; then
+    # These commands don't require environment variables
+    :
+else
+    # Check if required environment variables are set after loading
+    check_required_env "$COMMAND"
+fi
 
 # Console port can have a default
 CONSOLE_PORT=${CONSOLE_PORT:-3000}
 
-# Export for Vite (use offset port if available)
-export VITE_HTTP_PORT=${SYSTEM_HTTP_PORT_ACTUAL:-$SYSTEM_HTTP_PORT}
-export VITE_API_URL="http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT_ACTUAL:-$SYSTEM_HTTP_PORT}/api"
+# Export for Vite (use offset port if available) - only if variables are set
+if [ -n "$SYSTEM_HTTP_PORT" ]; then
+    export VITE_HTTP_PORT=${SYSTEM_HTTP_PORT_ACTUAL:-$SYSTEM_HTTP_PORT}
+    export VITE_API_URL="http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT_ACTUAL:-$SYSTEM_HTTP_PORT}/api"
+fi
 export VITE_APP_VERSION=${TAG:-dev}
 
 # Function to run development server
@@ -59,9 +73,216 @@ function dev() {
     npm install
   fi
   
+  # Set build type to DEBUG for development (will try localhost, fallback to sandbox)
+  export REDIACC_BUILD_TYPE=${REDIACC_BUILD_TYPE:-DEBUG}
+  
   # Start development server
   echo "Starting development server on port ${CONSOLE_PORT}..."
+  echo "Build type: $REDIACC_BUILD_TYPE"
   PORT=$CONSOLE_PORT npm run dev
+}
+
+# Function to run in sandbox mode (for open-source contributors)
+function sandbox() {
+  local USE_DOCKER=false
+  local DOCKER_PORT=8080
+  local OPEN_BROWSER=true
+  
+  # Parse arguments
+  for arg in "$@"; do
+    case $arg in
+      --docker)
+        USE_DOCKER=true
+        ;;
+      --port=*)
+        DOCKER_PORT="${arg#*=}"
+        ;;
+      --no-browser)
+        OPEN_BROWSER=false
+        ;;
+      --help)
+        echo "Usage: ./go sandbox [OPTIONS]"
+        echo ""
+        echo "Options:"
+        echo "  --docker        Run in Docker container (recommended for quick start)"
+        echo "  --port=PORT     Docker port (default: 8080)"
+        echo "  --no-browser    Don't open browser automatically"
+        echo ""
+        echo "Examples:"
+        echo "  ./go sandbox              # Run locally with npm"
+        echo "  ./go sandbox --docker     # Run in Docker (recommended)"
+        echo ""
+        return 0
+        ;;
+    esac
+  done
+  
+  echo "Starting Rediacc Console in Sandbox Mode (Open-Source)..."
+  echo "========================================================"
+  echo ""
+  
+  if [ "$USE_DOCKER" = true ]; then
+    # Docker mode - build and run container
+    echo "🐳 Docker Mode - Building and running containerized console"
+    echo ""
+    
+    # Check if Docker is installed
+    if ! command -v docker &> /dev/null; then
+      echo "❌ Error: Docker is not installed!"
+      echo ""
+      echo "Please install Docker first:"
+      echo "  - Linux: https://docs.docker.com/engine/install/"
+      echo "  - macOS: https://docs.docker.com/desktop/mac/install/"
+      echo "  - Windows: https://docs.docker.com/desktop/windows/install/"
+      echo ""
+      echo "Or run without Docker: ./go sandbox"
+      return 1
+    fi
+    
+    # Check if Docker daemon is running
+    if ! docker info &> /dev/null; then
+      echo "❌ Error: Docker daemon is not running!"
+      echo "Please start Docker and try again."
+      return 1
+    fi
+    
+    # Build the Docker image
+    echo "📦 Building Docker image..."
+    echo "This may take a few minutes on first run..."
+    echo ""
+    
+    if ! docker build -f Dockerfile.standalone -t rediacc-console:sandbox \
+      --build-arg REDIACC_BUILD_TYPE=DEBUG .; then
+      echo ""
+      echo "❌ Error: Docker build failed!"
+      echo "Please check the error messages above."
+      return 1
+    fi
+    
+    echo ""
+    echo "✅ Docker image built successfully!"
+    echo ""
+    
+    # Stop any existing container
+    docker stop rediacc-console-sandbox 2>/dev/null || true
+    docker rm rediacc-console-sandbox 2>/dev/null || true
+    
+    # Run the container
+    echo "🚀 Starting container on port ${DOCKER_PORT}..."
+    docker run -d \
+      --name rediacc-console-sandbox \
+      -p ${DOCKER_PORT}:80 \
+      -e INSTANCE_NAME=sandbox \
+      -e BUILD_TYPE=DEBUG \
+      -e ENABLE_DEBUG=true \
+      rediacc-console:sandbox
+    
+    # Wait for container to be ready
+    echo -n "⏳ Waiting for console to be ready"
+    for i in {1..30}; do
+      if curl -s http://localhost:${DOCKER_PORT}/health > /dev/null 2>&1; then
+        echo " ✓"
+        break
+      elif [ $i -eq 30 ]; then
+        echo " ⚠️"
+        echo "Warning: Console may not be fully ready yet."
+        break
+      fi
+      echo -n "."
+      sleep 1
+    done
+    
+    echo ""
+    echo "✅ Rediacc Console is running in Docker!"
+    echo ""
+    echo "🌐 Access the console at: http://localhost:${DOCKER_PORT}"
+    echo ""
+    echo "📋 Container Management:"
+    echo "  View logs:    docker logs -f rediacc-console-sandbox"
+    echo "  Stop:         docker stop rediacc-console-sandbox"
+    echo "  Restart:      docker start rediacc-console-sandbox"
+    echo "  Remove:       docker rm -f rediacc-console-sandbox"
+    echo ""
+    
+    # Open browser if requested
+    if [ "$OPEN_BROWSER" = true ]; then
+      open_browser "http://localhost:${DOCKER_PORT}"
+    fi
+    
+    # Show logs
+    echo "📜 Showing container logs (Ctrl+C to exit):"
+    echo "----------------------------------------"
+    docker logs -f rediacc-console-sandbox
+    
+  else
+    # Local development mode
+    echo "This mode is designed for open-source contributors who want to"
+    echo "work on the frontend without setting up a local backend."
+    echo ""
+    echo "💡 Tip: Use './go sandbox --docker' for easier setup with Docker"
+    echo ""
+    echo "The console will connect to: sandbox.rediacc.com"
+    echo ""
+    
+    # Install dependencies if node_modules doesn't exist or if package-lock.json is newer than node_modules
+    if [ ! -d "$ROOT_DIR/node_modules" ] || [ "$ROOT_DIR/package-lock.json" -nt "$ROOT_DIR/node_modules" ]; then
+      echo "Installing dependencies..."
+      npm install
+    fi
+    
+    # Set environment for sandbox mode
+    export REDIACC_BUILD_TYPE=DEBUG
+    export SANDBOX_MODE=true
+    export VITE_HTTP_PORT=7322  # Default port for consistency
+    export VITE_SANDBOX_API_URL=${SANDBOX_API_URL:-https://sandbox.rediacc.com/api}
+    export CONSOLE_PORT=${CONSOLE_PORT:-3000}
+    
+    # Start development server
+    echo ""
+    echo "Starting development server on port ${CONSOLE_PORT}..."
+    echo "Build type: DEBUG (with sandbox fallback)"
+    echo "Sandbox URL: $VITE_SANDBOX_API_URL"
+    echo ""
+    echo "Note: The console will attempt to connect to localhost:7322 first,"
+    echo "      then automatically fallback to sandbox if localhost is unavailable."
+    echo ""
+    
+    # Open browser if requested
+    if [ "$OPEN_BROWSER" = true ]; then
+      # Wait a bit for the server to start
+      (sleep 3 && open_browser "http://localhost:${CONSOLE_PORT}") &
+    fi
+    
+    PORT=$CONSOLE_PORT npm run dev
+  fi
+}
+
+# Helper function to open browser (cross-platform)
+function open_browser() {
+  local url="$1"
+  echo "🌐 Opening browser to: $url"
+  
+  # Detect platform and open browser
+  case "$OSTYPE" in
+    linux*)
+      if command -v xdg-open &> /dev/null; then
+        xdg-open "$url" 2>/dev/null || true
+      elif command -v gnome-open &> /dev/null; then
+        gnome-open "$url" 2>/dev/null || true
+      else
+        echo "Please open your browser and navigate to: $url"
+      fi
+      ;;
+    darwin*)
+      open "$url" 2>/dev/null || true
+      ;;
+    msys*|cygwin*|win32)
+      start "$url" 2>/dev/null || true
+      ;;
+    *)
+      echo "Please open your browser and navigate to: $url"
+      ;;
+  esac
 }
 
 # Function to build the application
@@ -76,6 +297,10 @@ function build() {
   
   # Clean caches before build
   rm -rf node_modules/.vite
+  
+  # Default to RELEASE for production builds
+  export REDIACC_BUILD_TYPE=${REDIACC_BUILD_TYPE:-RELEASE}
+  echo "Build type: $REDIACC_BUILD_TYPE"
   
   # Build with NODE_ENV explicitly set to production
   NODE_ENV=production npm run build
@@ -109,10 +334,36 @@ function lint() {
 
 # Function to clean up
 function clean() {
+  local CLEAN_DOCKER=false
+  
+  # Parse arguments
+  for arg in "$@"; do
+    case $arg in
+      --docker)
+        CLEAN_DOCKER=true
+        ;;
+    esac
+  done
+  
   echo "Cleaning build artifacts..."
   rm -rf dist/
   rm -rf node_modules/.vite
   sudo rm -rf playwright/artifacts/ 2>/dev/null || true
+  
+  # Clean Docker artifacts if requested
+  if [ "$CLEAN_DOCKER" = true ]; then
+    echo "Cleaning Docker containers and images..."
+    
+    # Stop and remove container
+    docker stop rediacc-console-sandbox 2>/dev/null || true
+    docker rm rediacc-console-sandbox 2>/dev/null || true
+    
+    # Remove image
+    docker rmi rediacc-console:sandbox 2>/dev/null || true
+    
+    echo "Docker artifacts cleaned."
+  fi
+  
   echo "Build artifacts cleaned."
 }
 
@@ -381,12 +632,57 @@ function release() {
 
 # Function to setup development environment
 function setup() {
+  local SETUP_MODE="$1"
+  
+  if [ "$SETUP_MODE" = "sandbox" ]; then
+    echo "Setting up sandbox development environment..."
+    echo "============================================"
+    echo ""
+    echo "This setup is for open-source contributors who want to"
+    echo "work on the frontend without a local backend."
+    echo ""
+    
+    # Install dependencies
+    echo "Installing dependencies..."
+    npm install
+    
+    echo ""
+    echo "✅ Sandbox environment setup complete!"
+    echo ""
+    echo "You can now run:"
+    echo "  ./go sandbox    # Start with sandbox backend"
+    echo ""
+    return 0
+  fi
+  
   echo "Setting up development environment..."
+  
+  # Check environment variables
+  if [ -z "$SYSTEM_HTTP_PORT" ] || [ -z "$SYSTEM_DOMAIN" ]; then
+    echo ""
+    echo "⚠️  Environment variables not configured."
+    echo ""
+    echo "You have two options:"
+    echo ""
+    echo "1. Setup for local development (requires backend):"
+    echo "   - Create a .env file in the parent directory with:"
+    echo "     SYSTEM_HTTP_PORT=7322"
+    echo "     SYSTEM_DOMAIN=localhost"
+    echo "   - Then run: ./go setup"
+    echo ""
+    echo "2. Setup for sandbox development (no backend needed):"
+    echo "   ./go setup sandbox"
+    echo ""
+    return 1
+  fi
   
   # Check if middleware is running
   if ! curl -s http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}/api > /dev/null 2>&1; then
     echo "⚠️  Middleware API is not running on ${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}!"
     echo "Start it with: cd ../middleware && ./go start"
+    echo ""
+    echo "Or use sandbox mode if you don't have a local backend:"
+    echo "  ./go sandbox"
   else
     echo "✅ Middleware API is running on ${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT}"
   fi
@@ -470,10 +766,15 @@ function status() {
 
 # Help message
 function show_help() {
-  echo "Usage: ./go [COMMAND]"
+  echo "Usage: ./go [COMMAND] [OPTIONS]"
   echo ""
   echo "Commands:"
-  echo "  dev           Start development server"
+  echo "  sandbox       Start in sandbox mode (for open-source contributors)"
+  echo "    --docker    Run in Docker container (recommended)"
+  echo "    --port=PORT Set Docker port (default: 8080)"
+  echo "    --no-browser Don't open browser automatically"
+  echo "  sandbox-docker Quick start with Docker (alias for 'sandbox --docker')"
+  echo "  dev           Start development server (requires local backend)"
   echo "  build         Build the application for production"
   echo "  preview       Preview the production build"
   echo "  lint          Run ESLint on the codebase"
@@ -489,21 +790,41 @@ function show_help() {
   echo "    --file=<path>  Run specific test file"
   echo "  test_playwright_clean  Clean Playwright test artifacts"
   echo "  clean         Clean build artifacts"
+  echo "    --docker    Also clean Docker containers/images"
   echo "  release       Build and create release package in bin/"
-  echo "  setup         Setup development environment"
+  echo "  setup [sandbox]  Setup development environment"
+  echo "                   Use 'setup sandbox' for open-source setup"
   echo "  status        Check application status"
   echo ""
   echo "  help          Show this help message"
   echo ""
-  echo "Quick Start:"
-  echo "  ./go setup    # Setup web environment"
-  echo "  ./go dev      # Start web development"
+  echo "🚀 Quick Start (Open-Source Contributors):"
+  echo "  ./go sandbox-docker     # Fastest way - run with Docker"
+  echo "  ./go sandbox            # Run locally with npm"
+  echo ""
+  echo "📦 Docker Sandbox Examples:"
+  echo "  ./go sandbox --docker              # Build and run in Docker"
+  echo "  ./go sandbox --docker --port=3000  # Use custom port"
+  echo "  ./go sandbox --docker --no-browser # Don't open browser"
+  echo ""
+  echo "🔧 Quick Start (With Local Backend):"
+  echo "  ./go setup          # Setup local environment"
+  echo "  ./go dev            # Start local development"
   echo ""
 }
 
 # Main function to handle commands
 main() {
     case "$1" in
+      sandbox)
+        shift  # Remove 'sandbox' from arguments
+        sandbox "$@"
+        ;;
+      sandbox-docker)
+        # Convenience alias for sandbox --docker
+        shift  # Remove 'sandbox-docker' from arguments
+        sandbox --docker "$@"
+        ;;
       dev)
         dev
         ;;
@@ -530,13 +851,15 @@ main() {
         test_playwright_clean
         ;;
       clean)
-        clean
+        shift  # Remove 'clean' from arguments
+        clean "$@"
         ;;
       release)
         release
         ;;
       setup)
-        setup
+        shift  # Remove 'setup' from arguments
+        setup "$@"
         ;;
       status)
         status
