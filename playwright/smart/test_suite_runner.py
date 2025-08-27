@@ -9,10 +9,11 @@ import os
 import json
 import importlib.util
 import time
+import argparse
 from pathlib import Path
 from playwright.sync_api import Playwright, sync_playwright, Page, Browser, BrowserContext
 from datetime import datetime
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, List
 
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent))
@@ -24,8 +25,12 @@ from logging_utils import StructuredLogger
 class AllTestsRunner(TestBase):
     """Run all tests in sequence with shared browser session."""
     
-    def __init__(self):
-        """Initialize test runner."""
+    def __init__(self, scenario_name: str = "full_suite"):
+        """Initialize test runner with specified scenario.
+        
+        Args:
+            scenario_name: Name of the scenario to run (default: full_suite)
+        """
         script_dir = Path(__file__).parent
         config_path = script_dir.parent / "config.json"
         super().__init__(str(config_path))
@@ -41,27 +46,79 @@ class AllTestsRunner(TestBase):
         self.session_repo_name = self.get_session_repository_name()
         self.log_info(f"Session repository name: {self.session_repo_name}")
         
+        # Load test scenarios from JSON
+        self.scenarios = self.load_scenarios()
+        self.current_scenario = self.get_scenario(scenario_name)
+        
+        if not self.current_scenario:
+            raise ValueError(f"Scenario '{scenario_name}' not found. Available scenarios: {self.list_scenario_names()}")
+        
         # Log session initialization
         self.session_logger.info("Test session initialized",
                                 session_repo_name=self.session_repo_name,
+                                scenario_name=scenario_name,
+                                scenario_description=self.current_scenario['description'],
                                 category="session_lifecycle")
         
-        # Test modules to run in order
-        self.test_modules = [
-            ('test_user_registration.py', 'RegistrationTest', True),   # Uses shared session
-            ('test_repository_creation.py', 'run_with_page', True),    # Uses existing session
-            ('test_repository_edit.py', 'RepoEditTest', True),      # Uses existing session
-            ('test_repository_down.py', 'RepoDownTest', True), # Uses existing session
-            ('test_repository_push.py', 'RepoPushTest', True), # Uses existing session
-        ]
+        # Load test modules from selected scenario
+        self.test_modules = self.load_test_modules_from_scenario(self.current_scenario)
         
         self.test_results = []
         
         # Log test plan
         self.session_logger.info("Test execution plan",
+                                scenario=scenario_name,
                                 test_count=len(self.test_modules),
                                 test_names=[module[0] for module in self.test_modules],
                                 category="test_plan")
+    
+    def load_scenarios(self) -> Dict[str, Any]:
+        """Load test scenarios from JSON configuration file."""
+        scenarios_path = Path(__file__).parent / "test_scenarios.json"
+        
+        if not scenarios_path.exists():
+            self.log_warning(f"Scenarios file not found at {scenarios_path}, using default")
+            # Return default scenarios if file doesn't exist
+            return {
+                "scenarios": [
+                    {
+                        "name": "full_suite",
+                        "description": "Default full test suite",
+                        "tests": [
+                            {"module": "test_user_registration.py", "class_name": "RegistrationTest", "use_run_with_page": True},
+                            {"module": "test_repository_creation.py", "class_name": "run_with_page", "use_run_with_page": True},
+                            {"module": "test_repository_edit.py", "class_name": "RepoEditTest", "use_run_with_page": True},
+                            {"module": "test_repository_down.py", "class_name": "RepoDownTest", "use_run_with_page": True},
+                            {"module": "test_repository_push.py", "class_name": "RepoPushTest", "use_run_with_page": True}
+                        ]
+                    }
+                ]
+            }
+        
+        with open(scenarios_path, 'r') as f:
+            return json.load(f)
+    
+    def get_scenario(self, scenario_name: str) -> Optional[Dict[str, Any]]:
+        """Get a specific scenario by name."""
+        for scenario in self.scenarios.get('scenarios', []):
+            if scenario['name'] == scenario_name:
+                return scenario
+        return None
+    
+    def list_scenario_names(self) -> List[str]:
+        """Get list of all available scenario names."""
+        return [s['name'] for s in self.scenarios.get('scenarios', [])]
+    
+    def load_test_modules_from_scenario(self, scenario: Dict[str, Any]) -> List[Tuple[str, str, bool]]:
+        """Load test modules from a scenario configuration."""
+        test_modules = []
+        for test in scenario['tests']:
+            test_modules.append((
+                test['module'],
+                test['class_name'],
+                test.get('use_run_with_page', True)
+            ))
+        return test_modules
     
     def load_test_module(self, module_file: str):
         """Dynamically load a test module."""
@@ -236,25 +293,31 @@ class AllTestsRunner(TestBase):
             # Run tests in order
             all_passed = True
             
-            # Test 1: Registration
-            self.log_info("\n" + "="*60)
-            self.log_info("Running Test 1: Registration")
-            self.log_info("="*60)
+            # Check if registration test is in the scenario
+            has_registration = any(m[0] == 'test_user_registration.py' for m in self.test_modules)
             
-            self.session_logger.log_test_step("registration_phase", "Starting registration test")
-            
-            # Run registration test
-            reg_module_file, reg_class_name, use_run_with_page = self.test_modules[0]
-            reg_success = self.run_test_module(reg_module_file, reg_class_name, page, use_run_with_page)
-            self.test_results.append(('test_user_registration', reg_success, "Registration " + ("successful" if reg_success else "failed")))
-            
-            self.session_logger.info("Registration test completed",
-                                   success=reg_success,
-                                   category="test_result")
-            
-            # If registration failed, try to login anyway
-            if not reg_success:
-                self.log_warning("Registration failed or user already exists, attempting login...")
+            if has_registration:
+                # Test 1: Registration
+                self.log_info("\n" + "="*60)
+                self.log_info("Running Test 1: Registration")
+                self.log_info("="*60)
+                
+                self.session_logger.log_test_step("registration_phase", "Starting registration test")
+                
+                # Run registration test
+                reg_module_file, reg_class_name, use_run_with_page = self.test_modules[0]
+                reg_success = self.run_test_module(reg_module_file, reg_class_name, page, use_run_with_page)
+                self.test_results.append(('test_user_registration', reg_success, "Registration " + ("successful" if reg_success else "failed")))
+                
+                self.session_logger.info("Registration test completed",
+                                       success=reg_success,
+                                       category="test_result")
+                
+                # If registration failed, try to login anyway
+                if not reg_success:
+                    self.log_warning("Registration failed or user already exists, attempting login...")
+            else:
+                self.log_info("Registration test not included in scenario, skipping...")
             
             # Test 2: Login
             self.log_info("\n" + "="*60)
@@ -277,8 +340,11 @@ class AllTestsRunner(TestBase):
             # Take screenshot after login
             self.take_screenshot(page, "test_login_success")
             
+            # Determine which tests to run (skip registration if it was already run)
+            tests_to_run = self.test_modules[1:] if has_registration else self.test_modules
+            
             # Run remaining tests using their run_with_page methods
-            for module_file, test_class_name, use_run_with_page in self.test_modules[1:]:
+            for module_file, test_class_name, use_run_with_page in tests_to_run:
                 try:
                     # Check if page is still open
                     if page.is_closed():
@@ -394,13 +460,58 @@ class AllTestsRunner(TestBase):
 
 def main():
     """Main entry point."""
-    runner = AllTestsRunner()
+    parser = argparse.ArgumentParser(description="Run Playwright smart test suite with scenario support")
+    parser.add_argument(
+        "--scenario",
+        default="full_suite",
+        help="Name of the scenario to run (default: full_suite)"
+    )
+    parser.add_argument(
+        "--list-scenarios",
+        action="store_true",
+        help="List all available test scenarios"
+    )
     
-    with sync_playwright() as playwright:
-        success = runner.run(playwright)
+    args = parser.parse_args()
+    
+    # If listing scenarios, load and display them
+    if args.list_scenarios:
+        # Create a temporary runner just to load scenarios
+        temp_runner = AllTestsRunner("full_suite")
+        print("\nAvailable test scenarios:")
+        print("="*60)
+        for scenario in temp_runner.scenarios.get('scenarios', []):
+            print(f"\nScenario: {scenario['name']}")
+            print(f"Description: {scenario['description']}")
+            print(f"Tests: {len(scenario['tests'])} test(s)")
+            for test in scenario['tests']:
+                print(f"  - {test['module']}: {test.get('description', 'No description')}")
+        print("\n" + "="*60)
+        print(f"\nUsage: python {Path(__file__).name} --scenario <scenario_name>\n")
+        sys.exit(0)
+    
+    # Run the selected scenario
+    try:
+        runner = AllTestsRunner(args.scenario)
+        print(f"\nRunning scenario: {args.scenario}")
+        print(f"Description: {runner.current_scenario['description']}")
+        print(f"Number of tests: {len(runner.test_modules)}\n")
         
-        # Exit with appropriate code
-        sys.exit(0 if success else 1)
+        with sync_playwright() as playwright:
+            success = runner.run(playwright)
+            
+            # Exit with appropriate code
+            sys.exit(0 if success else 1)
+            
+    except ValueError as e:
+        print(f"\nError: {e}")
+        print("\nUse --list-scenarios to see available scenarios.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\nUnexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 
 
 if __name__ == "__main__":

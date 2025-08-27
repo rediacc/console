@@ -372,6 +372,7 @@ function test_playwright() {
   local HEADED_MODE=true
   local SLOW_MO=""
   local TEST_FILE=""
+  local SCENARIO=""
   
   # Parse arguments
   for arg in "$@"; do
@@ -387,6 +388,9 @@ function test_playwright() {
         ;;
       --file=*)
         TEST_FILE="${arg#*=}"
+        ;;
+      --scenario=*)
+        SCENARIO="${arg#*=}"
         ;;
     esac
   done
@@ -483,10 +487,17 @@ function test_playwright() {
   # Run tests
   echo -e "\nRunning tests..."
   
+  # Build command with scenario parameter if provided
+  local TEST_CMD="python3 $TEST_PATH"
+  if [ -n "$SCENARIO" ]; then
+    TEST_CMD="$TEST_CMD --scenario=$SCENARIO"
+    echo "Using test scenario: $SCENARIO"
+  fi
+  
   if [ "$HEADED_MODE" = true ]; then
-    docker compose run --rm -e HEADED=true playwright python3 $TEST_PATH
+    docker compose run --rm -e HEADED=true playwright $TEST_CMD
   else
-    docker compose run --rm playwright python3 $TEST_PATH
+    docker compose run --rm playwright $TEST_CMD
   fi
   
   local test_exit_code=$?
@@ -504,7 +515,27 @@ function test_playwright() {
 
 # Function to run Playwright tests in headless mode
 function test_playwright_headless() {
-  test_playwright --headless "$@"
+  local SCENARIO=""
+  local OTHER_ARGS=""
+  
+  # Parse arguments to extract scenario
+  for arg in "$@"; do
+    case $arg in
+      --scenario=*)
+        SCENARIO="${arg#*=}"
+        ;;
+      *)
+        OTHER_ARGS="$OTHER_ARGS $arg"
+        ;;
+    esac
+  done
+  
+  # Pass scenario to test_playwright along with --headless and other args
+  if [ -n "$SCENARIO" ]; then
+    test_playwright --headless --scenario="$SCENARIO" $OTHER_ARGS
+  else
+    test_playwright --headless $OTHER_ARGS
+  fi
 }
 
 # Function to clean Playwright test artifacts
@@ -786,8 +817,10 @@ function show_help() {
   echo "    --file=<path>  Run specific test file (e.g., --file=test_repository_push.py)"
   echo "  test_playwright  Run Playwright UI tests with GUI (Docker)"
   echo "    --file=<path>  Run specific test file"
+  echo "    --scenario=<name>  Run specific test scenario (default: full_suite)"
   echo "  test_playwright_headless  Run Playwright tests headless (Docker)"
   echo "    --file=<path>  Run specific test file"
+  echo "    --scenario=<name>  Run specific test scenario (default: full_suite)"
   echo "  test_playwright_clean  Clean Playwright test artifacts"
   echo "  clean         Clean build artifacts"
   echo "    --docker    Also clean Docker containers/images"

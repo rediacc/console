@@ -1,0 +1,52 @@
+{
+  "scenarios": [
+    {
+      "name": "full_suite",
+      "description": "Complete test suite including registration, login, and all repository operations",
+      "tests": [
+        {
+          "module": "test_user_registration.py",
+          "class_name": "RegistrationTest",
+          "use_run_with_page": true,
+          "description": "User registration test"
+        },
+        {
+          "module": "test_repository_creation.py",
+          "class_name": "run_with_page",
+          "use_run_with_page": true,
+          "description": "Repository creation test"
+        },
+        {
+          "module": "test_repository_edit.py",
+          "class_name": "RepoEditTest",
+          "use_run_with_page": true,
+          "description": "Repository edit test"
+        },
+        {
+          "module": "test_repository_down.py",
+          "class_name": "RepoDownTest",
+          "use_run_with_page": true,
+          "description": "Repository down/stop test"
+        },
+        {
+          "module": "test_repository_push.py",
+          "class_name": "RepoPushTest",
+          "use_run_with_page": true,
+          "description": "Repository push test"
+        }
+      ]
+    },
+    {
+      "name": "creation_only",
+      "description": "Only repository creation test",
+      "tests": [
+        {
+          "module": "test_repository_creation.py",
+          "class_name": "run_with_page",
+          "use_run_with_page": true,
+          "description": "Repository creation test"
+        }
+      ]
+    }
+  ]
+}
