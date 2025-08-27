@@ -600,6 +600,84 @@
       "modeSwitch": 3000
     }
   },
+  "systemRegionDelete": {
+    "targetRegion": "region004",
+    "createTestRegionFirst": false,
+    "ui": {
+      "systemNavTestId": "main-nav-system",
+      "expertModeSelector": "label:has-text('Expert')",
+      "regionsTabSelector": "text=Regions",
+      "deleteButtonPrefix": "system-region-delete-button-",
+      "confirmYesButton": "button:has-text('Yes')",
+      "confirmOkButton": "button:has-text('OK')",
+      "modalSelector": ".ant-modal, [role='dialog']",
+      "tableSelector": "table.ant-table"
+    },
+    "validation": {
+      "successIndicators": [
+        "Region deleted successfully",
+        "Region '.*' deleted successfully",
+        "Successfully deleted region"
+      ],
+      "errorMessages": [
+        "Cannot delete Default Region",
+        "Region not found",
+        "Deletion failed"
+      ],
+      "notificationSelectors": [
+        ".ant-message",
+        ".ant-notification",
+        "[role='alert']"
+      ]
+    },
+    "timeouts": {
+      "navigation": 10000,
+      "element": 5000,
+      "confirmDialog": 3000,
+      "deletion": 5000,
+      "validation": 5000
+    }
+  },
+  "systemRegionEdit": {
+    "sourceRegion": "Default Region",
+    "targetRegion": "Modified Region",
+    "ui": {
+      "systemNavTestId": "main-nav-system",
+      "expertModeSelector": "label:has-text('Expert')",
+      "simpleModeSelector": "label:has-text('Simple')",
+      "regionsTabSelector": "text=Regions",
+      "editButtonPrefix": "system-region-edit-button-",
+      "regionNameInputTestId": "resource-modal-field-regionName-input",
+      "submitButtonTestId": "resource-modal-ok-button",
+      "cancelButtonTestId": "resource-modal-cancel-button",
+      "modalSelector": ".ant-modal",
+      "tableSelector": "table.ant-table"
+    },
+    "validation": {
+      "successIndicators": [
+        "Region updated successfully",
+        "Region '.*' updated successfully",
+        "Successfully updated region"
+      ],
+      "errorMessages": [
+        "Region name already exists",
+        "Region name is required",
+        "Update failed"
+      ],
+      "notificationSelectors": [
+        ".ant-message",
+        ".ant-notification",
+        "[role='alert']"
+      ]
+    },
+    "timeouts": {
+      "navigation": 10000,
+      "element": 5000,
+      "modalOpen": 3000,
+      "update": 5000,
+      "validation": 5000
+    }
+  },
   "systemVaultConfiguration": {
     "ui": {
       "systemNavTestId": "main-nav-system",
