@@ -435,7 +435,7 @@ function test_playwright() {
   
   # Check X11 for headed mode
   if [ "$HEADED_MODE" = true ]; then
-    echo "Running in headed mode (with GUI)..."
+    echo "Running in headed mode (with browser UI)..."
     export DISPLAY=${DISPLAY:-:0}
     
     if [ -e /tmp/.X11-unix/X0 ]; then
@@ -815,7 +815,7 @@ function show_help() {
   echo "    --headless  Run browser tests in headless mode"
   echo "    --slow[=ms] Run browser tests with slow motion"
   echo "    --file=<path>  Run specific test file (e.g., --file=test_repository_push.py)"
-  echo "  test_playwright  Run Playwright UI tests with GUI (Docker)"
+  echo "  test_playwright  Run Playwright UI tests with browser UI (Docker)"
   echo "    --file=<path>  Run specific test file"
   echo "    --scenario=<name>  Run specific test scenario (default: full_suite)"
   echo "  test_playwright_headless  Run Playwright tests headless (Docker)"
