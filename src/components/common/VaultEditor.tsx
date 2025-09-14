@@ -1403,6 +1403,19 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                                 <Tag color="warning">{t('vaultEditor.systemCompatibility.no')}</Tag>
                               )}
                             </Space>
+                            <Space>
+                              <Text>{t('vaultEditor.systemCompatibility.sudoAvailable')}:</Text>
+                              {(() => {
+                                const sudoStatus = compatibility.sudo_available || 'unknown'
+                                const sudoConfig = {
+                                  available: { color: 'success', text: t('vaultEditor.systemCompatibility.available') },
+                                  password_required: { color: 'warning', text: t('vaultEditor.systemCompatibility.passwordRequired') },
+                                  not_installed: { color: 'error', text: t('vaultEditor.systemCompatibility.notInstalled') }
+                                }
+                                const config = sudoConfig[sudoStatus] || { color: 'default', text: t('vaultEditor.systemCompatibility.unknown') }
+                                return <Tag color={config.color}>{config.text}</Tag>
+                              })()}
+                            </Space>
                           </Space>
                         </Card>
                         

@@ -1304,6 +1304,20 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                                             <Tag color="warning">Not Available</Tag>
                                           )}
                                         </Descriptions.Item>
+                                        <Descriptions.Item label="Sudo Support">
+                                          {(() => {
+                                            const sudoStatus = compatibility.sudo_available || 'unknown'
+                                            if (sudoStatus === 'available') {
+                                              return <Tag color="success">Available</Tag>
+                                            } else if (sudoStatus === 'password_required') {
+                                              return <Tag color="warning">Password Required</Tag>
+                                            } else if (sudoStatus === 'not_installed') {
+                                              return <Tag color="error">Not Installed</Tag>
+                                            } else {
+                                              return <Tag color="default">Unknown</Tag>
+                                            }
+                                          })()}
+                                        </Descriptions.Item>
                                       </Descriptions>
                                     </Card>
                                     

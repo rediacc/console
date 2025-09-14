@@ -254,7 +254,7 @@ class ProtocolUrlService {
       iframe.style.display = 'none'
       
       return new Promise<boolean>((resolve) => {
-        let timeout: NodeJS.Timeout
+        let timeout: number
         
         // If protocol handler exists, the iframe won't load
         iframe.onerror = () => {
@@ -285,6 +285,146 @@ class ProtocolUrlService {
   }
 
   /**
+   * Check protocol registration status with enhanced detection
+   * Returns detailed information about the protocol availability
+   */
+  async checkProtocolStatus(): Promise<{
+    available: boolean;
+    method: 'iframe' | 'navigation' | 'unknown';
+    confidence: 'high' | 'medium' | 'low';
+    errorReason?: string;
+  }> {
+    // Method 1: Try iframe-based detection
+    try {
+      const iframeResult = await this.checkProtocolAvailable()
+      if (iframeResult) {
+        return {
+          available: true,
+          method: 'iframe',
+          confidence: 'medium'
+        }
+      }
+    } catch (error) {
+      // Continue to next method
+    }
+
+    // Method 2: Try navigation-based detection (more aggressive)
+    try {
+      const testUrl = `${this.PROTOCOL_SCHEME}://status-check/test/test/test`
+      
+      return new Promise<{
+        available: boolean;
+        method: 'iframe' | 'navigation' | 'unknown';
+        confidence: 'high' | 'medium' | 'low';
+        errorReason?: string;
+      }>((resolve) => {
+        let resolved = false
+        
+        // Create a hidden window/tab to test protocol
+        const testWindow = window.open('', '_blank', 'width=1,height=1,left=-1000,top=-1000')
+        
+        if (!testWindow) {
+          resolve({
+            available: false,
+            method: 'unknown',
+            confidence: 'low',
+            errorReason: 'Popup blocked'
+          })
+          return
+        }
+
+        // Set up timeout
+        const timeout: number = setTimeout(() => {
+          if (!resolved) {
+            resolved = true
+            try {
+              testWindow.close()
+            } catch (e) {
+              // Ignore close errors
+            }
+            resolve({
+              available: false,
+              method: 'navigation',
+              confidence: 'medium',
+              errorReason: 'Timeout - protocol handler may not be registered'
+            })
+          }
+        }, 3000)
+
+        // If the protocol handler is registered, the test window should handle the URL
+        // and we won't be able to access its location due to cross-origin restrictions
+        try {
+          testWindow.location.href = testUrl
+          
+          // Check if window was redirected (indicates protocol handler worked)
+          setTimeout(() => {
+            if (!resolved) {
+              try {
+                // If we can still access the window's location, protocol didn't work
+                const location = testWindow.location.href
+                resolved = true
+                clearTimeout(timeout)
+                testWindow.close()
+                
+                if (location === testUrl || location === 'about:blank') {
+                  resolve({
+                    available: false,
+                    method: 'navigation',
+                    confidence: 'high',
+                    errorReason: 'Protocol handler not registered'
+                  })
+                } else {
+                  resolve({
+                    available: true,
+                    method: 'navigation',
+                    confidence: 'high'
+                  })
+                }
+              } catch (e) {
+                // Cross-origin error means protocol handler likely worked
+                resolved = true
+                clearTimeout(timeout)
+                try {
+                  testWindow.close()
+                } catch (closeError) {
+                  // Ignore close errors
+                }
+                resolve({
+                  available: true,
+                  method: 'navigation',
+                  confidence: 'medium'
+                })
+              }
+            }
+          }, 1000)
+          
+        } catch (error) {
+          resolved = true
+          clearTimeout(timeout)
+          try {
+            testWindow.close()
+          } catch (e) {
+            // Ignore close errors
+          }
+          resolve({
+            available: false,
+            method: 'navigation',
+            confidence: 'low',
+            errorReason: `Navigation error: ${error}`
+          })
+        }
+      })
+    } catch (error) {
+      return {
+        available: false,
+        method: 'unknown',
+        confidence: 'low',
+        errorReason: `Detection failed: ${error}`
+      }
+    }
+  }
+
+  /**
    * Get installation instructions for the protocol handler
    */
   getInstallInstructions(): { platform: string; instructions: string[] }[] {
@@ -295,7 +435,7 @@ class ProtocolUrlService {
           'Download and install Rediacc CLI',
           'Open PowerShell as Administrator',
           'Navigate to the Rediacc CLI directory',
-          'Run: .\\rediacc.ps1 --register-protocol',
+          'Run: .\\rediacc.ps1 -RegisterProtocol',
           'Restart your browser'
         ]
       },

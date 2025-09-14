@@ -1,17 +1,20 @@
 import React, { useState, useCallback } from 'react'
 import { Dropdown, Button, Menu, message, Tooltip } from 'antd'
-import { 
-  DesktopOutlined, 
-  SyncOutlined, 
-  CodeOutlined, 
-  ApiOutlined, 
+import {
+  DesktopOutlined,
+  SyncOutlined,
+  CodeOutlined,
+  ApiOutlined,
   FolderOpenOutlined,
-  DownOutlined
+  DownOutlined,
+  BuildOutlined
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { protocolUrlService, ProtocolAction } from '@/services/protocolUrlService'
 import { PipInstallationModal } from './PipInstallationModal'
+import { LocalCommandModal } from './LocalCommandModal'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { tokenService } from '@/services/tokenService'
 
 interface LocalActionsMenuProps {
   machine: string
@@ -19,10 +22,12 @@ interface LocalActionsMenuProps {
   token: string
   teamName?: string
   disabled?: boolean
+  userEmail?: string
   pluginContainers?: Array<{
     name: string
     image: string
     status: string
+    [key: string]: any
   }>
 }
 
@@ -32,12 +37,14 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
   token,
   teamName = 'Default',
   disabled = false,
+  userEmail,
   pluginContainers = []
 }) => {
   const { t } = useTranslation()
   const [showInstallModal, setShowInstallModal] = useState(false)
   const [installModalErrorType, setInstallModalErrorType] = useState<'not-installed' | 'protocol-not-registered' | 'permission-denied'>('not-installed')
   const [isCheckingProtocol, setIsCheckingProtocol] = useState(false)
+  const [showCommandModal, setShowCommandModal] = useState(false)
   
   const styles = useComponentStyles()
 
@@ -78,8 +85,8 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
           url = protocolUrlService.generateUrl(baseParams)
       }
     } else {
-      // Just navigate to the repository
-      url = protocolUrlService.generateUrl(baseParams)
+      // Default action for "Open in Desktop" - use terminal as default (most commonly useful)
+      url = protocolUrlService.generateTerminalUrl(baseParams)
     }
 
     // Try to open the URL
@@ -89,13 +96,30 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
 
     // If protocol failed, show installation modal
     if (!result.success) {
-      // Determine error type based on the error
-      if (result.error?.type === 'timeout') {
-        setInstallModalErrorType('not-installed')
-      } else if (result.error?.message.includes('permission')) {
-        setInstallModalErrorType('permission-denied')
-      } else {
-        setInstallModalErrorType('protocol-not-registered')
+      // Enhanced error detection using protocol status
+      try {
+        const protocolStatus = await protocolUrlService.checkProtocolStatus()
+        
+        if (protocolStatus.available) {
+          // Protocol is available but URL failed - might be permission issue
+          setInstallModalErrorType('permission-denied')
+        } else {
+          // Protocol not available - check error reason
+          if (protocolStatus.errorReason?.includes('not registered')) {
+            setInstallModalErrorType('protocol-not-registered')
+          } else {
+            setInstallModalErrorType('not-installed')
+          }
+        }
+      } catch (statusError) {
+        // Fallback to original error detection
+        if (result.error?.type === 'timeout') {
+          setInstallModalErrorType('not-installed')
+        } else if (result.error?.message.includes('permission')) {
+          setInstallModalErrorType('permission-denied')
+        } else {
+          setInstallModalErrorType('protocol-not-registered')
+        }
       }
       
       // Show modal immediately
@@ -163,6 +187,20 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       ),
       onClick: () => handleOpenInDesktop('browser'),
       'data-testid': `local-actions-browser-${repository}`
+    },
+    {
+      type: 'divider'
+    },
+    {
+      key: 'cli-commands',
+      icon: <BuildOutlined style={styles.icon.small} />,
+      label: (
+        <span style={styles.body}>
+          {t('resources:localActions.showCLICommands')}
+        </span>
+      ),
+      onClick: () => setShowCommandModal(true),
+      'data-testid': `local-actions-cli-commands-${repository}`
     }
   ]
 
@@ -198,6 +236,16 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
         visible={showInstallModal}
         onClose={() => setShowInstallModal(false)}
         errorType={installModalErrorType}
+      />
+
+      <LocalCommandModal
+        visible={showCommandModal}
+        onClose={() => setShowCommandModal(false)}
+        machine={machine}
+        repository={repository}
+        token={token}
+        userEmail={userEmail || tokenService.getUserEmail() || ''}
+        pluginContainers={pluginContainers}
       />
     </>
   )

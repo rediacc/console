@@ -1217,6 +1217,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 repository={record.name}
                 token={currentToken}
                 teamName={machine.teamName}
+                userEmail={userEmail}
                 pluginContainers={containersData[record.name]?.containers || []}
                 data-testid={`machine-repo-list-local-actions-${record.name}`}
               />
