@@ -62,6 +62,7 @@ export interface UnifiedResourceModalProps {
   hiddenParams?: string[]
   defaultParams?: Record<string, any>
   preselectedFunction?: string
+  creationContext?: 'credentials-only' | 'normal'
 }
 
 const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
@@ -80,6 +81,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   hiddenParams = [],
   defaultParams = {},
   preselectedFunction,
+  creationContext,
 }) => {
   const { t } = useTranslation(['resources', 'machines', 'common', 'distributedStorage', 'system'])
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
@@ -170,6 +172,16 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         ...(resourceType === 'machine' && { regionName: z.string().optional(), bridgeName: z.string().optional() }),
       })
     }
+
+    // For repository creation in credentials-only mode, use simpler validation
+    if (resourceType === 'repository' && creationContext === 'credentials-only') {
+      return z.object({
+        teamName: z.string().min(1, 'Team name is required'),
+        repositoryName: z.string().min(1, 'Repository name is required'),
+        repositoryVault: z.string().optional().default('{}'),
+      })
+    }
+
     return SCHEMA_MAP[resourceType as keyof typeof SCHEMA_MAP] || z.object({})
   }
 
@@ -409,8 +421,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         // Check if machine is prefilled
         const isPrefilledMachine = existingData?.prefilledMachine
         
-        // Check if this is credential-only mode (when repositoryGuid is pre-filled from "Add Credential" button)
-        const isCredentialOnlyMode = existingData?.repositoryGuid && existingData?.repositoryGuid.trim() !== ''
+        // Check if this is credential-only mode (either from Add Credential button or Repo Credentials tab)
+        const isCredentialOnlyMode = (existingData?.repositoryGuid && existingData?.repositoryGuid.trim() !== '') || creationContext === 'credentials-only'
         
         // Get machines for the team (use existingData teamName if available)
         const teamName = existingData?.teamName || 'Private Team'
@@ -471,8 +483,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       // Check if machine is prefilled
       const isPrefilledMachine = existingData?.prefilledMachine
       
-      // Check if this is credential-only mode (when repositoryGuid is pre-filled from "Add Credential" button)
-      const isCredentialOnlyMode = existingData?.repositoryGuid && existingData?.repositoryGuid.trim() !== ''
+      // Check if this is credential-only mode (either from Add Credential button or Repo Credentials tab)
+      const isCredentialOnlyMode = (existingData?.repositoryGuid && existingData?.repositoryGuid.trim() !== '') || creationContext === 'credentials-only'
       
       // Get machines for the selected team
       const selectedTeamName = form.getValues('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
@@ -690,12 +702,22 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     if (mode === 'create') {
       const createKey = RESOURCE_CONFIG[resourceType as keyof typeof RESOURCE_CONFIG]?.createKey
       const createText = createKey ? t(createKey) : ''
-      
-      // Special case for repository creation from machine
-      if (resourceType === 'repository' && existingData?.machineName) {
-        return `${createText} for ${existingData.machineName}`
+
+      // Special case for repository creation
+      if (resourceType === 'repository') {
+        // Check if this is credential-only mode (either from Add Credential button or Repo Credentials tab)
+        const isCredentialOnlyMode = (existingData?.repositoryGuid && existingData?.repositoryGuid.trim() !== '') || creationContext === 'credentials-only'
+
+        if (isCredentialOnlyMode) {
+          // For credential-only mode, show "Create Repo (Credentials) in [team]"
+          const team = existingData?.teamName || (uiMode === 'simple' ? 'Private Team' : (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter))
+          return `Create Repo (Credentials) in ${team}`
+        } else if (existingData?.machineName) {
+          // For repository creation from machine
+          return `${createText} for ${existingData.machineName}`
+        }
       }
-      
+
       if (isTeamPreselected || uiMode === 'simple') {
         const team = uiMode === 'simple' ? 'Private Team' : (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter)
         return `${createText} in ${team}`
@@ -982,8 +1004,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           </div>
         )}
         
-        {/* Keep open checkbox for repository creation - only show when creating physical storage */}
-        {resourceType === 'repository' && mode === 'create' && !(existingData?.repositoryGuid && existingData?.repositoryGuid.trim() !== '') && (
+        {/* Keep open checkbox for repository creation - only show when creating physical storage (not credential-only mode) */}
+        {resourceType === 'repository' && mode === 'create' && !((existingData?.repositoryGuid && existingData?.repositoryGuid.trim() !== '') || creationContext === 'credentials-only') && (
           <div style={{ marginBottom: spacing('MD') }}>
             <Checkbox 
               data-testid="resource-modal-keep-open-checkbox"
@@ -1082,7 +1104,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           onTestConnectionStateChange={setTestConnectionSuccess}
           isModalOpen={open}
           beforeVaultContent={
-            resourceType === 'repository' && mode === 'create' ? (
+            resourceType === 'repository' && mode === 'create' && !((existingData?.repositoryGuid && existingData?.repositoryGuid.trim() !== '') || creationContext === 'credentials-only') ? (
               <Collapse 
                 data-testid="resource-modal-template-collapse"
                 style={{ marginBottom: 16, marginTop: 16 }}

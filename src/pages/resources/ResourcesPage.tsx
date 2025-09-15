@@ -103,6 +103,7 @@ const ResourcesPage: React.FC = () => {
     mode: 'create' | 'edit' | 'vault'
     data?: any
     preselectedFunction?: string
+    creationContext?: 'credentials-only' | 'normal'
   }>({ open: false, resourceType: 'machine', mode: 'create' })
   
   // Refs for table containers
@@ -403,12 +404,13 @@ const ResourcesPage: React.FC = () => {
   }, [location])
 
   // Handler to open unified modal
-  const openUnifiedModal = (resourceType: ResourceType, mode: 'create' | 'edit' | 'vault', data?: any) => {
+  const openUnifiedModal = (resourceType: ResourceType, mode: 'create' | 'edit' | 'vault', data?: any, creationContext?: 'credentials-only' | 'normal') => {
     setUnifiedModalState({
       open: true,
       resourceType,
       mode,
-      data
+      data,
+      creationContext
     })
   }
   
@@ -1561,7 +1563,7 @@ const ResourcesPage: React.FC = () => {
                                 openUnifiedModal('machine', 'create')
                                 break
                               case 'repositories':
-                                openUnifiedModal('repository', 'create')
+                                openUnifiedModal('repository', 'create', undefined, 'credentials-only')
                                 break
                               case 'storage':
                                 openUnifiedModal('storage', 'create')
@@ -1679,7 +1681,7 @@ const ResourcesPage: React.FC = () => {
                             openUnifiedModal('machine', 'create')
                             break
                           case 'repositories':
-                            openUnifiedModal('repository', 'create')
+                            openUnifiedModal('repository', 'create', undefined, 'credentials-only')
                             break
                           case 'storage':
                             openUnifiedModal('storage', 'create')
@@ -1768,6 +1770,7 @@ const ResourcesPage: React.FC = () => {
         mode={unifiedModalState.mode}
         existingData={unifiedModalState.data || currentResource}
         teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
+        creationContext={unifiedModalState.creationContext}
         onSubmit={handleUnifiedModalSubmit}
         onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
         onFunctionSubmit={
