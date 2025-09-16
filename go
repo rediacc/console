@@ -731,6 +731,13 @@ function setup() {
   
   echo ""
   echo "✅ Development environment setup complete!"
+  echo ""
+  echo "🔍 Telemetry Information:"
+  echo "  - OpenTelemetry telemetry is enabled for user behavior analytics"
+  echo "  - Telemetry data is sent to obs.rediacc.com for monitoring and insights"
+  echo "  - No sensitive data (passwords, keys) is collected"
+  echo "  - Data helps improve the application and user experience"
+  echo ""
   echo "You can now run: ./go dev"
 }
 

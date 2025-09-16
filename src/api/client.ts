@@ -1,10 +1,20 @@
 import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
+
+// Extend axios config to include metadata
+declare module 'axios' {
+  interface InternalAxiosRequestConfig {
+    metadata?: {
+      startTime: number
+    }
+  }
+}
 import { store } from '@/store/store'
 import { logout } from '@/store/auth/authSlice'
 import { showMessage } from '@/utils/messages'
 import { encryptRequestData, decryptResponseData, hasVaultFields } from './encryptionMiddleware'
 import { tokenService } from '@/services/tokenService'
 import { apiConnectionService } from '@/services/apiConnectionService'
+import { telemetryService } from '@/services/telemetryService'
 
 // API configuration
 const API_PREFIX = '/StoredProcedure'
@@ -62,6 +72,9 @@ class ApiClient {
   private setupInterceptors() {
     this.client.interceptors.request.use(
       async (config: InternalAxiosRequestConfig) => {
+        // Add request start time for telemetry
+        config.metadata = { startTime: performance.now() }
+
         const token = await tokenService.getToken()
         if (token) config.headers['Rediacc-RequestToken'] = token
 
@@ -78,15 +91,40 @@ class ApiClient {
 
     this.client.interceptors.response.use(
       async (response) => {
+        const startTime = response.config.metadata?.startTime || 0
+        const duration = performance.now() - startTime
+
         const responseData = await this.handleResponseDecryption(response.data as ApiResponse)
         response.data = responseData
 
+        // Track successful API call
+        telemetryService.trackApiCall(
+          response.config.method?.toUpperCase() || 'UNKNOWN',
+          response.config.url || '',
+          response.status,
+          duration
+        )
+
         if (responseData.failure !== 0) return this.handleApiFailure(responseData)
-        
+
         await this.handleTokenRotation(responseData)
         return response
       },
-      (error) => this.handleResponseError(error)
+      (error) => {
+        const startTime = error.config?.metadata?.startTime || 0
+        const duration = performance.now() - startTime
+
+        // Track failed API call
+        telemetryService.trackApiCall(
+          error.config?.method?.toUpperCase() || 'UNKNOWN',
+          error.config?.url || '',
+          error.response?.status,
+          duration,
+          error.message
+        )
+
+        return this.handleResponseError(error)
+      }
     )
   }
 

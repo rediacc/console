@@ -7,6 +7,7 @@ import { loginSuccess } from '@/store/auth/authSlice'
 import { getAuthData, migrateFromLocalStorage } from '@/utils/auth'
 import { AppProviders } from '@/components/common/AppProviders'
 import { ThemedToaster } from '@/components/common/ThemedToaster'
+import { TelemetryProvider } from '@/components/common/TelemetryProvider'
 import { initializeApiClient } from '@/api/init'
 import AuthLayout from '@/components/layouts/AuthLayout'
 import MainLayout from '@/components/layouts/MainLayout'
@@ -68,80 +69,82 @@ const AppContent: React.FC = () => {
 
   return (
       <AppProviders>
-        <BrowserRouter basename={import.meta.env.BASE_URL}>
-          <Routes>
-            {/* Auth routes */}
-            <Route element={<AuthLayout />}>
-              <Route path="/login" element={<LoginPage />} />
-            </Route>
+          <BrowserRouter basename={import.meta.env.BASE_URL}>
+            <TelemetryProvider>
+            <Routes>
+              {/* Auth routes */}
+              <Route element={<AuthLayout />}>
+                <Route path="/login" element={<LoginPage />} />
+              </Route>
 
-            {/* Protected routes */}
-            <Route
-              element={
-                isAuthenticated ? <MainLayout /> : <Navigate to="/login" replace />
-              }
-            >
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              
-              {/* Dashboard */}
-              <Route path="/dashboard" element={
-                <Suspense fallback={<PageLoader />}>
-                  <DashboardPage />
-                </Suspense>
-              } />
-              
-              {/* Organization */}
-              <Route path="/resources" element={
-                <Suspense fallback={<PageLoader />}>
-                  <ResourcesPage />
-                </Suspense>
-              } />
-              
-              {/* Distributed Storage */}
-              <Route path="/distributed-storage" element={
-                <Suspense fallback={<PageLoader />}>
-                  <DistributedStoragePage />
-                </Suspense>
-              } />
-              
-              {/* Marketplace */}
-              <Route path="/marketplace" element={
-                <Suspense fallback={<PageLoader />}>
-                  <MarketplacePage />
-                </Suspense>
-              } />
-              
-              {/* Queue */}
-              <Route path="/queue" element={
-                <Suspense fallback={<PageLoader />}>
-                  <QueuePage />
-                </Suspense>
-              } />
-              
-              {/* System (Users & Permissions) */}
-              <Route path="/system" element={
-                <Suspense fallback={<PageLoader />}>
-                  <SystemPage />
-                </Suspense>
-              } />
-              
-              {/* Audit */}
-              <Route path="/audit" element={
-                <Suspense fallback={<PageLoader />}>
-                  <AuditPage />
-                </Suspense>
-              } />
-              
-              {/* Architecture */}
-              <Route path="/architecture" element={
-                <Suspense fallback={<PageLoader />}>
-                  <ArchitecturePage />
-                </Suspense>
-              } />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-        <ThemedToaster />
+              {/* Protected routes */}
+              <Route
+                element={
+                  isAuthenticated ? <MainLayout /> : <Navigate to="/login" replace />
+                }
+              >
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+                {/* Dashboard */}
+                <Route path="/dashboard" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <DashboardPage />
+                  </Suspense>
+                } />
+
+                {/* Organization */}
+                <Route path="/resources" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ResourcesPage />
+                  </Suspense>
+                } />
+
+                {/* Distributed Storage */}
+                <Route path="/distributed-storage" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <DistributedStoragePage />
+                  </Suspense>
+                } />
+
+                {/* Marketplace */}
+                <Route path="/marketplace" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <MarketplacePage />
+                  </Suspense>
+                } />
+
+                {/* Queue */}
+                <Route path="/queue" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <QueuePage />
+                  </Suspense>
+                } />
+
+                {/* System (Users & Permissions) */}
+                <Route path="/system" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <SystemPage />
+                  </Suspense>
+                } />
+
+                {/* Audit */}
+                <Route path="/audit" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <AuditPage />
+                  </Suspense>
+                } />
+
+                {/* Architecture */}
+                <Route path="/architecture" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ArchitecturePage />
+                  </Suspense>
+                } />
+              </Route>
+            </Routes>
+            </TelemetryProvider>
+          </BrowserRouter>
+          <ThemedToaster />
       </AppProviders>
   )
 }
