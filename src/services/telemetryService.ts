@@ -598,39 +598,14 @@ export const telemetryService = new TelemetryService()
 export const createTelemetryConfig = (): TelemetryConfig => {
   const isDev = import.meta.env.DEV
 
-  // Determine the observability endpoint
   const getObsEndpoint = () => {
-    if (isDev) {
-      // In development, try to determine the domain from the current URL
-      try {
-        const currentDomain = window.location.hostname
-        if (currentDomain === 'localhost' || currentDomain === '127.0.0.1') {
-          // Local development - use sandbox observability
-          return 'https://obs.rediacc.com/otlp'
-        } else {
-          // Assume it's a Rediacc domain, construct obs subdomain
-          const domainParts = currentDomain.split('.')
-          if (domainParts.length >= 2) {
-            const baseDomain = domainParts.slice(-2).join('.')
-            return `https://obs.${baseDomain}/otlp`
-          }
-        }
-      } catch {
-        // Fallback to sandbox
-        return 'https://obs.rediacc.com/otlp'
-      }
+    const hostname = window.location.hostname
+
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'https://www.rediacc.com/otlp'
     }
 
-    // Production - use current domain's obs subdomain
-    const currentDomain = window.location.hostname
-    const domainParts = currentDomain.split('.')
-    if (domainParts.length >= 2) {
-      const baseDomain = domainParts.slice(-2).join('.')
-      return `https://obs.${baseDomain}/otlp`
-    }
-
-    // Ultimate fallback
-    return 'https://obs.rediacc.com/otlp'
+    return `https://${hostname}/otlp`
   }
 
   return {

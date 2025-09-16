@@ -1296,13 +1296,13 @@ const ResourcesPage: React.FC = () => {
             }
             
             // Open the repository creation modal with prefilled machine
-            openUnifiedModal('repository', 'create', { 
+            openUnifiedModal('repository', 'create', {
               machineName: machine.machineName,
               teamName: machine.teamName,
               prefilledMachine: true,
               repositoryGuid: repositoryGuid,  // Pass the GUID if provided
               vaultContent: vaultContent  // Pass default vault content for credential-only mode
-            })
+            }, repositoryGuid ? 'credentials-only' : 'normal')  // Set creationContext based on repositoryGuid
           }}
           enabled={teamResourcesTab === 'machines'}
           className="full-height-machine-table"

@@ -1234,7 +1234,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                   // In edit mode for repositories, the credential field should not be required
                   // since it already exists and user may just want to view it
                   const isRequired = !(isEditMode && entityType === 'REPOSITORY' && fieldName === 'credential')
-                  return renderField(fieldName, field as FieldDefinition, isRequired)
+                  return <div key={fieldName}>{renderField(fieldName, field as FieldDefinition, isRequired)}</div>
                 })}
               
               {/* Conditionally show ssh_password in required fields when SSH key is not configured */}
@@ -1480,7 +1480,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               {optionalFields.map((fieldName) => {
                 const field = fields[fieldName as keyof typeof fields]
                 if (!field) return null
-                
+
                 // Skip ssh_password for MACHINE entity as it's conditionally shown in required fields
                 if (entityType === 'MACHINE' && fieldName === 'ssh_password') {
                   return (
@@ -1500,8 +1500,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                     </Form.Item>
                   )
                 }
-                
-                return renderField(fieldName, field as FieldDefinition, false)
+
+                return <div key={fieldName}>{renderField(fieldName, field as FieldDefinition, false)}</div>
               })}
             </Collapse.Panel>
           )}
@@ -1538,7 +1538,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                   {providerFields.required.map((fieldName: string) => {
                     const field = providerFields.fields?.[fieldName]
                     if (!field) return null
-                    return renderField(fieldName, field as FieldDefinition, true, true)
+                    return <div key={fieldName}>{renderField(fieldName, field as FieldDefinition, true, true)}</div>
                   })}
                 </>
               )}
@@ -1550,7 +1550,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                   {providerFields.optional.map((fieldName: string) => {
                     const field = providerFields.fields?.[fieldName]
                     if (!field) return null
-                    return renderField(fieldName, field as FieldDefinition, false, true)
+                    return <div key={fieldName}>{renderField(fieldName, field as FieldDefinition, false, true)}</div>
                   })}
                 </>
               )}

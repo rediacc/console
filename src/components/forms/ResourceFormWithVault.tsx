@@ -43,6 +43,7 @@ interface ResourceFormWithVaultProps<T extends Record<string, any> = any> {
   beforeVaultContent?: React.ReactNode // Custom content to render before vault configuration
   isModalOpen?: boolean // Modal open state to handle resets
   isEditMode?: boolean // Whether we're in edit mode
+  creationContext?: 'credentials-only' | 'normal' // Context for repository creation
 }
 
 const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormWithVaultProps<any>>(
@@ -64,6 +65,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     beforeVaultContent,
     isModalOpen,
     isEditMode = false,
+    creationContext,
   }, ref) {
     const { t } = useTranslation('common')
     const styles = useFormStyles()
@@ -92,7 +94,13 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     }, [vaultData, setValue, vaultFieldName])
 
     const handleFormSubmit = async (formData: any) => {
-      if (!isVaultValid) {
+      // Skip vault validation for repository credentials
+      // Repository credentials only need field-level validation (regex patterns)
+      // which is already handled by the form validation system
+      // This applies to both creation in credentials-only mode AND edit mode for repositories
+      const shouldSkipVaultValidation = entityType === 'REPOSITORY' && (creationContext === 'credentials-only' || isEditMode)
+
+      if (!isVaultValid && !shouldSkipVaultValidation) {
         setShowVaultValidationErrors(true)
         message.error(t('vaultEditor.pleaseFixErrors'))
         return

@@ -186,7 +186,7 @@ Currently set to enabled by default. Future implementation should include:
 ## Data Destinations
 
 ### Primary Endpoint
-- **URL**: `https://obs.rediacc.com/otlp`
+- **URL**: `https://www.rediacc.com/otlp`
 - **Protocol**: OTLP over HTTP
 - **Format**: JSON
 

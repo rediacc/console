@@ -1030,6 +1030,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           entityType={getEntityType()}
           vaultFieldName={getVaultFieldName()}
           showDefaultsAlert={mode === 'create' && uiMode === 'simple'}
+          creationContext={creationContext}
           initialVaultData={(() => {
             if (existingData?.vaultContent) {
               try {
@@ -1039,17 +1040,15 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                 console.log('[UnifiedResourceModal] Raw vault content:', existingData.vaultContent);
                 console.log('[UnifiedResourceModal] Parsed vault data for edit:', parsed);
                 console.log('[UnifiedResourceModal] Parsed vault keys:', Object.keys(parsed));
-                
                 // Special handling for repositories - map the vault data correctly
                 if (resourceType === 'repository') {
                   console.log('[UnifiedResourceModal] Repository vault before mapping:', JSON.stringify(parsed, null, 2));
-                  
                   // The vault data might have the credential at root level or nested
                   // We need to ensure it's in the format VaultEditor expects
                   if (!parsed.credential && parsed.repoVault) {
                     // If repoVault exists, it might contain the credential
                     try {
-                      const innerVault = typeof parsed.repoVault === 'string' ? 
+                      const innerVault = typeof parsed.repoVault === 'string' ?
                         JSON.parse(parsed.repoVault) : parsed.repoVault;
                       if (innerVault.credential) {
                         parsed = { credential: innerVault.credential };
@@ -1060,7 +1059,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                   } else if (parsed.repositoryVault) {
                     // Or it might be in repositoryVault
                     try {
-                      const innerVault = typeof parsed.repositoryVault === 'string' ? 
+                      const innerVault = typeof parsed.repositoryVault === 'string' ?
                         JSON.parse(parsed.repositoryVault) : parsed.repositoryVault;
                       if (innerVault.credential) {
                         parsed = { credential: innerVault.credential };
@@ -1069,12 +1068,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                       console.error('[UnifiedResourceModal] Failed to parse repository vault:', e);
                     }
                   }
-                  
                   // If still no credential field but we have other fields, check if any could be the credential
                   if (!parsed.credential) {
                     // Check for any 32-character string that might be the credential
                     for (const [key, value] of Object.entries(parsed)) {
-                      if (typeof value === 'string' && value.length === 32 && 
+                      if (typeof value === 'string' && value.length === 32 &&
                           /^[A-Za-z0-9!@#$%^&*()_+{}|:<>,.?/]+$/.test(value)) {
                         console.log(`[UnifiedResourceModal] Found potential credential in field '${key}':`, value);
                         parsed = { credential: value };
@@ -1082,10 +1080,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                       }
                     }
                   }
-                  
                   console.log('[UnifiedResourceModal] Repository vault after mapping:', JSON.stringify(parsed, null, 2));
                 }
-                
                 return parsed;
               } catch (e) {
                 console.error('[UnifiedResourceModal] Failed to parse vault content:', e);
@@ -1105,7 +1101,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           isModalOpen={open}
           beforeVaultContent={
             resourceType === 'repository' && mode === 'create' && !((existingData?.repositoryGuid && existingData?.repositoryGuid.trim() !== '') || creationContext === 'credentials-only') ? (
-              <Collapse 
+              <Collapse
                 data-testid="resource-modal-template-collapse"
                 style={{ marginBottom: 16, marginTop: 16 }}
                 items={[
