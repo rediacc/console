@@ -428,7 +428,7 @@ const AuditPage = () => {
       )}
 
       {/* Audit Logs Table */}
-      <Card data-testid="audit-table-card" style={cardStyle} bodyStyle={cardBodyStyle}>
+      <Card data-testid="audit-table-card" style={cardStyle} styles={{ body: cardBodyStyle }}>
         <div ref={tableRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <Table
             data-testid="audit-table"

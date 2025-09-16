@@ -90,7 +90,10 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '40px 0' }}>
-        <Spin tip={t('resources:templates.loading')} />
+        <Spin />
+        <div style={{ marginTop: 16, color: 'var(--ant-color-text-secondary)' }}>
+          {t('resources:templates.loading')}
+        </div>
       </div>
     )
   }

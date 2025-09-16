@@ -1349,7 +1349,10 @@ const ResourcesPage: React.FC = () => {
         <div ref={repositoryTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           {repositoriesLoading ? (
             <div style={{ textAlign: 'center', padding: '100px 0' }}>
-              <Spin size="large" tip={t('common:general.loading')} />
+              <Spin size="large" />
+              <div style={{ marginTop: 16, color: 'var(--ant-color-text-secondary)' }}>
+                {t('common:general.loading')}
+              </div>
             </div>
           ) : repositories.length === 0 ? (
             <Empty
@@ -1390,7 +1393,10 @@ const ResourcesPage: React.FC = () => {
         <div ref={storageTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           {storagesLoading ? (
             <div style={{ textAlign: 'center', padding: '100px 0' }}>
-              <Spin size="large" tip={t('common:general.loading')} />
+              <Spin size="large" />
+              <div style={{ marginTop: 16, color: 'var(--ant-color-text-secondary)' }}>
+                {t('common:general.loading')}
+              </div>
             </div>
           ) : storages.length === 0 ? (
             <Empty
@@ -1431,7 +1437,10 @@ const ResourcesPage: React.FC = () => {
         <div ref={scheduleTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           {schedulesLoading ? (
             <div style={{ textAlign: 'center', padding: '100px 0' }}>
-              <Spin size="large" tip={t('common:general.loading')} />
+              <Spin size="large" />
+              <div style={{ marginTop: 16, color: 'var(--ant-color-text-secondary)' }}>
+                {t('common:general.loading')}
+              </div>
             </div>
           ) : schedules.length === 0 ? (
             <Empty
@@ -1506,7 +1515,7 @@ const ResourcesPage: React.FC = () => {
       {uiMode !== 'simple' ? (
         <Row gutter={0} style={containerStyle}>
           <Col span={24} style={{ height: '100%' }}>
-            <Card style={cardStyle} bodyStyle={cardBodyStyle}>
+            <Card style={cardStyle} styles={{ body: cardBodyStyle }}>
               <div style={{ marginBottom: 16 }}>
                 <div style={{ 
                   display: 'flex', 
@@ -1656,7 +1665,7 @@ const ResourcesPage: React.FC = () => {
       ) : (
         <Row gutter={0} style={containerStyle}>
           <Col span={24} style={{ height: '100%' }}>
-            <Card style={cardStyle} bodyStyle={cardBodyStyle}>
+            <Card style={cardStyle} styles={{ body: cardBodyStyle }}>
               <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
                 <div>
                   <Title level={4} style={{ ...styles.heading4, margin: 0 }}>

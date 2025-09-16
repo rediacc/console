@@ -910,9 +910,11 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                 </Space>
               </div>
             }
-            bodyStyle={{ 
-              padding: 0,
-              backgroundColor: getGroupBackgroundColor(groupIndex)
+            styles={{
+              body: {
+                padding: 0,
+                backgroundColor: getGroupBackgroundColor(groupIndex)
+              }
             }}
             style={{
               borderColor: getGroupBorderColor(groupIndex),

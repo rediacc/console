@@ -46,7 +46,7 @@ const LanguageSelector: React.FC = () => {
       onChange={handleChange}
       style={selectorStyle}
       suffixIcon={<GlobalOutlined />}
-      dropdownMatchSelectWidth={false}
+      popupMatchSelectWidth={false}
       data-testid="language-selector"
     >
       {languages.map((lang) => (

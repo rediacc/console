@@ -214,9 +214,11 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
         top: 20,
         ...styles.modalXLarge
       }}
-      bodyStyle={{ 
-        height: 'calc(90vh - 180px)', 
-        padding: spacing('MD')
+      styles={{
+        body: {
+          height: 'calc(90vh - 180px)',
+          padding: spacing('MD')
+        }
       }}
       footer={[
         <Button 
@@ -268,12 +270,14 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
           <div style={{ height: 'calc(90vh - 340px)', overflow: 'auto' }}>
             <Row gutter={[spacing('XL'), spacing('XL')]}>
               <Col xs={24} md={16}>
-                <Card 
+                <Card
                   title={<Text strong style={styles.heading5}>{t('description')}</Text>}
-                  bodyStyle={{ 
-                    maxHeight: 'calc(90vh - 420px)', 
-                    overflow: 'auto',
-                    padding: spacing('MD')
+                  styles={{
+                    body: {
+                      maxHeight: 'calc(90vh - 420px)',
+                      overflow: 'auto',
+                      padding: spacing('MD')
+                    }
                   }}
                   style={{
                     borderRadius: borderRadius('LG'),
@@ -286,12 +290,14 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
                 </Card>
               </Col>
               <Col xs={24} md={8}>
-                <Card 
+                <Card
                   title={<Text strong style={styles.heading5}>{t('features')}</Text>}
-                  bodyStyle={{ 
-                    maxHeight: 'calc(90vh - 420px)', 
-                    overflow: 'auto',
-                    padding: spacing('MD')
+                  styles={{
+                    body: {
+                      maxHeight: 'calc(90vh - 420px)',
+                      overflow: 'auto',
+                      padding: spacing('MD')
+                    }
                   }}
                   style={{
                     borderRadius: borderRadius('LG'),
@@ -325,7 +331,10 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
         >
           {loading ? (
             <div style={{ ...styles.flexCenter, padding: spacing('XXXL') }}>
-              <Spin tip={t('loadingFiles')} size="large" />
+              <Spin size="large" />
+              <div style={{ marginTop: 16, color: 'var(--ant-color-text-secondary)' }}>
+                {t('loadingFiles')}
+              </div>
             </div>
           ) : templateDetails && templateDetails.files.length > 0 ? (
             <Row gutter={spacing('MD')} style={{ height: 'calc(90vh - 340px)' }}>
@@ -337,7 +346,7 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
                       <Text strong style={styles.heading6}>{t('fileList')}</Text>
                     </Space>
                   }
-                  bodyStyle={{ padding: 0, height: 'calc(100% - 38px)' }}
+                  styles={{ body: { padding: 0, height: 'calc(100% - 38px)' } }}
                   style={{ 
                     height: '100%', 
                     display: 'flex', 
@@ -397,7 +406,7 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
                     borderRadius: borderRadius('LG'),
                     boxShadow: DESIGN_TOKENS.SHADOWS.CARD
                   }}
-                  bodyStyle={{ flex: 1, overflow: 'auto', padding: spacing('MD') }}
+                  styles={{ body: { flex: 1, overflow: 'auto', padding: spacing('MD') } }}
                 >
                   {templateDetails.files[selectedFileIndex] && renderFileContent(templateDetails.files[selectedFileIndex])}
                 </Card>
@@ -433,7 +442,7 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
                 borderRadius: borderRadius('LG'),
                 boxShadow: DESIGN_TOKENS.SHADOWS.CARD
               }}
-              bodyStyle={{ padding: spacing('MD') }}
+              styles={{ body: { padding: spacing('MD') } }}
             >
               <Space direction="vertical" size={spacing('LG')} style={{ width: '100%' }}>
                 <Alert

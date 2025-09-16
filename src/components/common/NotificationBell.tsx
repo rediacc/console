@@ -186,7 +186,7 @@ const NotificationBell: React.FC = () => {
       open={dropdownOpen}
       onOpenChange={setDropdownOpen}
       menu={{ items: [] }}
-      dropdownRender={() => dropdownContent}
+      popupRender={() => dropdownContent}
     >
       <Badge count={unreadCount} size="small">
         <Button

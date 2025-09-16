@@ -2196,7 +2196,10 @@ const SystemPage: React.FC = () => {
                 />
               ) : bridgesLoading ? (
                 <div style={{ textAlign: 'center', padding: '100px 0' }}>
-                  <Spin size="large" tip={t('common:general.loading')} />
+                  <Spin size="large" />
+                  <div style={{ marginTop: 16, color: 'var(--ant-color-text-secondary)' }}>
+                    {t('common:general.loading')}
+                  </div>
                 </div>
               ) : (
                 <Table

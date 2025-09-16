@@ -638,7 +638,10 @@ const ArchitecturePage: React.FC = () => {
   if (isLoading) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" tip={t('messages.loading', { ns: 'common' })} />
+        <Spin size="large" />
+        <div style={{ marginTop: 16, color: 'var(--ant-color-text-secondary)' }}>
+          {t('messages.loading', { ns: 'common' })}
+        </div>
       </div>
     )
   }
@@ -865,7 +868,10 @@ const ArchitecturePage: React.FC = () => {
                 justifyContent: 'center',
                 zIndex: 10
               }}>
-                <Spin size="large" tip={t('messages.loading', { ns: 'common' })} />
+                <Spin size="large" />
+                <div style={{ marginTop: 16, color: 'var(--ant-color-text-secondary)' }}>
+                  {t('messages.loading', { ns: 'common' })}
+                </div>
               </div>
             )}
             <svg ref={svgRef} style={{ width: '100%', height: '100%' }} data-testid="architecture-svg"></svg>

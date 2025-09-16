@@ -51,7 +51,7 @@ class TelemetryService {
 
   async initialize(config: TelemetryConfig): Promise<void> {
     if (this.isInitialized) {
-      console.warn('TelemetryService is already initialized')
+      console.debug('TelemetryService is already initialized (this is normal in React.StrictMode)')
       return
     }
 

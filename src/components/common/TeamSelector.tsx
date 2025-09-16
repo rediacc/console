@@ -80,7 +80,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
           </Tag>
         )
       }}
-      dropdownRender={(menu) => (
+      popupRender={(menu) => (
         <>
           <div style={{ padding: spacing('SM') }}>
             <Input

@@ -310,7 +310,10 @@ const MarketplacePage: React.FC = () => {
       {/* Main Content - Templates by Category */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px 0' }} data-testid="marketplace-loading">
-          <Spin size="large" tip={t('marketplace:loading')} />
+          <Spin size="large" />
+          <div style={{ marginTop: 16, color: 'var(--ant-color-text-secondary)' }}>
+            {t('marketplace:loading')}
+          </div>
         </div>
       ) : categoryGroups.length === 0 ? (
         <Card style={styles.card} data-testid="marketplace-empty-state">

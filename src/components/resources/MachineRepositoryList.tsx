@@ -1243,7 +1243,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   if (loading) {
     return (
       <div style={{ padding: '20px', textAlign: 'center' }} data-testid="machine-repo-list-loading">
-        <Spin tip={t('resources:repositories.fetchingRepositories')} />
+        <Spin />
+        <div style={{ marginTop: 16, color: 'var(--ant-color-text-secondary)' }}>
+          {t('resources:repositories.fetchingRepositories')}
+        </div>
       </div>
     )
   }

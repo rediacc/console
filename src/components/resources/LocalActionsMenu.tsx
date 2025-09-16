@@ -204,12 +204,13 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
     }
   ]
 
-  const menu = <Menu items={menuItems} data-testid={`local-actions-menu-${repository}`} />
-
   return (
     <>
-      <Dropdown 
-        overlay={menu} 
+      <Dropdown
+        menu={{
+          items: menuItems,
+          'data-testid': `local-actions-menu-${repository}`
+        }} 
         trigger={['click']}
         disabled={disabled || isCheckingProtocol}
         data-testid={`local-actions-dropdown-container-${repository}`}

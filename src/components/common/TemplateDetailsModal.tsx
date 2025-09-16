@@ -217,7 +217,10 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
     >
       {loading && (
         <div style={{ textAlign: 'center', padding: 'var(--space-5xl) 0' }} data-testid="template-details-loading">
-          <Spin tip={t('resources:templates.loadingDetails')} />
+          <Spin />
+          <div style={{ marginTop: 16, color: 'var(--ant-color-text-secondary)' }}>
+            {t('resources:templates.loadingDetails')}
+          </div>
         </div>
       )}
 
@@ -249,7 +252,7 @@ const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
                     borderRadius: '8px',
                     boxShadow: 'var(--shadow-sm)'
                   }}
-                  bodyStyle={{ padding: 0 }}
+                  styles={{ body: { padding: 0 } }}
                   data-testid="template-details-readme-content"
                 >
                   {renderFileContent(readmeFile)}
