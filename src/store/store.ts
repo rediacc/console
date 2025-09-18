@@ -4,11 +4,12 @@ import authSlice from './auth/authSlice'
 import uiSlice from './ui/uiSlice'
 import notificationSlice from './notifications/notificationSlice'
 import machineAssignmentSlice from './distributedStorage/machineAssignmentSlice'
-import { 
+import {
   machineAssignmentMiddleware,
   machineSelectionPersistenceMiddleware,
   machineAssignmentLoggingMiddleware
 } from './distributedStorage/machineAssignmentMiddleware'
+import { telemetryMiddleware } from './middleware/telemetryMiddleware'
 
 export const store = configureStore({
   reducer: {
@@ -27,6 +28,7 @@ export const store = configureStore({
         ],
       },
     }).concat(
+      telemetryMiddleware,
       machineAssignmentMiddleware,
       machineSelectionPersistenceMiddleware,
       import.meta.env.DEV ? machineAssignmentLoggingMiddleware : []

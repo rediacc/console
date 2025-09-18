@@ -46,6 +46,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useComponentStyles, useNavigationStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants'
 import SandboxWarning from '@/components/common/SandboxWarning'
+import { useTelemetry } from '@/components/common/TelemetryProvider'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
@@ -67,6 +68,7 @@ const MainLayout: React.FC = () => {
   const { data: companyData } = useCompanyInfo()
   const styles = useComponentStyles()
   const navStyles = useNavigationStyles()
+  const { trackUserAction, trackEvent } = useTelemetry()
 
   // Handle responsive behavior
   useEffect(() => {
@@ -164,12 +166,19 @@ const MainLayout: React.FC = () => {
   // Handle mode transition
   const handleModeToggle = () => {
     setIsTransitioning(true)
-    
+
     // Toggle the mode
     dispatch(toggleUiMode())
-    
+
     // Determine the new mode
     const newMode = uiMode === 'simple' ? 'expert' : 'simple'
+
+    // Track mode change
+    trackUserAction('ui_mode_toggle', 'mode_switcher', {
+      from_mode: uiMode,
+      to_mode: newMode,
+      current_page: location.pathname
+    })
     
     // Check if current page is visible in the new mode
     const currentPath = location.pathname
@@ -195,6 +204,12 @@ const MainLayout: React.FC = () => {
   }
 
   const handleLogout = async () => {
+    // Track logout action
+    trackUserAction('logout', 'logout_button', {
+      current_page: location.pathname,
+      session_duration: Date.now() - (window as any).sessionStartTime || 0
+    })
+
     try {
       await apiClient.logout()
     } catch (error) {
@@ -293,7 +308,13 @@ const MainLayout: React.FC = () => {
             flexShrink: 0,
             cursor: 'pointer',
           }}
-          onClick={() => navigate('/dashboard')}
+          onClick={() => {
+            trackUserAction('navigation', '/dashboard', {
+              trigger: 'logo_click',
+              from_page: location.pathname
+            })
+            navigate('/dashboard')
+          }}
           data-testid="main-logo-home"
         >
           <img
@@ -319,6 +340,15 @@ const MainLayout: React.FC = () => {
               const menuItemContent = (
                 <div
                   onClick={() => {
+                    // Track navigation click
+                    trackUserAction('navigation', item.key, {
+                      menu_item: item.label,
+                      ui_mode: uiMode,
+                      is_mobile: isMobile,
+                      sidebar_collapsed: collapsed,
+                      from_page: location.pathname
+                    })
+
                     navigate(item.key)
                     if (isMobile) {
                       setMobileMenuVisible(false)
@@ -590,7 +620,13 @@ const MainLayout: React.FC = () => {
               <Button
                 type="text"
                 icon={<MenuUnfoldOutlined />}
-                onClick={() => setMobileMenuVisible(!mobileMenuVisible)}
+                onClick={() => {
+                  trackUserAction('ui_interaction', 'mobile_menu_toggle', {
+                    action: mobileMenuVisible ? 'close' : 'open',
+                    current_page: location.pathname
+                  })
+                  setMobileMenuVisible(!mobileMenuVisible)
+                }}
                 data-testid="mobile-menu-toggle"
                 aria-label={mobileMenuVisible ? t('navigation.closeMobileMenu') : t('navigation.openMobileMenu')}
                 aria-expanded={mobileMenuVisible}
@@ -603,7 +639,12 @@ const MainLayout: React.FC = () => {
               <Button
                 type="text"
                 icon={<MenuUnfoldOutlined />}
-                onClick={() => setCollapsed(false)}
+                onClick={() => {
+                  trackUserAction('ui_interaction', 'sidebar_expand', {
+                    current_page: location.pathname
+                  })
+                  setCollapsed(false)
+                }}
                 data-testid="main-sidebar-expand"
                 style={{
                   ...styles.touchTarget,
@@ -614,7 +655,12 @@ const MainLayout: React.FC = () => {
               <Button
                 type="text"
                 icon={<MenuFoldOutlined />}
-                onClick={() => setCollapsed(true)}
+                onClick={() => {
+                  trackUserAction('ui_interaction', 'sidebar_collapse', {
+                    current_page: location.pathname
+                  })
+                  setCollapsed(true)
+                }}
                 data-testid="main-sidebar-collapse"
                 style={{
                   ...styles.touchTarget,

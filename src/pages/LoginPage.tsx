@@ -25,6 +25,7 @@ import {
 } from '@/utils/vaultProtocol'
 import { masterPasswordService } from '@/services/masterPasswordService'
 import { tokenService } from '@/services/tokenService'
+import { useTelemetry } from '@/components/common/TelemetryProvider'
 import { useVerifyTFA } from '@/api/queries/twoFactor'
 import RegistrationModal from '@/components/auth/RegistrationModal'
 import { generateRandomEmail, generateRandomCompanyName, generateRandomPassword } from '@/utils/cryptoGenerators'
@@ -116,6 +117,7 @@ const LoginPage: React.FC = () => {
   const { t } = useTranslation(['auth', 'common'])
   const verifyTFAMutation = useVerifyTFA()
   const styles = useComponentStyles()
+  const { trackUserAction, trackEvent } = useTelemetry()
 
   // Check URL parameters for registration flag
   useEffect(() => {
@@ -172,6 +174,13 @@ const LoginPage: React.FC = () => {
     setLoading(true)
     setError(null)
     setVaultProtocolState(null)
+
+    // Track login attempt
+    trackUserAction('login_attempt', 'login_form', {
+      email_domain: values.email.split('@')[1] || 'unknown',
+      has_master_password: !!values.masterPassword,
+      is_remember_me: !!values.rememberMe
+    })
 
     try {
       // Hash password
@@ -256,8 +265,23 @@ const LoginPage: React.FC = () => {
         companyEncryptionEnabled: companyHasEncryption,
       }))
 
+      // Track successful login
+      trackUserAction('login_success', 'login_form', {
+        email_domain: values.email.split('@')[1] || 'unknown',
+        company: companyName || 'unknown',
+        has_encryption: companyHasEncryption,
+        vault_protocol_state: vaultProtocolState?.toString() || 'none'
+      })
+
       navigate('/dashboard')
     } catch (error: any) {
+      // Track login failure
+      trackUserAction('login_failure', 'login_form', {
+        email_domain: values.email.split('@')[1] || 'unknown',
+        error_message: error.message || 'unknown_error',
+        has_master_password: !!values.masterPassword
+      })
+
       setError(error.message || t('login.errors.invalidCredentials'))
     } finally {
       setLoading(false)

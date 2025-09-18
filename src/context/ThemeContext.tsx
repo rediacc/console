@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { telemetryService } from '@/services/telemetryService';
 
 type Theme = 'light' | 'dark';
 
@@ -18,6 +19,20 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     const savedTheme = localStorage.getItem('theme');
     return (savedTheme as Theme) || 'light';
   });
+
+  // Track initial theme selection on mount
+  useEffect(() => {
+    const isSystemDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches || false;
+    const savedTheme = localStorage.getItem('theme');
+
+    telemetryService.trackEvent('user.theme_initialized', {
+      'theme.current': theme,
+      'theme.was_saved': !!savedTheme,
+      'theme.system_preference': isSystemDark ? 'dark' : 'light',
+      'theme.matches_system': theme === (isSystemDark ? 'dark' : 'light'),
+      'accessibility.prefers_dark': isSystemDark
+    });
+  }, []); // Only run on mount
 
   useEffect(() => {
     const applyTheme = (theme: Theme) => {
@@ -50,7 +65,20 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
+    const currentTheme = theme;
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+    // Track theme switching
+    telemetryService.trackEvent('user.theme_changed', {
+      'theme.from': currentTheme,
+      'theme.to': newTheme,
+      'theme.method': 'toggle',
+      'theme.time_of_day': new Date().getHours(),
+      'page.url': window.location.pathname,
+      'accessibility.prefers_dark': window.matchMedia?.('(prefers-color-scheme: dark)').matches || false
+    });
+
+    setTheme(newTheme);
   };
 
   return (

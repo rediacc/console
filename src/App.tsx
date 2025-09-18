@@ -8,6 +8,8 @@ import { getAuthData, migrateFromLocalStorage } from '@/utils/auth'
 import { AppProviders } from '@/components/common/AppProviders'
 import { ThemedToaster } from '@/components/common/ThemedToaster'
 import { TelemetryProvider } from '@/components/common/TelemetryProvider'
+import { InteractionTracker } from '@/components/common/InteractionTracker'
+import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { initializeApiClient } from '@/api/init'
 import AuthLayout from '@/components/layouts/AuthLayout'
 import MainLayout from '@/components/layouts/MainLayout'
@@ -71,7 +73,9 @@ const AppContent: React.FC = () => {
       <AppProviders>
           <BrowserRouter basename={import.meta.env.BASE_URL}>
             <TelemetryProvider>
-            <Routes>
+              <ErrorBoundary>
+                <InteractionTracker>
+                  <Routes>
               {/* Auth routes */}
               <Route element={<AuthLayout />}>
                 <Route path="/login" element={<LoginPage />} />
@@ -141,7 +145,9 @@ const AppContent: React.FC = () => {
                   </Suspense>
                 } />
               </Route>
-            </Routes>
+                  </Routes>
+                </InteractionTracker>
+              </ErrorBoundary>
             </TelemetryProvider>
           </BrowserRouter>
           <ThemedToaster />

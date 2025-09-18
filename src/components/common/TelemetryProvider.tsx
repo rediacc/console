@@ -33,6 +33,12 @@ export const TelemetryProvider: React.FC<TelemetryProviderProps> = ({ children }
         const config = createTelemetryConfig()
         await telemetryService.initialize(config)
         setIsInitialized(true)
+
+        // Store session start time for logout tracking
+        if (typeof window !== 'undefined') {
+          (window as any).sessionStartTime = Date.now()
+        }
+
         console.log('🔍 Telemetry successfully initialized')
       } catch (error) {
         console.error('Failed to initialize telemetry:', error)
