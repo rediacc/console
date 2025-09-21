@@ -335,7 +335,7 @@
     "downloadCli": "Download Rediacc CLI from",
     "installationSteps": "Installation Steps",
     "protocolRegistrationRequired": "Protocol registration required for browser integration",
-    "windowsInstructions": "Windows: Run .\\rediacc.ps1 -RegisterProtocol as Administrator",
+    "windowsInstructions": "Windows: Run rediacc.bat -RegisterProtocol as Administrator",
     "macosInstructions": "macOS: Run ./rediacc --register-protocol",
     "linuxInstructions": "Linux: Run ./rediacc --register-protocol",
     "troubleshooting": "Troubleshooting",

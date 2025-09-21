@@ -435,7 +435,7 @@ class ProtocolUrlService {
           'Download and install Rediacc CLI',
           'Open PowerShell as Administrator',
           'Navigate to the Rediacc CLI directory',
-          'Run: .\\rediacc.ps1 -RegisterProtocol',
+          'Run: rediacc.bat -RegisterProtocol',
           'Restart your browser'
         ]
       },
