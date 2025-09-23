@@ -3,7 +3,7 @@
  * Generates and handles rediacc:// URLs for desktop app integration
  */
 
-export type ProtocolAction = 'sync' | 'terminal' | 'plugin' | 'browser'
+export type ProtocolAction = 'terminal' | 'desktop'
 
 export interface ProtocolError {
   type: 'timeout' | 'exception' | 'not-installed' | 'permission-denied'
@@ -18,36 +18,11 @@ export interface ProtocolUrlParams {
   queryParams?: Record<string, string | number | boolean>
 }
 
-export interface SyncParams {
-  direction?: 'upload' | 'download'
-  localPath?: string
-  mirror?: boolean
-  verify?: boolean
-  preview?: boolean
-  autoStart?: boolean
-}
-
 export interface TerminalParams {
   command?: string
   autoExecute?: boolean
   terminalType?: 'repo' | 'machine'
   fontSize?: number
-}
-
-export interface PluginParams {
-  name?: string
-  port?: string | number
-  autoConnect?: boolean
-  openBrowser?: boolean
-  waitTimeout?: number
-}
-
-export interface BrowserParams {
-  path?: string
-  view?: 'list' | 'grid' | 'tree'
-  showHidden?: boolean
-  sortBy?: 'name' | 'size' | 'date'
-  sortOrder?: 'asc' | 'desc'
 }
 
 export interface ContainerParams {
@@ -130,23 +105,6 @@ class ProtocolUrlService {
     return url
   }
 
-  /**
-   * Generate a sync-specific URL
-   */
-  async generateSyncUrl(
-    baseParams: Omit<ProtocolUrlParams, 'action' | 'queryParams'>,
-    syncParams?: SyncParams,
-    windowParams?: WindowParams
-  ): Promise<string> {
-    return await this.generateUrl({
-      ...baseParams,
-      action: 'sync',
-      queryParams: {
-        ...syncParams,
-        ...windowParams
-      }
-    })
-  }
 
   /**
    * Generate a terminal-specific URL
@@ -166,37 +124,18 @@ class ProtocolUrlService {
     })
   }
 
-  /**
-   * Generate a plugin-specific URL
-   */
-  async generatePluginUrl(
-    baseParams: Omit<ProtocolUrlParams, 'action' | 'queryParams'>,
-    pluginParams?: PluginParams,
-    windowParams?: WindowParams
-  ): Promise<string> {
-    return await this.generateUrl({
-      ...baseParams,
-      action: 'plugin',
-      queryParams: {
-        ...pluginParams,
-        ...windowParams
-      }
-    })
-  }
 
   /**
-   * Generate a browser-specific URL
+   * Generate a desktop-specific URL
    */
-  async generateBrowserUrl(
+  async generateDesktopUrl(
     baseParams: Omit<ProtocolUrlParams, 'action' | 'queryParams'>,
-    browserParams?: BrowserParams,
     windowParams?: WindowParams
   ): Promise<string> {
     return await this.generateUrl({
       ...baseParams,
-      action: 'browser',
+      action: 'desktop',
       queryParams: {
-        ...browserParams,
         ...windowParams
       }
     })
@@ -553,10 +492,8 @@ class ProtocolUrlService {
   ): Promise<Record<ProtocolAction | 'navigate', string>> {
     return {
       navigate: await this.generateUrl(baseParams),
-      sync: await this.generateSyncUrl(baseParams),
       terminal: await this.generateTerminalUrl(baseParams),
-      plugin: await this.generatePluginUrl(baseParams),
-      browser: await this.generateBrowserUrl(baseParams)
+      desktop: await this.generateDesktopUrl(baseParams)
     }
   }
 }

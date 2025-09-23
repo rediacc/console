@@ -2,11 +2,7 @@ import React, { useState, useCallback } from 'react'
 import { Dropdown, Button, Menu, message, Tooltip } from 'antd'
 import {
   DesktopOutlined,
-  SyncOutlined,
   CodeOutlined,
-  ApiOutlined,
-  FolderOpenOutlined,
-  DownOutlined,
   BuildOutlined
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
@@ -55,12 +51,6 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
   const styles = useComponentStyles()
   const currentUserEmail = useSelector((state: RootState) => state.auth.user?.email)
 
-  // Filter running plugin containers
-  const runningPlugins = pluginContainers.filter(container => 
-    container.image?.includes('rediacc/plugin') && 
-    container.status?.toLowerCase().includes('running')
-  )
-
   const handleOpenInDesktop = useCallback(async (action?: ProtocolAction, containerAction?: 'terminal' | 'logs' | 'stats') => {
     const baseParams = {
       team: teamName,
@@ -100,10 +90,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
             url = await protocolUrlService.generateTerminalUrl(baseParams)
             break
           case 'plugin':
-            url = await protocolUrlService.generatePluginUrl(baseParams, {
-              // Auto-select first running plugin if available
-              name: runningPlugins[0]?.name
-            })
+            url = await protocolUrlService.generatePluginUrl(baseParams)
             break
           case 'browser':
             url = await protocolUrlService.generateBrowserUrl(baseParams)
@@ -112,7 +99,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
             url = await protocolUrlService.generateUrl(baseParams)
         }
       } else {
-        // Default action for "Open in Desktop" - use terminal as default (most commonly useful)
+        // Default action for "Open in Desktop" - use GUI for team/machine/repo selection
         if (isContainerMenu && containerId) {
           const containerParams: ContainerParams = {
             containerId,
@@ -121,7 +108,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
           }
           url = await protocolUrlService.generateContainerTerminalUrl(baseParams, containerParams)
         } else {
-          url = await protocolUrlService.generateTerminalUrl(baseParams)
+          url = await protocolUrlService.generateDesktopUrl(baseParams)
         }
       }
     } catch (error) {
@@ -166,7 +153,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       // Show modal immediately
       setShowInstallModal(true)
     }
-  }, [teamName, machine, repository, runningPlugins, isContainerMenu, containerId, containerName])
+  }, [teamName, machine, repository, isContainerMenu, containerId, containerName])
 
   // Generate different menu items based on whether this is a container menu
   const menuItems: any[] = isContainerMenu ? [
@@ -219,20 +206,6 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       'data-testid': `local-actions-open-${repository}`
     },
     {
-      type: 'divider'
-    },
-    {
-      key: 'sync',
-      icon: <SyncOutlined style={styles.icon.small} />,
-      label: (
-        <span style={styles.body}>
-          {t('resources:localActions.openFileSync')}
-        </span>
-      ),
-      onClick: () => handleOpenInDesktop('sync'),
-      'data-testid': `local-actions-sync-${repository}`
-    },
-    {
       key: 'terminal',
       icon: <CodeOutlined style={styles.icon.small} />,
       label: (
@@ -242,30 +215,6 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       ),
       onClick: () => handleOpenInDesktop('terminal'),
       'data-testid': `local-actions-terminal-${repository}`
-    },
-    {
-      key: 'plugin',
-      icon: <ApiOutlined style={styles.icon.small} />,
-      label: (
-        <span style={styles.body}>
-          {t('resources:localActions.openPluginManager')}
-        </span>
-      ),
-      onClick: () => handleOpenInDesktop('plugin'),
-      disabled: runningPlugins.length === 0,
-      title: runningPlugins.length === 0 ? t('resources:localActions.noPluginsRunning') : undefined,
-      'data-testid': `local-actions-plugin-${repository}`
-    },
-    {
-      key: 'browser',
-      icon: <FolderOpenOutlined style={styles.icon.small} />,
-      label: (
-        <span style={styles.body}>
-          {t('resources:localActions.openFileBrowser')}
-        </span>
-      ),
-      onClick: () => handleOpenInDesktop('browser'),
-      'data-testid': `local-actions-browser-${repository}`
     },
     {
       type: 'divider'
