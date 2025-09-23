@@ -84,11 +84,11 @@ class ProtocolUrlService {
     const { team, machine, repository, action, queryParams } = params
 
     // Import forkTokenService dynamically to avoid circular dependencies
-    const { getOrCreateForkToken } = await import('./forkTokenService')
+    const { createFreshForkToken } = await import('./forkTokenService')
 
-    // Create fork token for this action
+    // Create fresh fork token for this action (ensures new token per click)
     const actionKey = action || 'default'
-    const forkToken = await getOrCreateForkToken(actionKey)
+    const forkToken = await createFreshForkToken(actionKey)
 
     // Build path components
     const pathParts = [
@@ -337,7 +337,7 @@ class ProtocolUrlService {
       iframe.style.display = 'none'
       
       return new Promise<boolean>((resolve) => {
-        let timeout: number
+        let timeout: ReturnType<typeof setTimeout>
         
         // If protocol handler exists, the iframe won't load
         iframe.onerror = () => {
@@ -417,7 +417,7 @@ class ProtocolUrlService {
         }
 
         // Set up timeout
-        const timeout: number = setTimeout(() => {
+        const timeout: ReturnType<typeof setTimeout> = setTimeout(() => {
           if (!resolved) {
             resolved = true
             try {

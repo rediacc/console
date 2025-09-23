@@ -111,6 +111,34 @@ class ForkTokenService {
   }
 
   /**
+   * Create a fresh fork token for an action, clearing any existing token
+   * This ensures each call gets a new token for security and proper rotation
+   */
+  async createFreshForkToken(action: string, expirationHours: number = this.DEFAULT_EXPIRATION_HOURS): Promise<string> {
+    // Clear any existing token for this action first
+    const storageKey = `${this.FORK_TOKEN_PREFIX}${action}`
+    const existingTokenInfoStr = await secureStorage.getItem(storageKey)
+
+    if (existingTokenInfoStr) {
+      try {
+        const existingTokenInfo: ForkTokenInfo = JSON.parse(existingTokenInfoStr)
+        console.log(`Clearing existing fork token for action: ${action}, token: ${existingTokenInfo.token.substring(0, 8)}...`)
+      } catch (error) {
+        console.log(`Clearing corrupted fork token data for action: ${action}`)
+      }
+
+      // Remove the old token
+      await secureStorage.removeItem(storageKey)
+    }
+
+    // Create new fork token
+    const newToken = await this.createForkToken(action, expirationHours)
+    console.log(`Created fresh fork token for action: ${action}, token: ${newToken.substring(0, 8)}...`)
+
+    return newToken
+  }
+
+  /**
    * Clear all fork tokens
    */
   clearAllForkTokens(): void {
@@ -188,6 +216,9 @@ export const getForkToken = (action: string): Promise<string | null> =>
 
 export const getOrCreateForkToken = (action: string, expirationHours?: number): Promise<string> =>
   forkTokenService.getOrCreateForkToken(action, expirationHours)
+
+export const createFreshForkToken = (action: string, expirationHours?: number): Promise<string> =>
+  forkTokenService.createFreshForkToken(action, expirationHours)
 
 export const clearAllForkTokens = (): void =>
   forkTokenService.clearAllForkTokens()
