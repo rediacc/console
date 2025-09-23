@@ -14,6 +14,8 @@ interface AuthState {
   companyEncryptionEnabled: boolean
   vaultCompany: string | null // Stores the VaultCompany sentinel value
   // Token removed from Redux state for security - now managed by tokenService
+  showSessionExpiredDialog: boolean
+  stayLoggedOutMode: boolean // User chose to stay on page after session expired
 }
 
 const initialState: AuthState = {
@@ -22,6 +24,8 @@ const initialState: AuthState = {
   company: null,
   companyEncryptionEnabled: false,
   vaultCompany: null,
+  showSessionExpiredDialog: false,
+  stayLoggedOutMode: false,
 }
 
 const authSlice = createSlice({
@@ -48,6 +52,8 @@ const authSlice = createSlice({
       state.company = null
       state.companyEncryptionEnabled = false
       state.vaultCompany = null
+      state.showSessionExpiredDialog = false
+      state.stayLoggedOutMode = false
       // Token cleanup is handled by tokenService
       // masterPassword cleanup is handled by masterPasswordService
     },
@@ -63,8 +69,17 @@ const authSlice = createSlice({
       state.vaultCompany = action.payload.vaultCompany
       state.companyEncryptionEnabled = action.payload.companyEncryptionEnabled
     },
+    showSessionExpiredDialog: (state) => {
+      state.showSessionExpiredDialog = true
+    },
+    hideSessionExpiredDialog: (state) => {
+      state.showSessionExpiredDialog = false
+    },
+    setStayLoggedOutMode: (state, action: PayloadAction<boolean>) => {
+      state.stayLoggedOutMode = action.payload
+    },
   },
 })
 
-export const { loginSuccess, logout, updateCompany, setVaultCompany } = authSlice.actions
+export const { loginSuccess, logout, updateCompany, setVaultCompany, showSessionExpiredDialog, hideSessionExpiredDialog, setStayLoggedOutMode } = authSlice.actions
 export default authSlice.reducer

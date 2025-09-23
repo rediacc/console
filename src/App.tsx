@@ -3,10 +3,12 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Spin } from 'antd'
 import { selectIsAuthenticated } from '@/store/auth/authSelectors'
+import { RootState } from '@/store/store'
 import { loginSuccess } from '@/store/auth/authSlice'
 import { getAuthData, migrateFromLocalStorage } from '@/utils/auth'
 import { AppProviders } from '@/components/common/AppProviders'
 import { ThemedToaster } from '@/components/common/ThemedToaster'
+import { SessionExpiredDialog } from '@/components/auth/SessionExpiredDialog'
 import { TelemetryProvider } from '@/components/common/TelemetryProvider'
 import { InteractionTracker } from '@/components/common/InteractionTracker'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
@@ -46,6 +48,8 @@ const PageLoader: React.FC = () => {
 const AppContent: React.FC = () => {
   const dispatch = useDispatch()
   const isAuthenticated = useSelector(selectIsAuthenticated)
+  const showSessionExpiredDialog = useSelector((state: RootState) => state.auth.showSessionExpiredDialog)
+  const stayLoggedOutMode = useSelector((state: RootState) => state.auth.stayLoggedOutMode)
 
   useEffect(() => {
     const initialize = async () => {
@@ -84,7 +88,7 @@ const AppContent: React.FC = () => {
               {/* Protected routes */}
               <Route
                 element={
-                  isAuthenticated ? <MainLayout /> : <Navigate to="/login" replace />
+                  (isAuthenticated || showSessionExpiredDialog || stayLoggedOutMode) ? <MainLayout /> : <Navigate to="/login" replace />
                 }
               >
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -151,6 +155,7 @@ const AppContent: React.FC = () => {
             </TelemetryProvider>
           </BrowserRouter>
           <ThemedToaster />
+          <SessionExpiredDialog />
       </AppProviders>
   )
 }

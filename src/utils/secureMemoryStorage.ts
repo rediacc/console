@@ -187,12 +187,12 @@ class SecureMemoryStorage {
   secureWipe(): void {
     // Clear storage
     this.storage.clear();
-    
+
     // Overwrite master password
     const length = this.masterPassword.length;
     this.masterPassword = '0'.repeat(length);
     this.masterPassword = '';
-    
+
     // Clear crypto key
     this.cryptoKey = null;
   }
@@ -213,7 +213,24 @@ export interface ISecureStorage {
 
 // Auto-wipe on page unload for security
 if (typeof window !== 'undefined') {
-  window.addEventListener('beforeunload', () => {
+  let isProtocolLaunch = false;
+
+  // Track protocol launches to avoid wiping tokens
+  window.addEventListener('beforeunload', (event) => {
+    // Don't wipe if this is just a protocol launch
+    if (isProtocolLaunch) {
+      isProtocolLaunch = false;
+      return;
+    }
+
+    // Only wipe on actual page navigation/close
     secureStorage.secureWipe();
   });
+
+  // Export function for protocolUrlService to signal protocol launches
+  (window as any).signalProtocolLaunch = () => {
+    isProtocolLaunch = true;
+    // Reset flag after a brief delay to handle the event
+    setTimeout(() => { isProtocolLaunch = false; }, 100);
+  };
 }

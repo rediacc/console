@@ -9,7 +9,7 @@ declare module 'axios' {
   }
 }
 import { store } from '@/store/store'
-import { logout } from '@/store/auth/authSlice'
+import { logout, showSessionExpiredDialog } from '@/store/auth/authSlice'
 import { showMessage } from '@/utils/messages'
 import { encryptRequestData, decryptResponseData, hasVaultFields } from './encryptionMiddleware'
 import { tokenService } from '@/services/tokenService'
@@ -46,7 +46,6 @@ class ApiClient {
     this.client.defaults.baseURL = API_BASE_URL + API_PREFIX
   }
   private readonly TOKEN_UPDATE_POLL_INTERVAL_MS = 10
-  private readonly REDIRECT_DELAY_MS = 1500
 
   constructor() {
     // Initialize with empty baseURL, will be set after health check
@@ -76,7 +75,12 @@ class ApiClient {
         config.metadata = { startTime: performance.now() }
 
         const token = await tokenService.getToken()
-        if (token) config.headers['Rediacc-RequestToken'] = token
+        if (token) {
+          config.headers['Rediacc-RequestToken'] = token
+          console.log('Adding token to request:', config.url, token.substring(0, 8) + '...')
+        } else {
+          console.warn('No token available for request:', config.url)
+        }
 
         if (config.data && hasVaultFields(config.data)) {
           try {
@@ -107,7 +111,7 @@ class ApiClient {
 
         if (responseData.failure !== 0) return this.handleApiFailure(responseData)
 
-        await this.handleTokenRotation(responseData)
+        await this.handleTokenRotation(responseData, response.config.url)
         return response
       },
       (error) => {
@@ -214,9 +218,18 @@ class ApiClient {
   }
   
   private handleUnauthorizedError(): void {
-    showMessage('error', 'Session expired. Please login again.')
-    store.dispatch(logout())
-    this.redirectToLogin()
+    const currentPath = window.location.pathname
+    const isAlreadyOnLogin = currentPath.includes('/login')
+
+    // Only show dialog if not already on login page and dialog not already shown
+    if (!isAlreadyOnLogin) {
+      const state = store.getState()
+      if (!state.auth.showSessionExpiredDialog) {
+        showMessage('error', 'Session expired. Please login again.')
+        store.dispatch(logout())
+        store.dispatch(showSessionExpiredDialog())
+      }
+    }
   }
   
   private handleApiFailure(responseData: ApiResponse): Promise<never> {
@@ -227,10 +240,12 @@ class ApiClient {
     return Promise.reject(new Error(this.extractErrorMessage(responseData)))
   }
 
-  private async handleTokenRotation(responseData: ApiResponse): Promise<void> {
+  private async handleTokenRotation(responseData: ApiResponse, requestUrl?: string): Promise<void> {
+    // For ForkAuthenticationRequest, only rotate the main session token (resultSets[0])
+    // Don't use the fork token from the "Credentials" resultSet for main session rotation
     const newToken = responseData.resultSets?.[0]?.data?.[0]?.nextRequestToken
     if (!newToken) return
-    
+
     this.isUpdatingToken = true
     try {
       await tokenService.updateToken(newToken)
@@ -256,15 +271,6 @@ class ApiClient {
     return Promise.reject(customError)
   }
 
-  private redirectToLogin(): void {
-    const { pathname } = window.location
-    const basePath = import.meta.env.BASE_URL || '/'
-    const loginPath = `${basePath}login`.replace('//', '/')
-    
-    if (!pathname.includes('/login')) {
-      setTimeout(() => window.location.href = loginPath, this.REDIRECT_DELAY_MS)
-    }
-  }
 }
 
 export const apiClient = new ApiClient()

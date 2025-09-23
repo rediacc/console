@@ -10,16 +10,16 @@ import {
   BuildOutlined
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
-import { protocolUrlService, ProtocolAction } from '@/services/protocolUrlService'
+import { useSelector } from 'react-redux'
+import { protocolUrlService, ProtocolAction, ContainerParams } from '@/services/protocolUrlService'
 import { PipInstallationModal } from './PipInstallationModal'
 import { LocalCommandModal } from './LocalCommandModal'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
-import { tokenService } from '@/services/tokenService'
+import type { RootState } from '@/store/store'
 
 interface LocalActionsMenuProps {
   machine: string
   repository: string
-  token: string
   teamName?: string
   disabled?: boolean
   userEmail?: string
@@ -29,24 +29,31 @@ interface LocalActionsMenuProps {
     status: string
     [key: string]: any
   }>
+  // Container-specific props
+  containerId?: string
+  containerName?: string
+  isContainerMenu?: boolean
 }
 
 export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
   machine,
   repository,
-  token,
   teamName = 'Default',
   disabled = false,
   userEmail,
-  pluginContainers = []
+  pluginContainers = [],
+  containerId,
+  containerName,
+  isContainerMenu = false
 }) => {
   const { t } = useTranslation()
   const [showInstallModal, setShowInstallModal] = useState(false)
   const [installModalErrorType, setInstallModalErrorType] = useState<'not-installed' | 'protocol-not-registered' | 'permission-denied'>('not-installed')
   const [isCheckingProtocol, setIsCheckingProtocol] = useState(false)
   const [showCommandModal, setShowCommandModal] = useState(false)
-  
+
   const styles = useComponentStyles()
+  const currentUserEmail = useSelector((state: RootState) => state.auth.user?.email)
 
   // Filter running plugin containers
   const runningPlugins = pluginContainers.filter(container => 
@@ -54,39 +61,73 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
     container.status?.toLowerCase().includes('running')
   )
 
-  const handleOpenInDesktop = useCallback(async (action?: ProtocolAction) => {
+  const handleOpenInDesktop = useCallback(async (action?: ProtocolAction, containerAction?: 'terminal' | 'logs' | 'stats') => {
     const baseParams = {
-      token,
       team: teamName,
       machine,
       repository
     }
 
     let url: string
-    if (action) {
-      // Generate action-specific URL
-      switch (action) {
-        case 'sync':
-          url = protocolUrlService.generateSyncUrl(baseParams)
-          break
-        case 'terminal':
-          url = protocolUrlService.generateTerminalUrl(baseParams)
-          break
-        case 'plugin':
-          url = protocolUrlService.generatePluginUrl(baseParams, {
-            // Auto-select first running plugin if available
-            name: runningPlugins[0]?.name
-          })
-          break
-        case 'browser':
-          url = protocolUrlService.generateBrowserUrl(baseParams)
-          break
-        default:
-          url = protocolUrlService.generateUrl(baseParams)
+    try {
+      if (isContainerMenu && containerId) {
+        // Container-specific URL generation
+        const containerParams: ContainerParams = {
+          containerId,
+          containerName,
+          action: containerAction || 'terminal'
+        }
+
+        switch (containerAction) {
+          case 'logs':
+            url = await protocolUrlService.generateContainerLogsUrl(baseParams, containerParams)
+            break
+          case 'stats':
+            url = await protocolUrlService.generateContainerStatsUrl(baseParams, containerParams)
+            break
+          case 'terminal':
+          default:
+            url = await protocolUrlService.generateContainerTerminalUrl(baseParams, containerParams)
+            break
+        }
+      } else if (action) {
+        // Generate action-specific URL
+        switch (action) {
+          case 'sync':
+            url = await protocolUrlService.generateSyncUrl(baseParams)
+            break
+          case 'terminal':
+            url = await protocolUrlService.generateTerminalUrl(baseParams)
+            break
+          case 'plugin':
+            url = await protocolUrlService.generatePluginUrl(baseParams, {
+              // Auto-select first running plugin if available
+              name: runningPlugins[0]?.name
+            })
+            break
+          case 'browser':
+            url = await protocolUrlService.generateBrowserUrl(baseParams)
+            break
+          default:
+            url = await protocolUrlService.generateUrl(baseParams)
+        }
+      } else {
+        // Default action for "Open in Desktop" - use terminal as default (most commonly useful)
+        if (isContainerMenu && containerId) {
+          const containerParams: ContainerParams = {
+            containerId,
+            containerName,
+            action: 'terminal'
+          }
+          url = await protocolUrlService.generateContainerTerminalUrl(baseParams, containerParams)
+        } else {
+          url = await protocolUrlService.generateTerminalUrl(baseParams)
+        }
       }
-    } else {
-      // Default action for "Open in Desktop" - use terminal as default (most commonly useful)
-      url = protocolUrlService.generateTerminalUrl(baseParams)
+    } catch (error) {
+      console.error('Failed to generate protocol URL:', error)
+      message.error('Failed to create secure connection for desktop app')
+      return
     }
 
     // Try to open the URL
@@ -125,9 +166,47 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       // Show modal immediately
       setShowInstallModal(true)
     }
-  }, [token, teamName, machine, repository, runningPlugins])
+  }, [teamName, machine, repository, runningPlugins, isContainerMenu, containerId, containerName])
 
-  const menuItems: any[] = [
+  // Generate different menu items based on whether this is a container menu
+  const menuItems: any[] = isContainerMenu ? [
+    {
+      key: 'container-terminal',
+      icon: <CodeOutlined style={styles.icon.small} />,
+      label: (
+        <span style={styles.body}>
+          {t('resources:localActions.openContainerTerminal')}
+        </span>
+      ),
+      onClick: () => handleOpenInDesktop(undefined, 'terminal'),
+      'data-testid': `local-actions-container-terminal-${containerId}`
+    },
+    {
+      type: 'divider'
+    },
+    {
+      key: 'container-logs',
+      icon: <BuildOutlined style={styles.icon.small} />,
+      label: (
+        <span style={styles.body}>
+          {t('resources:localActions.viewContainerLogs')}
+        </span>
+      ),
+      onClick: () => handleOpenInDesktop(undefined, 'logs'),
+      'data-testid': `local-actions-container-logs-${containerId}`
+    },
+    {
+      key: 'container-stats',
+      icon: <BuildOutlined style={styles.icon.small} />,
+      label: (
+        <span style={styles.body}>
+          {t('resources:localActions.containerStats')}
+        </span>
+      ),
+      onClick: () => handleOpenInDesktop(undefined, 'stats'),
+      'data-testid': `local-actions-container-stats-${containerId}`
+    }
+  ] : [
     {
       key: 'open',
       icon: <DesktopOutlined style={styles.icon.small} />,
@@ -215,9 +294,9 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
         disabled={disabled || isCheckingProtocol}
         data-testid={`local-actions-dropdown-container-${repository}`}
       >
-        <Tooltip title={t('resources:localActions.local')}>
-          <Button 
-            size="small" 
+        <Tooltip title={isContainerMenu ? t('resources:localActions.containerLocal') : t('resources:localActions.local')}>
+          <Button
+            size="small"
             icon={<DesktopOutlined style={styles.icon.small} />}
             loading={isCheckingProtocol}
             style={{
@@ -227,8 +306,8 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
               alignItems: 'center',
               gap: '4px'
             }}
-            data-testid={`local-actions-dropdown-${repository}`}
-            aria-label={t('resources:localActions.local')}
+            data-testid={isContainerMenu ? `local-actions-dropdown-${containerId}` : `local-actions-dropdown-${repository}`}
+            aria-label={isContainerMenu ? t('resources:localActions.containerLocal') : t('resources:localActions.local')}
           />
         </Tooltip>
       </Dropdown>
@@ -239,15 +318,17 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
         errorType={installModalErrorType}
       />
 
-      <LocalCommandModal
-        visible={showCommandModal}
-        onClose={() => setShowCommandModal(false)}
-        machine={machine}
-        repository={repository}
-        token={token}
-        userEmail={userEmail || tokenService.getUserEmail() || ''}
-        pluginContainers={pluginContainers}
-      />
+      {/* Only show command modal for repository menus, not container menus */}
+      {!isContainerMenu && (
+        <LocalCommandModal
+          visible={showCommandModal}
+          onClose={() => setShowCommandModal(false)}
+          machine={machine}
+          repository={repository}
+          userEmail={userEmail || currentUserEmail || ''}
+          pluginContainers={pluginContainers}
+        />
+      )}
     </>
   )
 }

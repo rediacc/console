@@ -900,22 +900,35 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           })
           
           return (
-            <Dropdown
-              menu={{ items: menuItems }}
-              trigger={['click']}
-            >
-              <Tooltip title={t('machines:remote')}>
-                <Button
-                  type="primary"
-                  size="small"
-                  icon={<FunctionOutlined />}
-                  loading={managedQueueMutation.isPending}
-                  style={componentStyles.touchTarget}
-                  data-testid={`machine-repo-list-container-actions-${container.id}`}
-                  aria-label={t('machines:remote')}
-                />
-              </Tooltip>
-            </Dropdown>
+            <Space size="small">
+              <Dropdown
+                menu={{ items: menuItems }}
+                trigger={['click']}
+              >
+                <Tooltip title={t('machines:remote')}>
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<FunctionOutlined />}
+                    loading={managedQueueMutation.isPending}
+                    style={componentStyles.touchTarget}
+                    data-testid={`machine-repo-list-container-actions-${container.id}`}
+                    aria-label={t('machines:remote')}
+                  />
+                </Tooltip>
+              </Dropdown>
+              <LocalActionsMenu
+                machine={machine.machineName}
+                repository={record.name}
+                token={currentToken}
+                teamName={machine.teamName}
+                userEmail={userEmail}
+                containerId={container.id}
+                containerName={container.name}
+                isContainerMenu={true}
+                data-testid={`machine-repo-list-container-local-actions-${container.id}`}
+              />
+            </Space>
           )
         },
       },

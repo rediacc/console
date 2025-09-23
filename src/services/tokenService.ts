@@ -35,7 +35,7 @@ class TokenService {
     if (!token) {
       throw new Error('Token cannot be empty')
     }
-    await secureStorage.setItem(this.TOKEN_KEY, token)
+      await secureStorage.setItem(this.TOKEN_KEY, token)
   }
 
   /**
@@ -67,7 +67,25 @@ class TokenService {
   /**
    * Secure wipe of all auth data
    */
-  secureWipe = (): void => this.clearToken()
+  secureWipe(): void {
+    this.clearToken()
+    // Also clear fork tokens when logging out
+    this.clearForkTokens()
+  }
+
+  /**
+   * Clear fork tokens on logout
+   */
+  private clearForkTokens(): void {
+    try {
+      // Import dynamically to avoid circular dependencies
+      import('./forkTokenService').then(({ forkTokenService }) => {
+        forkTokenService.clearAllForkTokens()
+      })
+    } catch (error) {
+      // Silently fail - fork token cleanup is not critical for logout
+    }
+  }
 }
 
 // Export singleton instance

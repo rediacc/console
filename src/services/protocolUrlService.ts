@@ -11,7 +11,6 @@ export interface ProtocolError {
 }
 
 export interface ProtocolUrlParams {
-  token: string
   team: string
   machine: string
   repository: string
@@ -51,6 +50,16 @@ export interface BrowserParams {
   sortOrder?: 'asc' | 'desc'
 }
 
+export interface ContainerParams {
+  containerId?: string
+  containerName?: string
+  action?: 'terminal' | 'logs' | 'stats' | 'exec'
+  command?: string
+  lines?: number
+  follow?: boolean
+  shell?: 'bash' | 'sh' | 'zsh'
+}
+
 export interface WindowParams {
   popup?: boolean
   fullscreen?: boolean
@@ -69,13 +78,21 @@ class ProtocolUrlService {
 
   /**
    * Generate a protocol URL with the given parameters
+   * Fork token will be created automatically for the specified action
    */
-  generateUrl(params: ProtocolUrlParams): string {
-    const { token, team, machine, repository, action, queryParams } = params
+  async generateUrl(params: ProtocolUrlParams): Promise<string> {
+    const { team, machine, repository, action, queryParams } = params
+
+    // Import forkTokenService dynamically to avoid circular dependencies
+    const { getOrCreateForkToken } = await import('./forkTokenService')
+
+    // Create fork token for this action
+    const actionKey = action || 'default'
+    const forkToken = await getOrCreateForkToken(actionKey)
 
     // Build path components
     const pathParts = [
-      encodeURIComponent(token),
+      encodeURIComponent(forkToken),
       encodeURIComponent(team),
       encodeURIComponent(machine),
       encodeURIComponent(repository)
@@ -92,7 +109,7 @@ class ProtocolUrlService {
     // Add query parameters if any
     if (queryParams && Object.keys(queryParams).length > 0) {
       const searchParams = new URLSearchParams()
-      
+
       Object.entries(queryParams).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           // Convert boolean to yes/no for consistency with CLI
@@ -116,12 +133,12 @@ class ProtocolUrlService {
   /**
    * Generate a sync-specific URL
    */
-  generateSyncUrl(
+  async generateSyncUrl(
     baseParams: Omit<ProtocolUrlParams, 'action' | 'queryParams'>,
     syncParams?: SyncParams,
     windowParams?: WindowParams
-  ): string {
-    return this.generateUrl({
+  ): Promise<string> {
+    return await this.generateUrl({
       ...baseParams,
       action: 'sync',
       queryParams: {
@@ -134,12 +151,12 @@ class ProtocolUrlService {
   /**
    * Generate a terminal-specific URL
    */
-  generateTerminalUrl(
+  async generateTerminalUrl(
     baseParams: Omit<ProtocolUrlParams, 'action' | 'queryParams'>,
     terminalParams?: TerminalParams,
     windowParams?: WindowParams
-  ): string {
-    return this.generateUrl({
+  ): Promise<string> {
+    return await this.generateUrl({
       ...baseParams,
       action: 'terminal',
       queryParams: {
@@ -152,12 +169,12 @@ class ProtocolUrlService {
   /**
    * Generate a plugin-specific URL
    */
-  generatePluginUrl(
+  async generatePluginUrl(
     baseParams: Omit<ProtocolUrlParams, 'action' | 'queryParams'>,
     pluginParams?: PluginParams,
     windowParams?: WindowParams
-  ): string {
-    return this.generateUrl({
+  ): Promise<string> {
+    return await this.generateUrl({
       ...baseParams,
       action: 'plugin',
       queryParams: {
@@ -170,16 +187,77 @@ class ProtocolUrlService {
   /**
    * Generate a browser-specific URL
    */
-  generateBrowserUrl(
+  async generateBrowserUrl(
     baseParams: Omit<ProtocolUrlParams, 'action' | 'queryParams'>,
     browserParams?: BrowserParams,
     windowParams?: WindowParams
-  ): string {
-    return this.generateUrl({
+  ): Promise<string> {
+    return await this.generateUrl({
       ...baseParams,
       action: 'browser',
       queryParams: {
         ...browserParams,
+        ...windowParams
+      }
+    })
+  }
+
+  /**
+   * Generate a container terminal URL
+   */
+  async generateContainerTerminalUrl(
+    baseParams: Omit<ProtocolUrlParams, 'action' | 'queryParams'>,
+    containerParams: ContainerParams,
+    windowParams?: WindowParams
+  ): Promise<string> {
+    return await this.generateUrl({
+      ...baseParams,
+      action: 'terminal',
+      queryParams: {
+        terminalType: 'container',
+        ...containerParams,
+        ...windowParams
+      }
+    })
+  }
+
+  /**
+   * Generate a container logs URL
+   */
+  async generateContainerLogsUrl(
+    baseParams: Omit<ProtocolUrlParams, 'action' | 'queryParams'>,
+    containerParams: ContainerParams,
+    windowParams?: WindowParams
+  ): Promise<string> {
+    return await this.generateUrl({
+      ...baseParams,
+      action: 'terminal',
+      queryParams: {
+        terminalType: 'container',
+        action: 'logs',
+        lines: containerParams.lines || 100,
+        follow: containerParams.follow || false,
+        ...containerParams,
+        ...windowParams
+      }
+    })
+  }
+
+  /**
+   * Generate a container stats URL
+   */
+  async generateContainerStatsUrl(
+    baseParams: Omit<ProtocolUrlParams, 'action' | 'queryParams'>,
+    containerParams: ContainerParams,
+    windowParams?: WindowParams
+  ): Promise<string> {
+    return await this.generateUrl({
+      ...baseParams,
+      action: 'terminal',
+      queryParams: {
+        terminalType: 'container',
+        action: 'stats',
+        ...containerParams,
         ...windowParams
       }
     })
@@ -221,6 +299,11 @@ class ProtocolUrlService {
       window.addEventListener('blur', handleBlur)
       
       try {
+        // Signal that we're about to launch a protocol URL to prevent token wipe
+        if (typeof (window as any).signalProtocolLaunch === 'function') {
+          (window as any).signalProtocolLaunch();
+        }
+
         // Use window.open with _self to replace current tab behavior
         // This triggers the protocol handler without opening a new tab
         window.open(url, '_self')
@@ -465,15 +548,15 @@ class ProtocolUrlService {
   /**
    * Utility function to create a complete set of URLs for all actions
    */
-  generateAllActionUrls(
+  async generateAllActionUrls(
     baseParams: Omit<ProtocolUrlParams, 'action' | 'queryParams'>
-  ): Record<ProtocolAction | 'navigate', string> {
+  ): Promise<Record<ProtocolAction | 'navigate', string>> {
     return {
-      navigate: this.generateUrl(baseParams),
-      sync: this.generateSyncUrl(baseParams),
-      terminal: this.generateTerminalUrl(baseParams),
-      plugin: this.generatePluginUrl(baseParams),
-      browser: this.generateBrowserUrl(baseParams)
+      navigate: await this.generateUrl(baseParams),
+      sync: await this.generateSyncUrl(baseParams),
+      terminal: await this.generateTerminalUrl(baseParams),
+      plugin: await this.generatePluginUrl(baseParams),
+      browser: await this.generateBrowserUrl(baseParams)
     }
   }
 }

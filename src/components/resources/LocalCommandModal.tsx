@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Modal, Tabs, Form, Input, Select, Checkbox, Button, Space, Typography, message, Radio } from 'antd'
+import { Modal, Tabs, Form, Input, Select, Checkbox, Button, Space, Typography, message, Radio, theme } from 'antd'
 import { CopyOutlined, CodeOutlined, WindowsOutlined, AppleOutlined, ApiOutlined, SyncOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 
@@ -32,6 +32,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
   pluginContainers = []
 }) => {
   const { t } = useTranslation()
+  const { token: themeToken } = theme.useToken()
   const [activeTab, setActiveTab] = useState('plugin')
   const [useDocker, setUseDocker] = useState(false)
   const [os, setOs] = useState<'unix' | 'windows'>('unix')
@@ -415,9 +416,10 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
 
         <div style={{
           padding: 16,
-          backgroundColor: '#f5f5f5',
+          backgroundColor: themeToken.colorFillAlter,
           borderRadius: 8,
-          marginBottom: 16
+          marginBottom: 16,
+          border: `1px solid ${themeToken.colorBorder}`
         }}>
           <Text strong>{t('resources:localCommandBuilder.generatedCommand')}:</Text>
           <Paragraph
