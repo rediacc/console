@@ -15,7 +15,7 @@ import type { RootState } from '@/store/store'
 
 interface LocalActionsMenuProps {
   machine: string
-  repository: string
+  repository?: string  // Made optional for machine-only mode
   teamName?: string
   disabled?: boolean
   userEmail?: string
@@ -29,6 +29,8 @@ interface LocalActionsMenuProps {
   containerId?: string
   containerName?: string
   isContainerMenu?: boolean
+  // Machine-only mode
+  isMachineOnlyMenu?: boolean
 }
 
 export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
@@ -40,7 +42,8 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
   pluginContainers = [],
   containerId,
   containerName,
-  isContainerMenu = false
+  isContainerMenu = false,
+  isMachineOnlyMenu = false
 }) => {
   const { t } = useTranslation()
   const [showInstallModal, setShowInstallModal] = useState(false)
@@ -55,7 +58,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
     const baseParams = {
       team: teamName,
       machine,
-      repository
+      repository: isMachineOnlyMenu ? '' : (repository || '')
     }
 
     let url: string
@@ -104,9 +107,9 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
           const containerParams: ContainerParams = {
             containerId,
             containerName,
-            action: 'terminal'
+            action: 'desktop'  // Use desktop action for container-level desktop access
           }
-          url = await protocolUrlService.generateContainerTerminalUrl(baseParams, containerParams)
+          url = await protocolUrlService.generateDesktopUrl(baseParams, containerParams)
         } else {
           url = await protocolUrlService.generateDesktopUrl(baseParams)
         }
@@ -153,7 +156,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       // Show modal immediately
       setShowInstallModal(true)
     }
-  }, [teamName, machine, repository, isContainerMenu, containerId, containerName])
+  }, [teamName, machine, repository, isContainerMenu, containerId, containerName, isMachineOnlyMenu])
 
   // Generate different menu items based on whether this is a container menu
   const menuItems: any[] = isContainerMenu ? [

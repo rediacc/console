@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Table,
@@ -48,7 +48,9 @@ import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { usePingFunction } from '@/services/pingService';
 import { showMessage } from '@/utils/messages';
+import { LocalActionsMenu } from './LocalActionsMenu';
 import { MachineRepositoryList } from './MachineRepositoryList';
+import { tokenService } from '@/services/tokenService';
 import { useLocalizedFunctions } from '@/services/functionsService';
 import { getLocalizedRelativeTime, formatTimestamp } from '@/utils/timeUtils';
 import { useRepositories } from '@/api/queries/repositories';
@@ -129,6 +131,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const [showLoadingIndicator, setShowLoadingIndicator] = useState(false);
   const [loadingTimer, setLoadingTimer] = useState<NodeJS.Timeout | null>(null);
   const [expandingRowKey, setExpandingRowKey] = useState<string | null>(null);
+  const [currentToken, setCurrentToken] = useState<string>('');
   
   // Bulk selection state
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
@@ -172,6 +175,17 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       }
     };
   }, [loadingTimer]);
+
+  // Fetch token for LocalActionsMenu
+  useEffect(() => {
+    const fetchToken = async () => {
+      const token = await tokenService.getToken()
+      if (token) {
+        setCurrentToken(token)
+      }
+    }
+    fetchToken()
+  }, [])
 
   // Queries only - mutations are handled by parent
   const { data: machines = [], isLoading, refetch } = useMachines(teamFilter, enabled);
@@ -560,6 +574,12 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                 aria-label={t('common:actions.delete')}
               />
             </Tooltip>
+            <LocalActionsMenu
+              machine={record.machineName}
+              teamName={record.teamName}
+              token={currentToken}
+              isMachineOnlyMenu={true}
+            />
           </Space>
         ),
       });

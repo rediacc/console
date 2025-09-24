@@ -69,9 +69,13 @@ class ProtocolUrlService {
     const pathParts = [
       encodeURIComponent(forkToken),
       encodeURIComponent(team),
-      encodeURIComponent(machine),
-      encodeURIComponent(repository)
+      encodeURIComponent(machine)
     ]
+
+    // Only add repository if it's provided and not empty
+    if (repository && repository.trim() !== '') {
+      pathParts.push(encodeURIComponent(repository))
+    }
 
     // Add action if specified
     if (action) {
@@ -130,12 +134,14 @@ class ProtocolUrlService {
    */
   async generateDesktopUrl(
     baseParams: Omit<ProtocolUrlParams, 'action' | 'queryParams'>,
+    containerParams?: ContainerParams,
     windowParams?: WindowParams
   ): Promise<string> {
     return await this.generateUrl({
       ...baseParams,
       action: 'desktop',
       queryParams: {
+        ...containerParams,
         ...windowParams
       }
     })
