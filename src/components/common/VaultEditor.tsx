@@ -54,6 +54,7 @@ interface VaultEditorProps {
   teamName?: string // For SSH test connection
   bridgeName?: string // For SSH test connection
   onTestConnectionStateChange?: (success: boolean) => void // Callback for test connection state
+  onOsSetupStatusChange?: (completed: boolean | null) => void // Callback for OS setup status
   isModalOpen?: boolean // Modal open state to handle resets
   isEditMode?: boolean // Whether we're in edit mode
 }
@@ -117,6 +118,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   teamName = 'Default Team',
   bridgeName = 'Default Bridge',
   onTestConnectionStateChange,
+  onOsSetupStatusChange,
   isModalOpen,
   isEditMode = false,
 }) => {
@@ -134,6 +136,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   const [testTaskId, setTestTaskId] = useState<string | null>(null)
   const [isTestingConnection, setIsTestingConnection] = useState(false)
   const [testConnectionSuccess, setTestConnectionSuccess] = useState(false)
+  const [osSetupCompleted, setOsSetupCompleted] = useState<boolean | null>(null)
   
   const uiMode = useAppSelector((state) => state.ui.uiMode)
   const { theme } = useTheme()
@@ -356,10 +359,18 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               if (result.kernel_compatibility) {
                 form.setFieldValue('kernel_compatibility', result.kernel_compatibility)
               }
-              
+
+              // Store OS setup status if available (now part of kernel compatibility data)
+              if (result.kernel_compatibility && result.kernel_compatibility.os_setup_completed !== undefined) {
+                setOsSetupCompleted(result.kernel_compatibility.os_setup_completed)
+                if (onOsSetupStatusChange) {
+                  onOsSetupStatusChange(result.kernel_compatibility.os_setup_completed)
+                }
+              }
+
               // Clear SSH password after successful test
               form.setFieldValue('ssh_password', '')
-              
+
               // Mark test connection as successful
               setTestConnectionSuccess(true)
               
@@ -1416,6 +1427,14 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                                 return <Tag color={config.color}>{config.text}</Tag>
                               })()}
                             </Space>
+                            {osSetupCompleted !== null && (
+                              <Space>
+                                <Text>{t('vaultEditor.systemCompatibility.osSetup')}:</Text>
+                                <Tag color={osSetupCompleted ? 'success' : 'warning'}>
+                                  {osSetupCompleted ? t('vaultEditor.systemCompatibility.setupCompleted') : t('vaultEditor.systemCompatibility.setupRequired')}
+                                </Tag>
+                              </Space>
+                            )}
                           </Space>
                         </Card>
                         

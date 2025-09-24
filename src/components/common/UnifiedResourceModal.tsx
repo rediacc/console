@@ -1098,6 +1098,14 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           teamName={form.getValues('teamName') || (existingData?.teamName) || (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) || 'Private Team'}
           bridgeName={form.getValues('bridgeName') || 'Global Bridges'}
           onTestConnectionStateChange={setTestConnectionSuccess}
+          onOsSetupStatusChange={(completed) => {
+            // Auto-toggle setup checkbox based on OS setup status
+            // If setup is completed, uncheck the checkbox (no need to run setup again)
+            // If setup is not completed, check the checkbox (need to run setup)
+            if (completed !== null) {
+              setAutoSetupEnabled(!completed)
+            }
+          }}
           isModalOpen={open}
           beforeVaultContent={
             resourceType === 'repository' && mode === 'create' && !((existingData?.repositoryGuid && existingData?.repositoryGuid.trim() !== '') || creationContext === 'credentials-only') ? (
