@@ -181,7 +181,7 @@ class ProtocolUrlService {
         terminalType: 'container',
         action: 'logs',
         lines: containerParams.lines || 100,
-        follow: containerParams.follow || false,
+        follow: true,
         ...containerParams,
         ...windowParams
       }

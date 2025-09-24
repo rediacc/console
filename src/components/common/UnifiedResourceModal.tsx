@@ -12,7 +12,7 @@ import ResourceFormWithVault from '@/components/forms/ResourceFormWithVault'
 import VaultEditorModal from '@/components/common/VaultEditorModal'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 import TemplateSelector from '@/components/common/TemplateSelector'
-import TemplateDetailsModal from '@/components/common/TemplateDetailsModal'
+import TemplatePreviewModal from '@/components/common/TemplatePreviewModal'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, borderRadius, fontSize } from '@/utils/styleConstants'
@@ -460,7 +460,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             name: 'repositoryGuid',
             label: t('repositories.guid', { defaultValue: 'Repository GUID' }),
             type: 'text' as const,
-            disabled: true, // Make it read-only
+            readOnly: true, // Read-only instead of disabled - allows form submission
             helperText: t('repositories.guidHelperText', { defaultValue: 'This repository already exists on the machine.' })
           })
         }
@@ -524,7 +524,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           name: 'repositoryGuid',
           label: t('repositories.guid', { defaultValue: 'Repository GUID' }),
           type: 'text' as const,
-          disabled: true, // Make it read-only
+          readOnly: true, // Read-only instead of disabled - allows form submission
           helperText: t('repositories.guidHelperText', { defaultValue: 'This repository already exists on the machine.' })
         })
       } else if (isExpertMode) {
@@ -1192,8 +1192,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         />
       )}
 
-      {/* Template Details Modal */}
-      <TemplateDetailsModal
+      {/* Template Preview Modal */}
+      <TemplatePreviewModal
         visible={showTemplateDetails}
         templateName={templateToView}
         onClose={() => {
@@ -1201,10 +1201,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           setTemplateToView(null)
         }}
         onUseTemplate={(templateName) => {
-          setSelectedTemplate(templateName)
+          setSelectedTemplate(typeof templateName === 'string' ? templateName : templateName.name)
           setShowTemplateDetails(false)
           setTemplateToView(null)
         }}
+        context="repository-creation"
       />
     </>
   )

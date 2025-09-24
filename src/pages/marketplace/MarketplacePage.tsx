@@ -20,9 +20,8 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import MarketplaceCard from '@/components/marketplace/MarketplaceCard'
-import MarketplacePreview from '@/components/marketplace/MarketplacePreview'
+import TemplatePreviewModal from '@/components/common/TemplatePreviewModal'
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
-import { useDropdownData } from '@/api/queries/useDropdownData'
 import { useCreateRepository } from '@/api/queries/repositories'
 
 const { Title, Text } = Typography
@@ -49,7 +48,7 @@ const MarketplacePage: React.FC = () => {
   const { t } = useTranslation(['marketplace', 'resources', 'common'])
   const navigate = useNavigate()
   const styles = useComponentStyles()
-  const { data: dropdownData } = useDropdownData()
+  // const { data: dropdownData } = useDropdownData() // Not used in marketplace
   const createRepositoryMutation = useCreateRepository()
   
   const [loading, setLoading] = useState(true)
@@ -448,17 +447,18 @@ const MarketplacePage: React.FC = () => {
 
       {/* Preview Modal */}
       {previewTemplate && (
-        <MarketplacePreview
+        <TemplatePreviewModal
           template={previewTemplate}
           visible={showPreview}
           onClose={() => {
             setShowPreview(false)
             setPreviewTemplate(null)
           }}
-          onDeploy={() => {
-            handleDeployTemplate(previewTemplate)
+          onUseTemplate={(template) => {
+            handleDeployTemplate(template as Template)
             setShowPreview(false)
           }}
+          context="marketplace"
         />
       )}
 

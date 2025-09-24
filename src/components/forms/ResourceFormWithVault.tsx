@@ -21,6 +21,7 @@ interface FormFieldConfig {
   rules?: any[]
   hidden?: boolean
   disabled?: boolean
+  readOnly?: boolean
   helperText?: string
   sizeUnits?: string[] // For size type: ['G', 'T'] or ['percentage', 'G', 'T']
 }
@@ -178,6 +179,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
                   data-testid={`resource-modal-field-${field.name}-password`}
                   placeholder={field.placeholder}
                   disabled={field.disabled}
+                  readOnly={field.readOnly}
                   autoComplete="off"
                 />
               )}
@@ -285,6 +287,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
                   type={field.type || 'text'}
                   placeholder={field.placeholder}
                   disabled={field.disabled}
+                  readOnly={field.readOnly}
                   autoComplete="off"
                 />
               )}
