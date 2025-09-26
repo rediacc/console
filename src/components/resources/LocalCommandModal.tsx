@@ -34,6 +34,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
   const [activeTab, setActiveTab] = useState('terminal')
   const [os, setOs] = useState<'unix' | 'windows'>('unix')
   const [useDocker, setUseDocker] = useState(false)
+  const [useNetworkHost, setUseNetworkHost] = useState(true)  // Default to true for localhost access
   const [apiUrl, setApiUrl] = useState('')
 
   // Terminal command state
@@ -91,14 +92,16 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
       ? `set REDIACC_TOKEN=${token}`
       : `export REDIACC_TOKEN="${token}"`
 
+    const networkFlag = useDocker && useNetworkHost ? ' --network=host' : ''
     const baseCommand = useDocker
-      ? `docker run -it --rm -e REDIACC_TOKEN="${token}" -e REDIACC_API_URL="${apiUrl}" rediacc/cli term`
+      ? `docker run -it --rm${networkFlag} -e REDIACC_TOKEN="${token}" -e SYSTEM_API_URL="${apiUrl}" rediacc/cli term`
       : (os === 'windows' ? 'rediacc.bat term' : 'rediacc term')
-    const machineParam = `--machine ${machine}`
+    const teamParam = ' --team Default'  // Default team as placeholder
+    const machineParam = ` --machine ${machine}`
     const repoParam = repository ? ` --repo ${repository}` : ''
     const commandParam = termCommand ? ` --command "${termCommand}"` : ''
 
-    const termCmd = `${baseCommand} ${machineParam}${repoParam}${commandParam}`
+    const termCmd = `${baseCommand}${teamParam}${machineParam}${repoParam}${commandParam}`
 
     return useDocker ? termCmd : `${tokenEnvCmd} && ${apiEnvCmd} && ${termCmd}`
   }
@@ -112,8 +115,9 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
       ? `set REDIACC_TOKEN=${token}`
       : `export REDIACC_TOKEN="${token}"`
 
+    const networkFlag = useDocker && useNetworkHost ? ' --network=host' : ''
     const baseCommand = useDocker
-      ? `docker run -it --rm -e REDIACC_TOKEN="${token}" -e REDIACC_API_URL="${apiUrl}" rediacc/cli desktop`
+      ? `docker run -it --rm${networkFlag} -e REDIACC_TOKEN="${token}" -e SYSTEM_API_URL="${apiUrl}" rediacc/cli desktop`
       : (os === 'windows' ? 'rediacc.bat desktop' : 'rediacc desktop')
     const teamParam = ' --team Default'  // Default team as placeholder
     const machineParam = ` --machine ${machine}`
@@ -130,14 +134,16 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
       ? `set REDIACC_API_URL=${apiUrl}`
       : `export REDIACC_API_URL="${apiUrl}"`
 
+    const networkFlag = useDocker && useNetworkHost ? ' --network=host' : ''
     const baseCommand = useDocker
-      ? `docker run -it --rm -e REDIACC_API_URL="${apiUrl}" rediacc/cli term`
+      ? `docker run -it --rm${networkFlag} -e SYSTEM_API_URL="${apiUrl}" rediacc/cli term`
       : (os === 'windows' ? 'rediacc.bat term' : 'rediacc term')
-    const machineParam = `--machine ${machine}`
+    const teamParam = ' --team Default'  // Default team as placeholder
+    const machineParam = ` --machine ${machine}`
     const repoParam = repository ? ` --repo ${repository}` : ''
     const commandParam = termCommand ? ` --command "${termCommand}"` : ''
 
-    const termCmd = `${baseCommand} ${machineParam}${repoParam}${commandParam}`
+    const termCmd = `${baseCommand}${teamParam}${machineParam}${repoParam}${commandParam}`
 
     return useDocker ? termCmd : `${apiEnvCmd} && ${termCmd}`
   }
@@ -147,8 +153,9 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
       ? `set REDIACC_API_URL=${apiUrl}`
       : `export REDIACC_API_URL="${apiUrl}"`
 
+    const networkFlag = useDocker && useNetworkHost ? ' --network=host' : ''
     const baseCommand = useDocker
-      ? `docker run -it --rm -e REDIACC_API_URL="${apiUrl}" rediacc/cli desktop`
+      ? `docker run -it --rm${networkFlag} -e SYSTEM_API_URL="${apiUrl}" rediacc/cli desktop`
       : (os === 'windows' ? 'rediacc.bat desktop' : 'rediacc desktop')
     const teamParam = ' --team Default'  // Default team as placeholder
     const machineParam = ` --machine ${machine}`
@@ -277,6 +284,20 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
             </Text>
           </Checkbox>
         </Form.Item>
+
+        {useDocker && (
+          <Form.Item>
+            <Checkbox
+              checked={useNetworkHost}
+              onChange={(e) => setUseNetworkHost(e.target.checked)}
+            >
+              Use host networking (--network=host)
+              <Text type="secondary" style={{ marginLeft: 8 }}>
+                Required for localhost API access (e.g., http://localhost:7322)
+              </Text>
+            </Checkbox>
+          </Form.Item>
+        )}
 
         <div style={{
           padding: 16,
