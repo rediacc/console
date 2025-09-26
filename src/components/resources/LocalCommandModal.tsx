@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Modal, Tabs, Form, Input, Checkbox, Button, Space, Typography, message, Radio, theme } from 'antd'
+import { Modal, Tabs, Form, Input, Checkbox, Button, Space, Typography, message, Radio, theme, Spin } from 'antd'
 import { CopyOutlined, CodeOutlined, WindowsOutlined, AppleOutlined, DesktopOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
+import { createFreshForkToken } from '@/services/forkTokenService'
 
 const { Text, Paragraph } = Typography
 const { TabPane } = Tabs
@@ -38,6 +39,10 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
   // Terminal command state
   const [termCommand, setTermCommand] = useState('')
 
+  // Token state - no longer pre-generate tokens
+  const [isGeneratingToken, setIsGeneratingToken] = useState(false)
+  const [tokenError, setTokenError] = useState<string>('')
+
   // Auto-detect API URL from current browser location
   useEffect(() => {
     if (visible) {
@@ -47,12 +52,81 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
     }
   }, [visible])
 
+  // Generate fork token only when needed (on copy)
+  const generateForkTokenForCopy = async (action: string): Promise<string> => {
+    setIsGeneratingToken(true)
+    setTokenError('')
+
+    try {
+      const token = await createFreshForkToken(action)
+      return token
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate token'
+      setTokenError(errorMessage)
+      console.error('Failed to generate fork token:', error)
+      message.error(`Token generation failed: ${errorMessage}`)
+      throw error
+    } finally {
+      setIsGeneratingToken(false)
+    }
+  }
+
+  // Clear error state when modal closes
+  useEffect(() => {
+    if (!visible) {
+      setTokenError('')
+    }
+  }, [visible])
 
 
 
 
-  const buildTermCommand = () => {
-    const setEnvCmd = os === 'windows'
+
+  const buildTermCommand = (token: string = '<SECURE_TOKEN>') => {
+    const apiEnvCmd = os === 'windows'
+      ? `set REDIACC_API_URL=${apiUrl}`
+      : `export REDIACC_API_URL="${apiUrl}"`
+
+    const tokenEnvCmd = os === 'windows'
+      ? `set REDIACC_TOKEN=${token}`
+      : `export REDIACC_TOKEN="${token}"`
+
+    const baseCommand = useDocker
+      ? `docker run -it --rm -e REDIACC_TOKEN="${token}" -e REDIACC_API_URL="${apiUrl}" rediacc/cli term`
+      : (os === 'windows' ? 'rediacc.bat term' : 'rediacc term')
+    const machineParam = `--machine ${machine}`
+    const repoParam = repository ? ` --repo ${repository}` : ''
+    const commandParam = termCommand ? ` --command "${termCommand}"` : ''
+
+    const termCmd = `${baseCommand} ${machineParam}${repoParam}${commandParam}`
+
+    return useDocker ? termCmd : `${tokenEnvCmd} && ${apiEnvCmd} && ${termCmd}`
+  }
+
+  const buildDesktopCommand = (token: string = '<SECURE_TOKEN>') => {
+    const apiEnvCmd = os === 'windows'
+      ? `set REDIACC_API_URL=${apiUrl}`
+      : `export REDIACC_API_URL="${apiUrl}"`
+
+    const tokenEnvCmd = os === 'windows'
+      ? `set REDIACC_TOKEN=${token}`
+      : `export REDIACC_TOKEN="${token}"`
+
+    const baseCommand = useDocker
+      ? `docker run -it --rm -e REDIACC_TOKEN="${token}" -e REDIACC_API_URL="${apiUrl}" rediacc/cli desktop`
+      : (os === 'windows' ? 'rediacc.bat desktop' : 'rediacc desktop')
+    const teamParam = ' --team Default'  // Default team as placeholder
+    const machineParam = ` --machine ${machine}`
+    const repoParam = repository ? ` --repo ${repository}` : ''
+
+    const desktopCmd = `${baseCommand}${teamParam}${machineParam}${repoParam}`
+
+    return useDocker ? desktopCmd : `${tokenEnvCmd} && ${apiEnvCmd} && ${desktopCmd}`
+  }
+
+  // Fallback versions without token (for error cases)
+  const buildTermCommandWithoutToken = () => {
+    const apiEnvCmd = os === 'windows'
       ? `set REDIACC_API_URL=${apiUrl}`
       : `export REDIACC_API_URL="${apiUrl}"`
 
@@ -65,11 +139,11 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
 
     const termCmd = `${baseCommand} ${machineParam}${repoParam}${commandParam}`
 
-    return useDocker ? termCmd : `${setEnvCmd} && ${termCmd}`
+    return useDocker ? termCmd : `${apiEnvCmd} && ${termCmd}`
   }
 
-  const buildDesktopCommand = () => {
-    const setEnvCmd = os === 'windows'
+  const buildDesktopCommandWithoutToken = () => {
+    const apiEnvCmd = os === 'windows'
       ? `set REDIACC_API_URL=${apiUrl}`
       : `export REDIACC_API_URL="${apiUrl}"`
 
@@ -82,18 +156,50 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
 
     const desktopCmd = `${baseCommand}${teamParam}${machineParam}${repoParam}`
 
-    return useDocker ? desktopCmd : `${setEnvCmd} && ${desktopCmd}`
+    return useDocker ? desktopCmd : `${apiEnvCmd} && ${desktopCmd}`
   }
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
+  const copyToClipboard = async () => {
+    try {
+      setIsGeneratingToken(true)
+
+      // Generate fresh token for the current action
+      const token = await generateForkTokenForCopy(activeTab)
+
+      // Build command with real token
+      const commandWithToken = activeTab === 'desktop'
+        ? buildDesktopCommand(token)
+        : buildTermCommand(token)
+
+      // Copy to clipboard
+      await navigator.clipboard.writeText(commandWithToken)
       message.success(t('common:copiedToClipboard'))
-    }).catch(() => {
-      message.error(t('common:copyFailed'))
-    })
+
+      // Close modal after successful copy to prevent multiple token generations
+      onClose()
+    } catch (error) {
+      // If token generation fails, copy command without token (fallback)
+      try {
+        // Build command without token environment variables
+        const fallbackCommand = activeTab === 'desktop'
+          ? buildDesktopCommandWithoutToken()
+          : buildTermCommandWithoutToken()
+
+        await navigator.clipboard.writeText(fallbackCommand)
+        message.warning('Copied without secure token - please login manually')
+
+        // Close modal after fallback copy as well
+        onClose()
+      } catch (clipboardError) {
+        message.error(t('common:copyFailed'))
+      }
+    } finally {
+      setIsGeneratingToken(false)
+    }
   }
 
   const getCommand = () => {
+    // Always show placeholder token in preview
     switch (activeTab) {
       case 'terminal':
         return buildTermCommand()
@@ -120,7 +226,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
 
       <Form layout="vertical" style={{ marginBottom: 16 }}>
         <Form.Item label={t('resources:localCommandBuilder.operatingSystem')}>
-          <Radio.Group value={os} onChange={(e) => setOs(e.target.value)}>
+          <Radio.Group value={os} onChange={(e: any) => setOs(e.target.value)}>
             <Radio.Button value="unix">
               <AppleOutlined /> {t('resources:localCommandBuilder.unixLinuxMac')}
             </Radio.Button>
@@ -179,20 +285,43 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
           marginBottom: 16,
           border: `1px solid ${themeToken.colorBorder}`
         }}>
-          <Text strong>{t('resources:localCommandBuilder.generatedCommand')}:</Text>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <Text strong>{t('resources:localCommandBuilder.generatedCommand')}:</Text>
+            {isGeneratingToken && (
+              <Spin size="small" />
+            )}
+          </div>
+
+          {tokenError ? (
+            <div style={{ padding: '12px 0' }}>
+              <Text type="danger">Token generation failed: {tokenError}</Text>
+              <br />
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Copy will attempt without secure token. You may need to login manually.
+              </Text>
+            </div>
+          ) : null}
+
           <Paragraph
             code
             copyable={{
               text: getCommand(),
-              icon: <CopyOutlined />
+              icon: <CopyOutlined />,
+              onCopy: copyToClipboard
             }}
             style={{ marginTop: 8, marginBottom: 8 }}
           >
             {getCommand()}
           </Paragraph>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {t('resources:localCommandBuilder.apiUrl')}: {apiUrl}
-          </Text>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {t('resources:localCommandBuilder.apiUrl')}: {apiUrl}
+            </Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Token: Secure token will be generated on copy
+            </Text>
+          </div>
         </div>
 
         <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
@@ -202,7 +331,9 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
           <Button
             type="primary"
             icon={<CopyOutlined />}
-            onClick={() => copyToClipboard(getCommand())}
+            onClick={copyToClipboard}
+            disabled={isGeneratingToken}
+            loading={isGeneratingToken}
           >
             {t('resources:localCommandBuilder.copyCommand')}
           </Button>
