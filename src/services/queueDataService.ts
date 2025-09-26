@@ -414,12 +414,15 @@ class QueueDataService {
    */
   private buildGeneralSettings(context: QueueRequestContext): any {
     const generalSettings: any = {}
-    
+
     // Add COMPANY_ID from the company credential
     if (context.companyCredential) {
       generalSettings.COMPANY_ID = context.companyCredential
     }
-    
+
+    // Add SYSTEM_API_URL from current environment for CLI configuration
+    generalSettings.SYSTEM_API_URL = this.getSystemApiUrl()
+
     if (context.companyVault && typeof context.companyVault === 'object') {
       this.addCompanyVaultToGeneralSettings(generalSettings, context.companyVault)
     }
@@ -501,6 +504,28 @@ class QueueDataService {
         .map(byte => String.fromCharCode(byte))
         .join('')
       return btoa(binaryString)
+    }
+  }
+
+  /**
+   * Get the system API URL from current environment
+   * This determines the API URL that CLI tools should use to connect back
+   */
+  private getSystemApiUrl(): string {
+    try {
+      // Get the current window location
+      const currentOrigin = window.location.origin
+
+      // Use the current origin + /api for all environments
+      // This works for:
+      // - localhost:3000 → http://localhost:3000/api
+      // - localhost (port 80) → http://localhost/api
+      // - https://production.com → https://production.com/api
+      return `${currentOrigin}/api`
+    } catch (error) {
+      // No fallback - if we can't detect the URL, don't provide one
+      console.warn('Unable to detect system API URL:', error)
+      return ''
     }
   }
 }
