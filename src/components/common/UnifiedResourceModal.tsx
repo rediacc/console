@@ -797,7 +797,12 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     if (mode === 'create' && resourceType === 'machine') {
       data.autoSetup = autoSetupEnabled
     }
-    
+
+    // For credential-only repository creation, ensure repositoryGuid is included
+    if (mode === 'create' && resourceType === 'repository' && existingData?.repositoryGuid) {
+      data.repositoryGuid = existingData.repositoryGuid
+    }
+
     await onSubmit(data)
   }
 

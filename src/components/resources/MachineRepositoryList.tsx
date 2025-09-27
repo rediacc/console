@@ -1236,16 +1236,17 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               />
             )}
             {record.isUnmapped && onCreateRepository && (
-              <Button
-                type="default"
-                size="small"
-                icon={<KeyOutlined />}
-                onClick={() => onCreateRepository(machine, record.originalGuid || record.name)}
-                style={componentStyles.touchTarget}
-                data-testid={`machine-repo-list-add-credential-${record.name}`}
-              >
-                {t('resources:repositories.addCredential')}
-              </Button>
+              <Tooltip title={t('resources:repositories.addCredential')}>
+                <Button
+                  type="default"
+                  size="small"
+                  icon={<KeyOutlined />}
+                  onClick={() => onCreateRepository(machine, record.originalGuid || record.name)}
+                  style={componentStyles.touchTarget}
+                  data-testid={`machine-repo-list-add-credential-${record.name}`}
+                  aria-label={t('resources:repositories.addCredential')}
+                />
+              </Tooltip>
             )}
           </Space>
         )

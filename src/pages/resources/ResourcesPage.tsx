@@ -1283,16 +1283,10 @@ const ResourcesPage: React.FC = () => {
               setSelectedTeams([machine.teamName])
             }
             
-            // Generate default vault content with a valid Access Password for credential-only mode
+            // For credential-only mode, start with empty vault so user must enter their own credential
             let vaultContent = undefined
             if (repositoryGuid) {
-              // Generate a random 32-character credential
-              const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+{}|:<>,.?/'
-              let credential = ''
-              for (let i = 0; i < 32; i++) {
-                credential += chars.charAt(Math.floor(Math.random() * chars.length))
-              }
-              vaultContent = JSON.stringify({ credential })
+              vaultContent = JSON.stringify({ credential: '' })
             }
             
             // Open the repository creation modal with prefilled machine
