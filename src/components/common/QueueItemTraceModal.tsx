@@ -366,24 +366,41 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
     }
   }
 
-  // Helper function to check if task is stale (5+ minute since assigned)
-  const isTaskStale = () => {
-    if (!traceData?.queueDetails) return false
+  // Helper function to get task staleness level (progressive: none, early, stale, critical)
+  const getTaskStaleness = () => {
+    if (!traceData?.queueDetails) return 'none'
     const lastAssigned = normalizeProperty(traceData.queueDetails, 'lastAssigned', 'LastAssigned') || normalizeProperty(traceData.queueDetails, 'assignedTime', 'AssignedTime')
     const lastRetryAt = normalizeProperty(traceData.queueDetails, 'lastRetryAt', 'LastRetryAt')
+    const lastResponseAt = normalizeProperty(traceData.queueDetails, 'lastResponseAt', 'LastResponseAt')
     const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
-    
+
+    // Only check staleness for active processing tasks
     if (!lastAssigned || status === 'COMPLETED' || status === 'CANCELLED' || status === 'CANCELLING' || status === 'FAILED' || status === 'PENDING') {
-      return false
+      return 'none'
     }
-    
-    const minutesSinceAssigned = dayjs().diff(dayjs(lastAssigned), 'minute')
-    // If there was a recent retry, check from retry time instead
-    if (lastRetryAt) {
-      const minutesSinceRetry = dayjs().diff(dayjs(lastRetryAt), 'minute')
-      return minutesSinceAssigned >= 5 && minutesSinceRetry >= 5
-    }
-    return minutesSinceAssigned >= 5
+
+    // Find the most recent activity timestamp
+    const timestamps = [lastAssigned, lastRetryAt, lastResponseAt].filter(Boolean)
+    if (timestamps.length === 0) return 'none'
+
+    // Use the most recent timestamp as the last activity time
+    const lastActivityTime = timestamps.reduce((latest, current) => {
+      return dayjs(current).isAfter(dayjs(latest)) ? current : latest
+    })
+
+    const secondsSinceLastActivity = dayjs().diff(dayjs(lastActivityTime), 'second')
+
+    // Progressive staleness levels
+    if (secondsSinceLastActivity >= 120) return 'critical'  // 2+ minutes - strong cancellation recommendation
+    if (secondsSinceLastActivity >= 90) return 'stale'      // 1.5+ minutes - stale with cancel option
+    if (secondsSinceLastActivity >= 60) return 'early'      // 1+ minute - early warning
+    return 'none'
+  }
+
+  // Legacy function for backward compatibility
+  const isTaskStale = () => {
+    const staleness = getTaskStaleness()
+    return staleness === 'stale' || staleness === 'critical'
   }
 
   // Helper function to check if task is old pending (6+ hours)
@@ -547,21 +564,30 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
           </div>
         ) : null,
         // Show Cancel button for PENDING, ASSIGNED, or PROCESSING tasks that can be cancelled
-        (traceData?.queueDetails && 
+        // Style and text vary based on staleness level
+        (traceData?.queueDetails &&
         traceData.queueDetails.canBeCancelled &&
-        (normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' || 
+        (normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' ||
          normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'ASSIGNED' ||
          normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PROCESSING')) ? (
-          <Button 
+          <Button
             key="cancel"
             data-testid="queue-trace-cancel-button"
             danger
-            icon={<CloseCircleOutlined />} 
+            type={getTaskStaleness() === 'critical' ? 'primary' : 'default'}
+            size={getTaskStaleness() === 'critical' ? 'default' : 'default'}
+            icon={<CloseCircleOutlined />}
             onClick={handleCancelQueueItem}
             loading={isCancelling}
-            style={styles.buttonPrimary}
+            style={{
+              ...styles.buttonPrimary,
+              fontWeight: getTaskStaleness() === 'critical' ? 'bold' : 'normal',
+              fontSize: getTaskStaleness() === 'critical' ? '14px' : '13px'
+            }}
           >
-            Cancel
+            {getTaskStaleness() === 'critical' ? 'Cancel Stuck Task' :
+             getTaskStaleness() === 'stale' ? 'Cancel Task' :
+             'Cancel'}
           </Button>
         ) : null,
         // Show Retry button only for failed tasks that haven't reached max retries
@@ -608,16 +634,74 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
         </div>
       ) : traceData ? (
         <div>
-          {/* Stale Task Warning */}
-          {isTaskStale() && (
+          {/* Progressive Stale Task Warnings */}
+          {getTaskStaleness() === 'early' && (
+            <Alert
+              data-testid="queue-trace-alert-early"
+              message="Task May Be Inactive"
+              description="Task hasn't provided updates for over 1 minute. This may be normal for long-running operations."
+              type="info"
+              showIcon
+              icon={<ClockCircleOutlined />}
+              style={{ marginBottom: 16 }}
+            />
+          )}
+
+          {getTaskStaleness() === 'stale' && (
             <Alert
               data-testid="queue-trace-alert-stale"
               message="Task May Be Stale"
-              description="This task has been processing for over 5 minutes and may be stuck."
+              description="Task appears inactive for over 1.5 minutes. Consider canceling if no progress is expected."
               type="warning"
               showIcon
               icon={<WarningOutlined />}
               style={{ marginBottom: 16 }}
+              action={
+                traceData?.queueDetails?.canBeCancelled &&
+                (normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' ||
+                 normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'ASSIGNED' ||
+                 normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PROCESSING') ? (
+                  <Button
+                    danger
+                    size="small"
+                    icon={<CloseCircleOutlined />}
+                    onClick={handleCancelQueueItem}
+                    loading={isCancelling}
+                  >
+                    Cancel Task
+                  </Button>
+                ) : null
+              }
+            />
+          )}
+
+          {getTaskStaleness() === 'critical' && (
+            <Alert
+              data-testid="queue-trace-alert-critical"
+              message="Task Likely Stuck - Cancellation Recommended"
+              description="Task has been inactive for over 2 minutes. The queue processor will automatically timeout this task at 3 minutes if no activity is detected."
+              type="error"
+              showIcon
+              icon={<ExclamationCircleOutlined />}
+              style={{ marginBottom: 16 }}
+              action={
+                traceData?.queueDetails?.canBeCancelled &&
+                (normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' ||
+                 normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'ASSIGNED' ||
+                 normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PROCESSING') ? (
+                  <Button
+                    danger
+                    type="primary"
+                    size="default"
+                    icon={<CloseCircleOutlined />}
+                    onClick={handleCancelQueueItem}
+                    loading={isCancelling}
+                    style={{ fontWeight: 'bold' }}
+                  >
+                    Cancel Stuck Task
+                  </Button>
+                ) : null
+              }
             />
           )}
           

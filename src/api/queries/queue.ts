@@ -27,6 +27,7 @@ export interface QueueItem {
   retryCount?: number
   lastRetryAt?: string
   lastFailureReason?: string
+  lastResponseAt?: string
   permanentlyFailed?: boolean
   createdBy?: string
 }

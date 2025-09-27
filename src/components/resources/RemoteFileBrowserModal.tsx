@@ -29,6 +29,7 @@ import {
   ClockCircleOutlined,
   DatabaseOutlined,
   RightOutlined,
+  CloseOutlined,
 } from '@ant-design/icons';
 import { useDropdownData } from '@/api/queries/useDropdownData';
 import { useStorage } from '@/api/queries/storage';
@@ -625,35 +626,36 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       onCancel={onCancel}
       className={ModalSize.Large}
       footer={[
-        <Button 
-          key="cancel" 
-          onClick={onCancel}
-          style={componentStyles.touchTarget}
-          data-testid="file-browser-cancel-button"
-        >
-          {t('common:actions.cancel')}
-        </Button>,
-        <Button
-          key="refresh"
-          icon={<ReloadOutlined />}
-          onClick={loadFiles}
-          loading={loading}
-          style={componentStyles.touchTarget}
-          data-testid="file-browser-refresh-button"
-        >
-          {t('common:actions.refresh')}
-        </Button>,
-        <Button
-          key="pull"
-          type="primary"
-          icon={<CloudDownloadOutlined />}
-          onClick={handlePull}
-          disabled={!selectedFile}
-          style={componentStyles.touchTarget}
-          data-testid="file-browser-pull-button"
-        >
-          {t('resources:remoteFiles.pull')}
-        </Button>,
+        <Tooltip key="cancel" title={t('common:actions.cancel')}>
+          <Button
+            icon={<CloseOutlined />}
+            onClick={onCancel}
+            style={componentStyles.touchTarget}
+            data-testid="file-browser-cancel-button"
+            aria-label={t('common:actions.cancel')}
+          />
+        </Tooltip>,
+        <Tooltip key="refresh" title={t('common:actions.refresh')}>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={loadFiles}
+            loading={loading}
+            style={componentStyles.touchTarget}
+            data-testid="file-browser-refresh-button"
+            aria-label={t('common:actions.refresh')}
+          />
+        </Tooltip>,
+        <Tooltip key="pull" title={t('resources:remoteFiles.pull')}>
+          <Button
+            type="primary"
+            icon={<CloudDownloadOutlined />}
+            onClick={handlePull}
+            disabled={!selectedFile}
+            style={componentStyles.touchTarget}
+            data-testid="file-browser-pull-button"
+            aria-label={t('resources:remoteFiles.pull')}
+          />
+        </Tooltip>,
       ]}
     >
       <Space direction="vertical" style={{ width: '100%' }} size="middle">
@@ -688,16 +690,17 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
                 options={storageSources}
                 data-testid="file-browser-source-select"
               />
-              <Button
-                icon={<FolderOpenOutlined />}
-                onClick={loadFiles}
-                loading={loading}
-                disabled={!selectedSource}
-                style={componentStyles.touchTarget}
-                data-testid="file-browser-load-files-button"
-              >
-                {t('resources:remoteFiles.loadFiles')}
-              </Button>
+              <Tooltip title={t('resources:remoteFiles.loadFiles')}>
+                <Button
+                  icon={<FolderOpenOutlined />}
+                  onClick={loadFiles}
+                  loading={loading}
+                  disabled={!selectedSource}
+                  style={componentStyles.touchTarget}
+                  data-testid="file-browser-load-files-button"
+                  aria-label={t('resources:remoteFiles.loadFiles')}
+                />
+              </Tooltip>
             </Space>
             <Input.Search
               placeholder={t('common:actions.search')}
