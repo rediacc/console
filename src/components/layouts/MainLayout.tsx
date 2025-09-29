@@ -47,6 +47,7 @@ import { useComponentStyles, useNavigationStyles } from '@/hooks/useComponentSty
 import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants'
 import SandboxWarning from '@/components/common/SandboxWarning'
 import { useTelemetry } from '@/components/common/TelemetryProvider'
+import { apiConnectionService } from '@/services/apiConnectionService'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
@@ -56,6 +57,7 @@ const MainLayout: React.FC = () => {
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false)
+  const [isDevelopment, setIsDevelopment] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
   const dispatch = useDispatch()
@@ -98,9 +100,19 @@ const MainLayout: React.FC = () => {
         }
       }
     }
-    
+
     updateCompanyData()
   }, [companyData, company, dispatch])
+
+  // Check if we're in development environment
+  useEffect(() => {
+    const checkEnvironment = () => {
+      const endpointInfo = apiConnectionService.getEndpointInfo()
+      setIsDevelopment(endpointInfo?.type === 'localhost')
+    }
+
+    checkEnvironment()
+  }, [])
 
   // Define all menu items with visibility flags
   const allMenuItems = [
@@ -118,6 +130,7 @@ const MainLayout: React.FC = () => {
       label: t('navigation.distributedStorage'),
       showInSimple: false, // Show in expert mode only
       requiresPlan: ['ELITE', 'PREMIUM', 'Elite', 'Premium'], // Support both uppercase and proper case
+      requiresDevelopment: true, // Only show in local development
       'data-testid': 'main-nav-distributed-storage',
     },
     {
@@ -125,6 +138,7 @@ const MainLayout: React.FC = () => {
       icon: <ShoppingOutlined />,
       label: t('navigation.marketplace'),
       showInSimple: false,
+      requiresDevelopment: true, // Only show in local development
       'data-testid': 'main-nav-marketplace',
     },
     {
@@ -228,7 +242,7 @@ const MainLayout: React.FC = () => {
       if (item.type !== 'divider' && !(uiMode === 'expert' || item.showInSimple)) {
         return false
       }
-      
+
       // Check plan requirements
       if (item.requiresPlan) {
         // If no subscription data, hide the item
@@ -244,10 +258,15 @@ const MainLayout: React.FC = () => {
           return false
         }
       }
-      
+
+      // Check development environment requirements
+      if (item.requiresDevelopment && !isDevelopment) {
+        return false
+      }
+
       return true
     })
-    .map(({ showInSimple, requiresPlan, ...item }) => item)
+    .map(({ showInSimple, requiresPlan, requiresDevelopment, ...item }) => item)
 
   // Don't select any menu during transition
   const selectedKeys = isTransitioning ? [] : [location.pathname]
