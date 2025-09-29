@@ -88,22 +88,19 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
       ? `set REDIACC_API_URL=${apiUrl}`
       : `export REDIACC_API_URL="${apiUrl}"`
 
-    const tokenEnvCmd = os === 'windows'
-      ? `set REDIACC_TOKEN=${token}`
-      : `export REDIACC_TOKEN="${token}"`
-
     const networkFlag = useDocker && useNetworkHost ? ' --network=host' : ''
     const baseCommand = useDocker
-      ? `docker run -it --rm${networkFlag} -e REDIACC_TOKEN="${token}" -e SYSTEM_API_URL="${apiUrl}" rediacc/cli term`
+      ? `docker run -it --rm${networkFlag} -e SYSTEM_API_URL="${apiUrl}" rediacc/cli term`
       : (os === 'windows' ? 'rediacc.bat term' : 'rediacc term')
+    const tokenParam = ` --token "${token}"`
     const teamParam = ' --team Default'  // Default team as placeholder
     const machineParam = ` --machine ${machine}`
     const repoParam = repository ? ` --repo ${repository}` : ''
     const commandParam = termCommand ? ` --command "${termCommand}"` : ''
 
-    const termCmd = `${baseCommand}${teamParam}${machineParam}${repoParam}${commandParam}`
+    const termCmd = `${baseCommand}${tokenParam}${teamParam}${machineParam}${repoParam}${commandParam}`
 
-    return useDocker ? termCmd : `${tokenEnvCmd} && ${apiEnvCmd} && ${termCmd}`
+    return useDocker ? termCmd : `${apiEnvCmd} && ${termCmd}`
   }
 
   const buildDesktopCommand = (token: string = '<SECURE_TOKEN>') => {
@@ -111,21 +108,18 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
       ? `set REDIACC_API_URL=${apiUrl}`
       : `export REDIACC_API_URL="${apiUrl}"`
 
-    const tokenEnvCmd = os === 'windows'
-      ? `set REDIACC_TOKEN=${token}`
-      : `export REDIACC_TOKEN="${token}"`
-
     const networkFlag = useDocker && useNetworkHost ? ' --network=host' : ''
     const baseCommand = useDocker
-      ? `docker run -it --rm${networkFlag} -e REDIACC_TOKEN="${token}" -e SYSTEM_API_URL="${apiUrl}" rediacc/cli desktop`
+      ? `docker run -it --rm${networkFlag} -e SYSTEM_API_URL="${apiUrl}" rediacc/cli desktop`
       : (os === 'windows' ? 'rediacc.bat desktop' : 'rediacc desktop')
+    const tokenParam = ` --token "${token}"`
     const teamParam = ' --team Default'  // Default team as placeholder
     const machineParam = ` --machine ${machine}`
     const repoParam = repository ? ` --repo ${repository}` : ''
 
-    const desktopCmd = `${baseCommand}${teamParam}${machineParam}${repoParam}`
+    const desktopCmd = `${baseCommand}${tokenParam}${teamParam}${machineParam}${repoParam}`
 
-    return useDocker ? desktopCmd : `${tokenEnvCmd} && ${apiEnvCmd} && ${desktopCmd}`
+    return useDocker ? desktopCmd : `${apiEnvCmd} && ${desktopCmd}`
   }
 
   // Fallback versions without token (for error cases)
