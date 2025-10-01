@@ -16,7 +16,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants'
-import { configService } from '@/services/configService'
+import { templateService } from '@/services/templateService'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -92,26 +92,21 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         // For repository creation context, fetch the template from templates.json to get README
         if (context === 'repository-creation' && templateName && !baseTemplate.readme) {
           try {
-            const templatesUrl = await configService.getTemplatesUrl()
-            const templatesResponse = await fetch(templatesUrl)
-            if (templatesResponse.ok) {
-              const templatesData = await templatesResponse.json()
-              const foundTemplate = templatesData.templates?.find((t: any) => t.name === templateName)
-              if (foundTemplate) {
-                // Set the loaded template with README content
-                const fullTemplate = {
-                  id: foundTemplate.id,
-                  name: foundTemplate.name,
-                  readme: foundTemplate.readme,
-                  category: foundTemplate.category,
-                  tags: foundTemplate.tags,
-                  difficulty: foundTemplate.difficulty,
-                  iconUrl: foundTemplate.iconUrl,
-                  download_url: foundTemplate.download_url
-                }
-                setLoadedTemplate(fullTemplate)
-                baseTemplate = fullTemplate // Use the full template for fetching details
+            const templates = await templateService.fetchTemplates()
+            const foundTemplate = templates.find((t: any) => t.name === templateName)
+            if (foundTemplate) {
+              // Set the loaded template with README content
+              const fullTemplate = {
+                id: foundTemplate.id,
+                name: foundTemplate.name,
+                readme: foundTemplate.readme,
+                category: foundTemplate.category,
+                tags: foundTemplate.tags,
+                difficulty: foundTemplate.difficulty,
+                download_url: foundTemplate.download_url
               }
+              setLoadedTemplate(fullTemplate)
+              baseTemplate = fullTemplate // Use the full template for fetching details
             }
           } catch (templatesError) {
             console.error('Failed to fetch templates:', templatesError)
@@ -119,16 +114,8 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         }
 
         // Fetch the detailed template data (files, etc.)
-        const url = baseTemplate.download_url
-          ? `${window.location.origin}/configs/${baseTemplate.download_url}`
-          : baseTemplate.id
-            ? `${window.location.origin}/configs/templates/${baseTemplate.id}.json`
-            : `${window.location.origin}/configs/template_${baseTemplate.name}.json` // fallback
-        const response = await fetch(url)
-        if (response.ok) {
-          const data = await response.json()
-          setTemplateDetails(data)
-        }
+        const data = await templateService.fetchTemplateData(baseTemplate)
+        setTemplateDetails(data)
       } catch (error) {
         // Failed to fetch template details
         console.error('Failed to fetch template details:', error)

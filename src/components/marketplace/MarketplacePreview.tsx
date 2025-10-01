@@ -20,6 +20,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants'
+import { templateService } from '@/services/templateService'
 
 const { Title, Text, Paragraph } = Typography
 const { TabPane } = Tabs
@@ -31,7 +32,6 @@ interface Template {
   category?: string
   tags?: string[]
   difficulty?: 'beginner' | 'intermediate' | 'advanced'
-  iconUrl?: string
   download_url?: string
 }
 
@@ -78,15 +78,8 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
 
     try {
       setLoading(true)
-      // Use download_url if available, otherwise construct from id
-      const url = template.download_url
-        ? `${window.location.origin}/configs/${template.download_url}`
-        : `${window.location.origin}/configs/templates/${template.id}.json`
-      const response = await fetch(url)
-      if (response.ok) {
-        const data = await response.json()
-        setTemplateDetails(data)
-      }
+      const data = await templateService.fetchTemplateData(template)
+      setTemplateDetails(data)
     } catch (error) {
       // Failed to fetch template details
     } finally {
@@ -176,31 +169,12 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
       data-testid="marketplace-preview-modal"
       title={
         <Space size={spacing('MD')}>
-          {template.iconUrl ? (
-            <img 
-              src={template.iconUrl} 
-              alt={template.name}
-              style={{ 
-                width: DESIGN_TOKENS.DIMENSIONS.ICON_XXL, 
-                height: DESIGN_TOKENS.DIMENSIONS.ICON_XXL, 
-                objectFit: 'contain',
-                filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.1))'
-              }}
-              onError={(e) => {
-                e.currentTarget.style.display = 'none'
-                e.currentTarget.parentElement?.appendChild(
-                  <span>{getTemplateIcon(template.name)}</span> as any
-                )
-              }}
-            />
-          ) : (
-            getTemplateIcon(template.name)
-          )}
+          {getTemplateIcon(template.name)}
           <div>
             <Title level={4} style={{ ...styles.heading4, margin: 0 }}>
               {getTemplateTitle(template.name)}
             </Title>
-            <Tag 
+            <Tag
               color={getDifficultyColor(template.difficulty)}
               style={{
                 borderRadius: borderRadius('SM'),

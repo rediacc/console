@@ -11,18 +11,19 @@ import {
 import { useTranslation } from 'react-i18next'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, borderRadius, fontSize } from '@/utils/styleConstants'
-import { configService } from '@/services/configService'
+import { templateService } from '@/services/templateService'
 
 const { Text, Paragraph } = Typography
 
 interface Template {
+  id?: string
   name: string
   readme: string
 }
 
 interface TemplateSelectorProps {
   value?: string | null
-  onChange?: (templateName: string | null) => void
+  onChange?: (templateId: string | null) => void
   onViewDetails?: (templateName: string) => void
 }
 
@@ -46,14 +47,8 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       setLoading(true)
       setError(null)
 
-      const templatesUrl = await configService.getTemplatesUrl()
-      const response = await fetch(templatesUrl)
-      if (!response.ok) {
-        throw new Error('Failed to fetch templates')
-      }
-
-      const data = await response.json()
-      setTemplates(data.templates || [])
+      const fetchedTemplates = await templateService.fetchTemplates()
+      setTemplates(fetchedTemplates)
     } catch (err) {
       console.error('Failed to fetch templates:', err)
       setError('Unable to load templates. Please check your connection.')
@@ -140,8 +135,8 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
       <Row gutter={[spacing('MD'), spacing('MD')]}>
         {templates.map((template) => {
-          const isSelected = value === template.name
-          
+          const isSelected = value === (template.id || template.name)
+
           return (
             <Col key={template.name} xs={24} sm={12} md={8}>
               <Card
@@ -158,7 +153,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                   transition: DESIGN_TOKENS.TRANSITIONS.HOVER,
                   padding: spacing('MD')
                 }}
-                onClick={() => onChange?.(isSelected ? null : template.name)}
+                onClick={() => onChange?.(isSelected ? null : (template.id || template.name))}
               >
                 {isSelected && (
                   <CheckCircleOutlined 

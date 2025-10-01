@@ -12,7 +12,7 @@ import MarketplaceCard from '@/components/marketplace/MarketplaceCard'
 import TemplatePreviewModal from '@/components/common/TemplatePreviewModal'
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import { useCreateRepository } from '@/api/queries/repositories'
-import { configService } from '@/services/configService'
+import { templateService } from '@/services/templateService'
 
 const { Title, Text } = Typography
 const { Search } = Input
@@ -59,19 +59,15 @@ const MarketplacePage: React.FC = () => {
   const fetchTemplates = async () => {
     try {
       setLoading(true)
-      const templatesUrl = await configService.getTemplatesUrl()
-      const response = await fetch(templatesUrl)
-      if (!response.ok) throw new Error('Failed to fetch templates')
+      const fetchedTemplates = await templateService.fetchTemplates()
 
-      const data = await response.json()
       // Enhance templates with marketplace metadata
-      const enhancedTemplates = (data.templates || []).map((template: any) => ({
+      const enhancedTemplates = fetchedTemplates.map((template: any) => ({
         ...template,
         // Use backend category, fallback to deriving from ID if not provided
         category: template.category || getTemplateCategoryFromId(template.id),
         tags: getTemplateTags(template.id, template.readme),
-        difficulty: getTemplateDifficulty(template.id),
-        iconUrl: `${window.location.origin}/configs/template_${template.id}_icon.svg`
+        difficulty: getTemplateDifficulty(template.id)
       }))
       setTemplates(enhancedTemplates)
     } catch (err) {
@@ -403,7 +399,7 @@ const MarketplacePage: React.FC = () => {
           resourceType="repository"
           mode="create"
           existingData={{
-            preselectedTemplate: deployingTemplate.name
+            preselectedTemplate: deployingTemplate.id || deployingTemplate.name
           }}
           onSubmit={handleCreateRepository}
           isSubmitting={createRepositoryMutation.isPending}

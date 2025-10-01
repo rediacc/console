@@ -16,6 +16,7 @@ import TemplatePreviewModal from '@/components/common/TemplatePreviewModal'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, borderRadius, fontSize } from '@/utils/styleConstants'
+import { templateService } from '@/services/templateService'
 import {
   createMachineSchema,
   createRepositorySchema,
@@ -776,14 +777,10 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     // Add template parameter for repository creation
     if (resourceType === 'repository' && mode === 'create' && selectedTemplate) {
       try {
-        // Fetch the template details
-        const response = await fetch(`${window.location.origin}/configs/template_${selectedTemplate}.json`)
-        if (response.ok) {
-          const templateData = await response.json()
-          // Base64 encode the template JSON
-          data.tmpl = btoa(JSON.stringify(templateData))
-        }
+        // Fetch the template details by ID using templateService
+        data.tmpl = await templateService.getEncodedTemplateDataById(selectedTemplate)
       } catch (error) {
+        console.error('Failed to load template:', error)
         message.warning(t('resources:templates.failedToLoadTemplate'))
       }
     }
