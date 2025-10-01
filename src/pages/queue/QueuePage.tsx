@@ -19,6 +19,7 @@ const QueuePage: React.FC = () => {
   const { t } = useTranslation(['queue'])
   const styles = useComponentStyles()
   const [viewTeam, setViewTeam] = useState<string>('') // Team for viewing queue items
+  const [activeTab, setActiveTab] = useState<string>('active') // Track which tab is active
   const [filters, setFilters] = useState<QueueFilters>({
     teamName: '',
     includeCompleted: true,
@@ -45,14 +46,19 @@ const QueuePage: React.FC = () => {
   const failedTableRef = useRef<HTMLDivElement>(null)
   
   // Combine team selection with filters
+  // Dynamically adjust filters based on active tab
   const queryFilters = useMemo(() => ({
     ...filters,
     teamName: viewTeam,
+    // Auto-enable includeCancelled when on cancelled tab
+    includeCancelled: activeTab === 'cancelled' ? true : filters.includeCancelled,
+    // Auto-enable includeCompleted when on completed tab
+    includeCompleted: activeTab === 'completed' ? true : filters.includeCompleted,
     dateFrom: dateRange?.[0]?.startOf('day').format('YYYY-MM-DD HH:mm:ss'),
     dateTo: dateRange?.[1]?.endOf('day').format('YYYY-MM-DD HH:mm:ss'),
     status: statusFilter.join(','),
     ...(taskIdFilter.trim() && isValidGuid(taskIdFilter.trim()) ? { taskId: taskIdFilter.trim() } : {})
-  }), [filters, viewTeam, dateRange, statusFilter, taskIdFilter])
+  }), [filters, viewTeam, dateRange, statusFilter, taskIdFilter, activeTab])
   
   const { data: queueData, isLoading, refetch, isRefetching } = useQueueItems(queryFilters)
   const { data: dropdownData } = useDropdownData()
@@ -548,20 +554,26 @@ const QueuePage: React.FC = () => {
               <Text type="secondary">Options</Text>
             </div>
             <Space direction="vertical">
-              <Checkbox
-                checked={filters.includeCompleted}
-                onChange={(e) => setFilters({ ...filters, includeCompleted: e.target.checked })}
-                data-testid="queue-checkbox-include-completed"
-              >
-                Include Completed
-              </Checkbox>
-              <Checkbox
-                checked={filters.includeCancelled}
-                onChange={(e) => setFilters({ ...filters, includeCancelled: e.target.checked })}
-                data-testid="queue-checkbox-include-cancelled"
-              >
-                Include Cancelled
-              </Checkbox>
+              <Tooltip title={activeTab === 'completed' ? 'Automatically enabled when viewing Completed tab' : ''}>
+                <Checkbox
+                  checked={activeTab === 'completed' ? true : filters.includeCompleted}
+                  disabled={activeTab === 'completed'}
+                  onChange={(e) => setFilters({ ...filters, includeCompleted: e.target.checked })}
+                  data-testid="queue-checkbox-include-completed"
+                >
+                  Include Completed
+                </Checkbox>
+              </Tooltip>
+              <Tooltip title={activeTab === 'cancelled' ? 'Automatically enabled when viewing Cancelled tab' : ''}>
+                <Checkbox
+                  checked={activeTab === 'cancelled' ? true : filters.includeCancelled}
+                  disabled={activeTab === 'cancelled'}
+                  onChange={(e) => setFilters({ ...filters, includeCancelled: e.target.checked })}
+                  data-testid="queue-checkbox-include-cancelled"
+                >
+                  Include Cancelled
+                </Checkbox>
+              </Tooltip>
               <Checkbox
                 checked={filters.onlyStale}
                 onChange={(e) => setFilters({ ...filters, onlyStale: e.target.checked })}
@@ -704,11 +716,12 @@ const QueuePage: React.FC = () => {
             </Col>
           </Row>
 
-          <Tabs 
-            defaultActiveKey="active"
-            style={{ 
-              flex: 1, 
-              display: 'flex', 
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            style={{
+              flex: 1,
+              display: 'flex',
               flexDirection: 'column',
               minHeight: 0,
               overflow: 'hidden'
