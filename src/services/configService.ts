@@ -22,6 +22,7 @@ interface AppConfig {
   supportUrl?: string
   csrfEnabled?: boolean
   httpsOnly?: boolean
+  templatesUrl?: string
   customConfig?: any
 }
 
@@ -54,6 +55,7 @@ class ConfigService {
         supportUrl: rConfig.supportUrl || undefined,
         csrfEnabled: rConfig.csrfEnabled === 'true',
         httpsOnly: rConfig.httpsOnly === 'true',
+        templatesUrl: rConfig.templatesUrl || undefined,
         customConfig: rConfig.customConfig ? JSON.parse(rConfig.customConfig) : undefined
       }
     } catch (error) {
@@ -168,6 +170,11 @@ class ConfigService {
   async getDefaultLanguage(): Promise<string> {
     const config = await this.getConfig()
     return config.defaultLanguage || 'en'
+  }
+
+  async getTemplatesUrl(): Promise<string> {
+    const config = await this.getConfig()
+    return config.templatesUrl || 'https://json.rediacc.com/templates.json'
   }
 
   // Check if configuration is from runtime (nginx) or build-time (vite)

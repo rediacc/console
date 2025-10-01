@@ -36,10 +36,15 @@ const AuditPage = () => {
   ]);
   const [entityFilter, setEntityFilter] = useState<string | undefined>();
   const [searchText, setSearchText] = useState('');
-  
+
+  // Ensure dates are always defined before passing to the hook
+  // Use ISO 8601 format (with 'T' separator) for proper JSON datetime parsing
+  const startDate = dateRange[0]?.startOf('day').format('YYYY-MM-DDTHH:mm:ss');
+  const endDate = dateRange[1]?.endOf('day').format('YYYY-MM-DDTHH:mm:ss');
+
   const { data: auditLogs, isLoading, refetch, error, isError } = useAuditLogs({
-    startDate: dateRange[0]?.startOf('day').format('YYYY-MM-DD HH:mm:ss'),
-    endDate: dateRange[1]?.endOf('day').format('YYYY-MM-DD HH:mm:ss'),
+    startDate,
+    endDate,
     entityFilter,
     maxRecords: 1000
   });

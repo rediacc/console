@@ -11,6 +11,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, borderRadius, fontSize } from '@/utils/styleConstants'
+import { configService } from '@/services/configService'
 
 const { Text, Paragraph } = Typography
 
@@ -44,12 +45,13 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
     try {
       setLoading(true)
       setError(null)
-      
-      const response = await fetch(`${window.location.origin}/config/templates.json`)
+
+      const templatesUrl = await configService.getTemplatesUrl()
+      const response = await fetch(templatesUrl)
       if (!response.ok) {
         throw new Error('Failed to fetch templates')
       }
-      
+
       const data = await response.json()
       setTemplates(data.templates || [])
     } catch (err) {

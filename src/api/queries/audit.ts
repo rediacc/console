@@ -22,13 +22,24 @@ export const useAuditLogs = (params?: AuditLogsParams) => {
     queryKey: ['auditLogs', params],
     queryFn: async () => {
       try {
-        const response = await apiClient.post('/GetAuditLogs', {
-          startDate: params?.startDate,
-          endDate: params?.endDate,
-          entityFilter: params?.entityFilter,
+        // Build request body, only including defined parameters
+        const requestBody: Record<string, any> = {
           maxRecords: params?.maxRecords || 100
-        });
-        
+        };
+
+        // Only include date parameters if they have valid values
+        if (params?.startDate) {
+          requestBody.startDate = params.startDate;
+        }
+        if (params?.endDate) {
+          requestBody.endDate = params.endDate;
+        }
+        if (params?.entityFilter) {
+          requestBody.entityFilter = params.entityFilter;
+        }
+
+        const response = await apiClient.post('/GetAuditLogs', requestBody);
+
         return response.resultSets?.[1]?.data as AuditLog[] || [];
       } catch (error) {
         console.error('Failed to fetch audit logs:', error);

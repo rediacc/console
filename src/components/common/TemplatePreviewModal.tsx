@@ -20,6 +20,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants'
+import { configService } from '@/services/configService'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -93,7 +94,8 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         // For repository creation context, fetch the template from templates.json to get README
         if (context === 'repository-creation' && templateName && !baseTemplate.readme) {
           try {
-            const templatesResponse = await fetch(`${window.location.origin}/config/templates.json`)
+            const templatesUrl = await configService.getTemplatesUrl()
+            const templatesResponse = await fetch(templatesUrl)
             if (templatesResponse.ok) {
               const templatesData = await templatesResponse.json()
               const foundTemplate = templatesData.templates?.find((t: any) => t.name === templateName)

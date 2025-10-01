@@ -23,6 +23,7 @@ import MarketplaceCard from '@/components/marketplace/MarketplaceCard'
 import TemplatePreviewModal from '@/components/common/TemplatePreviewModal'
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import { useCreateRepository } from '@/api/queries/repositories'
+import { configService } from '@/services/configService'
 
 const { Title, Text } = Typography
 const { Search } = Input
@@ -68,9 +69,10 @@ const MarketplacePage: React.FC = () => {
   const fetchTemplates = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`${window.location.origin}/config/templates.json`)
+      const templatesUrl = await configService.getTemplatesUrl()
+      const response = await fetch(templatesUrl)
       if (!response.ok) throw new Error('Failed to fetch templates')
-      
+
       const data = await response.json()
       // Enhance templates with marketplace metadata
       const enhancedTemplates = (data.templates || []).map((template: Template) => ({
