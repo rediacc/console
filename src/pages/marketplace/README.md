@@ -62,7 +62,7 @@ The Marketplace feature provides an advanced template browsing and deployment ex
 
 ### Data Flow
 
-1. Templates are fetched from `/config/templates.json`
+1. Templates are fetched from `/configs/templates.json`
 2. Enhanced with marketplace metadata (category, tags, difficulty, etc.)
 3. Filtered based on user selections
 4. Deployment navigates to Resources page with state:

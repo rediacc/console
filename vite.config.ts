@@ -22,11 +22,29 @@ export default defineConfig(({ mode }) => ({
       'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()'
     },
     proxy: {
-      '/config/templates.json': {
+      '/configs/templates.json': {
         target: 'https://json.rediacc.com',
         changeOrigin: true,
         secure: true,
         rewrite: (path) => '/templates.json',
+      },
+      '/configs/pricing.json': {
+        target: 'https://json.rediacc.com',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => '/configs/pricing.json',
+      },
+      '/configs/services.json': {
+        target: 'https://json.rediacc.com',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => '/configs/services.json',
+      },
+      '/configs/tiers.json': {
+        target: 'https://json.rediacc.com',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => '/configs/tiers.json',
       },
       '/api': {
         target: `http://localhost:${process.env.VITE_HTTP_PORT || '7322'}`,

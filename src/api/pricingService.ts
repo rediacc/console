@@ -1,5 +1,4 @@
 // Pricing service to fetch centralized pricing configuration
-import i18n from '../i18n/config';
 
 export interface PricingConfig {
   baseMonthlyPrices: {
@@ -38,57 +37,42 @@ export interface PricingConfig {
   };
 }
 
-const pricingCache = new Map<string, PricingConfig>(); // Cache per language
+const pricingCache = new Map<string, PricingConfig>();
 const cacheTimestamps = new Map<string, number>();
 const CACHE_DURATION = 1000 * 60 * 60; // 1 hour cache
 
 export const fetchPricingConfig = async (): Promise<PricingConfig | null> => {
-  const currentLang = i18n.language || 'en';
-  const cacheKey = currentLang;
-  
+  const cacheKey = 'pricing';
+
   // Return cached data if valid
   const cachedData = pricingCache.get(cacheKey);
   const cacheTimestamp = cacheTimestamps.get(cacheKey);
-  
+
   if (cachedData && cacheTimestamp && (Date.now() - cacheTimestamp < CACHE_DURATION)) {
     return cachedData;
   }
 
   try {
-    const response = await fetch(`/config/pricing.${currentLang}.json`);
+    // Always fetch the base pricing.json (English content)
+    const response = await fetch('/configs/pricing.json');
     if (!response.ok) {
       throw new Error(`Failed to fetch pricing: ${response.status}`);
     }
-    
+
     const data: PricingConfig = await response.json();
-    
+
     // Cache the data
     pricingCache.set(cacheKey, data);
     cacheTimestamps.set(cacheKey, Date.now());
-    
+
     return data;
   } catch (error) {
     // If fetch fails, return the cached data if available
     if (cachedData) {
       return cachedData;
     }
-    
-    // Try fallback to English if current language fails
-    if (currentLang !== 'en') {
-      try {
-        const fallbackResponse = await fetch('/config/pricing.en.json');
-        if (fallbackResponse.ok) {
-          const fallbackData: PricingConfig = await fallbackResponse.json();
-          pricingCache.set(cacheKey, fallbackData);
-          cacheTimestamps.set(cacheKey, Date.now());
-          return fallbackData;
-        }
-      } catch (fallbackError) {
-        // Fallback to English pricing also failed
-      }
-    }
-    
-    // Return null on failure (no fallback)
+
+    // Return null on failure
     return null;
   }
 };

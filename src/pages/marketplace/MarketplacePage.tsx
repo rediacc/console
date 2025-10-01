@@ -80,7 +80,7 @@ const MarketplacePage: React.FC = () => {
         category: getTemplateCategory(template.name),
         tags: getTemplateTags(template.name, template.readme),
         difficulty: getTemplateDifficulty(template.name),
-        iconUrl: `${window.location.origin}/config/template_${template.name}_icon.svg`
+        iconUrl: `${window.location.origin}/configs/template_${template.name}_icon.svg`
       }))
       setTemplates(enhancedTemplates)
     } catch (err) {

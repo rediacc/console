@@ -777,7 +777,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     if (resourceType === 'repository' && mode === 'create' && selectedTemplate) {
       try {
         // Fetch the template details
-        const response = await fetch(`${window.location.origin}/config/template_${selectedTemplate}.json`)
+        const response = await fetch(`${window.location.origin}/configs/template_${selectedTemplate}.json`)
         if (response.ok) {
           const templateData = await response.json()
           // Base64 encode the template JSON

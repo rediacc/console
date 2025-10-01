@@ -76,7 +76,7 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
     
     try {
       setLoading(true)
-      const response = await fetch(`${window.location.origin}/config/template_${template.name}.json`)
+      const response = await fetch(`${window.location.origin}/configs/template_${template.name}.json`)
       if (response.ok) {
         const data = await response.json()
         setTemplateDetails(data)

@@ -117,7 +117,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         }
 
         // Fetch the detailed template data (files, etc.)
-        const response = await fetch(`${window.location.origin}/config/template_${baseTemplate.name}.json`)
+        const response = await fetch(`${window.location.origin}/configs/template_${baseTemplate.name}.json`)
         if (response.ok) {
           const data = await response.json()
           setTemplateDetails(data)
