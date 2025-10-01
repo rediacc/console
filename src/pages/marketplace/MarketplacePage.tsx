@@ -1,20 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { Card, Row, Col, Input, Space, Typography, Spin, Empty, Segmented, Divider, message } from 'antd'
-import { 
-  SearchOutlined, 
-  AppstoreOutlined, 
-  UnorderedListOutlined,
-  DatabaseOutlined,
-  RocketOutlined,
-  MonitorOutlined,
-  HddOutlined,
-  MessageOutlined,
-  SafetyOutlined,
-  SearchOutlined as SearchIconOutlined,
-  CodeOutlined,
-  ControlOutlined,
-  ApiOutlined,
-  CloudOutlined
+import {
+  SearchOutlined,
+  AppstoreOutlined,
+  UnorderedListOutlined
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -29,18 +18,19 @@ const { Title, Text } = Typography
 const { Search } = Input
 
 interface Template {
+  id?: string
   name: string
   readme: string
   category?: string
   tags?: string[]
   difficulty?: 'beginner' | 'intermediate' | 'advanced'
   iconUrl?: string
+  download_url?: string
 }
 
 interface CategoryGroup {
   key: string
   title: string
-  icon: React.ReactNode
   description: string
   templates: Template[]
 }
@@ -75,12 +65,13 @@ const MarketplacePage: React.FC = () => {
 
       const data = await response.json()
       // Enhance templates with marketplace metadata
-      const enhancedTemplates = (data.templates || []).map((template: Template) => ({
+      const enhancedTemplates = (data.templates || []).map((template: any) => ({
         ...template,
-        category: getTemplateCategory(template.name),
-        tags: getTemplateTags(template.name, template.readme),
-        difficulty: getTemplateDifficulty(template.name),
-        iconUrl: `${window.location.origin}/configs/template_${template.name}_icon.svg`
+        // Use backend category, fallback to deriving from ID if not provided
+        category: template.category || getTemplateCategoryFromId(template.id),
+        tags: getTemplateTags(template.id, template.readme),
+        difficulty: getTemplateDifficulty(template.id),
+        iconUrl: `${window.location.origin}/configs/template_${template.id}_icon.svg`
       }))
       setTemplates(enhancedTemplates)
     } catch (err) {
@@ -91,155 +82,94 @@ const MarketplacePage: React.FC = () => {
     }
   }
 
-  // Helper functions for template metadata
-  const getTemplateCategory = (name: string): string => {
-    if (name.startsWith('db_')) return 'databases'
-    if (name.startsWith('kick_')) return 'quickstart'
-    if (name.startsWith('monitor_')) return 'monitoring'
-    if (name.startsWith('cache_')) return 'caching'
-    if (name.startsWith('queue_')) return 'messaging'
-    if (name.startsWith('auth_')) return 'authentication'
-    if (name.startsWith('search_')) return 'search'
-    if (name.startsWith('dev_')) return 'development'
-    if (name.startsWith('manage_')) return 'management'
-    if (name.startsWith('api_')) return 'api'
-    if (name.startsWith('route_')) return 'networking'
+  // Helper function to derive category from template ID (fallback only)
+  const getTemplateCategoryFromId = (id: string): string => {
+    // Extract category from ID format: "category_name"
+    const parts = id.split('_')
+    if (parts.length >= 2) {
+      return parts[0] // First part is the category
+    }
     return 'other'
   }
 
-  const getTemplateTags = (name: string, readme: string): string[] => {
+  const getTemplateTags = (id: string, readme: string): string[] => {
     const tags = []
-    const lowerName = name.toLowerCase()
+    const lowerId = id.toLowerCase()
     const lowerReadme = readme.toLowerCase()
-    
+
     // Technology tags
-    if (lowerName.includes('mysql')) tags.push('MySQL')
-    if (lowerName.includes('postgres')) tags.push('PostgreSQL')
-    if (lowerName.includes('mongo')) tags.push('MongoDB')
-    if (lowerName.includes('redis')) tags.push('Redis')
-    if (lowerName.includes('nginx')) tags.push('Nginx')
-    if (lowerName.includes('wordpress')) tags.push('WordPress')
-    if (lowerName.includes('docker')) tags.push('Docker')
-    
+    if (lowerId.includes('mysql')) tags.push('MySQL')
+    if (lowerId.includes('postgres')) tags.push('PostgreSQL')
+    if (lowerId.includes('mongo')) tags.push('MongoDB')
+    if (lowerId.includes('redis')) tags.push('Redis')
+    if (lowerId.includes('nginx')) tags.push('Nginx')
+    if (lowerId.includes('wordpress')) tags.push('WordPress')
+    if (lowerId.includes('docker')) tags.push('Docker')
+
     // Use case tags
     if (lowerReadme.includes('production')) tags.push('Production Ready')
     if (lowerReadme.includes('development')) tags.push('Development')
     if (lowerReadme.includes('high availability')) tags.push('HA')
     if (lowerReadme.includes('cluster')) tags.push('Clustered')
-    
+
     return tags
   }
 
-  const getTemplateDifficulty = (name: string): 'beginner' | 'intermediate' | 'advanced' => {
-    if (['kick_nginx', 'db_mysql', 'cache_redis'].includes(name)) return 'beginner'
-    if (['monitor_prometheus_grafana', 'queue_kafka', 'auth_keycloak'].includes(name)) return 'advanced'
+  const getTemplateDifficulty = (id: string): 'beginner' | 'intermediate' | 'advanced' => {
+    if (['networking_nginx', 'databases_mysql', 'caching_redis'].includes(id)) return 'beginner'
+    if (['monitoring_prometheus-grafana', 'messaging_kafka', 'security_keycloak'].includes(id)) return 'advanced'
     return 'intermediate'
   }
 
+  // Auto-generate category metadata from category key (fully maintainable)
+  const getCategoryMetadata = (categoryKey: string) => {
+    // Convert category key to readable label: "api-gateway" → "Api Gateway"
+    const label = categoryKey
+      .split(/[-_]/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
 
-  // Group templates by category
-  const categoryGroups = useMemo((): CategoryGroup[] => {
-    const groups: Record<string, CategoryGroup> = {
-      databases: {
-        key: 'databases',
-        title: t('marketplace:category.databases'),
-        icon: <DatabaseOutlined />,
-        description: t('marketplace:category.databases.description', 'Database systems for data storage and management'),
-        templates: []
-      },
-      quickstart: {
-        key: 'quickstart',
-        title: t('marketplace:category.quickstart'),
-        icon: <RocketOutlined />,
-        description: t('marketplace:category.quickstart.description', 'Quick start templates to get you up and running'),
-        templates: []
-      },
-      monitoring: {
-        key: 'monitoring',
-        title: t('marketplace:category.monitoring'),
-        icon: <MonitorOutlined />,
-        description: t('marketplace:category.monitoring.description', 'Monitoring and observability solutions'),
-        templates: []
-      },
-      caching: {
-        key: 'caching',
-        title: t('marketplace:category.caching'),
-        icon: <HddOutlined />,
-        description: t('marketplace:category.caching.description', 'In-memory caching solutions'),
-        templates: []
-      },
-      messaging: {
-        key: 'messaging',
-        title: t('marketplace:category.messaging'),
-        icon: <MessageOutlined />,
-        description: t('marketplace:category.messaging.description', 'Message queuing and streaming platforms'),
-        templates: []
-      },
-      authentication: {
-        key: 'authentication',
-        title: t('marketplace:category.authentication'),
-        icon: <SafetyOutlined />,
-        description: t('marketplace:category.authentication.description', 'Authentication and authorization services'),
-        templates: []
-      },
-      search: {
-        key: 'search',
-        title: t('marketplace:category.search'),
-        icon: <SearchIconOutlined />,
-        description: t('marketplace:category.search.description', 'Search engines and indexing solutions'),
-        templates: []
-      },
-      development: {
-        key: 'development',
-        title: t('marketplace:category.development'),
-        icon: <CodeOutlined />,
-        description: t('marketplace:category.development.description', 'Development tools and platforms'),
-        templates: []
-      },
-      management: {
-        key: 'management',
-        title: t('marketplace:category.management'),
-        icon: <ControlOutlined />,
-        description: t('marketplace:category.management.description', 'Infrastructure management tools'),
-        templates: []
-      },
-      api: {
-        key: 'api',
-        title: t('marketplace:category.api'),
-        icon: <ApiOutlined />,
-        description: t('marketplace:category.api.description', 'API gateways and management'),
-        templates: []
-      },
-      networking: {
-        key: 'networking',
-        title: t('marketplace:category.networking'),
-        icon: <CloudOutlined />,
-        description: t('marketplace:category.networking.description', 'Networking and routing solutions'),
-        templates: []
-      }
+    return {
+      label,
+      description: `${label} templates and solutions`
     }
+  }
 
+
+  // Group templates by category - dynamically generated from actual templates
+  const categoryGroups = useMemo((): CategoryGroup[] => {
     // Filter templates based on search
     const filteredTemplates = templates.filter(template => {
       if (searchTerm) {
         const search = searchTerm.toLowerCase()
-        return template.name.toLowerCase().includes(search) || 
+        return template.name.toLowerCase().includes(search) ||
                template.readme.toLowerCase().includes(search) ||
                (template.tags || []).some(tag => tag.toLowerCase().includes(search))
       }
       return true
     })
 
-    // Group filtered templates
+    // Dynamically build groups based on templates' categories
+    const groups: Record<string, CategoryGroup> = {}
+
     filteredTemplates.forEach(template => {
-      const category = template.category || 'other'
-      if (groups[category]) {
-        groups[category].templates.push(template)
+      const categoryKey = template.category || 'other'
+
+      if (!groups[categoryKey]) {
+        const metadata = getCategoryMetadata(categoryKey)
+        groups[categoryKey] = {
+          key: categoryKey,
+          title: metadata.label,
+          description: metadata.description,
+          templates: []
+        }
       }
+
+      groups[categoryKey].templates.push(template)
     })
 
-    // Return only groups with templates
-    return Object.values(groups).filter(group => group.templates.length > 0)
+    // Return all groups with templates, sorted by key
+    return Object.values(groups).sort((a, b) => a.key.localeCompare(b.key))
   }, [templates, searchTerm, t])
 
   const handleDeployTemplate = (template: Template) => {
@@ -406,13 +336,10 @@ const MarketplacePage: React.FC = () => {
             <div key={group.key} style={{ marginBottom: 48 }} data-testid={`marketplace-category-${group.key}`}>
               {/* Category Header */}
               <div style={{ marginBottom: 16 }}>
-                <Space align="center" size="middle">
-                  <span style={{ fontSize: 24, color: '#1890ff' }}>{group.icon}</span>
-                  <div>
-                    <Title level={4} style={{ margin: 0 }}>{group.title}</Title>
-                    <Text type="secondary">{group.description}</Text>
-                  </div>
-                </Space>
+                <div>
+                  <Title level={4} style={{ margin: 0 }}>{group.title}</Title>
+                  <Text type="secondary">{group.description}</Text>
+                </div>
               </div>
               
               {/* Templates in this category */}

@@ -6,11 +6,7 @@ import {
   FileTextOutlined,
   CodeOutlined,
   SafetyOutlined,
-  DatabaseOutlined,
-  GlobalOutlined,
-  CloudOutlined,
   AppstoreOutlined,
-  DeploymentUnitOutlined,
   CheckCircleOutlined,
   FileOutlined
 } from '@/utils/optimizedIcons'
@@ -31,12 +27,14 @@ interface TemplateFile {
 }
 
 interface Template {
+  id?: string
   name: string
   readme: string
   category?: string
   tags?: string[]
   difficulty?: 'beginner' | 'intermediate' | 'advanced'
   iconUrl?: string
+  download_url?: string
 }
 
 interface TemplateDetails {
@@ -85,7 +83,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     }
 
     const fetchTemplateDetails = async () => {
-      const baseTemplate = template || (templateName ? { name: templateName, readme: '' } : null)
+      let baseTemplate = template || (templateName ? { name: templateName, readme: '' } : null)
       if (!baseTemplate) return
 
       try {
@@ -101,14 +99,18 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
               const foundTemplate = templatesData.templates?.find((t: any) => t.name === templateName)
               if (foundTemplate) {
                 // Set the loaded template with README content
-                setLoadedTemplate({
+                const fullTemplate = {
+                  id: foundTemplate.id,
                   name: foundTemplate.name,
                   readme: foundTemplate.readme,
                   category: foundTemplate.category,
                   tags: foundTemplate.tags,
                   difficulty: foundTemplate.difficulty,
-                  iconUrl: foundTemplate.iconUrl
-                })
+                  iconUrl: foundTemplate.iconUrl,
+                  download_url: foundTemplate.download_url
+                }
+                setLoadedTemplate(fullTemplate)
+                baseTemplate = fullTemplate // Use the full template for fetching details
               }
             }
           } catch (templatesError) {
@@ -117,7 +119,12 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         }
 
         // Fetch the detailed template data (files, etc.)
-        const response = await fetch(`${window.location.origin}/configs/template_${baseTemplate.name}.json`)
+        const url = baseTemplate.download_url
+          ? `${window.location.origin}/configs/${baseTemplate.download_url}`
+          : baseTemplate.id
+            ? `${window.location.origin}/configs/templates/${baseTemplate.id}.json`
+            : `${window.location.origin}/configs/template_${baseTemplate.name}.json` // fallback
+        const response = await fetch(url)
         if (response.ok) {
           const data = await response.json()
           setTemplateDetails(data)
@@ -137,26 +144,9 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
 
   if (!effectiveTemplate) return null
 
-  const getTemplateIcon = (name: string) => {
-    const lowerName = name.toLowerCase()
-    if (lowerName.includes('db_') || lowerName.includes('database') || lowerName.includes('sql')) {
-      return <DatabaseOutlined style={styles.icon.xxlarge} />
-    }
-    if (lowerName.includes('nginx') || lowerName.includes('wordpress') || lowerName.includes('web')) {
-      return <GlobalOutlined style={styles.icon.xxlarge} />
-    }
-    if (lowerName.includes('cloud') || lowerName.includes('route')) {
-      return <CloudOutlined style={styles.icon.xxlarge} />
-    }
-    if (lowerName.includes('monitor') || lowerName.includes('prometheus')) {
-      return <DeploymentUnitOutlined style={styles.icon.xxlarge} />
-    }
+  // Use generic icon for all templates (backend provides proper names)
+  const getTemplateIcon = () => {
     return <AppstoreOutlined style={styles.icon.xxlarge} />
-  }
-
-  const getTemplateTitle = (name: string) => {
-    const cleanName = name.replace(/^(db_|kick_|route_|monitor_|cache_|queue_|auth_|search_|dev_|manage_|api_)/, '')
-    return cleanName.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
   }
 
   const getDifficultyColor = (difficulty?: string) => {
@@ -236,7 +226,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
   }
 
   const modalTitle = context === 'marketplace' ?
-    getTemplateTitle(effectiveTemplate.name) :
+    effectiveTemplate.name :
     t('resources:templates.templateDetails')
 
   return (
@@ -257,12 +247,12 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
               onError={(e) => {
                 e.currentTarget.style.display = 'none'
                 e.currentTarget.parentElement?.appendChild(
-                  <span>{getTemplateIcon(effectiveTemplate.name)}</span> as any
+                  <span>{getTemplateIcon()}</span> as any
                 )
               }}
             />
           ) : (
-            getTemplateIcon(effectiveTemplate.name)
+            getTemplateIcon()
           )}
           <div>
             <Title level={4} style={{ ...styles.heading4, margin: 0 }}>
@@ -270,7 +260,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
             </Title>
             {context === 'repository-creation' && (
               <Tag color="blue" data-testid="template-details-name-tag">
-                {effectiveTemplate.name.replace(/^(db_|kick_|route_)/, '')}
+                {effectiveTemplate.name}
               </Tag>
             )}
             {context === 'marketplace' && effectiveTemplate.difficulty && (

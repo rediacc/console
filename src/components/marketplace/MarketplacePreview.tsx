@@ -25,12 +25,14 @@ const { Title, Text, Paragraph } = Typography
 const { TabPane } = Tabs
 
 interface Template {
+  id?: string
   name: string
   readme: string
   category?: string
   tags?: string[]
   difficulty?: 'beginner' | 'intermediate' | 'advanced'
   iconUrl?: string
+  download_url?: string
 }
 
 interface TemplateDetails {
@@ -73,10 +75,14 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
 
   const fetchTemplateDetails = async () => {
     if (!template) return
-    
+
     try {
       setLoading(true)
-      const response = await fetch(`${window.location.origin}/configs/template_${template.name}.json`)
+      // Use download_url if available, otherwise construct from id
+      const url = template.download_url
+        ? `${window.location.origin}/configs/${template.download_url}`
+        : `${window.location.origin}/configs/templates/${template.id}.json`
+      const response = await fetch(url)
       if (response.ok) {
         const data = await response.json()
         setTemplateDetails(data)
