@@ -112,7 +112,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
               }
             }
           } catch (templatesError) {
-            console.error('Failed to fetch templates.json:', templatesError)
+            console.error('Failed to fetch templates:', templatesError)
           }
         }
 

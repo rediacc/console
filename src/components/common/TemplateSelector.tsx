@@ -55,8 +55,9 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       const data = await response.json()
       setTemplates(data.templates || [])
     } catch (err) {
-      setError('Failed to load templates')
-      message.error('Failed to load templates')
+      console.error('Failed to fetch templates:', err)
+      setError('Unable to load templates. Please check your connection.')
+      message.error('Unable to load templates. Please check your connection.')
     } finally {
       setLoading(false)
     }

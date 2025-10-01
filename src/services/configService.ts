@@ -174,7 +174,7 @@ class ConfigService {
 
   async getTemplatesUrl(): Promise<string> {
     const config = await this.getConfig()
-    return config.templatesUrl || 'https://json.rediacc.com/templates.json'
+    return config.templatesUrl || '/config/templates.json'
   }
 
   // Check if configuration is from runtime (nginx) or build-time (vite)

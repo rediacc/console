@@ -84,7 +84,8 @@ const MarketplacePage: React.FC = () => {
       }))
       setTemplates(enhancedTemplates)
     } catch (err) {
-      // Error fetching templates
+      console.error('Failed to fetch templates:', err)
+      message.error('Unable to load templates. Please check your connection.')
     } finally {
       setLoading(false)
     }
