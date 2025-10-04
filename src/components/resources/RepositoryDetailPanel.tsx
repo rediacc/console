@@ -1,19 +1,20 @@
 import React, { useEffect, useMemo } from 'react'
-import { 
-  Typography, 
-  Card, 
-  Row, 
-  Col, 
-  Progress, 
-  Tag, 
-  Space, 
-  Button, 
+import {
+  Typography,
+  Card,
+  Row,
+  Col,
+  Progress,
+  Tag,
+  Space,
+  Button,
   Empty,
   Divider,
-  Statistic
+  Statistic,
+  Alert
 } from 'antd'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
-import { 
+import {
   CloseOutlined,
   DatabaseOutlined,
   ClockCircleOutlined,
@@ -25,7 +26,8 @@ import {
   FolderOutlined,
   CheckCircleOutlined,
   StopOutlined,
-  CodeOutlined
+  CodeOutlined,
+  WarningOutlined
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { Repository } from '@/api/queries/repositories'
@@ -62,6 +64,11 @@ interface RepositoryVaultData {
   container_count: number
   has_services: boolean
   service_count: number
+  total_volumes?: number
+  internal_volumes?: number
+  external_volumes?: number
+  external_volume_names?: string[]
+  volume_status?: 'safe' | 'warning' | 'none'
 }
 
 interface ServiceData {
@@ -293,10 +300,50 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
                           <Tag color="purple" data-testid={`repo-detail-rediaccfile-${repository.repositoryName}`}>{t('resources:repositories.hasRediaccfile')}</Tag>
                         </div>
                       )}
+                      {repositoryData.repositoryData.docker_running && repositoryData.repositoryData.volume_status && repositoryData.repositoryData.volume_status !== 'none' && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Text type="secondary">Docker Volumes:</Text>
+                          {repositoryData.repositoryData.volume_status === 'safe' ? (
+                            <Tag color="success" icon={<CheckCircleOutlined />} data-testid={`repo-detail-volume-safe-${repository.repositoryName}`}>
+                              {repositoryData.repositoryData.internal_volumes} Safe Volume{repositoryData.repositoryData.internal_volumes !== 1 ? 's' : ''}
+                            </Tag>
+                          ) : repositoryData.repositoryData.volume_status === 'warning' ? (
+                            <Tag color="warning" icon={<WarningOutlined />} data-testid={`repo-detail-volume-warning-${repository.repositoryName}`}>
+                              {repositoryData.repositoryData.external_volumes} External, {repositoryData.repositoryData.internal_volumes} Internal
+                            </Tag>
+                          ) : null}
+                        </div>
+                      )}
                     </Space>
                   </Card>
                 </Col>
               </Row>
+
+              {/* External Volume Warning Alert */}
+              {repositoryData.repositoryData.volume_status === 'warning' && repositoryData.repositoryData.external_volume_names && repositoryData.repositoryData.external_volume_names.length > 0 && (
+                <Alert
+                  type="warning"
+                  showIcon
+                  icon={<WarningOutlined />}
+                  message="External Docker Volumes Detected"
+                  description={
+                    <div>
+                      <Text>The following volumes are stored outside the repository:</Text>
+                      <ul style={{ marginTop: 8, marginBottom: 8 }}>
+                        {repositoryData.repositoryData.external_volume_names.map((vol: string) => (
+                          <li key={vol}><Text code>{vol}</Text></li>
+                        ))}
+                      </ul>
+                      <Text type="secondary">
+                        <strong>Warning:</strong> If this repository is cloned, these volumes will be orphaned.
+                        Consider using bind mounts to <Text code>$REPO_PATH</Text> instead.
+                      </Text>
+                    </div>
+                  }
+                  style={{ marginBottom: 16 }}
+                  data-testid={`repo-detail-volume-warning-alert-${repository.repositoryName}`}
+                />
+              )}
 
               <Divider style={{ margin: '24px 0' }} data-testid="repo-detail-storage-divider">
                 <Space>

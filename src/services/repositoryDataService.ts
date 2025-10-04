@@ -13,6 +13,11 @@ interface Repository {
   container_count: number
   has_services: boolean
   service_count: number
+  total_volumes?: number
+  internal_volumes?: number
+  external_volumes?: number
+  external_volume_names?: string[]
+  volume_status?: 'safe' | 'warning' | 'none'
 }
 
 interface RepositoryCache {
