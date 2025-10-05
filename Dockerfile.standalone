@@ -2,8 +2,10 @@
 # This is for open-source users who want to run the console independently
 
 # Build stage
-FROM node:18-alpine AS builder
-LABEL com.rediacc.base-image="node:18-alpine"
+ARG NODE_IMAGE=node:18-alpine
+
+FROM ${NODE_IMAGE} AS builder
+LABEL com.rediacc.base-image="${NODE_IMAGE}"
 
 # Set build type (can be overridden at build time)
 ARG REDIACC_BUILD_TYPE=DEBUG
@@ -29,8 +31,10 @@ ENV VITE_APP_VERSION=${VITE_APP_VERSION}
 RUN npm run build
 
 # Runtime stage
-FROM nginx:alpine
-LABEL com.rediacc.base-image="nginx:alpine"
+ARG NGINX_IMAGE=nginx:alpine
+
+FROM ${NGINX_IMAGE}
+LABEL com.rediacc.base-image="${NGINX_IMAGE}"
 
 # Install gettext for envsubst (environment variable substitution)
 RUN apk add --no-cache gettext
