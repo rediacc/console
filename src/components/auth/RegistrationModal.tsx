@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Modal, Form, Input, Button, Steps, Alert, Space, Typography } from 'antd'
+import React, { useState, useRef } from 'react'
+import { Modal, Form, Input, Button, Steps, Alert, Space, Typography, Checkbox } from 'antd'
 import { 
   UserOutlined, 
   LockOutlined, 
@@ -12,12 +12,16 @@ import { useTranslation } from 'react-i18next'
 import { showMessage } from '@/utils/messages'
 import { hashPassword } from '@/utils/auth'
 import apiClient from '@/api/client'
+import HCaptcha from '@hcaptcha/react-hcaptcha'
 import { useFormStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing } from '@/utils/styleConstants'
 import { ModalSize } from '@/types/modal'
+import { LanguageLink } from '@/components/common/languageLink'
+
 
 const { Step } = Steps
 const { Text } = Typography
+const hCaptchaSiteKey = "6c56894a-a4f2-485e-a250-824adfec4656";//process.env.REACT_APP_HCAPTCHA_SITE_KEY || 
 
 interface RegistrationModalProps {
   visible: boolean
@@ -37,6 +41,7 @@ interface RegistrationForm {
   password: string
   passwordConfirm: string
   companyName: string
+  termsAccepted?: boolean
 }
 
 interface VerificationForm {
@@ -55,6 +60,9 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [hCaptchaToken, setHCaptchaToken] = useState<string | null>(null)
+  const hCaptchaRef = useRef<HCaptcha>(null)
+  
   const [registrationData, setRegistrationData] = useState<{
     email: string
     companyName: string
@@ -98,6 +106,18 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   }, [currentStep, autoFillData, autoSubmit, verificationForm])
 
   const handleRegistration = async (values: RegistrationForm) => {
+    // Check hCaptcha token
+    if (!hCaptchaToken) {
+      setError(t('auth:registration.captchaRequired', 'Please complete the captcha'))
+      return
+    }
+
+    // Check terms acceptance
+    if (!values.termsAccepted) {
+      setError(t('auth:registration.termsRequired', 'You must accept the terms and conditions'))
+      return
+    }
+
     setLoading(true)
     setError(null)
 
@@ -105,10 +125,12 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       // Hash the password
       const passwordHash = await hashPassword(values.password)
 
-      // Call CreateNewCompany with headers
+      // Call CreateNewCompany with headers and captcha token
       const axiosClient = (apiClient as any).client
       const response = await axiosClient.post('/CreateNewCompany', {
-        companyName: values.companyName
+        companyName: values.companyName,
+        captchaToken: hCaptchaToken,
+        userEmailAddress: values.email
       }, {
         headers: {
           'Rediacc-UserEmail': values.email,
@@ -135,9 +157,32 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       const errorMessage = error.message || t('auth:registration.registrationFailed')
       setError(errorMessage)
       showMessage('error', errorMessage)
+      
+      // Reset captcha on error
+      if (hCaptchaRef.current) {
+        hCaptchaRef.current.resetCaptcha()
+        setHCaptchaToken(null)
+      }
     } finally {
       setLoading(false)
     }
+  }
+
+  // HCaptcha handlers
+  const onHCaptchaChange = (token: string | null) => {
+    setHCaptchaToken(token)
+    if (token) {
+      setError(null) // Clear error when captcha is completed
+    }
+  }
+
+  const onHCaptchaExpire = () => {
+    setHCaptchaToken(null)
+  }
+
+  const onHCaptchaError = (err: string) => {
+    console.error('HCaptcha error:', err)
+    setHCaptchaToken(null)
   }
 
   const handleVerification = async (values: VerificationForm) => {
@@ -185,8 +230,15 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
     setCurrentStep(0)
     setError(null)
     setRegistrationData(null)
+    setHCaptchaToken(null)
     registrationForm.resetFields()
     verificationForm.resetFields()
+    
+    // Reset captcha when closing
+    if (hCaptchaRef.current) {
+      hCaptchaRef.current.resetCaptcha()
+    }
+    
     onClose()
   }
 
@@ -205,6 +257,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           { required: true, message: t('common:messages.required') },
           { min: 3, message: t('auth:registration.companyNameMin') }
         ]}
+        style={{ marginBottom: 12 }}
       >
         <Input
           prefix={<BankOutlined />}
@@ -222,6 +275,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           { required: true, message: t('common:messages.required') },
           { type: 'email', message: t('common:messages.invalidEmail') }
         ]}
+        style={{ marginBottom: 12 }}
       >
         <Input
           prefix={<MailOutlined />}
@@ -240,6 +294,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           { required: true, message: t('common:messages.required') },
           { min: 8, message: t('auth:registration.passwordMin') }
         ]}
+        style={{ marginBottom: 12 }}
       >
         <Input.Password
           prefix={<LockOutlined />}
@@ -266,6 +321,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
             },
           }),
         ]}
+        style={{ marginBottom: 12 }}
       >
         <Input.Password
           prefix={<LockOutlined />}
@@ -277,16 +333,58 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         />
       </Form.Item>
 
-      <Form.Item>
+      {/* Terms and HCaptcha side by side */}
+      <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', marginBottom: 12 }}>
+        {/* Terms and Conditions */}
+        <Form.Item
+          name="termsAccepted"
+          valuePropName="checked"
+          rules={[
+            {
+              validator: (_, value) =>
+                value ? Promise.resolve() : Promise.reject(new Error(t('auth:registration.termsRequired', 'You must accept the terms and conditions')))
+            }
+          ]}
+          style={{ marginBottom: 0, flex: 1 }}
+        >
+          <Checkbox>
+            {t('auth:registration.termsText', 'I accept the terms and conditions {terms} and {privacy}').split('{terms}')[0]}
+            <LanguageLink to="/terms" className="underline" target='_blank'>
+              {t('auth:registration.termsLink', 'Terms of Use')}
+            </LanguageLink>
+            {t('auth:registration.termsText', 'I accept the terms and conditions {terms} and {privacy}').split('{terms}')[1].split('{privacy}')[0]}
+            <LanguageLink to="/privacy" className="underline" target='_blank'>
+              {t('auth:registration.privacyLink', 'Privacy Policy')}
+            </LanguageLink>
+            {t('auth:registration.termsText', 'I accept the terms and conditions {terms} and {privacy}').split('{privacy}')[1]}
+          </Checkbox>
+        </Form.Item>
+
+        {/* HCaptcha */}
+        <div style={{ flex: '0 0 auto' }}>
+          <HCaptcha
+            sitekey={hCaptchaSiteKey}
+            onVerify={onHCaptchaChange}
+            onExpire={onHCaptchaExpire}
+            onError={onHCaptchaError}
+            ref={hCaptchaRef}
+            theme="light"
+            size="normal"
+          />
+        </div>
+      </div>
+
+      <Form.Item style={{ marginBottom: 0 }}>
         <Button
           type="primary"
           htmlType="submit"
           block
           size="large"
           loading={loading}
+          disabled={!hCaptchaToken}
           style={{
             // Button styles handled by CSS
-            marginTop: spacing('SM')
+            marginTop: 8
           }}
           data-testid="registration-submit-button"
         >
@@ -304,7 +402,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       requiredMark={false}
       data-testid="registration-verification-form"
     >
-      <Space direction="vertical" size={spacing('MD')} style={{ width: '100%' }}>
+      <Space direction="vertical" size={spacing('SM')} style={{ width: '100%' }}>
         <Alert
           message={t('auth:registration.verificationRequired')}
           description={t('auth:registration.verificationDescription')}
@@ -321,6 +419,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
             { len: 6, message: t('auth:registration.activationCodeLength') },
             { pattern: /^\d{6}$/, message: t('auth:registration.activationCodeFormat') }
           ]}
+          style={{ marginBottom: 12 }}
         >
           <Input
             size="large"
@@ -337,7 +436,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           />
         </Form.Item>
 
-        <Form.Item>
+        <Form.Item style={{ marginBottom: 0 }}>
           <Button
             type="primary"
             htmlType="submit"
@@ -347,7 +446,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
             style={{
               ...styles.buttonPrimary,
               height: DESIGN_TOKENS.DIMENSIONS.INPUT_HEIGHT,
-              marginTop: spacing('SM')
+              marginTop: 8
             }}
             data-testid="registration-verify-button"
           >
@@ -359,9 +458,9 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   )
 
   const renderSuccess = () => (
-    <div style={{ textAlign: 'center', padding: `${spacing('XXXL')}px 0` }} data-testid="registration-success-container">
+    <div style={{ textAlign: 'center', padding: `${spacing('LG')}px 0` }} data-testid="registration-success-container">
       <CheckCircleOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_XXXL, color: '#52c41a' }} data-testid="registration-success-icon" />
-      <Typography.Title level={4} style={{ marginTop: spacing('LG') }} data-testid="registration-success-title">
+      <Typography.Title level={4} style={{ marginTop: spacing('MD') }} data-testid="registration-success-title">
         {t('auth:registration.successTitle')}
       </Typography.Title>
       <Text type="secondary" data-testid="registration-success-description">
@@ -393,8 +492,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       destroyOnHidden
       data-testid="registration-modal"
     >
-      <Space direction="vertical" size={spacing('LG')} style={{ width: '100%' }}>
-        <Steps current={currentStep} size="small" data-testid="registration-steps">
+      <Space direction="vertical" size={spacing('SM')} style={{ width: '100%' }}>
+        <Steps current={currentStep} size="small" style={{ marginBottom: 8 }} data-testid="registration-steps">
           <Step title={t('auth:registration.steps.register')} icon={<UserOutlined />} data-testid="registration-step-register" />
           <Step title={t('auth:registration.steps.verify')} icon={<SafetyCertificateOutlined />} data-testid="registration-step-verify" />
           <Step title={t('auth:registration.steps.complete')} icon={<CheckCircleOutlined />} data-testid="registration-step-complete" />
