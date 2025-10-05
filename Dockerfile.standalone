@@ -3,6 +3,7 @@
 
 # Build stage
 FROM node:18-alpine AS builder
+LABEL com.rediacc.base-image="node:18-alpine"
 
 # Set build type (can be overridden at build time)
 ARG REDIACC_BUILD_TYPE=DEBUG
@@ -29,6 +30,7 @@ RUN npm run build
 
 # Runtime stage
 FROM nginx:alpine
+LABEL com.rediacc.base-image="nginx:alpine"
 
 # Install gettext for envsubst (environment variable substitution)
 RUN apk add --no-cache gettext
