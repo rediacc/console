@@ -1,9 +1,11 @@
 # Dockerfile for standalone Rediacc Console deployment
 # This is for open-source users who want to run the console independently
 
-# Build stage
+# Base image ARGs must be declared before any FROM for multi-stage build
 ARG NODE_IMAGE=node:18-alpine
+ARG NGINX_IMAGE=nginx:alpine
 
+# Build stage
 FROM ${NODE_IMAGE} AS builder
 LABEL com.rediacc.base-image="${NODE_IMAGE}"
 
@@ -31,8 +33,6 @@ ENV VITE_APP_VERSION=${VITE_APP_VERSION}
 RUN npm run build
 
 # Runtime stage
-ARG NGINX_IMAGE=nginx:alpine
-
 FROM ${NGINX_IMAGE}
 LABEL com.rediacc.base-image="${NGINX_IMAGE}"
 
