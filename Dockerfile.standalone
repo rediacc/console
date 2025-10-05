@@ -7,6 +7,7 @@ ARG NGINX_IMAGE=nginx:alpine
 
 # Build stage
 FROM ${NODE_IMAGE} AS builder
+ARG NODE_IMAGE
 LABEL com.rediacc.base-image="${NODE_IMAGE}"
 
 # Set build type (can be overridden at build time)
@@ -34,6 +35,7 @@ RUN npm run build
 
 # Runtime stage
 FROM ${NGINX_IMAGE}
+ARG NGINX_IMAGE
 LABEL com.rediacc.base-image="${NGINX_IMAGE}"
 
 # Install gettext for envsubst (environment variable substitution)
