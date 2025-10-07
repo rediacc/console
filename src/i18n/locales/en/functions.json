@@ -242,6 +242,10 @@
         }
       }
     },
+    "clone": {
+      "name": "Clone",
+      "description": "Clone repository on the same machine"
+    },
     "push": {
       "name": "push",
       "description": "Push repository to remote storage",

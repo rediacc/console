@@ -83,6 +83,8 @@
     "failedToCreateQueueItem": "Failed to create queue item",
     "failedToCreateRepository": "Failed to create destination repository",
     "cleanedUpFailedPush": "Cleaned up repository after failed push",
+    "cloneStarted": "Clone operation started: {{dest}}",
+    "failedToCloneRepository": "Failed to clone repository",
     "deleteSuccess": "Repository deleted successfully",
     "deleteError": "Failed to delete repository",
     "placeholders": {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Empty, Card, Row, Col, Progress, Tooltip } from 'antd'
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
-import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, CloudDownloadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined, GlobalOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined } from '@/utils/optimizedIcons'
+import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, CloudDownloadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined, GlobalOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined, CopyOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { type QueueFunction } from '@/api/queries/queue'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
@@ -460,6 +460,117 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       }
     } catch (error) {
       showMessage('error', t('resources:repositories.failedToCreateQueueItem'))
+    }
+  }
+
+  const handleCloneRepository = async (repository: Repository) => {
+    try {
+      // Find team vault data
+      const team = teams?.find(t => t.teamName === machine.teamName)
+
+      // Find the repository vault data
+      const repositoryData = teamRepositories.find(r => r.repositoryName === repository.name)
+
+      if (!repositoryData || !repositoryData.vaultContent) {
+        showMessage('error', t('resources:repositories.noCredentialsFound', { name: repository.name }))
+        return
+      }
+
+      // Find the grand repository vault if grandGuid exists
+      let grandRepositoryVault = repositoryData.vaultContent
+      if (repositoryData.grandGuid) {
+        const grandRepository = teamRepositories.find(r => r.repositoryGuid === repositoryData.grandGuid)
+        if (grandRepository && grandRepository.vaultContent) {
+          grandRepositoryVault = grandRepository.vaultContent
+        }
+      }
+
+      // Generate destination filename
+      const timestamp = new Date().toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '-')
+      const state = repository.mounted ? 'online' : 'offline'
+      const destFilename = `${repository.name}-clone-${timestamp}`
+
+      // Create a new repository credential for the clone
+      try {
+        await createRepositoryMutation.mutateAsync({
+          teamName: machine.teamName,
+          repositoryName: destFilename,
+          parentRepoName: repository.name
+        })
+
+        // Store the created repository name for potential cleanup
+        setCreatedRepositoryName(destFilename)
+
+        // Immediately refresh the repositories list to get the new repository
+        const { data: updatedRepos } = await refetchRepositories()
+
+        // Find the newly created repository to get its GUID
+        const newRepo = updatedRepos?.find(r => r.repositoryName === destFilename)
+
+        if (!newRepo || !newRepo.repositoryGuid) {
+          throw new Error('Could not find newly created repository')
+        }
+
+        // Build params for push function
+        const params: Record<string, any> = {
+          repo: repositoryData.repositoryGuid,
+          dest: newRepo.repositoryGuid,
+          destinationType: 'machine',
+          to: machine.machineName,
+          state: state,
+          grand: repositoryData.grandGuid || repositoryData.repositoryGuid || ''
+        }
+
+        // Build queue vault
+        const queueVault = await buildQueueVault({
+          teamName: machine.teamName,
+          machineName: machine.machineName,
+          bridgeName: machine.bridgeName,
+          functionName: 'push',
+          params,
+          priority: 4,
+          description: `Clone ${repository.name} to ${destFilename}`,
+          addedVia: 'machine-repository-list-clone',
+          teamVault: team?.vaultContent || '{}',
+          machineVault: machine.vaultContent || '{}',
+          repositoryGuid: repositoryData.repositoryGuid,
+          repositoryVault: grandRepositoryVault,
+          destinationMachineVault: machine.vaultContent
+        })
+
+        const response = await managedQueueMutation.mutateAsync({
+          teamName: machine.teamName,
+          machineName: machine.machineName,
+          bridgeName: machine.bridgeName,
+          queueVault,
+          priority: 4
+        })
+
+        if (response?.taskId) {
+          showMessage('success', t('resources:repositories.cloneStarted', { dest: destFilename }))
+          setQueueTraceModal({ visible: true, taskId: response.taskId })
+        } else if (response?.isQueued) {
+          showMessage('info', t('resources:repositories.highestPriorityQueued'))
+        }
+
+      } catch (createError) {
+        // If we already created the repository but failed to start the clone, clean it up
+        if (createdRepositoryName) {
+          try {
+            await deleteRepositoryMutation.mutateAsync({
+              teamName: machine.teamName,
+              repositoryName: createdRepositoryName
+            })
+          } catch (deleteError) {
+            // Failed to cleanup repository after error
+          }
+        }
+        showMessage('error', t('resources:repositories.failedToCloneRepository'))
+        return
+      }
+
+    } catch (error) {
+      showMessage('error', t('resources:repositories.failedToCloneRepository'))
     }
   }
 
@@ -1183,7 +1294,15 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             onClick: () => handleQuickAction(record, 'down', 4, 'unmount')
           })
         }
-        
+
+        // Clone - always available
+        menuItems.push({
+          key: 'clone',
+          label: t('functions:functions.clone.name'),
+          icon: <CopyOutlined style={componentStyles.icon.small} />,
+          onClick: () => handleCloneRepository(record)
+        })
+
         // Push - always available
         menuItems.push({
           key: 'push',
