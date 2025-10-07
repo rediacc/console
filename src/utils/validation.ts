@@ -7,8 +7,8 @@ const createResourceNameSchema = (resourceType: string) =>
     .max(100, `${resourceType} name must be less than 100 characters`)
 
 // Resource name schemas
-const resourceTypes = ['Team', 'Region', 'Bridge', 'Machine', 'Repository', 'Storage', 'Schedule', 'Cluster', 'Pool', 'Image', 'Snapshot', 'Clone'] as const
-export const [teamNameSchema, regionNameSchema, bridgeNameSchema, machineNameSchema, repositoryNameSchema, storageNameSchema, scheduleNameSchema, clusterNameSchema, poolNameSchema, imageNameSchema, snapshotNameSchema, cloneNameSchema] = 
+const resourceTypes = ['Team', 'Region', 'Bridge', 'Machine', 'Repository', 'Storage', 'Cluster', 'Pool', 'Image', 'Snapshot', 'Clone'] as const
+export const [teamNameSchema, regionNameSchema, bridgeNameSchema, machineNameSchema, repositoryNameSchema, storageNameSchema, clusterNameSchema, poolNameSchema, imageNameSchema, snapshotNameSchema, cloneNameSchema] =
   resourceTypes.map(type => createResourceNameSchema(type))
 
 // User schemas
@@ -44,7 +44,6 @@ const resourceSchemas = {
   machine: { teamName: teamNameSchema, regionName: regionNameSchema, bridgeName: bridgeNameSchema, machineName: machineNameSchema },
   repository: { teamName: teamNameSchema, repositoryName: repositoryNameSchema },
   storage: { teamName: teamNameSchema, storageName: storageNameSchema },
-  schedule: { teamName: teamNameSchema, scheduleName: scheduleNameSchema },
   cluster: { clusterName: clusterNameSchema },
   pool: { teamName: teamNameSchema, clusterName: clusterNameSchema, poolName: poolNameSchema },
   image: { teamName: teamNameSchema, poolName: poolNameSchema, imageName: imageNameSchema },
@@ -93,7 +92,6 @@ export const createRepositorySchema = withVault({
     path: ['machineName']  // Show error on machine field
   })
 export const createStorageSchema = withVault(resourceSchemas.storage, 'storageVault')
-export const createScheduleSchema = withVault(resourceSchemas.schedule, 'scheduleVault')
 export const createClusterSchema = withVault(resourceSchemas.cluster, 'clusterVault')
 export const createPoolSchema = withVault(resourceSchemas.pool, 'poolVault')
 export const createImageSchema = withVault(resourceSchemas.image, 'imageVault')
@@ -130,7 +128,6 @@ export const editBridgeSchema = createEditSchema(bridgeNameSchema, 'bridgeName')
 export const editMachineSchema = z.object(resourceSchemas.machine)
 export const editRepositorySchema = createEditSchema(repositoryNameSchema, 'repositoryName')
 export const editStorageSchema = createEditSchema(storageNameSchema, 'storageName')
-export const editScheduleSchema = createEditSchema(scheduleNameSchema, 'scheduleName')
 
 // Type exports
 export type CreateTeamForm = z.infer<typeof createTeamSchema>
@@ -139,7 +136,6 @@ export type CreateBridgeForm = z.infer<typeof createBridgeSchema>
 export type CreateMachineForm = z.infer<typeof createMachineSchema>
 export type CreateRepositoryForm = z.infer<typeof createRepositorySchema>
 export type CreateStorageForm = z.infer<typeof createStorageSchema>
-export type CreateScheduleForm = z.infer<typeof createScheduleSchema>
 export type CreateClusterForm = z.infer<typeof createClusterSchema>
 export type CreatePoolForm = z.infer<typeof createPoolSchema>
 export type CreateImageForm = z.infer<typeof createImageSchema>
@@ -154,4 +150,3 @@ export type EditBridgeForm = z.infer<typeof editBridgeSchema>
 export type EditMachineForm = z.infer<typeof editMachineSchema>
 export type EditRepositoryForm = z.infer<typeof editRepositorySchema>
 export type EditStorageForm = z.infer<typeof editStorageSchema>
-export type EditScheduleForm = z.infer<typeof editScheduleSchema>

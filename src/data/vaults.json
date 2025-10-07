@@ -140,65 +140,6 @@
         }
       }
     },
-    "SCHEDULE": {
-      "descriptionKey": "fields.SCHEDULE.description",
-      "required": ["cron", "task"],
-      "optional": ["timezone", "notifications", "retry"],
-      "fields": {
-        "cron": {
-          "type": "string",
-          "example": "Schedule in cron format. Example: 0 2 * * * (daily at 2 AM)"
-        },
-        "task": {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "enum": ["backup", "restore", "sync", "cleanup"]
-            },
-            "target": {
-              "type": "string"
-            },
-            "options": {
-              "type": "object"
-            }
-          }
-        },
-        "timezone": {
-          "type": "string",
-          "example": "Time zone name. Example: America/New_York"
-        },
-        "notifications": {
-          "type": "object",
-          "properties": {
-            "onSuccess": {
-              "type": "boolean"
-            },
-            "onFailure": {
-              "type": "boolean"
-            },
-            "channels": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "enum": ["email", "webhook", "slack"]
-              }
-            }
-          }
-        },
-        "retry": {
-          "type": "object",
-          "properties": {
-            "attempts": {
-              "type": "number"
-            },
-            "interval": {
-              "type": "number"
-            }
-          }
-        }
-      }
-    },
     "REGION": {
       "descriptionKey": "fields.REGION.description",
       "required": [],

@@ -10,7 +10,6 @@ import {
   ApiOutlined,
   GlobalOutlined,
   InboxOutlined,
-  ScheduleOutlined,
   FilterOutlined,
   CheckOutlined,
   MinusCircleOutlined
@@ -43,7 +42,7 @@ const ArchitecturePage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'hierarchy' | 'force' | 'radial'>('hierarchy')
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [selectedEntityTypes, setSelectedEntityTypes] = useState<string[]>([
-    'company', 'user', 'team', 'region', 'bridge', 'machine', 'repository', 'schedule', 'storage'
+    'company', 'user', 'team', 'region', 'bridge', 'machine', 'repository', 'storage'
   ])
   const [isVisualizationLoading, setIsVisualizationLoading] = useState(false)
   const svgRef = useRef<SVGSVGElement | null>(null)
@@ -60,7 +59,6 @@ const ArchitecturePage: React.FC = () => {
     { value: 'bridge', label: t('architecture.nodeBridge'), icon: '🌉' },
     { value: 'machine', label: t('architecture.nodeMachine'), icon: '💻' },
     { value: 'repository', label: t('architecture.nodeRepository'), icon: '📦' },
-    { value: 'schedule', label: t('architecture.nodeSchedule'), icon: '📅' },
     { value: 'storage', label: t('architecture.nodeStorage'), icon: '💾' },
   ]
 
@@ -126,7 +124,6 @@ const ArchitecturePage: React.FC = () => {
       bridge: '🔌',
       machine: '💻',
       repository: '📁',
-      schedule: '📅',
       storage: '☁️',
     }
     return icons[nodeType] || '📌'
@@ -142,7 +139,6 @@ const ArchitecturePage: React.FC = () => {
       bridge: '#b8b8b8',
       machine: '#aeaeae',
       repository: '#a4a4a4',
-      schedule: '#9a9a9a',
       storage: '#909090',
     }
     
@@ -154,7 +150,6 @@ const ArchitecturePage: React.FC = () => {
       bridge: '#8a97a8',
       machine: '#9aa7b8',
       repository: '#aab7c8',
-      schedule: '#bac7d8',
       storage: '#cad7e8',
     }
     
@@ -369,7 +364,6 @@ const ArchitecturePage: React.FC = () => {
       const bridges = nodes.filter(n => n.nodeType === 'bridge')
       const machines = nodes.filter(n => n.nodeType === 'machine')
       const repositories = nodes.filter(n => n.nodeType === 'repository')
-      const schedules = nodes.filter(n => n.nodeType === 'schedule')
       const storages = nodes.filter(n => n.nodeType === 'storage')
 
       // Build teams branch with their related nodes
@@ -393,11 +387,7 @@ const ArchitecturePage: React.FC = () => {
         // Add repositories for this team (if any)
         const teamRepos = repositories.filter(r => r.parentTeam === team.nodeId)
         teamChildren.push(...teamRepos)
-        
-        // Add schedules for this team (if any)
-        const teamSchedules = schedules.filter(s => s.parentTeam === team.nodeId)
-        teamChildren.push(...teamSchedules)
-        
+
         // Add storages for this team (if any)
         const teamStorages = storages.filter(s => s.parentTeam === team.nodeId)
         teamChildren.push(...teamStorages)
@@ -679,7 +669,6 @@ const ArchitecturePage: React.FC = () => {
     regions: selectedEntityTypes.includes('region') ? (data.nodes.regions?.length || 0) : 0,
     bridges: selectedEntityTypes.includes('bridge') ? (data.nodes.bridges?.length || 0) : 0,
     repositories: selectedEntityTypes.includes('repository') ? (data.nodes.repositories?.length || 0) : 0,
-    schedules: selectedEntityTypes.includes('schedule') ? (data.nodes.schedules?.length || 0) : 0,
     storages: selectedEntityTypes.includes('storage') ? (data.nodes.storages?.length || 0) : 0,
   }
 
@@ -835,14 +824,7 @@ const ArchitecturePage: React.FC = () => {
                 />
               </Col>
               <Col span={3}>
-                <Statistic 
-                  title={t('architecture.schedules')}
-                  value={nodeCounts.schedules}
-                  prefix={<ScheduleOutlined />}
-                />
-              </Col>
-              <Col span={3}>
-                <Statistic 
+                <Statistic
                   title={t('architecture.storages')}
                   value={nodeCounts.storages}
                   prefix={<CloudOutlined />}
@@ -889,7 +871,6 @@ const ArchitecturePage: React.FC = () => {
               bridge: t('architecture.nodeBridge'),
               machine: t('architecture.nodeMachine'),
               repository: t('architecture.nodeRepository'),
-              schedule: t('architecture.nodeSchedule'),
               storage: t('architecture.nodeStorage'),
             }).map(([type, label]) => (
               <Col span={6} key={type} data-testid={`architecture-legend-${type}`}>

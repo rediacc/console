@@ -16,7 +16,6 @@ import {
   DesktopOutlined,
   TeamOutlined,
   DatabaseOutlined,
-  ScheduleOutlined,
   CloudServerOutlined,
   CopyOutlined,
   SyncOutlined,
@@ -1167,18 +1166,6 @@ const SystemPage: React.FC = () => {
       render: (count: number) => (
         <Space>
           <CloudServerOutlined />
-          <span>{count || 0}</span>
-        </Space>
-      ),
-    },
-    {
-      title: 'Schedules',
-      dataIndex: 'scheduleCount',
-      key: 'scheduleCount',
-      width: 100,
-      render: (count: number) => (
-        <Space>
-          <ScheduleOutlined />
           <span>{count || 0}</span>
         </Space>
       ),

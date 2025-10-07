@@ -55,7 +55,6 @@ const resourceIcons: Record<string, React.ReactNode> = {
   'Bridge': <ApiOutlined />,
   'Machine': <DesktopOutlined />,
   'Repo': <InboxOutlined />,
-  'Schedule': <CalendarOutlined />,
   'Storage': <CloudOutlined />
 };
 

@@ -1,14 +1,13 @@
 import React, { useState, useRef } from 'react'
 import { Card, Tabs, Button, Space, Modal, Tag, Typography, Table, Row, Col, Empty, Spin, Tooltip } from 'antd'
 import { useLocation } from 'react-router-dom'
-import { 
-  PlusOutlined, 
-  EditOutlined, 
+import {
+  PlusOutlined,
+  EditOutlined,
   DeleteOutlined,
   CloudOutlined,
   InboxOutlined,
   DesktopOutlined,
-  ScheduleOutlined,
   FunctionOutlined,
   WifiOutlined,
   HistoryOutlined,
@@ -54,24 +53,14 @@ import {
 } from '@/api/queries/repositories'
 
 // Storage queries
-import { 
-  useStorage, 
-  useCreateStorage, 
+import {
+  useStorage,
+  useCreateStorage,
   useUpdateStorageName,
-  useDeleteStorage, 
-  useUpdateStorageVault, 
-  Storage 
+  useDeleteStorage,
+  useUpdateStorageVault,
+  Storage
 } from '@/api/queries/storage'
-
-// Schedule queries
-import { 
-  useSchedules, 
-  useCreateSchedule, 
-  useUpdateScheduleName,
-  useDeleteSchedule, 
-  useUpdateScheduleVault, 
-  Schedule 
-} from '@/api/queries/schedules'
 
 import { useDropdownData } from '@/api/queries/useDropdownData'
 // Validation schemas now handled in UnifiedResourceModal
@@ -109,7 +98,6 @@ const ResourcesPage: React.FC = () => {
   // Refs for table containers
   const repositoryTableRef = useRef<HTMLDivElement>(null)
   const storageTableRef = useRef<HTMLDivElement>(null)
-  const scheduleTableRef = useRef<HTMLDivElement>(null)
   
   // Team state - removed create team functionality (exists in System page)
   
@@ -124,7 +112,6 @@ const ResourcesPage: React.FC = () => {
       case 'machines': return t('machines.createMachine')
       case 'repositories': return t('repositories.createRepository')
       case 'storage': return t('storage.createStorage')
-      case 'schedules': return t('schedules.createSchedule')
       default: return t('general.create')
     }
   }
@@ -135,7 +122,6 @@ const ResourcesPage: React.FC = () => {
       case 'machines': return 'machines'
       case 'repositories': return 'repositories'
       case 'storage': return 'storage'
-      case 'schedules': return 'schedules'
       default: return teamResourcesTab
     }
   }
@@ -205,8 +191,7 @@ const ResourcesPage: React.FC = () => {
     const mutations = {
       machine: deleteMachineMutation,
       repository: deleteRepositoryMutation,
-      storage: deleteStorageMutation,
-      schedule: deleteScheduleMutation
+      storage: deleteStorageMutation
     }
     
     // Get the correct translation namespace and key
@@ -248,12 +233,6 @@ const ResourcesPage: React.FC = () => {
               storageName: resourceName,
             } as any)
             refetchStorage()
-          } else if (resourceType === 'schedule') {
-            await mutation.mutateAsync({
-              teamName: resource.teamName,
-              scheduleName: resourceName,
-            } as any)
-            refetchSchedules()
           }
           showMessage('success', t(getTranslationKey('deleteSuccess')))
         } catch (error) {
@@ -298,15 +277,6 @@ const ResourcesPage: React.FC = () => {
   const updateStorageNameMutation = useUpdateStorageName()
   const deleteStorageMutation = useDeleteStorage()
   const updateStorageVaultMutation = useUpdateStorageVault()
-
-  // Schedule hooks - only fetch when schedules tab is active
-  const { data: schedules = [], isLoading: schedulesLoading, refetch: refetchSchedules } = useSchedules(
-    selectedTeams.length > 0 && teamResourcesTab === 'schedules' ? selectedTeams : undefined
-  )
-  const createScheduleMutation = useCreateSchedule()
-  const updateScheduleNameMutation = useUpdateScheduleName()
-  const deleteScheduleMutation = useDeleteSchedule()
-  const updateScheduleVaultMutation = useUpdateScheduleVault()
   
   // Queue mutation - using managed version for high-priority handling
   const createQueueItemMutation = useManagedQueueItem()
@@ -342,13 +312,6 @@ const ResourcesPage: React.FC = () => {
   })
   
   const storagePageSize = useDynamicPageSize(storageTableRef, {
-    containerOffset: 220,
-    minRows: 5,
-    maxRows: 50,
-    rowHeight: 55
-  })
-  
-  const schedulePageSize = useDynamicPageSize(scheduleTableRef, {
     containerOffset: 220,
     minRows: 5,
     maxRows: 50,
@@ -435,8 +398,7 @@ const ResourcesPage: React.FC = () => {
       const mutations = {
         machine: { create: createMachineMutation, updateName: updateMachineNameMutation, updateVault: updateMachineVaultMutation },
         repository: { create: createRepositoryMutation, updateName: updateRepositoryNameMutation, updateVault: updateRepositoryVaultMutation },
-        storage: { create: createStorageMutation, updateName: updateStorageNameMutation, updateVault: updateStorageVaultMutation },
-        schedule: { create: createScheduleMutation, updateName: updateScheduleNameMutation, updateVault: updateScheduleVaultMutation }
+        storage: { create: createStorageMutation, updateName: updateStorageNameMutation, updateVault: updateStorageVaultMutation }
       }
       
       if (mode === 'create') {
@@ -650,12 +612,6 @@ const ResourcesPage: React.FC = () => {
               currentStorageName: currentName,
               newStorageName: newName,
             } as any)
-          } else if (resourceType === 'schedule') {
-            await mutation.mutateAsync({
-              teamName: currentResource.teamName,
-              currentScheduleName: currentName,
-              newScheduleName: newName,
-            } as any)
           }
         }
         
@@ -682,13 +638,6 @@ const ResourcesPage: React.FC = () => {
               teamName: currentResource.teamName,
               storageName: newName || currentName,
               storageVault: vaultData,
-              vaultVersion: currentResource.vaultVersion + 1,
-            } as any)
-          } else if (resourceType === 'schedule') {
-            await vaultMutation.mutateAsync({
-              teamName: currentResource.teamName,
-              scheduleName: newName || currentName,
-              scheduleVault: vaultData,
               vaultVersion: currentResource.vaultVersion + 1,
             } as any)
           }
@@ -719,8 +668,7 @@ const ResourcesPage: React.FC = () => {
       const mutations = {
         machine: updateMachineVaultMutation,
         repository: updateRepositoryVaultMutation,
-        storage: updateStorageVaultMutation,
-        schedule: updateScheduleVaultMutation
+        storage: updateStorageVaultMutation
       }
       
       const mutation = mutations[resourceType as keyof typeof mutations]
@@ -745,13 +693,6 @@ const ResourcesPage: React.FC = () => {
           storageVault: vault,
           vaultVersion: version,
         } as any)
-      } else if (resourceType === 'schedule') {
-        await mutation.mutateAsync({
-          teamName: currentResource.teamName,
-          scheduleName: currentResource.scheduleName,
-          scheduleVault: vault,
-          vaultVersion: version,
-        } as any)
       }
     } catch (error) {
       // Error handled by mutation
@@ -760,7 +701,6 @@ const ResourcesPage: React.FC = () => {
 
   const handleDeleteRepository = (repository: Repository) => handleDelete('repository', repository)
   const handleDeleteStorage = (storage: Storage) => handleDelete('storage', storage)
-  const handleDeleteSchedule = (schedule: Schedule) => handleDelete('schedule', schedule)
 
   // Generic function selection handler
   const handleResourceFunctionSelected = async (
@@ -1124,116 +1064,19 @@ const ResourcesPage: React.FC = () => {
     },
   ]
 
-  // Schedule columns
-  const scheduleColumns = [
-    {
-      title: t('schedules.scheduleName'),
-      dataIndex: 'scheduleName',
-      key: 'scheduleName',
-      ellipsis: true,
-      render: (text: string) => (
-        <Space>
-          <ScheduleOutlined style={{ color: '#556b2f' }} />
-          <strong>{text}</strong>
-        </Space>
-      ),
-    },
-    {
-      title: t('general.team'),
-      dataIndex: 'teamName',
-      key: 'teamName',
-      width: 150,
-      ellipsis: true,
-      render: (teamName: string) => <Tag color="#8FBC8F">{teamName}</Tag>,
-    },
-    ...(uiMode === 'expert' ? [{
-      title: t('general.vaultVersion'),
-      dataIndex: 'vaultVersion',
-      key: 'vaultVersion',
-      width: 100,
-      align: 'center' as const,
-      render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
-    }] : []),
-    {
-      title: t('common:table.actions'),
-      key: 'actions',
-      width: 250,
-      render: (_: any, record: Schedule) => (
-        <Space>
-          <Tooltip title={t('common:actions.edit')}>
-            <Button
-              type="primary"
-              size="small"
-              icon={<EditOutlined />}
-              style={styles.touchTargetSmall}
-              data-testid={`resources-schedule-edit-${record.scheduleName}`}
-              onClick={() => {
-                setCurrentResource(record);
-                openUnifiedModal('schedule', 'edit', record);
-              }}
-              aria-label={t('common:actions.edit')}
-            />
-          </Tooltip>
-          <Tooltip title={t('machines:trace')}>
-            <Button
-              type="primary"
-              size="small"
-              icon={<HistoryOutlined />}
-              style={styles.touchTargetSmall}
-              data-testid={`resources-schedule-trace-${record.scheduleName}`}
-              onClick={() => {
-                setAuditTraceModal({
-                  open: true,
-                  entityType: 'Schedule',
-                  entityIdentifier: record.scheduleName,
-                  entityName: record.scheduleName
-                });
-              }}
-              aria-label={t('machines:trace')}
-            />
-          </Tooltip>
-          <Tooltip title={t('common:actions.delete')}>
-            <Button
-              type="primary"
-              danger
-              size="small"
-              icon={<DeleteOutlined />}
-              style={styles.touchTargetSmall}
-              data-testid={`resources-schedule-delete-${record.scheduleName}`}
-              onClick={() => {
-                Modal.confirm({
-                  title: t('schedules.deleteSchedule'),
-                  content: t('schedules.confirmDelete', { scheduleName: record.scheduleName }),
-                  okText: t('general.yes'),
-                  okType: 'danger',
-                  cancelText: t('general.no'),
-                  onOk: () => handleDeleteSchedule(record),
-                });
-              }}
-              aria-label={t('common:actions.delete')}
-            />
-          </Tooltip>
-        </Space>
-      ),
-    },
-  ]
-
   // Check if we're currently submitting or updating vault
   const isSubmitting = createMachineMutation.isPending ||
                       updateMachineNameMutation.isPending ||
                       updateMachineBridgeMutation.isPending ||
-                      createRepositoryMutation.isPending || 
+                      createRepositoryMutation.isPending ||
                       updateRepositoryNameMutation.isPending ||
                       createStorageMutation.isPending ||
                       updateStorageNameMutation.isPending ||
-                      createScheduleMutation.isPending ||
-                      updateScheduleNameMutation.isPending ||
                       createQueueItemMutation.isPending
-                      
+
   const isUpdatingVault = updateMachineVaultMutation.isPending ||
                          updateRepositoryVaultMutation.isPending ||
-                         updateStorageVaultMutation.isPending ||
-                         updateScheduleVaultMutation.isPending
+                         updateStorageVaultMutation.isPending
 
   const teamResourcesTabs = [
     {
@@ -1418,50 +1261,6 @@ const ResourcesPage: React.FC = () => {
         </div>
       ),
     },
-    {
-      key: 'schedules',
-      label: (
-        <Tooltip title={t('resourceTabs.schedules')} placement="top">
-          <span data-testid="resources-tab-schedules">
-            <ScheduleOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD }} />
-          </span>
-        </Tooltip>
-      ),
-      children: (
-        <div ref={scheduleTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          {schedulesLoading ? (
-            <div style={{ textAlign: 'center', padding: '100px 0' }}>
-              <Spin size="large" />
-              <div style={{ marginTop: 16, color: 'var(--ant-color-text-secondary)' }}>
-                {t('common:general.loading')}
-              </div>
-            </div>
-          ) : schedules.length === 0 ? (
-            <Empty
-              description={t('schedules.noSchedules')}
-              style={{ margin: 'auto' }}
-            />
-          ) : (
-            <Table
-              data-testid="resources-schedule-table"
-              columns={scheduleColumns}
-              dataSource={schedules}
-              rowKey="scheduleName"
-              scroll={{ x: 'max-content' }}
-              pagination={{
-                total: schedules?.length || 0,
-                pageSize: schedulePageSize,
-                showSizeChanger: false,
-                showTotal: (total, range) => `${t('common:general.showingRecords', { start: range[0], end: range[1], total })}`,
-                position: ['bottomRight'],
-              }}
-              style={{ flex: 1 }}
-              sticky
-            />
-          )}
-        </div>
-      ),
-    },
   ]
 
   // Calculate available height for full-height layout using design system
@@ -1489,9 +1288,7 @@ const ResourcesPage: React.FC = () => {
   const handleTabKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
       event.preventDefault()
-      const tabOrder = uiMode === 'simple' 
-        ? ['machines', 'repositories', 'storage'] 
-        : ['machines', 'repositories', 'storage', 'schedules']
+      const tabOrder = ['machines', 'repositories', 'storage']
       const currentIndex = tabOrder.indexOf(teamResourcesTab)
       
       if (event.key === 'ArrowLeft') {
@@ -1571,9 +1368,6 @@ const ResourcesPage: React.FC = () => {
                               case 'storage':
                                 openUnifiedModal('storage', 'create')
                                 break
-                              case 'schedules':
-                                openUnifiedModal('schedule', 'create')
-                                break
                             }
                           }}
                           aria-label={getCreateButtonText()}
@@ -1622,9 +1416,6 @@ const ResourcesPage: React.FC = () => {
                                 break
                               case 'storage':
                                 refetchStorage()
-                                break
-                              case 'schedules':
-                                refetchSchedules()
                                 break
                             }
                           }}
@@ -1749,7 +1540,7 @@ const ResourcesPage: React.FC = () => {
               <Tabs
                 activeKey={teamResourcesTab}
                 onChange={setTeamResourcesTab}
-                items={teamResourcesTabs.filter(tab => tab.key !== 'schedules')}
+                items={teamResourcesTabs}
                 style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
                 className="full-height-tabs"
                 onKeyDown={handleTabKeyDown}

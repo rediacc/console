@@ -301,19 +301,6 @@
       "successMessage": "Storage configurations imported successfully"
     }
   },
-  "schedules": {
-    "scheduleName": "Schedule Name",
-    "createSchedule": "Add Schedule",
-    "editSchedule": "Edit Schedule",
-    "deleteSchedule": "Delete Schedule",
-    "confirmDelete": "Are you sure you want to delete schedule \"{{scheduleName}}\"?",
-    "noSchedules": "No schedules found in this team",
-    "deleteSuccess": "Schedule deleted successfully",
-    "deleteError": "Failed to delete schedule",
-    "placeholders": {
-      "enterScheduleName": "Enter schedule name"
-    }
-  },
   "general": {
     "team": "Team",
     "region": "Region",

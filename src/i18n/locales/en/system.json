@@ -25,7 +25,6 @@
     "nodeBridge": "Bridge",
     "nodeMachine": "Machine",
     "nodeRepository": "Repository",
-    "nodeSchedule": "Schedule",
     "nodeStorage": "Storage",
     "filterEntities": "Filter Entities",
     "selectEntities": "Select entity types to display",

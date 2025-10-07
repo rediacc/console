@@ -31,7 +31,7 @@ interface ResourceFormWithVaultProps<T extends Record<string, any> = any> {
   fields: FormFieldConfig[]
   onSubmit: (data: T) => void | Promise<void>
   entityType: string
-  vaultFieldName: string // e.g., 'repositoryVault', 'storageVault', 'scheduleVault'
+  vaultFieldName: string // e.g., 'repositoryVault', 'storageVault'
   layout?: 'horizontal' | 'vertical' | 'inline'
   showDefaultsAlert?: boolean
   defaultsContent?: React.ReactNode

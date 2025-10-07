@@ -280,21 +280,6 @@
           "description": "Additional rclone parameters for advanced configuration"
         }
       },
-      "SCHEDULE": {
-        "description": "Schedule configuration for automated tasks",
-        "cron": {
-          "label": "Cron Expression",
-          "description": "Cron expression defining the schedule"
-        },
-        "timezone": {
-          "label": "Timezone",
-          "description": "Timezone for schedule execution"
-        },
-        "enabled": {
-          "label": "Enable Schedule",
-          "description": "Whether this schedule is active"
-        }
-      },
       "BRIDGE": {
         "description": "Bridge configuration for network connectivity",
         "ip": {

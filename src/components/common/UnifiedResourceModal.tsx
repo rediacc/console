@@ -21,7 +21,6 @@ import {
   createMachineSchema,
   createRepositorySchema,
   createStorageSchema,
-  createScheduleSchema,
   createTeamSchema,
   createRegionSchema,
   createBridgeSchema,
@@ -33,7 +32,6 @@ import {
   CreateMachineForm,
   CreateRepositoryForm,
   CreateStorageForm,
-  CreateScheduleForm,
   CreateClusterForm,
   CreatePoolForm,
   CreateImageForm,
@@ -45,7 +43,7 @@ import { ModalSize } from '@/types/modal'
 
 const { Text } = Typography
 
-export type ResourceType = 'machine' | 'repository' | 'storage' | 'schedule' | 'team' | 'region' | 'bridge' | 'cluster' | 'pool' | 'image' | 'snapshot' | 'clone'
+export type ResourceType = 'machine' | 'repository' | 'storage' | 'team' | 'region' | 'bridge' | 'cluster' | 'pool' | 'image' | 'snapshot' | 'clone'
 
 export interface UnifiedResourceModalProps {
   open: boolean
@@ -122,7 +120,6 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     storage: { key: 'storage', createKey: 'resources:storage.createStorage' },
     repository: { key: 'repositories', createKey: 'resources:repositories.createRepository' },
     machine: { key: 'machines', createKey: 'machines:createMachine' },
-    schedule: { key: 'schedules', createKey: 'resources:schedules.createSchedule' },
     team: { key: 'teams', createKey: 'system:teams.createTeam' },
     region: { key: 'regions', createKey: 'system:regions.createRegion' },
     bridge: { key: 'bridges', createKey: 'system:bridges.createBridge' },
@@ -155,7 +152,6 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     }) : createMachineSchema,
     repository: createRepositorySchema,
     storage: createStorageSchema,
-    schedule: createScheduleSchema,
     team: createTeamSchema,
     region: createRegionSchema,
     bridge: createBridgeSchema,

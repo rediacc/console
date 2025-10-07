@@ -33,7 +33,6 @@ interface CompanyDataGraph {
     bridges: GraphNode[]
     machines: GraphNode[]
     repositories: GraphNode[]
-    schedules: GraphNode[]
     storages: GraphNode[]
   }
   relationships: {
@@ -44,7 +43,6 @@ interface CompanyDataGraph {
     teamToMachines: GraphRelationship[]
     bridgeToMachines: GraphRelationship[]
     teamToRepos: GraphRelationship[]
-    teamToSchedules: GraphRelationship[]
     teamToStorages: GraphRelationship[]
   }
   summary: {
@@ -85,7 +83,7 @@ export const useCompanyArchitecture = () => {
         fixTripleEncodedFields(nodes, ['users'])
         
         // Ensure all node arrays exist with defaults
-        const nodeDefaults = ['machines', 'repositories', 'schedules', 'storages'] as const
+        const nodeDefaults = ['machines', 'repositories', 'storages'] as const
         nodeDefaults.forEach(field => { 
           if (!nodes[field]) {
             (nodes as any)[field] = []
