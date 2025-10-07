@@ -38,7 +38,7 @@ interface FunctionSelectionModalProps {
   currentMachineName?: string // Current machine name for context
   additionalContext?: {
     sourceRepository?: string
-    grandRepository?: string | null
+    parentRepository?: string | null
   } // Additional context information to display
 }
 
@@ -457,11 +457,11 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                             <Text strong>Destination Filename: </Text>
                             <Text code>{functionParams.dest}</Text>
                           </div>
-                          {additionalContext?.grandRepository && (
+                          {additionalContext?.parentRepository && (
                             <div>
                               <Text strong>Repository Lineage: </Text>
                               <Space>
-                                <Tag color="blue">{additionalContext.grandRepository}</Tag>
+                                <Tag color="blue">{additionalContext.parentRepository}</Tag>
                                 <Text type="secondary">→</Text>
                                 <Tag color="#8FBC8F">{additionalContext.sourceRepository}</Tag>
                                 <Text type="secondary">→</Text>
@@ -469,7 +469,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                               </Space>
                             </div>
                           )}
-                          {!additionalContext?.grandRepository && additionalContext?.sourceRepository && (
+                          {!additionalContext?.parentRepository && additionalContext?.sourceRepository && (
                             <div>
                               <Text strong>Source Repository: </Text>
                               <Tag color="#8FBC8F">{additionalContext.sourceRepository}</Tag>

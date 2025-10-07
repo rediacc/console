@@ -107,7 +107,7 @@
   "createRepo": "Create Repo",
   "pullRepo": "Pull Repo",
   "runAction": "Run on Server",
-  "advanced": "Advanced",
+  "experimental": "experimental",
   "lastUpdated": "Last Updated",
   "statusUnknown": "Unknown",
   "currentMachine": "Current Machine",

@@ -3123,6 +3123,15 @@ a:focus,
   background-color: rgba(255, 255, 255, 0.02);
 }
 
+/* Subtle background for clone repository rows */
+.repository-clone-row {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="dark"] .repository-clone-row {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
 /* Nested table hover states for containers and plugins */
 .ant-table-expanded-row .ant-table-tbody > tr.ant-table-row {
   transition: background-color 0.3s ease;

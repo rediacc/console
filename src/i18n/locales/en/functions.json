@@ -243,7 +243,7 @@
       }
     },
     "clone": {
-      "name": "Clone",
+      "name": "clone",
       "description": "Clone repository on the same machine"
     },
     "push": {

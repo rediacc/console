@@ -9,6 +9,7 @@ export interface Repository {
   vaultVersion: number
   vaultContent?: string
   grandGuid?: string         // Top-most parent repository GUID
+  parentGuid?: string        // Immediate parent repository GUID
 }
 
 // Get repositories for a team or multiple teams
@@ -23,7 +24,8 @@ export const useRepositories = createResourceQuery<Repository>({
     teamName: 'teamName',
     vaultVersion: 'vaultVersion',
     vaultContent: 'vaultContent',
-    grandGuid: 'grandGuid'
+    grandGuid: 'grandGuid',
+    parentGuid: 'parentGuid'
   }),
   enabledCheck: (teamFilter) => !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0)
 })
@@ -108,6 +110,22 @@ export const useDeleteRepository = createMutation<{
   invalidateKeys: ['repositories', 'teams', 'machines'],
   successMessage: (vars) => `Repository "${vars.repositoryName}" deleted successfully`,
   errorMessage: 'Failed to delete repository',
+  transformData: (data) => ({
+    teamName: data.teamName,
+    repoName: data.repositoryName, // Map repositoryName to repoName for API
+  })
+})
+
+// Promote repository to grand (convert clone to original)
+export const usePromoteRepositoryToGrand = createMutation<{
+  teamName: string
+  repositoryName: string
+}>({
+  endpoint: '/PromoteRepositoryToGrand',
+  method: 'post',
+  invalidateKeys: ['repositories'],
+  successMessage: (vars) => `Repository "${vars.repositoryName}" promoted to original successfully`,
+  errorMessage: 'Failed to promote repository',
   transformData: (data) => ({
     teamName: data.teamName,
     repoName: data.repositoryName, // Map repositoryName to repoName for API

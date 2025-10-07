@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react'
-import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Empty, Card, Row, Col, Progress, Tooltip } from 'antd'
+import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Empty, Card, Row, Col, Progress, Tooltip, Modal, Input } from 'antd'
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
-import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, CloudDownloadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined, GlobalOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined, CopyOutlined } from '@/utils/optimizedIcons'
+import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, CloudDownloadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined, GlobalOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined, CopyOutlined, RiseOutlined, StarOutlined, EditOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { type QueueFunction } from '@/api/queries/queue'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import { Machine } from '@/types'
 import { useTeams } from '@/api/queries/teams'
-import { useRepositories, useCreateRepository, useDeleteRepository } from '@/api/queries/repositories'
+import { useRepositories, useCreateRepository, useDeleteRepository, usePromoteRepositoryToGrand, useUpdateRepositoryName } from '@/api/queries/repositories'
 import { useMachines } from '@/api/queries/machines'
 import { useStorage } from '@/api/queries/storage'
 import type { ColumnsType } from 'antd/es/table'
@@ -128,6 +128,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const { data: storageData = [] } = useStorage(machine.teamName)
   const createRepositoryMutation = useCreateRepository()
   const deleteRepositoryMutation = useDeleteRepository()
+  const promoteRepositoryMutation = usePromoteRepositoryToGrand()
+  const updateRepositoryNameMutation = useUpdateRepositoryName()
 
   // IMPORTANT: This component uses a hybrid approach:
   // 1. teamRepositories (from API) - provides repository credentials and metadata
@@ -239,8 +241,34 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                     plugin_count: pluginCount
                   }
                 })
-                
-                setRepositories(repositoriesWithPluginCounts)
+
+                // Sort repositories hierarchically: originals first, then their children
+                const sortedRepositories = repositoriesWithPluginCounts.sort((a, b) => {
+                  const aData = teamRepositories.find(r => r.repositoryName === a.name)
+                  const bData = teamRepositories.find(r => r.repositoryName === b.name)
+
+                  // Get family names (grand parent name or self)
+                  const aFamily = aData?.grandGuid ? teamRepositories.find(r => r.repositoryGuid === aData.grandGuid)?.repositoryName || a.name : a.name
+                  const bFamily = bData?.grandGuid ? teamRepositories.find(r => r.repositoryGuid === bData.grandGuid)?.repositoryName || b.name : b.name
+
+                  // First sort by family
+                  if (aFamily !== bFamily) {
+                    return aFamily.localeCompare(bFamily)
+                  }
+
+                  // Within same family: originals (no parent) first, then clones
+                  const aIsOriginal = !aData?.parentGuid
+                  const bIsOriginal = !bData?.parentGuid
+
+                  if (aIsOriginal !== bIsOriginal) {
+                    return aIsOriginal ? -1 : 1
+                  }
+
+                  // Within same status (both original or both clones), sort alphabetically
+                  return a.name.localeCompare(b.name)
+                })
+
+                setRepositories(sortedRepositories)
                 
                 // Process containers and services if included
                 if (result.containers && Array.isArray(result.containers)) {
@@ -572,6 +600,395 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     } catch (error) {
       showMessage('error', t('resources:repositories.failedToCloneRepository'))
     }
+  }
+
+  const handleDeleteClone = async (repository: Repository) => {
+    // Find the repository data
+    const repositoryData = teamRepositories.find(r => r.repositoryName === repository.name)
+
+    if (!repositoryData) {
+      showMessage('error', t('resources:repositories.repositoryNotFound'))
+      return
+    }
+
+    // Safety check: only allow deletion of clones (repositories with a parent)
+    if (!repositoryData.grandGuid || repositoryData.grandGuid === repositoryData.repositoryGuid) {
+      showMessage('error', t('resources:repositories.cannotDeleteGrandRepository'))
+      return
+    }
+
+    // Show confirmation modal
+    Modal.confirm({
+      title: t('resources:repositories.deleteCloneConfirmTitle'),
+      content: t('resources:repositories.deleteCloneConfirmMessage', { name: repository.name }),
+      okText: t('common:delete'),
+      okType: 'danger',
+      cancelText: t('common:cancel'),
+      onOk: async () => {
+        try {
+          // Find team vault data
+          const team = teams?.find(t => t.teamName === machine.teamName)
+
+          // Find the grand repository vault
+          let grandRepositoryVault = repositoryData.vaultContent
+          if (repositoryData.grandGuid) {
+            const grandRepository = teamRepositories.find(r => r.repositoryGuid === repositoryData.grandGuid)
+            if (grandRepository && grandRepository.vaultContent) {
+              grandRepositoryVault = grandRepository.vaultContent
+            }
+          }
+
+          // Step 1: Queue the physical deletion via repo_rm
+          const params: Record<string, any> = {
+            repo: repositoryData.repositoryGuid,
+            grand: repositoryData.grandGuid
+          }
+
+          const queueVault = await buildQueueVault({
+            teamName: machine.teamName,
+            machineName: machine.machineName,
+            bridgeName: machine.bridgeName,
+            functionName: 'rm',
+            params,
+            priority: 4,
+            description: `Delete clone ${repository.name}`,
+            addedVia: 'machine-repository-list-delete-clone',
+            teamVault: team?.vaultContent || '{}',
+            machineVault: machine.vaultContent || '{}',
+            repositoryGuid: repositoryData.repositoryGuid,
+            repositoryVault: grandRepositoryVault
+          })
+
+          const queueResponse = await managedQueueMutation.mutateAsync({
+            teamName: machine.teamName,
+            machineName: machine.machineName,
+            bridgeName: machine.bridgeName,
+            queueVault,
+            priority: 4
+          })
+
+          if (queueResponse?.taskId) {
+            showMessage('success', t('resources:repositories.deleteCloneQueued', { name: repository.name }))
+            setQueueTraceModal({ visible: true, taskId: queueResponse.taskId })
+
+            // Step 2: Delete the credential from database after queuing
+            try {
+              await deleteRepositoryMutation.mutateAsync({
+                teamName: machine.teamName,
+                repositoryName: repository.name
+              })
+              showMessage('success', t('resources:repositories.deleteCloneSuccess'))
+            } catch (credError) {
+              showMessage('warning', t('resources:repositories.deleteCloneCredentialFailed'))
+            }
+          } else if (queueResponse?.isQueued) {
+            showMessage('info', t('resources:repositories.highestPriorityQueued'))
+          }
+
+        } catch (error) {
+          showMessage('error', t('resources:repositories.deleteCloneFailed'))
+        }
+      }
+    })
+  }
+
+  const handlePromoteToGrand = async (repository: Repository) => {
+    // Find the repository data
+    const repositoryData = teamRepositories.find(r => r.repositoryName === repository.name)
+
+    if (!repositoryData) {
+      showMessage('error', t('resources:repositories.repositoryNotFound'))
+      return
+    }
+
+    // Safety check: only allow promotion of clones (repositories with a parent)
+    if (!repositoryData.grandGuid || repositoryData.grandGuid === repositoryData.repositoryGuid) {
+      showMessage('error', t('resources:repositories.alreadyOriginalRepository'))
+      return
+    }
+
+    // Find the current grand repository
+    const currentGrand = teamRepositories.find(r => r.repositoryGuid === repositoryData.grandGuid)
+    const currentGrandName = currentGrand?.repositoryName || 'original'
+
+    // Find sibling clones (exclude the original repository itself)
+    const siblingClones = teamRepositories.filter(r =>
+      r.grandGuid === repositoryData.grandGuid &&
+      r.repositoryGuid !== repositoryData.repositoryGuid &&
+      r.grandGuid !== r.repositoryGuid  // Exclude original repositories
+    )
+
+    // Show confirmation modal
+    Modal.confirm({
+      title: t('resources:repositories.promoteToGrandTitle'),
+      content: (
+        <div>
+          <Typography.Paragraph>
+            {t('resources:repositories.promoteToGrandMessage', {
+              name: repository.name,
+              grand: currentGrandName
+            })}
+          </Typography.Paragraph>
+          {siblingClones.length > 0 && (
+            <>
+              <Typography.Paragraph>
+                {t('resources:repositories.promoteWillUpdateSiblings', { count: siblingClones.length })}
+              </Typography.Paragraph>
+              <ul>
+                {siblingClones.map(clone => (
+                  <li key={clone.repositoryGuid}>{clone.repositoryName}</li>
+                ))}
+              </ul>
+            </>
+          )}
+          <Alert
+            message={t('resources:repositories.promoteWarning')}
+            type="warning"
+            showIcon
+            style={{ marginTop: 16 }}
+          />
+        </div>
+      ),
+      okText: t('resources:repositories.promoteButton'),
+      okType: 'primary',
+      cancelText: t('common:cancel'),
+      onOk: async () => {
+        try {
+          await promoteRepositoryMutation.mutateAsync({
+            teamName: machine.teamName,
+            repositoryName: repository.name
+          })
+          showMessage('success', t('resources:repositories.promoteSuccess', { name: repository.name }))
+        } catch (error: any) {
+          const errorMessage = error?.response?.data?.message || t('resources:repositories.promoteFailed')
+          showMessage('error', errorMessage)
+        }
+      }
+    })
+  }
+
+  const handleRenameRepository = async (repository: Repository) => {
+    let newName = repository.name
+
+    Modal.confirm({
+      title: t('resources:repositories.renameTitle'),
+      content: (
+        <div>
+          <Typography.Paragraph>
+            {t('resources:repositories.renameMessage', { name: repository.name })}
+          </Typography.Paragraph>
+          <Input
+            defaultValue={repository.name}
+            placeholder={t('resources:repositories.newRepositoryName')}
+            onChange={(e) => { newName = e.target.value }}
+            onPressEnter={(e) => {
+              e.preventDefault()
+              const modal = Modal.confirm({ visible: false })
+              modal.destroy()
+            }}
+            autoFocus
+          />
+        </div>
+      ),
+      okText: t('common:save'),
+      cancelText: t('common:cancel'),
+      onOk: async () => {
+        // Validate new name
+        const trimmedName = newName.trim()
+
+        if (!trimmedName) {
+          showMessage('error', t('resources:repositories.emptyNameError'))
+          return Promise.reject()
+        }
+
+        if (trimmedName === repository.name) {
+          showMessage('info', t('resources:repositories.nameUnchanged'))
+          return Promise.reject()
+        }
+
+        // Check if name already exists
+        const existingRepo = teamRepositories.find(r => r.repositoryName === trimmedName)
+        if (existingRepo) {
+          showMessage('error', t('resources:repositories.nameAlreadyExists', { name: trimmedName }))
+          return Promise.reject()
+        }
+
+        try {
+          await updateRepositoryNameMutation.mutateAsync({
+            teamName: machine.teamName,
+            currentRepositoryName: repository.name,
+            newRepositoryName: trimmedName
+          })
+          showMessage('success', t('resources:repositories.renameSuccess', { oldName: repository.name, newName: trimmedName }))
+
+          // Refresh repository list
+          if (onActionComplete) {
+            onActionComplete()
+          }
+        } catch (error: any) {
+          const errorMessage = error?.response?.data?.message || t('resources:repositories.renameFailed')
+          showMessage('error', errorMessage)
+          return Promise.reject()
+        }
+      }
+    })
+  }
+
+  const handleDeleteGrandRepository = async (repository: Repository) => {
+    // Find the repository data
+    const repositoryData = teamRepositories.find(r => r.repositoryName === repository.name)
+
+    if (!repositoryData) {
+      showMessage('error', t('resources:repositories.repositoryNotFound'))
+      return
+    }
+
+    // Safety check: only allow deletion of grand repositories (no parent)
+    if (repositoryData.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid) {
+      showMessage('error', t('resources:repositories.notAGrandRepository'))
+      return
+    }
+
+    // Check for child repositories (clones) before deletion
+    const childClones = teamRepositories.filter(r =>
+      r.grandGuid === repositoryData.repositoryGuid &&
+      r.repositoryGuid !== repositoryData.repositoryGuid
+    )
+
+    if (childClones.length > 0) {
+      // Show error modal with clone list
+      Modal.error({
+        title: t('resources:repositories.cannotDeleteHasClones'),
+        content: (
+          <div>
+            <Typography.Paragraph>
+              {t('resources:repositories.hasActiveClonesMessage', {
+                name: repository.name,
+                count: childClones.length
+              })}
+            </Typography.Paragraph>
+            <Typography.Paragraph strong>
+              {t('resources:repositories.clonesList')}
+            </Typography.Paragraph>
+            <ul>
+              {childClones.map(clone => (
+                <li key={clone.repositoryGuid}>{clone.repositoryName}</li>
+              ))}
+            </ul>
+            <Typography.Paragraph>
+              {t('resources:repositories.deleteOptionsMessage')}
+            </Typography.Paragraph>
+          </div>
+        ),
+        okText: t('common:close')
+      })
+      return
+    }
+
+    // State for confirmation input
+    let confirmationInput = ''
+
+    // Show advanced confirmation modal
+    Modal.confirm({
+      title: t('resources:repositories.deleteGrandConfirmTitle'),
+      content: (
+        <div>
+          <Alert
+            message={t('resources:repositories.deleteGrandWarning')}
+            description={t('resources:repositories.deleteGrandWarningDesc', { name: repository.name })}
+            type="warning"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+          <Typography.Text strong>
+            {t('resources:repositories.deleteGrandConfirmPrompt', { name: repository.name })}
+          </Typography.Text>
+          <input
+            type="text"
+            placeholder={repository.name}
+            style={{
+              width: '100%',
+              marginTop: 8,
+              padding: '8px',
+              border: '1px solid #d9d9d9',
+              borderRadius: '4px'
+            }}
+            onChange={(e) => {
+              confirmationInput = e.target.value
+            }}
+          />
+        </div>
+      ),
+      okText: t('common:delete'),
+      okType: 'danger',
+      cancelText: t('common:cancel'),
+      onOk: async () => {
+        // Verify confirmation input matches repository name
+        if (confirmationInput !== repository.name) {
+          showMessage('error', t('resources:repositories.deleteGrandConfirmationMismatch'))
+          return Promise.reject()
+        }
+
+        try {
+          // Find team vault data
+          const team = teams?.find(t => t.teamName === machine.teamName)
+
+          // For grand repositories, use its own vault
+          const grandRepositoryVault = repositoryData.vaultContent
+
+          // Step 1: Queue the physical deletion via repo_rm
+          const params: Record<string, any> = {
+            repo: repositoryData.repositoryGuid,
+            grand: repositoryData.repositoryGuid // Grand points to itself
+          }
+
+          const queueVault = await buildQueueVault({
+            teamName: machine.teamName,
+            machineName: machine.machineName,
+            bridgeName: machine.bridgeName,
+            functionName: 'rm',
+            params,
+            priority: 4,
+            description: `Delete repository ${repository.name}`,
+            addedVia: 'machine-repository-list-delete-grand',
+            teamVault: team?.vaultContent || '{}',
+            machineVault: machine.vaultContent || '{}',
+            repositoryGuid: repositoryData.repositoryGuid,
+            repositoryVault: grandRepositoryVault
+          })
+
+          const queueResponse = await managedQueueMutation.mutateAsync({
+            teamName: machine.teamName,
+            machineName: machine.machineName,
+            bridgeName: machine.bridgeName,
+            queueVault,
+            priority: 4
+          })
+
+          if (queueResponse?.taskId) {
+            showMessage('success', t('resources:repositories.deleteGrandQueued', { name: repository.name }))
+            setQueueTraceModal({ visible: true, taskId: queueResponse.taskId })
+
+            // Step 2: Delete the credential from database after queuing
+            try {
+              await deleteRepositoryMutation.mutateAsync({
+                teamName: machine.teamName,
+                repositoryName: repository.name
+              })
+              showMessage('success', t('resources:repositories.deleteGrandSuccess'))
+            } catch (credError) {
+              showMessage('warning', t('resources:repositories.deleteGrandCredentialFailed'))
+            }
+          } else if (queueResponse?.isQueued) {
+            showMessage('info', t('resources:repositories.highestPriorityQueued'))
+          }
+
+        } catch (error) {
+          showMessage('error', t('resources:repositories.deleteGrandFailed'))
+          return Promise.reject()
+        }
+      }
+    })
   }
 
 
@@ -1069,15 +1486,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           </div>
         )}
         
-        <div style={{ marginBottom: 16 }} data-testid="machine-repo-list-expanded-header">
-          <Typography.Title level={5} style={{ margin: 0 }}>{t('resources:repositories.containersAndPlugins')}</Typography.Title>
-        </div>
-        
         {/* Regular Containers Table */}
-        <div style={{ marginBottom: 24 }} data-testid="machine-repo-list-containers-section">
-          <Typography.Title level={5} style={{ marginBottom: 16 }}>
-            {t('resources:repositories.containersList')}
-          </Typography.Title>
+        <div style={{ marginBottom: 16 }} data-testid="machine-repo-list-containers-section">
           {containers?.error ? (
             <Alert message={t('resources:repositories.errorLoadingContainers')} description={containers.error} type="error" />
           ) : regularContainers.length > 0 ? (
@@ -1113,17 +1523,12 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 }
               })}
             />
-          ) : (
-            <Empty description={t('resources:repositories.noContainers')} data-testid="machine-repo-list-no-containers" />
-          )}
+          ) : null}
         </div>
-        
+
         {/* Plugin Containers Table */}
         {pluginContainers.length > 0 && (
-          <div data-testid="machine-repo-list-plugins-section">
-            <Typography.Title level={5} style={{ marginBottom: 16 }}>
-              {t('resources:repositories.pluginsList')}
-            </Typography.Title>
+          <div style={{ marginTop: 16 }} data-testid="machine-repo-list-plugins-section">
             <Table
               columns={containerColumnsWithRepo}
               dataSource={pluginContainers}
@@ -1250,21 +1655,34 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       render: (name: string, record: Repository) => {
         const isExpanded = expandedRows.includes(record.name)
         const hasExpandableContent = record.mounted && (record.has_services || record.container_count > 0 || record.plugin_count > 0)
-        
+
+        // Look up repository data to determine if it's a clone or original
+        const repositoryData = teamRepositories.find(r => r.repositoryName === record.name)
+        const isClone = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid
+        const isOriginal = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid === repositoryData.repositoryGuid
+
+        // Find immediate parent repository name for clones
+        const parentRepository = isClone && repositoryData.parentGuid
+          ? teamRepositories.find(r => r.repositoryGuid === repositoryData.parentGuid)
+          : null
+        const tooltipTitle = isClone && parentRepository ? `Clone of ${parentRepository.repositoryName}` : (isOriginal ? 'Original repository' : undefined)
+
         return (
-          <Space>
-            <span style={{ 
-              display: 'inline-block',
-              width: 12,
-              transition: 'transform 0.3s ease',
-              transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-              visibility: hasExpandableContent ? 'visible' : 'hidden'
-            }}>
-              <RightOutlined style={{ fontSize: 12, color: '#999' }} />
-            </span>
-            <InboxOutlined style={{ color: '#556b2f' }} />
-            <strong>{name}</strong>
-          </Space>
+          <Tooltip title={tooltipTitle}>
+            <Space>
+              <span style={{
+                display: 'inline-block',
+                width: 12,
+                transition: 'transform 0.3s ease',
+                transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                visibility: hasExpandableContent ? 'visible' : 'hidden'
+              }}>
+                <RightOutlined style={{ fontSize: 12, color: '#999' }} />
+              </span>
+              {isOriginal ? <StarOutlined /> : <CopyOutlined />}
+              <strong>{name}</strong>
+            </Space>
+          </Tooltip>
         )
       },
     },
@@ -1274,9 +1692,12 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       width: 160,
       fixed: 'right',
       render: (_: any, record: Repository) => {
+        // Look up repository data from database to get grandGuid
+        const repositoryData = teamRepositories.find(r => r.repositoryName === record.name)
+
         // Build smart menu items based on repository state
         const menuItems = []
-        
+
         // Up - always available
         menuItems.push({
           key: 'up',
@@ -1310,7 +1731,24 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           icon: <CloudUploadOutlined style={componentStyles.icon.small} />,
           onClick: () => handleRunFunction(record, 'push')
         })
-        
+
+        // Promote to Original and Delete - only for clones (repositories with a parent)
+        if (repositoryData && repositoryData.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid) {
+          menuItems.push({
+            key: 'promote-to-grand',
+            label: t('resources:repositories.promoteToGrand'),
+            icon: <RiseOutlined style={componentStyles.icon.small} />,
+            onClick: () => handlePromoteToGrand(record)
+          })
+          menuItems.push({
+            key: 'delete-clone',
+            label: t('resources:repositories.deleteClone'),
+            icon: <DeleteOutlined style={componentStyles.icon.small} />,
+            onClick: () => handleDeleteClone(record),
+            danger: true
+          })
+        }
+
         // Always add divider and advanced option at the end
         if (menuItems.length > 0) {
           menuItems.push({
@@ -1319,12 +1757,31 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         }
         
         menuItems.push({
-          key: 'advanced',
-          label: t('machines:advanced'),
+          key: 'experimental',
+          label: t('machines:experimental'),
           icon: <FunctionOutlined style={componentStyles.icon.small} />,
           onClick: () => handleRunFunction(record)
         })
-        
+
+        // Rename - always available
+        menuItems.push({
+          key: 'rename',
+          label: t('resources:repositories.rename'),
+          icon: <EditOutlined style={componentStyles.icon.small} />,
+          onClick: () => handleRenameRepository(record)
+        })
+
+        // Delete Grand Repository - only for original repositories (no parent)
+        if (repositoryData && repositoryData.grandGuid && repositoryData.grandGuid === repositoryData.repositoryGuid) {
+          menuItems.push({
+            key: 'delete-grand',
+            label: t('resources:repositories.deleteGrand'),
+            icon: <DeleteOutlined style={componentStyles.icon.small} />,
+            onClick: () => handleDeleteGrandRepository(record),
+            danger: true
+          })
+        }
+
         return (
           <Space size="small">
             <Dropdown
@@ -1451,18 +1908,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         </div>
       )}
       
-      {/* Repositories Label */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: hideSystemInfo ? 8 : 20 }} data-testid="machine-repo-list-repos-header">
-        <Typography.Title level={5} style={{ marginBottom: 0 }} data-testid="machine-repo-list-repos-title">
-          {t('resources:repositories.repositories')}
-        </Typography.Title>
-        {machine.vaultStatusTime && !loading && (
-          <Text type="secondary" style={{ fontSize: '12px' }} title={`Raw: ${machine.vaultStatusTime}, Local: ${formatTimestampAsIs(machine.vaultStatusTime, 'datetime')}`} data-testid="machine-repo-list-last-updated">
-            {t('machines:lastUpdated')}: {getLocalizedRelativeTime(machine.vaultStatusTime, t)}
-          </Text>
-        )}
-      </div>
-      
       {/* Repository Table */}
       <Table
         columns={columns}
@@ -1473,6 +1918,12 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         scroll={{ x: 'max-content' }}
         style={tableStyles.tableContainer}
         data-testid="machine-repo-list-table"
+        rowClassName={(record) => {
+          // Apply subtle background to clone rows
+          const repositoryData = teamRepositories.find(r => r.repositoryName === record.name)
+          const isClone = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid
+          return isClone ? 'repository-clone-row' : ''
+        }}
         expandable={{
           expandedRowRender: renderExpandedRow,
           expandedRowKeys: expandedRows,
@@ -1593,13 +2044,13 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               </Space>
               {selectedFunction === 'push' && (() => {
                 const currentRepoData = teamRepositories.find(r => r.repositoryName === selectedRepository.name);
-                if (currentRepoData?.grandGuid) {
-                  const grandRepo = teamRepositories.find(r => r.repositoryGuid === currentRepoData.grandGuid);
-                  if (grandRepo) {
+                if (currentRepoData?.parentGuid) {
+                  const parentRepo = teamRepositories.find(r => r.repositoryGuid === currentRepoData.parentGuid);
+                  if (parentRepo) {
                     return (
                       <Space>
-                        <Text type="secondary">Original Repository:</Text>
-                        <Tag color="blue">{grandRepo.repositoryName}</Tag>
+                        <Text type="secondary">Parent Repository:</Text>
+                        <Tag color="blue">{parentRepo.repositoryName}</Tag>
                         <Text type="secondary">→</Text>
                         <Text type="secondary">Current:</Text>
                         <Tag color="#8FBC8F">{selectedRepository.name}</Tag>
@@ -1650,11 +2101,11 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         additionalContext={
           selectedFunction === 'push' && selectedRepository ? {
             sourceRepository: selectedRepository.name,
-            grandRepository: (() => {
+            parentRepository: (() => {
               const currentRepoData = teamRepositories.find(r => r.repositoryName === selectedRepository.name);
-              if (currentRepoData?.grandGuid) {
-                const grandRepo = teamRepositories.find(r => r.repositoryGuid === currentRepoData.grandGuid);
-                return grandRepo?.repositoryName || null;
+              if (currentRepoData?.parentGuid) {
+                const parentRepo = teamRepositories.find(r => r.repositoryGuid === currentRepoData.parentGuid);
+                return parentRepo?.repositoryName || null;
               }
               return null;
             })()
