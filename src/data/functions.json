@@ -250,6 +250,31 @@
         }
       }
     },
+    "expand": {
+      "name": "expand",
+      "category": "repository",
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
+      "params": {
+        "repo": {
+          "type": "string",
+          "required": true
+        },
+        "size": {
+          "type": "string",
+          "required": true,
+          "format": "size",
+          "units": ["G", "T"]
+        },
+        "grand": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
     "rm": {
       "name": "rm",
       "category": "repository",

@@ -172,6 +172,24 @@
         }
       }
     },
+    "expand": {
+      "name": "expand",
+      "description": "Expand repository storage online with zero downtime",
+      "params": {
+        "repo": {
+          "label": "Repository",
+          "help": "Repository name"
+        },
+        "size": {
+          "label": "New Size",
+          "help": "New size (e.g., 20G) - must be larger than current size"
+        },
+        "grand": {
+          "label": "Grand Repository",
+          "help": "Grand repository GUID"
+        }
+      }
+    },
     "rm": {
       "name": "rm",
       "description": "Delete repository",

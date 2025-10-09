@@ -1724,6 +1724,16 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           onClick: () => handleCloneRepository(record)
         })
 
+        // Expand - only when mounted (online expansion)
+        if (record.mounted) {
+          menuItems.push({
+            key: 'expand',
+            label: t('functions:functions.expand.name'),
+            icon: <ExpandOutlined style={componentStyles.icon.small} />,
+            onClick: () => handleRunFunction(record, 'expand')
+          })
+        }
+
         // Push - always available
         menuItems.push({
           key: 'push',
