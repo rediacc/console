@@ -954,9 +954,10 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                   backgroundColor: index % 2 === 0 ? 'transparent' : 'rgba(0, 0, 0, 0.01)'
                 }}
               >
-                <MachineRepositoryList 
+                <MachineRepositoryList
                   machine={machine}
                   key={`${machine.machineName}-${expansionTimestamps[machine.machineName] || 0}-${refreshKeys[machine.machineName] || 0}`}
+                  refreshKey={refreshKeys[machine.machineName]}
                   onActionComplete={() => {
                     // Refresh this specific machine's repository list
                     if (externalRefreshKeys === undefined) {
@@ -972,6 +973,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                   hideSystemInfo={true}
                   isLoading={showLoadingIndicator && expandingRowKey === machine.machineName}
                   onRefreshMachines={onRefreshMachines}
+                  onQueueItemCreated={onQueueItemCreated}
                 />
               </div>
             ))}
@@ -1070,9 +1072,10 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             })}
             expandable={{
               expandedRowRender: (record) => (
-                <MachineRepositoryList 
-                  machine={record} 
+                <MachineRepositoryList
+                  machine={record}
                   key={`${record.machineName}-${expansionTimestamps[record.machineName] || 0}-${refreshKeys[record.machineName] || 0}`}
+                  refreshKey={refreshKeys[record.machineName]}
                   onActionComplete={() => {
                     // Refresh this specific machine's repository list
                     if (externalRefreshKeys === undefined) {
@@ -1087,6 +1090,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                   onCreateRepository={onCreateRepository}
                   isLoading={showLoadingIndicator && expandingRowKey === record.machineName}
                   onRefreshMachines={onRefreshMachines}
+                  onQueueItemCreated={onQueueItemCreated}
                 />
               ),
               rowExpandable: () => true,

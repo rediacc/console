@@ -160,7 +160,7 @@
     },
     "resize": {
       "name": "resize",
-      "description": "Resize repository storage",
+      "description": "Resize repository storage (offline operation - repository must be unmounted)",
       "params": {
         "repo": {
           "label": "Repository",
@@ -168,7 +168,7 @@
         },
         "size": {
           "label": "New Size",
-          "help": "New size (e.g., 20G)"
+          "help": "New size (e.g., 20G) - can be larger or smaller than current size"
         }
       }
     },
@@ -335,7 +335,7 @@
       "description": "Test network connectivity to the machine"
     },
     "container_start": {
-      "name": "container_start",
+      "name": "start",
       "description": "Start a Docker container",
       "params": {
         "container": {
@@ -345,7 +345,7 @@
       }
     },
     "container_stop": {
-      "name": "container_stop",
+      "name": "stop",
       "description": "Stop a running Docker container",
       "params": {
         "container": {
@@ -355,7 +355,7 @@
       }
     },
     "container_restart": {
-      "name": "container_restart",
+      "name": "restart",
       "description": "Restart a Docker container",
       "params": {
         "container": {
@@ -365,7 +365,7 @@
       }
     },
     "container_remove": {
-      "name": "container_remove",
+      "name": "remove",
       "description": "Remove a Docker container",
       "params": {
         "container": {
@@ -417,7 +417,7 @@
       }
     },
     "container_pause": {
-      "name": "container_pause",
+      "name": "pause",
       "description": "Pause a running Docker container",
       "params": {
         "container": {
@@ -427,7 +427,7 @@
       }
     },
     "container_unpause": {
-      "name": "container_unpause",
+      "name": "unpause",
       "description": "Unpause a paused Docker container",
       "params": {
         "container": {

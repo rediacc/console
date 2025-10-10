@@ -39,6 +39,7 @@ export { default as InfoCircleOutlined } from '@ant-design/icons/InfoCircleOutli
 export { default as QuestionCircleOutlined } from '@ant-design/icons/QuestionCircleOutlined'
 export { default as ExclamationCircleOutlined } from '@ant-design/icons/ExclamationCircleOutlined'
 export { default as ExpandOutlined } from '@ant-design/icons/ExpandOutlined'
+export { default as ShrinkOutlined } from '@ant-design/icons/ShrinkOutlined'
 export { default as AlertOutlined } from '@ant-design/icons/AlertOutlined'
 export { default as CreditCardOutlined } from '@ant-design/icons/CreditCardOutlined'
 export { default as CrownOutlined } from '@ant-design/icons/CrownOutlined'

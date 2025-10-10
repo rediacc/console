@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Empty, Card, Row, Col, Progress, Tooltip, Modal, Input } from 'antd'
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
-import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, CloudDownloadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined, GlobalOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined, CopyOutlined, RiseOutlined, StarOutlined, EditOutlined } from '@/utils/optimizedIcons'
+import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, CloudDownloadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined, GlobalOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined, CopyOutlined, RiseOutlined, StarOutlined, EditOutlined, ShrinkOutlined, ControlOutlined, LoginOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { type QueueFunction } from '@/api/queries/queue'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
@@ -13,7 +13,6 @@ import { useMachines } from '@/api/queries/machines'
 import { useStorage } from '@/api/queries/storage'
 import type { ColumnsType } from 'antd/es/table'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
-import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import { LocalActionsMenu } from './LocalActionsMenu'
 import { showMessage } from '@/utils/messages'
 import { tokenService } from '@/services/tokenService'
@@ -33,7 +32,8 @@ interface Repository {
   image_path: string
   accessible: boolean
   has_rediaccfile: boolean
-  docker_running: boolean
+  docker_available: boolean  // Docker daemon is running and accessible
+  docker_running: boolean    // Containers are actually running (container_count > 0)
   container_count: number
   plugin_count: number
   has_services: boolean
@@ -89,10 +89,12 @@ interface MachineRepositoryListProps {
   highlightedContainer?: any | null
   isLoading?: boolean
   onRefreshMachines?: () => Promise<any>
+  refreshKey?: number // Used to trigger re-rendering when parent wants to force refresh
+  onQueueItemCreated?: (taskId: string, machineName: string) => void // Callback to open parent's QueueItemTraceModal with machine context
 }
 
 
-export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete, hideSystemInfo = false, onCreateRepository, onRepositoryClick, highlightedRepository, onContainerClick, highlightedContainer, isLoading, onRefreshMachines }) => {
+export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete, hideSystemInfo = false, onCreateRepository, onRepositoryClick, highlightedRepository, onContainerClick, highlightedContainer, isLoading, onRefreshMachines, refreshKey, onQueueItemCreated }) => {
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
   const userEmail = useAppSelector((state) => state.auth.user?.email || '')
   const tableStyles = useTableStyles()
@@ -106,10 +108,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const [selectedRepository, setSelectedRepository] = useState<Repository | null>(null)
   const [functionModalOpen, setFunctionModalOpen] = useState(false)
   const [selectedFunction, setSelectedFunction] = useState<string | null>(null)
-  const [queueTraceModal, setQueueTraceModal] = useState<{
-    visible: boolean
-    taskId: string | null
-  }>({ visible: false, taskId: null })
   const [expandedRows, setExpandedRows] = useState<string[]>([])
   const [servicesData, setServicesData] = useState<Record<string, any>>({})
   const [containersData, setContainersData] = useState<Record<string, any>>({})
@@ -388,7 +386,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         setLoading(false)
       }
     }
-  }, [machine, repositoriesLoading, teamRepositories])
+  }, [machine, repositoriesLoading, teamRepositories, refreshKey])
 
   // Fetch current token when modal might be opened
   useEffect(() => {
@@ -482,7 +480,9 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       
       if (response?.taskId) {
         showMessage('success', t('resources:repositories.queueItemCreated'))
-        setQueueTraceModal({ visible: true, taskId: response.taskId })
+        if (onQueueItemCreated) {
+          onQueueItemCreated(response.taskId, machine.machineName)
+        }
       } else if (response?.isQueued) {
         showMessage('info', t('resources:repositories.highestPriorityQueued'))
       }
@@ -576,7 +576,9 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
         if (response?.taskId) {
           showMessage('success', t('resources:repositories.cloneStarted', { dest: destFilename }))
-          setQueueTraceModal({ visible: true, taskId: response.taskId })
+          if (onQueueItemCreated) {
+            onQueueItemCreated(response.taskId, machine.machineName)
+          }
         } else if (response?.isQueued) {
           showMessage('info', t('resources:repositories.highestPriorityQueued'))
         }
@@ -669,7 +671,9 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
           if (queueResponse?.taskId) {
             showMessage('success', t('resources:repositories.deleteCloneQueued', { name: repository.name }))
-            setQueueTraceModal({ visible: true, taskId: queueResponse.taskId })
+            if (onQueueItemCreated) {
+              onQueueItemCreated(queueResponse.taskId, machine.machineName)
+            }
 
             // Step 2: Delete the credential from database after queuing
             try {
@@ -967,7 +971,9 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
           if (queueResponse?.taskId) {
             showMessage('success', t('resources:repositories.deleteGrandQueued', { name: repository.name }))
-            setQueueTraceModal({ visible: true, taskId: queueResponse.taskId })
+            if (onQueueItemCreated) {
+              onQueueItemCreated(queueResponse.taskId, machine.machineName)
+            }
 
             // Step 2: Delete the credential from database after queuing
             try {
@@ -1019,13 +1025,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         repo: repositoryData.repositoryGuid,
         container: container.id || container.name
       }
-      
+
       // Add action-specific params
       if (action === 'container_remove') {
         params.force = 'false' // Default to safe remove
-      } else if (action === 'container_logs') {
-        params.lines = '100'
-        params.follow = 'false'
       }
       
       // Build queue vault
@@ -1054,9 +1057,9 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       
       if (response?.taskId) {
         showMessage('success', t('resources:repositories.queueItemCreated'))
-        setQueueTraceModal({ visible: true, taskId: response.taskId })
-        
-        // Container action completed
+        if (onQueueItemCreated) {
+          onQueueItemCreated(response.taskId, machine.machineName)
+        }
       } else if (response?.isQueued) {
         showMessage('info', t('resources:repositories.highestPriorityQueued'))
       }
@@ -1239,10 +1242,12 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       
       setFunctionModalOpen(false)
       setSelectedRepository(null)
-      
+
       if (response?.taskId) {
         showMessage('success', t('resources:repositories.queueItemCreated'))
-        setQueueTraceModal({ visible: true, taskId: response.taskId })
+        if (onQueueItemCreated) {
+          onQueueItemCreated(response.taskId, machine.machineName)
+        }
       } else if (response?.isQueued) {
         // Item was queued for highest priority management
         showMessage('info', t('resources:repositories.highestPriorityQueued'))
@@ -1296,6 +1301,45 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     
     // Container columns (without actions column which will be added in renderExpandedRow)
     const containerColumns: ColumnsType<any> = [
+      {
+        title: t('resources:containers.status'),
+        dataIndex: 'state',
+        key: 'status',
+        width: 80,
+        align: 'center',
+        render: (_: any, record: any) => {
+          let icon: React.ReactNode
+          let color: string
+          let tooltipText: string
+
+          if (record.state === 'running') {
+            icon = <PlayCircleOutlined />
+            color = '#52c41a' // green
+            tooltipText = t('resources:containers.containerStatusRunning')
+          } else if (record.state === 'paused') {
+            icon = <PauseCircleOutlined />
+            color = '#faad14' // orange/yellow
+            tooltipText = t('resources:containers.containerStatusPaused')
+          } else if (record.state === 'restarting') {
+            icon = <ReloadOutlined />
+            color = '#1890ff' // blue
+            tooltipText = t('resources:containers.containerStatusRestarting')
+          } else {
+            // Stopped/exited or other states
+            icon = <StopOutlined />
+            color = '#d9d9d9' // gray
+            tooltipText = t('resources:containers.containerStatusStopped')
+          }
+
+          return (
+            <Tooltip title={tooltipText}>
+              <span style={{ fontSize: 18, color }}>
+                {icon}
+              </span>
+            </Tooltip>
+          )
+        },
+      },
       {
         title: t('resources:repositories.containerName'),
         dataIndex: 'name',
@@ -1405,28 +1449,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               onClick: () => handleContainerAction(record, container, 'container_remove')
             })
           }
-          
-          // Always available actions
-          menuItems.push({ type: 'divider' as const })
-          menuItems.push({
-            key: 'logs',
-            label: t('functions:functions.container_logs.name'),
-            icon: <FileTextOutlined style={componentStyles.icon.small} />,
-            onClick: () => handleContainerAction(record, container, 'container_logs')
-          })
-          menuItems.push({
-            key: 'inspect',
-            label: t('functions:functions.container_inspect.name'),
-            icon: <LineChartOutlined style={componentStyles.icon.small} />,
-            onClick: () => handleContainerAction(record, container, 'container_inspect')
-          })
-          menuItems.push({
-            key: 'stats',
-            label: t('functions:functions.container_stats.name'),
-            icon: <LineChartOutlined style={componentStyles.icon.small} />,
-            onClick: () => handleContainerAction(record, container, 'container_stats')
-          })
-          
+
           return (
             <Space size="small">
               <Dropdown
@@ -1453,6 +1476,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 userEmail={userEmail}
                 containerId={container.id}
                 containerName={container.name}
+                containerState={container.state}
                 isContainerMenu={true}
                 data-testid={`machine-repo-list-container-local-actions-${container.id}`}
               />
@@ -1570,6 +1594,45 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   // System container columns
   const systemContainerColumns: ColumnsType<any> = [
     {
+      title: t('resources:containers.status'),
+      dataIndex: 'state',
+      key: 'status',
+      width: 80,
+      align: 'center',
+      render: (_: any, record: any) => {
+        let icon: React.ReactNode
+        let color: string
+        let tooltipText: string
+
+        if (record.state === 'running') {
+          icon = <PlayCircleOutlined />
+          color = '#52c41a' // green
+          tooltipText = t('resources:containers.containerStatusRunning')
+        } else if (record.state === 'paused') {
+          icon = <PauseCircleOutlined />
+          color = '#faad14' // orange/yellow
+          tooltipText = t('resources:containers.containerStatusPaused')
+        } else if (record.state === 'restarting') {
+          icon = <ReloadOutlined />
+          color = '#1890ff' // blue
+          tooltipText = t('resources:containers.containerStatusRestarting')
+        } else {
+          // Stopped/exited or other states
+          icon = <StopOutlined />
+          color = '#d9d9d9' // gray
+          tooltipText = t('resources:containers.containerStatusStopped')
+        }
+
+        return (
+          <Tooltip title={tooltipText}>
+            <span style={{ fontSize: 18, color }}>
+              {icon}
+            </span>
+          </Tooltip>
+        )
+      },
+    },
+    {
       title: t('resources:repositories.containerName'),
       dataIndex: 'name',
       key: 'name',
@@ -1648,6 +1711,44 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
   const columns: ColumnsType<Repository> = [
     {
+      title: t('resources:repositories.status'),
+      dataIndex: 'status',
+      key: 'status',
+      width: 80,
+      align: 'center',
+      render: (_: any, record: Repository) => {
+        // Determine status based on mounted and docker_running
+        let icon: React.ReactNode
+        let color: string
+        let tooltipText: string
+
+        if (record.mounted && record.docker_running) {
+          // Mounted & Running - Optimal
+          icon = <CheckCircleOutlined />
+          color = '#52c41a' // green
+          tooltipText = t('resources:repositories.statusMountedRunning')
+        } else if (record.mounted && !record.docker_running) {
+          // Mounted but not running - Partial
+          icon = <ClockCircleOutlined />
+          color = '#faad14' // orange/yellow
+          tooltipText = t('resources:repositories.statusMountedNotRunning')
+        } else {
+          // Unmounted - Offline
+          icon = <DisconnectOutlined />
+          color = '#d9d9d9' // gray
+          tooltipText = t('resources:repositories.statusUnmounted')
+        }
+
+        return (
+          <Tooltip title={tooltipText}>
+            <span style={{ fontSize: 18, color }}>
+              {icon}
+            </span>
+          </Tooltip>
+        )
+      },
+    },
+    {
       title: t('resources:repositories.repositoryName'),
       dataIndex: 'name',
       key: 'name',
@@ -1698,6 +1799,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         // Build smart menu items based on repository state
         const menuItems = []
 
+        // PRIMARY ACTIONS AT TOP LEVEL
+
         // Up - always available
         menuItems.push({
           key: 'up',
@@ -1705,7 +1808,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           icon: <PlayCircleOutlined style={componentStyles.icon.small} />,
           onClick: () => handleQuickAction(record, 'up', 4, 'mount')
         })
-        
+
         // Down - only when mounted
         if (record.mounted) {
           menuItems.push({
@@ -1724,16 +1827,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           onClick: () => handleCloneRepository(record)
         })
 
-        // Expand - only when mounted (online expansion)
-        if (record.mounted) {
-          menuItems.push({
-            key: 'expand',
-            label: t('functions:functions.expand.name'),
-            icon: <ExpandOutlined style={componentStyles.icon.small} />,
-            onClick: () => handleRunFunction(record, 'expand')
-          })
-        }
-
         // Push - always available
         menuItems.push({
           key: 'push',
@@ -1741,6 +1834,70 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           icon: <CloudUploadOutlined style={componentStyles.icon.small} />,
           onClick: () => handleRunFunction(record, 'push')
         })
+
+        // ADVANCED SUBMENU FOR STORAGE OPERATIONS
+        const advancedSubmenuItems = []
+
+        // Mount/Unmount
+        if (!record.mounted) {
+          advancedSubmenuItems.push({
+            key: 'mount',
+            label: t('resources:repositories.mount'),
+            icon: <DatabaseOutlined style={componentStyles.icon.small} />,
+            onClick: () => handleQuickAction(record, 'mount', 4)
+          })
+        } else {
+          advancedSubmenuItems.push({
+            key: 'unmount',
+            label: t('resources:repositories.unmount'),
+            icon: <DisconnectOutlined style={componentStyles.icon.small} />,
+            onClick: () => handleQuickAction(record, 'unmount', 4)
+          })
+        }
+
+        // Resize - only when NOT mounted (offline operation)
+        if (!record.mounted) {
+          advancedSubmenuItems.push({
+            key: 'resize',
+            label: t('functions:functions.resize.name'),
+            icon: <ShrinkOutlined style={componentStyles.icon.small} />,
+            onClick: () => handleRunFunction(record, 'resize')
+          })
+        }
+
+        // Expand - only when mounted (online expansion)
+        if (record.mounted) {
+          advancedSubmenuItems.push({
+            key: 'expand',
+            label: t('functions:functions.expand.name'),
+            icon: <ExpandOutlined style={componentStyles.icon.small} />,
+            onClick: () => handleRunFunction(record, 'expand')
+          })
+        }
+
+        // Add divider and experimental to advanced submenu
+        if (advancedSubmenuItems.length > 0) {
+          advancedSubmenuItems.push({
+            type: 'divider' as const
+          })
+        }
+
+        advancedSubmenuItems.push({
+          key: 'experimental',
+          label: t('machines:experimental'),
+          icon: <FunctionOutlined style={componentStyles.icon.small} />,
+          onClick: () => handleRunFunction(record)
+        })
+
+        // Add Advanced submenu if there are items
+        if (advancedSubmenuItems.length > 0) {
+          menuItems.push({
+            key: 'advanced',
+            label: t('resources:repositories.advanced'),
+            icon: <ControlOutlined style={componentStyles.icon.small} />,
+            children: advancedSubmenuItems
+          })
+        }
 
         // Promote to Original and Delete - only for clones (repositories with a parent)
         if (repositoryData && repositoryData.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid) {
@@ -1759,19 +1916,12 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           })
         }
 
-        // Always add divider and advanced option at the end
+        // Always add divider before management actions
         if (menuItems.length > 0) {
           menuItems.push({
             type: 'divider' as const
           })
         }
-        
-        menuItems.push({
-          key: 'experimental',
-          label: t('machines:experimental'),
-          icon: <FunctionOutlined style={componentStyles.icon.small} />,
-          onClick: () => handleRunFunction(record)
-        })
 
         // Rename - always available
         menuItems.push({
@@ -2122,37 +2272,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           } : undefined
         }
       />
-      
-      {/* Queue Item Trace Modal */}
-      <QueueItemTraceModal
-        taskId={queueTraceModal.taskId}
-        visible={queueTraceModal.visible}
-        onClose={() => {
-          setQueueTraceModal({ visible: false, taskId: null })
-          setCreatedRepositoryName(null) // Clear the created repository name
-          // Trigger refresh when modal closes
-          if (onActionComplete) {
-            onActionComplete()
-          }
-        }}
-        data-testid="machine-repo-list-queue-trace-modal"
-        onTaskStatusChange={async (status, taskId) => {
-          // If push task failed and we created a repository, delete it
-          if (status === 'FAILED' && createdRepositoryName) {
-            try {
-              await deleteRepositoryMutation.mutateAsync({
-                teamName: machine.teamName,
-                repositoryName: createdRepositoryName
-              })
-              showMessage('info', t('resources:repositories.cleanedUpFailedPush'))
-            } catch (deleteError) {
-              // Failed to cleanup repository after failed push
-            }
-            setCreatedRepositoryName(null)
-          }
-        }}
-      />
-      
+
     </div>
   )
 }

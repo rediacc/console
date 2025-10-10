@@ -76,6 +76,25 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
 
   const columns: ColumnsType<Repository> = [
     {
+      title: t('resources:repositories.status'),
+      dataIndex: 'status',
+      key: 'status',
+      width: 80,
+      align: 'center',
+      render: (_: any, record: Repository) => {
+        // Note: SplitRepositoryView shows global repositories, not machine-specific data
+        // So we don't have mounted/docker_running status here - this is a credential view
+        // We can show a simple indicator that credentials exist
+        return (
+          <Tooltip title={t('resources:repositories.credentialExists')}>
+            <span style={{ fontSize: 18, color: '#1890ff' }}>
+              <KeyOutlined />
+            </span>
+          </Tooltip>
+        )
+      },
+    },
+    {
       title: t('resources:repositories.repositoryName'),
       dataIndex: 'repositoryName',
       key: 'repositoryName',
@@ -84,12 +103,12 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
       render: (name: string, record: Repository) => (
         <Space>
           <FolderOutlined style={{ color: '#8FBC8F' }} />
-          <Button 
-            type="link" 
+          <Button
+            type="link"
             onClick={() => handleRowClick(record)}
-            style={{ 
+            style={{
               ...componentStyles.touchTarget,
-              padding: 0, 
+              padding: 0,
               height: 'auto',
               fontWeight: selectedRepository?.repositoryGuid === record.repositoryGuid ? 'bold' : 'normal'
             }}

@@ -28,6 +28,7 @@ interface LocalActionsMenuProps {
   // Container-specific props
   containerId?: string
   containerName?: string
+  containerState?: string  // Container state (running, paused, stopped, etc.)
   isContainerMenu?: boolean
   // Machine-only mode
   isMachineOnlyMenu?: boolean
@@ -42,6 +43,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
   pluginContainers = [],
   containerId,
   containerName,
+  containerState,
   isContainerMenu = false,
   isMachineOnlyMenu = false
 }) => {
@@ -159,22 +161,34 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
   }, [teamName, machine, repository, isContainerMenu, containerId, containerName, isMachineOnlyMenu])
 
   // Generate different menu items based on whether this is a container menu
-  const menuItems: any[] = isContainerMenu ? [
-    {
-      key: 'container-terminal',
-      icon: <CodeOutlined style={styles.icon.small} />,
-      label: (
-        <span style={styles.body}>
-          {t('resources:localActions.openContainerTerminal')}
-        </span>
-      ),
-      onClick: () => handleOpenInDesktop(undefined, 'terminal'),
-      'data-testid': `local-actions-container-terminal-${containerId}`
-    },
-    {
-      type: 'divider'
-    },
-    {
+  const menuItems: any[] = isContainerMenu ? (() => {
+    const items: any[] = []
+    const isRunning = containerState === 'running'
+
+    // Terminal - only available when running
+    if (isRunning) {
+      items.push({
+        key: 'container-terminal',
+        icon: <CodeOutlined style={styles.icon.small} />,
+        label: (
+          <span style={styles.body}>
+            {t('resources:localActions.openContainerTerminal')}
+          </span>
+        ),
+        onClick: () => handleOpenInDesktop(undefined, 'terminal'),
+        'data-testid': `local-actions-container-terminal-${containerId}`
+      })
+    }
+
+    // Add divider if we have terminal
+    if (items.length > 0) {
+      items.push({
+        type: 'divider'
+      })
+    }
+
+    // Logs - always available
+    items.push({
       key: 'container-logs',
       icon: <BuildOutlined style={styles.icon.small} />,
       label: (
@@ -184,19 +198,25 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       ),
       onClick: () => handleOpenInDesktop(undefined, 'logs'),
       'data-testid': `local-actions-container-logs-${containerId}`
-    },
-    {
-      key: 'container-stats',
-      icon: <BuildOutlined style={styles.icon.small} />,
-      label: (
-        <span style={styles.body}>
-          {t('resources:localActions.containerStats')}
-        </span>
-      ),
-      onClick: () => handleOpenInDesktop(undefined, 'stats'),
-      'data-testid': `local-actions-container-stats-${containerId}`
+    })
+
+    // Stats - only available when running
+    if (isRunning) {
+      items.push({
+        key: 'container-stats',
+        icon: <BuildOutlined style={styles.icon.small} />,
+        label: (
+          <span style={styles.body}>
+            {t('resources:localActions.containerStats')}
+          </span>
+        ),
+        onClick: () => handleOpenInDesktop(undefined, 'stats'),
+        'data-testid': `local-actions-container-stats-${containerId}`
+      })
     }
-  ] : [
+
+    return items
+  })() : [
     {
       key: 'open',
       icon: <DesktopOutlined style={styles.icon.small} />,
