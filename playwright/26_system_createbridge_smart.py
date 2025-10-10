@@ -21,8 +21,8 @@ class CreateBridgeTest:
         self.page = None
         self.context = None
         self.browser = None
-        # Use specific bridge name for MCP test
-        self.bridge_name = "test_bridge_smart_verify"
+        # Generate unique bridge name with timestamp
+        self.bridge_name = f"testbridge_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         
     def load_config(self) -> dict:
         """Load configuration from config.json"""

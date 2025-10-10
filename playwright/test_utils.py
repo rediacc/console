@@ -15,11 +15,8 @@ from logging_utils import StructuredLogger, log_playwright_action, log_api_call,
 class TestBase:
     """Base class for all Playwright tests."""
     
-    # Class variables to store session data
+    # Class variable to store session repository name
     _session_repository_name: Optional[str] = None
-    _session_bridge_name: Optional[str] = None
-    _session_team_name: Optional[str] = None
-    _session_region_name: Optional[str] = None
     
     def __init__(self, config_path: str):
         """Initialize test with configuration."""
@@ -49,32 +46,14 @@ class TestBase:
         suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
         return f"repo_{suffix}"
     
-    @staticmethod
-    def generate_session_bridge_name() -> str:
-        """Generate a random bridge name for the session.
-        Format: bridge_XXXXXX where X is alphanumeric."""
-        suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
-        return f"bridge_{suffix}"
-    
     def get_session_repository_name(self) -> str:
         """Get the session repository name."""
         return TestBase._session_repository_name
-    
-    def get_session_bridge_name(self) -> str:
-        """Get the session bridge name, generating if needed."""
-        if TestBase._session_bridge_name is None:
-            TestBase._session_bridge_name = self.generate_session_bridge_name()
-        return TestBase._session_bridge_name
     
     @classmethod
     def set_session_repository_name(cls, name: str):
         """Set the session repository name. Used by test runners to ensure consistency."""
         cls._session_repository_name = name
-    
-    @classmethod
-    def set_session_bridge_name(cls, name: str):
-        """Set the session bridge name. Used by test runners to ensure consistency."""
-        cls._session_bridge_name = name
     
     def load_config(self, config_path: str) -> Dict[str, Any]:
         """Load configuration from JSON file."""

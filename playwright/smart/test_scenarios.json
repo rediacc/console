@@ -47,18 +47,6 @@
           "description": "Repository creation test"
         }
       ]
-    },
-    {
-      "name": "bridge_creation",
-      "description": "System bridge creation test",
-      "tests": [
-        {
-          "module": "test_system_bridge_creation.py",
-          "class_name": "run_with_page",
-          "use_run_with_page": true,
-          "description": "System bridge creation test"
-        }
-      ]
     }
   ]
 }
