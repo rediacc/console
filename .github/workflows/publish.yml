@@ -161,13 +161,12 @@ jobs:
           else
             echo "gh-pages branch does not exist, creating new directory..."
             mkdir -p gh-pages
-            cd gh-pages
-            git init -b gh-pages
-            git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/rediacc/console.git
+            (cd gh-pages && git init -b gh-pages && git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/rediacc/console.git)
           fi
 
           # Verify directory exists and is accessible
-          ls -la gh-pages/ || echo "gh-pages directory created"
+          ls -la gh-pages/
+          echo "gh-pages directory ready"
 
       - name: Configure Git
         run: |
