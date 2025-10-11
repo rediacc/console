@@ -8,15 +8,13 @@ import {
   Tag, 
   Space, 
   Button, 
-  Empty,
+  
   Divider,
   Statistic
 } from 'antd'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { 
   CloseOutlined,
-  ClockCircleOutlined,
-  InfoCircleOutlined,
   AppstoreOutlined,
   CloudServerOutlined,
   CodeOutlined,
@@ -24,7 +22,6 @@ import {
   HddOutlined,
   WifiOutlined,
   FolderOutlined,
-  ClusterOutlined,
   PlayCircleOutlined,
   PauseCircleOutlined
 } from '@/utils/optimizedIcons'
@@ -130,7 +127,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
 
   // Check if this is a plugin container
   const isPlugin = container?.name?.startsWith('plugin-')
-  const pluginName = isPlugin ? container.name.replace('plugin-', '') : null
+  const pluginName = isPlugin && container ? container.name.replace('plugin-', '') : null
 
   if (!visible || !container) {
     return null
@@ -307,7 +304,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
                 </div>
 
                 {/* Port Mappings */}
-                {(container.port_mappings?.length > 0 || container.ports) && (
+                {(container.port_mappings && container.port_mappings.length > 0 || container.ports) && (
                   <div>
                     <Text type="secondary">{t('resources:containers.ports')}:</Text>
                     <br />

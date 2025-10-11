@@ -9,8 +9,7 @@ import {
   HistoryOutlined,
   PlusOutlined,
   RightOutlined,
-  CloudServerOutlined,
-  FileImageOutlined
+  CloudServerOutlined
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { DistributedStoragePool, DistributedStorageCluster } from '@/api/queries/distributedStorage'
@@ -97,7 +96,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
       key: 'poolName',
       ellipsis: true,
       render: (name: string, record: DistributedStoragePool) => {
-        const isExpanded = expandedRowKeys.includes(record.poolGuid)
+        const isExpanded = expandedRowKeys.includes(record.poolGuid || '')
         return (
           <Space>
             <span style={{ 
@@ -146,7 +145,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
                   onRunFunction(record)
                 } else {
                   // Handle specific function
-                  onRunFunction({ ...record, preselectedFunction: key })
+                  onRunFunction({ ...record, preselectedFunction: key } as DistributedStoragePool & { preselectedFunction: string })
                 }
               }
             }}
@@ -171,7 +170,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
               setAuditTraceModal({
                 open: true,
                 entityType: 'DistributedStoragePool',
-                entityIdentifier: record.poolName,
+                entityIdentifier: record.poolName || '',
                 entityName: record.poolName
               })
             }}
@@ -256,11 +255,11 @@ export const PoolTable: React.FC<PoolTableProps> = ({
                       return
                     }
                     
-                    const isExpanded = expandedRowKeys.includes(record.poolGuid)
+                    const isExpanded = expandedRowKeys.includes(record.poolGuid ?? '')
                     if (isExpanded) {
                       setExpandedRowKeys(expandedRowKeys.filter(key => key !== record.poolGuid))
                     } else {
-                      setExpandedRowKeys([...expandedRowKeys, record.poolGuid])
+                      setExpandedRowKeys([...expandedRowKeys, record.poolGuid ?? ''])
                     }
                   },
                   style: { 
@@ -284,8 +283,8 @@ export const PoolTable: React.FC<PoolTableProps> = ({
       <AuditTraceModal
         open={auditTraceModal.open}
         onCancel={() => setAuditTraceModal({ open: false, entityType: null, entityIdentifier: null })}
-        entityType={auditTraceModal.entityType}
-        entityIdentifier={auditTraceModal.entityIdentifier}
+        entityType={auditTraceModal.entityType || ''}
+        entityIdentifier={auditTraceModal.entityIdentifier || ''}
         entityName={auditTraceModal.entityName}
       />
     </>

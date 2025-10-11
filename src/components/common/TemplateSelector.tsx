@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Row, Col, Button, Space, Typography, Spin, Empty, Tag, message } from 'antd'
-import { 
-  DatabaseOutlined, 
-  GlobalOutlined, 
-  CloudOutlined, 
+import {
+  DatabaseOutlined,
+  GlobalOutlined,
+  CloudOutlined,
   CheckCircleOutlined,
   InfoCircleOutlined,
   AppstoreOutlined
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
-import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, borderRadius, fontSize } from '@/utils/styleConstants'
 import { templateService } from '@/services/templateService'
 
@@ -36,7 +35,6 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   const [templates, setTemplates] = useState<Template[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const styles = useComponentStyles()
 
   useEffect(() => {
     fetchTemplates()

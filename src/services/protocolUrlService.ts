@@ -282,23 +282,8 @@ class ProtocolUrlService {
       iframe.style.display = 'none'
       
       return new Promise<boolean>((resolve) => {
-        let timeout: ReturnType<typeof setTimeout>
-        
-        // If protocol handler exists, the iframe won't load
-        iframe.onerror = () => {
-          clearTimeout(timeout)
-          document.body.removeChild(iframe)
-          resolve(true)
-        }
-        
-        iframe.onload = () => {
-          clearTimeout(timeout)
-          document.body.removeChild(iframe)
-          resolve(false)
-        }
-        
         // Timeout after 2 seconds - assume not installed
-        timeout = setTimeout(() => {
+        setTimeout(() => {
           document.body.removeChild(iframe)
           resolve(false)
         }, 2000)
@@ -488,6 +473,63 @@ class ProtocolUrlService {
         ]
       }
     ]
+  }
+
+  /**
+   * Generate a sync-specific URL
+   */
+  async generateSyncUrl(
+    baseParams: Omit<ProtocolUrlParams, 'action' | 'queryParams'>,
+    syncParams?: { direction?: 'upload' | 'download'; path?: string },
+    windowParams?: WindowParams
+  ): Promise<string> {
+    return await this.generateUrl({
+      ...baseParams,
+      action: 'desktop',
+      queryParams: {
+        action: 'sync',
+        ...syncParams,
+        ...windowParams
+      }
+    })
+  }
+
+  /**
+   * Generate a plugin-specific URL
+   */
+  async generatePluginUrl(
+    baseParams: Omit<ProtocolUrlParams, 'action' | 'queryParams'>,
+    pluginParams?: { pluginName?: string; pluginAction?: string },
+    windowParams?: WindowParams
+  ): Promise<string> {
+    return await this.generateUrl({
+      ...baseParams,
+      action: 'desktop',
+      queryParams: {
+        action: 'plugin',
+        ...pluginParams,
+        ...windowParams
+      }
+    })
+  }
+
+  /**
+   * Generate a browser-specific URL
+   */
+  async generateBrowserUrl(
+    baseParams: Omit<ProtocolUrlParams, 'action' | 'queryParams'>,
+    browserParams?: { path?: string; readonly?: boolean },
+    windowParams?: WindowParams
+  ): Promise<string> {
+    return await this.generateUrl({
+      ...baseParams,
+      action: 'desktop',
+      queryParams: {
+        action: 'browser',
+        ...browserParams,
+        ...windowParams
+      }
+    })
   }
 
   /**

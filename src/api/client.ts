@@ -28,7 +28,12 @@ export interface ApiResponse<T = any> {
   message: string
   resultSets: Array<{
     data: T[]
+    resultSetIndex?: number
   }>
+  status?: number
+  isTFAEnabled?: boolean
+  isAuthorized?: boolean
+  authenticationStatus?: string
 }
 
 class ApiClient {
@@ -111,7 +116,7 @@ class ApiClient {
 
         if (responseData.failure !== 0) return this.handleApiFailure(responseData)
 
-        await this.handleTokenRotation(responseData, response.config.url)
+        await this.handleTokenRotation(responseData)
         return response
       },
       (error) => {
@@ -240,7 +245,7 @@ class ApiClient {
     return Promise.reject(new Error(this.extractErrorMessage(responseData)))
   }
 
-  private async handleTokenRotation(responseData: ApiResponse, requestUrl?: string): Promise<void> {
+  private async handleTokenRotation(responseData: ApiResponse): Promise<void> {
     // For ForkAuthenticationRequest, only rotate the main session token (resultSets[0])
     // Don't use the fork token from the "Credentials" resultSet for main session rotation
     const newToken = responseData.resultSets?.[0]?.data?.[0]?.nextRequestToken

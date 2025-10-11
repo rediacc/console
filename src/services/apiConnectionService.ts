@@ -23,7 +23,7 @@ class ApiConnectionService {
   constructor() {
     // Determine build type from environment
     const envBuildType = import.meta.env.VITE_BUILD_TYPE || import.meta.env.MODE
-    this.buildType = envBuildType === 'production' || envBuildType === 'RELEASE' ? 'RELEASE' : 'DEBUG'
+    this.buildType = (envBuildType === 'RELEASE' || import.meta.env.MODE === 'production') ? 'RELEASE' : 'DEBUG'
   }
 
   /**
@@ -48,7 +48,7 @@ class ApiConnectionService {
     try {
       // Try a simple GET request to the API endpoint
       // Using a lightweight endpoint that doesn't require authentication
-      const response = await axios.get(`${url}/Health`, {
+      await axios.get(`${url}/Health`, {
         timeout: 3000, // 3 second timeout for health check
         validateStatus: (status) => status < 500 // Accept any non-5xx status
       })

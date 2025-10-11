@@ -248,7 +248,7 @@ export class BatchApiService {
    */
   static async batchValidateMachines(
     machines: Machine[],
-    targetType: 'cluster' | 'image' | 'clone',
+    _targetType: 'cluster' | 'image' | 'clone',
     onProgress?: (progress: BatchProgress) => void
   ): Promise<BatchResult<Machine>> {
     // For validation, we can process in larger batches since it's read-only

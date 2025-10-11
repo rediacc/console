@@ -4,10 +4,8 @@ import {
   Space, 
   Typography, 
   Divider, 
-  Empty, 
+  
   Button, 
-  Timeline,
-  Tag,
   Spin,
   Alert
 } from 'antd'
@@ -25,7 +23,7 @@ import { useGetMachineAssignmentStatus } from '@/api/queries/distributedStorage'
 import MachineAssignmentStatusBadge from './MachineAssignmentStatusBadge'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 
-const { Text, Title } = Typography
+const { Text } = Typography
 
 interface DistributedStorageSectionProps {
   machine: Machine

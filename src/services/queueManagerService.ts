@@ -1,6 +1,9 @@
 import { showMessage } from '@/utils/messages'
 import { queueMonitoringService } from '@/services/queueMonitoringService'
 
+// Declare chrome as optional global for extension context detection
+declare const chrome: any
+
 interface QueuedItem {
   id: string
   data: {
@@ -118,9 +121,10 @@ class QueueManagerService {
   }
 
   /**
-   * Remove an active task by bridge name
+   * Remove an active task by bridge name (currently unused but kept for potential future use)
    */
-  private removeActiveTaskByBridge(bridgeName: string) {
+  // @ts-expect-error - Intentionally unused, kept for potential future use
+  private _removeActiveTaskByBridge(bridgeName: string) {
     // Removing active task for bridge
     const deleted = this.activeTasks.delete(bridgeName)
     if (!deleted) {

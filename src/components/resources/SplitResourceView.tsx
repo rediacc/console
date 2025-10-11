@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { Machine, Repository } from '@/types'
 import { MachineTable } from './MachineTable'
 import { UnifiedDetailPanel } from './UnifiedDetailPanel'
-import { useComponentStyles } from '@/hooks/useComponentStyles'
 
 interface ContainerData {
   id: string
@@ -58,7 +57,6 @@ interface SplitResourceViewProps {
 
 export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
   const { type, selectedResource, onResourceSelect, onMachineRepositoryClick, onMachineContainerClick } = props
-  const componentStyles = useComponentStyles()
   
   // Calculate 25% of window width for the panel
   const calculatePanelWidth = () => {

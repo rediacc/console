@@ -116,8 +116,7 @@ class PipInstallationService {
    */
   getInstallationCommands(options: InstallOptions = {}): InstallationCommands {
     const platform = this.detectPlatform()
-    const pipPrefix = platform === 'windows' ? 'python -m pip' : 'python3 -m pip'
-    
+
     return {
       install: this.generateInstallCommand(options),
       postInstall: [
@@ -136,7 +135,7 @@ class PipInstallationService {
    */
   getTroubleshootingCommands(errorType: ErrorType): { description: string; commands: string[] } {
     switch (errorType) {
-      case 'pip-not-found':
+      case 'pip-not-found': {
         const platform = this.detectPlatform()
         if (platform === 'windows') {
           return {
@@ -156,7 +155,8 @@ class PipInstallationService {
             ]
           }
         }
-      
+      }
+
       case 'permission-denied':
         return {
           description: 'Permission denied. Try one of these approaches:',

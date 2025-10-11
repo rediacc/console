@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { Dropdown, Button, Menu, message, Tooltip } from 'antd'
+import { Dropdown, Button, message, Tooltip } from 'antd'
 import {
   DesktopOutlined,
   CodeOutlined,
@@ -87,21 +87,13 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
         }
       } else if (action) {
         // Generate action-specific URL
-        switch (action) {
-          case 'sync':
-            url = await protocolUrlService.generateSyncUrl(baseParams)
-            break
-          case 'terminal':
-            url = await protocolUrlService.generateTerminalUrl(baseParams)
-            break
-          case 'plugin':
-            url = await protocolUrlService.generatePluginUrl(baseParams)
-            break
-          case 'browser':
-            url = await protocolUrlService.generateBrowserUrl(baseParams)
-            break
-          default:
-            url = await protocolUrlService.generateUrl(baseParams)
+        if (action === 'terminal') {
+          url = await protocolUrlService.generateTerminalUrl(baseParams)
+        } else if (action === 'desktop') {
+          url = await protocolUrlService.generateDesktopUrl(baseParams)
+        } else {
+          // Default to desktop action for custom actions like sync, plugin, browser
+          url = await protocolUrlService.generateUrl(baseParams)
         }
       } else {
         // Default action for "Open in Desktop" - use GUI for team/machine/repo selection
@@ -109,7 +101,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
           const containerParams: ContainerParams = {
             containerId,
             containerName,
-            action: 'desktop'  // Use desktop action for container-level desktop access
+            action: 'terminal' as const  // Use terminal action for container-level desktop access
           }
           url = await protocolUrlService.generateDesktopUrl(baseParams, containerParams)
         } else {
@@ -260,8 +252,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       <Dropdown
         menu={{
           items: menuItems,
-          'data-testid': `local-actions-menu-${repository}`
-        }} 
+        } as any} 
         trigger={['click']}
         disabled={disabled || isCheckingProtocol}
         data-testid={`local-actions-dropdown-container-${repository}`}

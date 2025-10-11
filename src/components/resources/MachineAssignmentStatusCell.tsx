@@ -11,17 +11,25 @@ interface MachineAssignmentStatusCellProps {
 
 const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = ({ machine }) => {
   const styles = useComponentStyles()
+
+  // Always call hooks at the top level
+  const { data, isLoading } = useGetMachineAssignmentStatus(
+    machine.machineName,
+    machine.teamName,
+    !machine.distributedStorageClusterName // Only fetch if not already assigned to cluster
+  )
+
   // If machine already has distributedStorageClusterName, we know it's assigned to a cluster
   if (machine.distributedStorageClusterName) {
     return (
-      <div 
+      <div
         data-testid="machine-status-cell-cluster"
         style={{
           ...styles.flexStart,
           minHeight: '24px'
         }}
       >
-        <MachineAssignmentStatusBadge 
+        <MachineAssignmentStatusBadge
           assignmentType="CLUSTER"
           assignmentDetails={`Assigned to cluster: ${machine.distributedStorageClusterName}`}
           size="small"
@@ -29,13 +37,6 @@ const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = 
       </div>
     )
   }
-
-  // Otherwise, fetch the assignment status
-  const { data, isLoading } = useGetMachineAssignmentStatus(
-    machine.machineName,
-    machine.teamName,
-    true
-  )
 
   if (isLoading) {
     return (

@@ -1,7 +1,6 @@
 import React from 'react'
-import { Table, Tag, Space, Badge } from 'antd'
+import { Table, Tag, Badge } from 'antd'
 import type { ColumnsType } from 'antd/es/table/interface'
-import { CloudServerOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { Machine } from '@/types'
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell'
@@ -104,8 +103,8 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
         data-testid="ds-machines-table"
         expandable={{
           expandedRowKeys,
-          onExpandedRowsChange: (keys) => onExpandedRowsChange?.(keys as string[]),
-          expandedRowRender: (machine) => (
+          onExpandedRowsChange: onExpandedRowsChange ? ((keys: any) => onExpandedRowsChange(keys as string[])) : undefined,
+          expandedRowRender: (machine: Machine) => (
             <div style={{ ...componentStyles.padding.md, background: 'var(--color-fill-quaternary)' }}>
               <MachineRepositoryList
                 machine={machine}
@@ -113,12 +112,12 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
               />
             </div>
           ),
-          rowExpandable: (machine) => machine.queueCount > 0,
+          rowExpandable: (machine: Machine) => machine.queueCount > 0,
         }}
         scroll={{ x: 800 }}
         pagination={{
           showSizeChanger: true,
-          showTotal: (total, range) => 
+          showTotal: (total: number, range: [number, number]) =>
             t('machines:showingMachines', { start: range[0], end: range[1], total }),
         }}
       />

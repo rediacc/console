@@ -33,6 +33,7 @@ const MachineRow: React.FC<RowData & {
 }> = ({ machine, style, selectable, onRowClick, renderActions }) => {
   const { isMachineSelected, toggleSelection } = useMachineSelection()
   const isSelected = isMachineSelected(machine.machineName)
+  const tableStyles = useTableStyles()
 
   const handleCheckboxChange = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
@@ -46,16 +47,13 @@ const MachineRow: React.FC<RowData & {
   }, [machine, onRowClick])
 
   return (
-    <div 
+    <div
       style={{
         ...style,
         ...tableStyles.tableCell,
         cursor: onRowClick ? 'pointer' : 'default',
         borderBottom: '1px solid var(--color-border-secondary)',
-        transition: 'background-color 0.2s ease',
-        ':hover': {
-          backgroundColor: 'var(--color-fill-quaternary)'
-        }
+        transition: 'background-color 0.2s ease'
       }}
       className={styles.row}
       onClick={handleRowClick}
@@ -189,10 +187,11 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
           itemCount={itemCount}
           loadMoreItems={loadMoreItems}
         >
-          {({ onItemsRendered, ref }) => (
+          {({ onItemsRendered, ref }: { onItemsRendered: any; ref: any }) => (
             <List
               ref={(list) => {
                 ref(list)
+                // @ts-expect-error - listRef.current is readonly but we need to assign for keyboard navigation
                 listRef.current = list
               }}
               height={height}
@@ -201,6 +200,7 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
               onItemsRendered={onItemsRendered}
               overscanCount={5}
               data-testid="virtual-machine-list"
+              width="100%"
             >
               {Row}
             </List>
@@ -217,6 +217,7 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
         itemSize={rowHeight}
         overscanCount={5}
         data-testid="virtual-machine-list"
+        width="100%"
       >
         {Row}
       </List>
@@ -224,13 +225,9 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
   }, [loadMore, hasMore, isItemLoaded, itemCount, loadMoreItems, height, rowHeight, Row, machines.length])
 
   return (
-    <div 
+    <div
       style={{
-        ...tableStyles.tableContainer,
-        ':focus': {
-          outline: '2px solid var(--color-primary)',
-          outlineOffset: '-2px'
-        }
+        ...tableStyles.tableContainer
       }}
       className={styles.virtualTable}
       onKeyDown={handleKeyDown}

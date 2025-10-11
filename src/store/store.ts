@@ -1,4 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit'
+import { configureStore, Middleware } from '@reduxjs/toolkit'
 import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux'
 import authSlice from './auth/authSlice'
 import uiSlice from './ui/uiSlice'
@@ -11,15 +11,25 @@ import {
 } from './distributedStorage/machineAssignmentMiddleware'
 import { telemetryMiddleware } from './middleware/telemetryMiddleware'
 
+// Define RootState type from reducer shape before store creation
+const rootReducer = {
+  auth: authSlice,
+  ui: uiSlice,
+  notifications: notificationSlice,
+  machineAssignment: machineAssignmentSlice,
+}
+
+export type RootState = {
+  auth: ReturnType<typeof authSlice>
+  ui: ReturnType<typeof uiSlice>
+  notifications: ReturnType<typeof notificationSlice>
+  machineAssignment: ReturnType<typeof machineAssignmentSlice>
+}
+
 export const store = configureStore({
-  reducer: {
-    auth: authSlice,
-    ui: uiSlice,
-    notifications: notificationSlice,
-    machineAssignment: machineAssignmentSlice,
-  },
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({
+  reducer: rootReducer,
+  middleware: (getDefaultMiddleware) => {
+    const middleware = getDefaultMiddleware({
       serializableCheck: {
         ignoredActions: ['auth/setToken', 'machineAssignment/validateSelectedMachines/fulfilled'],
         ignoredPaths: [
@@ -28,14 +38,16 @@ export const store = configureStore({
         ],
       },
     }).concat(
-      telemetryMiddleware,
-      machineAssignmentMiddleware,
-      machineSelectionPersistenceMiddleware,
-      import.meta.env.DEV ? machineAssignmentLoggingMiddleware : []
-    ).filter(Boolean),
+      telemetryMiddleware as Middleware,
+      machineAssignmentMiddleware as Middleware,
+      machineSelectionPersistenceMiddleware as Middleware,
+      import.meta.env.DEV ? (machineAssignmentLoggingMiddleware as Middleware) : ([] as unknown as Middleware)
+    ).filter(Boolean) as any
+
+    return middleware
+  },
 })
 
-export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch
 
 // Export typed hooks

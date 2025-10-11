@@ -314,6 +314,7 @@ class QueueDataService {
           }
         }
       } catch (e) {
+        // Ignore vault parsing errors - repository vault is optional
       }
     }
 

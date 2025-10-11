@@ -52,20 +52,20 @@ export interface ModalConfig {
  * Combines size class with optional responsive and custom classes
  */
 export function getModalClassName(config: ModalConfig): string {
-  const classes = [config.size]
-  
+  const classes: string[] = [config.size as string]
+
   if (config.responsive !== false) {
-    classes.push('modal-responsive')
+    classes.push('modal-responsive' as string)
   }
-  
+
   if (config.scrollable) {
-    classes.push('modal-content-scrollable')
+    classes.push('modal-content-scrollable' as string)
   }
-  
+
   if (config.className) {
     classes.push(config.className)
   }
-  
+
   return classes.join(' ')
 }
 

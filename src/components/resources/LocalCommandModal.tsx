@@ -26,8 +26,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
   onClose,
   machine,
   repository,
-  userEmail,
-  pluginContainers = []
+  pluginContainers: _pluginContainers = []
 }) => {
   const { t } = useTranslation()
   const { token: themeToken } = theme.useToken()
