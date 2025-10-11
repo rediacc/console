@@ -153,18 +153,21 @@ jobs:
           path: dist/
           retention-days: 90
 
-      - name: Checkout gh-pages branch (or create if not exists)
+      - name: Setup gh-pages directory
         run: |
-          if git ls-remote --heads origin gh-pages | grep gh-pages; then
+          if git ls-remote --heads origin gh-pages | grep -q gh-pages; then
             echo "gh-pages branch exists, checking out..."
-            git clone --branch gh-pages --single-branch https://github.com/rediacc/console.git gh-pages
+            git clone --branch gh-pages --depth 1 https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/rediacc/console.git gh-pages
           else
             echo "gh-pages branch does not exist, creating new directory..."
             mkdir -p gh-pages
             cd gh-pages
-            git init
-            git remote add origin https://github.com/rediacc/console.git
+            git init -b gh-pages
+            git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/rediacc/console.git
           fi
+
+          # Verify directory exists and is accessible
+          ls -la gh-pages/ || echo "gh-pages directory created"
 
       - name: Configure Git
         run: |
