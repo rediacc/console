@@ -4,9 +4,10 @@ import path from 'path'
 
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  // Use root path for custom domain (console.rediacc.com)
-  // If deploying to github.io/console, change to '/console/'
-  base: '/',
+  // Use environment variable for base path configuration
+  // Local development: defaults to '/console/' (works with middleware at localhost:7322/console/)
+  // Production (GitHub Pages): set VITE_BASE_PATH=/ (works at console.rediacc.com/)
+  base: process.env.VITE_BASE_PATH || '/console/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
