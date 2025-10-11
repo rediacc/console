@@ -84,14 +84,50 @@ jobs:
           echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
           echo "Commit SHA: $COMMIT_SHA"
 
+      - name: Find CI workflow run for commit
+        id: find-run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMIT_SHA="${{ steps.get-sha.outputs.commit_sha }}"
+          echo "Looking for CI workflow run for commit: $COMMIT_SHA"
+
+          # Find the workflow run ID for this commit
+          RUN_ID=$(gh run list \
+            --workflow=ci.yml \
+            --commit="$COMMIT_SHA" \
+            --status=success \
+            --limit=1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+
+          if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
+            echo "Error: No successful CI workflow run found for commit $COMMIT_SHA"
+            echo "Please ensure CI has completed successfully for this commit"
+            exit 1
+          fi
+
+          echo "Found workflow run ID: $RUN_ID"
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+
       - name: Download build artifact from CI
-        uses: dawidd6/action-download-artifact@v3
-        with:
-          workflow: ci.yml
-          commit: ${{ steps.get-sha.outputs.commit_sha }}
-          name: build-RELEASE-${{ steps.get-sha.outputs.commit_sha }}
-          path: dist/
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMIT_SHA="${{ steps.get-sha.outputs.commit_sha }}"
+          RUN_ID="${{ steps.find-run.outputs.run_id }}"
+          ARTIFACT_NAME="build-RELEASE-$COMMIT_SHA"
+
+          echo "Downloading artifact: $ARTIFACT_NAME"
+          echo "From workflow run: $RUN_ID"
+
+          # Download artifact using GitHub CLI
+          gh run download "$RUN_ID" \
+            --name "$ARTIFACT_NAME" \
+            --dir dist/
+
+          echo "Artifact downloaded successfully"
+          ls -lah dist/
 
       - name: Create CNAME file
         run: echo 'console.rediacc.com' > dist/CNAME
@@ -110,20 +146,37 @@ jobs:
           }
           EOF
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact for GitHub Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
       - name: Upload distribution artifacts
         uses: actions/upload-artifact@v4
         with:
           name: console-${{ steps.detect-tag.outputs.tag_name }}
           path: dist/
           retention-days: 90
+
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Deploy versioned release
+        run: |
+          chmod +x .github/scripts/manage-versions.sh
+          .github/scripts/manage-versions.sh deploy gh-pages dist ${{ steps.detect-tag.outputs.tag_name }}
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: gh-pages
 
       - name: Deploy to GitHub Pages
         id: deployment
@@ -139,11 +192,14 @@ jobs:
           - **Version**: ${{ steps.detect-tag.outputs.tag_name }}
           - **Build Date**: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)
           - **Commit**: \`$(git rev-parse --short HEAD)\`
-          - **Deployed to**: https://console.rediacc.com
+          - **Latest**: https://console.rediacc.com
+          - **This Version**: https://console.rediacc.com/versions/${{ steps.detect-tag.outputs.tag_name }}/
 
-          ## Installation
+          ## Access This Version
 
-          The web console is automatically deployed to [console.rediacc.com](https://console.rediacc.com).
+          - **Latest (always up-to-date)**: [console.rediacc.com](https://console.rediacc.com)
+          - **This specific version**: [console.rediacc.com/versions/${{ steps.detect-tag.outputs.tag_name }}/](https://console.rediacc.com/versions/${{ steps.detect-tag.outputs.tag_name }}/)
+          - **All versions**: [console.rediacc.com/versions/](https://console.rediacc.com/versions/)
 
           ## What's Included
 
@@ -151,9 +207,16 @@ jobs:
           - All static assets (JS, CSS, images)
           - Version information at \`/version.json\`
 
+          ## Version Management
+
+          This release is deployed with automatic version management:
+          - Old versions are automatically cleaned up to maintain total size under 128 MB
+          - At least the 3 most recent versions are always retained
+          - Each version is accessible via its own subdirectory
+
           ## Deployment
 
-          This release has been automatically deployed to GitHub Pages.
+          This release has been automatically deployed to GitHub Pages with versioned URLs.
 
           ---
           🤖 Built and deployed via GitHub Actions
@@ -175,11 +238,15 @@ jobs:
           echo "## 🚀 Console Release Deployed" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: ${{ steps.detect-tag.outputs.tag_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **URL**: https://console.rediacc.com" >> $GITHUB_STEP_SUMMARY
+          echo "- **Latest URL**: https://console.rediacc.com" >> $GITHUB_STEP_SUMMARY
+          echo "- **This Version**: https://console.rediacc.com/versions/${{ steps.detect-tag.outputs.tag_name }}/" >> $GITHUB_STEP_SUMMARY
+          echo "- **All Versions**: https://console.rediacc.com/versions/" >> $GITHUB_STEP_SUMMARY
           echo "- **Build Date**: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: \`$(git rev-parse --short HEAD)\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
-          echo "1. Verify deployment at https://console.rediacc.com" >> $GITHUB_STEP_SUMMARY
-          echo "2. Check version.json at https://console.rediacc.com/version.json" >> $GITHUB_STEP_SUMMARY
-          echo "3. Review the GitHub Release" >> $GITHUB_STEP_SUMMARY
+          echo "1. Verify latest deployment at https://console.rediacc.com" >> $GITHUB_STEP_SUMMARY
+          echo "2. Check this version at https://console.rediacc.com/versions/${{ steps.detect-tag.outputs.tag_name }}/" >> $GITHUB_STEP_SUMMARY
+          echo "3. Browse all versions at https://console.rediacc.com/versions/" >> $GITHUB_STEP_SUMMARY
+          echo "4. Check version.json at https://console.rediacc.com/version.json" >> $GITHUB_STEP_SUMMARY
+          echo "5. Review the GitHub Release" >> $GITHUB_STEP_SUMMARY
