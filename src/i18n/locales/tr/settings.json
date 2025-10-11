@@ -1,85 +1,85 @@
 {
-  "title": "Ayarlar",
   "company": {
-    "title": "Şirket Ayarları",
-    "description": "Organizasyon genelindeki yapılandırmaları yönetmek için şirket kasa ayarlarınızı yapılandırın.",
-    "configureVault": "Kasayı Yapılandır",
-    "modalTitle": "Şirket Kasasını Yapılandır"
+    "configureVault": "Apps Kasasını Yapılandır",
+    "description": "Kuruluş çapındaki yapılandırmaları yönetmek için şirket kasası ayarlarınızı yapılandırın.",
+    "modalTitle": "Şirket Kasasını Yapılandırma",
+    "title": "Şirket Ayarları"
   },
   "personal": {
-    "title": "Kişisel Ayarlar",
-    "description": "Deneyiminizi özelleştirmek için kişisel kasa ayarlarınızı yapılandırın.",
-    "configureVault": "Kasayı Yapılandır",
-    "modalTitle": "Kullanıcı Kasasını Yapılandır"
+    "configureVault": "Apps Kasasını Yapılandır",
+    "description": "Deneyiminizi kişiselleştirmek için kişisel kasa ayarlarınızı yapılandırın.",
+    "modalTitle": "Kullanıcı Kasasını Yapılandırın",
+    "title": "Kişisel Ayarlar"
   },
+  "title": "Ayarlar",
   "twoFactorAuth": {
-    "title": "İki Faktörlü Kimlik Doğrulama",
-    "status": {
-      "enabled": "İki Faktörlü Kimlik Doğrulama Etkin",
-      "disabled": "İki Faktörlü Kimlik Doğrulama Devre Dışı",
-      "enabledDescription": "Hesabınız ek bir güvenlik katmanı ile korunuyor.",
-      "disabledDescription": "Hesabınıza ekstra bir güvenlik katmanı ekleyin."
-    },
-    "whatIs": {
-      "title": "İki Faktörlü Kimlik Doğrulama Nedir?",
-      "description": "İki Faktörlü Kimlik Doğrulama (TFA), şifrenize ek olarak telefonunuzdan zamana dayalı bir kod gerektirerek hesabınıza ekstra bir güvenlik katmanı ekler.",
-      "benefit1": "Şifreniz ele geçirilse bile hesabınızı korur",
-      "benefit2": "Endüstri standardı TOTP (Zamana Dayalı Tek Kullanımlık Şifre) algoritmasını kullanır",
-      "benefit3": "Google Authenticator, Authy veya Microsoft Authenticator gibi popüler kimlik doğrulama uygulamalarıyla çalışır"
-    },
-    "enable": "İki Faktörlü Kimlik Doğrulamayı Etkinleştir",
     "disable": "İki Faktörlü Kimlik Doğrulamayı Devre Dışı Bırak",
-    "setupMethods": {
-      "qrCode": "QR Kodu",
-      "manual": "Manuel Giriş"
-    },
-    "scanQRCode": "Bu QR kodunu kimlik doğrulama uygulamanızla tarayın",
-    "manualSetup": {
-      "title": "Manuel Kurulum",
-      "instructions": "Bu gizli anahtarı kimlik doğrulama uygulamanıza girin:"
-    },
-    "important": "Önemli",
-    "saveSecretWarning": "Bu gizli anahtarı güvenli bir yerde saklayın. Kimlik doğrulama cihazınızı kaybederseniz hesabınıza erişimi kurtarmak için buna ihtiyacınız olacak.",
-    "secretCopied": "Gizli anahtar panoya kopyalandı",
-    "done": "Tamam",
-    "enableSuccess": {
-      "title": "İki Faktörlü Kimlik Doğrulama Etkinleştirildi!",
-      "subtitle": "Hesabınız artık TFA ile korunuyor.",
-      "verified": "TFA Başarıyla Doğrulandı",
-      "verifiedDescription": "Kimlik doğrulama uygulamanız başarıyla yapılandırıldı ve hesabınızda iki faktörlü kimlik doğrulama artık aktif."
-    },
-    "verification": {
-      "title": "Kimlik Doğrulayıcınızı Doğrulayın",
-      "subtitle": "QR kodunu tarayın veya kimlik doğrulama uygulamanıza gizli anahtarı girin, ardından doğrulamak için 6 haneli kodu girin.",
-      "codeLabel": "Doğrulama Kodu",
-      "codePlaceholder": "000000",
-      "codeRequired": "Doğrulama kodu gerekli",
-      "codeLength": "Kod tam olarak 6 haneli olmalıdır",
-      "codeFormat": "Kod yalnızca rakam içermelidir",
-      "submit": "Doğrula ve TFA'yı Etkinleştir"
-    },
-    "enableModal": {
-      "title": "İki Faktörlü Kimlik Doğrulamayı Etkinleştir",
-      "warning": "Güvenlik Doğrulaması Gerekli",
-      "warningDescription": "İki faktörlü kimlik doğrulamayı etkinleştirmek için lütfen hesap şifrenizi girin.",
-      "passwordLabel": "Mevcut Şifre",
-      "passwordPlaceholder": "Mevcut şifrenizi girin",
-      "passwordRequired": "Şifre gerekli",
-      "submit": "TFA'yı Etkinleştir"
-    },
     "disableModal": {
-      "title": "İki Faktörlü Kimlik Doğrulamayı Devre Dışı Bırak",
-      "warning": "Güvenlik Uyarısı",
-      "warningDescription": "TFA'yı devre dışı bırakmak hesabınızı daha az güvenli hale getirecektir. Devam etmek için mevcut şifrenizi ve geçerli bir TFA kodu girmeniz gerekecek.",
-      "passwordLabel": "Mevcut Şifre",
-      "passwordPlaceholder": "Mevcut şifrenizi girin",
-      "passwordRequired": "Şifre gerekli",
+      "codeFormat": "Kod yalnızca rakamlardan oluşmalıdır",
       "codeLabel": "TFA Kodu",
+      "codeLength": "Kod tam olarak 6 haneli olmalıdır",
       "codePlaceholder": "000000",
       "codeRequired": "TFA kodu gerekli",
+      "passwordLabel": "Mevcut Şifre",
+      "passwordPlaceholder": "Mevcut şifrenizi girin",
+      "passwordRequired": "Şifre gerekli",
+      "submit": "TFA'yı devre dışı bırak",
+      "title": "İki Faktörlü Kimlik Doğrulamayı Devre Dışı Bırak",
+      "warning": "Güvenlik Uyarısı",
+      "warningDescription": "TFA'yı devre dışı bırakmak hesabınızı daha az güvenli hale getirecektir. Devam etmek için mevcut şifrenizi ve geçerli bir TFA kodunu girmeniz gerekecektir."
+    },
+    "done": "Tamamlamak",
+    "enable": "İki Faktörlü Kimlik Doğrulamayı Etkinleştir",
+    "enableModal": {
+      "passwordLabel": "Mevcut Şifre",
+      "passwordPlaceholder": "Mevcut şifrenizi girin",
+      "passwordRequired": "Şifre gerekli",
+      "submit": "TFA'yı etkinleştir",
+      "title": "İki Faktörlü Kimlik Doğrulamayı Etkinleştir",
+      "warning": "Güvenlik Doğrulaması Gerekli",
+      "warningDescription": "İki faktörlü kimlik doğrulamayı etkinleştirmek için lütfen hesap şifrenizi girin."
+    },
+    "enableSuccess": {
+      "subtitle": "Hesabınız artık TFA ile korunuyor.",
+      "title": "İki Faktörlü Kimlik Doğrulama Etkinleştirildi!",
+      "verified": "TFA Başarıyla Doğrulandı",
+      "verifiedDescription": "Kimlik doğrulayıcı uygulamanız başarıyla yapılandırıldı ve iki faktörlü kimlik doğrulama artık hesabınızda etkin."
+    },
+    "important": "Önemli",
+    "manualSetup": {
+      "instructions": "Bu gizli anahtarı kimlik doğrulayıcı uygulamanıza girin:",
+      "title": "Manuel Kurulum"
+    },
+    "saveSecretWarning": "Bu gizli anahtarı güvenli bir yere saklayın. Kimlik doğrulayıcı cihazınızı kaybederseniz hesabınıza erişimi geri kazanmak için buna ihtiyacınız olacak.",
+    "scanQRCode": "Bu QR kodunu kimlik doğrulayıcı uygulamanızla tarayın",
+    "secretCopied": "Gizli anahtar panoya kopyalandı",
+    "setupMethods": {
+      "manual": "Manuel Giriş",
+      "qrCode": "QR Kodu"
+    },
+    "status": {
+      "disabled": "İki Faktörlü Kimlik Doğrulama Devre Dışı Bırakıldı",
+      "disabledDescription": "Hesabınıza ekstra bir güvenlik katmanı ekleyin.",
+      "enabled": "İki Faktörlü Kimlik Doğrulama Etkin",
+      "enabledDescription": "Hesabınız ek bir güvenlik katmanıyla korunmaktadır."
+    },
+    "title": "İki Faktörlü Kimlik Doğrulama",
+    "verification": {
+      "codeFormat": "Kod yalnızca rakamlardan oluşmalıdır",
+      "codeLabel": "Doğrulama Kodu",
       "codeLength": "Kod tam olarak 6 haneli olmalıdır",
-      "codeFormat": "Kod yalnızca rakam içermelidir",
-      "submit": "TFA'yı Devre Dışı Bırak"
+      "codePlaceholder": "000000",
+      "codeRequired": "Doğrulama kodu gerekli",
+      "submit": "TFA'yı Doğrulayın ve Etkinleştirin",
+      "subtitle": "QR kodunu tarayın veya kimlik doğrulama uygulamanıza gizli anahtarı girin, ardından doğrulamak için 6 haneli kodu girin.",
+      "title": "Kimlik Doğrulayıcınızı Doğrulayın"
+    },
+    "whatIs": {
+      "benefit1": "Şifreniz ele geçirilse bile hesabınızı korur",
+      "benefit2": "Endüstri standardı TOTP (Zamana Dayalı Tek Kullanımlık Şifre) algoritmasını kullanır",
+      "benefit3": "Google Authenticator, Authy veya Microsoft Authenticator gibi popüler kimlik doğrulama uygulamalarıyla çalışır",
+      "description": "İki Faktörlü Kimlik Doğrulama (TFA), şifrenize ek olarak telefonunuzdan zamana dayalı bir kod alınmasını gerektirerek hesabınıza ekstra bir güvenlik katmanı ekler.",
+      "title": "İki Faktörlü Kimlik Doğrulama Nedir?"
     }
   }
 }

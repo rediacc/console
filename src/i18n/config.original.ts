@@ -232,8 +232,7 @@ i18n
       caches: ['localStorage'],
     },
     react: {
-      useSuspense: true,
-      wait: true
+      useSuspense: true
     }
   });
 

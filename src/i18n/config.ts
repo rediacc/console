@@ -1,7 +1,6 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
-import Backend from 'i18next-http-backend';
 
 // Only load default language initially (English)
 import enAuth from './locales/en/auth.json';
@@ -181,7 +180,6 @@ i18n
     },
     react: {
       useSuspense: false, // Disable suspense to prevent blocking
-      wait: false,
       bindI18n: 'languageChanged loaded', // Re-render components when language changes
       bindI18nStore: 'added removed', // Re-render when translations are added/removed
       transEmptyNodeValue: '', // Prevent showing keys for empty translations

@@ -1,83 +1,83 @@
 {
-  "title": "Queue Management",
-  "filters": "Filters",
-  "team": "Team",
-  "selectTeam": "Select a team to view queue items",
-  "machine": "Machine",
-  "selectMachine": "All machines",
-  "status": "Status",
-  "selectStatus": "All statuses",
   "dateRange": "Date Range",
-  "options": "Options",
-  "includeCompleted": "Include Completed",
+  "filters": "Filters",
   "includeCancelled": "Include Cancelled",
-  "onlyStale": "Only Stale Items",
-  "statusPending": "Pending",
-  "statusRunning": "Running",
-  "statusCompleted": "Completed",
-  "statusFailed": "Failed",
-  "statusCancelled": "Cancelled",
-  "tabs": {
-    "active": {
-      "title": "Active Queue",
-      "tooltip": "Shows all pending, assigned, processing, and cancelling tasks. Includes tasks waiting to be picked up and those currently being executed.",
-      "description": "This section displays all active tasks including pending items waiting for assignment, tasks being processed by machines, and tasks in the process of being cancelled."
-    },
-    "completed": {
-      "title": "Completed",
-      "tooltip": "Shows all successfully completed tasks",
-      "description": "This section displays all tasks that have been successfully completed without errors."
-    },
-    "cancelled": {
-      "title": "Cancelled",
-      "tooltip": "Shows all cancelled tasks that were stopped by user request",
-      "description": "This section displays all tasks that were cancelled by user request. These tasks were stopped before completion."
-    },
-    "failed": {
-      "title": "Failed",
-      "tooltip": "Shows all failed tasks that encountered errors during execution",
-      "description": "This section displays all tasks that failed due to errors during execution. Tasks may be retried up to 2 times before being permanently marked as failed."
-    }
-  },
+  "includeCompleted": "Include Completed",
+  "machine": "Machine",
   "monitoring": {
-    "completed": "Queue task {{taskId}} completed successfully ({{teamName}} - {{machineName}})",
+    "assigned": "Queue task {{taskId}} assigned to machine ({{teamName}} - {{machineName}})",
     "cancelled": "Queue task {{taskId}} was cancelled ({{teamName}} - {{machineName}})",
     "cancelling": "Queue task {{taskId}} is being cancelled ({{teamName}} - {{machineName}})",
+    "completed": "Queue task {{taskId}} completed successfully ({{teamName}} - {{machineName}})",
+    "failedWaitingRetry": "Queue task {{taskId}} failed - waiting for retry (attempt {{attempt}} of {{maxAttempts}}) ({{teamName}} - {{machineName}})",
+    "monitoringAlready": "Already monitoring queue task {{taskId}}",
     "permanentlyFailed": "Queue task {{taskId}} permanently failed after {{attempts}} attempts ({{teamName}} - {{machineName}})",
     "permanentlyFailedWithReason": "Queue task {{taskId}} permanently failed: {{reason}} ({{teamName}} - {{machineName}})",
-    "failedWaitingRetry": "Queue task {{taskId}} failed - waiting for retry (attempt {{attempt}} of {{maxAttempts}}) ({{teamName}} - {{machineName}})",
-    "startedProcessing": "Queue task {{taskId}} started processing ({{teamName}} - {{machineName}})",
-    "assigned": "Queue task {{taskId}} assigned to machine ({{teamName}} - {{machineName}})",
     "queuedForRetry": "Queue task {{taskId}} queued for retry (attempt {{attempt}} of {{maxAttempts}}) ({{teamName}} - {{machineName}})",
     "staleTask": "Queue task {{taskId}} appears to be stale (no progress for {{minutes}} minutes)",
     "startedMonitoring": "Started monitoring queue task {{taskId}} ({{teamName}} - {{machineName}})",
+    "startedProcessing": "Queue task {{taskId}} started processing ({{teamName}} - {{machineName}})",
     "stoppedMonitoring": "Stopped monitoring queue task {{taskId}}",
-    "monitoringAlready": "Already monitoring queue task {{taskId}}",
     "taskNotFound": "Queue task {{taskId}} no longer exists"
   },
+  "onlyStale": "Only Stale Items",
+  "options": "Options",
   "queueManager": {
-    "title": "Queue Manager",
+    "alreadyHasPriority1": "You already have a highest priority task running on bridge {{bridgeName}}. Please wait for it to complete.",
     "buttonLabel": "Highest Priority",
-    "tooltip": "Highest priority queue manager",
+    "cancelledTask": "Cancelled existing pending task for {{machineName}}",
+    "clearCompleted": "Clear Completed",
     "description": "Highest priority queue items (priority 1) are managed to ensure only one task runs per bridge at a time.",
     "emptyState": "No highest priority items in queue",
     "itemQueued": "Highest priority task queued. Position: {{position}}",
-    "cancelledTask": "Cancelled existing pending task for {{machineName}}",
-    "alreadyHasPriority1": "You already have a highest priority task running on bridge {{bridgeName}}. Please wait for it to complete.",
     "taskCancelled": "Task cancelled: Already have a priority 1 task on this bridge",
-    "clearCompleted": "Clear Completed"
+    "title": "Queue Manager",
+    "tooltip": "Highest priority queue manager"
+  },
+  "selectMachine": "All machines",
+  "selectStatus": "All statuses",
+  "selectTeam": "Select a team to view queue items",
+  "statistics": {
+    "processing": "Processing",
+    "timeSinceAssigned": "Time Since Assigned",
+    "totalDuration": "Total Duration"
+  },
+  "status": "Status",
+  "statusCancelled": "Cancelled",
+  "statusCompleted": "Completed",
+  "statusFailed": "Failed",
+  "statusPending": "Pending",
+  "statusRunning": "Running",
+  "tabs": {
+    "active": {
+      "description": "This section displays all active tasks including pending items waiting for assignment, tasks being processed by machines, and tasks in the process of being cancelled.",
+      "title": "Active Queue",
+      "tooltip": "Shows all pending, assigned, processing, and cancelling tasks. Includes tasks waiting to be picked up and those currently being executed."
+    },
+    "cancelled": {
+      "description": "This section displays all tasks that were cancelled by user request. These tasks were stopped before completion.",
+      "title": "Cancelled",
+      "tooltip": "Shows all cancelled tasks that were stopped by user request"
+    },
+    "completed": {
+      "description": "This section displays all tasks that have been successfully completed without errors.",
+      "title": "Completed",
+      "tooltip": "Shows all successfully completed tasks"
+    },
+    "failed": {
+      "description": "This section displays all tasks that failed due to errors during execution. Tasks may be retried up to 2 times before being permanently marked as failed.",
+      "title": "Failed",
+      "tooltip": "Shows all failed tasks that encountered errors during execution"
+    }
   },
   "taskStatus": {
-    "completedTitle": "Task Completed Successfully",
-    "completedDescription": "The task finished successfully after {{minutes}} minutes.",
-    "cancelledTitle": "Task Cancelled",
     "cancelledDescription": "The task was cancelled and will not be processed.",
-    "failedTitle": "Task Failed Permanently",
-    "failedDescription": "The task has failed permanently after {{retries}} retries."
+    "cancelledTitle": "Task Cancelled",
+    "completedDescription": "The task finished successfully after {{minutes}} minutes.",
+    "completedTitle": "Task Completed Successfully",
+    "failedDescription": "The task has failed permanently after {{retries}} retries.",
+    "failedTitle": "Task Failed Permanently"
   },
-  "statistics": {
-    "totalDuration": "Total Duration",
-    "processing": "Processing",
-    "timeSinceAssigned": "Time Since Assigned"
-  }
+  "team": "Team",
+  "title": "Queue Management"
 }
