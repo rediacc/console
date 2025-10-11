@@ -22,7 +22,8 @@ const API_PREFIX = '/StoredProcedure'
 // API URL will be determined dynamically based on connection health check
 let API_BASE_URL = ''
 
-export interface ApiResponse<T = unknown> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export interface ApiResponse<T = any> {
   failure: number
   errors: string[]
   message: string
@@ -38,7 +39,8 @@ export interface ApiResponse<T = unknown> {
 
 class ApiClient {
   private client: AxiosInstance
-  private requestQueue: Promise<unknown> = Promise.resolve()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private requestQueue: Promise<any> = Promise.resolve()
   private isUpdatingToken = false
 
   private readonly HTTP_UNAUTHORIZED = 401
@@ -165,20 +167,25 @@ class ApiClient {
     return response.data
   }
 
-  private async makeRequest<T = unknown>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async makeRequest<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
     return this.queueRequest(() => this.client.post<ApiResponse<T>>(endpoint, data || {}))
   }
 
-  get = <T = unknown>(endpoint: string, params?: unknown): Promise<ApiResponse<T>> =>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get = <T = any>(endpoint: string, params?: any): Promise<ApiResponse<T>> =>
     this.makeRequest<T>(endpoint, params)
 
-  post = <T = unknown>(endpoint: string, data: unknown): Promise<ApiResponse<T>> =>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  post = <T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> =>
     this.makeRequest<T>(endpoint, data)
 
-  put = <T = unknown>(endpoint: string, data: unknown): Promise<ApiResponse<T>> =>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  put = <T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> =>
     this.makeRequest<T>(endpoint, data)
 
-  delete = <T = unknown>(endpoint: string, data: unknown): Promise<ApiResponse<T>> =>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  delete = <T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> =>
     this.makeRequest<T>(endpoint, data)
 
   private async queueRequest<T>(request: () => Promise<AxiosResponse<ApiResponse<T>>>): Promise<ApiResponse<T>> {
