@@ -178,6 +178,17 @@ jobs:
           chmod +x .github/scripts/manage-versions.sh
           .github/scripts/manage-versions.sh deploy gh-pages dist ${{ steps.detect-tag.outputs.tag_name }}
 
+      - name: Verify deployment structure
+        run: |
+          echo "=== gh-pages directory structure ==="
+          ls -laR gh-pages/ | head -100
+          echo ""
+          echo "=== Checking for versions directory ==="
+          ls -la gh-pages/versions/ || echo "versions directory not found!"
+          echo ""
+          echo "=== Checking for versions.json ==="
+          cat gh-pages/versions.json || echo "versions.json not found!"
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
