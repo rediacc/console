@@ -441,6 +441,10 @@ deploy_version() {
 
     echo "{\"latest\":\"$version_tag\",\"versions\":$versions_array}" > "$manifest_file"
 
+    # Ensure .nojekyll exists at root (prevent Jekyll processing on GitHub Pages)
+    touch "$gh_pages_dir/.nojekyll"
+    log_info "Created .nojekyll at root"
+
     log_success "Version $version_tag deployed successfully"
 }
 
