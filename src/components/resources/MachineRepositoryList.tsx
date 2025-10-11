@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Empty, Card, Row, Col, Progress, Tooltip, Modal, Input } from 'antd'
+import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Tooltip, Modal, Input } from 'antd'
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
-import { InboxOutlined, CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, CloudDownloadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, FileTextOutlined, LineChartOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, HddOutlined, ApiOutlined, DisconnectOutlined, GlobalOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined, CopyOutlined, RiseOutlined, StarOutlined, EditOutlined, ShrinkOutlined, ControlOutlined, LoginOutlined } from '@/utils/optimizedIcons'
+import { CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, ApiOutlined, DisconnectOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined, CopyOutlined, RiseOutlined, StarOutlined, EditOutlined, ShrinkOutlined, ControlOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { type QueueFunction } from '@/api/queries/queue'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
@@ -15,9 +15,7 @@ import type { ColumnsType } from 'antd/es/table'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 import { LocalActionsMenu } from './LocalActionsMenu'
 import { showMessage } from '@/utils/messages'
-import { tokenService } from '@/services/tokenService'
 import { useAppSelector } from '@/store/store'
-import { getLocalizedRelativeTime, formatTimestampAsIs } from '@/utils/timeUtils'
 
 const { Text } = Typography
 
@@ -99,20 +97,19 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const userEmail = useAppSelector((state) => state.auth.user?.email || '')
   const tableStyles = useTableStyles()
   const componentStyles = useComponentStyles()
-  const [currentToken, setCurrentToken] = useState<string>('')
   const [repositories, setRepositories] = useState<Repository[]>([])
-  const [systemContainers, setSystemContainers] = useState<any[]>([])
-  const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null)
+  const [systemContainers] = useState<any[]>([])
+  const [_systemInfo, setSystemInfo] = useState<SystemInfo | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedRepository, setSelectedRepository] = useState<Repository | null>(null)
   const [functionModalOpen, setFunctionModalOpen] = useState(false)
   const [selectedFunction, setSelectedFunction] = useState<string | null>(null)
   const [expandedRows, setExpandedRows] = useState<string[]>([])
-  const [servicesData, setServicesData] = useState<Record<string, any>>({})
+  const [_servicesData, setServicesData] = useState<Record<string, any>>({})
   const [containersData, setContainersData] = useState<Record<string, any>>({})
   const [createdRepositoryName, setCreatedRepositoryName] = useState<string | null>(null)
-  const [isRefreshingRepo, setIsRefreshingRepo] = useState(false)
+  const [_isRefreshingRepo, setIsRefreshingRepo] = useState(false)
   const [showRepoLoadingIndicator, setShowRepoLoadingIndicator] = useState(false)
   const [repoLoadingTimer, setRepoLoadingTimer] = useState<NodeJS.Timeout | null>(null)
   const [expandingRepoKey, setExpandingRepoKey] = useState<string | null>(null)
@@ -241,7 +238,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 })
 
                 // Sort repositories hierarchically: originals first, then their children
-                const sortedRepositories = repositoriesWithPluginCounts.sort((a, b) => {
+                const sortedRepositories = repositoriesWithPluginCounts.sort((a: Repository, b: Repository) => {
                   const aData = teamRepositories.find(r => r.repositoryName === a.name)
                   const bData = teamRepositories.find(r => r.repositoryName === b.name)
 
@@ -386,18 +383,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         setLoading(false)
       }
     }
-  }, [machine, repositoriesLoading, teamRepositories, refreshKey])
-
-  // Fetch current token when modal might be opened
-  useEffect(() => {
-    const fetchToken = async () => {
-      const token = await tokenService.getToken()
-      if (token) {
-        setCurrentToken(token)
-      }
-    }
-    fetchToken()
-  }, [])
+  }, [machine, repositoriesLoading, teamRepositories, refreshKey, setRepositories, setServicesData, setContainersData, setLoading, setError])
 
   // Clean up timer on unmount
   useEffect(() => {
@@ -1100,10 +1086,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           grandRepositoryVault = grandRepository.vaultContent
         }
       }
-      
-      let finalParams = { ...functionData.params }
-      let repositoryGuid = repositoryData.repositoryGuid
-      let repositoryVault = grandRepositoryVault
+
+      const finalParams = { ...functionData.params }
+      const repositoryGuid = repositoryData.repositoryGuid
+      const repositoryVault = grandRepositoryVault
       let destinationMachineVault = undefined
       let destinationStorageVault = undefined
       let sourceMachineVault = undefined
@@ -1259,45 +1245,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     }
   }
 
-  // Services columns
-  const serviceColumns: ColumnsType<any> = [
-    {
-      title: t('resources:repositories.serviceName'),
-      dataIndex: 'name',
-      key: 'name',
-      ellipsis: true,
-      render: (name: string) => <Tag color="blue">{name}</Tag>,
-    },
-    {
-      title: t('resources:repositories.activeState'),
-      dataIndex: 'active_state',
-      key: 'active_state',
-      render: (state: string) => (
-        <Tag color={state === 'active' ? 'success' : state === 'failed' ? 'error' : 'default'}>
-          {state}
-        </Tag>
-      ),
-    },
-    {
-      title: t('resources:repositories.memory'),
-      dataIndex: 'memory_human',
-      key: 'memory_human',
-      render: (memory: string) => memory || '-',
-    },
-    {
-      title: t('resources:repositories.pid'),
-      dataIndex: 'main_pid',
-      key: 'main_pid',
-      width: 80,
-      render: (pid: number) => pid > 0 ? pid : '-',
-    },
-    {
-      title: t('resources:repositories.restarts'),
-      dataIndex: 'restart_count',
-      key: 'restart_count',
-      render: (count: number) => <Tag>{count}</Tag>,
-    },
-  ]
     
     // Container columns (without actions column which will be added in renderExpandedRow)
     const containerColumns: ColumnsType<any> = [
@@ -1345,7 +1292,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         dataIndex: 'name',
         key: 'name',
         ellipsis: true,
-        render: (name: string, record: any) => {
+        render: (name: string, _record: any) => {
           const isPlugin = name?.startsWith('plugin-')
           return (
             <Space>
@@ -1389,7 +1336,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     ]
     
   const renderExpandedRow = (record: Repository) => {
-    const services = servicesData[record.name]
     const containers = containersData[record.name]
     
     // Separate plugin containers from regular containers
@@ -1471,14 +1417,12 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               <LocalActionsMenu
                 machine={machine.machineName}
                 repository={record.name}
-                token={currentToken}
                 teamName={machine.teamName}
                 userEmail={userEmail}
                 containerId={container.id}
                 containerName={container.name}
                 containerState={container.state}
                 isContainerMenu={true}
-                data-testid={`machine-repo-list-container-local-actions-${container.id}`}
               />
             </Space>
           )
@@ -1964,11 +1908,9 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               <LocalActionsMenu
                 machine={machine.machineName}
                 repository={record.name}
-                token={currentToken}
                 teamName={machine.teamName}
                 userEmail={userEmail}
                 pluginContainers={containersData[record.name]?.containers || []}
-                data-testid={`machine-repo-list-local-actions-${record.name}`}
               />
             )}
             {record.isUnmapped && onCreateRepository && (

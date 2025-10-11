@@ -2,9 +2,6 @@ import React from 'react';
 import { Select } from 'antd';
 import { GlobalOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
-import { useComponentStyles } from '@/hooks/useComponentStyles';
-import { DESIGN_TOKENS } from '@/utils/styleConstants';
-
 const { Option } = Select;
 
 interface Language {
@@ -26,8 +23,7 @@ const languages: Language[] = [
 ];
 
 const LanguageSelector: React.FC = () => {
-  const { i18n, t } = useTranslation();
-  const styles = useComponentStyles();
+  const { i18n } = useTranslation();
 
   const handleChange = async (value: string) => {
     await i18n.changeLanguage(value);

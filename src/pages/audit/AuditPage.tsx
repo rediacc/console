@@ -26,7 +26,7 @@ const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
 const AuditPage = () => {
-  const { t } = useTranslation('system');
+  const { t: _t } = useTranslation('system');
   const { token } = theme.useToken();
   const styles = useComponentStyles();
   const tableRef = useRef<HTMLDivElement>(null);
@@ -279,13 +279,13 @@ const AuditPage = () => {
     ...styles.container,
     height: 'calc(100vh - 64px - 48px)', // viewport - header - content margin
     overflow: 'hidden',
-    ...styles.flexColumn
+    ...styles.flexColumn as React.CSSProperties
   };
 
   const cardStyle: React.CSSProperties = {
     ...styles.card,
     flex: 1,
-    ...styles.flexColumn,
+    ...styles.flexColumn as React.CSSProperties,
     overflow: 'hidden'
   };
 
@@ -293,7 +293,7 @@ const AuditPage = () => {
     flex: 1,
     overflow: 'hidden',
     ...styles.padding.md,
-    ...styles.flexColumn
+    ...styles.flexColumn as React.CSSProperties
   };
 
   return (
@@ -459,9 +459,9 @@ const AuditPage = () => {
                   description={
                     <Space direction="vertical" align="center">
                       <Text type="secondary">
-                        {isError 
-                          ? "Unable to load audit logs" 
-                          : filteredLogs?.length === 0 && auditLogs?.length > 0 
+                        {isError
+                          ? "Unable to load audit logs"
+                          : (filteredLogs?.length === 0 && auditLogs && auditLogs.length > 0)
                             ? "No logs match your current filters"
                             : "No audit logs found for the selected date range"
                         }

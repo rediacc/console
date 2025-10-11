@@ -1,925 +1,509 @@
 {
+  "common": {
+    "additionalProviders": "Mevcut ek sağlayıcılar: iCloud Drive, Amazon Cloud Drive (kullanımdan kaldırıldı), Citrix Files ve daha uzmanlaşmış sağlayıcılar.",
+    "authentication": {
+      "apiKey": "Bu sağlayıcı API anahtarı kimlik doğrulamasını kullanıyor. Sağlayıcının konsolundan bir anahtar oluşturun.",
+      "oauth": "Bu sağlayıcı OAuth kimlik doğrulamasını kullanıyor. Erişime izin vermeniz gerekecek.",
+      "password": "Bu sağlayıcı şifre kimlik doğrulamasını kullanıyor. Uygulamaya özel şifreler kullanmayı düşünün.",
+      "serviceAccount": "Bu sağlayıcı, sunucu uygulamaları için hizmet hesabı kimlik doğrulamasını destekler."
+    },
+    "errors": {
+      "connectionFailed": "Bağlantı başarısız oldu. Lütfen ağınızı ve sağlayıcı ayarlarınızı kontrol edin.",
+      "invalidCredentials": "Geçersiz kimlik bilgileri. Lütfen kimlik doğrulama ayrıntılarınızı kontrol edin.",
+      "permissionDenied": "İzin reddedildi. Erişim haklarınızı ve kimlik doğrulamanızı kontrol edin.",
+      "quotaExceeded": "Depolama kotası aşıldı. Lütfen yer açın veya planınızı yükseltin."
+    },
+    "noVersioning": {
+      "helpText": "Yerden tasarruf etmek için bu depolama biriminde dosya sürümü oluşturmayı devre dışı bırakın",
+      "label": "Sürüm Oluşturmayı Devre Dışı Bırak"
+    },
+    "parameters": {
+      "helpText": "Gelişmiş yapılandırma için ekstra rclone parametreleri",
+      "label": "Ek Parametreler",
+      "placeholder": "--transferler 4 --dama 8"
+    }
+  },
   "storageProviders": {
-    "s3": {
-      "name": "Amazon S3 Uyumlu",
-      "description": "S3 uyumlu nesne depolama (AWS, Linode, DigitalOcean, Vultr, vb.)",
-      "helpText": "Amazon S3 ve uyumlu nesne depolama servisleri. AWS S3, Linode Object Storage, DigitalOcean Spaces, Vultr Object Storage, MinIO ve diğerlerini destekler.",
-      "fields": {
-        "provider": {
-          "label": "Sağlayıcı",
-          "placeholder": "S3 sağlayıcısını seçin",
-          "helpText": "S3 uyumlu depolama sağlayıcınızı seçin"
-        },
-        "access_key_id": {
-          "label": "Erişim Anahtarı ID",
-          "placeholder": "AKIAIOSFODNN7EXAMPLE",
-          "helpText": "Kimlik doğrulama için erişim anahtarı ID'niz. Bunu sağlayıcınızın konsolundan alın"
-        },
-        "secret_access_key": {
-          "label": "Gizli Erişim Anahtarı",
-          "placeholder": "Gizli erişim anahtarınızı girin",
-          "helpText": "Gizli erişim anahtarınız. Bunu güvende tutun ve asla paylaşmayın"
-        },
-        "endpoint": {
-          "label": "Uç Nokta",
-          "placeholder": "s3.amazonaws.com",
-          "helpText": "S3 API uç nokta URL'si. AWS S3 için boş bırakın. Diğer sağlayıcılar için gerekli"
-        },
-        "region": {
-          "label": "Bölge",
-          "placeholder": "us-east-1",
-          "helpText": "Klasörünüzün bulunduğu AWS bölgesi"
-        },
-        "bucket": {
-          "label": "Klasör",
-          "placeholder": "my-backup-bucket",
-          "helpText": "S3 klasör adı. Küresel olarak benzersiz olmalı ve adlandırma kurallarına uymalı"
-        },
-        "folder": {
-          "label": "Klasör",
-          "placeholder": "rediacc",
-          "helpText": "Klasör içindeki isteğe bağlı klasör yolu"
-        },
-        "env_auth": {
-          "label": "Ortam Kimlik Doğrulaması Kullan",
-          "helpText": "Kimlik doğrulama için AWS ortam değişkenlerini veya IAM rolünü kullan"
-        },
-        "location_constraint": {
-          "label": "Konum Kısıtlaması",
-          "placeholder": "EU",
-          "helpText": "Yeni klasörler oluştururken konum kısıtlaması"
-        },
-        "acl": {
-          "label": "Erişim Kontrol Listesi",
-          "helpText": "Yüklenen nesneler için varsayılan ACL. Özel önerilir"
-        }
-      },
-      "tips": [
-        "AWS S3 için programatik erişime sahip bir IAM kullanıcısı oluşturun",
-        "Erişim izinlerini kontrol etmek için klasör politikalarını kullanın",
-        "Önemli veri koruması için sürümlemeyi etkinleştirin",
-        "Depolama maliyetlerini yönetmek için yaşam döngüsü kurallarını kullanmayı düşünün"
-      ]
-    },
-    "b2": {
-      "name": "Backblaze B2",
-      "description": "Backblaze B2 Bulut Depolama",
-      "helpText": "Backblaze B2 uygun fiyatlı bir bulut yedekleme servisidir. Kimlik doğrulama için uygulama anahtarları kullanır.",
-      "fields": {
-        "account": {
-          "label": "Hesap ID veya Uygulama Anahtarı ID",
-          "placeholder": "000000000000000000000000",
-          "helpText": "B2 hesap ID'niz veya uygulama anahtarı ID'niz"
-        },
-        "key": {
-          "label": "Uygulama Anahtarı",
-          "placeholder": "Uygulama anahtarınızı girin",
-          "helpText": "B2 konsolundan uygulama anahtarı. Ana anahtar yerine uygulama anahtarları kullanın"
-        },
-        "hard_delete": {
-          "label": "Kalıcı Silme",
-          "helpText": "Dosyaları gizlemek yerine kalıcı olarak sil. Dikkatli kullanın"
-        },
-        "endpoint": {
-          "label": "Özel Uç Nokta",
-          "placeholder": "s3.us-west-000.backblazeb2.com",
-          "helpText": "B2 için özel S3 uyumlu uç nokta"
-        }
-      },
-      "tips": [
-        "Güvenlik için sınırlı izinlere sahip uygulama anahtarları oluşturun",
-        "B2, 10GB ücretsiz depolama ve günlük 1GB indirme sunar",
-        "Gizli dosyalar hala depolama kotasına sayılır",
-        "Eski sürümleri otomatik olarak silmek için yaşam döngüsü kurallarını düşünün"
-      ]
-    },
-    "drive": {
-      "name": "Google Drive",
-      "description": "Google Drive bulut depolama",
-      "helpText": "Google Drive kişisel bulut depolama. OAuth kimlik doğrulaması veya servis hesabı gerektirir.",
-      "fields": {
-        "client_id": {
-          "label": "OAuth İstemci ID",
-          "placeholder": "123456789012-abcdef.apps.googleusercontent.com",
-          "helpText": "Google Cloud Console'dan OAuth 2.0 istemci ID"
-        },
-        "client_secret": {
-          "label": "OAuth İstemci Gizli Anahtarı",
-          "placeholder": "İstemci gizli anahtarınızı girin",
-          "helpText": "OAuth 2.0 istemci gizli anahtarı. Bunu güvende tutun"
-        },
-        "token": {
-          "label": "OAuth Token",
-          "helpText": "Kimlik doğrulama akışı ile elde edilen OAuth2 token"
-        },
-        "scope": {
-          "label": "Erişim Kapsamı",
-          "helpText": "Google Drive erişimi için izin kapsamı. 'drive' tam erişim verir"
-        },
-        "root_folder_id": {
-          "label": "Kök Klasör ID",
-          "placeholder": "0AOa0a0a0a0a0Uk9PVA",
-          "helpText": "Kullanılacak kök klasörün ID'si. Drive kökünü kullanmak için boş bırakın"
-        },
-        "service_account_file": {
-          "label": "Servis Hesabı Dosyası",
-          "placeholder": "Base64 kodlanmış JSON dosyası",
-          "helpText": "Sunucu tarafı kimlik doğrulaması için servis hesabı JSON dosya içeriği (base64 kodlanmış)"
-        },
-        "team_drive": {
-          "label": "Takım Sürücüsü ID",
-          "placeholder": "Takım sürücüsü ID'sini girin",
-          "helpText": "Kullanılacak Takım Sürücüsü (Paylaşılan Sürücü) ID'si"
-        },
-        "impersonate": {
-          "label": "Kullanıcı Taklidi",
-          "placeholder": "kullanici@alan.com",
-          "helpText": "Servis hesabı kullanırken taklit edilecek kullanıcının e-postası"
-        }
-      },
-      "tips": [
-        "Sunucu tarafı uygulamalar için servis hesapları kullanın",
-        "Takım Sürücüleri kişisel sürücülerden farklı izinlere sahiptir",
-        "Google'ın günlük yükleme/indirme kotaları vardır",
-        "Büyük dosyalar yüklemeden sonra görünmesi zaman alabilir"
-      ]
-    },
-    "onedrive": {
-      "name": "Microsoft OneDrive",
-      "description": "Microsoft OneDrive bulut depolama",
-      "helpText": "Microsoft OneDrive kişisel ve iş bulut depolama. OAuth kimlik doğrulaması kullanır.",
-      "fields": {
-        "token": {
-          "label": "OAuth Token",
-          "helpText": "Microsoft kimlik doğrulaması ile elde edilen OAuth2 token"
-        },
-        "drive_id": {
-          "label": "Sürücü ID",
-          "placeholder": "b!Ei1XXXXXXXXXX",
-          "helpText": "Kullanılacak belirli sürücü ID'si. Varsayılan için boş bırakın"
-        },
-        "drive_type": {
-          "label": "Sürücü Türü",
-          "helpText": "OneDrive hesap türü - kişisel, iş veya belge kitaplığı"
-        },
-        "folder": {
-          "label": "Klasör Yolu",
-          "placeholder": "yedekler",
-          "helpText": "OneDrive içinde kök olarak kullanılacak klasör yolu"
-        }
-      },
-      "tips": [
-        "Tokenlar her 90 günde bir sona erer ve yenilenmesi gerekir",
-        "İş hesapları farklı API sınırlarına sahip olabilir",
-        "Büyük dosya yüklemeleri otomatik olarak parçalanır",
-        "Dosya adlarındaki bazı özel karakterler sorun yaratabilir"
-      ]
-    },
-    "mega": {
-      "name": "Mega",
-      "description": "Mega bulut depolama",
-      "helpText": "MEGA istemci tarafı şifrelenmiş bulut depolama sağlar. Katı giriş hız sınırları vardır.",
-      "fields": {
-        "user": {
-          "label": "E-posta",
-          "placeholder": "kullanici@ornek.com",
-          "helpText": "MEGA hesap e-posta adresiniz"
-        },
-        "pass": {
-          "label": "Şifre",
-          "placeholder": "Şifrenizi girin",
-          "helpText": "MEGA hesap şifreniz (şifrelenecek)"
-        },
-        "hard_delete": {
-          "label": "Kalıcı Silme",
-          "helpText": "Dosyaları çöp kutusuna taşımak yerine kalıcı olarak sil"
-        },
-        "use_https": {
-          "label": "HTTPS Kullan",
-          "helpText": "Transferler için HTTPS kullan (önerilir)"
-        }
-      },
-      "tips": [
-        "MEGA'nın katı hız sınırları var - sık girişlerden kaçının",
-        "Tüm dosyalar istemci tarafında şifrelenir",
-        "Ücretsiz hesaplar 20GB depolama alanına sahip",
-        "Daha iyi güvenlik için uygulama şifrelerini kullanmayı düşünün"
-      ]
-    },
-    "box": {
-      "name": "Box",
-      "description": "Box bulut depolama",
-      "helpText": "Box kurumsal bulut depolama ve işbirliği platformu. OAuth 2.0 kimlik doğrulaması kullanır.",
-      "fields": {
-        "client_id": {
-          "label": "OAuth İstemci ID",
-          "placeholder": "İstemci ID'nizi girin",
-          "helpText": "Box uygulama ayarlarından OAuth 2.0 istemci ID"
-        },
-        "client_secret": {
-          "label": "OAuth İstemci Gizli Anahtarı",
-          "placeholder": "İstemci gizli anahtarınızı girin",
-          "helpText": "OAuth 2.0 istemci gizli anahtarı. Bunu güvende tutun"
-        },
-        "token": {
-          "label": "OAuth Token",
-          "helpText": "Box kimlik doğrulaması ile elde edilen OAuth2 token"
-        },
-        "root_folder_id": {
-          "label": "Kök Klasör ID",
-          "placeholder": "0",
-          "helpText": "Kök klasör ID'si. '0' Box'ınızın kökü anlamına gelir"
-        }
-      },
-      "tips": [
-        "Box yüklemeler için 15GB dosya boyutu sınırı var",
-        "Kurumsal hesaplar ek özelliklere sahip olabilir",
-        "Sunucu tarafı uygulamalar için uygulama tokenları kullanın",
-        "Box katı API hız sınırlarına sahip"
-      ]
-    },
-    "dropbox": {
-      "name": "Dropbox",
-      "description": "Dropbox bulut depolama",
-      "helpText": "Dropbox kişisel ve iş bulut depolama. Dosyalar büyük/küçük harfe duyarsızdır.",
-      "fields": {
-        "client_id": {
-          "label": "OAuth İstemci ID",
-          "placeholder": "Uygulama anahtarınızı girin",
-          "helpText": "Dropbox Uygulama Konsolundan uygulama anahtarı"
-        },
-        "client_secret": {
-          "label": "OAuth İstemci Gizli Anahtarı",
-          "placeholder": "Uygulama gizli anahtarınızı girin",
-          "helpText": "Dropbox Uygulama Konsolundan uygulama gizli anahtarı"
-        },
-        "token": {
-          "label": "OAuth Token",
-          "helpText": "Dropbox kimlik doğrulaması ile elde edilen OAuth2 token"
-        }
-      },
-      "tips": [
-        "Dropbox büyük/küçük harfe duyarsızdır - benzer dosya adlarından kaçının",
-        "Yüklemeler için maksimum 150GB dosya boyutu",
-        "Toplu işlemler daha verimlidir",
-        "Takım özellikleri için Dropbox Business'ı düşünün"
-      ]
-    },
     "azureblob": {
-      "name": "Azure Blob Depolama",
       "description": "Microsoft Azure Blob Depolama",
-      "helpText": "Yapılandırılmamış veriler için Azure Blob Depolama. Birden fazla kimlik doğrulama yöntemini destekler.",
       "fields": {
         "account": {
-          "label": "Depolama Hesap Adı",
-          "placeholder": "hesabim",
-          "helpText": "Azure depolama hesabınızın adı"
+          "helpText": "Azure depolama hesabınızın adı",
+          "label": "Depolama Hesabı Adı",
+          "placeholder": "hesabım"
+        },
+        "endpoint": {
+          "helpText": "Azure depolama için özel uç nokta",
+          "label": "Uç nokta",
+          "placeholder": "https://myaccount.blob.core.windows.net"
         },
         "key": {
-          "label": "Depolama Hesap Anahtarı",
-          "placeholder": "Hesap anahtarınızı girin",
-          "helpText": "Azure portalından birincil veya ikincil anahtar"
+          "helpText": "Azure portalından birincil veya ikincil anahtar",
+          "label": "Depolama Hesabı Anahtarı",
+          "placeholder": "Hesap anahtarınızı girin"
         },
         "sas_url": {
-          "label": "SAS URL",
-          "placeholder": "Kullanıyorsanız SAS URL'sini girin",
-          "helpText": "Sınırlı erişim için Paylaşılan Erişim İmza URL'si"
-        },
-        "endpoint": {
-          "label": "Uç Nokta",
-          "placeholder": "https://hesabim.blob.core.windows.net",
-          "helpText": "Azure depolama için özel uç nokta"
+          "helpText": "Sınırlı erişim için Paylaşılan Erişim İmza URL'si",
+          "label": "SAS URL'si",
+          "placeholder": "Kullanıyorsanız SAS URL'sini girin"
         }
       },
+      "helpText": "Yapılandırılmamış veriler için Azure Blob Depolama. Birden fazla kimlik doğrulama yöntemini destekler.",
+      "name": "Azure Blob Depolama",
       "tips": [
-        "Geçici erişim için SAS tokenları kullanın",
+        "Geçici erişim için SAS belirteçlerini kullanın",
         "Maliyet optimizasyonu için uygun depolama katmanını seçin",
-        "Veri koruması için yumuşak silmeyi etkinleştirin",
+        "Veri koruması için geçici silmeyi etkinleştirin",
         "Azure kaynakları için yönetilen kimlikleri kullanmayı düşünün"
       ]
     },
-    "gcs": {
-      "name": "Google Cloud Storage",
-      "description": "Google Cloud Storage",
-      "helpText": "Nesneler ve blob'lar için Google Cloud Storage. Google Drive'dan farklıdır.",
+    "b2": {
+      "description": "Backblaze B2 Bulut Depolama",
       "fields": {
-        "service_account_file": {
-          "label": "Servis Hesabı Dosyası",
-          "placeholder": "Base64 kodlanmış JSON dosyası",
-          "helpText": "Servis hesabı JSON anahtar dosyası (base64 kodlanmış)"
+        "account": {
+          "helpText": "B2 hesap kimliğiniz veya uygulama anahtarı kimliğiniz",
+          "label": "Hesap Kimliği veya Uygulama Anahtarı Kimliği",
+          "placeholder": "00000000000000000000000000"
         },
-        "project_number": {
-          "label": "Proje Numarası",
-          "placeholder": "123456789012",
-          "helpText": "GCP proje numarası (proje ID'si değil)"
+        "endpoint": {
+          "helpText": "B2 için özel S3 uyumlu uç nokta",
+          "label": "Özel Uç Nokta",
+          "placeholder": "s3.us-west-000.backblazeb2.com"
         },
-        "bucket_policy_only": {
-          "label": "Sadece Klasör Politikası",
-          "helpText": "Tek tip klasör düzeyinde erişim kontrolü kullan"
-        },
-        "location": {
-          "label": "Varsayılan Konum",
-          "placeholder": "US",
-          "helpText": "Yeni klasörler için varsayılan konum"
-        },
-        "storage_class": {
-          "label": "Depolama Sınıfı",
-          "helpText": "Nesneler için varsayılan depolama sınıfı"
-        }
-      },
-      "tips": [
-        "Kimlik doğrulama için servis hesapları kullanın",
-        "Erişim sıklığına göre depolama sınıfını seçin",
-        "Önemli veriler için sürümlemeyi etkinleştirin",
-        "Maliyetleri yönetmek için yaşam döngüsü politikaları ayarlayın"
-      ]
-    },
-    "swift": {
-      "name": "OpenStack Swift",
-      "description": "OpenStack Swift Nesne Depolama",
-      "helpText": "Rackspace, OVH ve diğerleri tarafından kullanılan OpenStack Swift nesne depolama.",
-      "fields": {
-        "user": {
-          "label": "Kullanıcı Adı",
-          "placeholder": "Kullanıcı adınızı girin",
-          "helpText": "OpenStack kullanıcı adı"
+        "hard_delete": {
+          "helpText": "Dosyaları gizlemek yerine kalıcı olarak silin. Dikkatli kullanın",
+          "label": "Kalıcı Silme"
         },
         "key": {
-          "label": "API Anahtarı/Şifre",
-          "placeholder": "API anahtarınızı girin",
-          "helpText": "Kimlik doğrulama için API anahtarı veya şifre"
-        },
-        "auth": {
-          "label": "Kimlik Doğrulama URL'si",
-          "placeholder": "https://auth.cloud.com/v3",
-          "helpText": "Kimlik doğrulama uç nokta URL'si"
-        },
-        "tenant": {
-          "label": "Kiracı Adı",
-          "placeholder": "Kiracı adını girin",
-          "helpText": "Kiracı/proje adı"
-        },
-        "tenant_id": {
-          "label": "Kiracı ID",
-          "placeholder": "Kiracı ID'sini girin",
-          "helpText": "Kiracı/proje ID'si"
-        },
-        "domain": {
-          "label": "Alan",
-          "placeholder": "Default",
-          "helpText": "Kullanıcı alan adı"
-        },
-        "region": {
-          "label": "Bölge",
-          "placeholder": "Bölgeyi girin",
-          "helpText": "Bölge adı"
-        },
-        "storage_url": {
-          "label": "Depolama URL'si",
-          "placeholder": "Depolama URL'sini girin",
-          "helpText": "Depolama URL'si (isteğe bağlı)"
-        },
-        "auth_version": {
-          "label": "Kimlik Doğrulama Sürümü",
-          "helpText": "Kimlik doğrulama protokol sürümü"
+          "helpText": "B2 konsolundan uygulama anahtarı. Ana anahtar yerine uygulama anahtarlarını kullanın",
+          "label": "Uygulama Anahtarı",
+          "placeholder": "Uygulama anahtarınızı girin"
         }
       },
+      "helpText": "Backblaze B2 uygun fiyatlı bir bulut yedekleme hizmetidir. Kimlik doğrulama için uygulama anahtarlarını kullanır.",
+      "name": "Backblaze B2",
       "tips": [
-        "Doğru kimlik doğrulama URL'si için sağlayıcınızla kontrol edin",
-        "Yeni dağıtımlar için v3 kimlik doğrulaması önerilir",
-        "Bazı sağlayıcılar belirli kiracı ayarları gerektirir",
-        "Büyük nesne desteği sağlayıcıya göre değişebilir"
+        "Güvenlik için sınırlı izinlere sahip uygulama anahtarları oluşturun",
+        "B2, 10 GB ücretsiz depolama alanı ve 1 GB günlük indirme olanağı sunuyor",
+        "Gizli dosyalar hâlâ depolama kotasına dahil ediliyor",
+        "Eski sürümleri otomatik olarak silmek için yaşam döngüsü kurallarını göz önünde bulundurun"
       ]
     },
-    "sftp": {
-      "name": "SFTP",
-      "description": "SSH Dosya Transfer Protokolü",
-      "helpText": "SSH üzerinden güvenli dosya transferi. Şifre ve anahtar tabanlı kimlik doğrulamayı destekler.",
+    "box": {
+      "description": "Kutu bulut depolama",
       "fields": {
-        "host": {
-          "label": "Ana Bilgisayar",
-          "placeholder": "ornek.com",
-          "helpText": "SFTP sunucu ana bilgisayar adı veya IP adresi"
+        "client_id": {
+          "helpText": "Box uygulaması ayarlarından OAuth 2.0 istemci kimliği",
+          "label": "OAuth İstemci Kimliği",
+          "placeholder": "Müşteri kimliğinizi girin"
         },
-        "user": {
-          "label": "Kullanıcı Adı",
-          "placeholder": "kullaniciadi",
-          "helpText": "SSH/SFTP kullanıcı adı"
+        "client_secret": {
+          "helpText": "OAuth 2.0 istemci sırrı. Bunu güvende tutun",
+          "label": "OAuth İstemci Sırrı",
+          "placeholder": "Müşteri sırrınızı girin"
         },
-        "port": {
-          "label": "Port",
-          "placeholder": "22",
-          "helpText": "SFTP portu (varsayılan 22)"
+        "root_folder_id": {
+          "helpText": "Kök klasörün kimliği. '0' Kutunuzun kökü anlamına gelir",
+          "label": "Kök Klasör Kimliği",
+          "placeholder": "0"
         },
-        "pass": {
-          "label": "Şifre",
-          "placeholder": "Şifreyi girin",
-          "helpText": "Şifre kimlik doğrulaması için şifre"
-        },
-        "key_file": {
-          "label": "Özel Anahtar Dosyası",
-          "placeholder": "/yol/anahtar",
-          "helpText": "SSH özel anahtar dosyasının yolu"
-        },
-        "key_file_pass": {
-          "label": "Anahtar Parolası",
-          "placeholder": "Parolayı girin",
-          "helpText": "Şifrelenmiş özel anahtar için parola"
-        },
-        "pubkey_file": {
-          "label": "Genel Anahtar Dosyası",
-          "placeholder": "/yol/anahtar.pub",
-          "helpText": "SSH genel anahtar dosyasının yolu"
-        },
-        "known_hosts_file": {
-          "label": "Bilinen Ana Bilgisayarlar Dosyası",
-          "placeholder": "~/.ssh/known_hosts",
-          "helpText": "Sunucu doğrulaması için bilinen ana bilgisayarlar dosyasının yolu"
+        "token": {
+          "helpText": "Box kimlik doğrulaması yoluyla elde edilen OAuth2 jetonu",
+          "label": "OAuth Jetonu"
         }
       },
+      "helpText": "Box kurumsal bulut depolama ve işbirliği platformu. OAuth 2.0 kimlik doğrulamasını kullanır.",
+      "name": "Kutu",
       "tips": [
-        "Daha iyi güvenlik için anahtar tabanlı kimlik doğrulama kullanın",
-        "İlk bağlantıda sunucu parmak izini doğrulayın",
-        "Özel anahtarlarınızı güvende ve şifreli tutun",
-        "Anahtar yönetimi için SSH aracısını kullanmayı düşünün"
+        "Box'ın yüklemeler için 15 GB dosya boyutu sınırı vardır",
+        "Kurumsal hesapların ek özellikleri olabilir",
+        "Sunucu tarafı uygulamaları için uygulama belirteçlerini kullanın",
+        "Box'ın katı API oranı sınırları vardır"
+      ]
+    },
+    "cloudflare-r2": {
+      "description": "Cloudflare R2 nesne depolama",
+      "fields": {
+        "access_key_id": {
+          "helpText": "R2 erişim anahtarı kimliği",
+          "label": "Erişim Anahtarı Kimliği",
+          "placeholder": "Erişim anahtarını girin"
+        },
+        "account_id": {
+          "helpText": "Cloudflare hesap kimliği",
+          "label": "Hesap Kimliği",
+          "placeholder": "Hesap kimliğini girin"
+        },
+        "endpoint": {
+          "helpText": "R2 uç nokta URL'si",
+          "label": "Uç nokta",
+          "placeholder": "https://ACCOUNT_ID.r2.cloudflarestorage.com"
+        },
+        "secret_access_key": {
+          "helpText": "R2 gizli erişim anahtarı",
+          "label": "Gizli Erişim Anahtarı",
+          "placeholder": "Gizli anahtarı girin"
+        }
+      },
+      "helpText": "Cloudflare R2, çıkış ücreti olmayan S3 uyumlu nesne depolamadır.",
+      "name": "Cloudflare R2",
+      "tips": [
+        "Çıkış ücreti yok",
+        "S3 uyumlu API",
+        "Otomatik çoğaltma",
+        "Cloudflare CDN ile entegre"
+      ]
+    },
+    "drive": {
+      "description": "Google Drive bulut depolama alanı",
+      "fields": {
+        "client_id": {
+          "helpText": "Google Cloud Console'dan OAuth 2.0 istemci kimliği",
+          "label": "OAuth İstemci Kimliği",
+          "placeholder": "123456789012-abcdef.apps.googleusercontent.com"
+        },
+        "client_secret": {
+          "helpText": "OAuth 2.0 istemci sırrı. Bunu güvende tutun",
+          "label": "OAuth İstemci Sırrı",
+          "placeholder": "Müşteri sırrınızı girin"
+        },
+        "impersonate": {
+          "helpText": "Hizmet hesabını kullanırken kimliğine bürünülecek kullanıcının e-postası",
+          "label": "Kullanıcıyı Taklit Et",
+          "placeholder": "kullanıcı@alanadi.com"
+        },
+        "root_folder_id": {
+          "helpText": "Kullanılacak kök klasörün kimliği. Sürücü kökünü kullanmak için boş bırakın",
+          "label": "Kök Klasör Kimliği",
+          "placeholder": "0aoa0a0a0a0uk9pva"
+        },
+        "scope": {
+          "helpText": "Google Drive erişimi için izin kapsamı. 'sürücü' tam erişim sağlar",
+          "label": "Erişim Kapsamı"
+        },
+        "service_account_file": {
+          "helpText": "Sunucu tarafı kimlik doğrulaması için hizmet hesabı JSON dosyası içeriği (base64 kodlu)",
+          "label": "Hizmet Hesabı Dosyası",
+          "placeholder": "Base64 kodlu JSON dosyası"
+        },
+        "team_drive": {
+          "helpText": "Kullanılacak Ekip Drive'ının (Ortak Drive) kimliği",
+          "label": "Ekip Drive'ı Kimliği",
+          "placeholder": "Ekip Drive'ı kimliğini girin"
+        },
+        "token": {
+          "helpText": "Kimlik doğrulama akışı aracılığıyla elde edilen OAuth2 jetonu",
+          "label": "OAuth Jetonu"
+        }
+      },
+      "helpText": "Google Drive kişisel bulut depolama alanı. OAuth kimlik doğrulaması veya hizmet hesabı gerektirir.",
+      "name": "Google Drive",
+      "tips": [
+        "Sunucu tarafı uygulamaları için hizmet hesaplarını kullanın",
+        "Ekip Drive'larının kişisel Drive'lardan farklı izinleri vardır",
+        "Google'ın günlük yükleme/indirme kotaları vardır",
+        "Büyük dosyaların yükleme sonrasında görünmesi zaman alabilir"
+      ]
+    },
+    "dropbox": {
+      "description": "Dropbox bulut depolama alanı",
+      "fields": {
+        "client_id": {
+          "helpText": "Dropbox Uygulama Konsolundan uygulama anahtarı",
+          "label": "OAuth İstemci Kimliği",
+          "placeholder": "Uygulama anahtarınızı girin"
+        },
+        "client_secret": {
+          "helpText": "Dropbox App Console'dan uygulama sırrı",
+          "label": "OAuth İstemci Sırrı",
+          "placeholder": "Uygulama sırrınızı girin"
+        },
+        "token": {
+          "helpText": "Dropbox kimlik doğrulaması yoluyla elde edilen OAuth2 jetonu",
+          "label": "OAuth Jetonu"
+        }
+      },
+      "helpText": "Dropbox kişisel ve iş amaçlı bulut depolama alanı. Dosyalar büyük/küçük harfe duyarlı değildir.",
+      "name": "Dropbox",
+      "tips": [
+        "Dropbox büyük/küçük harfe duyarlı değildir; benzer dosya adlarından kaçının",
+        "Yüklemeler için maksimum 150 GB dosya boyutu vardır",
+        "Toplu işlemler daha verimlidir",
+        "Ekip özellikleri için Dropbox Business'ı kullanmayı düşünün"
+      ]
+    },
+    "fichier": {
+      "description": "1Fichier dosya barındırma",
+      "fields": {
+        "api_key": {
+          "helpText": "1Fichier hesabından API anahtarı",
+          "label": "API Anahtarı",
+          "placeholder": "API anahtarını girin"
+        },
+        "shared_folder": {
+          "helpText": "Paylaşılan klasör kimliği (isteğe bağlı)",
+          "label": "Paylaşılan Klasör Kimliği",
+          "placeholder": "Klasör kimliğini girin"
+        }
+      },
+      "helpText": "1Fichier, ücretsiz ve premium depolama sunan bir Fransız dosya barındırma hizmetidir.",
+      "name": "1Fichier",
+      "tips": [
+        "Premium için dosya boyutu sınırı yok",
+        "FTP erişimi mevcut",
+        "Hızlı indirmeler için CDN desteği",
+        "Özel klasör seçenekleri"
+      ]
+    },
+    "filefabric": {
+      "description": "Kurumsal Dosya Yapısı",
+      "fields": {
+        "permanent_token": {
+          "helpText": "Kalıcı kimlik doğrulama jetonu",
+          "label": "Kalıcı Jeton",
+          "placeholder": "Kalıcı jetonu girin"
+        },
+        "root_folder_id": {
+          "helpText": "Kök klasör kimliği (isteğe bağlı)",
+          "label": "Kök Klasör Kimliği",
+          "placeholder": "Klasör kimliğini girin"
+        },
+        "url": {
+          "helpText": "FileFabric örnek URL'si",
+          "label": "URL'si",
+          "placeholder": "https://yourcompany.filefabric.com"
+        }
+      },
+      "helpText": "FileFabric, işletmeler için çoklu bulut veri yönetimi platformu sağlar.",
+      "name": "DosyaFabric",
+      "tips": [
+        "Çoklu bulut ağ geçidi çözümü",
+        "Şirket içi dağıtım mevcut",
+        "Kurumsal güvenlik özellikleri",
+        "Uyumluluk ve yönetim araçları"
+      ]
+    },
+    "filescom": {
+      "description": "Files.com bulut FTP",
+      "fields": {
+        "api_key": {
+          "helpText": "API anahtarı (şifreye alternatif)",
+          "label": "API Anahtarı",
+          "placeholder": "API anahtarını girin"
+        },
+        "password": {
+          "helpText": "Files.com şifresi",
+          "label": "Şifre",
+          "placeholder": "Şifreyi girin"
+        },
+        "site": {
+          "helpText": "Files.com alt alan adınız",
+          "label": "Site Alt Alanı",
+          "placeholder": "şirketim"
+        },
+        "username": {
+          "helpText": "Files.com kullanıcı adı",
+          "label": "Kullanıcı adı",
+          "placeholder": "Kullanıcı adını girin"
+        }
+      },
+      "helpText": "Files.com, gelişmiş otomasyon ve güvenlik özelliklerine sahip bir bulut FTP/SFTP hizmetidir.",
+      "name": "Files.com",
+      "tips": [
+        "Kurumsal düzeyde güvenlik",
+        "Otomasyon iş akışları",
+        "Ayrıntılı denetim günlükleri",
+        "HIPAA ve SOC2 uyumlu"
       ]
     },
     "ftp": {
-      "name": "FTP",
-      "description": "Dosya Transfer Protokolü",
-      "helpText": "Geleneksel dosya transfer protokolü. Güvenlik için FTPS kullanmayı düşünün.",
+      "description": "Dosya Aktarım Protokolü",
       "fields": {
-        "host": {
-          "label": "Ana Bilgisayar",
-          "placeholder": "ftp.ornek.com",
-          "helpText": "FTP sunucu ana bilgisayar adı veya IP adresi"
+        "explicit_tls": {
+          "helpText": "Açık FTPS kullanın (örtük yerine önerilir)",
+          "label": "Açık TLS"
         },
-        "user": {
-          "label": "Kullanıcı Adı",
-          "placeholder": "kullaniciadi",
-          "helpText": "FTP kullanıcı adı"
+        "host": {
+          "helpText": "FTP sunucusu ana bilgisayar adı veya IP adresi",
+          "label": "Ev sahibi",
+          "placeholder": "ftp.example.com"
         },
         "pass": {
+          "helpText": "FTP şifresi",
           "label": "Şifre",
-          "placeholder": "Şifreyi girin",
-          "helpText": "FTP şifresi"
+          "placeholder": "Şifreyi girin"
         },
         "port": {
-          "label": "Port",
-          "placeholder": "21",
-          "helpText": "FTP portu (varsayılan 21)"
+          "helpText": "FTP bağlantı noktası (varsayılan 21'dir)",
+          "label": "Liman",
+          "placeholder": "21"
         },
         "tls": {
-          "label": "FTPS Kullan",
-          "helpText": "Şifreleme için TLS/SSL üzerinden FTP kullan"
-        },
-        "explicit_tls": {
-          "label": "Açık TLS",
-          "helpText": "Açık FTPS kullan (örtük yerine önerilir)"
-        }
-      },
-      "tips": [
-        "FTP güvensizdir - mümkün olduğunda FTPS veya SFTP kullanın",
-        "Bazı güvenlik duvarları FTP pasif modunu engelleyebilir",
-        "Sunucunuzun FTPS desteği olup olmadığını kontrol edin",
-        "Daha güvenli bir alternatif olarak SFTP'yi düşünün"
-      ]
-    },
-    "webdav": {
-      "name": "WebDAV",
-      "description": "WebDAV protokolü",
-      "helpText": "Web tabanlı Dağıtılmış Yazarlık ve Sürümleme. Nextcloud, ownCloud ve diğerleri tarafından kullanılır.",
-      "fields": {
-        "url": {
-          "label": "WebDAV URL'si",
-          "placeholder": "https://webdav.ornek.com",
-          "helpText": "Tam WebDAV uç nokta URL'si"
+          "helpText": "Şifreleme için TLS/SSL üzerinden FTP kullanın",
+          "label": "FTPS'yi kullan"
         },
         "user": {
-          "label": "Kullanıcı Adı",
-          "placeholder": "Kullanıcı adını girin",
-          "helpText": "WebDAV kullanıcı adı"
-        },
-        "pass": {
-          "label": "Şifre",
-          "placeholder": "Şifreyi girin",
-          "helpText": "WebDAV şifresi"
-        },
-        "vendor": {
-          "label": "Satıcı",
-          "helpText": "Belirli uyumluluk için WebDAV satıcısı"
+          "helpText": "FTP kullanıcı adı",
+          "label": "Kullanıcı adı",
+          "placeholder": "kullanıcı adı"
         }
       },
+      "helpText": "Geleneksel dosya aktarım protokolü. Güvenlik için FTPS kullanmayı düşünün.",
+      "name": "FTP'de",
       "tips": [
-        "Farklı satıcıların belirli tuhaflıkları olabilir",
-        "Nextcloud/ownCloud özel satıcı desteğine sahiptir",
-        "Güvenli bağlantılar için HTTPS kullanın",
-        "Bazı sunucuların dosya boyutu sınırlamaları vardır"
+        "FTP güvenli değil; mümkünse FTPS veya SFTP kullanın",
+        "Bazı güvenlik duvarları FTP pasif modunu engelleyebilir",
+        "Sunucunuzun FTPS'yi destekleyip desteklemediğini kontrol edin",
+        "SFTP'yi daha güvenli bir alternatif olarak düşünün"
       ]
     },
-    "local": {
-      "name": "Yerel Dosya Sistemi",
-      "description": "Yerel dosya sistemi depolama",
-      "helpText": "Yerel veya bağlı dosya sistemlerine doğrudan erişim.",
+    "gcs": {
+      "description": "Google Bulut Depolama",
       "fields": {
-        "path": {
-          "label": "Yol",
-          "placeholder": "/mnt/yedek",
-          "helpText": "Yerel dizine mutlak yol"
+        "bucket_policy_only": {
+          "helpText": "Tek tip paket düzeyinde erişim kontrolü kullanın",
+          "label": "Yalnızca Paket Politikası"
         },
-        "nounc": {
-          "label": "UNC'yi Devre Dışı Bırak",
-          "helpText": "Windows'ta UNC (\\\\sunucu\\paylaşım) yollarını devre dışı bırak"
+        "location": {
+          "helpText": "Yeni paketler için varsayılan konum",
+          "label": "Varsayılan Konum",
+          "placeholder": "BİZ"
+        },
+        "project_number": {
+          "helpText": "GCP proje numarası (proje kimliği değil)",
+          "label": "Proje Numarası",
+          "placeholder": "123456789012"
+        },
+        "service_account_file": {
+          "helpText": "Hizmet hesabı JSON anahtar dosyası (base64 kodlu)",
+          "label": "Hizmet Hesabı Dosyası",
+          "placeholder": "Base64 kodlu JSON dosyası"
+        },
+        "storage_class": {
+          "helpText": "Nesneler için varsayılan depolama sınıfı",
+          "label": "Depolama Sınıfı"
         }
       },
+      "helpText": "Nesneler ve lekeler için Google Bulut Depolama. Google Drive'dan farklı.",
+      "name": "Google Bulut Depolama",
       "tips": [
-        "Yolun var olduğundan ve uygun izinlere sahip olduğundan emin olun",
-        "Göreceli yollar değil, mutlak yollar kullanın",
-        "Ağ paylaşımları önce bağlanmalıdır",
-        "Büyük dosyalar için dosya sistemi sınırlamalarını göz önünde bulundurun"
+        "Kimlik doğrulama için hizmet hesaplarını kullanın",
+        "Erişim sıklığına göre depolama sınıfını seçin",
+        "Önemli veriler için sürüm oluşturmayı etkinleştirin",
+        "Maliyetleri yönetmek için yaşam döngüsü politikaları belirleyin"
       ]
     },
-    "pcloud": {
-      "name": "pCloud",
-      "description": "OAuth kimlik doğrulamalı bulut depolama servisi",
-      "helpText": "pCloud, istemci tarafı şifreleme seçeneği ile güvenli bulut depolama sunar. AB ve ABD bölgeleri vardır.",
+    "gofile": {
+      "description": "GoFile anonim dosya paylaşımı",
       "fields": {
-        "client_id": {
-          "label": "OAuth İstemci ID",
-          "placeholder": "İstemci ID'sini girin",
-          "helpText": "pCloud için OAuth 2.0 istemci ID"
-        },
-        "client_secret": {
-          "label": "OAuth İstemci Gizli Anahtarı",
-          "placeholder": "İstemci gizli anahtarını girin",
-          "helpText": "OAuth 2.0 istemci gizli anahtarı"
-        },
-        "token": {
-          "label": "OAuth Token",
-          "helpText": "Kimlik doğrulama ile elde edilen OAuth2 token"
-        },
-        "hostname": {
-          "label": "Ana Bilgisayar Adı",
-          "placeholder": "api.pcloud.com",
-          "helpText": "API ana bilgisayar adı (AB için eapi.pcloud.com)"
+        "account_id": {
+          "helpText": "GoFile hesap kimliği (isteğe bağlı)",
+          "label": "Hesap Kimliği",
+          "placeholder": "Hesap kimliğini girin"
         },
         "root_folder_id": {
-          "label": "Kök Klasör ID",
-          "placeholder": "Klasör ID'sini girin",
-          "helpText": "Başlangıç klasör ID'si (isteğe bağlı)"
+          "helpText": "Yüklemeler için kök klasör kimliği",
+          "label": "Kök Klasör Kimliği",
+          "placeholder": "Kök klasör kimliğini girin"
         }
       },
+      "helpText": "GoFile, anonim yükleme desteğine sahip ücretsiz bir dosya paylaşım ve depolama platformudur.",
+      "name": "Go dosyası",
       "tips": [
-        "Konumunuza göre AB veya ABD bölgesini seçin",
-        "Crypto klasörü istemci tarafı şifreleme sağlar",
-        "Ömür boyu planları mevcuttur",
-        "Mobil ve masaüstü senkronizasyon istemcileri mevcuttur"
-      ]
-    },
-    "yandex": {
-      "name": "Yandex Disk",
-      "description": "Yandex bulut depolama servisi",
-      "helpText": "Yandex Disk, Rusya ve Doğu Avrupa'da popüler bir bulut depolama servisidir. OAuth kimlik doğrulaması kullanır.",
-      "fields": {
-        "client_id": {
-          "label": "OAuth İstemci ID",
-          "placeholder": "İstemci ID'sini girin",
-          "helpText": "Yandex'ten OAuth 2.0 istemci ID"
-        },
-        "client_secret": {
-          "label": "OAuth İstemci Gizli Anahtarı",
-          "placeholder": "İstemci gizli anahtarını girin",
-          "helpText": "OAuth 2.0 istemci gizli anahtarı"
-        },
-        "token": {
-          "label": "OAuth Token",
-          "helpText": "Yandex kimlik doğrulaması ile elde edilen OAuth2 token"
-        }
-      },
-      "tips": [
-        "Ücretsiz katman 10GB depolama içerir",
-        "Mobil cihazlardan otomatik fotoğraf yüklemeyi destekler",
-        "Tüm büyük platformlar için masaüstü senkronizasyon istemcileri vardır",
-        "Office belgesi işbirliği mevcuttur"
+        "Temel kullanım için kayıt gerekmez",
+        "Sınırsız bant genişliği",
+        "Ücretsiz kullanıcılar için sınırlı süreyle saklanan dosyalar",
+        "Premium hesaplar kalıcı depolama alanına sahip oluyor"
       ]
     },
     "googlephotos": {
-      "name": "Google Fotoğraflar",
-      "description": "Google Fotoğraflar depolama servisi",
-      "helpText": "Google Fotoğraflar yedekleme ve senkronizasyon servisi. Not: Sadece fotoğraf ve video işlemleriyle sınırlıdır.",
+      "description": "Google Fotoğraflar depolama hizmeti",
       "fields": {
         "client_id": {
-          "label": "OAuth İstemci ID",
-          "placeholder": "123456789012-abcdef.apps.googleusercontent.com",
-          "helpText": "Google Cloud Console'dan OAuth 2.0 istemci ID"
+          "helpText": "Google Cloud Console'dan OAuth 2.0 istemci kimliği",
+          "label": "OAuth İstemci Kimliği",
+          "placeholder": "123456789012-abcdef.apps.googleusercontent.com"
         },
         "client_secret": {
-          "label": "OAuth İstemci Gizli Anahtarı",
-          "placeholder": "İstemci gizli anahtarınızı girin",
-          "helpText": "OAuth 2.0 istemci gizli anahtarı"
-        },
-        "token": {
-          "label": "OAuth Token",
-          "helpText": "photos.readonly kapsamına sahip OAuth2 token"
+          "helpText": "OAuth 2.0 istemci sırrı",
+          "label": "OAuth İstemci Sırrı",
+          "placeholder": "Müşteri sırrınızı girin"
         },
         "read_only": {
-          "label": "Sadece Okuma",
-          "helpText": "Google Fotoğraflar API'si çoğu işlem için sadece okumadır"
+          "helpText": "Google Fotoğraflar API'si çoğu işlem için salt okunurdur",
+          "label": "Salt Okunur"
+        },
+        "token": {
+          "helpText": "Photos.readonly kapsamına sahip OAuth2 jetonu",
+          "label": "OAuth Jetonu"
         }
       },
+      "helpText": "Google Foto yedekleme ve senkronizasyon hizmeti. Not: Yalnızca fotoğraf ve video işlemleriyle sınırlıdır.",
+      "name": "Google Fotoğraflar",
       "tips": [
-        "Google Fotoğraflar API'sinin sınırlı yazma yetenekleri vardır",
-        "En iyi Google Fotoğraflar'dan fotoğraf yedeklemek için kullanılır",
-        "Orijinal kalite Google Drive depolamasına sayılır",
+        "Google Fotoğraflar API'sinin yazma yetenekleri sınırlıdır",
+        "En iyi şekilde Google Fotoğraflar'daki fotoğrafları yedeklemek için kullanılır",
+        "Orijinal kalite, Google Drive depolama alanına göre sayılır",
         "Albümler ve meta veriler korunabilir"
       ]
     },
-    "proton": {
-      "name": "Proton Drive",
-      "description": "Gizlilik odaklı şifreli bulut depolama",
-      "helpText": "Proton Drive, ProtonMail'in yapımcılarından uçtan uca şifreli bulut depolama sunar.",
+    "hdfs": {
+      "description": "Hadoop Dağıtılmış Dosya Sistemi",
       "fields": {
+        "data_transfer_protection": {
+          "helpText": "Veri aktarımı koruma düzeyi",
+          "label": "Veri Aktarımı Koruması"
+        },
+        "namenode": {
+          "helpText": "HDFS ad düğümü URL'si",
+          "label": "Ad düğümü URL'si",
+          "placeholder": "http://namenode:9870"
+        },
+        "service_principal_name": {
+          "helpText": "Kerberos hizmeti asıl adı",
+          "label": "Hizmet Sorumlusu",
+          "placeholder": "hdfs/namenode.example.com@EXAMPLE.COM"
+        },
         "username": {
-          "label": "Kullanıcı Adı",
-          "placeholder": "kullanici@proton.me",
-          "helpText": "Proton hesap e-postanız"
-        },
-        "password": {
-          "label": "Şifre",
-          "placeholder": "Şifrenizi girin",
-          "helpText": "Proton hesap şifreniz"
-        },
-        "tfa": {
-          "label": "İki Faktörlü Kod",
-          "placeholder": "Etkinse TFA kodunu girin",
-          "helpText": "İki faktörlü kimlik doğrulama kodu (etkinse)"
+          "helpText": "HDFS kullanıcı adı",
+          "label": "Kullanıcı adı",
+          "placeholder": "Hadoop"
         }
       },
+      "helpText": "HDFS, Apache Hadoop'un bir parçası olan ticari donanım üzerinde çalışmak üzere tasarlanmış dağıtılmış bir dosya sistemidir.",
+      "name": "HDFS",
       "tips": [
-        "Tüm dosyalar uçtan uca şifrelenir",
-        "Proton gizlilik ekosisteminin parçası",
-        "Ücretsiz katman 1GB depolama içerir",
-        "Şifreleme ile dosya paylaşımını destekler"
-      ]
-    },
-    "storj": {
-      "name": "Storj",
-      "description": "Dağıtık bulut depolama",
-      "helpText": "Storj, dosyaları küresel bir ağ üzerinde şifreleyen ve dağıtan merkezi olmayan bir bulut depolama ağıdır.",
-      "fields": {
-        "access_grant": {
-          "label": "Erişim İzni",
-          "placeholder": "Erişim izninizi girin",
-          "helpText": "Storj'dan serileştirilmiş erişim izni"
-        },
-        "satellite_address": {
-          "label": "Uydu Adresi",
-          "placeholder": "us1.storj.io:7777",
-          "helpText": "Uydu adresi (isteğe bağlı, varsayılan us1.storj.io:7777)"
-        },
-        "api_key": {
-          "label": "API Anahtarı",
-          "placeholder": "API anahtarını girin",
-          "helpText": "Uydu web arayüzünden API anahtarı"
-        },
-        "passphrase": {
-          "label": "Şifreleme Parolası",
-          "placeholder": "Şifreleme parolasını girin",
-          "helpText": "Verileriniz için şifreleme parolası"
-        }
-      },
-      "tips": [
-        "Dağıtık depolama yüksek dayanıklılık sağlar",
-        "Tüm veriler istemci tarafında şifrelenir",
-        "Sadece kullandığınız kadar ödeyin",
-        "Arşivleme ve yedekleme kullanım durumları için iyi"
-      ]
-    },
-    "smb": {
-      "name": "SMB / CIFS",
-      "description": "Windows ağ paylaşımları",
-      "helpText": "Windows paylaşımlarına ve NAS cihazlarına erişim için Sunucu Mesaj Bloğu (SMB) protokolü.",
-      "fields": {
-        "host": {
-          "label": "Ana Bilgisayar",
-          "placeholder": "sunucu.yerel veya 192.168.1.100",
-          "helpText": "SMB sunucu ana bilgisayar adı veya IP adresi"
-        },
-        "user": {
-          "label": "Kullanıcı Adı",
-          "placeholder": "ALAN\\kullaniciadi veya kullaniciadi",
-          "helpText": "Kullanıcı adı (alan içerebilir)"
-        },
-        "pass": {
-          "label": "Şifre",
-          "placeholder": "Şifreyi girin",
-          "helpText": "SMB kimlik doğrulaması için şifre"
-        },
-        "domain": {
-          "label": "Alan",
-          "placeholder": "WORKGROUP",
-          "helpText": "SMB alanı (varsayılan WORKGROUP)"
-        },
-        "port": {
-          "label": "Port",
-          "placeholder": "445",
-          "helpText": "SMB portu (genellikle 445)"
-        }
-      },
-      "tips": [
-        "Güvenlik için SMB3 önerilir",
-        "Ağ keşfinin etkin olduğundan emin olun",
-        "Güvenlik duvarı yapılandırması gerekebilir",
-        "Ana bilgisayar adı başarısız olursa IP adresi ile test edin"
-      ]
-    },
-    "oracle": {
-      "name": "Oracle Nesne Depolama",
-      "description": "Oracle Bulut Altyapısı Nesne Depolama",
-      "helpText": "Oracle Bulut Altyapısı (OCI) Nesne Depolama, büyük miktarlarda yapılandırılmamış veriyi depolamak için bölgesel bir servistir.",
-      "fields": {
-        "namespace": {
-          "label": "Nesne Depolama Ad Alanı",
-          "placeholder": "Ad alanını girin",
-          "helpText": "Nesne depolama ad alanı (OCI Konsolunda bulunur)"
-        },
-        "compartment": {
-          "label": "Bölme OCID",
-          "placeholder": "ocid1.compartment.oc1...",
-          "helpText": "Klasörün bulunduğu bölme OCID'si"
-        },
-        "region": {
-          "label": "Bölge",
-          "placeholder": "us-ashburn-1",
-          "helpText": "OCI bölge tanımlayıcısı"
-        },
-        "user": {
-          "label": "Kullanıcı OCID",
-          "placeholder": "ocid1.user.oc1...",
-          "helpText": "Kimlik doğrulama için kullanıcı OCID'si"
-        },
-        "key_file": {
-          "label": "API Anahtar Dosyası",
-          "placeholder": "Base64 kodlanmış PEM dosyası",
-          "helpText": "PEM formatında RSA özel anahtarı (base64 kodlanmış)"
-        },
-        "fingerprint": {
-          "label": "Anahtar Parmak İzi",
-          "placeholder": "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99",
-          "helpText": "API imzalama anahtarının parmak izi"
-        },
-        "tenancy": {
-          "label": "Kiracılık OCID",
-          "placeholder": "ocid1.tenancy.oc1...",
-          "helpText": "Kiracılık OCID'si"
-        }
-      },
-      "tips": [
-        "OCI Konsolu kullanıcı ayarlarında API anahtarları oluşturun",
-        "Kaynakları düzenlemek için bölmeleri kullanın",
-        "Maliyet optimizasyonu için depolama sınıfları mevcuttur",
-        "Alternatif olarak S3 uyumluluk API'sini destekler"
-      ]
-    },
-    "sharefile": {
-      "name": "Citrix ShareFile",
-      "description": "Kurumsal dosya paylaşımı ve depolama",
-      "helpText": "Citrix ShareFile, güvenli dosya paylaşımı olan kurumsal içerik işbirliği platformudur.",
-      "fields": {
-        "upload_endpoint": {
-          "label": "Yükleme Uç Noktası",
-          "placeholder": "https://sirket.sf-api.com",
-          "helpText": "ShareFile yükleme uç nokta URL'si"
-        },
-        "root_folder_id": {
-          "label": "Kök Klasör ID",
-          "placeholder": "Kök klasör ID'sini girin",
-          "helpText": "Kök klasörün ID'si"
-        },
-        "token": {
-          "label": "OAuth Token",
-          "helpText": "ShareFile erişimi için OAuth2 token"
-        }
-      },
-      "tips": [
-        "Kurumsal kullanım için tasarlandı",
-        "Büyük dosya transferlerini destekler",
-        "Denetim izleri ve uyumluluk özellikleri var",
-        "Tüm platformlar için mobil uygulamalar mevcut"
-      ]
-    },
-    "jottacloud": {
-      "name": "Jottacloud",
-      "description": "Norveç bulut depolama servisi",
-      "helpText": "Jottacloud, gizliliğe odaklanan ve İskandinav ülkelerinde popüler olan bir bulut depolama servisidir.",
-      "fields": {
-        "user": {
-          "label": "Kullanıcı Adı",
-          "placeholder": "kullaniciadi",
-          "helpText": "Jottacloud kullanıcı adı"
-        },
-        "pass": {
-          "label": "Şifre",
-          "placeholder": "Şifreyi girin",
-          "helpText": "Jottacloud şifresi"
-        },
-        "device": {
-          "label": "Cihaz Adı",
-          "placeholder": "Jotta",
-          "helpText": "Cihaz adı (genellikle Jotta)"
-        },
-        "mountpoint": {
-          "label": "Bağlama Noktası",
-          "placeholder": "Archive",
-          "helpText": "Kullanılacak bağlama noktası (Archive, Sync veya Backup)"
-        }
-      },
-      "tips": [
-        "Kişisel planlarda sınırsız depolama",
-        "Veriler Norveç'te saklanır (AB gizlilik yasaları)",
-        "Dosya sürümlemeyi destekler",
-        "Fotoğraf ve video yedekleme için iyi"
-      ]
-    },
-    "koofr": {
-      "name": "Koofr",
-      "description": "Avrupa bulut depolama servisi",
-      "helpText": "Koofr, diğer bulut depolama hesaplarına da bağlanabilen bir Avrupa bulut depolama servisidir.",
-      "fields": {
-        "user": {
-          "label": "E-posta",
-          "placeholder": "kullanici@ornek.com",
-          "helpText": "Koofr hesap e-postanız"
-        },
-        "pass": {
-          "label": "Şifre",
-          "placeholder": "Şifreyi girin",
-          "helpText": "Koofr şifreniz"
-        },
-        "provider": {
-          "label": "Sağlayıcı",
-          "helpText": "Koofr sağlayıcısı (koofr, digistorage veya diğer)"
-        }
-      },
-      "tips": [
-        "Birden fazla bulut hesabını bağlayabilir",
-        "Veriler AB'de saklanır (GDPR uyumlu)",
-        "WebDAV erişimini destekler",
-        "Masaüstü ve mobil uygulamaları var"
-      ]
-    },
-    "mailru": {
-      "name": "Mail.ru Cloud",
-      "description": "Mail.ru bulut depolama servisi",
-      "helpText": "Mail.ru Cloud (şimdi VK Cloud'un parçası) Rusya'da popüler bir bulut depolama servisidir.",
-      "fields": {
-        "user": {
-          "label": "Kullanıcı Adı",
-          "placeholder": "kullanici@mail.ru",
-          "helpText": "Mail.ru e-posta adresiniz"
-        },
-        "pass": {
-          "label": "Şifre",
-          "placeholder": "Şifreyi girin",
-          "helpText": "Mail.ru şifreniz"
-        },
-        "speedup_enable": {
-          "label": "Hızlandırmayı Etkinleştir",
-          "helpText": "Hızlandırma (paralel yükleme) özelliğini etkinleştir"
-        }
-      },
-      "tips": [
-        "Ücretsiz katman 8GB depolama içerir",
-        "Rusça konuşulan ülkelerde popüler",
-        "Büyük dosya yüklemelerini destekler",
-        "Mobil ve masaüstü senkronizasyon uygulamaları var"
+        "Büyük veri iş yükleri için tasarlandı",
+        "Yüksek verimli erişim",
+        "Çoğaltmayla hataya dayanıklı",
+        "Büyük dosyalar için en iyisi"
       ]
     },
     "hidrive": {
-      "name": "HiDrive",
       "description": "STRATO HiDrive bulut depolama",
-      "helpText": "HiDrive, Almanya'da popüler olan STRATO tarafından sunulan bir bulut depolama servisidir.",
       "fields": {
-        "user": {
-          "label": "Kullanıcı Adı",
-          "placeholder": "kullaniciadi",
-          "helpText": "HiDrive kullanıcı adı"
-        },
         "pass": {
+          "helpText": "HiDrive şifresi",
           "label": "Şifre",
-          "placeholder": "Şifreyi girin",
-          "helpText": "HiDrive şifresi"
+          "placeholder": "Şifreyi girin"
         },
         "protocol": {
-          "label": "Protokol",
-          "helpText": "Kullanılacak protokol (webdav veya smb)"
+          "helpText": "Kullanılacak protokol (webdav veya smb)",
+          "label": "Protokol"
         },
         "root": {
-          "label": "Kök Yol",
-          "placeholder": "/",
-          "helpText": "Kullanılacak kök yol"
+          "helpText": "Kullanılacak kök yolu",
+          "label": "Kök Yolu",
+          "placeholder": "/"
+        },
+        "user": {
+          "helpText": "HiDrive kullanıcı adı",
+          "label": "Kullanıcı adı",
+          "placeholder": "kullanıcı adı"
         }
       },
+      "helpText": "HiDrive, STRATO'nun Almanya'da popüler bir bulut depolama hizmetidir.",
+      "name": "HiDrive",
       "tips": [
         "Almanya ve Avrupa'da popüler",
         "WebDAV ve SMB protokollerini destekler",
@@ -927,246 +511,945 @@
         "İşbirliği özelliklerini içerir"
       ]
     },
-    "pikpak": {
-      "name": "PikPak",
-      "description": "Çevrimdışı indirme özellikli bulut depolama",
-      "helpText": "PikPak, çevrimdışı indirme ve medya akışını destekleyen bir bulut depolama servisidir.",
+    "http": {
+      "description": "HTTP/HTTPS uzaktan kumandası",
       "fields": {
-        "user": {
-          "label": "Kullanıcı Adı",
-          "placeholder": "kullanici@ornek.com",
-          "helpText": "PikPak hesap e-postası"
+        "headers": {
+          "helpText": "Ek HTTP başlıkları (satır başına bir tane)",
+          "label": "HTTP Başlıkları",
+          "placeholder": "Başlık: değer"
         },
-        "pass": {
-          "label": "Şifre",
-          "placeholder": "Şifreyi girin",
-          "helpText": "PikPak hesap şifresi"
+        "no_head": {
+          "helpText": "HEAD isteklerini kullanmayın",
+          "label": "KAFA yok"
+        },
+        "no_slash": {
+          "helpText": "URL'nin sonuna eğik çizgi eklemeyin",
+          "label": "Eğik çizgi yok"
+        },
+        "url": {
+          "helpText": "HTTP sunucusunun temel URL'si",
+          "label": "URL'si",
+          "placeholder": "https://example.com/path/"
         }
       },
+      "helpText": "Dosyalara HTTP/HTTPS protokolü üzerinden erişin. Web sunucularına salt okunur erişim.",
+      "name": "HTTP",
       "tips": [
-        "Çevrimdışı indirmeyi destekler",
-        "Yerleşik medya oynatıcı",
-        "Torrent'leri buluta indirmek için iyi",
-        "Akış özellikli mobil uygulamaları var"
-      ]
-    },
-    "premiumizeme": {
-      "name": "Premiumize.me",
-      "description": "Bulut depolama ve indirme servisi",
-      "helpText": "Premiumize.me, bulut depolama ve indirme yetenekleri sağlayan çok ana bilgisayarlı bir servistir.",
-      "fields": {
-        "api_key": {
-          "label": "API Anahtarı",
-          "placeholder": "API anahtarınızı girin",
-          "helpText": "Premiumize.me hesap ayarlarından API anahtarı"
-        }
-      },
-      "tips": [
-        "Bulut depolamayı indirme servisi ile birleştirir",
-        "Birçok dosya barındırma sitesini destekler",
-        "VPN servisi içerir",
-        "Medya akışı için iyi"
-      ]
-    },
-    "putio": {
-      "name": "Put.io",
-      "description": "Torrent destekli bulut depolama",
-      "helpText": "Put.io, torrent'leri getirebilen ve akış yapabilen bir bulut depolama servisidir.",
-      "fields": {
-        "token": {
-          "label": "OAuth Token",
-          "placeholder": "OAuth token'ı girin",
-          "helpText": "Put.io hesap ayarlarından OAuth token"
-        }
-      },
-      "tips": [
-        "Torrent işlemede uzmanlaşmış",
-        "Otomatik video dönüştürme",
-        "Yerleşik medya oynatıcı",
-        "Otomasyon için iyi API"
+        "Salt okunur erişim",
+        "Herkese açık dosyalara erişim için iyi",
+        "Dizin listelerini ayrıştırabilir",
+        "Temel kimlik doğrulamayı destekler"
       ]
     },
     "internetarchive": {
-      "name": "Internet Archive",
-      "description": "Internet Archive depolama",
-      "helpText": "Internet Archive, dijitalleştirilmiş materyallerin koleksiyonlarına ücretsiz erişim sunan kar amacı gütmeyen bir dijital kütüphanedir.",
+      "description": "İnternet Arşivi depolama",
       "fields": {
         "access_key_id": {
+          "helpText": "İnternet Arşivinden S3 benzeri erişim anahtarı",
           "label": "Erişim Anahtarı",
-          "placeholder": "Erişim anahtarını girin",
-          "helpText": "Internet Archive'dan S3 benzeri erişim anahtarı"
-        },
-        "secret_access_key": {
-          "label": "Gizli Anahtar",
-          "placeholder": "Gizli anahtarı girin",
-          "helpText": "S3 benzeri gizli anahtar"
+          "placeholder": "Erişim anahtarını girin"
         },
         "endpoint": {
-          "label": "Uç Nokta",
-          "placeholder": "https://s3.us.archive.org",
-          "helpText": "Internet Archive S3 uç noktası"
+          "helpText": "İnternet Arşivi S3 uç noktası",
+          "label": "Uç nokta",
+          "placeholder": "https://s3.us.archive.org"
         },
         "front_endpoint": {
-          "label": "Ön Uç Nokta",
-          "placeholder": "https://archive.org",
-          "helpText": "Genel erişim için ön uç URL'si"
+          "helpText": "Genel erişim için ön uç URL'si",
+          "label": "Ön Uç Uç Noktası",
+          "placeholder": "https://archive.org"
+        },
+        "secret_access_key": {
+          "helpText": "S3 benzeri gizli anahtar",
+          "label": "Gizli Anahtar",
+          "placeholder": "Gizli anahtarı girin"
         }
       },
+      "helpText": "İnternet Arşivi, dijitalleştirilmiş materyal koleksiyonlarına ücretsiz erişim sunan, kar amacı gütmeyen bir dijital kütüphanedir.",
+      "name": "İnternet Arşivi",
       "tips": [
         "Kamu malı içerik için ücretsiz depolama",
         "Özel öğeler için özel erişim gerektirir",
-        "Arşivleme ve koruma için en iyi",
+        "Arşivleme ve koruma için en iyisi",
         "Meta verileri ve koleksiyonları destekler"
       ]
     },
-    "qingstor": {
-      "name": "QingStor",
-      "description": "QingStor Nesne Depolama",
-      "helpText": "QingStor, Çin'de popüler olan QingCloud tarafından sunulan bir nesne depolama servisidir.",
+    "jottacloud": {
+      "description": "Norveç bulut depolama hizmeti",
       "fields": {
-        "access_key_id": {
-          "label": "Erişim Anahtarı ID",
-          "placeholder": "Erişim anahtarı ID'sini girin",
-          "helpText": "QingCloud konsolundan erişim anahtarı ID"
+        "device": {
+          "helpText": "Cihaz adı (genellikle Jotta)",
+          "label": "Cihaz Adı",
+          "placeholder": "Bu yüzden"
         },
-        "secret_access_key": {
-          "label": "Gizli Erişim Anahtarı",
-          "placeholder": "Gizli erişim anahtarını girin",
-          "helpText": "Gizli erişim anahtarı"
+        "mountpoint": {
+          "helpText": "Kullanılacak bağlama noktası (Arşiv, Senkronizasyon veya Yedekleme)",
+          "label": "Bağlantı Noktası",
+          "placeholder": "Arşiv"
         },
-        "endpoint": {
-          "label": "Uç Nokta",
-          "placeholder": "https://qingstor.com",
-          "helpText": "QingStor uç nokta URL'si"
+        "pass": {
+          "helpText": "Jottacloud şifresi",
+          "label": "Şifre",
+          "placeholder": "Şifreyi girin"
         },
-        "zone": {
-          "label": "Bölge",
-          "placeholder": "pek3a",
-          "helpText": "QingStor bölgesi (örn., pek3a, sh1a)"
+        "user": {
+          "helpText": "Jottacloud kullanıcı adı",
+          "label": "Kullanıcı adı",
+          "placeholder": "kullanıcı adı"
         }
       },
+      "helpText": "Jottacloud, İskandinav ülkelerinde popüler olan ve gizliliğe odaklanan bir bulut depolama hizmetidir.",
+      "name": "Jottacloud",
+      "tips": [
+        "Kişisel planlarda sınırsız depolama",
+        "Norveç'te depolanan veriler (AB gizlilik yasaları)",
+        "Dosya sürümlendirmeyi destekler",
+        "Fotoğraf ve video yedekleme için iyi"
+      ]
+    },
+    "koofr": {
+      "description": "Avrupa bulut depolama hizmeti",
+      "fields": {
+        "pass": {
+          "helpText": "Koofr şifreniz",
+          "label": "Şifre",
+          "placeholder": "Şifreyi girin"
+        },
+        "provider": {
+          "helpText": "Koofr sağlayıcısı (koofr, digistorage veya diğer)",
+          "label": "sağlayıcı"
+        },
+        "user": {
+          "helpText": "Koofr hesabınızın e-postası",
+          "label": "E-posta",
+          "placeholder": "kullanıcı@example.com"
+        }
+      },
+      "helpText": "Koofr, diğer bulut depolama hesaplarına da bağlanabilen bir Avrupa bulut depolama hizmetidir.",
+      "name": "Küfür",
+      "tips": [
+        "Birden fazla bulut hesabını bağlayabilir",
+        "AB'de depolanan veriler (GDPR uyumlu)",
+        "WebDAV erişimini destekler",
+        "Masaüstü ve mobil uygulamaları var"
+      ]
+    },
+    "linkbox": {
+      "description": "Linkbox bulut depolama alanı",
+      "fields": {
+        "token": {
+          "helpText": "Linkbox ayarlarından API belirteci",
+          "label": "API Jetonu",
+          "placeholder": "API jetonunu girin"
+        }
+      },
+      "helpText": "Linkbox, kullanım kolaylığı ve paylaşım yeteneklerine odaklanarak bulut depolama alanı sağlar.",
+      "name": "Bağlantı kutusu",
+      "tips": [
+        "Basit paylaşım seçenekleri",
+        "Doğrudan indirme bağlantıları",
+        "Mobil uygulamalar mevcut",
+        "Uygun fiyatlandırma katmanları"
+      ]
+    },
+    "local": {
+      "description": "Yerel dosya sistemi depolaması",
+      "fields": {
+        "nounc": {
+          "helpText": "Windows'ta UNC (\\\\sunucu\\paylaşım) yollarını devre dışı bırakın",
+          "label": "UNC'yi devre dışı bırak"
+        },
+        "path": {
+          "helpText": "Yerel dizine giden mutlak yol",
+          "label": "Yol",
+          "placeholder": "/mnt/yedekleme"
+        }
+      },
+      "helpText": "Yerel veya bağlı dosya sistemlerine doğrudan erişim.",
+      "name": "Yerel Dosya Sistemi",
+      "tips": [
+        "Yolun mevcut olduğundan ve uygun izinlere sahip olduğundan emin olun",
+        "Göreli yollar değil mutlak yollar kullanın",
+        "Önce ağ paylaşımları kurulmalı",
+        "Büyük dosyalar için dosya sistemi sınırlamalarını göz önünde bulundurun"
+      ]
+    },
+    "mailru": {
+      "description": "Mail.ru bulut depolama hizmeti",
+      "fields": {
+        "pass": {
+          "helpText": "Mail.ru şifreniz",
+          "label": "Şifre",
+          "placeholder": "Şifreyi girin"
+        },
+        "speedup_enable": {
+          "helpText": "Hızlandırma (paralel yükleme) özelliğini etkinleştirin",
+          "label": "Hızlandırmayı Etkinleştir"
+        },
+        "user": {
+          "helpText": "Mail.ru e-posta adresiniz",
+          "label": "Kullanıcı adı",
+          "placeholder": "kullanıcı@mail.ru"
+        }
+      },
+      "helpText": "Mail.ru Cloud (şu anda VK Cloud'un bir parçası) Rusya'da popüler bir bulut depolama hizmetidir.",
+      "name": "Mail.ru Bulutu",
+      "tips": [
+        "Ücretsiz katman 8 GB depolama alanı içerir",
+        "Rusça konuşulan ülkelerde popüler",
+        "Büyük dosya yüklemelerini destekler",
+        "Mobil ve masaüstü senkronizasyon uygulamalarına sahiptir"
+      ]
+    },
+    "mega": {
+      "description": "Mega bulut depolama",
+      "fields": {
+        "hard_delete": {
+          "helpText": "Dosyaları çöp kutusuna taşımak yerine kalıcı olarak silin",
+          "label": "Kalıcı Silme"
+        },
+        "pass": {
+          "helpText": "MEGA hesabınızın şifresi (şifrelenecektir)",
+          "label": "Şifre",
+          "placeholder": "Şifrenizi girin"
+        },
+        "use_https": {
+          "helpText": "Aktarımlar için HTTPS kullanın (önerilir)",
+          "label": "HTTPS'yi kullan"
+        },
+        "user": {
+          "helpText": "MEGA hesabınızın e-posta adresi",
+          "label": "E-posta",
+          "placeholder": "kullanıcı@example.com"
+        }
+      },
+      "helpText": "MEGA, istemci tarafında şifrelenmiş bulut depolama alanı sağlar. Katı giriş hızı sınırları vardır.",
+      "name": "Mega",
+      "tips": [
+        "MEGA'nın katı hız sınırları vardır; sık oturum açmaktan kaçının",
+        "Tüm dosyalar istemci tarafında şifrelenir",
+        "Ücretsiz hesapların 20 GB depolama alanı vardır",
+        "Daha iyi güvenlik için uygulama şifrelerini kullanmayı düşünün"
+      ]
+    },
+    "netstorage": {
+      "description": "Akamai NetStorage CDN'si",
+      "fields": {
+        "account": {
+          "helpText": "NetStorage hesap adı",
+          "label": "Hesap",
+          "placeholder": "Hesabı girin"
+        },
+        "host": {
+          "helpText": "NetStorage ana bilgisayarı",
+          "label": "Ev sahibi",
+          "placeholder": "xxxxx.akamaihd.net"
+        },
+        "secret": {
+          "helpText": "NetStorage sırrı/anahtarı",
+          "label": "Gizli",
+          "placeholder": "Sırrı girin"
+        }
+      },
+      "helpText": "Akamai NetStorage, medya dağıtımı için optimize edilmiş, küresel olarak dağıtılmış bir bulut depolama çözümüdür.",
+      "name": "Akamai NetStorage",
+      "tips": [
+        "CDN dağıtımı için optimize edildi",
+        "Küresel uç konumları",
+        "Medya akışı desteği",
+        "Kurumsal düzeyde performans"
+      ]
+    },
+    "onedrive": {
+      "description": "Microsoft OneDrive bulut depolama alanı",
+      "fields": {
+        "drive_id": {
+          "helpText": "Kullanılacak özel sürücü kimliği. Varsayılan olarak boş bırakın",
+          "label": "Sürücü Kimliği",
+          "placeholder": "b!Ei1XXXXXXXXXX"
+        },
+        "drive_type": {
+          "helpText": "OneDrive hesabının türü - kişisel, iş veya belge kitaplığı",
+          "label": "Sürücü Tipi"
+        },
+        "folder": {
+          "helpText": "OneDrive'da kök olarak kullanılacak klasör yolu",
+          "label": "Klasör Yolu",
+          "placeholder": "yedeklemeler"
+        },
+        "token": {
+          "helpText": "Microsoft kimlik doğrulaması yoluyla elde edilen OAuth2 belirteci",
+          "label": "OAuth Jetonu"
+        }
+      },
+      "helpText": "Microsoft OneDrive kişisel ve kurumsal bulut depolama alanı. OAuth kimlik doğrulamasını kullanır.",
+      "name": "Microsoft OneDrive",
+      "tips": [
+        "Jetonların süresi her 90 günde bir dolar ve yenilenmesi gerekir",
+        "Ticari hesapların farklı API sınırları olabilir",
+        "Büyük dosya yüklemeleri otomatik olarak parçalanır",
+        "Dosya adlarındaki bazı özel karakterler sorunlara neden olabilir"
+      ]
+    },
+    "opendrive": {
+      "description": "OpenDrive bulut depolama alanı",
+      "fields": {
+        "password": {
+          "helpText": "OpenDrive şifresi",
+          "label": "Şifre",
+          "placeholder": "Şifreyi girin"
+        },
+        "username": {
+          "helpText": "OpenDrive kullanıcı adı",
+          "label": "Kullanıcı adı",
+          "placeholder": "Kullanıcı adını girin"
+        }
+      },
+      "helpText": "OpenDrive bulut depolama, çevrimiçi yedekleme ve FTP değiştirme hizmetleri sağlar.",
+      "name": "OpenDrive",
+      "tips": [
+        "Sınırsız depolama planı mevcut",
+        "Yerleşik belge görüntüleyici",
+        "Görev yönetimi özellikleri",
+        "Not alma yetenekleri"
+      ]
+    },
+    "oracle": {
+      "description": "Oracle Bulut Altyapısı Nesne Depolaması",
+      "fields": {
+        "compartment": {
+          "helpText": "Kovanın bulunduğu bölme OCID'si",
+          "label": "Bölme OCID'si",
+          "placeholder": "ocid1.bölme.oc1..."
+        },
+        "fingerprint": {
+          "helpText": "API imzalama anahtarının parmak izi",
+          "label": "Anahtar Parmak İzi",
+          "placeholder": "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99"
+        },
+        "key_file": {
+          "helpText": "PEM formatında RSA özel anahtarı (base64 kodlu)",
+          "label": "API Anahtar Dosyası",
+          "placeholder": "Base64 kodlu PEM dosyası"
+        },
+        "namespace": {
+          "helpText": "Nesne depolama ad alanı (OCI Konsolunda bulunur)",
+          "label": "Nesne Depolama Ad Alanı",
+          "placeholder": "Ad alanını girin"
+        },
+        "region": {
+          "helpText": "OCI bölge tanımlayıcısı",
+          "label": "Bölge",
+          "placeholder": "us-ashburn-1"
+        },
+        "tenancy": {
+          "helpText": "Kiracılık OCID'si",
+          "label": "Kiracılık OCID'si",
+          "placeholder": "ocid1.tenancy.oc1..."
+        },
+        "user": {
+          "helpText": "Kimlik doğrulama için kullanıcı OCID'si",
+          "label": "Kullanıcı OCID'si",
+          "placeholder": "ocid1.user.oc1..."
+        }
+      },
+      "helpText": "Oracle Cloud Infrastructure (OCI) Object Storage, büyük miktarlarda yapılandırılmamış verilerin depolanmasına yönelik bölgesel bir hizmettir.",
+      "name": "Oracle Nesne Depolama",
+      "tips": [
+        "OCI Konsolu kullanıcı ayarlarında API anahtarları oluşturun",
+        "Kaynakları düzenlemek için bölmeleri kullanın",
+        "Maliyet optimizasyonu için mevcut depolama sınıfları",
+        "Alternatif olarak S3 uyumluluk API'sini destekler"
+      ]
+    },
+    "pcloud": {
+      "description": "OAuth kimlik doğrulamalı bulut depolama hizmeti",
+      "fields": {
+        "client_id": {
+          "helpText": "pCloud için OAuth 2.0 istemci kimliği",
+          "label": "OAuth İstemci Kimliği",
+          "placeholder": "Müşteri kimliğini girin"
+        },
+        "client_secret": {
+          "helpText": "OAuth 2.0 istemci sırrı",
+          "label": "OAuth İstemci Sırrı",
+          "placeholder": "İstemci sırrını girin"
+        },
+        "hostname": {
+          "helpText": "API ana bilgisayar adı (AB için eapi.pcloud.com)",
+          "label": "Ana makine adı",
+          "placeholder": "api.pcloud.com"
+        },
+        "root_folder_id": {
+          "helpText": "Klasör kimliğini başlatma (isteğe bağlı)",
+          "label": "Kök Klasör Kimliği",
+          "placeholder": "Klasör kimliğini girin"
+        },
+        "token": {
+          "helpText": "Kimlik doğrulama yoluyla elde edilen OAuth2 jetonu",
+          "label": "OAuth Jetonu"
+        }
+      },
+      "helpText": "pCloud, istemci tarafı şifreleme seçeneğiyle güvenli bulut depolama alanı sunar. AB ve ABD bölgeleri var.",
+      "name": "pCloud",
+      "tips": [
+        "Bulunduğunuz yere göre AB veya ABD bölgesini seçin",
+        "Kripto klasörü istemci tarafında şifreleme sağlar",
+        "Ömür boyu planları mevcut",
+        "Mobil ve masaüstü senkronizasyon istemcileri mevcut"
+      ]
+    },
+    "pikpak": {
+      "description": "Çevrimdışı indirmeyle bulut depolama",
+      "fields": {
+        "pass": {
+          "helpText": "PikPak ​​hesap şifresi",
+          "label": "Şifre",
+          "placeholder": "Şifreyi girin"
+        },
+        "user": {
+          "helpText": "PikPak ​​hesabı e-postası",
+          "label": "Kullanıcı adı",
+          "placeholder": "kullanıcı@example.com"
+        }
+      },
+      "helpText": "PikPak, çevrimdışı indirmeyi ve medya akışını destekleyen bir bulut depolama hizmetidir.",
+      "name": "PikPak",
+      "tips": [
+        "Çevrimdışı indirmeyi destekler",
+        "Dahili medya oynatıcı",
+        "Buluta torrent göndermek için iyi",
+        "Akışlı mobil uygulamalar var"
+      ]
+    },
+    "pixeldrain": {
+      "description": "Pixeldrain dosya paylaşımı",
+      "fields": {
+        "api_key": {
+          "helpText": "Pixeldrain hesabından API anahtarı",
+          "label": "API Anahtarı",
+          "placeholder": "API anahtarını girin"
+        },
+        "root_folder_id": {
+          "helpText": "Kök klasör kimliği (isteğe bağlı)",
+          "label": "Kök Klasör Kimliği",
+          "placeholder": "Klasör kimliğini girin"
+        }
+      },
+      "helpText": "Pixeldrain, basitliğe ve kullanım kolaylığına odaklanan bir dosya paylaşım platformudur.",
+      "name": "Piksel tahliyesi",
+      "tips": [
+        "Yüklemeler için kayıt gerekmez",
+        "Tarayıcıda görüntülenebilen dosyalar",
+        "Geliştiriciler için API",
+        "Geçici dosya paylaşımına uygun"
+      ]
+    },
+    "premiumizeme": {
+      "description": "Bulut depolama ve indirme hizmeti",
+      "fields": {
+        "api_key": {
+          "helpText": "Premiumize.me hesap ayarlarından API anahtarı",
+          "label": "API Anahtarı",
+          "placeholder": "API anahtarınızı girin"
+        }
+      },
+      "helpText": "Premiumize.me, bulut depolama ve indirme yetenekleri sağlayan çok sunuculu bir hizmettir.",
+      "name": "Premiumize.me",
+      "tips": [
+        "Bulut depolamayı indirme hizmetiyle birleştirir",
+        "Birçok dosya barındırma sitesini destekler",
+        "VPN hizmeti içerir",
+        "Medya akışı için iyi"
+      ]
+    },
+    "proton": {
+      "description": "Gizlilik odaklı şifreli bulut depolama",
+      "fields": {
+        "password": {
+          "helpText": "Proton hesabınızın şifresi",
+          "label": "Şifre",
+          "placeholder": "Şifrenizi girin"
+        },
+        "tfa": {
+          "helpText": "İki faktörlü kimlik doğrulama kodu (etkinse)",
+          "label": "İki Faktörlü Kod",
+          "placeholder": "Etkinse TFA kodunu girin"
+        },
+        "username": {
+          "helpText": "Proton hesabınızın e-postası",
+          "label": "Kullanıcı adı",
+          "placeholder": "kullanıcı@proton.me"
+        }
+      },
+      "helpText": "Proton Drive, ProtonMail'in yapımcılarından uçtan uca şifrelenmiş bulut depolama alanı sunar.",
+      "name": "Proton Sürücüsü",
+      "tips": [
+        "Tüm dosyalar uçtan uca şifrelenmiştir",
+        "Proton gizlilik ekosisteminin bir parçası",
+        "Ücretsiz katman 1 GB depolama alanı içerir",
+        "Şifrelemeyle dosya paylaşımını destekler"
+      ]
+    },
+    "putio": {
+      "description": "Torrent destekli bulut depolama",
+      "fields": {
+        "token": {
+          "helpText": "Put.io hesap ayarlarından OAuth jetonu",
+          "label": "OAuth Jetonu",
+          "placeholder": "OAuth jetonunu girin"
+        }
+      },
+      "helpText": "Put.io, torrentleri getirip yayınlayabilen bir bulut depolama hizmetidir.",
+      "name": "Put.io",
+      "tips": [
+        "Torrent işleme konusunda uzman",
+        "Otomatik video dönüştürme",
+        "Dahili medya oynatıcı",
+        "Otomasyon için iyi API"
+      ]
+    },
+    "qingstor": {
+      "description": "QingStor Nesne Depolaması",
+      "fields": {
+        "access_key_id": {
+          "helpText": "QingCloud konsolundan anahtar kimliğine erişin",
+          "label": "Erişim Anahtarı Kimliği",
+          "placeholder": "Erişim anahtarı kimliğini girin"
+        },
+        "endpoint": {
+          "helpText": "QingStor uç nokta URL'si",
+          "label": "Uç nokta",
+          "placeholder": "https://qingstor.com"
+        },
+        "secret_access_key": {
+          "helpText": "Gizli erişim anahtarı",
+          "label": "Gizli Erişim Anahtarı",
+          "placeholder": "Gizli erişim anahtarını girin"
+        },
+        "zone": {
+          "helpText": "QingStor bölgesi (örneğin pek3a, sh1a)",
+          "label": "Alan",
+          "placeholder": "pek3a"
+        }
+      },
+      "helpText": "QingStor, QingCloud'un Çin'de popüler bir nesne depolama hizmetidir.",
+      "name": "QingStor",
       "tips": [
         "Çin pazarında popüler",
         "S3 uyumlu API",
-        "Birden fazla kullanılabilirlik bölgesi",
+        "Çoklu kullanılabilirlik bölgeleri",
         "Asya'da iyi performans"
       ]
     },
     "quatrix": {
-      "name": "Quatrix",
-      "description": "Quatrix güvenli dosya transferi",
-      "helpText": "Quatrix, iş kullanımı için tasarlanmış güvenli bir dosya transferi ve depolama platformudur.",
+      "description": "Quatrix güvenli dosya aktarımı",
       "fields": {
         "api_key": {
+          "helpText": "Quatrix hesabından API anahtarı",
           "label": "API Anahtarı",
-          "placeholder": "API anahtarını girin",
-          "helpText": "Quatrix hesabından API anahtarı"
+          "placeholder": "API anahtarını girin"
         },
         "host": {
-          "label": "Ana Bilgisayar",
-          "placeholder": "https://alan-adiniz.quatrix.com",
-          "helpText": "Quatrix ana bilgisayar URL'niz"
+          "helpText": "Quatrix ana bilgisayar URL'niz",
+          "label": "Ev sahibi",
+          "placeholder": "https://your-domain.quatrix.com"
         }
       },
+      "helpText": "Quatrix, iş amaçlı kullanım için tasarlanmış güvenli bir dosya aktarımı ve depolama platformudur.",
+      "name": "Dörtlü",
       "tips": [
         "Kurumsal odaklı güvenlik",
-        "Büyük dosya transferlerini destekler",
+        "Büyük dosya aktarımlarını destekler",
         "Yerleşik şifreleme",
         "Denetim izi özellikleri"
       ]
     },
-    "seafile": {
-      "name": "Seafile",
-      "description": "Açık kaynak bulut depolama",
-      "helpText": "Seafile, dosya şifreleme ve grup işbirliği özellikleri olan açık kaynaklı bir dosya senkronizasyon ve paylaşım platformudur.",
+    "s3": {
+      "description": "S3 uyumlu nesne depolama (AWS, Linode, DigitalOcean, Vultr vb.)",
       "fields": {
-        "url": {
-          "label": "Sunucu URL'si",
-          "placeholder": "https://seafile.ornek.com",
-          "helpText": "Seafile sunucu URL'si"
+        "access_key_id": {
+          "helpText": "Kimlik doğrulama için erişim anahtarı kimliğiniz. Bunu sağlayıcınızın konsolundan alın",
+          "label": "Erişim Anahtarı Kimliği",
+          "placeholder": "Akiaiosfodnn7 örneği"
         },
-        "user": {
-          "label": "Kullanıcı Adı",
-          "placeholder": "kullanici@ornek.com",
-          "helpText": "Seafile kullanıcı adı veya e-posta"
+        "acl": {
+          "helpText": "Yüklenen nesneler için varsayılan ACL. Özel tavsiye edilir",
+          "label": "Erişim Kontrol Listesi"
         },
-        "pass": {
-          "label": "Şifre",
-          "placeholder": "Şifreyi girin",
-          "helpText": "Seafile şifresi"
+        "bucket": {
+          "helpText": "S3 paketi adı. Global olarak benzersiz olmalı ve adlandırma kurallarına uymalıdır",
+          "label": "Kova",
+          "placeholder": "yedek-kovam"
         },
-        "library": {
-          "label": "Kütüphane ID",
-          "placeholder": "Kütüphane ID'sini girin",
-          "helpText": "Seafile kütüphane ID'si"
+        "endpoint": {
+          "helpText": "S3 API uç noktası URL'si. AWS S3 için boş bırakın. Diğer sağlayıcılar için gerekli",
+          "label": "Uç nokta",
+          "placeholder": "s3.amazonaws.com"
         },
-        "auth_token": {
-          "label": "Kimlik Doğrulama Token'ı",
-          "placeholder": "Kimlik doğrulama token'ını girin",
-          "helpText": "Kimlik doğrulama token'ı (isteğe bağlı)"
+        "env_auth": {
+          "helpText": "Kimlik doğrulama için AWS ortam değişkenlerini veya IAM rolünü kullanın",
+          "label": "Ortam Kimlik Doğrulamasını Kullan"
+        },
+        "folder": {
+          "helpText": "Paket içindeki isteğe bağlı klasör yolu",
+          "label": "Dosya",
+          "placeholder": "rediacc"
+        },
+        "location_constraint": {
+          "helpText": "Yeni paketler oluştururken konum kısıtlaması",
+          "label": "Konum Kısıtlaması",
+          "placeholder": "AB"
+        },
+        "provider": {
+          "helpText": "S3 uyumlu depolama sağlayıcınızı seçin",
+          "label": "sağlayıcı",
+          "placeholder": "S3 sağlayıcısını seçin"
+        },
+        "region": {
+          "helpText": "Paketinizin bulunduğu AWS bölgesi",
+          "label": "Bölge",
+          "placeholder": "abd-doğu-1"
+        },
+        "secret_access_key": {
+          "helpText": "Gizli erişim anahtarınız. Bunu güvende tutun ve asla paylaşmayın",
+          "label": "Gizli Erişim Anahtarı",
+          "placeholder": "Gizli erişim anahtarınızı girin"
         }
       },
+      "helpText": "Amazon S3 ve uyumlu nesne depolama hizmetleri. AWS S3, Linode Object Storage, DigitalOcean Spaces, Vultr Object Storage, MinIO ve daha birçoklarını destekler.",
+      "name": "Amazon S3 Uyumlu",
       "tips": [
-        "Kendi barındırma seçeneği mevcut",
-        "Dosya sürümleme ve anlık görüntüler",
+        "AWS S3 için programlı erişime sahip bir IAM kullanıcısı oluşturun",
+        "Erişim izinlerini kontrol etmek için paket politikalarını kullanın",
+        "Önemli veri koruması için sürüm oluşturmayı etkinleştirin",
+        "Depolama maliyetlerini yönetmek için yaşam döngüsü kurallarını kullanmayı düşünün"
+      ]
+    },
+    "seafile": {
+      "description": "Açık kaynaklı bulut depolama",
+      "fields": {
+        "auth_token": {
+          "helpText": "Kimlik doğrulama jetonu (isteğe bağlı)",
+          "label": "Kimlik Doğrulama Jetonu",
+          "placeholder": "Kimlik doğrulama jetonunu girin"
+        },
+        "library": {
+          "helpText": "Seafile kitaplığı kimliği",
+          "label": "Kütüphane Kimliği",
+          "placeholder": "Kütüphane kimliğini girin"
+        },
+        "pass": {
+          "helpText": "Seafile şifresi",
+          "label": "Şifre",
+          "placeholder": "Şifreyi girin"
+        },
+        "url": {
+          "helpText": "Seafile sunucusu URL'si",
+          "label": "Sunucu URL'si",
+          "placeholder": "https://seafile.example.com"
+        },
+        "user": {
+          "helpText": "Seafile kullanıcı adı veya e-postası",
+          "label": "Kullanıcı adı",
+          "placeholder": "kullanıcı@example.com"
+        }
+      },
+      "helpText": "Seafile, dosya şifreleme ve grup işbirliği özelliklerine sahip açık kaynaklı bir dosya senkronizasyonu ve paylaşım platformudur.",
+      "name": "Deniz dosyası",
+      "tips": [
+        "Kendi kendine barındırılan seçenek mevcut",
+        "Dosya sürümü oluşturma ve anlık görüntüler",
         "Uçtan uca şifreleme desteği",
-        "Takım işbirliği için iyi"
+        "Ekip işbirliği için iyi"
+      ]
+    },
+    "sftp": {
+      "description": "SSH Dosya Aktarım Protokolü",
+      "fields": {
+        "host": {
+          "helpText": "SFTP sunucusu ana bilgisayar adı veya IP adresi",
+          "label": "Ev sahibi",
+          "placeholder": "example.com"
+        },
+        "key_file": {
+          "helpText": "SSH özel anahtar dosyasının yolu",
+          "label": "Özel Anahtar Dosyası",
+          "placeholder": "/yol/giden/anahtar"
+        },
+        "key_file_pass": {
+          "helpText": "Şifrelenmiş özel anahtar için parola",
+          "label": "Anahtar Parola",
+          "placeholder": "Parolayı girin"
+        },
+        "known_hosts_file": {
+          "helpText": "Sunucu doğrulaması için bilinen ana bilgisayar dosyasının yolu",
+          "label": "Bilinen Hosts Dosyası",
+          "placeholder": "~/.ssh/bilinen_hosts"
+        },
+        "pass": {
+          "helpText": "Parola kimlik doğrulaması için parola",
+          "label": "Şifre",
+          "placeholder": "Şifreyi girin"
+        },
+        "port": {
+          "helpText": "SFTP bağlantı noktası (varsayılan 22'dir)",
+          "label": "Liman",
+          "placeholder": "22"
+        },
+        "pubkey_file": {
+          "helpText": "SSH ortak anahtar dosyasının yolu",
+          "label": "Genel Anahtar Dosyası",
+          "placeholder": "/path/to/key.pub"
+        },
+        "user": {
+          "helpText": "SSH/SFTP kullanıcı adı",
+          "label": "Kullanıcı adı",
+          "placeholder": "kullanıcı adı"
+        }
+      },
+      "helpText": "SSH üzerinden güvenli dosya aktarımı. Parola ve anahtar tabanlı kimlik doğrulamayı destekler.",
+      "name": "SFTP",
+      "tips": [
+        "Daha iyi güvenlik için anahtar tabanlı kimlik doğrulamayı kullanın",
+        "İlk bağlantıda sunucu parmak izini doğrulayın",
+        "Özel anahtarlarınızı güvende ve şifrelenmiş halde tutun",
+        "Anahtar yönetimi için SSH aracısını kullanmayı düşünün"
+      ]
+    },
+    "sharefile": {
+      "description": "Kurumsal dosya paylaşımı ve depolama",
+      "fields": {
+        "root_folder_id": {
+          "helpText": "Kök klasörün kimliği",
+          "label": "Kök Klasör Kimliği",
+          "placeholder": "Kök klasör kimliğini girin"
+        },
+        "token": {
+          "helpText": "ShareFile erişimi için OAuth2 jetonu",
+          "label": "OAuth Jetonu"
+        },
+        "upload_endpoint": {
+          "helpText": "ShareFile yükleme uç noktası URL'si",
+          "label": "Uç Noktayı Yükle",
+          "placeholder": "https://company.sf-api.com"
+        }
+      },
+      "helpText": "Citrix ShareFile, güvenli dosya paylaşımına sahip kurumsal bir içerik işbirliği platformudur.",
+      "name": "Citrix Paylaşım Dosyası",
+      "tips": [
+        "Kurumsal kullanım için tasarlandı",
+        "Büyük dosya aktarımlarını destekler",
+        "Denetim izleri ve uyumluluk özellikleri vardır",
+        "Tüm platformlara uygun mobil uygulamalar"
+      ]
+    },
+    "sia": {
+      "description": "Sia merkezi olmayan depolama",
+      "fields": {
+        "api_password": {
+          "helpText": "Sia daemon API şifresi",
+          "label": "API Şifresi",
+          "placeholder": "API şifresini girin"
+        },
+        "api_url": {
+          "helpText": "Gördün mü, çok mutluyum",
+          "label": "API URL'si",
+          "placeholder": "http://127.0.0.1:9980"
+        }
+      },
+      "helpText": "Sia, dosyaları merkezi olmayan bir ağ üzerinden şifreleyen ve dağıtan merkezi olmayan bir bulut depolama platformudur.",
+      "name": "öyle mi",
+      "tips": [
+        "Tamamen merkezi olmayan depolama",
+        "Geleneksel buluttan daha düşük maliyet",
+        "Sia arka plan programının çalıştırılmasını gerektirir",
+        "Siacoin kripto para biriminde ödeme"
+      ]
+    },
+    "smb": {
+      "description": "Windows ağ paylaşımları",
+      "fields": {
+        "domain": {
+          "helpText": "KOBİ alanı (varsayılan ÇALIŞMA GRUBU)",
+          "label": "İhtisas",
+          "placeholder": "ÇALIŞMA GRUBU"
+        },
+        "host": {
+          "helpText": "SMB sunucusu ana bilgisayar adı veya IP adresi",
+          "label": "Ev sahibi",
+          "placeholder": "sunucu.yerel veya 192.168.1.100"
+        },
+        "pass": {
+          "helpText": "SMB kimlik doğrulaması için şifre",
+          "label": "Şifre",
+          "placeholder": "Şifreyi girin"
+        },
+        "port": {
+          "helpText": "SMB bağlantı noktası (genellikle 445)",
+          "label": "Liman",
+          "placeholder": "445"
+        },
+        "user": {
+          "helpText": "Kullanıcı adı (alanı içerebilir)",
+          "label": "Kullanıcı adı",
+          "placeholder": "DOMAIN\\kullanıcı adı veya kullanıcı adı"
+        }
+      },
+      "helpText": "Windows paylaşımlarına ve NAS cihazlarına erişim için Sunucu Mesaj Bloğu (SMB) protokolü.",
+      "name": "KOBİ / CIFS",
+      "tips": [
+        "Güvenlik için SMB3 önerilir",
+        "Ağ bulmanın etkin olduğundan emin olun",
+        "Güvenlik duvarı yapılandırması gerektirebilir",
+        "Ana bilgisayar adı başarısız olursa IP adresiyle test edin"
+      ]
+    },
+    "storj": {
+      "description": "Merkezi olmayan bulut depolama",
+      "fields": {
+        "access_grant": {
+          "helpText": "Storj'dan serileştirilmiş erişim izni",
+          "label": "Erişim İzni",
+          "placeholder": "Erişim izninizi girin"
+        },
+        "api_key": {
+          "helpText": "Uydu web arayüzünden API anahtarı",
+          "label": "API Anahtarı",
+          "placeholder": "API anahtarını girin"
+        },
+        "passphrase": {
+          "helpText": "Verileriniz için şifreleme parolası",
+          "label": "Şifreleme Parolası",
+          "placeholder": "Şifreleme parolasını girin"
+        },
+        "satellite_address": {
+          "helpText": "Uydu adresi (isteğe bağlı, varsayılan olarak us1.storj.io:7777)",
+          "label": "Uydu Adresi",
+          "placeholder": "us1.storj.io:7777"
+        }
+      },
+      "helpText": "Storj, dosyaları küresel bir ağ üzerinden şifreleyen ve dağıtan merkezi olmayan bir bulut depolama ağıdır.",
+      "name": "Storj",
+      "tips": [
+        "Merkezi olmayan depolama yüksek dayanıklılık sağlar",
+        "Tüm veriler istemci tarafında şifrelenir",
+        "Yalnızca kullandığınız kadar ödeyin",
+        "Arşivleme ve yedekleme kullanım durumları için iyi"
       ]
     },
     "sugarsync": {
-      "name": "SugarSync",
-      "description": "SugarSync bulut depolama",
-      "helpText": "SugarSync, mevcut klasör yapılarının senkronizasyonuna izin veren bir bulut depolama servisidir.",
+      "description": "SugarSync bulut depolama alanı",
       "fields": {
-        "app_id": {
-          "label": "Uygulama ID",
-          "placeholder": "Uygulama ID'sini girin",
-          "helpText": "SugarSync'ten uygulama ID'si"
-        },
         "access_key_id": {
+          "helpText": "Kimlik doğrulama için erişim anahtarı",
           "label": "Erişim Anahtarı",
-          "placeholder": "Erişim anahtarını girin",
-          "helpText": "Kimlik doğrulama için erişim anahtarı"
+          "placeholder": "Erişim anahtarını girin"
+        },
+        "app_id": {
+          "helpText": "SugarSync'ten uygulama kimliği",
+          "label": "Uygulama kimliği",
+          "placeholder": "Uygulama kimliğini girin"
         },
         "private_access_key": {
+          "helpText": "Özel erişim anahtarı",
           "label": "Özel Erişim Anahtarı",
-          "placeholder": "Özel anahtarı girin",
-          "helpText": "Özel erişim anahtarı"
+          "placeholder": "Özel anahtarı girin"
         },
         "refresh_token": {
-          "label": "Yenileme Token'ı",
-          "placeholder": "Yenileme token'ını girin",
-          "helpText": "OAuth yenileme token'ı"
+          "helpText": "OAuth yenileme jetonu",
+          "label": "Jetonu Yenile",
+          "placeholder": "Yenileme jetonunu girin"
         }
       },
+      "helpText": "SugarSync, mevcut klasör yapılarının senkronize edilmesine olanak tanıyan bir bulut depolama hizmetidir.",
+      "name": "Sugarnync",
       "tips": [
         "Bilgisayarınızdaki herhangi bir klasörü senkronize eder",
-        "Dosyaları özel klasöre taşımaya gerek yok",
-        "Seçici senkronizasyonu destekler",
-        "Mevcut yapıları yedeklemek için iyi"
+        "Dosyaları özel klasöre taşımanıza gerek yok",
+        "Seçmeli senkronizasyonu destekler",
+        "Mevcut yapıların yedeklenmesi için iyi"
+      ]
+    },
+    "swift": {
+      "description": "OpenStack Swift Nesne Depolama",
+      "fields": {
+        "auth": {
+          "helpText": "Kimlik doğrulama uç noktası URL'si",
+          "label": "Kimlik doğrulama URL'si",
+          "placeholder": "https://auth.cloud.com/v3"
+        },
+        "auth_version": {
+          "helpText": "Kimlik doğrulama protokolü sürümü",
+          "label": "Kimlik Doğrulama Sürümü"
+        },
+        "domain": {
+          "helpText": "Kullanıcı alan adı",
+          "label": "İhtisas",
+          "placeholder": "Varsayılan"
+        },
+        "key": {
+          "helpText": "Kimlik doğrulama için API anahtarı veya şifre",
+          "label": "API Anahtarı/Şifre",
+          "placeholder": "API anahtarınızı girin"
+        },
+        "region": {
+          "helpText": "Bölge adı",
+          "label": "Bölge",
+          "placeholder": "Bölgeyi girin"
+        },
+        "storage_url": {
+          "helpText": "Depolama URL'si (isteğe bağlı)",
+          "label": "Depolama URL'si",
+          "placeholder": "Depolama URL'sini girin"
+        },
+        "tenant": {
+          "helpText": "Kiracı/proje adı",
+          "label": "Kiracı Adı",
+          "placeholder": "Kiracı adını girin"
+        },
+        "tenant_id": {
+          "helpText": "Kiracı/proje kimliği",
+          "label": "Kiracı Kimliği",
+          "placeholder": "Kiracı kimliğini girin"
+        },
+        "user": {
+          "helpText": "OpenStack kullanıcı adı",
+          "label": "Kullanıcı adı",
+          "placeholder": "Kullanıcı adınızı girin"
+        }
+      },
+      "helpText": "Rackspace, OVH ve diğerleri tarafından kullanılan OpenStack Swift nesne depolaması.",
+      "name": "OpenStack Swift",
+      "tips": [
+        "Doğru kimlik doğrulama URL'si için sağlayıcınıza danışın",
+        "Yeni dağıtımlar için v3 kimlik doğrulaması önerilir",
+        "Bazı sağlayıcılar belirli kiracı ayarları gerektirir",
+        "Büyük nesne desteği sağlayıcıya göre değişebilir"
       ]
     },
     "ulozto": {
-      "name": "Uloz.to",
       "description": "Uloz.to dosya barındırma",
-      "helpText": "Uloz.to, Çek Cumhuriyeti ve Slovakya'da popüler bir dosya barındırma servisidir.",
       "fields": {
         "app_token": {
-          "label": "Uygulama Token'ı",
-          "placeholder": "Uygulama token'ını girin",
-          "helpText": "Uloz.to'dan uygulama token'ı"
-        },
-        "username": {
-          "label": "Kullanıcı Adı",
-          "placeholder": "Kullanıcı adını girin",
-          "helpText": "Uloz.to kullanıcı adı"
+          "helpText": "Uloz.to'dan uygulama jetonu",
+          "label": "Uygulama Jetonu",
+          "placeholder": "Uygulama jetonunu girin"
         },
         "password": {
+          "helpText": "Uloz.to şifresi",
           "label": "Şifre",
-          "placeholder": "Şifreyi girin",
-          "helpText": "Uloz.to şifresi"
+          "placeholder": "Şifreyi girin"
+        },
+        "username": {
+          "helpText": "Uloz.to kullanıcı adı",
+          "label": "Kullanıcı adı",
+          "placeholder": "Kullanıcı adını girin"
         }
       },
+      "helpText": "Uloz.to, Çek Cumhuriyeti ve Slovakya'da popüler bir dosya barındırma hizmetidir.",
+      "name": "Uloz.to",
       "tips": [
         "Çek ve Slovak pazarlarında popüler",
         "Büyük dosya yüklemelerini destekler",
@@ -1175,429 +1458,146 @@
       ]
     },
     "uptobox": {
-      "name": "Uptobox",
       "description": "Uptobox dosya barındırma",
-      "helpText": "Uptobox, torrent desteği ve akış yetenekleri olan bir dosya barındırma servisidir.",
       "fields": {
         "api_key": {
+          "helpText": "Uptobox hesabından API anahtarı",
           "label": "API Anahtarı",
-          "placeholder": "API anahtarını girin",
-          "helpText": "Uptobox hesabından API anahtarı"
+          "placeholder": "API anahtarını girin"
         }
       },
+      "helpText": "Uptobox, torrent desteği ve akış özelliklerine sahip bir dosya barındırma hizmetidir.",
+      "name": "Yukarı kutu",
       "tips": [
-        "Premium hesaplar daha iyi hızlara sahip",
+        "Premium hesapların hızları daha iyidir",
         "URL'lerden uzaktan yüklemeyi destekler",
-        "Yerleşik video oynatıcı",
+        "Dahili video oynatıcı",
         "Medya depolama için iyi"
       ]
     },
-    "zoho": {
-      "name": "Zoho WorkDrive",
-      "description": "Zoho WorkDrive depolama",
-      "helpText": "Zoho WorkDrive, gelişmiş yönetici kontrolleri olan takımlar için bir içerik işbirliği platformudur.",
+    "wasabi": {
+      "description": "Wasabi Sıcak Bulut Depolama",
       "fields": {
-        "client_id": {
-          "label": "OAuth İstemci ID",
-          "placeholder": "İstemci ID'sini girin",
-          "helpText": "Zoho'dan OAuth istemci ID"
+        "access_key_id": {
+          "helpText": "Wasabi erişim anahtarı kimliği",
+          "label": "Erişim Anahtarı Kimliği",
+          "placeholder": "Erişim anahtarını girin"
         },
-        "client_secret": {
-          "label": "OAuth İstemci Gizli Anahtarı",
-          "placeholder": "İstemci gizli anahtarını girin",
-          "helpText": "OAuth istemci gizli anahtarı"
-        },
-        "token": {
-          "label": "OAuth Token",
-          "helpText": "Zoho kimlik doğrulamasından OAuth2 token"
+        "endpoint": {
+          "helpText": "Wasabi uç nokta URL'si",
+          "label": "Uç nokta",
+          "placeholder": "s3.wasabisys.com"
         },
         "region": {
+          "helpText": "Wasabi bölgesi",
           "label": "Bölge",
-          "placeholder": "com",
-          "helpText": "Zoho bölgesi (com, eu, in, jp, com.cn, com.au)"
+          "placeholder": "abd-doğu-1"
+        },
+        "secret_access_key": {
+          "helpText": "Wasabi gizli erişim anahtarı",
+          "label": "Gizli Erişim Anahtarı",
+          "placeholder": "Gizli anahtarı girin"
         }
       },
+      "helpText": "Wasabi, çıkış ücreti olmadan ve öngörülebilir fiyatlandırmayla hızlı bulut nesne depolaması sağlar.",
+      "name": "Vasabi",
       "tips": [
-        "Zoho verimlilik paketinin parçası",
-        "Takım klasörleri ve çalışma alanları",
+        "Çıkış ücreti yok",
+        "AWS S3'ten %80 daha az",
+        "API isteği ücreti yok",
+        "11 dokuzlu dayanıklılık"
+      ]
+    },
+    "webdav": {
+      "description": "WebDAV protokolü",
+      "fields": {
+        "pass": {
+          "helpText": "WebDAV şifresi",
+          "label": "Şifre",
+          "placeholder": "Şifreyi girin"
+        },
+        "url": {
+          "helpText": "Tam WebDAV uç nokta URL'si",
+          "label": "Webdav URL'si",
+          "placeholder": "https://webdav.example.com"
+        },
+        "user": {
+          "helpText": "WebDAV kullanıcı adı",
+          "label": "Kullanıcı adı",
+          "placeholder": "Kullanıcı adını girin"
+        },
+        "vendor": {
+          "helpText": "Belirli uyumluluk için WebDAV satıcısı",
+          "label": "Satıcı"
+        }
+      },
+      "helpText": "Web tabanlı Dağıtılmış Yazma ve Sürüm Oluşturma. Nextcloud, ownCloud ve diğerleri tarafından kullanılır.",
+      "name": "WebDav",
+      "tips": [
+        "Farklı satıcıların belirli tuhaflıkları olabilir",
+        "Nextcloud/ownCloud'un özel tedarikçi desteği vardır",
+        "Güvenli bağlantılar için HTTPS kullanın",
+        "Bazı sunucularda dosya boyutu sınırlamaları vardır"
+      ]
+    },
+    "yandex": {
+      "description": "Yandex bulut depolama hizmeti",
+      "fields": {
+        "client_id": {
+          "helpText": "Yandex'den OAuth 2.0 istemci kimliği",
+          "label": "OAuth İstemci Kimliği",
+          "placeholder": "Müşteri kimliğini girin"
+        },
+        "client_secret": {
+          "helpText": "OAuth 2.0 istemci sırrı",
+          "label": "OAuth İstemci Sırrı",
+          "placeholder": "İstemci sırrını girin"
+        },
+        "token": {
+          "helpText": "Yandex kimlik doğrulaması yoluyla elde edilen OAuth2 jetonu",
+          "label": "OAuth Jetonu"
+        }
+      },
+      "helpText": "Yandex Disk, Rusya ve Doğu Avrupa'da popüler olan bir bulut depolama hizmetidir. OAuth kimlik doğrulamasını kullanır.",
+      "name": "Yandex Diski",
+      "tips": [
+        "Ücretsiz katman 10 GB depolama alanı içerir",
+        "Mobil cihazlardan otomatik fotoğraf yüklemeyi destekler",
+        "Tüm büyük platformlar için masaüstü senkronizasyon istemcilerine sahiptir",
+        "Office belgeleriyle işbirliği mevcut"
+      ]
+    },
+    "zoho": {
+      "description": "Zoho WorkDrive depolama alanı",
+      "fields": {
+        "client_id": {
+          "helpText": "Zoho'dan OAuth istemci kimliği",
+          "label": "OAuth İstemci Kimliği",
+          "placeholder": "Müşteri kimliğini girin"
+        },
+        "client_secret": {
+          "helpText": "OAuth istemci sırrı",
+          "label": "OAuth İstemci Sırrı",
+          "placeholder": "İstemci sırrını girin"
+        },
+        "region": {
+          "helpText": "Zoho bölgesi (com, ab, in, jp, com.cn, com.au)",
+          "label": "Bölge",
+          "placeholder": "iletişim"
+        },
+        "token": {
+          "helpText": "Zoho kimlik doğrulamasından OAuth2 jetonu",
+          "label": "OAuth Jetonu"
+        }
+      },
+      "helpText": "Zoho WorkDrive, gelişmiş yönetici kontrollerine sahip ekiplere yönelik bir içerik işbirliği platformudur.",
+      "name": "Zoho WorkDrive",
+      "tips": [
+        "Zoho üretkenlik paketinin bir parçası",
+        "Ekip klasörleri ve çalışma alanları",
         "Gelişmiş izin kontrolleri",
         "Zoho uygulamalarıyla entegrasyon"
       ]
-    },
-    "opendrive": {
-      "name": "OpenDrive",
-      "description": "OpenDrive bulut depolama",
-      "helpText": "OpenDrive, bulut depolama, çevrimiçi yedekleme ve FTP değiştirme servisleri sağlar.",
-      "fields": {
-        "username": {
-          "label": "Kullanıcı Adı",
-          "placeholder": "Kullanıcı adını girin",
-          "helpText": "OpenDrive kullanıcı adı"
-        },
-        "password": {
-          "label": "Şifre",
-          "placeholder": "Şifreyi girin",
-          "helpText": "OpenDrive şifresi"
-        }
-      },
-      "tips": [
-        "Sınırsız depolama planları mevcut",
-        "Yerleşik belge görüntüleyici",
-        "Görev yönetimi özellikleri",
-        "Not alma yetenekleri"
-      ]
-    },
-    "fichier": {
-      "name": "1Fichier",
-      "description": "1Fichier dosya barındırma",
-      "helpText": "1Fichier, ücretsiz ve premium depolama sunan bir Fransız dosya barındırma servisidir.",
-      "fields": {
-        "api_key": {
-          "label": "API Anahtarı",
-          "placeholder": "API anahtarını girin",
-          "helpText": "1Fichier hesabından API anahtarı"
-        },
-        "shared_folder": {
-          "label": "Paylaşılan Klasör ID",
-          "placeholder": "Klasör ID'sini girin",
-          "helpText": "Paylaşılan klasör ID'si (isteğe bağlı)"
-        }
-      },
-      "tips": [
-        "Premium için dosya boyutu sınırı yok",
-        "FTP erişimi mevcut",
-        "Hızlı indirmeler için CDN desteği",
-        "Özel klasör seçenekleri"
-      ]
-    },
-    "gofile": {
-      "name": "GoFile",
-      "description": "GoFile anonim dosya paylaşımı",
-      "helpText": "GoFile, anonim yükleme desteği olan ücretsiz bir dosya paylaşım ve depolama platformudur.",
-      "fields": {
-        "account_id": {
-          "label": "Hesap ID",
-          "placeholder": "Hesap ID'sini girin",
-          "helpText": "GoFile hesap ID'si (isteğe bağlı)"
-        },
-        "root_folder_id": {
-          "label": "Kök Klasör ID",
-          "placeholder": "Kök klasör ID'sini girin",
-          "helpText": "Yüklemeler için kök klasör ID'si"
-        }
-      },
-      "tips": [
-        "Temel kullanım için kayıt gerekmez",
-        "Sınırsız bant genişliği",
-        "Ücretsiz kullanıcılar için dosyalar sınırlı süre saklanır",
-        "Premium hesaplar kalıcı depolama alır"
-      ]
-    },
-    "linkbox": {
-      "name": "Linkbox",
-      "description": "Linkbox bulut depolama",
-      "helpText": "Linkbox, kullanım kolaylığı ve paylaşım yeteneklerine odaklanan bulut depolama sağlar.",
-      "fields": {
-        "token": {
-          "label": "API Token",
-          "placeholder": "API token'ını girin",
-          "helpText": "Linkbox ayarlarından API token'ı"
-        }
-      },
-      "tips": [
-        "Basit paylaşım seçenekleri",
-        "Doğrudan indirme bağlantıları",
-        "Mobil uygulamalar mevcut",
-        "Uygun fiyatlı katmanlar"
-      ]
-    },
-    "pixeldrain": {
-      "name": "Pixeldrain",
-      "description": "Pixeldrain dosya paylaşımı",
-      "helpText": "Pixeldrain, basitlik ve kullanım kolaylığına odaklanan bir dosya paylaşım platformudur.",
-      "fields": {
-        "api_key": {
-          "label": "API Anahtarı",
-          "placeholder": "API anahtarını girin",
-          "helpText": "Pixeldrain hesabından API anahtarı"
-        },
-        "root_folder_id": {
-          "label": "Kök Klasör ID",
-          "placeholder": "Klasör ID'sini girin",
-          "helpText": "Kök klasör ID'si (isteğe bağlı)"
-        }
-      },
-      "tips": [
-        "Yüklemeler için kayıt gerekmez",
-        "Dosyalar tarayıcıda görüntülenebilir",
-        "Geliştiriciler için API",
-        "Geçici dosya paylaşımı için uygun"
-      ]
-    },
-    "sia": {
-      "name": "Sia",
-      "description": "Sia merkezi olmayan depolama",
-      "helpText": "Sia, dosyaları merkezi olmayan bir ağ üzerinde şifreleyen ve dağıtan merkezi olmayan bir bulut depolama platformudur.",
-      "fields": {
-        "api_url": {
-          "label": "API URL",
-          "placeholder": "http://127.0.0.1:9980",
-          "helpText": "Sia daemon API URL'si"
-        },
-        "api_password": {
-          "label": "API Şifresi",
-          "placeholder": "API şifresini girin",
-          "helpText": "Sia daemon API şifresi"
-        }
-      },
-      "tips": [
-        "Tamamen merkezi olmayan depolama",
-        "Geleneksel buluttan daha düşük maliyet",
-        "Sia daemon'u çalıştırmayı gerektirir",
-        "Siacoin kripto parası ile ödeme"
-      ]
-    },
-    "filefabric": {
-      "name": "FileFabric",
-      "description": "Kurumsal Dosya Dokusu",
-      "helpText": "FileFabric, kuruluşlar için çok bulutlu veri yönetimi platformu sağlar.",
-      "fields": {
-        "url": {
-          "label": "URL",
-          "placeholder": "https://sirketiniz.filefabric.com",
-          "helpText": "FileFabric örnek URL'si"
-        },
-        "permanent_token": {
-          "label": "Kalıcı Token",
-          "placeholder": "Kalıcı token'ı girin",
-          "helpText": "Kalıcı kimlik doğrulama token'ı"
-        },
-        "root_folder_id": {
-          "label": "Kök Klasör ID",
-          "placeholder": "Klasör ID'sini girin",
-          "helpText": "Kök klasör ID'si (isteğe bağlı)"
-        }
-      },
-      "tips": [
-        "Çok bulutlu ağ geçidi çözümü",
-        "Yerinde dağıtım mevcut",
-        "Kurumsal güvenlik özellikleri",
-        "Uyumluluk ve yönetişim araçları"
-      ]
-    },
-    "filescom": {
-      "name": "Files.com",
-      "description": "Files.com bulut FTP",
-      "helpText": "Files.com, gelişmiş otomasyon ve güvenlik özellikleri olan bir bulut FTP/SFTP servisidir.",
-      "fields": {
-        "site": {
-          "label": "Site Alt Alan Adı",
-          "placeholder": "sirketim",
-          "helpText": "Files.com alt alan adınız"
-        },
-        "username": {
-          "label": "Kullanıcı Adı",
-          "placeholder": "Kullanıcı adını girin",
-          "helpText": "Files.com kullanıcı adı"
-        },
-        "password": {
-          "label": "Şifre",
-          "placeholder": "Şifreyi girin",
-          "helpText": "Files.com şifresi"
-        },
-        "api_key": {
-          "label": "API Anahtarı",
-          "placeholder": "API anahtarını girin",
-          "helpText": "API anahtarı (şifreye alternatif)"
-        }
-      },
-      "tips": [
-        "Kurumsal düzeyde güvenlik",
-        "Otomasyon iş akışları",
-        "Detaylı denetim günlükleri",
-        "HIPAA ve SOC2 uyumlu"
-      ]
-    },
-    "hdfs": {
-      "name": "HDFS",
-      "description": "Hadoop Dağıtık Dosya Sistemi",
-      "helpText": "HDFS, Apache Hadoop'un parçası olan, emtia donanımı üzerinde çalışmak üzere tasarlanmış dağıtık bir dosya sistemidir.",
-      "fields": {
-        "namenode": {
-          "label": "İsim Düğümü URL'si",
-          "placeholder": "http://namenode:9870",
-          "helpText": "HDFS isim düğümü URL'si"
-        },
-        "username": {
-          "label": "Kullanıcı Adı",
-          "placeholder": "hadoop",
-          "helpText": "HDFS kullanıcı adı"
-        },
-        "service_principal_name": {
-          "label": "Servis Sorumlusu",
-          "placeholder": "hdfs/namenode.example.com@EXAMPLE.COM",
-          "helpText": "Kerberos servis sorumlusu adı"
-        },
-        "data_transfer_protection": {
-          "label": "Veri Transfer Koruması",
-          "helpText": "Veri transfer koruma seviyesi"
-        }
-      },
-      "tips": [
-        "Büyük veri iş yükleri için tasarlandı",
-        "Yüksek verim erişimi",
-        "Çoğaltma ile hata toleranslı",
-        "Büyük dosyalar için en iyi"
-      ]
-    },
-    "http": {
-      "name": "HTTP",
-      "description": "HTTP/HTTPS uzak",
-      "helpText": "HTTP/HTTPS protokolü üzerinden dosyalara erişim. Web sunucularına salt okunur erişim.",
-      "fields": {
-        "url": {
-          "label": "URL",
-          "placeholder": "https://ornek.com/yol/",
-          "helpText": "HTTP sunucusunun temel URL'si"
-        },
-        "headers": {
-          "label": "HTTP Başlıkları",
-          "placeholder": "Başlık: değer",
-          "helpText": "Ek HTTP başlıkları (satır başına bir tane)"
-        },
-        "no_slash": {
-          "label": "Eğik Çizgi Yok",
-          "helpText": "URL'ye son eğik çizgi ekleme"
-        },
-        "no_head": {
-          "label": "HEAD Yok",
-          "helpText": "HEAD isteklerini kullanma"
-        }
-      },
-      "tips": [
-        "Salt okunur erişim",
-        "Genel dosyalara erişmek için iyi",
-        "Dizin listelerini ayrıştırabilir",
-        "Temel kimlik doğrulamayı destekler"
-      ]
-    },
-    "netstorage": {
-      "name": "Akamai NetStorage",
-      "description": "Akamai NetStorage CDN",
-      "helpText": "Akamai NetStorage, medya dağıtımı için optimize edilmiş küresel olarak dağıtılmış bir bulut depolama çözümüdür.",
-      "fields": {
-        "host": {
-          "label": "Ana Bilgisayar",
-          "placeholder": "xxxxx.akamaihd.net",
-          "helpText": "NetStorage ana bilgisayarı"
-        },
-        "account": {
-          "label": "Hesap",
-          "placeholder": "Hesabı girin",
-          "helpText": "NetStorage hesap adı"
-        },
-        "secret": {
-          "label": "Gizli Anahtar",
-          "placeholder": "Gizli anahtarı girin",
-          "helpText": "NetStorage gizli anahtar/anahtar"
-        }
-      },
-      "tips": [
-        "CDN dağıtımı için optimize edilmiş",
-        "Küresel kenar konumları",
-        "Medya akış desteği",
-        "Kurumsal düzeyde performans"
-      ]
-    },
-    "cloudflare-r2": {
-      "name": "Cloudflare R2",
-      "description": "Cloudflare R2 nesne depolama",
-      "helpText": "Cloudflare R2, çıkış ücreti olmayan S3 uyumlu nesne depolamadır.",
-      "fields": {
-        "account_id": {
-          "label": "Hesap ID",
-          "placeholder": "Hesap ID'sini girin",
-          "helpText": "Cloudflare hesap ID'si"
-        },
-        "access_key_id": {
-          "label": "Erişim Anahtarı ID",
-          "placeholder": "Erişim anahtarını girin",
-          "helpText": "R2 erişim anahtarı ID"
-        },
-        "secret_access_key": {
-          "label": "Gizli Erişim Anahtarı",
-          "placeholder": "Gizli anahtarı girin",
-          "helpText": "R2 gizli erişim anahtarı"
-        },
-        "endpoint": {
-          "label": "Uç Nokta",
-          "placeholder": "https://HESAP_ID.r2.cloudflarestorage.com",
-          "helpText": "R2 uç nokta URL'si"
-        }
-      },
-      "tips": [
-        "Çıkış ücreti yok",
-        "S3 uyumlu API",
-        "Otomatik çoğaltma",
-        "Cloudflare CDN ile entegre"
-      ]
-    },
-    "wasabi": {
-      "name": "Wasabi",
-      "description": "Wasabi Sıcak Bulut Depolama",
-      "helpText": "Wasabi, çıkış ücreti olmayan ve öngörülebilir fiyatlandırma ile hızlı bulut nesne depolama sağlar.",
-      "fields": {
-        "access_key_id": {
-          "label": "Erişim Anahtarı ID",
-          "placeholder": "Erişim anahtarını girin",
-          "helpText": "Wasabi erişim anahtarı ID"
-        },
-        "secret_access_key": {
-          "label": "Gizli Erişim Anahtarı",
-          "placeholder": "Gizli anahtarı girin",
-          "helpText": "Wasabi gizli erişim anahtarı"
-        },
-        "region": {
-          "label": "Bölge",
-          "placeholder": "us-east-1",
-          "helpText": "Wasabi bölgesi"
-        },
-        "endpoint": {
-          "label": "Uç Nokta",
-          "placeholder": "s3.wasabisys.com",
-          "helpText": "Wasabi uç nokta URL'si"
-        }
-      },
-      "tips": [
-        "Çıkış ücreti yok",
-        "AWS S3'ten %80 daha ucuz",
-        "API istek ücreti yok",
-        "11 dokuz dayanıklılık"
-      ]
-    }
-  },
-  "common": {
-    "additionalProviders": "Ek sağlayıcılar mevcut: iCloud Drive, Amazon Cloud Drive (kullanımdan kaldırıldı), Citrix Files ve daha fazla özel sağlayıcı.",
-    "noVersioning": {
-      "label": "Sürümlemeyi Devre Dışı Bırak",
-      "helpText": "Alan kazanmak için bu depolama için dosya sürümlemeyi devre dışı bırak"
-    },
-    "parameters": {
-      "label": "Ek Parametreler",
-      "placeholder": "--transfers 4 --checkers 8",
-      "helpText": "Gelişmiş yapılandırma için ekstra rclone parametreleri"
-    },
-    "authentication": {
-      "oauth": "Bu sağlayıcı OAuth kimlik doğrulaması kullanır. Erişimi yetkilendirmeniz gerekecek.",
-      "apiKey": "Bu sağlayıcı API anahtarı kimlik doğrulaması kullanır. Sağlayıcının konsolundan bir anahtar oluşturun.",
-      "password": "Bu sağlayıcı şifre kimlik doğrulaması kullanır. Uygulamaya özel şifreler kullanmayı düşünün.",
-      "serviceAccount": "Bu sağlayıcı sunucu uygulamaları için servis hesabı kimlik doğrulamasını destekler."
-    },
-    "errors": {
-      "invalidCredentials": "Geçersiz kimlik bilgileri. Lütfen kimlik doğrulama bilgilerinizi kontrol edin.",
-      "connectionFailed": "Bağlantı başarısız. Lütfen ağınızı ve sağlayıcı ayarlarınızı kontrol edin.",
-      "permissionDenied": "İzin reddedildi. Erişim haklarınızı ve kimlik doğrulamanızı kontrol edin.",
-      "quotaExceeded": "Depolama kotası aşıldı. Lütfen alan boşaltın veya planınızı yükseltin."
     }
   }
 }

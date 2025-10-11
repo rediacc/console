@@ -209,7 +209,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             onChange: (keys) => setRemovingMachines(keys as string[]),
             getCheckboxProps: (record) => ({
               'data-testid': `assign-clone-machine-checkbox-${record.machineName}`
-            })
+            } as any)
           }}
           columns={columns}
           dataSource={assignedMachines}

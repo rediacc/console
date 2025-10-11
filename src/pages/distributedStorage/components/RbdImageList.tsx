@@ -20,7 +20,6 @@ import {
 import { useTranslation } from 'react-i18next'
 import type { MenuProps } from 'antd'
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
-import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge'
 import { 
   useDistributedStorageRbdImages, 
   useDeleteDistributedStorageRbdImage,
@@ -98,12 +97,17 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
   
   const handleRunFunction = async (functionName: string, image?: DistributedStorageRbdImage) => {
     try {
-      const queueVault = buildQueueVault({
-        function: functionName,
+      const queueVault = await buildQueueVault({
+        functionName: functionName,
+        teamName: pool.teamName,
+        params: {
+          cluster_name: pool.clusterName,
+          pool_name: pool.poolName,
+          image_name: image?.imageName || '',
+        },
         priority: 3,
-        cluster_name: pool.clusterName,
-        pool_name: pool.poolName,
-        image_name: image?.imageName || '',
+        description: `Execute ${functionName}`,
+        addedVia: 'DistributedStorage'
       })
       
       const response = await managedQueueMutation.mutateAsync({
@@ -113,9 +117,10 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
         queueVault,
         priority: 3
       })
-      
-      if (response.taskId) {
-        handleQueueItemCreated(response.taskId)
+
+      const taskId = response.taskId
+      if (taskId) {
+        handleQueueItemCreated(taskId)
       }
     } catch (error) {
       message.error(t('queue.createError'))
@@ -334,11 +339,11 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
           data-testid="rbd-image-table"
           onRow={(record) => ({
             'data-testid': `rbd-image-row-${record.imageName}`,
-          })}
+          } as any)}
           expandable={{
             expandedRowRender,
             expandedRowKeys,
-            onExpandedRowsChange: setExpandedRowKeys,
+            onExpandedRowsChange: (keys) => setExpandedRowKeys(keys as string[]),
             expandIcon: ({ expanded, onExpand, record }) => (
               <Button
                 size="small"
@@ -379,8 +384,7 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
             await updateImageVaultMutation.mutateAsync({
               poolName: pool.poolName,
               teamName: pool.teamName,
-              imageName: data.imageName,
-              imageVault: data.imageVault,
+              poolVault: data.imageVault,
               vaultVersion: modalState.data?.vaultVersion || 0
             })
           }
@@ -391,7 +395,7 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
       
       <QueueItemTraceModal
         visible={queueModalVisible}
-        onCancel={() => setQueueModalVisible(false)}
+        onClose={() => setQueueModalVisible(false)}
         taskId={queueModalTaskId}
       />
       

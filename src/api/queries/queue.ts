@@ -57,6 +57,8 @@ export interface QueueFunction {
     format?: string
     units?: string[]
     options?: string[]
+    ui?: string
+    checkboxOptions?: Array<{ value: string; label: string }>
   }>
 }
 

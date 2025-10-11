@@ -49,7 +49,7 @@ interface TelemetryMiddlewareOptions {
 export const createTelemetryMiddleware = (options: TelemetryMiddlewareOptions = {}): Middleware => {
   const { enabled = true, debugMode = false } = options
 
-  return (store) => (next) => (action) => {
+  return (store) => (next) => (action: any) => {
     if (!enabled) {
       return next(action)
     }
@@ -201,13 +201,14 @@ function trackBusinessActions(action: any, stateBefore: any, stateAfter: any): v
       })
       break
 
-    case 'auth/logout':
+    case 'auth/logout': {
       const sessionDuration = Date.now() - ((window as any).sessionStartTime || Date.now())
       telemetryService.trackEvent('business.user_session_end', {
         'session.duration_ms': sessionDuration,
         'session.company': stateBefore.auth?.company || 'unknown'
       })
       break
+    }
 
     case 'notifications/addNotification':
       telemetryService.trackEvent('business.notification_created', {

@@ -124,7 +124,7 @@ interface QueueStats {
   MachineIssues: QueueMachineIssue[] | string;
 }
 
-interface DistributedStorageTeamBreakdown {
+export interface DistributedStorageTeamBreakdown {
   TeamName: string;
   TotalMachines: number;
   AvailableMachines: number;
@@ -133,7 +133,7 @@ interface DistributedStorageTeamBreakdown {
   CloneMachines: number;
 }
 
-interface DistributedStorageStats {
+export interface DistributedStorageStats {
   total_machines: number;
   available_machines: number;
   cluster_assigned_machines: number;
@@ -147,7 +147,7 @@ interface DistributedStorageStats {
   total_clusters: number;
   active_clusters: number;
   avg_machines_per_cluster: number;
-  team_breakdown: DistributedStorageTeamBreakdown[] | string;
+  team_breakdown: DistributedStorageTeamBreakdown[];
 }
 
 interface DashboardData {

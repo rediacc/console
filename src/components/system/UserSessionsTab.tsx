@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next'
 import { useUserRequests, useDeleteUserRequest, type UserRequest } from '@/api/queries/users'
 import { useSelector } from 'react-redux'
 import { selectUser } from '@/store/auth/authSelectors'
-import { RootState } from '@/store/store'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -310,7 +309,7 @@ const UserSessionsTab: React.FC = () => {
             scroll={{ x: 1500 }}
             onRow={(record) => ({
               'data-testid': `sessions-row-${record.requestId}`,
-            })}
+            } as any)}
           />
         </div>
       </Card>

@@ -1,83 +1,83 @@
 {
-  "title": "Warteschlangenverwaltung",
-  "filters": "Filter",
-  "team": "Team",
-  "selectTeam": "Wählen Sie ein Team, um Warteschlangenelemente anzuzeigen",
-  "machine": "Maschine",
-  "selectMachine": "Alle Maschinen",
-  "status": "Status",
-  "selectStatus": "Alle Status",
   "dateRange": "Datumsbereich",
-  "options": "Optionen",
-  "includeCompleted": "Abgeschlossene einschließen",
-  "includeCancelled": "Abgebrochene einschließen",
-  "onlyStale": "Nur veraltete Elemente",
-  "statusPending": "Ausstehend",
-  "statusRunning": "Läuft",
-  "statusCompleted": "Abgeschlossen",
-  "statusFailed": "Fehlgeschlagen",
-  "statusCancelled": "Abgebrochen",
-  "tabs": {
-    "active": {
-      "title": "Aktive Warteschlange",
-      "tooltip": "Zeigt alle ausstehenden, zugewiesenen, verarbeitenden und abbrechenden Aufgaben. Enthält Aufgaben, die auf Zuweisung warten, und solche, die derzeit ausgeführt werden.",
-      "description": "Dieser Abschnitt zeigt alle aktiven Aufgaben einschließlich ausstehender Elemente, die auf Zuweisung warten, von Maschinen verarbeitete Aufgaben und Aufgaben, die gerade abgebrochen werden."
-    },
-    "completed": {
-      "title": "Abgeschlossen",
-      "tooltip": "Zeigt alle erfolgreich abgeschlossenen Aufgaben",
-      "description": "Dieser Abschnitt zeigt alle Aufgaben, die erfolgreich ohne Fehler abgeschlossen wurden."
-    },
-    "cancelled": {
-      "title": "Abgebrochen",
-      "tooltip": "Zeigt alle abgebrochenen Aufgaben, die durch Benutzeranforderung gestoppt wurden",
-      "description": "Dieser Abschnitt zeigt alle Aufgaben, die durch Benutzeranforderung abgebrochen wurden. Diese Aufgaben wurden vor dem Abschluss gestoppt."
-    },
-    "failed": {
-      "title": "Fehlgeschlagen",
-      "tooltip": "Zeigt alle fehlgeschlagenen Aufgaben, die während der Ausführung auf Fehler gestoßen sind",
-      "description": "Dieser Abschnitt zeigt alle Aufgaben, die aufgrund von Fehlern während der Ausführung fehlgeschlagen sind. Aufgaben können bis zu 2 Mal wiederholt werden, bevor sie dauerhaft als fehlgeschlagen markiert werden."
-    }
-  },
+  "filters": "Filter",
+  "includeCancelled": "Storniert einbeziehen",
+  "includeCompleted": "Schließen Sie „Abgeschlossen“ ein",
+  "machine": "Maschine",
   "monitoring": {
-    "completed": "Warteschlangenaufgabe {{taskId}} erfolgreich abgeschlossen ({{teamName}} - {{machineName}})",
+    "assigned": "Warteschlangenaufgabe {{taskId}} der Maschine zugewiesen ({{teamName}} - {{machineName}})",
     "cancelled": "Warteschlangenaufgabe {{taskId}} wurde abgebrochen ({{teamName}} - {{machineName}})",
     "cancelling": "Warteschlangenaufgabe {{taskId}} wird abgebrochen ({{teamName}} - {{machineName}})",
-    "permanentlyFailed": "Warteschlangenaufgabe {{taskId}} dauerhaft fehlgeschlagen nach {{attempts}} Versuchen ({{teamName}} - {{machineName}})",
-    "permanentlyFailedWithReason": "Warteschlangenaufgabe {{taskId}} dauerhaft fehlgeschlagen: {{reason}} ({{teamName}} - {{machineName}})",
-    "failedWaitingRetry": "Warteschlangenaufgabe {{taskId}} fehlgeschlagen - wartet auf Wiederholung (Versuch {{attempt}} von {{maxAttempts}}) ({{teamName}} - {{machineName}})",
-    "startedProcessing": "Warteschlangenaufgabe {{taskId}} hat mit der Verarbeitung begonnen ({{teamName}} - {{machineName}})",
-    "assigned": "Warteschlangenaufgabe {{taskId}} der Maschine zugewiesen ({{teamName}} - {{machineName}})",
-    "queuedForRetry": "Warteschlangenaufgabe {{taskId}} für Wiederholung eingereiht (Versuch {{attempt}} von {{maxAttempts}}) ({{teamName}} - {{machineName}})",
-    "staleTask": "Warteschlangenaufgabe {{taskId}} scheint veraltet zu sein (kein Fortschritt seit {{minutes}} Minuten)",
-    "startedMonitoring": "Überwachung der Warteschlangenaufgabe {{taskId}} gestartet ({{teamName}} - {{machineName}})",
-    "stoppedMonitoring": "Überwachung der Warteschlangenaufgabe {{taskId}} gestoppt",
+    "completed": "Warteschlangenaufgabe {{taskId}} erfolgreich abgeschlossen ({{teamName}} - {{machineName}})",
+    "failedWaitingRetry": "Warteschlangenaufgabe {{taskId}} fehlgeschlagen – wartet auf Wiederholung (Versuch {{attempt}} von {{maxAttempts}}) ({{teamName}} – {{machineName}})",
     "monitoringAlready": "Warteschlangenaufgabe {{taskId}} wird bereits überwacht",
-    "taskNotFound": "Warteschlangenaufgabe {{taskId}} existiert nicht mehr"
+    "permanentlyFailed": "Die Warteschlangenaufgabe {{taskId}} ist nach {{attempts}} Versuchen dauerhaft fehlgeschlagen ({{teamName}} - {{machineName}})",
+    "permanentlyFailedWithReason": "Warteschlangenaufgabe {{taskId}} ist dauerhaft fehlgeschlagen: {{reason}} ({{teamName}} - {{machineName}})",
+    "queuedForRetry": "Warteschlangenaufgabe {{taskId}} in der Warteschlange für Wiederholung (Versuch {{attempt}} von {{maxAttempts}}) ({{teamName}} – {{machineName}})",
+    "staleTask": "Die Warteschlangenaufgabe {{taskId}} scheint veraltet zu sein (kein Fortschritt für {{minutes}} Minuten)",
+    "startedMonitoring": "Überwachungswarteschlangenaufgabe {{taskId}} gestartet ({{teamName}} - {{machineName}})",
+    "startedProcessing": "Warteschlangenaufgabe {{taskId}} hat mit der Verarbeitung begonnen ({{teamName}} - {{machineName}})",
+    "stoppedMonitoring": "Überwachungswarteschlangenaufgabe {{taskId}} gestoppt",
+    "taskNotFound": "Die Warteschlangenaufgabe {{taskId}} existiert nicht mehr"
   },
+  "onlyStale": "Nur veraltete Artikel",
+  "options": "Optionen",
   "queueManager": {
-    "title": "Warteschlangenmanager",
+    "alreadyHasPriority1": "Auf der Brücke {{bridgeName}} wird bereits eine Aufgabe mit der höchsten Priorität ausgeführt. Bitte warten Sie, bis der Vorgang abgeschlossen ist.",
     "buttonLabel": "Höchste Priorität",
-    "tooltip": "Warteschlangenmanager für höchste Priorität",
-    "description": "Warteschlangenelemente mit höchster Priorität (Priorität 1) werden verwaltet, um sicherzustellen, dass nur eine Aufgabe pro Brücke gleichzeitig läuft.",
-    "emptyState": "Keine Elemente mit höchster Priorität in der Warteschlange",
-    "itemQueued": "Aufgabe mit höchster Priorität eingereiht. Position: {{position}}",
-    "cancelledTask": "Bestehende ausstehende Aufgabe für {{machineName}} abgebrochen",
-    "alreadyHasPriority1": "Sie haben bereits eine Aufgabe mit höchster Priorität auf Brücke {{bridgeName}} laufen. Bitte warten Sie auf deren Abschluss.",
-    "taskCancelled": "Aufgabe abgebrochen: Es gibt bereits eine Priorität-1-Aufgabe auf dieser Brücke",
-    "clearCompleted": "Abgeschlossene löschen"
+    "cancelledTask": "Vorhandene ausstehende Aufgabe für {{machineName}} abgebrochen",
+    "clearCompleted": "Löschen abgeschlossen",
+    "description": "Warteschlangenelemente mit der höchsten Priorität (Priorität 1) werden verwaltet, um sicherzustellen, dass jeweils nur eine Aufgabe pro Bridge ausgeführt wird.",
+    "emptyState": "Keine Elemente mit der höchsten Priorität in der Warteschlange",
+    "itemQueued": "Aufgabe mit der höchsten Priorität in der Warteschlange. Position: {{position}}",
+    "taskCancelled": "Aufgabe abgebrochen: Es gibt bereits eine Aufgabe mit Priorität 1 auf dieser Brücke",
+    "title": "Warteschlangenmanager",
+    "tooltip": "Warteschlangenmanager mit der höchsten Priorität"
+  },
+  "selectMachine": "Alle Maschinen",
+  "selectStatus": "Alle Status",
+  "selectTeam": "Wählen Sie ein Team aus, um Warteschlangenelemente anzuzeigen",
+  "statistics": {
+    "processing": "Verarbeitung",
+    "timeSinceAssigned": "Zeit seit Zuweisung",
+    "totalDuration": "Gesamtdauer"
+  },
+  "status": "Status",
+  "statusCancelled": "Abgesagt",
+  "statusCompleted": "Vollendet",
+  "statusFailed": "Fehlgeschlagen",
+  "statusPending": "Ausstehend",
+  "statusRunning": "Läuft",
+  "tabs": {
+    "active": {
+      "description": "In diesem Abschnitt werden alle aktiven Aufgaben angezeigt, einschließlich ausstehender Elemente, die auf Zuweisung warten, Aufgaben, die von Maschinen verarbeitet werden, und Aufgaben, die gerade abgebrochen werden.",
+      "title": "Aktive Warteschlange",
+      "tooltip": "Zeigt alle ausstehenden, zugewiesenen, in Bearbeitung befindlichen und abbrechenden Aufgaben. Beinhaltet Aufgaben, die darauf warten, abgeholt zu werden, und solche, die gerade ausgeführt werden."
+    },
+    "cancelled": {
+      "description": "In diesem Abschnitt werden alle Aufgaben angezeigt, die auf Benutzeranfrage abgebrochen wurden. Diese Aufgaben wurden vor Abschluss gestoppt.",
+      "title": "Abgesagt",
+      "tooltip": "Zeigt alle abgebrochenen Aufgaben an, die auf Benutzeranfrage gestoppt wurden"
+    },
+    "completed": {
+      "description": "In diesem Abschnitt werden alle Aufgaben angezeigt, die erfolgreich und ohne Fehler abgeschlossen wurden.",
+      "title": "Vollendet",
+      "tooltip": "Zeigt alle erfolgreich abgeschlossenen Aufgaben an"
+    },
+    "failed": {
+      "description": "In diesem Abschnitt werden alle Aufgaben angezeigt, die aufgrund von Fehlern während der Ausführung fehlgeschlagen sind. Aufgaben können bis zu zwei Mal wiederholt werden, bevor sie dauerhaft als fehlgeschlagen markiert werden.",
+      "title": "Fehlgeschlagen",
+      "tooltip": "Zeigt alle fehlgeschlagenen Aufgaben an, bei deren Ausführung Fehler aufgetreten sind"
+    }
   },
   "taskStatus": {
-    "completedTitle": "Aufgabe erfolgreich abgeschlossen",
-    "completedDescription": "Die Aufgabe wurde nach {{minutes}} Minuten erfolgreich beendet.",
+    "cancelledDescription": "Die Aufgabe wurde abgebrochen und wird nicht bearbeitet.",
     "cancelledTitle": "Aufgabe abgebrochen",
-    "cancelledDescription": "Die Aufgabe wurde abgebrochen und wird nicht verarbeitet.",
-    "failedTitle": "Aufgabe dauerhaft fehlgeschlagen",
-    "failedDescription": "Die Aufgabe ist nach {{retries}} Wiederholungen dauerhaft fehlgeschlagen."
+    "completedDescription": "Die Aufgabe wurde nach {{minutes}} Minuten erfolgreich abgeschlossen.",
+    "completedTitle": "Aufgabe erfolgreich abgeschlossen",
+    "failedDescription": "Die Aufgabe ist nach {{retries}} Wiederholungen dauerhaft fehlgeschlagen.",
+    "failedTitle": "Die Aufgabe ist dauerhaft fehlgeschlagen"
   },
-  "statistics": {
-    "totalDuration": "Gesamtdauer",
-    "processing": "Verarbeitung",
-    "timeSinceAssigned": "Zeit seit Zuweisung"
-  }
+  "team": "Team",
+  "title": "Warteschlangenverwaltung"
 }

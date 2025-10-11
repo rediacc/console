@@ -7,8 +7,7 @@ import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 import QRCode from 'react-qr-code'
 import { message } from 'antd'
-import { useComponentStyles } from '@/hooks/useComponentStyles'
-import { DESIGN_TOKENS, spacing, fontSize } from '@/utils/styleConstants'
+import { DESIGN_TOKENS, spacing } from '@/utils/styleConstants'
 import { ModalSize } from '@/types/modal'
 
 const { Title, Text, Paragraph } = Typography
@@ -20,7 +19,6 @@ interface TwoFactorSettingsProps {
 
 const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel }) => {
   const { t } = useTranslation('settings')
-  const styles = useComponentStyles()
   const [passwordForm] = Form.useForm()
   const [disableForm] = Form.useForm()
   const userEmail = useSelector((state: RootState) => state.auth.user?.email)

@@ -3,7 +3,6 @@ import { Modal, Tabs, Table, Button, Space, Tag, Empty, Spin, message } from 'an
 import type { ColumnsType } from 'antd/es/table'
 import { CloudServerOutlined, DesktopOutlined, PlusOutlined, DeleteOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
-import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
 import { 
   useDistributedStorageClusterMachines,
   useGetAvailableMachinesForClone,
@@ -180,10 +179,9 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
         <div>
           <p>{t('machines:selectMachines')}</p>
           <AvailableMachinesSelector
-            availableMachines={availableMachines}
-            selectedMachines={selectedMachines}
-            onSelectionChange={setSelectedMachines}
-            teamName={teamName}
+            machines={availableMachines}
+            value={selectedMachines}
+            onChange={setSelectedMachines}
           />
         </div>
         

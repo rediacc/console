@@ -5,13 +5,13 @@ import { UseFormReturn, Controller } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import VaultEditor from '../common/VaultEditor'
 import { useFormStyles } from '@/hooks/useComponentStyles'
-import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants'
+import { spacing } from '@/utils/styleConstants'
 
 export interface ResourceFormWithVaultRef {
   submit: () => Promise<void>
 }
 
-interface FormFieldConfig {
+export interface FormFieldConfig {
   name: string
   label: string
   type?: 'text' | 'select' | 'password' | 'email' | 'number' | 'size'
@@ -131,12 +131,8 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     // Expose submit method to parent
     useImperativeHandle(ref, () => ({
       submit: async () => {
-        try {
-          const result = await handleSubmit(handleFormSubmit)()
-          return result
-        } catch (error) {
-          throw error
-        }
+        const result = await handleSubmit(handleFormSubmit)()
+        return result
       }
     }))
 
@@ -186,10 +182,10 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
             />
           )
 
-        case 'size':
+        case 'size': {
           const units = field.sizeUnits || ['G', 'T']
           const defaultUnit = units[0] === 'percentage' ? '%' : units[0]
-          
+
           return (
             <Controller
               name={field.name as any}
@@ -274,6 +270,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
               }}
             />
           )
+        }
 
         default:
           return (
@@ -302,7 +299,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     const wrapperCol = { span: 18 }
 
     return (
-      <div style={{ ...styles.flexColumn, gap: spacing('SM'), height: '100%' }}>
+      <div style={{ ...styles.flexColumn as React.CSSProperties, gap: spacing('SM'), height: '100%' }}>
         {/* Form Section */}
         <Form 
           data-testid="resource-modal-form"

@@ -11,7 +11,9 @@ export interface ValidationError {
   code: string
   message: string
   field?: string
+  severity?: 'error' | 'warning'
   context?: Record<string, any>
+  metadata?: Record<string, any>
 }
 
 export interface ValidationWarning {
@@ -23,6 +25,7 @@ export interface ValidationWarning {
 
 export interface InvalidMachine {
   machine: Machine
+  machineName: string
   errors: ValidationError[]
   canOverride: boolean
 }
@@ -32,6 +35,9 @@ export interface BulkValidationResult {
   invalidMachines: InvalidMachine[]
   summary: ValidationSummary
   canProceed: boolean
+  allValid: boolean
+  errors: Record<string, ValidationError[]>
+  warnings: Record<string, ValidationWarning[]>
 }
 
 export interface ValidationSummary {
@@ -58,6 +64,9 @@ export interface ExclusivityValidation {
   conflictType?: 'cluster' | 'image' | 'clone'
   conflictResource?: string
   canOverride: boolean
+  assignmentType?: string
+  resourceName?: string
+  machineName?: string
 }
 
 export interface CapacityValidation {

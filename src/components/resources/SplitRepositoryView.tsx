@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Repository } from '@/api/queries/repositories'
-import { Table, Button, Tag, Space, Empty, Typography, Dropdown } from 'antd'
+import { Table, Button, Tag, Space, Empty, Typography, Dropdown, Tooltip } from 'antd'
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
 import { 
   FolderOutlined, 
@@ -81,7 +81,7 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
       key: 'status',
       width: 80,
       align: 'center',
-      render: (_: any, record: Repository) => {
+      render: (_: any, _record: Repository) => {
         // Note: SplitRepositoryView shows global repositories, not machine-specific data
         // So we don't have mounted/docker_running status here - this is a credential view
         // We can show a simple indicator that credentials exist

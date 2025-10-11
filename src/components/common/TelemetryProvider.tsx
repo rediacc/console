@@ -68,7 +68,7 @@ export const TelemetryProvider: React.FC<TelemetryProviderProps> = ({ children }
     if (isInitialized && user) {
       telemetryService.setUserContext({
         email: user.email,
-        company: company,
+        company: company ?? undefined,
         // Note: We don't pass the actual user ID for privacy, just the email domain
       })
     }
@@ -90,7 +90,7 @@ export const TelemetryProvider: React.FC<TelemetryProviderProps> = ({ children }
       try {
         // Try to use web-vitals library if available
         if ('webVitals' in window) {
-          // @ts-ignore - web-vitals might be loaded globally
+          // @ts-expect-error - web-vitals might be loaded globally
           const { getCLS, getFID, getFCP, getLCP, getTTFB, onINP } = window.webVitals
 
           getCLS((metric: any) => {
@@ -353,7 +353,7 @@ export const useTelemetry = (): TelemetryContextType => {
       trackPageView: () => {},
       trackError: () => {},
       trackPerformance: () => {},
-      measureAndTrack: <T extends any>(name: string, fn: () => T | Promise<T>): T | Promise<T> => fn(),
+      measureAndTrack: <T,>(_name: string, fn: () => T | Promise<T>): T | Promise<T> => fn(),
     }
   }
   return context
@@ -362,11 +362,11 @@ export const useTelemetry = (): TelemetryContextType => {
 // Higher-order component for automatic performance tracking with SDK 2.0 patterns
 export const withTelemetryTracking = <P extends object>(
   WrappedComponent: React.ComponentType<P>,
-  componentName?: string
+  _componentName?: string
 ) => {
   const TrackedComponent: React.FC<P> = (props) => {
     const { measureAndTrack, trackEvent } = useTelemetry()
-    const displayName = componentName || WrappedComponent.displayName || WrappedComponent.name || 'Component'
+    const displayName = _componentName || WrappedComponent.displayName || WrappedComponent.name || 'Component'
 
     useEffect(() => {
       trackEvent('component.render_start', { 'component.name': displayName })
@@ -386,7 +386,7 @@ export const withTelemetryTracking = <P extends object>(
     )) as React.ReactElement
   }
 
-  TrackedComponent.displayName = `withTelemetryTracking(${componentName || WrappedComponent.displayName || WrappedComponent.name || 'Component'})`
+  TrackedComponent.displayName = `withTelemetryTracking(${_componentName || WrappedComponent.displayName || WrappedComponent.name || 'Component'})`
   return TrackedComponent
 }
 
@@ -417,7 +417,7 @@ export const useComponentTelemetry = (componentName: string) => {
 
 // Hook for tracking user interactions with UI elements (enhanced)
 export const useInteractionTracking = () => {
-  const { trackUserAction, trackEvent } = useTelemetry()
+  const { trackUserAction } = useTelemetry()
 
   const trackClick = (target: string, details?: Record<string, any>) => {
     trackUserAction('click', target, {

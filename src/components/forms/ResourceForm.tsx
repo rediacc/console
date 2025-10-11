@@ -1,10 +1,6 @@
-import React from 'react'
 import { Form, Input, Select, Button, Space } from 'antd'
-import { Controller, UseFormReturn } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { ZodSchema } from 'zod'
-import { useFormStyles } from '@/hooks/useComponentStyles'
-import { DESIGN_TOKENS, spacing } from '@/utils/styleConstants'
+import { Controller, UseFormReturn, FieldValues } from 'react-hook-form'
+import { spacing } from '@/utils/styleConstants'
 
 interface FormFieldConfig {
   name: string
@@ -18,7 +14,7 @@ interface FormFieldConfig {
   disabled?: boolean
 }
 
-interface ResourceFormProps<T = any> {
+interface ResourceFormProps<T extends FieldValues = FieldValues> {
   form: UseFormReturn<T>
   fields: FormFieldConfig[]
   onSubmit: (data: T) => void | Promise<void>
@@ -29,7 +25,7 @@ interface ResourceFormProps<T = any> {
   layout?: 'horizontal' | 'vertical' | 'inline'
 }
 
-function ResourceForm<T = any>({
+function ResourceForm<T extends FieldValues = FieldValues>({
   form,
   fields,
   onSubmit,
@@ -44,10 +40,8 @@ function ResourceForm<T = any>({
     handleSubmit,
     formState: { errors },
   } = form
-  const styles = useFormStyles()
 
   const renderField = (field: FormFieldConfig) => {
-    const error = errors[field.name as keyof typeof errors]
 
     switch (field.type) {
       case 'select':

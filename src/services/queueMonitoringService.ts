@@ -2,6 +2,9 @@ import { showTranslatedMessage } from '@/utils/messages'
 import apiClient from '@/api/client'
 import queueManagerService from '@/services/queueManagerService'
 
+// Declare chrome as optional global for extension context detection
+declare const chrome: any
+
 interface MonitoredTask {
   taskId: string
   teamName: string

@@ -5,16 +5,16 @@ import {
   Table,
   Button,
   Space,
-  Tag,
+  
   Input,
   Select,
   Spin,
   Empty,
   Alert,
   Breadcrumb,
-  Radio,
+  
   Tooltip,
-  message,
+  
 } from 'antd';
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles';
 import { ModalSize } from '@/types/modal';
@@ -26,8 +26,6 @@ import {
   ReloadOutlined,
   HomeOutlined,
   FolderOpenOutlined,
-  ClockCircleOutlined,
-  DatabaseOutlined,
   RightOutlined,
   CloseOutlined,
 } from '@ant-design/icons';
@@ -68,11 +66,11 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
   teamName,
   bridgeName,
   onPullSelected,
-  onClose,
+  onClose: _onClose,
   onQueueItemCreated,
 }) => {
   const { t } = useTranslation(['resources', 'common', 'machines']);
-  const { data: dropdownData } = useDropdownData();
+  const { data: _dropdownData } = useDropdownData();
   const tableStyles = useTableStyles();
   const componentStyles = useComponentStyles();
   const { data: storageData, isLoading: isLoadingStorage } = useStorage(teamName);
@@ -88,7 +86,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
   const [selectedSource, setSelectedSource] = useState<string>('');
   const [selectedFile, setSelectedFile] = useState<string>('');
   const [searchText, setSearchText] = useState('');
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [_viewMode, _setViewMode] = useState<'table' | 'grid'>('table');
 
   // Get available storage sources
   const storageSources = useMemo(() => {
@@ -140,7 +138,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       const isStorageSource = sourceDetails?.type === 'storage';
       
       // Get vault data for the source
-      let additionalVaultData = {};
+      const additionalVaultData: Record<string, any> = {};
       
       // For list function, we always need the current machine's vault data
       // because the command runs on the current machine
@@ -250,7 +248,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
         try {
           // The response data is in completionResult.responseData (parsed vault content)
           // The actual command output should be in the result field
-          let commandResult = completionResult.responseData?.result;
+          const commandResult = completionResult.responseData?.result;
           
           // If there's no response data, the operation completed but returned no data
           if (!commandResult && !completionResult.responseData) {
@@ -435,7 +433,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       // Direct pull implementation
       const file = selectedFileObject;
         // Get vault data - same pattern as list function
-        let additionalVaultData = {};
+        const additionalVaultData: Record<string, any> = {};
         
         // Find the source details from storage or machines
         const sourceDetails = storageSources.find(s => s.value === selectedSource);
@@ -760,7 +758,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
               data-testid="file-browser-table"
               onRow={(record) => ({
                 'data-testid': `file-browser-row-${record.name}`,
-              })}
+              } as any)}
             />
           )}
         </Spin>

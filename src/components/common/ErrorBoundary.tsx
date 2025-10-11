@@ -42,14 +42,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     // Track error in telemetry
     try {
       telemetryService.trackError(error, {
-        component_stack: errorInfo.componentStack,
+        component_stack: errorInfo.componentStack || undefined,
         error_boundary: 'global',
         page_url: window.location.href,
         user_agent: navigator.userAgent,
         timestamp: Date.now(),
         error_id: this.state.errorId || 'unknown',
         react_error_info: JSON.stringify({
-          componentStack: errorInfo.componentStack.substring(0, 1000), // Limit length
+          componentStack: errorInfo.componentStack?.substring(0, 1000) || 'N/A', // Limit length
           // Add any other relevant React error info
         })
       })

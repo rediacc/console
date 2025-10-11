@@ -27,7 +27,7 @@ const TelemetryExample: React.FC = () => {
   } = useTelemetryTracking()
 
   // Component state
-  const [data, setData] = useState([])
+  const [data, setData] = useState<Array<{ id: number; name: string; status: string }>>([])
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [form] = Form.useForm()
@@ -134,7 +134,7 @@ const TelemetryExample: React.FC = () => {
   }
 
   // Example: Tracking table operations
-  const handleTableChange = (pagination: any, filters: any, sorter: any) => {
+  const handleTableChange = (_pagination: any, _filters: any, sorter: any) => {
     trackEvent('table.interaction', {
       'table.name': 'example_table',
       'table.action': 'sort',

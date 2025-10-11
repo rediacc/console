@@ -35,7 +35,6 @@ import vaultDefinitions from '../../data/vaults.json'
 import storageProviders from '../../data/storageProviders.json'
 import { useAppSelector } from '@/store/store'
 import FieldGenerator from './FieldGenerator'
-import { useTheme } from '@/context/ThemeContext'
 import { useCreateQueueItem, useQueueItemTrace } from '@/api/queries/queue'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import { useTeams } from '@/api/queries/teams'
@@ -74,6 +73,7 @@ interface FieldDefinition {
   maximum?: number
   properties?: Record<string, any>
   items?: any
+  additionalProperties?: any
 }
 
 // Helper components for reduced repetition
@@ -139,7 +139,6 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   const [osSetupCompleted, setOsSetupCompleted] = useState<boolean | null>(null)
   
   const uiMode = useAppSelector((state) => state.ui.uiMode)
-  const { theme } = useTheme()
   const styles = useComponentStyles()
   
   // Queue vault builder
@@ -186,8 +185,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 
   // Get provider-specific fields for STORAGE entity
   const providerFields = useMemo(() => {
-    if (entityType === 'STORAGE' && selectedProvider && storageProviders.providers[selectedProvider]) {
-      return storageProviders.providers[selectedProvider]
+    if (entityType === 'STORAGE' && selectedProvider && selectedProvider in storageProviders.providers) {
+      return storageProviders.providers[selectedProvider as keyof typeof storageProviders.providers]
     }
     return null
   }, [entityType, selectedProvider])
@@ -280,8 +279,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     }
     
     Object.entries(ruleBuilders).forEach(([key, ruleFn]) => {
-      if (field[key as keyof FieldDefinition] !== undefined) {
-        rules.push(ruleFn(field[key as keyof FieldDefinition] as any))
+      const fieldKey = key as keyof typeof ruleBuilders
+      if (fieldKey in field && field[fieldKey as keyof FieldDefinition] !== undefined) {
+        rules.push(ruleFn(field[fieldKey as keyof FieldDefinition] as never))
       }
     })
     
@@ -458,10 +458,11 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       
       const formData: Record<string, any> = {}
       Object.entries(entityDef.fields || {}).forEach(([key, field]) => {
+        const typedField = field as FieldDefinition
         if (initialData[key] !== undefined) {
           formData[key] = initialData[key]
-        } else if (field.default !== undefined) {
-          formData[key] = field.default
+        } else if (typedField.default !== undefined) {
+          formData[key] = typedField.default
         }
       })
       
@@ -875,10 +876,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               const currentValue = getFieldValue(fieldName)
               
               return (
-                <FieldFormItem
+                <Form.Item
                   name={fieldName}
-                  label={fieldLabel}
-                  description={fieldDescription}
+                  label={<FieldLabel label={fieldLabel} description={fieldDescription} />}
                   initialValue={field.default === true}
                   normalize={(value) => value === true || value === 'true'}
                 >
@@ -917,7 +917,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                       borderRadius: borderRadius('LG')
                     }}
                   />
-                </FieldFormItem>
+                </Form.Item>
               )
             }}
           </Form.Item>
@@ -1205,7 +1205,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         wrapperCol={{ xs: { span: 24 }, sm: { span: 18 } }}
         labelAlign="right"
         colon={true}
-        onValuesChange={(changedValues, allValues) => {
+        onValuesChange={(changedValues, _allValues) => {
           handleFormChange(changedValues)
         }}
         autoComplete="off"
@@ -1249,15 +1249,16 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 })}
               
               {/* Conditionally show ssh_password in required fields when SSH key is not configured */}
-              {entityType === 'MACHINE' && !requiredFields.includes('ssh_password') && (
+              {entityType === 'MACHINE' && !requiredFields.includes('ssh_password' as never) && (
                 <Form.Item
                   noStyle
                   shouldUpdate={(prevValues, currentValues) => prevValues.ssh_key_configured !== currentValues.ssh_key_configured}
                 >
                   {({ getFieldValue }) => {
                     const sshKeyConfigured = getFieldValue('ssh_key_configured')
-                    if (!sshKeyConfigured && fields['ssh_password']) {
-                      return renderField('ssh_password', fields['ssh_password'] as FieldDefinition, true)
+                    const sshPasswordField = 'ssh_password' in fields ? fields['ssh_password'] : null
+                    if (!sshKeyConfigured && sshPasswordField) {
+                      return renderField('ssh_password', sshPasswordField as FieldDefinition, true, false)
                     }
                     return null
                   }}
@@ -1350,7 +1351,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                               message.error(t('vaultEditor.testConnection.failed'))
                             }
                           },
-                          onError: (error) => {
+                          onError: (_error) => {
                             message.error(t('vaultEditor.testConnection.failed'))
                           }
                         })
@@ -1385,14 +1386,14 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                     const compatibility = form.getFieldValue('kernel_compatibility')
                     const status = compatibility.compatibility_status || 'unknown'
                     const osInfo = compatibility.os_info || {}
-                    
-                    const statusConfig = {
+
+                    const statusConfig: Record<string, { type: 'success' | 'warning' | 'error' | 'info'; icon: JSX.Element; color: string }> = {
                       compatible: { type: 'success' as const, icon: <CheckCircleOutlined />, color: '#52c41a' },
                       warning: { type: 'warning' as const, icon: <WarningOutlined />, color: '#faad14' },
                       incompatible: { type: 'error' as const, icon: <ExclamationCircleOutlined />, color: '#ff4d4f' },
                       unknown: { type: 'info' as const, icon: <QuestionCircleOutlined />, color: '#1890ff' }
                     }
-                    
+
                     const config = statusConfig[status] || statusConfig.unknown
                     
                     return (
@@ -1418,7 +1419,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                               <Text>{t('vaultEditor.systemCompatibility.sudoAvailable')}:</Text>
                               {(() => {
                                 const sudoStatus = compatibility.sudo_available || 'unknown'
-                                const sudoConfig = {
+                                const sudoConfig: Record<string, { color: string; text: string }> = {
                                   available: { color: 'success', text: t('vaultEditor.systemCompatibility.available') },
                                   password_required: { color: 'warning', text: t('vaultEditor.systemCompatibility.passwordRequired') },
                                   not_installed: { color: 'error', text: t('vaultEditor.systemCompatibility.notInstalled') }
@@ -1555,19 +1556,21 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               {providerFields.required && providerFields.required.length > 0 && (
                 <>
                   {providerFields.required.map((fieldName: string) => {
-                    const field = providerFields.fields?.[fieldName]
+                    if (!providerFields.fields || !(fieldName in providerFields.fields)) return null
+                    const field = providerFields.fields[fieldName as keyof typeof providerFields.fields]
                     if (!field) return null
                     return <div key={fieldName}>{renderField(fieldName, field as FieldDefinition, true, true)}</div>
                   })}
                 </>
               )}
-              
+
               {/* Optional provider fields */}
               {providerFields.optional && providerFields.optional.length > 0 && (
                 <>
                   {providerFields.required && providerFields.required.length > 0 && <div style={{ marginTop: 24 }} />}
                   {providerFields.optional.map((fieldName: string) => {
-                    const field = providerFields.fields?.[fieldName]
+                    if (!providerFields.fields || !(fieldName in providerFields.fields)) return null
+                    const field = providerFields.fields[fieldName as keyof typeof providerFields.fields]
                     if (!field) return null
                     return <div key={fieldName}>{renderField(fieldName, field as FieldDefinition, false, true)}</div>
                   })}

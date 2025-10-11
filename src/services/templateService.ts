@@ -89,7 +89,7 @@ class TemplateService {
 
       const data = await response.json()
       this.templatesCache = data.templates || []
-      return this.templatesCache
+      return this.templatesCache || []
     } catch (error) {
       console.error('Failed to fetch templates:', error)
       throw error

@@ -1,85 +1,85 @@
 {
-  "title": "設定",
   "company": {
-    "title": "会社設定",
-    "description": "組織全体の設定を管理するための会社保険庫設定を構成します。",
-    "configureVault": "保険庫を設定",
-    "modalTitle": "会社保険庫を設定"
+    "configureVault": "ボールトの構成",
+    "description": "会社の Vault 設定を構成して、組織全体の構成を管理します。",
+    "modalTitle": "Company Vault の構成",
+    "title": "会社の設定"
   },
   "personal": {
-    "title": "個人設定",
-    "description": "体験をカスタマイズするための個人保険庫設定を構成します。",
-    "configureVault": "保険庫を設定",
-    "modalTitle": "ユーザー保険庫を設定"
+    "configureVault": "ボールトの構成",
+    "description": "個人用ボルト設定を構成してエクスペリエンスをカスタマイズします。",
+    "modalTitle": "ユーザーボルトの構成",
+    "title": "個人設定"
   },
+  "title": "設定",
   "twoFactorAuth": {
-    "title": "二要素認証",
-    "status": {
-      "enabled": "二要素認証が有効です",
-      "disabled": "二要素認証が無効です",
-      "enabledDescription": "アカウントは追加のセキュリティレイヤーで保護されています。",
-      "disabledDescription": "アカウントに追加のセキュリティレイヤーを追加します。"
-    },
-    "whatIs": {
-      "title": "二要素認証とは？",
-      "description": "二要素認証（TFA）は、パスワードに加えて携帯電話からの時間ベースのコードを要求することで、アカウントに追加のセキュリティレイヤーを追加します。",
-      "benefit1": "パスワードが侵害されてもアカウントを保護します",
-      "benefit2": "業界標準のTOTP（時間ベースのワンタイムパスワード）アルゴリズムを使用",
-      "benefit3": "Google Authenticator、Authy、Microsoft Authenticatorなどの人気の認証アプリで動作"
-    },
-    "enable": "二要素認証を有効にする",
     "disable": "二要素認証を無効にする",
-    "setupMethods": {
-      "qrCode": "QRコード",
-      "manual": "手動入力"
-    },
-    "scanQRCode": "認証アプリでこのQRコードをスキャンしてください",
-    "manualSetup": {
-      "title": "手動設定",
-      "instructions": "認証アプリにこのシークレットキーを入力してください："
-    },
-    "important": "重要",
-    "saveSecretWarning": "このシークレットキーを安全な場所に保存してください。認証デバイスを紛失した場合、アカウントへのアクセスを回復するために必要になります。",
-    "secretCopied": "シークレットキーをクリップボードにコピーしました",
-    "done": "完了",
-    "enableSuccess": {
-      "title": "二要素認証が有効になりました！",
-      "subtitle": "アカウントがTFAで保護されるようになりました。",
-      "verified": "TFAが正常に検証されました",
-      "verifiedDescription": "認証アプリが正常に設定され、アカウントで二要素認証がアクティブになりました。"
-    },
-    "verification": {
-      "title": "認証アプリを確認",
-      "subtitle": "QRコードをスキャンするか、認証アプリにシークレットキーを入力し、6桁のコードを入力して確認してください。",
-      "codeLabel": "確認コード",
-      "codePlaceholder": "000000",
-      "codeRequired": "確認コードは必須です",
-      "codeLength": "コードは正確に6桁である必要があります",
-      "codeFormat": "コードは数字のみを含む必要があります",
-      "submit": "確認してTFAを有効化"
-    },
-    "enableModal": {
-      "title": "二要素認証を有効にする",
-      "warning": "セキュリティ確認が必要です",
-      "warningDescription": "二要素認証を有効にするには、アカウントのパスワードを入力してください。",
-      "passwordLabel": "現在のパスワード",
-      "passwordPlaceholder": "現在のパスワードを入力",
-      "passwordRequired": "パスワードは必須です",
-      "submit": "TFAを有効化"
-    },
     "disableModal": {
+      "codeFormat": "コードには数字のみを含める必要があります",
+      "codeLabel": "TFAコード",
+      "codeLength": "コードは正確に 6 桁である必要があります",
+      "codePlaceholder": "000000",
+      "codeRequired": "TFAコードが必要です",
+      "passwordLabel": "現在のパスワード",
+      "passwordPlaceholder": "現在のパスワードを入力してください",
+      "passwordRequired": "パスワードが必要です",
+      "submit": "TFA を無効にする",
       "title": "二要素認証を無効にする",
       "warning": "セキュリティ警告",
-      "warningDescription": "TFAを無効にすると、アカウントのセキュリティが低下します。続行するには、現在のパスワードと有効なTFAコードを入力する必要があります。",
+      "warningDescription": "TFA を無効にすると、アカウントの安全性が低下します。 続行するには、現在のパスワードと有効な TFA コードを入力する必要があります。"
+    },
+    "done": "終わり",
+    "enable": "二要素認証を有効にする",
+    "enableModal": {
       "passwordLabel": "現在のパスワード",
-      "passwordPlaceholder": "現在のパスワードを入力",
-      "passwordRequired": "パスワードは必須です",
-      "codeLabel": "TFAコード",
+      "passwordPlaceholder": "現在のパスワードを入力してください",
+      "passwordRequired": "パスワードが必要です",
+      "submit": "TFA を有効にする",
+      "title": "二要素認証を有効にする",
+      "warning": "セキュリティ検証が必要です",
+      "warningDescription": "2 要素認証を有効にするには、アカウントのパスワードを入力してください。"
+    },
+    "enableSuccess": {
+      "subtitle": "あなたのアカウントは TFA で保護されています。",
+      "title": "二要素認証が有効になりました！",
+      "verified": "TFA が正常に検証されました",
+      "verifiedDescription": "認証アプリは正常に構成され、アカウントで 2 要素認証がアクティブになりました。"
+    },
+    "important": "重要",
+    "manualSetup": {
+      "instructions": "この秘密キーを認証アプリに入力します。",
+      "title": "手動セットアップ"
+    },
+    "saveSecretWarning": "この秘密キーを安全な場所に保存します。 認証デバイスを紛失した場合にアカウントへのアクセスを回復するために必要になります。",
+    "scanQRCode": "認証アプリでこの QR コードをスキャンします",
+    "secretCopied": "秘密キーがクリップボードにコピーされました",
+    "setupMethods": {
+      "manual": "手動入力",
+      "qrCode": "QRコード"
+    },
+    "status": {
+      "disabled": "二要素認証が無効になっています",
+      "disabledDescription": "アカウントに追加のセキュリティ層を追加します。",
+      "enabled": "二要素認証が有効になっています",
+      "enabledDescription": "あなたのアカウントは追加のセキュリティ層で保護されています。"
+    },
+    "title": "二要素認証",
+    "verification": {
+      "codeFormat": "コードには数字のみを含める必要があります",
+      "codeLabel": "検証コード",
+      "codeLength": "コードは正確に 6 桁である必要があります",
       "codePlaceholder": "000000",
-      "codeRequired": "TFAコードは必須です",
-      "codeLength": "コードは正確に6桁である必要があります",
-      "codeFormat": "コードは数字のみを含む必要があります",
-      "submit": "TFAを無効化"
+      "codeRequired": "確認コードが必要です",
+      "submit": "TFA を確認して有効にする",
+      "subtitle": "QR コードをスキャンするか、認証アプリに秘密キーを入力し、6 桁のコードを入力して確認します。",
+      "title": "認証システムを検証する"
+    },
+    "whatIs": {
+      "benefit1": "パスワードが侵害された場合でもアカウントを保護します",
+      "benefit2": "業界標準の TOTP (Time-based One-Time Password) アルゴリズムを使用",
+      "benefit3": "Google Authenticator、Authy、Microsoft Authenticator などの一般的な認証アプリと連携します。",
+      "description": "2 要素認証 (TFA) は、パスワードに加えて携帯電話からの時間ベースのコードを要求することで、アカウントに追加のセキュリティ層を追加します。",
+      "title": "二要素認証とは何ですか?"
     }
   }
 }

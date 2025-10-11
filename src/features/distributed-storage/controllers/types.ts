@@ -1,15 +1,14 @@
 import type { Machine, MachineAssignmentType } from '@/types'
-import type { 
-  BulkOperationResult, 
-  AssignmentResult,
-  CloneIdentifier,
-  PoolIdentifier 
+import type {
+  BulkOperationResult
 } from '../hooks'
-import type { 
-  ValidationResult,
-  AssignmentConflict,
-  ConflictResolution 
+import type {
+  AssignmentConflict
 } from '../models'
+import type { ValidationResult as BaseValidationResult } from '../models/machine-validation.model'
+
+// Re-export ValidationResult from model
+export type ValidationResult = BaseValidationResult
 
 // Workflow types
 export interface WorkflowStep {
@@ -59,6 +58,7 @@ export interface BulkOperationWorkflowOptions {
   stopOnFirstError?: boolean
   validateBeforeEachBatch?: boolean
   generateReport?: boolean
+  workflowId?: string
 }
 
 export interface BulkOperationBatch {

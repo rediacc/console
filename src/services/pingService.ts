@@ -30,7 +30,10 @@ export interface PingFunctionResult {
  */
 export function usePingFunction(options?: { useManaged?: boolean }) {
   const { buildQueueVault } = useQueueVaultBuilder()
-  const createQueueItemMutation = options?.useManaged ? useManagedQueueItem() : useCreateQueueItem()
+  // Always call both hooks unconditionally
+  const managedMutation = useManagedQueueItem()
+  const regularMutation = useCreateQueueItem()
+  const createQueueItemMutation = options?.useManaged ? managedMutation : regularMutation
   const { data: teams } = useTeams()
 
   const executePing = useCallback(async (params: PingFunctionParams): Promise<PingFunctionResult> => {

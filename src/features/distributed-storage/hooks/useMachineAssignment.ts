@@ -1,16 +1,12 @@
 import { useCallback, useMemo } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import {
   useUpdateMachineClusterAssignment,
   useUpdateMachineClusterRemoval,
   useUpdateCloneMachineAssignments,
   useUpdateCloneMachineRemovals,
-  useUpdateImageMachineAssignment,
-  useGetMachineAssignmentStatus,
-  type MachineAssignmentStatus
+  useUpdateImageMachineAssignment
 } from '@/api/queries/distributedStorage'
 import { MachineAssignmentService } from '../services'
-import { showMessage } from '@/utils/messages'
 import { useTranslation } from 'react-i18next'
 import type { Machine } from '@/types'
 
@@ -35,7 +31,6 @@ export interface AssignmentResult {
 
 export const useMachineAssignment = (teamName?: string) => {
   const { t } = useTranslation(['distributedStorage', 'machines'])
-  const queryClient = useQueryClient()
   
   // Mutations
   const clusterAssignMutation = useUpdateMachineClusterAssignment()
@@ -218,14 +213,8 @@ export const useMachineAssignment = (teamName?: string) => {
     }
   }, [imageReassignMutation, t])
   
-  // Get assignment status for a machine
-  const getAssignmentStatus = useCallback((machineName: string) => {
-    if (!teamName || !machineName) {
-      return null
-    }
-    
-    return useGetMachineAssignmentStatus(machineName, teamName)
-  }, [teamName])
+  // Note: getAssignmentStatus removed as it violated hooks rules
+  // Users should call useGetMachineAssignmentStatus directly in their components
   
   // Helper to check if machines can be assigned
   const canAssignMachines = useCallback((
@@ -258,11 +247,10 @@ export const useMachineAssignment = (teamName?: string) => {
     removeFromCluster,
     removeFromClone,
     reassignImage,
-    
+
     // Status checking
-    getAssignmentStatus,
     canAssignMachines,
-    
+
     // Loading states
     isAssigning,
     isRemoving,

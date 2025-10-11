@@ -1,10 +1,10 @@
 export const extractTableData = <T = any[]>(
-  response: any, 
+  response: any,
   tableIndex = 1,
-  defaultValue: T = [] as T
+  defaultValue: T = [] as any
 ): T => {
   const data = response.resultSets?.[tableIndex]?.data ?? response.resultSets?.[0]?.data ?? defaultValue
-  return Array.isArray(data) ? data : defaultValue
+  return (Array.isArray(data) ? data : defaultValue) as T
 }
 
 export const extractFilteredTableData = <T extends Record<string, any>>(
@@ -19,15 +19,15 @@ export const extractResourceData = <T extends { [K in keyof T]: any }>(
   tableIndex = 1
 ): T[] => extractFilteredTableData<T>(response, item => item?.[nameField], tableIndex)
 
-export const parseNestedJson = (data: any, fields: string[]): Record<string, any> => 
-  fields.reduce((result, field) => {
+export const parseNestedJson = (data: any, fields: string[]): Record<string, any> =>
+  fields.reduce((result: Record<string, any>, field) => {
     try {
       result[field] = typeof data[field] === 'string' ? JSON.parse(data[field]) : data[field]
     } catch (e) {
       result[field] = data[field]
     }
     return result
-  }, {})
+  }, {} as Record<string, any>)
 
 export const parseDoubleEncodedJson = <T>(jsonString: string, fields: string[]): T => 
   parseNestedJson(JSON.parse(jsonString), fields) as T

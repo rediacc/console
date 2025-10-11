@@ -20,6 +20,7 @@ export interface DistributedStoragePool {
   vaultVersion?: number
   rbdImageCount?: number
   poolVault?: string
+  poolGuid?: string
 }
 
 export interface DistributedStorageRbdImage {
@@ -43,6 +44,8 @@ export interface DistributedStorageRbdSnapshot {
   createdDate?: string
   cloneCount?: number
   snapshotVault?: string
+  snapshotGuid?: string
+  vaultContent?: string
 }
 
 export interface DistributedStorageRbdClone {
@@ -54,6 +57,7 @@ export interface DistributedStorageRbdClone {
   clusterName: string
   snapshotCreatedDate?: string
   cloneVault?: string
+  vaultContent?: string
 }
 
 export interface MachineAssignmentStatus {

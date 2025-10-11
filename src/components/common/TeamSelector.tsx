@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react'
 import { Select, Space, Tag, Input } from 'antd'
 import { TeamOutlined, SearchOutlined } from '@/utils/optimizedIcons'
 import type { Team } from '@/api/queries/teams'
-import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants'
 
 interface TeamSelectorProps {
@@ -23,7 +22,6 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
   style
 }) => {
   const [searchValue, setSearchValue] = useState('')
-  const styles = useComponentStyles()
 
   const filteredOptions = useMemo(() => {
     const filtered = teams.filter(team =>
@@ -61,7 +59,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
       onSearch={setSearchValue}
       data-testid="team-selector"
       tagRender={(props) => {
-        const { label, value, closable, onClose } = props
+        const { value, closable, onClose } = props
         return (
           <Tag
             color="var(--color-primary)"

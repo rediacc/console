@@ -6,7 +6,6 @@
  */
 
 import { secureStorage } from '@/utils/secureMemoryStorage'
-import { tokenService } from './tokenService'
 
 export interface ForkTokenInfo {
   token: string

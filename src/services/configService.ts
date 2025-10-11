@@ -1,5 +1,4 @@
 
-import { RediaccConfig } from '@/types'
 import { apiConnectionService } from './apiConnectionService'
 
 interface AppConfig {

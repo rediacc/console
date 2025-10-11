@@ -197,22 +197,24 @@ class TelemetryService {
     // Add user context to global baggage for distributed tracing
     if (this.isInitialized) {
       try {
-        const activeBaggage = propagation.getActiveBaggage()
-        let baggage = activeBaggage || propagation.createBaggage()
+        // Note: Baggage API has changed in newer versions
+        // We create baggage entries but don't set them globally as this is handled by instrumentation
+        const entries: Record<string, { value: string }> = {}
 
         if (this.userContext.sessionId) {
-          baggage = propagation.setBaggage(baggage, 'session.id', this.userContext.sessionId)
+          entries['session.id'] = { value: this.userContext.sessionId }
         }
 
         if (this.userContext.email) {
           const emailDomain = this.userContext.email.split('@')[1]
           if (emailDomain) {
-            baggage = propagation.setBaggage(baggage, 'user.email_domain', emailDomain)
+            entries['user.email_domain'] = { value: emailDomain }
           }
         }
 
-        // Note: We can't set active baggage directly in newer versions
-        // This is handled automatically by the instrumentation
+        // Baggage is propagated via HTTP headers automatically by instrumentation
+        // Store for reference but don't attempt to set globally
+        void entries
       } catch (error) {
         console.warn('Failed to set baggage context:', error)
       }
@@ -560,7 +562,9 @@ class TelemetryService {
     }
   }
 
-  private enrichRequestSpan(span: any, request: any): void {
+  // Unused helper methods kept for potential future use (prefixed with _ to indicate intentionally unused)
+  // @ts-expect-error - Intentionally unused, kept for potential future use
+  private _enrichRequestSpan(span: any, request: any): void {
     if (!this.userContext) return
 
     // Add user context to requests
@@ -577,7 +581,8 @@ class TelemetryService {
     }
   }
 
-  private enrichResponseSpan(span: any, response: any): void {
+  // @ts-expect-error - Intentionally unused, kept for potential future use
+  private _enrichResponseSpan(span: any, response: any): void {
     if (response?.status) {
       span.setAttributes({
         'http.status_code': response.status,

@@ -8,8 +8,7 @@ import type {
   ValidationSummary,
   ValidationContext,
   ExclusivityValidation,
-  CapacityValidation,
-  ValidationConfig
+  CapacityValidation
 } from '../models/machine-validation.model'
 import type { DistributedStorageResource } from '../models/machine-assignment.model'
 
@@ -159,6 +158,32 @@ export class MachineValidationService {
   }
 
   /**
+   * Validate a single machine for assignment
+   */
+  static validateSingleMachine(
+    machine: Machine,
+    targetType: string,
+    _context?: ValidationContext
+  ): ValidationResult {
+    const result = this.validateExclusivityRule(machine, targetType as any)
+    const availabilityResult = this.validateMachineAvailability(machine)
+
+    // Combine all errors and warnings
+    const allErrors = [...result.errors, ...availabilityResult.errors]
+    const allWarnings = [...result.warnings, ...availabilityResult.warnings]
+
+    return {
+      isValid: allErrors.length === 0,
+      errors: allErrors,
+      warnings: allWarnings,
+      context: {
+        machine: machine.machineName,
+        targetType
+      }
+    }
+  }
+
+  /**
    * Validate bulk machine assignment
    */
   static validateBulkAssignment(
@@ -184,6 +209,7 @@ export class MachineValidationService {
 
         invalidMachines.push({
           machine,
+          machineName: machine.machineName,
           errors: result.errors,
           canOverride
         })
@@ -209,11 +235,36 @@ export class MachineValidationService {
       criticalErrors
     }
 
+    // Collect all warnings
+    const allWarnings: ValidationWarning[] = []
+    machines.forEach(machine => {
+      const result = this.validateExclusivityRule(machine, targetType as any)
+      allWarnings.push(...result.warnings)
+    })
+
+    // Convert invalidMachines to Record<string, ValidationError[]> format
+    const errorsByMachine: Record<string, ValidationError[]> = {}
+    invalidMachines.forEach(invalid => {
+      errorsByMachine[invalid.machineName] = invalid.errors
+    })
+
+    // Convert warnings to Record<string, ValidationWarning[]> format
+    const warningsByMachine: Record<string, ValidationWarning[]> = {}
+    machines.forEach(machine => {
+      const result = this.validateExclusivityRule(machine, targetType as any)
+      if (result.warnings.length > 0) {
+        warningsByMachine[machine.machineName] = result.warnings
+      }
+    })
+
     return {
       validMachines,
       invalidMachines,
       summary,
-      canProceed: validMachines.length > 0 && !criticalErrors
+      canProceed: validMachines.length > 0 && !criticalErrors,
+      allValid: invalidMachines.length === 0,
+      errors: errorsByMachine,
+      warnings: warningsByMachine
     }
   }
 

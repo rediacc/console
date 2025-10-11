@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Spin, Row, Col, Tabs, Switch, Collapse, Steps, Progress, Statistic, Alert, Divider, Badge, Tooltip, Segmented } from 'antd'
+import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Spin, Row, Col, Tabs, Collapse, Steps, Progress, Statistic, Alert, Divider, Badge, Tooltip, Segmented } from 'antd'
 import { ReloadOutlined, HistoryOutlined, FileTextOutlined, BellOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, RightOutlined, UserOutlined, RetweetOutlined, WarningOutlined, RocketOutlined, TeamOutlined, DashboardOutlined, ThunderboltOutlined, HourglassOutlined, ExclamationCircleOutlined, CrownOutlined, CodeOutlined, QuestionCircleOutlined } from '@/utils/optimizedIcons'
 import { useQueueItemTrace, useRetryFailedQueueItem, useCancelQueueItem } from '@/api/queries/queue'
 import dayjs from 'dayjs'
@@ -13,7 +13,7 @@ import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 import { formatTimestampAsIs } from '@/utils/timeUtils'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
-import { DESIGN_TOKENS, spacing, createModalStyle, createButtonStyle } from '@/utils/styleConstants'
+import { DESIGN_TOKENS, spacing, createModalStyle } from '@/utils/styleConstants'
 import './QueueItemTraceModal.css'
 
 dayjs.extend(relativeTime)
@@ -283,15 +283,15 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
     })
   }
 
-  const handleToggleMonitoring = () => {
+  const handleToggleMonitoring = (shouldMonitor?: boolean) => {
     if (!taskId || !traceData?.queueDetails) return
 
     const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
     const retryCount = normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0
     const permanentlyFailed = normalizeProperty(traceData.queueDetails, 'permanentlyFailed', 'PermanentlyFailed')
-    
+
     const lastFailureReason = normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason')
-    
+
     // Don't allow monitoring completed, cancelled, cancelling, or permanently failed tasks
     if (status === 'COMPLETED' || status === 'CANCELLED' || status === 'CANCELLING' ||
         (status === 'FAILED' && (permanentlyFailed || retryCount >= 2)) ||
@@ -300,7 +300,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
       return
     }
 
-    if (isMonitoring) {
+    const targetState = shouldMonitor !== undefined ? shouldMonitor : !isMonitoring
+
+    if (!targetState) {
       queueMonitoringService.removeTask(taskId)
       setIsMonitoring(false)
       showMessage('info', 'Background monitoring disabled for this task')
@@ -575,7 +577,6 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             data-testid="queue-trace-cancel-button"
             danger
             type={getTaskStaleness() === 'critical' ? 'primary' : 'default'}
-            size={getTaskStaleness() === 'critical' ? 'default' : 'default'}
             icon={<CloseCircleOutlined />}
             onClick={handleCancelQueueItem}
             loading={isCancelling}
@@ -692,7 +693,6 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   <Button
                     danger
                     type="primary"
-                    size="default"
                     icon={<CloseCircleOutlined />}
                     onClick={handleCancelQueueItem}
                     loading={isCancelling}

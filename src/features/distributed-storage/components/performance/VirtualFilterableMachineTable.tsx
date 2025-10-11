@@ -1,6 +1,6 @@
-import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react'
+import React, { useMemo, useState, useCallback, useEffect } from 'react'
 import { Input, Select, Space, Button, Badge } from 'antd'
-import { SearchOutlined, FilterOutlined, ReloadOutlined } from '@ant-design/icons'
+import { SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import { VirtualMachineTable } from './VirtualMachineTable'
 import { Machine, MachineAssignmentType } from '@/types'
 import { MachineAssignmentService } from '@/features/distributed-storage'
@@ -23,7 +23,7 @@ interface VirtualFilterableMachineTableProps {
 export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTableProps> = ({
   machines,
   loading = false,
-  teamName,
+  teamName: _teamName,
   onRefresh,
   selectable = true,
   onRowClick,

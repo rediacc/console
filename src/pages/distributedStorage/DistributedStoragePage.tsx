@@ -66,11 +66,43 @@ const DistributedStoragePage: React.FC = () => {
   })
   
   const planName = companyData?.activeSubscription?.PlanName
-  const hasDistributedStorageAccess = planName?.toUpperCase() === 'ELITE' || 
+  const hasDistributedStorageAccess = planName?.toUpperCase() === 'ELITE' ||
                                      planName?.toUpperCase() === 'PREMIUM'
-  
+
   console.log('hasDistributedStorageAccess:', hasDistributedStorageAccess, 'planName:', planName)
-  
+
+  // Distributed storage queries - must be called unconditionally
+  const { data: clusters = [], isLoading: clustersLoading, refetch: refetchClusters } = useDistributedStorageClusters(
+    selectedTeams.length > 0 ? selectedTeams : undefined,
+    hasDistributedStorageAccess && !!companyData
+  )
+
+  const { data: pools = [], isLoading: poolsLoading, refetch: refetchPools } = useDistributedStoragePools(
+    selectedTeams.length > 0 ? selectedTeams : undefined,
+    hasDistributedStorageAccess && activeTab === 'pools' && !!companyData
+  )
+
+  // Mutations - must be called unconditionally
+  const createClusterMutation = useCreateDistributedStorageCluster()
+  const createPoolMutation = useCreateDistributedStoragePool()
+  const updateClusterVaultMutation = useUpdateDistributedStorageClusterVault()
+  const updatePoolVaultMutation = useUpdateDistributedStoragePoolVault()
+  const deleteClusterMutation = useDeleteDistributedStorageCluster()
+  const deletePoolMutation = useDeleteDistributedStoragePool()
+
+  // Queue management - must be called unconditionally (hooks must be called unconditionally)
+  useManagedQueueItem()
+  useQueueVaultBuilder()
+
+  // Set default selected team on startup
+  const hasInitializedTeam = useRef(false)
+  React.useEffect(() => {
+    if (!teamsLoading && !hasInitializedTeam.current && teamsList && teamsList.length > 0) {
+      hasInitializedTeam.current = true
+      setSelectedTeams([teamsList[0].teamName])
+    }
+  }, [teamsList, teamsLoading])
+
   // Show debug info in UI temporarily
   if (!companyData) {
     return (
@@ -87,38 +119,6 @@ const DistributedStoragePage: React.FC = () => {
       </Row>
     )
   }
-  
-  // Distributed storage queries
-  const { data: clusters = [], isLoading: clustersLoading, refetch: refetchClusters } = useDistributedStorageClusters(
-    selectedTeams.length > 0 ? selectedTeams : undefined,
-    hasDistributedStorageAccess
-  )
-  
-  const { data: pools = [], isLoading: poolsLoading, refetch: refetchPools } = useDistributedStoragePools(
-    selectedTeams.length > 0 ? selectedTeams : undefined,
-    hasDistributedStorageAccess && activeTab === 'pools'
-  )
-  
-  // Mutations
-  const createClusterMutation = useCreateDistributedStorageCluster()
-  const createPoolMutation = useCreateDistributedStoragePool()
-  const updateClusterVaultMutation = useUpdateDistributedStorageClusterVault()
-  const updatePoolVaultMutation = useUpdateDistributedStoragePoolVault()
-  const deleteClusterMutation = useDeleteDistributedStorageCluster()
-  const deletePoolMutation = useDeleteDistributedStoragePool()
-  
-  // Queue management
-  const createQueueItemMutation = useManagedQueueItem()
-  const _buildQueueVault = useQueueVaultBuilder().buildQueueVault
-  
-  // Set default selected team on startup
-  const hasInitializedTeam = useRef(false)
-  React.useEffect(() => {
-    if (!teamsLoading && !hasInitializedTeam.current && teamsList && teamsList.length > 0) {
-      hasInitializedTeam.current = true
-      setSelectedTeams([teamsList[0].teamName])
-    }
-  }, [teamsList, teamsLoading])
   
   // Handle modal operations
   const openModal = (type: 'cluster' | 'pool', mode: 'create' | 'edit' | 'vault', data?: Record<string, any>) => {
@@ -151,7 +151,12 @@ const DistributedStoragePage: React.FC = () => {
             clusterVault: data.clusterVault
           })
         } else if (type === 'pool') {
-          await createPoolMutation.mutateAsync(data)
+          await createPoolMutation.mutateAsync({
+            teamName: data.teamName,
+            clusterName: data.clusterName,
+            poolName: data.poolName,
+            poolVault: data.poolVault
+          })
         }
       } else if (mode === 'edit' || mode === 'vault') {
         if (type === 'cluster') {
@@ -200,9 +205,6 @@ const DistributedStoragePage: React.FC = () => {
     showMessage('info', 'Function execution coming soon')
     closeModal()
   }
-  
-  // Check if loading
-  const _isLoading = clustersLoading || poolsLoading
   
   // Tab items
   const tabItems = [
@@ -419,7 +421,6 @@ const DistributedStoragePage: React.FC = () => {
           const data = modalState.data || {}
           if (modalState.type === 'cluster') {
             await updateClusterVaultMutation.mutateAsync({
-              teamName: selectedTeams[0],
               clusterName: data.clusterName,
               clusterVault: vault,
               vaultVersion: version

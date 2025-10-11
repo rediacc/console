@@ -1,85 +1,85 @@
 {
-  "title": "Settings",
   "company": {
-    "title": "Company Settings",
-    "description": "Configure your company vault settings to manage organization-wide configurations.",
     "configureVault": "Configure Vault",
-    "modalTitle": "Configure Company Vault"
+    "description": "Configure your company vault settings to manage organization-wide configurations.",
+    "modalTitle": "Configure Company Vault",
+    "title": "Company Settings"
   },
   "personal": {
-    "title": "Personal Settings",
-    "description": "Configure your personal vault settings to customize your experience.",
     "configureVault": "Configure Vault",
-    "modalTitle": "Configure User Vault"
+    "description": "Configure your personal vault settings to customize your experience.",
+    "modalTitle": "Configure User Vault",
+    "title": "Personal Settings"
   },
+  "title": "Settings",
   "twoFactorAuth": {
-    "title": "Two-Factor Authentication",
-    "status": {
-      "enabled": "Two-Factor Authentication is Enabled",
-      "disabled": "Two-Factor Authentication is Disabled",
-      "enabledDescription": "Your account is protected with an additional layer of security.",
-      "disabledDescription": "Add an extra layer of security to your account."
-    },
-    "whatIs": {
-      "title": "What is Two-Factor Authentication?",
-      "description": "Two-Factor Authentication (TFA) adds an extra layer of security to your account by requiring a time-based code from your phone in addition to your password.",
-      "benefit1": "Protects your account even if your password is compromised",
-      "benefit2": "Uses industry-standard TOTP (Time-based One-Time Password) algorithm",
-      "benefit3": "Works with popular authenticator apps like Google Authenticator, Authy, or Microsoft Authenticator"
-    },
-    "enable": "Enable Two-Factor Authentication",
     "disable": "Disable Two-Factor Authentication",
-    "setupMethods": {
-      "qrCode": "QR Code",
-      "manual": "Manual Entry"
+    "disableModal": {
+      "codeFormat": "Code must contain only numbers",
+      "codeLabel": "TFA Code",
+      "codeLength": "Code must be exactly 6 digits",
+      "codePlaceholder": "000000",
+      "codeRequired": "TFA code is required",
+      "passwordLabel": "Current Password",
+      "passwordPlaceholder": "Enter your current password",
+      "passwordRequired": "Password is required",
+      "submit": "Disable TFA",
+      "title": "Disable Two-Factor Authentication",
+      "warning": "Security Warning",
+      "warningDescription": "Disabling TFA will make your account less secure. You'll need to enter your current password and a valid TFA code to proceed."
     },
-    "scanQRCode": "Scan this QR code with your authenticator app",
-    "manualSetup": {
-      "title": "Manual Setup",
-      "instructions": "Enter this secret key in your authenticator app:"
-    },
-    "important": "Important",
-    "saveSecretWarning": "Save this secret key in a safe place. You'll need it to recover access to your account if you lose your authenticator device.",
-    "secretCopied": "Secret key copied to clipboard",
     "done": "Done",
+    "enable": "Enable Two-Factor Authentication",
+    "enableModal": {
+      "passwordLabel": "Current Password",
+      "passwordPlaceholder": "Enter your current password",
+      "passwordRequired": "Password is required",
+      "submit": "Enable TFA",
+      "title": "Enable Two-Factor Authentication",
+      "warning": "Security Verification Required",
+      "warningDescription": "Please enter your account password to enable two-factor authentication."
+    },
     "enableSuccess": {
-      "title": "Two-Factor Authentication Enabled!",
       "subtitle": "Your account is now protected with TFA.",
+      "title": "Two-Factor Authentication Enabled!",
       "verified": "TFA Successfully Verified",
       "verifiedDescription": "Your authenticator app has been successfully configured and two-factor authentication is now active on your account."
     },
+    "important": "Important",
+    "manualSetup": {
+      "instructions": "Enter this secret key in your authenticator app:",
+      "title": "Manual Setup"
+    },
+    "saveSecretWarning": "Save this secret key in a safe place. You'll need it to recover access to your account if you lose your authenticator device.",
+    "scanQRCode": "Scan this QR code with your authenticator app",
+    "secretCopied": "Secret key copied to clipboard",
+    "setupMethods": {
+      "manual": "Manual Entry",
+      "qrCode": "QR Code"
+    },
+    "status": {
+      "disabled": "Two-Factor Authentication is Disabled",
+      "disabledDescription": "Add an extra layer of security to your account.",
+      "enabled": "Two-Factor Authentication is Enabled",
+      "enabledDescription": "Your account is protected with an additional layer of security."
+    },
+    "title": "Two-Factor Authentication",
     "verification": {
-      "title": "Verify Your Authenticator",
-      "subtitle": "Scan the QR code or enter the secret key in your authenticator app, then enter the 6-digit code to verify.",
+      "codeFormat": "Code must contain only numbers",
       "codeLabel": "Verification Code",
+      "codeLength": "Code must be exactly 6 digits",
       "codePlaceholder": "000000",
       "codeRequired": "Verification code is required",
-      "codeLength": "Code must be exactly 6 digits",
-      "codeFormat": "Code must contain only numbers",
-      "submit": "Verify and Enable TFA"
+      "submit": "Verify and Enable TFA",
+      "subtitle": "Scan the QR code or enter the secret key in your authenticator app, then enter the 6-digit code to verify.",
+      "title": "Verify Your Authenticator"
     },
-    "enableModal": {
-      "title": "Enable Two-Factor Authentication",
-      "warning": "Security Verification Required",
-      "warningDescription": "Please enter your account password to enable two-factor authentication.",
-      "passwordLabel": "Current Password",
-      "passwordPlaceholder": "Enter your current password",
-      "passwordRequired": "Password is required",
-      "submit": "Enable TFA"
-    },
-    "disableModal": {
-      "title": "Disable Two-Factor Authentication",
-      "warning": "Security Warning",
-      "warningDescription": "Disabling TFA will make your account less secure. You'll need to enter your current password and a valid TFA code to proceed.",
-      "passwordLabel": "Current Password",
-      "passwordPlaceholder": "Enter your current password",
-      "passwordRequired": "Password is required",
-      "codeLabel": "TFA Code",
-      "codePlaceholder": "000000",
-      "codeRequired": "TFA code is required",
-      "codeLength": "Code must be exactly 6 digits",
-      "codeFormat": "Code must contain only numbers",
-      "submit": "Disable TFA"
+    "whatIs": {
+      "benefit1": "Protects your account even if your password is compromised",
+      "benefit2": "Uses industry-standard TOTP (Time-based One-Time Password) algorithm",
+      "benefit3": "Works with popular authenticator apps like Google Authenticator, Authy, or Microsoft Authenticator",
+      "description": "Two-Factor Authentication (TFA) adds an extra layer of security to your account by requiring a time-based code from your phone in addition to your password.",
+      "title": "What is Two-Factor Authentication?"
     }
   }
 }

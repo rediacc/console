@@ -1,83 +1,83 @@
 {
-  "title": "Gestión de Cola",
+  "dateRange": "Rango de fechas",
   "filters": "Filtros",
-  "team": "Equipo",
-  "selectTeam": "Selecciona un equipo para ver los elementos de la cola",
+  "includeCancelled": "Incluir cancelado",
+  "includeCompleted": "Incluir completada",
   "machine": "Máquina",
-  "selectMachine": "Todas las máquinas",
-  "status": "Estado",
-  "selectStatus": "Todos los estados",
-  "dateRange": "Rango de Fechas",
+  "monitoring": {
+    "assigned": "Tarea en cola {{taskId}} asignada a la máquina ({{teamName}} - {{machineName}})",
+    "cancelled": "La tarea en cola {{taskId}} se canceló ({{teamName}} - {{machineName}})",
+    "cancelling": "La tarea en cola {{taskId}} se está cancelando ({{teamName}} - {{machineName}})",
+    "completed": "La tarea de cola {{taskId}} se completó correctamente ({{teamName}} - {{machineName}})",
+    "failedWaitingRetry": "Error en la tarea de cola {{taskId}}: esperando un reintento (intento {{attempt}} de {{maxAttempts}}) ({{teamName}} - {{machineName}})",
+    "monitoringAlready": "Ya estamos monitoreando la tarea de la cola {{taskId}}",
+    "permanentlyFailed": "La tarea de cola {{taskId}} falló permanentemente después de {{attempts}} intentos ({{teamName}} - {{machineName}})",
+    "permanentlyFailedWithReason": "La tarea de cola {{taskId}} falló permanentemente: {{reason}} ({{teamName}} - {{machineName}})",
+    "queuedForRetry": "Tarea en cola {{taskId}} en cola para reintento (intento {{attempt}} de {{maxAttempts}}) ({{teamName}} - {{machineName}})",
+    "staleTask": "La tarea en cola {{taskId}} parece estar obsoleta (sin progreso durante {{minutos}} minutos)",
+    "startedMonitoring": "Se inició la tarea de cola de monitoreo {{taskId}} ({{teamName}} - {{machineName}})",
+    "startedProcessing": "La tarea en cola {{taskId}} comenzó a procesarse ({{teamName}} - {{machineName}})",
+    "stoppedMonitoring": "Se detuvo la tarea de la cola de monitoreo {{taskId}}",
+    "taskNotFound": "La tarea en cola {{taskId}} ya no existe"
+  },
+  "onlyStale": "Sólo artículos obsoletos",
   "options": "Opciones",
-  "includeCompleted": "Incluir Completados",
-  "includeCancelled": "Incluir Cancelados",
-  "onlyStale": "Solo Elementos Obsoletos",
+  "queueManager": {
+    "alreadyHasPriority1": "Ya tienes una tarea de máxima prioridad ejecutándose en el puente {{bridgeName}}. Espere a que se complete.",
+    "buttonLabel": "Prioridad más alta",
+    "cancelledTask": "Tarea pendiente existente cancelada para {{machineName}}",
+    "clearCompleted": "Borrar completada",
+    "description": "Los elementos de la cola de mayor prioridad (prioridad 1) se administran para garantizar que solo se ejecute una tarea por puente a la vez.",
+    "emptyState": "No hay elementos de máxima prioridad en la cola",
+    "itemQueued": "Tarea de mayor prioridad en cola. Posición: {{posición}}",
+    "taskCancelled": "Tarea cancelada: ya tengo una tarea de prioridad 1 en este puente",
+    "title": "Administrador de colas",
+    "tooltip": "Gestor de colas de máxima prioridad"
+  },
+  "selectMachine": "Todas las maquinas",
+  "selectStatus": "Todos los estados",
+  "selectTeam": "Seleccione un equipo para ver los elementos de la cola",
+  "statistics": {
+    "processing": "Tratamiento",
+    "timeSinceAssigned": "Tiempo desde que fue asignado",
+    "totalDuration": "Duración total"
+  },
+  "status": "Estado",
+  "statusCancelled": "Cancelada",
+  "statusCompleted": "Terminada",
+  "statusFailed": "Fallida",
   "statusPending": "Pendiente",
-  "statusRunning": "En Ejecución",
-  "statusCompleted": "Completado",
-  "statusFailed": "Fallido",
-  "statusCancelled": "Cancelado",
+  "statusRunning": "Correr",
   "tabs": {
     "active": {
-      "title": "Cola Activa",
-      "tooltip": "Muestra todas las tareas pendientes, asignadas, en proceso y cancelándose. Incluye tareas esperando ser recogidas y las que se están ejecutando actualmente.",
-      "description": "Esta sección muestra todas las tareas activas incluyendo elementos pendientes esperando asignación, tareas siendo procesadas por máquinas y tareas en proceso de cancelación."
-    },
-    "completed": {
-      "title": "Completadas",
-      "tooltip": "Muestra todas las tareas completadas exitosamente",
-      "description": "Esta sección muestra todas las tareas que se han completado exitosamente sin errores."
+      "description": "Esta sección muestra todas las tareas activas, incluidos los elementos pendientes en espera de asignación, las tareas procesadas por las máquinas y las tareas en proceso de cancelación.",
+      "title": "Cola activa",
+      "tooltip": "Muestra todas las tareas pendientes, asignadas, en proceso y canceladas. Incluye tareas en espera de ser retomadas y aquellas que se están ejecutando actualmente."
     },
     "cancelled": {
-      "title": "Canceladas",
-      "tooltip": "Muestra todas las tareas canceladas que fueron detenidas por solicitud del usuario",
-      "description": "Esta sección muestra todas las tareas que fueron canceladas por solicitud del usuario. Estas tareas se detuvieron antes de completarse."
+      "description": "Esta sección muestra todas las tareas que fueron canceladas por solicitud del usuario. Estas tareas se detuvieron antes de su finalización.",
+      "title": "Cancelada",
+      "tooltip": "Muestra todas las tareas canceladas que fueron detenidas por solicitud del usuario"
+    },
+    "completed": {
+      "description": "Esta sección muestra todas las tareas que se han completado exitosamente sin errores.",
+      "title": "Terminada",
+      "tooltip": "Muestra todas las tareas completadas con éxito"
     },
     "failed": {
-      "title": "Fallidas",
-      "tooltip": "Muestra todas las tareas fallidas que encontraron errores durante la ejecución",
-      "description": "Esta sección muestra todas las tareas que fallaron debido a errores durante la ejecución. Las tareas pueden reintentarse hasta 2 veces antes de marcarse permanentemente como fallidas."
+      "description": "Esta sección muestra todas las tareas que fallaron debido a errores durante la ejecución. Las tareas se pueden reintentar hasta 2 veces antes de marcarse permanentemente como fallidas.",
+      "title": "Fallida",
+      "tooltip": "Muestra todas las tareas fallidas que encontraron errores durante la ejecución"
     }
   },
-  "monitoring": {
-    "completed": "Tarea de cola {{taskId}} completada exitosamente ({{teamName}} - {{machineName}})",
-    "cancelled": "Tarea de cola {{taskId}} fue cancelada ({{teamName}} - {{machineName}})",
-    "cancelling": "Tarea de cola {{taskId}} está siendo cancelada ({{teamName}} - {{machineName}})",
-    "permanentlyFailed": "Tarea de cola {{taskId}} falló permanentemente después de {{attempts}} intentos ({{teamName}} - {{machineName}})",
-    "permanentlyFailedWithReason": "Tarea de cola {{taskId}} falló permanentemente: {{reason}} ({{teamName}} - {{machineName}})",
-    "failedWaitingRetry": "Tarea de cola {{taskId}} falló - esperando reintento (intento {{attempt}} de {{maxAttempts}}) ({{teamName}} - {{machineName}})",
-    "startedProcessing": "Tarea de cola {{taskId}} comenzó a procesarse ({{teamName}} - {{machineName}})",
-    "assigned": "Tarea de cola {{taskId}} asignada a máquina ({{teamName}} - {{machineName}})",
-    "queuedForRetry": "Tarea de cola {{taskId}} en cola para reintento (intento {{attempt}} de {{maxAttempts}}) ({{teamName}} - {{machineName}})",
-    "staleTask": "Tarea de cola {{taskId}} parece estar obsoleta (sin progreso por {{minutes}} minutos)",
-    "startedMonitoring": "Se comenzó a monitorear la tarea de cola {{taskId}} ({{teamName}} - {{machineName}})",
-    "stoppedMonitoring": "Se detuvo el monitoreo de la tarea de cola {{taskId}}",
-    "monitoringAlready": "Ya se está monitoreando la tarea de cola {{taskId}}",
-    "taskNotFound": "La tarea de cola {{taskId}} ya no existe"
-  },
-  "queueManager": {
-    "title": "Administrador de Cola",
-    "buttonLabel": "Máxima Prioridad",
-    "tooltip": "Administrador de cola de máxima prioridad",
-    "description": "Los elementos de cola de máxima prioridad (prioridad 1) se gestionan para garantizar que solo se ejecute una tarea por puente a la vez.",
-    "emptyState": "No hay elementos de máxima prioridad en la cola",
-    "itemQueued": "Tarea de máxima prioridad en cola. Posición: {{position}}",
-    "cancelledTask": "Se canceló la tarea pendiente existente para {{machineName}}",
-    "alreadyHasPriority1": "Ya tiene una tarea de máxima prioridad ejecutándose en el puente {{bridgeName}}. Por favor espere a que se complete.",
-    "taskCancelled": "Tarea cancelada: Ya hay una tarea de prioridad 1 en este puente",
-    "clearCompleted": "Limpiar Completadas"
-  },
   "taskStatus": {
-    "completedTitle": "Tarea Completada Exitosamente",
-    "completedDescription": "La tarea finalizó exitosamente después de {{minutes}} minutos.",
-    "cancelledTitle": "Tarea Cancelada",
     "cancelledDescription": "La tarea fue cancelada y no será procesada.",
-    "failedTitle": "Tarea Falló Permanentemente",
-    "failedDescription": "La tarea ha fallado permanentemente después de {{retries}} reintentos."
+    "cancelledTitle": "Tarea cancelada",
+    "completedDescription": "La tarea finalizó exitosamente después de {{minutos}} minutos.",
+    "completedTitle": "Tarea completada con éxito",
+    "failedDescription": "La tarea falló permanentemente después de {{retries}} reintentos.",
+    "failedTitle": "La tarea falló permanentemente"
   },
-  "statistics": {
-    "totalDuration": "Duración Total",
-    "processing": "Procesando",
-    "timeSinceAssigned": "Tiempo Desde Asignación"
-  }
+  "team": "Equipo",
+  "title": "Gestión de colas"
 }

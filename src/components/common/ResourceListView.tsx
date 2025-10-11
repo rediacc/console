@@ -63,11 +63,11 @@ function ResourceListView<T = any>({
     minRows: 5,
     maxRows: 50
   })
-  const cardBodyStyle = containerStyle?.height ? {
+  const cardBodyStyle: React.CSSProperties = containerStyle?.height ? {
     padding: 'var(--space-md)', // Design system spacing
     height: '100%',
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'column' as const,
     overflow: 'hidden'
   } : {}
 

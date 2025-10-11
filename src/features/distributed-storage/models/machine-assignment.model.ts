@@ -20,16 +20,26 @@ export interface BulkOperationRequest {
 
 export interface AssignmentConflict {
   machine: Machine
+  machineName: string
   currentAssignment: MachineAssignment
   requestedAssignment: string
   conflictType: 'exclusivity' | 'availability' | 'permission'
+  targetType?: 'cluster' | 'image' | 'clone'
+  targetResource?: string
   message?: string
 }
 
-export type ConflictResolution = 'skip' | 'force' | 'cancel'
+export type ConflictResolutionAction = 'skip' | 'force' | 'cancel'
+
+export interface ConflictResolution {
+  conflict: AssignmentConflict
+  action: ConflictResolutionAction
+  resolved: boolean
+  error?: string
+}
 
 export interface ConflictResolutionResult {
-  resolution: ConflictResolution
+  resolution: ConflictResolutionAction
   reason?: string
 }
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
-import { Skeleton, Tag } from 'antd'
+import { Skeleton } from 'antd'
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge'
 import { MachineAssignmentService } from '../../services'
 import { useGetMachineAssignmentStatus } from '@/api/queries/distributedStorage'
@@ -107,12 +107,12 @@ export const LazyAssignmentStatus: React.FC<LazyAssignmentStatusProps> = ({
   // If no API call needed, show immediate status
   if (!needsApiCall) {
     const assignmentInfo = MachineAssignmentService.getAssignmentInfo(machine)
-    
+
     return (
       <div ref={containerRef} data-testid="lazy-status-immediate-container">
         <MachineAssignmentStatusBadge
           assignmentType={immediateStatus}
-          resourceName={assignmentInfo.resourceName}
+          assignmentDetails={assignmentInfo.resourceName}
         />
       </div>
     )
@@ -149,7 +149,7 @@ export const LazyAssignmentStatus: React.FC<LazyAssignmentStatusProps> = ({
     <div ref={containerRef} data-testid="lazy-status-final-container">
       <MachineAssignmentStatusBadge
         assignmentType={finalAssignmentType}
-        resourceName={finalResourceName}
+        assignmentDetails={finalResourceName}
       />
     </div>
   )

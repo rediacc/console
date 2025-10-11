@@ -29,7 +29,8 @@ export interface RediaccConfig {
   // Feature URLs
   docsUrl: string
   supportUrl: string
-  
+  templatesUrl: string
+
   // Security Settings
   csrfEnabled: string
   httpsOnly: string

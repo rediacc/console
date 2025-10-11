@@ -127,7 +127,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
           onImportExport={(handlers) => {
             importExportHandlers.current = handlers
           }}
-          onFieldMovement={(movedToExtra, movedFromExtra) => {
+          onFieldMovement={(_movedToExtra, _movedFromExtra) => {
             // Field movement notifications are already shown by VaultEditor
             // This callback is optional for parent components that need to track movements
           }}

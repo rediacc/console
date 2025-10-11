@@ -1,157 +1,159 @@
 {
-  "title": "Distributed Storage",
-  "description": "Manage Ceph distributed storage clusters, pools, and images",
-  "tabs": {
-    "clusters": "Clusters",
-    "pools": "Pools"
+  "assignment": {
+    "actions": {
+      "assignToCluster": "Dem Cluster zugewiesen",
+      "assignedToClone": "Dem Klonen zugewiesen",
+      "assignedToImage": "Dem Bild zugewiesen",
+      "reassignedImage": "Neu zugewiesenes Bild",
+      "removedFromClone": "Aus Klon entfernt",
+      "removedFromCluster": "Aus Cluster entfernt"
+    },
+    "assignedTo": "Zugewiesen an {{type}}: {{name}}",
+    "assignedToClone": "Dem Klonen zugewiesen",
+    "assignedToCluster": "Dem Cluster zugewiesen",
+    "assignedToImage": "Dem Bild zugewiesen",
+    "available": "Verfügbar",
+    "currentAssignment": "Aktueller Auftrag",
+    "history": "Auftragsverlauf",
+    "none": "Keiner",
+    "status": "Zuweisungsstatus",
+    "viewStatus": "Aufgabenstatus anzeigen"
   },
-  "clusters": {
+  "assignmentStatus": {
+    "available": "Verfügbar",
+    "clone": "Klon",
     "cluster": "Cluster",
-    "clusters": "Clusters",
-    "clusterName": "Cluster Name",
-    "clusterNameRequired": "Cluster name is required",
-    "clusterNamePlaceholder": "Enter cluster name",
-    "noClusters": "No clusters configured yet",
-    "create": "Create Cluster",
-    "createInfo": "Important",
-    "createDescription": "Use the Remote button to run cluster creation functions. This will only create the cluster configuration entry.",
-    "confirmDelete": "Delete Cluster",
-    "deleteWarning": "Are you sure you want to delete cluster '{{name}}'? This action cannot be undone.",
-    "assignedMachines": "Assigned Machines",
-    "clusterNodes": "Cluster Nodes",
-    "machineName": "Machine Name",
-    "role": "Role",
-    "status": "Status",
-    "monitor": "Monitor",
-    "osd": "OSD",
-    "manager": "Manager",
-    "active": "Active",
-    "inactive": "Inactive",
-    "error": "Error",
-    "createdSuccess": "Cluster created successfully",
-    "updatedSuccess": "Cluster updated successfully",
-    "deletedSuccess": "Cluster deleted successfully",
-    "createError": "Failed to create cluster",
-    "updateError": "Failed to update cluster",
-    "deleteError": "Failed to delete cluster"
-  },
-  "pools": {
-    "pool": "Pool",
-    "pools": "Pools",
-    "poolName": "Pool Name",
-    "poolNameRequired": "Pool name is required",
-    "poolNamePlaceholder": "Enter pool name",
-    "cluster": "Cluster",
-    "clusterRequired": "Cluster selection is required",
-    "selectCluster": "Select a cluster",
-    "clusterPrefix": "Cluster",
-    "noPools": "No pools configured yet",
-    "create": "Create Pool",
-    "createInfo": "Important",
-    "createDescription": "Use the Remote button to run pool creation functions. This will only create the pool configuration entry.",
-    "confirmDelete": "Delete Pool",
-    "deleteWarning": "Are you sure you want to delete pool '{{name}}'? This action cannot be undone.",
-    "rbdImages": "RBD Images",
-    "createdSuccess": "Pool created successfully",
-    "updatedSuccess": "Pool updated successfully",
-    "deletedSuccess": "Pool deleted successfully",
-    "createError": "Failed to create pool",
-    "updateError": "Failed to update pool",
-    "deleteError": "Failed to delete pool"
-  },
-  "images": {
-    "image": "Image",
-    "images": "Images",
-    "imageName": "Image Name",
-    "size": "Size",
-    "features": "Features",
-    "noImages": "No images in this pool",
-    "create": "Create Image",
-    "createdSuccess": "Image created successfully",
-    "updatedSuccess": "Image updated successfully",
-    "deletedSuccess": "Image deleted successfully",
-    "createError": "Failed to create image",
-    "updateError": "Failed to update image",
-    "deleteError": "Failed to delete image"
-  },
-  "snapshots": {
-    "snapshot": "Snapshot",
-    "snapshots": "Snapshots",
-    "snapshotName": "Snapshot Name",
-    "protected": "Protected",
-    "noSnapshots": "No snapshots",
-    "create": "Create Snapshot",
-    "createdSuccess": "Snapshot created successfully",
-    "deletedSuccess": "Snapshot deleted successfully",
-    "createError": "Failed to create snapshot",
-    "deleteError": "Failed to delete snapshot"
+    "image": "Bild"
   },
   "clones": {
-    "clone": "Clone",
-    "clones": "Clones",
-    "cloneName": "Clone Name",
-    "parentSnapshot": "Parent Snapshot",
-    "noClones": "No clones",
-    "create": "Create Clone",
-    "createdSuccess": "Clone created successfully",
-    "deletedSuccess": "Clone deleted successfully",
-    "createError": "Failed to create clone",
-    "deleteError": "Failed to delete clone"
+    "addMachine": "Maschine hinzufügen",
+    "assignMachines": "Maschinen zuweisen",
+    "assignedMachines": "Zugewiesene Maschinen",
+    "exportMachines": "Maschinen exportieren",
+    "machineManager": "Maschinenmanager",
+    "noMachinesAssigned": "Diesem Klon sind keine Maschinen zugewiesen",
+    "removeMachine": "Maschine entfernen",
+    "removeSelectedMachines": "Ausgewählte Maschinen entfernen",
+    "searchMachines": "Suchmaschinen...",
+    "statistics": "Statistiken",
+    "title": "Klone",
+    "totalMachines": "Gesamtmaschinen"
+  },
+  "clusters": {
+    "assignMachines": "Maschinen zuweisen",
+    "assignedMachines": "Zugewiesene Maschinen",
+    "availableMachines": "Verfügbare Maschinen",
+    "clusterDetails": "Clusterdetails",
+    "configureVault": "Vault konfigurieren",
+    "createCluster": "Cluster erstellen",
+    "deleteCluster": "Cluster löschen",
+    "editCluster": "Cluster bearbeiten",
+    "fsid": "Ble",
+    "manageMachines": "Maschinen verwalten",
+    "monitorHosts": "Überwachen Sie Hosts",
+    "name": "Clustername",
+    "noMachinesAssigned": "Diesem Cluster sind keine Maschinen zugewiesen",
+    "removeFromCluster": "Aus Cluster entfernen",
+    "secretKey": "Geheimer Schlüssel",
+    "title": "Cluster"
+  },
+  "common": {
+    "actions": "Aktionen",
+    "cancel": "Stornieren",
+    "close": "Schließen",
+    "confirm": "Bestätigen",
+    "delete": "Löschen",
+    "details": "Einzelheiten",
+    "edit": "Bearbeiten",
+    "error": "Fehler",
+    "loading": "Laden...",
+    "refresh": "Aktualisieren",
+    "save": "Speichern",
+    "success": "Erfolg"
+  },
+  "dashboard": {
+    "avgMachinesPerCluster": "Durchschnittliche Maschinen/Cluster",
+    "clusterSummary": "Cluster-Zusammenfassung",
+    "machineUtilization": "Maschinenauslastung",
+    "subtitle": "{{total}} Gesamtmaschinen aller Teams",
+    "teamBreakdown": "Team-Maschinenverteilung",
+    "title": "Verteilte Speichermaschinen",
+    "totalClusters": "Gesamtcluster",
+    "utilizationDetails": "{{used}} von {{total}} Maschinen im Einsatz"
+  },
+  "description": "Verwalten Sie verteilte Speichercluster, Pools, Images und Snapshots",
+  "images": {
+    "assignedMachine": "Zugewiesene Maschine",
+    "name": "Bildname",
+    "reassignMachine": "Maschine neu zuweisen",
+    "reassignmentModal": {
+      "currentAssignment": "Aktueller Auftrag",
+      "noMachineAssigned": "Derzeit ist keine Maschine zugewiesen",
+      "selectNewMachine": "Wählen Sie Neue Maschine",
+      "title": "Bild der Maschine neu zuweisen",
+      "warning": "Warnung: Wenn Sie ein Image einem anderen Computer erneut zuweisen, ist es auf dem aktuellen Computer nicht verfügbar, bis die Daten migriert werden."
+    },
+    "reassignmentSuccess": "Bildmaschinenzuweisung erfolgreich aktualisiert",
+    "title": "Bilder"
+  },
+  "machineSection": {
+    "manageAssignment": "Aufgabe verwalten",
+    "notAssigned": "Keiner verteilten Speicherressource zugewiesen",
+    "title": "Verteilter Speicher",
+    "viewDetails": "Details anzeigen"
   },
   "machines": {
-    "selectMachines": "Select Machines",
-    "selectMachinesDescription": "Select machines to assign to this cluster",
-    "assignMachine": "Assign Machine",
-    "unassignMachine": "Unassign Machine",
-    "assignedSuccess": "Machine assigned successfully",
-    "unassignedSuccess": "Machine unassigned successfully",
-    "assignError": "Failed to assign machine",
-    "unassignError": "Failed to unassign machine"
+    "actions": {
+      "exportReport": "Bericht exportieren",
+      "removeAssignment": "Zuordnung entfernen",
+      "viewDetails": "Details anzeigen"
+    },
+    "filters": {
+      "allStatuses": "Alle Status",
+      "assignmentStatus": "Zuweisungsstatus",
+      "searchPlaceholder": "Suchmaschinen..."
+    },
+    "summary": {
+      "assignedToClones": "Klonen zugewiesen",
+      "assignedToClusters": "Clustern zugewiesen",
+      "assignedToImages": "Bildern zugewiesen",
+      "available": "Verfügbar",
+      "title": "Maschinenverfügbarkeit",
+      "total": "Gesamtmaschinen"
+    }
   },
-  "functions": {
-    "cluster_create": "Create Cluster",
-    "cluster_status": "Cluster Status",
-    "cluster_dashboard": "Dashboard Info",
-    "cluster_destroy": "Destroy Cluster",
-    "pool_create": "Create Pool",
-    "pool_list": "List Pools",
-    "pool_delete": "Delete Pool",
-    "image_create": "Create RBD Image",
-    "image_list": "List Images",
-    "image_info": "Image Info",
-    "image_delete": "Delete Image",
-    "image_resize": "Resize Image",
-    "snapshot_create": "Create Snapshot",
-    "snapshot_list": "List Snapshots",
-    "snapshot_delete": "Delete Snapshot",
-    "snapshot_rollback": "Rollback to Snapshot",
-    "clone_image": "Clone Image",
-    "clone_list": "List Clones",
-    "clone_cleanup": "Cleanup Clone",
-    "client_mount": "Mount Storage",
-    "client_unmount": "Unmount Storage",
-    "executing": "Executing function...",
-    "executionSuccess": "Function executed successfully",
-    "executionError": "Function execution failed"
+  "pools": {
+    "configureVault": "Vault konfigurieren",
+    "create": "Pool erstellen",
+    "createPool": "Pool erstellen",
+    "crush": "CRUSH-Regel",
+    "deletePool": "Pool löschen",
+    "editPool": "Pool bearbeiten",
+    "minSize": "Mindestgröße",
+    "name": "Poolname",
+    "noPools": "Keine Pools gefunden",
+    "pgNum": "PG-Nummer",
+    "pgpNum": "PGP-Nummer",
+    "poolDetails": "Pooldetails",
+    "poolId": "Pool-ID",
+    "size": "Größe",
+    "title": "Pools"
   },
-  "errors": {
-    "loadClusters": "Failed to load clusters",
-    "loadPools": "Failed to load pools",
-    "loadImages": "Failed to load images",
-    "loadMachines": "Failed to load machines",
-    "noTeamSelected": "No team selected",
-    "vaultRequired": "Vault configuration is required"
+  "snapshots": {
+    "title": "Schnappschüsse"
   },
-  "placeholders": {
-    "searchClusters": "Search clusters...",
-    "searchPools": "Search pools...",
-    "searchImages": "Search images..."
+  "tabs": {
+    "clusters": "Cluster",
+    "machines": "Maschinen",
+    "pools": "Pools"
   },
-  "tooltips": {
-    "expandRow": "Click to expand and view details",
-    "manageCluster": "Manage cluster configuration and nodes",
-    "managePool": "Manage pool configuration and images",
-    "runFunction": "Execute remote Ceph functions",
-    "viewAuditTrace": "View audit history for this item"
+  "title": "Verteilter Speicher",
+  "warnings": {
+    "dataLoss": "Warnung: Das Entfernen von Maschinen kann zu Datenverlust führen, wenn die Migration nicht ordnungsgemäß durchgeführt wird.",
+    "exclusivity": "Maschinen können jeweils nur einer Ressource zugewiesen werden (Cluster, Image oder Klon).",
+    "exclusivityClone": "Diese Maschine ist derzeit einem Klon zugewiesen. Es muss aus dem Klon entfernt werden, bevor es an anderer Stelle zugewiesen werden kann.",
+    "exclusivityCluster": "Diese Maschine ist derzeit einem Cluster zugewiesen. Es muss aus dem Cluster entfernt werden, bevor es an anderer Stelle zugewiesen werden kann.",
+    "exclusivityImage": "Dieser Maschine ist derzeit ein Bild zugewiesen. Das Bild muss neu zugewiesen werden, bevor dieses Gerät an anderer Stelle verwendet werden kann.",
+    "reassignment": "Die Neuzuweisung von Ressourcen erfordert eine sorgfältige Planung, um Serviceunterbrechungen zu vermeiden."
   }
 }

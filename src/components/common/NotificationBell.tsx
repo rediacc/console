@@ -10,12 +10,13 @@ import {
 } from '@/utils/optimizedIcons'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '@/store/store'
-import { 
-  markAsRead, 
-  markAllAsRead, 
-  clearNotification, 
+import {
+  markAsRead,
+  markAllAsRead,
+  clearNotification,
   clearAllNotifications,
-  NotificationType 
+  NotificationType,
+  Notification
 } from '@/store/notifications/notificationSlice'
 import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
@@ -123,11 +124,11 @@ const NotificationBell: React.FC = () => {
         ) : (
           <List
             dataSource={notifications}
-            renderItem={(notification, index) => (
+            renderItem={(notification: Notification, index: number) => (
               <List.Item
                 key={notification.id}
                 className={notification.read ? 'ant-list-item-read' : 'ant-list-item-unread'}
-                style={{ 
+                style={{
                   padding: `${spacing('SM')}px ${spacing('MD')}px`,
                   cursor: 'pointer',
                   transition: DESIGN_TOKENS.TRANSITIONS.DEFAULT
@@ -157,7 +158,7 @@ const NotificationBell: React.FC = () => {
                   }
                   description={
                     <div>
-                      <Text className="notification-message" style={{ 
+                      <Text className="notification-message" style={{
                         ...styles.body,
                         display: 'block',
                         marginBottom: spacing('XS'),

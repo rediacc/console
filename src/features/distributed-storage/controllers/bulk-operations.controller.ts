@@ -1,6 +1,5 @@
 import type { Machine } from '@/types'
 import { 
-  MachineAssignmentService, 
   MachineValidationService 
 } from '../services'
 import { BatchApiService } from '../services/batch-api.service'
@@ -22,7 +21,6 @@ import {
   ProgressCallback,
   MigrationPlan,
   MigrationResult,
-  WorkflowError,
   ValidationError,
   WorkflowEvent,
   WorkflowEventData,
@@ -263,9 +261,10 @@ export class BulkOperationsController {
   }
   
   /**
-   * Process assignment with batch API service
+   * Process assignment with batch API service (currently unused but kept for future use)
    */
-  private async processAssignmentWithBatching(
+  // @ts-expect-error - Intentionally unused, kept for future implementation
+  private async _processAssignmentWithBatching(
     machines: Machine[],
     targetType: 'cluster' | 'image' | 'clone',
     targetResource: string,
@@ -298,17 +297,12 @@ export class BulkOperationsController {
     
     // Record batch information
     const batchInfo: BulkOperationBatch = {
-      batchId: `batch-${Date.now()}`,
+      batchNumber: 1,
       machines: machineNames,
-      status: batchResult.failed.length === 0 ? 'completed' : 'partial',
-      successCount: batchResult.successful.length,
-      failureCount: batchResult.failed.length,
-      errors: batchResult.failed.reduce((acc, failure) => {
-        acc[failure.item] = failure.error
-        return acc
-      }, {} as Record<string, string>)
+      status: batchResult.failed.length === 0 ? 'completed' : 'failed',
+      error: batchResult.failed.length > 0 ? new Error(batchResult.failed.map(f => f.error).join('; ')) : undefined
     }
-    
+
     result.batches.push(batchInfo)
   }
 
@@ -331,16 +325,35 @@ export class BulkOperationsController {
       const validationResult: BulkValidationResult = {
         allValid: batchResult.failed.length === 0,
         validMachines: batchResult.successful,
-        invalidMachines: batchResult.failed.map(f => f.item),
+        invalidMachines: batchResult.failed.map(f => ({
+          machine: f.item,
+          machineName: f.item.machineName,
+          errors: [{
+            code: 'VALIDATION_FAILED',
+            message: f.error,
+            severity: 'error' as const
+          }],
+          canOverride: false
+        })),
         errors: {},
-        warnings: {}
+        warnings: {},
+        summary: {
+          totalMachines: machines.length,
+          validCount: batchResult.successful.length,
+          invalidCount: batchResult.failed.length,
+          errorTypes: new Map(),
+          warningCount: 0,
+          criticalErrors: false
+        },
+        canProceed: batchResult.successful.length > 0
       }
       
       batchResult.failed.forEach(failure => {
-        validationResult.errors[failure.item.machineName] = [{
+        const machineName = failure.item.machineName
+        validationResult.errors[machineName] = [{
           code: 'VALIDATION_FAILED',
           message: failure.error,
-          severity: 'error'
+          severity: 'error' as const
         }]
       })
       
@@ -363,23 +376,36 @@ export class BulkOperationsController {
       const unavailableMachines = validationResult.validMachines.filter(m =>
         availabilityCheck.unavailable.includes(m.machineName)
       )
-      
+
       if (unavailableMachines.length > 0) {
-        validationResult.invalidMachines.push(...unavailableMachines)
+        // Convert Machine[] to InvalidMachine[] before pushing
+        const invalidMachines = unavailableMachines.map(machine => ({
+          machine,
+          machineName: machine.machineName,
+          errors: [{
+            code: 'MACHINE_UNAVAILABLE',
+            message: `Machine is already assigned to another resource`,
+            severity: 'error' as const
+          }],
+          canOverride: false
+        }))
+
+        validationResult.invalidMachines.push(...invalidMachines)
         validationResult.validMachines = validationResult.validMachines.filter(m =>
           !unavailableMachines.includes(m)
         )
         validationResult.allValid = false
-        
+
         // Add availability errors
         unavailableMachines.forEach(machine => {
-          if (!validationResult.errors[machine.machineName]) {
-            validationResult.errors[machine.machineName] = []
+          const machineName = machine.machineName
+          if (!validationResult.errors[machineName]) {
+            validationResult.errors[machineName] = []
           }
-          validationResult.errors[machine.machineName].push({
+          validationResult.errors[machineName].push({
             code: 'MACHINE_UNAVAILABLE',
             message: `Machine is already assigned to another resource`,
-            severity: 'error'
+            severity: 'error' as const
           })
         })
       }
@@ -439,7 +465,7 @@ export class BulkOperationsController {
         failed: result.failedMachines.length,
         skipped: result.totalMachines - result.successfulMachines.length - result.failedMachines.length
       },
-      batches: result.batches.map((batch, index) => ({
+      batches: result.batches.map((batch, _index) => ({
         batchNumber: batch.batchNumber,
         size: batch.machines.length,
         duration: 0, // Would need to track per-batch timing
@@ -527,7 +553,7 @@ export class BulkOperationsController {
   }
   
   private async processBatches(
-    workflowId: string,
+    _workflowId: string,
     batches: BulkOperationBatch[],
     targetType: 'cluster' | 'image' | 'clone',
     targetResource: string,

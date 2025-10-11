@@ -4,7 +4,6 @@ import { CloudServerOutlined, FileImageOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import type { DistributedStorageRbdImage } from '@/api/queries/distributedStorage'
 import { useGetAvailableMachinesForClone, useUpdateImageMachineAssignment } from '@/api/queries/distributedStorage'
-import { showMessage } from '@/utils/messages'
 import { useComponentStyles, useFormStyles } from '@/hooks/useComponentStyles'
 import { ModalSize } from '@/types/modal'
 

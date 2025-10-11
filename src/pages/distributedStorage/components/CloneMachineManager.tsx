@@ -1,8 +1,7 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState } from 'react'
 import { Card, Table, Button, Space, Tag, Empty, Spin, Input, Row, Col, Statistic, message, Modal, Typography, Alert, Tooltip } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { 
-  CloudServerOutlined, 
   DesktopOutlined, 
   PlusOutlined, 
   DeleteOutlined,
@@ -209,7 +208,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
     {
       title: t('machines:assignmentStatus.title'),
       key: 'status',
-      render: (_, record: CloneMachine) => (
+      render: (_, _record: CloneMachine) => (
         <MachineAssignmentStatusBadge
           assignmentType="CLONE"
           assignmentDetails={t('machines:assignmentStatus.cloneDetails', { clone: clone.cloneName })}
@@ -421,10 +420,9 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
             />
           ) : (
             <AvailableMachinesSelector
-              availableMachines={availableMachines}
-              selectedMachines={selectedNewMachines}
-              onSelectionChange={setSelectedNewMachines}
-              teamName={teamName}
+              machines={availableMachines}
+              value={selectedNewMachines}
+              onChange={setSelectedNewMachines}
               data-testid="clone-manager-modal-selector"
             />
           )}

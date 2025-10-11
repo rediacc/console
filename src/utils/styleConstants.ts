@@ -213,7 +213,7 @@ export const createModalStyle = (width?: number) => ({
   padding: DESIGN_TOKENS.SPACING['4'],  // 32px padding as per style guide
 })
 
-export const createInputStyle = (height?: number) => ({
+export const createInputStyle = (_height?: number) => ({
   // Most styles are handled by CSS classes (.ant-input, etc.)
   // Only return minimal overrides if absolutely necessary
   // CSS already handles: min-height, border-radius, font-size, padding, border, transition

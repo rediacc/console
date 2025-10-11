@@ -7,12 +7,11 @@ import { useTheme } from '@/context/ThemeContext'
 import { showMessage } from '@/utils/messages'
 import type { Machine } from '@/types'
 import { usePingFunction } from '@/services/pingService'
-import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, borderRadius, fontSize } from '@/utils/styleConstants'
 import { ModalSize } from '@/types/modal'
 import './ConnectivityTestModal.css'
 
-const { Text, Title } = Typography
+const { Text } = Typography
 
 interface ConnectivityTestModalProps {
   open: boolean
@@ -35,8 +34,7 @@ interface TestResult {
 const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
   open,
   onClose,
-  machines,
-  teamFilter
+  machines
 }) => {
   const { t } = useTranslation(['machines', 'common'])
   const { theme } = useTheme()
@@ -44,7 +42,6 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
   const [isRunning, setIsRunning] = useState(false)
   const [progress, setProgress] = useState(0)
   const [currentMachineIndex, setCurrentMachineIndex] = useState(-1)
-  const styles = useComponentStyles()
   
   const { executePingForMachine, waitForQueueItemCompletion } = usePingFunction()
 
@@ -211,7 +208,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
       dataIndex: 'message',
       key: 'message',
       ellipsis: true,
-      render: (message?: string, record: TestResult) => {
+      render: (message: string | undefined, record: TestResult) => {
         if (!message) return '-'
         return (
           <Text type={record.status === 'failed' ? 'danger' : undefined}>
@@ -251,8 +248,8 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
         >
           {isRunning ? t('machines:testing') : t('machines:runTest')}
         </Button>,
-        <Tooltip title="Close">
-          <Button 
+        <Tooltip key="close-tooltip" title="Close">
+          <Button
             key="close"
             icon={<CloseCircleOutlined />}
             onClick={onClose} 

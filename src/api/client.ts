@@ -22,17 +22,24 @@ const API_PREFIX = '/StoredProcedure'
 // API URL will be determined dynamically based on connection health check
 let API_BASE_URL = ''
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface ApiResponse<T = any> {
   failure: number
   errors: string[]
   message: string
   resultSets: Array<{
     data: T[]
+    resultSetIndex?: number
   }>
+  status?: number
+  isTFAEnabled?: boolean
+  isAuthorized?: boolean
+  authenticationStatus?: string
 }
 
 class ApiClient {
   private client: AxiosInstance
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private requestQueue: Promise<any> = Promise.resolve()
   private isUpdatingToken = false
 
@@ -77,7 +84,6 @@ class ApiClient {
         const token = await tokenService.getToken()
         if (token) {
           config.headers['Rediacc-RequestToken'] = token
-          console.log('Adding token to request:', config.url, token.substring(0, 8) + '...')
         } else {
           console.warn('No token available for request:', config.url)
         }
@@ -111,7 +117,7 @@ class ApiClient {
 
         if (responseData.failure !== 0) return this.handleApiFailure(responseData)
 
-        await this.handleTokenRotation(responseData, response.config.url)
+        await this.handleTokenRotation(responseData)
         return response
       },
       (error) => {
@@ -161,20 +167,25 @@ class ApiClient {
     return response.data
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async makeRequest<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
     return this.queueRequest(() => this.client.post<ApiResponse<T>>(endpoint, data || {}))
   }
 
-  get = <T = any>(endpoint: string, params?: any): Promise<ApiResponse<T>> => 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get = <T = any>(endpoint: string, params?: any): Promise<ApiResponse<T>> =>
     this.makeRequest<T>(endpoint, params)
 
-  post = <T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> => 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  post = <T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> =>
     this.makeRequest<T>(endpoint, data)
 
-  put = <T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> => 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  put = <T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> =>
     this.makeRequest<T>(endpoint, data)
 
-  delete = <T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> => 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  delete = <T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> =>
     this.makeRequest<T>(endpoint, data)
 
   private async queueRequest<T>(request: () => Promise<AxiosResponse<ApiResponse<T>>>): Promise<ApiResponse<T>> {
@@ -240,7 +251,7 @@ class ApiClient {
     return Promise.reject(new Error(this.extractErrorMessage(responseData)))
   }
 
-  private async handleTokenRotation(responseData: ApiResponse, requestUrl?: string): Promise<void> {
+  private async handleTokenRotation(responseData: ApiResponse): Promise<void> {
     // For ForkAuthenticationRequest, only rotate the main session token (resultSets[0])
     // Don't use the fork token from the "Credentials" resultSet for main session rotation
     const newToken = responseData.resultSets?.[0]?.data?.[0]?.nextRequestToken
