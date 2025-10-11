@@ -1,27 +1,17 @@
 import React, { useState, useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { Layout, Menu, Avatar, Dropdown, Space, Badge, Typography, Switch, Button, Segmented, Tooltip } from 'antd'
+import { Layout, Avatar, Space, Badge, Typography, Button, Segmented, Tooltip } from 'antd'
 import {
-  DashboardOutlined,
-  TeamOutlined,
-  GlobalOutlined,
-  ApiOutlined,
-  CloudServerOutlined,
-  FolderOutlined,
-  ScheduleOutlined,
   ThunderboltOutlined,
   UserOutlined,
-  SafetyOutlined,
   SettingOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  ExperimentOutlined,
   SmileOutlined,
   SafetyCertificateOutlined,
   PartitionOutlined,
-  EnvironmentOutlined,
   AppstoreOutlined,
   HistoryOutlined,
   ShoppingOutlined,
@@ -43,7 +33,7 @@ import logoWhite from '@/assets/logo_white.png'
 import { RootState } from '@/store/store'
 import { useCompanyInfo } from '@/api/queries/dashboard'
 import { useQueryClient } from '@tanstack/react-query'
-import { useComponentStyles, useNavigationStyles } from '@/hooks/useComponentStyles'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants'
 import SandboxWarning from '@/components/common/SandboxWarning'
 import { useTelemetry } from '@/components/common/TelemetryProvider'
@@ -69,8 +59,7 @@ const MainLayout: React.FC = () => {
   const { t } = useTranslation('common')
   const { data: companyData } = useCompanyInfo()
   const styles = useComponentStyles()
-  const navStyles = useNavigationStyles()
-  const { trackUserAction, trackEvent } = useTelemetry()
+  const { trackUserAction } = useTelemetry()
 
   // Handle responsive behavior
   useEffect(() => {
@@ -268,12 +257,6 @@ const MainLayout: React.FC = () => {
     })
     .map(({ showInSimple, requiresPlan, requiresDevelopment, ...item }) => item)
 
-  // Don't select any menu during transition
-  const selectedKeys = isTransitioning ? [] : [location.pathname]
-  const openKeys = menuItems
-    .filter(item => item.children?.some(child => child.key === location.pathname))
-    .map(item => item.key)
-
   // Determine if current page needs no-scroll behavior
   const noScrollPages = ['/audit', '/resources', '/queue']
   const isNoScrollPage = noScrollPages.includes(location.pathname)
@@ -348,7 +331,7 @@ const MainLayout: React.FC = () => {
             }}
           />
         </div>
-        <div style={{ ...styles.flexColumn, height: `calc(100% - ${DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT}px)`, overflow: 'hidden' }}>
+        <div style={{ ...styles.flexColumn as React.CSSProperties, height: `calc(100% - ${DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT}px)`, overflow: 'hidden' }}>
           <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
             {menuItems.map((item) => {
               if (item.type === 'divider') {

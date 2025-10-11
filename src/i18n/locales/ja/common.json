@@ -1,395 +1,537 @@
 {
-  "navigation": {
-    "dashboard": "ダッシュボード",
-    "architecture": "アーキテクチャ",
-    "resources": "リソース",
-    "marketplace": "マーケットプレイス",
-    "queue": "キュー",
-    "system": "システム",
-    "audit": "監査",
-    "logout": "ログアウト"
-  },
   "actions": {
-    "edit": "編集",
-    "delete": "削除",
-    "search": "検索",
-    "reset": "リセット",
-    "cancel": "キャンセル",
-    "create": "作成",
-    "save": "保存",
-    "retry": "再試行",
-    "refresh": "更新",
-    "fullscreen": "フルスクリーン",
-    "exitFullscreen": "フルスクリーン終了",
     "addToQueue": "キューに追加",
-    "viewTrace": "トレースを表示",
-    "close": "閉じる",
-    "back": "戻る"
+    "advanced": "高度な",
+    "back": "戻る",
+    "cancel": "キャンセル",
+    "clearSelection": "選択をクリア",
+    "close": "近い",
+    "create": "作成する",
+    "createResource": "{{リソース}}を作成する",
+    "delete": "消去",
+    "edit": "編集",
+    "editResource": "{{リソース}}を編集",
+    "editVault": "ボールトの編集",
+    "exitFullscreen": "全画面表示を終了する",
+    "fullscreen": "全画面表示",
+    "manage": "管理",
+    "refresh": "リフレッシュ",
+    "remote": "リモート",
+    "remove": "取り除く",
+    "reset": "リセット",
+    "retry": "リトライ",
+    "runFunction": "関数の実行",
+    "save": "保存",
+    "search": "検索",
+    "trace": "トレース",
+    "viewTrace": "トレースの表示"
   },
-  "close": "閉じる",
-  "copiedToClipboard": "クリップボードにコピーしました",
+  "close": "近い",
+  "copiedToClipboard": "クリップボードにコピーされました",
   "copyFailed": "クリップボードへのコピーに失敗しました",
-  "export": "エクスポート",
+  "current": "現在",
+  "dashboard": {
+    "availablePlans": "利用可能なプラン",
+    "comparePlansDescription": "さまざまなサブスクリプション層の機能と価格を比較する",
+    "currentPlan": "現在の計画",
+    "elitePlanDescription": "あなたはすべての機能がロック解除された最高レベルのプランを利用しています",
+    "upgradeOptions": "アップグレードオプション"
+  },
+  "export": "輸出",
   "exportCSV": "CSVとしてエクスポート",
   "exportJSON": "JSONとしてエクスポート",
-  "refresh": "更新",
-  "today": "今日",
-  "yesterday": "昨日",
-  "last7Days": "過去7日間",
-  "last30Days": "過去30日間",
-  "thisMonth": "今月",
-  "lastMonth": "先月",
-  "messages": {
-    "success": "成功",
-    "required": "このフィールドは必須です",
-    "invalidEmail": "無効なメールアドレス",
+  "fieldGenerator": {
+    "applied": "値が正常に適用されました",
+    "apply": "適用する",
+    "cancel": "キャンセル",
+    "comingSoon": "近日公開",
+    "copied": "コピーしました！",
+    "copy": "コピー",
+    "copyError": "クリップボードへのコピーに失敗しました",
+    "generate": "生成する",
+    "generationError": "生成に失敗しました。 もう一度試してください。",
+    "generationSuccess": "正常に生成されました",
+    "keySize": "キーのサイズ",
+    "keyType": "キーの種類",
+    "moreSecure": "より安全な",
+    "regenerate": "再生する",
+    "title": {
+      "repository_credential": "リポジトリ認証情報の生成",
+      "ssh_keys": "SSHキーペアの生成"
+    },
+    "tooltip": "価値を生み出す"
+  },
+  "fields": {
+    "vault": "ボールトの構成"
+  },
+  "general": {
+    "cancel": "キャンセル",
+    "defaultsApplied": "適用されるデフォルト値",
+    "important": "重要",
     "loading": "読み込み中...",
-    "error": "エラー"
-  },
-  "table": {
-    "actions": "アクション",
-    "showingRecords": "{{total}}件中{{start}}-{{end}}件を表示"
-  },
-  "status": {
-    "label": "ステータス",
-    "initializing": "初期化中...",
-    "waitingForExecution": "実行待ち",
-    "processing": "処理中",
-    "running": "実行中"
+    "showingRecords": "{{total}} 件中 {{start}}～{{end}} 件のレコードを表示しています",
+    "vaultVersion": "ボールトのバージョン",
+    "versionFormat": "v{{バージョン}}"
   },
   "language": {
-    "select": "言語を選択",
+    "ar": "アラビア語",
+    "de": "ドイツ語",
     "en": "英語",
     "es": "スペイン語",
     "fr": "フランス語",
-    "de": "ドイツ語",
-    "zh": "中国語",
     "ja": "日本語",
-    "ar": "アラビア語",
+    "select": "言語の選択",
     "tr": "トルコ語",
-    "ru": "ロシア語"
+    "zh": "中国語"
+  },
+  "last30Days": "過去 30 日間",
+  "last7Days": "過去 7 日間",
+  "lastMonth": "先月",
+  "messages": {
+    "error": "エラー",
+    "invalidEmail": "無効なメールアドレス",
+    "loading": "読み込み中...",
+    "required": "この項目は必須です",
+    "success": "成功"
+  },
+  "navigation": {
+    "architecture": "建築",
+    "audit": "監査",
+    "closeMobileMenu": "モバイルメニューを閉じる",
+    "dashboard": "ダッシュボード",
+    "distributedStorage": "分散ストレージ",
+    "logout": "ログアウト",
+    "mainNavigation": "メインナビゲーション",
+    "marketplace": "市場",
+    "openMobileMenu": "モバイルメニューを開く",
+    "queue": "列",
+    "resources": "リソース",
+    "system": "システム"
+  },
+  "nestedObjectEditor": {
+    "Active": "アクティブ",
+    "Add": "追加",
+    "Array": "配列",
+    "Container Images Detected": "コンテナイメージが検出されました",
+    "Delete this entry?": "このエントリを削除しますか?",
+    "Enter key name": "キー名を入力してください",
+    "False": "間違い",
+    "Fields": "フィールド",
+    "Hide JSON": "JSONを隠す",
+    "Image": "画像",
+    "JSON Error": "JSONエラー",
+    "No": "いいえ",
+    "No entries": "エントリはありません",
+    "Object": "物体",
+    "Plugin Configuration Detected": "プラグイン構成が検出されました",
+    "Raw JSON Editor": "生の JSON エディター",
+    "Show JSON": "JSONを表示",
+    "True": "真実",
+    "Uniform Structure": "均一な構造",
+    "Uniform Structure Detected": "均一な構造が検出されました",
+    "Yes": "はい"
+  },
+  "no": "いいえ",
+  "noMatchingResults": "一致する結果はありません",
+  "none": "なし",
+  "notifications": {
+    "clearAll": "すべてクリア",
+    "empty": "通知はありません",
+    "markAllRead": "すべて既読としてマークする",
+    "title": "通知"
+  },
+  "refresh": "リフレッシュ",
+  "status": {
+    "initializing": "初期化中...",
+    "label": "状態",
+    "processing": "処理",
+    "running": "ランニング",
+    "waitingForExecution": "実行を待っています"
+  },
+  "table": {
+    "actions": "アクション",
+    "showingRecords": "{{total}} 件中 {{start}}～{{end}} 件のレコードを表示しています"
   },
   "theme": {
-    "light": "ライト",
-    "dark": "ダーク"
+    "dark": "暗い",
+    "light": "ライト"
   },
+  "thisMonth": "今月",
+  "today": "今日",
+  "total": "合計",
   "uiMode": {
-    "simple": "シンプル",
-    "expert": "エキスパート",
-    "switching": "{{mode}}モードに切り替え中..."
+    "expert": "専門家",
+    "simple": "単純",
+    "switching": "{{mode}} モードに切り替えています..."
   },
-  "general": {
-    "versionFormat": "v{{version}}",
-    "loading": "読み込み中...",
-    "showingRecords": "{{total}}件中{{start}}-{{end}}件を表示",
-    "defaultsApplied": "デフォルト値が適用されました",
-    "important": "重要",
-    "cancel": "キャンセル"
-  },
-  "yes": "はい",
-  "no": "いいえ",
-  "dashboard": {
-    "availablePlans": "利用可能なプラン",
-    "upgradeOptions": "アップグレードオプション",
-    "currentPlan": "現在のプラン",
-    "comparePlansDescription": "異なるサブスクリプション層の機能と価格を比較",
-    "elitePlanDescription": "すべての機能がアンロックされた最高レベルのプランをご利用中です"
-  },
+  "utilized": "活用済み",
   "vaultEditor": {
-    "vaultConfiguration": "ボルト設定",
-    "vaultVersion": "ボルトバージョン:",
-    "versionAutoIncrement": "保存時にバージョンが自動的に増加します",
-    "importJson": "JSONインポート",
-    "exportJson": "JSONエクスポート",
-    "unsavedChanges": "未保存の変更",
-    "versionWillIncrement": "バージョンは{{version}}に増加します",
-    "saveVaultConfiguration": "ボルト設定を保存",
-    "validationErrors": "検証エラー:",
-    "pleaseFixErrors": "保存前に検証エラーを修正してください",
-    "noChangesToSave": "保存する変更はありません",
-    "unknownEntityType": "不明なエンティティタイプ",
-    "unknownEntityDescription": "エンティティタイプ \"{{type}}\" はボルト定義で定義されていません。",
-    "requiredFields": "必須フィールド",
-    "optionalFields": "オプションフィールド",
-    "extraFields": "追加フィールド（スキーマ外）",
+    "advanced": "高度な",
+    "enterJsonArray": "JSON配列を入力してください",
+    "enterJsonObject": "JSONオブジェクトを入力してください",
+    "example": "例：",
+    "expertModeDescription": "JSON の直接編集が正しく行われないと、システムの機能が壊れる可能性があります。 ボールトのスキーマとその影響を理解している場合にのみ変更してください。",
+    "expertModeOnly": "エキスパートモードのみ",
+    "exportJson": "JSONのエクスポート",
+    "extraFields": "追加フィールド (スキーマに含まれない)",
     "extraFieldsTooltip": "これらのフィールドはインポートされましたが、スキーマで定義されていません",
     "extraFieldsWarning": "警告",
-    "extraFieldsWarningDescription": "これらのフィールドはスキーマで定義されておらず、JSON構造の'extraFields'に保存されます。",
-    "rawJsonEditor": "JSON生エディタ（エキスパートモード）",
-    "rawJsonTooltip": "直接JSON編集 - 注意して使用してください！",
-    "expertModeOnly": "エキスパートモードのみ",
-    "expertModeDescription": "直接JSON編集は、正しく行われない場合、システム機能を破壊する可能性があります。ボルトスキーマと影響を理解している場合のみ変更してください。",
-    "jsonError": "JSONエラー",
-    "formatJson": "JSONフォーマット",
-    "resetToFormValues": "フォーム値にリセット",
-    "isRequired": "{{field}}は必須です",
-    "invalidFormat": "無効な形式。{{description}}",
-    "minLength": "最小長は{{length}}です",
-    "maxLength": "最大長は{{length}}です",
-    "minValue": "最小値は{{value}}です",
-    "maxValue": "最大値は{{value}}です",
-    "mustBeValidJson": "有効なJSONである必要があります",
-    "mustBeArray": "配列である必要があります",
-    "mustBeValidJsonArray": "有効なJSON配列である必要があります",
-    "enterJsonObject": "JSONオブジェクトを入力",
-    "enterJsonArray": "JSON配列を入力",
-    "portPlaceholder": "ポート番号 (1-65535)",
-    "example": "例:",
-    "advanced": "詳細",
-    "failedToSerialize": "データをJSONにシリアル化できませんでした",
-    "invalidJsonFormat": "無効なJSON形式",
-    "failedToParseJson": "JSONの解析に失敗しました:",
-    "fieldsMovedToExtra": "{{count}}個のフィールドがextraFieldsに移動されました: {{fields}}",
-    "fieldsMovedFromExtra": "{{count}}個のフィールドがextraFieldsから復元されました: {{fields}}",
-    "sshPasswordRequiredWhenNoKey": "初期キー設定にはSSHパスワードが必要です",
-    "providerFields": "{{provider}}設定",
-    "providerRequiredFields": "{{provider}}の必須フィールド",
-    "testConnection": {
-      "button": "接続テスト",
-      "missingFields": "テスト前にIPアドレス、ユーザー名、パスワードを入力してください",
-      "initiated": "SSH接続テストが開始されました。結果はキューを確認してください。",
-      "success": "SSH接続成功",
-      "failed": "SSH接続失敗",
-      "testing": "接続テスト中..."
-    },
-    "systemCompatibility": {
-      "title": "システム互換性",
-      "systemInfo": "システム情報",
-      "kernelVersion": "カーネルバージョン",
-      "operatingSystem": "オペレーティングシステム",
-      "btrfsAvailable": "BTRFS利用可能",
-      "compatibilityStatus": "互換性ステータス",
-      "compatible": "互換性あり",
-      "warning": "警告",
-      "incompatible": "互換性なし",
-      "unknown": "不明",
-      "knownIssues": "既知の問題",
-      "recommendations": "推奨事項",
-      "yes": "はい",
-      "no": "いいえ"
-    },
+    "extraFieldsWarningDescription": "これらのフィールドはスキーマでは定義されていないため、JSON 構造の「extraFields」の下に保存されます。",
+    "failedToParseJson": "JSON の解析に失敗しました:",
+    "failedToSerialize": "データを JSON にシリアル化できませんでした",
     "fields": {
-      "MACHINE": {
-        "description": "SSHアクセスとストレージのマシン設定",
-        "ip": {
-          "label": "IPアドレス",
-          "description": "マシンのIPアドレス"
-        },
-        "user": {
-          "label": "ユーザー名",
-          "description": "接続用のSSHユーザー名"
-        },
-        "datastore": {
-          "label": "データストアパス",
-          "description": "データを保存するディレクトリパス。BTRFSファイルシステム上にある場合は、ネイティブ機能を利用します。それ以外の場合は、BTRFSストレージプールファイルが作成され、ここにマウントされて、スナップショットと圧縮が有効になります"
-        },
-        "port": {
-          "label": "SSHポート",
-          "description": "SSHポート番号"
-        },
-        "host_entry": {
-          "label": "ホストエントリ",
-          "description": "セキュリティ検証用のSSH既知ホストエントリ"
-        },
-        "ssh_key_configured": {
-          "label": "SSHキーは既に設定済み",
-          "description": "SSH公開鍵が既にターゲットマシンにインストールされている場合はチェック"
-        },
-        "ssh_password": {
-          "label": "SSHパスワード（一時的）",
-          "description": "初期SSHキー設定のための一時パスワードのみ。SSHキーが既に設定されている場合は空のままにしてください。このパスワードは公開鍵をコピーするために一度使用され、セキュリティのために後で削除する必要があります。"
-        }
-      },
-      "REPOSITORY": {
-        "description": "バックアップストレージのリポジトリ設定",
-        "name": {
-          "label": "リポジトリ名",
-          "description": "リポジトリ名識別子"
-        },
-        "credential": {
-          "label": "アクセスパスワード",
-          "description": "リポジトリアクセスパスワード（32文字、英数字+特殊文字）"
-        },
-        "encryption": {
-          "label": "暗号化を有効化",
-          "description": "リポジトリの暗号化を有効にする"
-        },
-        "retention": {
-          "label": "保持ポリシー",
-          "description": "保持ポリシー設定"
-        },
-        "schedule": {
-          "label": "バックアップスケジュール",
-          "description": "自動バックアップのCron式"
-        }
-      },
-      "STORAGE": {
-        "entityDescription": "バックアップ先のストレージ設定",
-        "name": {
-          "label": "ストレージ名",
-          "description": "このストレージ設定の一意の名前"
-        },
-        "provider": {
-          "label": "ストレージプロバイダー",
-          "description": "ストレージプロバイダータイプを選択"
-        },
-        "description": {
-          "label": "説明",
-          "description": "このストレージ設定のオプション説明"
-        },
-        "noVersioning": {
-          "label": "バージョニングを無効化",
-          "description": "このストレージのバージョン管理を無効にする"
-        },
-        "parameters": {
-          "label": "追加パラメータ",
-          "description": "高度な設定のための追加rcloneパラメータ"
-        }
-      },
-      "SCHEDULE": {
-        "description": "自動タスクのスケジュール設定",
-        "cron": {
-          "label": "Cron式",
-          "description": "スケジュールを定義するCron式"
-        },
-        "timezone": {
-          "label": "タイムゾーン",
-          "description": "スケジュール実行のタイムゾーン"
-        },
-        "enabled": {
-          "label": "スケジュールを有効化",
-          "description": "このスケジュールがアクティブかどうか"
-        }
-      },
       "BRIDGE": {
-        "description": "ネットワーク接続のブリッジ設定",
+        "description": "ネットワーク接続のためのブリッジ構成",
         "ip": {
-          "label": "IPアドレス",
-          "description": "ブリッジサーバーのIPアドレス"
+          "description": "ブリッジサーバーのIPアドレス",
+          "label": "IPアドレス"
         }
       },
-      "REGION": {
-        "description": "地理的分散のリージョン設定",
-        "name": {
-          "label": "リージョン名",
-          "description": "地理的リージョンの名前"
+      "CLONE": {
+        "description": "RBD クローン設定を構成する",
+        "features": {
+          "description": "クローンの RBD 機能",
+          "label": "特徴"
         },
-        "code": {
-          "label": "リージョンコード",
-          "description": "リージョンの短縮コード"
+        "parent_image": {
+          "description": "親イメージの名前",
+          "label": "親イメージ"
+        },
+        "parent_pool": {
+          "description": "親イメージを含むプール",
+          "label": "親プール"
+        },
+        "parent_snapshot": {
+          "description": "親スナップショットの名前",
+          "label": "親スナップショット"
+        },
+        "size": {
+          "description": "クローンイメージのサイズ",
+          "label": "クローンのサイズ"
         }
       },
-      "TEAM": {
-        "description": "組織構造のチーム設定",
-        "name": {
-          "label": "チーム名",
-          "description": "チームの名前"
+      "CLUSTER": {
+        "config": {
+          "description": "追加のクラスター構成オプション",
+          "label": "構成"
         },
-        "teamDescription": {
-          "label": "チーム説明",
-          "description": "チームの目的と責任の説明"
+        "description": "Ceph 分散ストレージクラスター設定の構成",
+        "fsid": {
+          "description": "Ceph クラスターの一意の識別子 (UUID 形式)",
+          "label": "ファイルシステムID"
         },
-        "SSH_PRIVATE_KEY": {
-          "label": "SSH秘密鍵",
-          "description": "チーム操作用のBase64エンコードされたSSH秘密鍵"
+        "mds": {
+          "description": "MDS (メタデータ サーバー) ノードのリスト",
+          "label": "MDSノード"
         },
-        "SSH_PUBLIC_KEY": {
-          "label": "SSH公開鍵",
-          "description": "チーム操作用のSSH公開鍵"
-        }
-      },
-      "USER": {
-        "description": "個人設定のユーザー設定",
-        "SSH_PRIVATE_KEY": {
-          "label": "SSH秘密鍵",
-          "description": "ユーザー操作用のBase64エンコードされたSSH秘密鍵"
+        "mgrs": {
+          "description": "クラスター内のマネージャー ノードのリスト",
+          "label": "マネージャーノード"
         },
-        "SSH_PUBLIC_KEY": {
-          "label": "SSH公開鍵",
-          "description": "ユーザー操作用のSSH公開鍵"
+        "monitors": {
+          "description": "クラスタ内の監視ノードのリスト",
+          "label": "監視ノード"
+        },
+        "osds": {
+          "description": "OSD (オブジェクト ストレージ デーモン) ノードのリスト",
+          "label": "OSDノード"
         }
       },
       "COMPANY": {
-        "description": "組織全体の設定の会社設定",
-        "UNIVERSAL_USER_ID": {
-          "label": "ユニバーサルユーザーID",
-          "description": "システム操作用のユニバーサルユーザーID"
-        },
-        "UNIVERSAL_USER_NAME": {
-          "label": "ユニバーサルユーザー名",
-          "description": "システム操作用のユニバーサルユーザー名"
-        },
         "DOCKER_JSON_CONF": {
-          "label": "Docker設定",
-          "description": "Dockerレジストリ認証設定"
-        },
-        "SSH_PRIVATE_KEY": {
-          "label": "SSH秘密鍵",
-          "description": "会社操作用のBase64エンコードされたSSH秘密鍵"
-        },
-        "SSH_PUBLIC_KEY": {
-          "label": "SSH公開鍵",
-          "description": "会社操作用のSSH公開鍵"
+          "description": "Docker レジストリ認証構成",
+          "label": "Docker の構成"
         },
         "LOG_FILE": {
-          "label": "ログファイルパス",
-          "description": "システムログファイルへのパス"
+          "description": "システムログファイルへのパス",
+          "label": "ログファイルのパス"
         },
         "PLUGINS": {
-          "label": "プラグイン",
-          "description": "コンテナイメージとアクティベーション状態を持つプラグイン設定"
+          "description": "コンテナイメージとアクティベーションステータスを含むプラグイン設定",
+          "label": "プラグイン"
+        },
+        "SSH_PRIVATE_KEY": {
+          "description": "企業運営用の Base64 でエンコードされた SSH 秘密キー",
+          "label": "SSH秘密鍵"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "会社運営用の SSH 公開キー",
+          "label": "SSH公開鍵"
+        },
+        "UNIVERSAL_USER_ID": {
+          "description": "システム操作用のユニバーサルユーザーID",
+          "label": "ユニバーサルユーザーID"
+        },
+        "UNIVERSAL_USER_NAME": {
+          "description": "システム操作用のユニバーサルユーザー名",
+          "label": "ユニバーサルユーザー名"
+        },
+        "description": "組織全体の設定のための会社の構成"
+      },
+      "IMAGE": {
+        "data_pool": {
+          "description": "画像データを保存するための別のプール",
+          "label": "データプール"
+        },
+        "description": "RBD イメージ設定を構成する",
+        "features": {
+          "description": "画像に対して有効にする RBD 機能",
+          "label": "特徴"
+        },
+        "object_size": {
+          "description": "画像内のオブジェクトのサイズ",
+          "label": "オブジェクトのサイズ"
+        },
+        "size": {
+          "description": "RBD イメージのサイズ (例: 10G、1T)",
+          "label": "画像サイズ"
+        },
+        "stripe_count": {
+          "description": "画像のストライプの数",
+          "label": "ストライプ数"
+        },
+        "stripe_unit": {
+          "description": "画像のストライプユニットサイズ",
+          "label": "ストライプユニット"
         }
+      },
+      "MACHINE": {
+        "datastore": {
+          "description": "データを保存するディレクトリのパス。 BTRFS ファイルシステム上にある場合は、ネイティブ機能が利用されます。 それ以外の場合は、BTRFS ストレージ プール ファイルが作成され、ここにマウントされ、スナップショットと圧縮が有効になります。",
+          "label": "データストアのパス"
+        },
+        "description": "SSH アクセスとストレージのためのマシン構成",
+        "host_entry": {
+          "description": "セキュリティ検証用の SSH 既知のホスト エントリ",
+          "label": "ホストエントリー"
+        },
+        "ip": {
+          "description": "マシンのIPアドレス",
+          "label": "IPアドレス"
+        },
+        "port": {
+          "description": "SSHポート番号",
+          "label": "SSHポート"
+        },
+        "ssh_key_configured": {
+          "description": "SSH 公開キーがターゲット マシンにすでにインストールされている場合は、これをチェックします。",
+          "label": "SSHキーはすでに構成されています"
+        },
+        "ssh_password": {
+          "description": "初期 SSH キー設定専用の一時パスワード。 SSH キーがすでに構成されている場合は、空のままにしておきます。 このパスワードは公開キーをコピーするために一度使用され、その後はセキュリティのために削除する必要があります。",
+          "label": "SSHパスワード(仮)"
+        },
+        "user": {
+          "description": "接続用のSSHユーザー名",
+          "label": "ユーザー名"
+        }
+      },
+      "POOL": {
+        "application": {
+          "description": "プールのアプリケーション タイプ (rbd、cephfs など)",
+          "label": "応用"
+        },
+        "crush_rule": {
+          "description": "データ配置の CRUSH ルール名",
+          "label": "クラッシュルール"
+        },
+        "description": "Cephストレージプール設定の構成",
+        "min_size": {
+          "description": "I/Oに必要なレプリカの最小数",
+          "label": "最小サイズ"
+        },
+        "pg_num": {
+          "description": "プールの配置グループの数",
+          "label": "配置グループ"
+        },
+        "pgp_num": {
+          "description": "配置目的の配置グループの数",
+          "label": "PGP 番号"
+        },
+        "size": {
+          "description": "プール内のオブジェクトのレプリカの数",
+          "label": "レプリケーションのサイズ"
+        }
+      },
+      "REGION": {
+        "code": {
+          "description": "地域のショートコード",
+          "label": "地域コード"
+        },
+        "description": "地理的分散のためのリージョン構成",
+        "name": {
+          "description": "地理的地域の名前",
+          "label": "地域名"
+        }
+      },
+      "REPOSITORY": {
+        "credential": {
+          "description": "リポジトリアクセスパスワード（32文字、英数字+特殊文字）",
+          "label": "アクセスパスワード"
+        },
+        "description": "バックアップストレージのリポジトリ構成",
+        "encryption": {
+          "description": "リポジトリの暗号化を有効にする",
+          "label": "暗号化を有効にする"
+        },
+        "name": {
+          "description": "リポジトリ名の識別子",
+          "label": "リポジトリ名"
+        },
+        "retention": {
+          "description": "保持ポリシーの設定",
+          "label": "保存ポリシー"
+        },
+        "schedule": {
+          "description": "自動バックアップ用の cron 式",
+          "label": "バックアップスケジュール"
+        }
+      },
+      "SNAPSHOT": {
+        "description": "RBD スナップショット設定を構成する",
+        "protected": {
+          "description": "スナップショットが削除から保護されているかどうか",
+          "label": "保護されています"
+        },
+        "size": {
+          "description": "スナップショットのサイズ",
+          "label": "スナップショットのサイズ"
+        },
+        "timestamp": {
+          "description": "スナップショットの作成タイムスタンプ",
+          "label": "タイムスタンプ"
+        }
+      },
+      "STORAGE": {
+        "description": {
+          "description": "このストレージ構成の説明 (オプション)",
+          "label": "説明"
+        },
+        "entityDescription": "バックアップ先のストレージ構成",
+        "name": {
+          "description": "このストレージ構成の一意の名前",
+          "label": "ストレージ名"
+        },
+        "noVersioning": {
+          "description": "このストレージのバージョン管理を無効にする",
+          "label": "バージョニングを無効にする"
+        },
+        "parameters": {
+          "description": "高度な構成のための追加の rclone パラメータ",
+          "label": "追加パラメータ"
+        },
+        "provider": {
+          "description": "ストレージプロバイダーのタイプを選択します",
+          "label": "ストレージプロバイダー"
+        }
+      },
+      "TEAM": {
+        "SSH_PRIVATE_KEY": {
+          "description": "チーム操作用の Base64 でエンコードされた SSH 秘密キー",
+          "label": "SSH秘密鍵"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "チーム操作用の SSH 公開キー",
+          "label": "SSH公開鍵"
+        },
+        "description": "組織構造のチーム構成",
+        "name": {
+          "description": "チーム名",
+          "label": "チーム名"
+        },
+        "teamDescription": {
+          "description": "チームの目的と責任の説明",
+          "label": "チームの説明"
+        }
+      },
+      "USER": {
+        "SSH_PRIVATE_KEY": {
+          "description": "ユーザー操作用の Base64 でエンコードされた SSH 秘密キー",
+          "label": "SSH秘密鍵"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "ユーザー操作用の SSH 公開キー",
+          "label": "SSH公開鍵"
+        },
+        "description": "個人設定のためのユーザー構成"
       }
-    }
-  },
-  "fieldGenerator": {
-    "title": {
-      "ssh_keys": "SSHキーペアを生成",
-      "repository_credential": "リポジトリ認証情報を生成"
     },
-    "tooltip": "値を生成",
-    "generate": "生成",
-    "regenerate": "再生成",
-    "apply": "適用",
-    "cancel": "キャンセル",
-    "copy": "コピー",
-    "copied": "コピーしました！",
-    "keyType": "キータイプ",
-    "keySize": "キーサイズ",
-    "moreSecure": "より安全",
-    "comingSoon": "近日公開",
-    "generationSuccess": "正常に生成されました",
-    "generationError": "生成に失敗しました。もう一度お試しください。",
-    "applied": "値が正常に適用されました",
-    "copyError": "クリップボードへのコピーに失敗しました"
+    "fields.CLONE.description": "RBD クローン設定を構成する",
+    "fields.CLUSTER.description": "Ceph 分散ストレージクラスター設定の構成",
+    "fields.IMAGE.description": "RBD イメージ設定を構成する",
+    "fields.POOL.description": "Cephストレージプール設定の構成",
+    "fields.SNAPSHOT.description": "RBD スナップショット設定を構成する",
+    "fieldsMovedFromExtra": "extraFields から復元された {{count}} 個のフィールド: {{fields}}",
+    "fieldsMovedToExtra": "{{count}} 個のフィールドが extraFields に移動されました: {{fields}}",
+    "formatJson": "JSON形式",
+    "importJson": "JSONをインポートする",
+    "invalidFormat": "無効な形式です。 {{説明}}",
+    "invalidJsonFormat": "無効な JSON 形式",
+    "isRequired": "{{フィールド}}は必須です",
+    "jsonError": "JSONエラー",
+    "maxLength": "最大長は {{length}} です",
+    "maxValue": "最大値は {{value}} です",
+    "minLength": "最小の長さは {{length}} です",
+    "minValue": "最小値は {{value}} です",
+    "mustBeArray": "配列である必要があります",
+    "mustBeValidJson": "有効な JSON である必要があります",
+    "mustBeValidJsonArray": "有効な JSON 配列である必要があります",
+    "noChangesToSave": "保存する変更はありません",
+    "optionalFields": "オプションのフィールド",
+    "pleaseFixErrors": "保存する前に検証エラーを修正してください",
+    "portPlaceholder": "ポート番号 (1-65535)",
+    "providerFields": "{{プロバイダー}} の構成",
+    "providerRequiredFields": "{{プロバイダー}} の必須フィールド",
+    "rawJsonEditor": "Raw JSON エディター (エキスパート モード)",
+    "rawJsonTooltip": "JSON の直接編集 - 使用には注意が必要です。",
+    "requiredFields": "必須フィールド",
+    "resetToFormValues": "フォーム値にリセット",
+    "saveVaultConfiguration": "ボールト構成の保存",
+    "sshPasswordRequiredWhenNoKey": "初期キー設定には SSH パスワードが必要です",
+    "systemCompatibility": {
+      "available": "利用可能",
+      "btrfsAvailable": "BTRFSが利用可能",
+      "compatibilityStatus": "互換性ステータス",
+      "compatible": "互換性がある",
+      "incompatible": "互換性がありません",
+      "kernelVersion": "カーネルのバージョン",
+      "knownIssues": "既知の問題",
+      "no": "いいえ",
+      "notInstalled": "インストールされていません",
+      "operatingSystem": "オペレーティング·システム",
+      "osSetup": "OSのセットアップ",
+      "passwordRequired": "パスワードが必要です",
+      "recommendations": "推奨事項",
+      "setupCompleted": "セットアップが完了しました",
+      "setupRequired": "セットアップが必要です",
+      "sudoAvailable": "須藤が利用可能",
+      "systemInfo": "システム情報",
+      "title": "システムの互換性",
+      "unknown": "未知",
+      "warning": "警告",
+      "yes": "はい"
+    },
+    "testConnection": {
+      "button": "テスト接続",
+      "failed": "SSH接続に失敗しました",
+      "initiated": "SSH接続テストが開始されました。 結果についてはキューを確認してください。",
+      "missingFields": "テストする前に IP アドレス、ユーザー名、パスワードを入力してください",
+      "success": "SSH接続に成功しました",
+      "testing": "接続をテストしています..."
+    },
+    "unknownEntityDescription": "エンティティ タイプ「{{type}}」はボールト定義で定義されていません。",
+    "unknownEntityType": "不明なエンティティ タイプ",
+    "unsavedChanges": "未保存の変更",
+    "validationErrors": "検証エラー:",
+    "vaultConfiguration": "ボールトの構成",
+    "vaultVersion": "ボールトのバージョン:",
+    "versionAutoIncrement": "バージョンは保存時に自動的にインクリメントされます",
+    "versionWillIncrement": "バージョンは {{version}} に増加します"
   },
-  "notifications": {
-    "title": "通知",
-    "empty": "通知はありません",
-    "markAllRead": "すべて既読にする",
-    "clearAll": "すべてクリア"
+  "warnings": {
+    "sandboxEnvironment": "サンドボックス環境",
+    "sandboxMessage": "アップデート中にデータがリセットされる場合があります。 テスト専用。"
   },
-  "nestedObjectEditor": {
-    "Image": "イメージ",
-    "Active": "アクティブ",
-    "Add": "追加",
-    "Delete this entry?": "このエントリを削除しますか？",
-    "Yes": "はい",
-    "No": "いいえ",
-    "Object": "オブジェクト",
-    "Array": "配列",
-    "True": "真",
-    "False": "偽",
-    "Enter key name": "キー名を入力",
-    "Show JSON": "JSONを表示",
-    "Hide JSON": "JSONを非表示",
-    "No entries": "エントリなし",
-    "Raw JSON Editor": "JSON生エディタ",
-    "JSON Error": "JSONエラー",
-    "Uniform Structure": "統一構造",
-    "Fields": "フィールド",
-    "Container Images Detected": "コンテナイメージが検出されました",
-    "Plugin Configuration Detected": "プラグイン設定が検出されました",
-    "Uniform Structure Detected": "統一構造が検出されました"
-  }
+  "yes": "はい",
+  "yesterday": "昨日"
 }

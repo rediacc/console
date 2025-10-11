@@ -1,83 +1,83 @@
 {
-  "title": "Kuyruk Yönetimi",
-  "filters": "Filtreler",
-  "team": "Takım",
-  "selectTeam": "Kuyruk öğelerini görüntülemek için bir takım seçin",
-  "machine": "Makine",
-  "selectMachine": "Tüm makineler",
-  "status": "Durum",
-  "selectStatus": "Tüm durumlar",
   "dateRange": "Tarih Aralığı",
-  "options": "Seçenekler",
-  "includeCompleted": "Tamamlananları Dahil Et",
+  "filters": "Filtreler",
   "includeCancelled": "İptal Edilenleri Dahil Et",
-  "onlyStale": "Sadece Eski Öğeler",
-  "statusPending": "Beklemede",
-  "statusRunning": "Çalışıyor",
-  "statusCompleted": "Tamamlandı",
-  "statusFailed": "Başarısız",
-  "statusCancelled": "İptal Edildi",
+  "includeCompleted": "Tamamlananları Dahil Et",
+  "machine": "Makine",
+  "monitoring": {
+    "assigned": "Makineye ({{teamName}} - {{machineName}}) atanan {{taskId}} kuyruk görevi",
+    "cancelled": "{{taskId}} kuyruk görevi iptal edildi ({{teamName}} - {{machineName}})",
+    "cancelling": "{{taskId}} kuyruk görevi iptal ediliyor ({{teamName}} - {{machineName}})",
+    "completed": "{{taskId}} kuyruk görevi başarıyla tamamlandı ({{teamName}} - {{machineName}})",
+    "failedWaitingRetry": "{{taskId}} kuyruk görevi başarısız oldu - yeniden deneme bekleniyor ({{maxAttempts}} denemesinden {{attempt}}) ({{teamName}} - {{machineName}})",
+    "monitoringAlready": "{{taskId}} kuyruk görevi zaten izleniyor",
+    "permanentlyFailed": "{{taskId}} kuyruk görevi, {{attempts}} denemeden sonra kalıcı olarak başarısız oldu ({{teamName}} - {{machineName}})",
+    "permanentlyFailedWithReason": "{{taskId}} kuyruk görevi kalıcı olarak başarısız oldu: {{reason}} ({{teamName}} - {{machineName}})",
+    "queuedForRetry": "Kuyruk görevi {{taskId}} yeniden denemek için sıraya alındı ​​(deneme {{attempt}} / {{maxAttempts}}) ({{teamName}} - {{machineName}})",
+    "staleTask": "{{taskId}} numaralı kuyruk görevi eski görünüyor ({{minute}} dakika boyunca ilerleme yok)",
+    "startedMonitoring": "{{taskId}} ({{teamName}} - {{machineName}}) kuyruk görevini izlemeye başlandı",
+    "startedProcessing": "{{taskId}} kuyruk görevi işlenmeye başladı ({{teamName}} - {{machineName}})",
+    "stoppedMonitoring": "{{taskId}} kuyruk görevinin izlenmesi durduruldu",
+    "taskNotFound": "{{taskId}} kuyruk görevi artık mevcut değil"
+  },
+  "onlyStale": "Yalnızca Eski Öğeler",
+  "options": "Seçenekler",
+  "queueManager": {
+    "alreadyHasPriority1": "{{bridgeName}} köprüsünde zaten çalışan en yüksek öncelikli bir göreviniz var. Lütfen tamamlanmasını bekleyin.",
+    "buttonLabel": "En Yüksek Öncelik",
+    "cancelledTask": "{{machineName}} için mevcut bekleyen görev iptal edildi",
+    "clearCompleted": "Tamamlananları Temizle",
+    "description": "En yüksek öncelikli kuyruk öğeleri (öncelik 1), aynı anda köprü başına yalnızca bir görevin çalıştırılmasını sağlayacak şekilde yönetilir.",
+    "emptyState": "Sırada en yüksek öncelikli öğe yok",
+    "itemQueued": "En yüksek öncelikli görev sıraya alındı. Pozisyon: {{pozisyon}}",
+    "taskCancelled": "Görev iptal edildi: Bu köprüde zaten öncelik 1 görevi var",
+    "title": "Kuyruk Yöneticisi",
+    "tooltip": "En yüksek öncelikli kuyruk yöneticisi"
+  },
+  "selectMachine": "Tüm makineler",
+  "selectStatus": "Tüm durumlar",
+  "selectTeam": "Kuyruk öğelerini görüntülemek için bir ekip seçin",
+  "statistics": {
+    "processing": "İşleme",
+    "timeSinceAssigned": "Atanmasından Bu Yana Geçen Süre",
+    "totalDuration": "Toplam Süre"
+  },
+  "status": "Durum",
+  "statusCancelled": "İptal edildi",
+  "statusCompleted": "Tamamlanmış",
+  "statusFailed": "Arızalı",
+  "statusPending": "Askıda olması",
+  "statusRunning": "Koşma",
   "tabs": {
     "active": {
-      "title": "Aktif Kuyruk",
-      "tooltip": "Tüm bekleyen, atanan, işlenen ve iptal edilen görevleri gösterir. Alınmayı bekleyen ve şu anda yürütülen görevleri içerir.",
-      "description": "Bu bölüm, atanmayı bekleyen beklemedeki öğeler, makineler tarafından işlenen görevler ve iptal edilme sürecindeki görevler dahil olmak üzere tüm aktif görevleri görüntüler."
-    },
-    "completed": {
-      "title": "Tamamlananlar",
-      "tooltip": "Başarıyla tamamlanan tüm görevleri gösterir",
-      "description": "Bu bölüm, hatasız olarak başarıyla tamamlanan tüm görevleri görüntüler."
+      "description": "Bu bölüm, atanmayı bekleyen bekleyen öğeler, makineler tarafından işlenen görevler ve iptal edilme sürecindeki görevler de dahil olmak üzere tüm etkin görevleri görüntüler.",
+      "title": "Aktif Sıra",
+      "tooltip": "Bekleyen, atanan, işlenen ve iptal edilen tüm görevleri gösterir. Alınmayı bekleyen ve halihazırda yürütülmekte olan görevleri içerir."
     },
     "cancelled": {
-      "title": "İptal Edilenler",
-      "tooltip": "Kullanıcı isteğiyle durdurulan tüm iptal edilen görevleri gösterir",
-      "description": "Bu bölüm, kullanıcı isteğiyle iptal edilen tüm görevleri görüntüler. Bu görevler tamamlanmadan önce durdurulmuştur."
+      "description": "Bu bölümde kullanıcı isteğiyle iptal edilen tüm görevler görüntülenir. Bu görevler tamamlanmadan durduruldu.",
+      "title": "İptal edildi",
+      "tooltip": "Kullanıcı isteğiyle durdurulan tüm iptal edilen görevleri gösterir"
+    },
+    "completed": {
+      "description": "Bu bölüm, hatasız bir şekilde başarıyla tamamlanan tüm görevleri görüntüler.",
+      "title": "Tamamlanmış",
+      "tooltip": "Başarıyla tamamlanan tüm görevleri gösterir"
     },
     "failed": {
-      "title": "Başarısız Olanlar",
-      "tooltip": "Yürütme sırasında hatayla karşılaşan tüm başarısız görevleri gösterir",
-      "description": "Bu bölüm, yürütme sırasında hatalar nedeniyle başarısız olan tüm görevleri görüntüler. Görevler kalıcı olarak başarısız işaretlenmeden önce 2 kereye kadar yeniden denenebilir."
+      "description": "Bu bölüm, yürütme sırasındaki hatalar nedeniyle başarısız olan tüm görevleri görüntüler. Görevler kalıcı olarak başarısız olarak işaretlenmeden önce en fazla 2 kez yeniden denenebilir.",
+      "title": "Arızalı",
+      "tooltip": "Yürütme sırasında hatalarla karşılaşan tüm başarısız görevleri gösterir"
     }
   },
-  "monitoring": {
-    "completed": "Kuyruk görevi {{taskId}} başarıyla tamamlandı ({{teamName}} - {{machineName}})",
-    "cancelled": "Kuyruk görevi {{taskId}} iptal edildi ({{teamName}} - {{machineName}})",
-    "cancelling": "Kuyruk görevi {{taskId}} iptal ediliyor ({{teamName}} - {{machineName}})",
-    "permanentlyFailed": "Kuyruk görevi {{taskId}}, {{attempts}} denemeden sonra kalıcı olarak başarısız oldu ({{teamName}} - {{machineName}})",
-    "permanentlyFailedWithReason": "Kuyruk görevi {{taskId}} kalıcı olarak başarısız oldu: {{reason}} ({{teamName}} - {{machineName}})",
-    "failedWaitingRetry": "Kuyruk görevi {{taskId}} başarısız oldu - yeniden deneme için bekliyor ({{maxAttempts}} denemeden {{attempt}}.) ({{teamName}} - {{machineName}})",
-    "startedProcessing": "Kuyruk görevi {{taskId}} işlenmeye başladı ({{teamName}} - {{machineName}})",
-    "assigned": "Kuyruk görevi {{taskId}} makineye atandı ({{teamName}} - {{machineName}})",
-    "queuedForRetry": "Kuyruk görevi {{taskId}} yeniden deneme için kuyruğa alındı ({{maxAttempts}} denemeden {{attempt}}.) ({{teamName}} - {{machineName}})",
-    "staleTask": "Kuyruk görevi {{taskId}} eski görünüyor ({{minutes}} dakikadır ilerleme yok)",
-    "startedMonitoring": "Kuyruk görevi {{taskId}} izlemeye başlandı ({{teamName}} - {{machineName}})",
-    "stoppedMonitoring": "Kuyruk görevi {{taskId}} izleme durduruldu",
-    "monitoringAlready": "Kuyruk görevi {{taskId}} zaten izleniyor",
-    "taskNotFound": "Kuyruk görevi {{taskId}} artık mevcut değil"
-  },
-  "queueManager": {
-    "title": "Kuyruk Yöneticisi",
-    "buttonLabel": "En Yüksek Öncelik",
-    "tooltip": "En yüksek öncelikli kuyruk yöneticisi",
-    "description": "En yüksek öncelikli kuyruk öğeleri (öncelik 1), her köprüde aynı anda yalnızca bir görevin çalışmasını sağlamak için yönetilir.",
-    "emptyState": "Kuyrukta en yüksek öncelikli öğe yok",
-    "itemQueued": "En yüksek öncelikli görev kuyruğa alındı. Pozisyon: {{position}}",
-    "cancelledTask": "{{machineName}} için mevcut bekleyen görev iptal edildi",
-    "alreadyHasPriority1": "{{bridgeName}} köprüsünde zaten çalışan en yüksek öncelikli bir göreviniz var. Lütfen tamamlanmasını bekleyin.",
-    "taskCancelled": "Görev iptal edildi: Bu köprüde zaten öncelik 1 görevi var",
-    "clearCompleted": "Tamamlananları Temizle"
-  },
   "taskStatus": {
-    "completedTitle": "Görev Başarıyla Tamamlandı",
-    "completedDescription": "Görev {{minutes}} dakika sonra başarıyla tamamlandı.",
-    "cancelledTitle": "Görev İptal Edildi",
     "cancelledDescription": "Görev iptal edildi ve işlenmeyecek.",
-    "failedTitle": "Görev Kalıcı Olarak Başarısız Oldu",
-    "failedDescription": "Görev {{retries}} yeniden denemeden sonra kalıcı olarak başarısız oldu."
+    "cancelledTitle": "Görev İptal Edildi",
+    "completedDescription": "Görev {{dakika}} dakika sonra başarıyla tamamlandı.",
+    "completedTitle": "Görev Başarıyla Tamamlandı",
+    "failedDescription": "{{retries}} yeniden denemeden sonra görev kalıcı olarak başarısız oldu.",
+    "failedTitle": "Görev Kalıcı Olarak Başarısız Oldu"
   },
-  "statistics": {
-    "totalDuration": "Toplam Süre",
-    "processing": "İşleniyor",
-    "timeSinceAssigned": "Atandıktan Sonraki Süre"
-  }
+  "team": "Takım",
+  "title": "Kuyruk Yönetimi"
 }

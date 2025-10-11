@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Machine } from '@/types'
 import MachineAssignmentStatusBadge from './MachineAssignmentStatusBadge'
 import MachineAssignmentStatusCell from './MachineAssignmentStatusCell'
-import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
+import { useTableStyles } from '@/hooks/useComponentStyles'
 import { ModalSize } from '@/types/modal'
 
 const { Text } = Typography
@@ -27,7 +27,6 @@ export const ViewAssignmentStatusModal: React.FC<ViewAssignmentStatusModalProps>
 }) => {
   const { t } = useTranslation(['machines', 'distributedStorage', 'common'])
   const tableStyles = useTableStyles()
-  const componentStyles = useComponentStyles()
   
   // Determine which machines to use
   const targetMachines = machines || (selectedMachines && allMachines 

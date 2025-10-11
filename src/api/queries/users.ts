@@ -69,10 +69,10 @@ export const useCreateUser = createMutation<{ email: string; password: string }>
 // Activate user - Special case that uses custom apiClient method
 export const useActivateUser = () => {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
-    mutationFn: async (data: { userEmail: string; activationCode: string }) => {
-      const response = await apiClient.activateUser(data.userEmail, data.activationCode)
+    mutationFn: async (data: { userEmail: string; activationCode: string; passwordHash: string }) => {
+      const response = await apiClient.activateUser(data.userEmail, data.activationCode, data.passwordHash)
       return response
     },
     onSuccess: (_, variables) => {
@@ -167,7 +167,7 @@ export const useDeleteUserRequest = createMutation<{ requestId: string }>({
   endpoint: '/DeleteUserRequest',
   method: 'delete',
   invalidateKeys: ['user-requests'],
-  successMessage: (vars) => `User session terminated successfully`,
+  successMessage: () => `User session terminated successfully`,
   errorMessage: 'Failed to terminate user session',
   transformData: (data) => ({ requestId: data.requestId })
 })

@@ -9,17 +9,14 @@ import {
   Checkbox,
   Tabs,
   Tag,
-  Divider,
   message
 } from 'antd'
 import { 
   RocketOutlined,
   CopyOutlined,
   CheckOutlined,
-  InfoCircleOutlined,
   CodeOutlined,
   QuestionCircleOutlined,
-  WarningOutlined,
   WindowsOutlined,
   AppleOutlined,
   DesktopOutlined
@@ -29,7 +26,7 @@ import { pipInstallationService, InstallOptions } from '@/services/pipInstallati
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, createModalStyle } from '@/utils/styleConstants'
 
-const { Text, Title, Paragraph } = Typography
+const { Text, Title } = Typography
 const { Panel } = Collapse
 
 interface PipInstallationModalProps {

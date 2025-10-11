@@ -18,7 +18,7 @@ import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
-import { DESIGN_TOKENS, spacing } from '@/utils/styleConstants'
+import { DESIGN_TOKENS } from '@/utils/styleConstants'
 import UnifiedResourceModal, { ResourceType } from '@/components/common/UnifiedResourceModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import ConnectivityTestModal from '@/components/common/ConnectivityTestModal'
@@ -31,7 +31,6 @@ import { useTeams, Team } from '@/api/queries/teams'
 
 
 // Machine queries
-import { MachineTable } from '@/components/resources/MachineTable'
 import { SplitResourceView } from '@/components/resources/SplitResourceView'
 import {
   useCreateMachine,
@@ -172,7 +171,7 @@ const ResourcesPage: React.FC = () => {
   }
   
   // Handler for container click from machine list
-  const handleMachineContainerClick = (machine: Machine, container: any) => {
+  const handleMachineContainerClick = (_machine: Machine, container: any) => {
     setSelectedMachine(null)
     setSelectedRepositoryFromMachine(null)
     setSelectedContainerFromMachine(container)
@@ -204,11 +203,11 @@ const ResourcesPage: React.FC = () => {
     }
     
     Modal.confirm({
-      title: t(getTranslationKey(resourceType === 'machine' ? 'confirmDelete' : `delete${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)}`)),
-      content: t(getTranslationKey(resourceType === 'machine' ? 'deleteWarning' : 'confirmDelete'), { 
+      title: t(getTranslationKey(resourceType === 'machine' ? 'confirmDelete' : `delete${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)}`)) as string,
+      content: t(getTranslationKey(resourceType === 'machine' ? 'deleteWarning' : 'confirmDelete'), {
         name: resourceName,
-        [`${resourceType}Name`]: resourceName 
-      }),
+        [`${resourceType}Name`]: resourceName
+      }) as string,
       okText: t('common:actions.delete'),
       okType: 'danger',
       cancelText: t('common:actions.cancel'),
@@ -1268,20 +1267,20 @@ const ResourcesPage: React.FC = () => {
     ...styles.container,
     height: 'calc(100vh - 64px - 48px)', // viewport - header - content margin
     overflow: 'hidden',
-    ...styles.flexColumn
+    ...styles.flexColumn as React.CSSProperties
   }
 
   const cardStyle: React.CSSProperties = {
     ...styles.card,
     height: '100%',
-    ...styles.flexColumn
+    ...styles.flexColumn as React.CSSProperties
   }
 
   const cardBodyStyle: React.CSSProperties = {
     flex: 1,
     overflow: 'hidden',
     ...styles.padding.md,
-    ...styles.flexColumn
+    ...styles.flexColumn as React.CSSProperties
   }
 
   // Enhanced tab navigation with arrow keys for accessibility
@@ -1610,9 +1609,10 @@ const ResourcesPage: React.FC = () => {
           setQueueTraceModal({ visible: false, taskId: null, machineName: null })
           // If we know the specific machine, refresh its data
           if (queueTraceModal.machineName) {
+            const machineName = queueTraceModal.machineName
             setRefreshKeys(prev => ({
               ...prev,
-              [queueTraceModal.machineName]: Date.now()
+              [machineName]: Date.now()
             }))
           } else {
             // Otherwise refresh all expanded machines

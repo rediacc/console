@@ -1,44 +1,18 @@
 import React from 'react';
-import { Card, Row, Col, Statistic, Progress, Space, Typography, Empty, Tag, List, Tooltip } from 'antd';
-import { 
-  CloudServerOutlined, 
-  DatabaseOutlined, 
+import { Card, Row, Col, Statistic, Progress, Space, Typography, Tag, List, Tooltip } from 'antd';
+import {
+  CloudServerOutlined,
+  DatabaseOutlined,
   HddOutlined,
   CopyOutlined,
-  TeamOutlined 
+  TeamOutlined
 } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
 import { theme } from 'antd';
-import { useTheme } from '@/context/ThemeContext';
 import { useComponentStyles } from '@/hooks/useComponentStyles';
+import { DistributedStorageStats } from '@/api/queries/dashboard';
 
-const { Text, Title } = Typography;
-
-interface DistributedStorageTeamBreakdown {
-  TeamName: string;
-  TotalMachines: number;
-  AvailableMachines: number;
-  ClusterMachines: number;
-  ImageMachines: number;
-  CloneMachines: number;
-}
-
-interface DistributedStorageStats {
-  total_machines: number;
-  available_machines: number;
-  cluster_assigned_machines: number;
-  image_assigned_machines: number;
-  clone_assigned_machines: number;
-  truly_available_machines: number;
-  available_percentage: number;
-  cluster_percentage: number;
-  image_percentage: number;
-  clone_percentage: number;
-  total_clusters: number;
-  active_clusters: number;
-  avg_machines_per_cluster: number;
-  team_breakdown: DistributedStorageTeamBreakdown[];
-}
+const { Text } = Typography;
 
 interface DistributedStorageDashboardWidgetProps {
   stats: DistributedStorageStats;
@@ -46,7 +20,6 @@ interface DistributedStorageDashboardWidgetProps {
 
 const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWidgetProps> = ({ stats }) => {
   const { t } = useTranslation(['common', 'distributedStorage']);
-  const { theme: currentTheme } = useTheme();
   const { token } = theme.useToken();
   const styles = useComponentStyles();
 

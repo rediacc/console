@@ -1,85 +1,85 @@
 {
-  "title": "设置",
   "company": {
-    "title": "公司设置",
-    "description": "配置您的公司保险库设置以管理组织范围的配置。",
     "configureVault": "配置保险库",
-    "modalTitle": "配置公司保险库"
+    "description": "配置您的公司保险库设置以管理组织范围的配置。",
+    "modalTitle": "配置公司保险库",
+    "title": "公司设置"
   },
   "personal": {
-    "title": "个人设置",
-    "description": "配置您的个人保险库设置以自定义您的体验。",
     "configureVault": "配置保险库",
-    "modalTitle": "配置用户保险库"
+    "description": "配置您的个人保险库设置以自定义您的体验。",
+    "modalTitle": "配置用户保险库",
+    "title": "个人设置"
   },
+  "title": "设置",
   "twoFactorAuth": {
-    "title": "双因素认证",
-    "status": {
-      "enabled": "双因素认证已启用",
-      "disabled": "双因素认证已禁用",
-      "enabledDescription": "您的账户已通过额外的安全层进行保护。",
-      "disabledDescription": "为您的账户添加额外的安全层。"
-    },
-    "whatIs": {
-      "title": "什么是双因素认证？",
-      "description": "双因素认证（TFA）通过要求除密码外还需要手机上的基于时间的代码，为您的账户添加额外的安全层。",
-      "benefit1": "即使您的密码被泄露，也能保护您的账户",
-      "benefit2": "使用行业标准的TOTP（基于时间的一次性密码）算法",
-      "benefit3": "与Google Authenticator、Authy或Microsoft Authenticator等流行的身份验证应用程序配合使用"
-    },
-    "enable": "启用双因素认证",
     "disable": "禁用双因素认证",
-    "setupMethods": {
-      "qrCode": "二维码",
-      "manual": "手动输入"
+    "disableModal": {
+      "codeFormat": "代码必须只包含数字",
+      "codeLabel": "TFA代码",
+      "codeLength": "代码必须正好是6位数字",
+      "codePlaceholder": "000000",
+      "codeRequired": "TFA代码是必需的",
+      "passwordLabel": "当前密码",
+      "passwordPlaceholder": "输入您的当前密码",
+      "passwordRequired": "密码是必需的",
+      "submit": "禁用TFA",
+      "title": "禁用双因素认证",
+      "warning": "安全警告",
+      "warningDescription": "禁用TFA将使您的账户安全性降低。您需要输入当前密码和有效的TFA代码才能继续。"
     },
-    "scanQRCode": "使用您的身份验证应用扫描此二维码",
-    "manualSetup": {
-      "title": "手动设置",
-      "instructions": "在您的身份验证应用中输入此密钥："
-    },
-    "important": "重要",
-    "saveSecretWarning": "请将此密钥保存在安全的地方。如果您丢失了身份验证设备，您将需要它来恢复对账户的访问。",
-    "secretCopied": "密钥已复制到剪贴板",
     "done": "完成",
+    "enable": "启用双因素认证",
+    "enableModal": {
+      "passwordLabel": "当前密码",
+      "passwordPlaceholder": "输入您的当前密码",
+      "passwordRequired": "密码是必需的",
+      "submit": "启用TFA",
+      "title": "启用双因素认证",
+      "warning": "需要安全验证",
+      "warningDescription": "请输入您的账户密码以启用双因素认证。"
+    },
     "enableSuccess": {
-      "title": "双因素认证已启用！",
       "subtitle": "您的账户现在受到TFA的保护。",
+      "title": "双因素认证已启用！",
       "verified": "TFA验证成功",
       "verifiedDescription": "您的身份验证应用已成功配置，双因素认证现已在您的账户上激活。"
     },
+    "important": "重要",
+    "manualSetup": {
+      "instructions": "在您的身份验证应用中输入此密钥：",
+      "title": "手动设置"
+    },
+    "saveSecretWarning": "请将此密钥保存在安全的地方。如果您丢失了身份验证设备，您将需要它来恢复对账户的访问。",
+    "scanQRCode": "使用您的身份验证应用扫描此二维码",
+    "secretCopied": "密钥已复制到剪贴板",
+    "setupMethods": {
+      "manual": "手动输入",
+      "qrCode": "二维码"
+    },
+    "status": {
+      "disabled": "双因素认证已禁用",
+      "disabledDescription": "为您的账户添加额外的安全层。",
+      "enabled": "双因素认证已启用",
+      "enabledDescription": "您的账户已通过额外的安全层进行保护。"
+    },
+    "title": "双因素认证",
     "verification": {
-      "title": "验证您的身份验证器",
-      "subtitle": "扫描二维码或在身份验证应用中输入密钥，然后输入6位数字代码进行验证。",
+      "codeFormat": "代码必须只包含数字",
       "codeLabel": "验证码",
+      "codeLength": "代码必须正好是6位数字",
       "codePlaceholder": "000000",
       "codeRequired": "验证码是必需的",
-      "codeLength": "代码必须正好是6位数字",
-      "codeFormat": "代码必须只包含数字",
-      "submit": "验证并启用TFA"
+      "submit": "验证并启用TFA",
+      "subtitle": "扫描二维码或在身份验证应用中输入密钥，然后输入6位数字代码进行验证。",
+      "title": "验证您的身份验证器"
     },
-    "enableModal": {
-      "title": "启用双因素认证",
-      "warning": "需要安全验证",
-      "warningDescription": "请输入您的账户密码以启用双因素认证。",
-      "passwordLabel": "当前密码",
-      "passwordPlaceholder": "输入您的当前密码",
-      "passwordRequired": "密码是必需的",
-      "submit": "启用TFA"
-    },
-    "disableModal": {
-      "title": "禁用双因素认证",
-      "warning": "安全警告",
-      "warningDescription": "禁用TFA将使您的账户安全性降低。您需要输入当前密码和有效的TFA代码才能继续。",
-      "passwordLabel": "当前密码",
-      "passwordPlaceholder": "输入您的当前密码",
-      "passwordRequired": "密码是必需的",
-      "codeLabel": "TFA代码",
-      "codePlaceholder": "000000",
-      "codeRequired": "TFA代码是必需的",
-      "codeLength": "代码必须正好是6位数字",
-      "codeFormat": "代码必须只包含数字",
-      "submit": "禁用TFA"
+    "whatIs": {
+      "benefit1": "即使您的密码被泄露，也能保护您的账户",
+      "benefit2": "使用行业标准的TOTP（基于时间的一次性密码）算法",
+      "benefit3": "与Google Authenticator、Authy或Microsoft Authenticator等流行的身份验证应用程序配合使用",
+      "description": "双因素认证（TFA）通过要求除密码外还需要手机上的基于时间的代码，为您的账户添加额外的安全层。",
+      "title": "什么是双因素认证？"
     }
   }
 }

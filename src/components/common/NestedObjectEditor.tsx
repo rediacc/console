@@ -13,7 +13,6 @@ import {
   Empty,
   Row,
   Col,
-  Segmented,
 } from 'antd'
 import {
   PlusOutlined,
@@ -221,7 +220,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
     // For structures with uniform object values
     if (typeof entry.value === 'object' && !Array.isArray(entry.value)) {
       // Render special UI for known field patterns
-      const hasImageAndActive = entry.value.hasOwnProperty('image') && entry.value.hasOwnProperty('active')
+      const hasImageAndActive = Object.prototype.hasOwnProperty.call(entry.value, 'image') && Object.prototype.hasOwnProperty.call(entry.value, 'active')
       const isImageLike = typeof entry.value.image === 'string' && 
         (entry.value.image.includes(':') || entry.value.image.includes('/'))
       

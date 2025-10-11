@@ -26,20 +26,20 @@ import {
   selectCurrentOperation,
   selectLastOperationResult,
   selectActiveFilters,
-  selectIsGroupExpanded,
   selectSelectionSummary,
-  selectAreAllSelectedMachinesValid
+  selectAreAllSelectedMachinesValid,
+  selectFilteredMachines
 } from './machineAssignmentSelectors'
 import type { Machine, MachineAssignmentType } from '@/types'
 import type { BulkOperationProgress, BulkOperationResult } from '@/features/distributed-storage'
 
 // Hook for machine selection management
-export const useMachineSelection = () => {
+export const useMachineSelection = (machines: Machine[] = []) => {
   const dispatch = useAppDispatch()
   const selectedMachines = useAppSelector(selectSelectedMachines)
   const selectedCount = useAppSelector(selectSelectedMachineCount)
   const hasSelection = useAppSelector(selectIsAnyMachineSelected)
-  const selectionSummary = useAppSelector(selectSelectionSummary)
+  const selectionSummary = useAppSelector(state => selectSelectionSummary(state, machines))
   
   const selectMachines = useCallback((machineNames: string[]) => {
     dispatch(addSelectedMachines(machineNames))
@@ -163,18 +163,16 @@ export const useMachineFilters = () => {
 // Hook for UI state management
 export const useMachineAssignmentUI = () => {
   const dispatch = useAppDispatch()
-  
+
   const toggleGroup = useCallback((groupId: string) => {
     dispatch(toggleGroupExpansion(groupId))
   }, [dispatch])
-  
-  const isGroupExpanded = useCallback((groupId: string) => {
-    return useAppSelector(state => selectIsGroupExpanded(state, groupId))
-  }, [])
-  
+
+  // Note: isGroupExpanded removed as it violated hooks rules
+  // Users should call useAppSelector(state => selectIsGroupExpanded(state, groupId)) directly in their components
+
   return {
-    toggleGroupExpansion: toggleGroup,
-    isGroupExpanded
+    toggleGroupExpansion: toggleGroup
   }
 }
 

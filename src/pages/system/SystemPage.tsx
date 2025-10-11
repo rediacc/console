@@ -41,13 +41,11 @@ import { useDispatch } from 'react-redux'
 import ResourceListView from '@/components/common/ResourceListView'
 import { masterPasswordService } from '@/services/masterPasswordService'
 import ResourceForm from '@/components/forms/ResourceForm'
-import ResourceFormWithVault, { ResourceFormWithVaultRef } from '@/components/forms/ResourceFormWithVault'
 import VaultEditorModal from '@/components/common/VaultEditorModal'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
 import UnifiedResourceModal, { ResourceType } from '@/components/common/UnifiedResourceModal'
 import UserSessionsTab from '@/components/system/UserSessionsTab'
-import { useComponentStyles } from '@/hooks/useComponentStyles'
-import { DESIGN_TOKENS, spacing, fontSize, fontWeight } from '@/utils/styleConstants'
+import { DESIGN_TOKENS } from '@/utils/styleConstants'
 import { ModalSize } from '@/types/modal'
 import TwoFactorSettings from '@/components/settings/TwoFactorSettings'
 import { useDropdownData } from '@/api/queries/useDropdownData'
@@ -83,7 +81,6 @@ import {
   useAssignUserToGroup,
   PermissionGroup 
 } from '@/api/queries/permissions'
-import { usePermissionGroups } from '@/api/queries/users'
 
 // Region queries
 import { 
@@ -133,7 +130,6 @@ const SystemPage: React.FC = () => {
   const { t: tOrg } = useTranslation('resources')
   const { t: tCommon } = useTranslation('common')
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
-  const styles = useComponentStyles()
   const [currentMasterPassword, setCurrentMasterPassword] = useState<string | null>(null)
   const currentUser = useSelector((state: RootState) => state.auth.user)
   const dispatch = useDispatch()
@@ -148,10 +144,7 @@ const SystemPage: React.FC = () => {
     }
     loadMasterPassword()
   }, [])
-  
-  // Form refs
-  const userFormRef = React.useRef<ResourceFormWithVaultRef>(null)
-  
+
   // Set initial tab to users
   React.useEffect(() => {
     setActiveTab('users')
@@ -338,7 +331,7 @@ const SystemPage: React.FC = () => {
     setCompanyVaultModalOpen(false)
   }
 
-  const handleUpdateUserVault = async (vault: string, version: number) => {
+  const handleUpdateUserVault = async (_vault: string, _version: number) => {
     // TODO: Implement user vault update when API is available
     // User vault update: vault, version
     setUserVaultModalOpen(false)
@@ -452,7 +445,7 @@ const SystemPage: React.FC = () => {
     }
   }
 
-  const handleImportCompanyData = async (values: any) => {
+  const handleImportCompanyData = async (_values: any) => {
     if (!importFile) {
       showMessage('error', tSystem('dangerZone.importData.modal.fileRequired'))
       return
@@ -1499,51 +1492,6 @@ const SystemPage: React.FC = () => {
     },
   ]
 
-  const teamFormFields = [
-    {
-      name: 'teamName',
-      label: 'Team Name',
-      placeholder: 'Enter team name',
-      required: true,
-    },
-  ]
-
-  // Form fields
-  const regionFormFields = [
-    {
-      name: 'regionName',
-      label: tOrg('regions.regionName'),
-      placeholder: tOrg('regions.placeholders.enterRegionName'),
-      required: true,
-    },
-  ]
-
-  const bridgeFormFields = uiMode === 'simple'
-    ? [
-        {
-          name: 'bridgeName',
-          label: tOrg('bridges.bridgeName'),
-          placeholder: tOrg('bridges.placeholders.enterBridgeName'),
-          required: true,
-        },
-      ]
-    : [
-        {
-          name: 'regionName',
-          label: tOrg('general.region'),
-          placeholder: tOrg('regions.placeholders.selectRegion'),
-          required: true,
-          type: 'select' as const,
-          options: dropdownData?.regions?.map((r: any) => ({ value: r.value, label: r.label })) || [],
-        },
-        {
-          name: 'bridgeName',
-          label: tOrg('bridges.bridgeName'),
-          placeholder: tOrg('bridges.placeholders.enterBridgeName'),
-          required: true,
-        },
-      ]
-
   // Define tab configurations
   const usersTab = {
     key: 'users',
@@ -1815,9 +1763,8 @@ const SystemPage: React.FC = () => {
                     renderItem={(permission: string) => (
                       <List.Item
                         actions={[
-                          <Tooltip title={t('common:actions.remove')}>
+                          <Tooltip key="remove" title={t('common:actions.remove')}>
                             <Button
-                              key="remove"
                               type="primary"
                               danger
                               size="small"

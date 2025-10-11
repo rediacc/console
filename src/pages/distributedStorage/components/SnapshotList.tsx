@@ -82,15 +82,20 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
   
   const handleRunFunction = async (functionName: string, snapshot?: DistributedStorageRbdSnapshot) => {
     try {
-      const queueVault = buildQueueVault({
-        function: functionName,
+      const queueVault = await buildQueueVault({
+        functionName: functionName,
+        teamName: pool.teamName,
+        params: {
+          cluster_name: pool.clusterName,
+          pool_name: pool.poolName,
+          image_name: image.imageName,
+          snapshot_name: snapshot?.snapshotName || '',
+        },
         priority: 3,
-        cluster_name: pool.clusterName,
-        pool_name: pool.poolName,
-        image_name: image.imageName,
-        snapshot_name: snapshot?.snapshotName || '',
+        description: `Execute ${functionName}`,
+        addedVia: 'DistributedStorage'
       })
-      
+
       const response = await managedQueueMutation.mutateAsync({
         teamName: pool.teamName,
         machineName: pool.clusterName,
@@ -98,9 +103,10 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
         queueVault,
         priority: 3
       })
-      
-      if (response.taskId) {
-        handleQueueItemCreated(response.taskId)
+
+      const taskId = response.taskId
+      if (taskId) {
+        handleQueueItemCreated(taskId)
       }
     } catch (error) {
       message.error(t('queue.createError'))
@@ -270,7 +276,7 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
             expandable={{
               expandedRowRender,
               expandedRowKeys,
-              onExpandedRowsChange: setExpandedRowKeys,
+              onExpandedRowsChange: (keys) => setExpandedRowKeys(keys as string[]),
               expandIcon: ({ expanded, onExpand, record }) => (
                 <Button
                   size="small"
@@ -325,7 +331,7 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
       
       <QueueItemTraceModal
         visible={queueModalVisible}
-        onCancel={() => setQueueModalVisible(false)}
+        onClose={() => setQueueModalVisible(false)}
         taskId={queueModalTaskId}
         data-testid="snapshot-list-queue-modal"
       />

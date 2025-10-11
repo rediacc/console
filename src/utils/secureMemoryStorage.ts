@@ -11,7 +11,6 @@ interface EncryptedData {
 
 class SecureMemoryStorage {
   private storage: Map<string, EncryptedData> = new Map();
-  private cryptoKey: CryptoKey | null = null;
   private masterPassword: string;
 
   constructor() {
@@ -164,7 +163,6 @@ class SecureMemoryStorage {
     this.storage.clear();
     // Regenerate master password for additional security
     this.masterPassword = this.generateMasterPassword();
-    this.cryptoKey = null;
   }
 
   /**
@@ -192,9 +190,6 @@ class SecureMemoryStorage {
     const length = this.masterPassword.length;
     this.masterPassword = '0'.repeat(length);
     this.masterPassword = '';
-
-    // Clear crypto key
-    this.cryptoKey = null;
   }
 }
 
@@ -216,7 +211,7 @@ if (typeof window !== 'undefined') {
   let isProtocolLaunch = false;
 
   // Track protocol launches to avoid wiping tokens
-  window.addEventListener('beforeunload', (event) => {
+  window.addEventListener('beforeunload', (_event) => {
     // Don't wipe if this is just a protocol launch
     if (isProtocolLaunch) {
       isProtocolLaunch = false;

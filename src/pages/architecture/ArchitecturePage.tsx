@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Card, Spin, Alert, Space, Typography, Radio, Button, Tooltip, Statistic, Row, Col, Select, Checkbox } from 'antd'
+import { Card, Spin, Alert, Space, Typography, Radio, Button, Tooltip, Statistic, Row, Col, Select } from 'antd'
 import { 
   FullscreenOutlined, 
   FullscreenExitOutlined, 
@@ -263,22 +263,23 @@ const ArchitecturePage: React.FC = () => {
         .selectAll('g')
         .data(nodes)
         .join('g')
-        .call(d3.drag<SVGGElement, GraphNode, GraphNode>()
-          .on('start', (event, d) => {
-            if (!event.active) simulation.alphaTarget(0.3).restart()
-            d.fx = d.x
-            d.fy = d.y
-          })
-          .on('drag', (event, d) => {
-            d.fx = event.x
-            d.fy = event.y
-          })
-          .on('end', (event, d) => {
-            if (!event.active) simulation.alphaTarget(0)
-            d.fx = null
-            d.fy = null
-          })
-        )
+
+      node.call(d3.drag<SVGGElement, GraphNode, GraphNode>()
+        .on('start', (event, d) => {
+          if (!event.active) simulation.alphaTarget(0.3).restart()
+          d.fx = d.x
+          d.fy = d.y
+        })
+        .on('drag', (event, d) => {
+          d.fx = event.x
+          d.fy = event.y
+        })
+        .on('end', (event, d) => {
+          if (!event.active) simulation.alphaTarget(0)
+          d.fx = null
+          d.fy = null
+        }) as any
+      )
 
       // Add circles for nodes
       node.append('circle')
@@ -288,13 +289,13 @@ const ArchitecturePage: React.FC = () => {
         .attr('stroke-width', 2)
         .style('cursor', 'pointer')
         .style('transition', 'all 0.2s ease')
-        .on('mouseenter', function(event, d) {
+        .on('mouseenter', function(_event, _d) {
           d3.select(this)
             .attr('r', 24)
             .attr('stroke-width', 3)
             .style('filter', 'brightness(1.1)')
         })
-        .on('mouseleave', function(event, d) {
+        .on('mouseleave', function(_event, _d) {
           d3.select(this)
             .attr('r', 20)
             .attr('stroke-width', 2)
@@ -458,7 +459,7 @@ const ArchitecturePage: React.FC = () => {
         .attr('stroke-width', 2)
         .style('cursor', (d: any) => d.data.nodeType === 'placeholder' ? 'default' : 'pointer')
         .style('transition', 'all 0.2s ease')
-        .on('mouseenter', function(event, d: any) {
+        .on('mouseenter', function(_event, d: any) {
           if (d.data.nodeType !== 'placeholder') {
             d3.select(this)
               .attr('r', 24)
@@ -466,7 +467,7 @@ const ArchitecturePage: React.FC = () => {
               .style('filter', 'brightness(1.1)')
           }
         })
-        .on('mouseleave', function(event, d: any) {
+        .on('mouseleave', function(_event, d: any) {
           if (d.data.nodeType !== 'placeholder') {
             d3.select(this)
               .attr('r', 20)
@@ -556,13 +557,13 @@ const ArchitecturePage: React.FC = () => {
         .attr('stroke-width', 2)
         .style('cursor', 'pointer')
         .style('transition', 'all 0.2s ease')
-        .on('mouseenter', function(event, d) {
+        .on('mouseenter', function(_event, _d) {
           d3.select(this)
             .attr('r', 24)
             .attr('stroke-width', 3)
             .style('filter', 'brightness(1.1)')
         })
-        .on('mouseleave', function(event, d) {
+        .on('mouseleave', function(_event, _d) {
           d3.select(this)
             .attr('r', 20)
             .attr('stroke-width', 2)
@@ -750,11 +751,11 @@ const ArchitecturePage: React.FC = () => {
                 width: window.innerWidth < 768 ? '100%' : 'auto'
               }}>
                 <Tooltip title={t('architecture.selectAll', { ns: 'system' })}>
-                  <Button 
+                  <Button
                     icon={<CheckOutlined />}
-                    size={window.innerWidth < 768 ? 'default' : 'small'}
-                    style={{ 
-                      ...(window.innerWidth < 768 ? styles.touchTarget : styles.touchTargetSmall),
+                    size={'small'}
+                    style={{
+                      ...styles.touchTargetSmall,
                       flex: window.innerWidth < 768 ? '1' : 'none'
                     }}
                     onClick={() => setSelectedEntityTypes(entityTypes.map(t => t.value))}
@@ -763,11 +764,11 @@ const ArchitecturePage: React.FC = () => {
                   />
                 </Tooltip>
                 <Tooltip title={t('architecture.clearAll', { ns: 'system' })}>
-                  <Button 
+                  <Button
                     icon={<MinusCircleOutlined />}
-                    size={window.innerWidth < 768 ? 'default' : 'small'}
-                    style={{ 
-                      ...(window.innerWidth < 768 ? styles.touchTarget : styles.touchTargetSmall),
+                    size={'small'}
+                    style={{
+                      ...styles.touchTargetSmall,
                       flex: window.innerWidth < 768 ? '1' : 'none',
                       marginLeft: window.innerWidth < 768 ? '8px' : '0'
                     }}

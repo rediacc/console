@@ -413,7 +413,7 @@ const QueuePage: React.FC = () => {
   const containerStyle: React.CSSProperties = {
     ...styles.container,
     height: 'calc(100vh - 64px - 48px)', // viewport - header - content margin
-    ...styles.flexColumn,
+    ...styles.flexColumn as React.CSSProperties,
     overflow: 'hidden'
   }
 

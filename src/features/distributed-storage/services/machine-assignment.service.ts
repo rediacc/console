@@ -3,7 +3,6 @@ import type {
   MachineAssignment,
   BulkOperationRequest,
   AssignmentConflict,
-  ConflictResolution,
   ConflictResolutionResult,
   DistributedStorageResource,
   AssignmentResult,
@@ -46,6 +45,19 @@ export class MachineAssignmentService {
     }
 
     return null
+  }
+
+  /**
+   * Get full assignment information for a machine
+   */
+  static getAssignmentInfo(machine: Machine): MachineAssignment {
+    return {
+      machineId: machine.machineGuid || '',
+      machineName: machine.machineName,
+      assignmentType: this.getMachineAssignmentType(machine),
+      resourceName: machine.distributedStorageClusterName ||
+                   machine.assignmentStatus?.assignmentDetails?.split(': ')[1]
+    }
   }
 
   /**
@@ -172,6 +184,7 @@ export class MachineAssignmentService {
 
         conflicts.push({
           machine,
+          machineName: machine.machineName,
           currentAssignment,
           requestedAssignment: targetResource,
           conflictType: 'exclusivity',
@@ -188,7 +201,7 @@ export class MachineAssignmentService {
    */
   static resolveAssignmentConflict(
     conflict: AssignmentConflict,
-    resolution: ConflictResolution = 'skip'
+    resolution: ConflictResolutionResult['resolution'] = 'skip'
   ): ConflictResolutionResult {
     switch (resolution) {
       case 'force':
@@ -197,13 +210,13 @@ export class MachineAssignmentService {
           resolution: 'force',
           reason: `Forcing reassignment from ${conflict.currentAssignment.assignmentType} to ${conflict.requestedAssignment}`
         }
-      
+
       case 'cancel':
         return {
           resolution: 'cancel',
           reason: 'Operation cancelled by user'
         }
-      
+
       case 'skip':
       default:
         return {
@@ -238,7 +251,7 @@ export class MachineAssignmentService {
    * Process assignment results and categorize successes/failures
    */
   static processAssignmentResults(
-    requestedMachines: string[],
+    _requestedMachines: string[],
     actualResults: any[],
     conflicts: AssignmentConflict[]
   ): AssignmentResult {
@@ -298,6 +311,7 @@ export class MachineAssignmentService {
         // Convert validation errors to conflicts
         const conflict: AssignmentConflict = {
           machine,
+          machineName: machine.machineName,
           currentAssignment: {
             machineId: machine.machineGuid || '',
             machineName: machine.machineName,

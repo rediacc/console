@@ -6,14 +6,12 @@ import { configService } from '@/services/configService'
 
 const SandboxWarning: React.FC = () => {
   const { t } = useTranslation('common')
-  const [instanceName, setInstanceName] = useState<string>('')
   const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
     const loadInstanceName = async () => {
       const name = await configService.getInstanceName()
       console.log('SandboxWarning: Instance name loaded:', name)
-      setInstanceName(name)
       // Show warning only for sandbox instances
       setIsVisible(name.toLowerCase() === 'sandbox')
     }

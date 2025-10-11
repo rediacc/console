@@ -1,23 +1,18 @@
 import type { Machine } from '@/types'
-import { 
-  MachineAssignmentService, 
-  MachineValidationService 
+import {
+  MachineValidationService
 } from '../services'
 import type {
   useMachineAssignment,
-  useMachineExclusivity,
-  CloneIdentifier,
-  PoolIdentifier,
-  AssignmentResult
+  useMachineExclusivity
 } from '../hooks'
+import type { PoolIdentifier } from '../hooks'
 import type {
   AssignmentConflict,
-  ConflictResolution,
-  ValidationResult
+  ConflictResolution
 } from '../models'
 import {
   WorkflowStep,
-  WorkflowResult,
   AssignmentWorkflowOptions,
   AssignmentWorkflowResult,
   ConflictResolutionStrategy,
@@ -76,7 +71,7 @@ export class MachineAssignmentController {
   async assignMachineToCluster(
     machineNames: string[],
     clusterName: string,
-    teamName: string,
+    _teamName: string,
     options: AssignmentWorkflowOptions = {}
   ): Promise<AssignmentWorkflowResult> {
     const workflowId = `assign-cluster-${Date.now()}`
@@ -100,12 +95,20 @@ export class MachineAssignmentController {
           description: 'Validating machine availability',
           execute: async () => {
             const availability = await this.exclusivityHook.checkAvailability(machineNames)
-            
+
             if (availability.unavailable.length > 0) {
               result.conflicts = Object.entries(availability.conflicts).map(([machine, conflict]) => ({
+                machine: { machineName: machine } as Machine,
                 machineName: machine,
-                currentAssignment: conflict,
-                targetType: 'cluster',
+                currentAssignment: {
+                  machineId: machine,
+                  machineName: machine,
+                  assignmentType: conflict.assignmentType as any,
+                  resourceName: conflict.resourceName
+                },
+                requestedAssignment: clusterName,
+                conflictType: 'exclusivity' as const,
+                targetType: 'cluster' as const,
                 targetResource: clusterName
               }))
               

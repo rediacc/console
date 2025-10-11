@@ -1,395 +1,537 @@
 {
-  "navigation": {
-    "dashboard": "لوحة التحكم",
-    "architecture": "الهيكل",
-    "resources": "الموارد",
-    "marketplace": "السوق",
-    "queue": "قائمة الانتظار",
-    "system": "النظام",
-    "audit": "التدقيق",
-    "logout": "تسجيل الخروج"
-  },
   "actions": {
-    "edit": "تحرير",
-    "delete": "حذف",
-    "search": "بحث",
-    "reset": "إعادة تعيين",
-    "cancel": "إلغاء",
-    "create": "إنشاء",
-    "save": "حفظ",
-    "retry": "إعادة المحاولة",
-    "refresh": "تحديث",
-    "fullscreen": "ملء الشاشة",
-    "exitFullscreen": "الخروج من وضع ملء الشاشة",
     "addToQueue": "إضافة إلى قائمة الانتظار",
-    "viewTrace": "عرض التتبع",
-    "close": "إغلاق",
-    "back": "رجوع"
+    "advanced": "متقدم",
+    "back": "خلف",
+    "cancel": "يلغي",
+    "clearSelection": "مسح التحديد",
+    "close": "يغلق",
+    "create": "يخلق",
+    "createResource": "إنشاء {{مورد}}",
+    "delete": "يمسح",
+    "edit": "يحرر",
+    "editResource": "تحرير {{المصدر}}",
+    "editVault": "تحرير قبو",
+    "exitFullscreen": "الخروج من وضع ملء الشاشة",
+    "fullscreen": "ملء الشاشة",
+    "manage": "يدير",
+    "refresh": "ينعش",
+    "remote": "بعيد",
+    "remove": "يزيل",
+    "reset": "إعادة ضبط",
+    "retry": "أعد المحاولة",
+    "runFunction": "وظيفة التشغيل",
+    "save": "يحفظ",
+    "search": "يبحث",
+    "trace": "يتعقب",
+    "viewTrace": "عرض التتبع"
   },
-  "close": "إغلاق",
+  "close": "يغلق",
   "copiedToClipboard": "تم النسخ إلى الحافظة",
   "copyFailed": "فشل النسخ إلى الحافظة",
-  "export": "تصدير",
-  "exportCSV": "تصدير كـ CSV",
+  "current": "حاضِر",
+  "dashboard": {
+    "availablePlans": "الخطط المتاحة",
+    "comparePlansDescription": "قارن الميزات والأسعار عبر مستويات الاشتراك المختلفة",
+    "currentPlan": "الخطة الحالية",
+    "elitePlanDescription": "أنت مشترك في خطتنا ذات المستوى الأعلى مع فتح جميع الميزات",
+    "upgradeOptions": "خيارات الترقية"
+  },
+  "export": "يصدّر",
+  "exportCSV": "تصدير كملف CSV",
   "exportJSON": "تصدير كـ JSON",
-  "refresh": "تحديث",
-  "today": "اليوم",
-  "yesterday": "أمس",
-  "last7Days": "آخر 7 أيام",
+  "fieldGenerator": {
+    "applied": "تم تطبيق القيم بنجاح",
+    "apply": "يتقدم",
+    "cancel": "يلغي",
+    "comingSoon": "قريباً",
+    "copied": "منسوخ!",
+    "copy": "ينسخ",
+    "copyError": "فشل النسخ إلى الحافظة",
+    "generate": "يولد",
+    "generationError": "فشل في الإنشاء. يرجى المحاولة مرة أخرى.",
+    "generationSuccess": "تم الإنشاء بنجاح",
+    "keySize": "حجم المفتاح",
+    "keyType": "نوع المفتاح",
+    "moreSecure": "أكثر أمنا",
+    "regenerate": "تجديد",
+    "title": {
+      "repository_credential": "إنشاء بيانات اعتماد المستودع",
+      "ssh_keys": "إنشاء زوج مفاتيح SSH"
+    },
+    "tooltip": "توليد القيمة"
+  },
+  "fields": {
+    "vault": "تكوين القبو"
+  },
+  "general": {
+    "cancel": "يلغي",
+    "defaultsApplied": "تم تطبيق القيم الافتراضية",
+    "important": "مهم",
+    "loading": "تحميل...",
+    "showingRecords": "عرض السجلات {{start}}-{{end}} من {{total}}",
+    "vaultVersion": "نسخة قبو",
+    "versionFormat": "ضد {{الإصدار}}"
+  },
+  "language": {
+    "ar": "عربي",
+    "de": "الألمانية",
+    "en": "إنجليزي",
+    "es": "الأسبانية",
+    "fr": "فرنسي",
+    "ja": "اليابانية",
+    "select": "اختر اللغة",
+    "tr": "تركي",
+    "zh": "الصينية"
+  },
   "last30Days": "آخر 30 يومًا",
-  "thisMonth": "هذا الشهر",
+  "last7Days": "آخر 7 أيام",
   "lastMonth": "الشهر الماضي",
   "messages": {
-    "success": "نجح",
-    "required": "هذا الحقل مطلوب",
-    "invalidEmail": "عنوان بريد إلكتروني غير صالح",
-    "loading": "جارٍ التحميل...",
-    "error": "خطأ"
+    "error": "خطأ",
+    "invalidEmail": "عنوان البريد الإلكتروني غير صالح",
+    "loading": "تحميل...",
+    "required": "هذه الخانة مطلوبه",
+    "success": "نجاح"
+  },
+  "navigation": {
+    "architecture": "بنيان",
+    "audit": "مراجعة",
+    "closeMobileMenu": "إغلاق قائمة الجوال",
+    "dashboard": "لوحة القيادة",
+    "distributedStorage": "التخزين الموزع",
+    "logout": "تسجيل الخروج",
+    "mainNavigation": "الملاحة الرئيسية",
+    "marketplace": "السوق",
+    "openMobileMenu": "فتح قائمة الجوال",
+    "queue": "طابور",
+    "resources": "موارد",
+    "system": "نظام"
+  },
+  "nestedObjectEditor": {
+    "Active": "نشيط",
+    "Add": "يضيف",
+    "Array": "صفيف",
+    "Container Images Detected": "تم اكتشاف صور الحاوية",
+    "Delete this entry?": "هل تريد حذف هذا الإدخال؟",
+    "Enter key name": "أدخل اسم المفتاح",
+    "False": "خطأ شنيع",
+    "Fields": "الحقول",
+    "Hide JSON": "إخفاء جسون",
+    "Image": "صورة",
+    "JSON Error": "خطأ JSON",
+    "No": "لا",
+    "No entries": "لا توجد إدخالات",
+    "Object": "هدف",
+    "Plugin Configuration Detected": "تم الكشف عن تكوين البرنامج المساعد",
+    "Raw JSON Editor": "محرر JSON الخام",
+    "Show JSON": "إظهار جسون",
+    "True": "حقيقي",
+    "Uniform Structure": "هيكل موحد",
+    "Uniform Structure Detected": "تم الكشف عن هيكل موحد",
+    "Yes": "نعم"
+  },
+  "no": "لا",
+  "noMatchingResults": "لا توجد نتائج مطابقة",
+  "none": "لا أحد",
+  "notifications": {
+    "clearAll": "مسح الكل",
+    "empty": "لا الإخطارات",
+    "markAllRead": "وضع علامة على الكل كمقروءة",
+    "title": "إشعارات"
+  },
+  "refresh": "ينعش",
+  "status": {
+    "initializing": "جارٍ التهيئة...",
+    "label": "حالة",
+    "processing": "يعالج",
+    "running": "جري",
+    "waitingForExecution": "في انتظار التنفيذ"
   },
   "table": {
     "actions": "الإجراءات",
     "showingRecords": "عرض السجلات {{start}}-{{end}} من {{total}}"
   },
-  "status": {
-    "label": "الحالة",
-    "initializing": "جارٍ التهيئة...",
-    "waitingForExecution": "في انتظار التنفيذ",
-    "processing": "معالجة",
-    "running": "قيد التشغيل"
-  },
-  "language": {
-    "select": "اختر اللغة",
-    "en": "الإنجليزية",
-    "es": "الإسبانية",
-    "fr": "الفرنسية",
-    "de": "الألمانية",
-    "zh": "الصينية",
-    "ja": "اليابانية",
-    "ar": "العربية",
-    "tr": "التركية",
-    "ru": "الروسية"
-  },
   "theme": {
-    "light": "فاتح",
-    "dark": "داكن"
+    "dark": "مظلم",
+    "light": "ضوء"
   },
+  "thisMonth": "هذا الشهر",
+  "today": "اليوم",
+  "total": "المجموع",
   "uiMode": {
-    "simple": "بسيط",
     "expert": "خبير",
-    "switching": "التبديل إلى وضع {{mode}}..."
+    "simple": "بسيط",
+    "switching": "التبديل إلى الوضع {{mode}}..."
   },
-  "general": {
-    "versionFormat": "الإصدار {{version}}",
-    "loading": "جارٍ التحميل...",
-    "showingRecords": "عرض السجلات {{start}}-{{end}} من {{total}}",
-    "defaultsApplied": "تم تطبيق القيم الافتراضية",
-    "important": "مهم",
-    "cancel": "إلغاء"
-  },
-  "yes": "نعم",
-  "no": "لا",
-  "dashboard": {
-    "availablePlans": "الخطط المتاحة",
-    "upgradeOptions": "خيارات الترقية",
-    "currentPlan": "الخطة الحالية",
-    "comparePlansDescription": "قارن الميزات والأسعار عبر مستويات الاشتراك المختلفة",
-    "elitePlanDescription": "أنت على أعلى خطة لدينا مع جميع الميزات مفتوحة"
-  },
+  "utilized": "مستعمل",
   "vaultEditor": {
-    "vaultConfiguration": "تكوين الخزنة",
-    "vaultVersion": "إصدار الخزنة:",
-    "versionAutoIncrement": "سيتم زيادة الإصدار تلقائيًا عند الحفظ",
-    "importJson": "استيراد JSON",
-    "exportJson": "تصدير JSON",
-    "unsavedChanges": "تغييرات غير محفوظة",
-    "versionWillIncrement": "سيتم زيادة الإصدار إلى {{version}}",
-    "saveVaultConfiguration": "حفظ تكوين الخزنة",
-    "validationErrors": "أخطاء التحقق:",
-    "pleaseFixErrors": "يرجى إصلاح أخطاء التحقق قبل الحفظ",
-    "noChangesToSave": "لا توجد تغييرات للحفظ",
-    "unknownEntityType": "نوع كيان غير معروف",
-    "unknownEntityDescription": "نوع الكيان \"{{type}}\" غير محدد في تعريفات الخزنة.",
-    "requiredFields": "الحقول المطلوبة",
-    "optionalFields": "الحقول الاختيارية",
-    "extraFields": "حقول إضافية (ليست في المخطط)",
-    "extraFieldsTooltip": "تم استيراد هذه الحقول ولكنها غير محددة في المخطط",
-    "extraFieldsWarning": "تحذير",
-    "extraFieldsWarningDescription": "هذه الحقول غير محددة في المخطط وسيتم تخزينها تحت 'extraFields' في بنية JSON.",
-    "rawJsonEditor": "محرر JSON الخام (وضع الخبير)",
-    "rawJsonTooltip": "تحرير JSON المباشر - استخدم بحذر!",
-    "expertModeOnly": "وضع الخبير فقط",
-    "expertModeDescription": "يمكن أن يؤدي تحرير JSON المباشر إلى كسر وظائف النظام إذا لم يتم بشكل صحيح. قم بالتعديل فقط إذا كنت تفهم مخطط الخزنة والآثار المترتبة.",
-    "jsonError": "خطأ JSON",
-    "formatJson": "تنسيق JSON",
-    "resetToFormValues": "إعادة تعيين إلى قيم النموذج",
-    "isRequired": "{{field}} مطلوب",
-    "invalidFormat": "تنسيق غير صالح. {{description}}",
-    "minLength": "الحد الأدنى للطول هو {{length}}",
-    "maxLength": "الحد الأقصى للطول هو {{length}}",
-    "minValue": "الحد الأدنى للقيمة هو {{value}}",
-    "maxValue": "الحد الأقصى للقيمة هو {{value}}",
-    "mustBeValidJson": "يجب أن يكون JSON صالحًا",
-    "mustBeArray": "يجب أن يكون مصفوفة",
-    "mustBeValidJsonArray": "يجب أن يكون مصفوفة JSON صالحة",
-    "enterJsonObject": "أدخل كائن JSON",
-    "enterJsonArray": "أدخل مصفوفة JSON",
-    "portPlaceholder": "رقم المنفذ (1-65535)",
-    "example": "مثال:",
     "advanced": "متقدم",
-    "failedToSerialize": "فشل تسلسل البيانات إلى JSON",
-    "invalidJsonFormat": "تنسيق JSON غير صالح",
+    "enterJsonArray": "أدخل صفيف JSON",
+    "enterJsonObject": "أدخل كائن JSON",
+    "example": "مثال:",
+    "expertModeDescription": "يمكن أن يؤدي تحرير JSON المباشر إلى تعطيل وظائف النظام إذا لم يتم إجراؤه بشكل صحيح. قم بالتعديل فقط إذا فهمت مخطط المخزن وتأثيراته.",
+    "expertModeOnly": "وضع الخبراء فقط",
+    "exportJson": "تصدير JSON",
+    "extraFields": "الحقول الإضافية (ليست في المخطط)",
+    "extraFieldsTooltip": "تم استيراد هذه الحقول ولكن لم يتم تعريفها في المخطط",
+    "extraFieldsWarning": "تحذير",
+    "extraFieldsWarningDescription": "لم يتم تعريف هذه الحقول في المخطط وسيتم تخزينها ضمن \"الحقول الإضافية\" في بنية JSON.",
     "failedToParseJson": "فشل تحليل JSON:",
-    "fieldsMovedToExtra": "تم نقل {{count}} حقل/حقول إلى extraFields: {{fields}}",
-    "fieldsMovedFromExtra": "تم استعادة {{count}} حقل/حقول من extraFields: {{fields}}",
-    "sshPasswordRequiredWhenNoKey": "كلمة مرور SSH مطلوبة لإعداد المفتاح الأولي",
-    "providerFields": "تكوين {{provider}}",
-    "providerRequiredFields": "الحقول المطلوبة لـ {{provider}}",
-    "testConnection": {
-      "button": "اختبار الاتصال",
-      "missingFields": "يرجى ملء عنوان IP واسم المستخدم وكلمة المرور قبل الاختبار",
-      "initiated": "تم بدء اختبار اتصال SSH. يرجى التحقق من قائمة الانتظار للحصول على النتائج.",
-      "success": "نجح اتصال SSH",
-      "failed": "فشل اتصال SSH",
-      "testing": "جارٍ اختبار الاتصال..."
-    },
-    "systemCompatibility": {
-      "title": "توافق النظام",
-      "systemInfo": "معلومات النظام",
-      "kernelVersion": "إصدار النواة",
-      "operatingSystem": "نظام التشغيل",
-      "btrfsAvailable": "BTRFS متاح",
-      "compatibilityStatus": "حالة التوافق",
-      "compatible": "متوافق",
-      "warning": "تحذير",
-      "incompatible": "غير متوافق",
-      "unknown": "غير معروف",
-      "knownIssues": "المشاكل المعروفة",
-      "recommendations": "التوصيات",
-      "yes": "نعم",
-      "no": "لا"
-    },
+    "failedToSerialize": "فشل في تسلسل البيانات إلى JSON",
     "fields": {
-      "MACHINE": {
-        "description": "تكوين الجهاز للوصول عبر SSH والتخزين",
-        "ip": {
-          "label": "عنوان IP",
-          "description": "عنوان IP للجهاز"
-        },
-        "user": {
-          "label": "اسم المستخدم",
-          "description": "اسم مستخدم SSH للاتصال"
-        },
-        "datastore": {
-          "label": "مسار مخزن البيانات",
-          "description": "مسار الدليل لتخزين البيانات. إذا كان موجودًا على نظام ملفات BTRFS، فسيستخدم الميزات الأصلية. وإلا، سيتم إنشاء ملف تجمع تخزين BTRFS وتثبيته هنا لتمكين اللقطات والضغط"
-        },
-        "port": {
-          "label": "منفذ SSH",
-          "description": "رقم منفذ SSH"
-        },
-        "host_entry": {
-          "label": "إدخال المضيف",
-          "description": "إدخال المضيف المعروف SSH للتحقق من الأمان"
-        },
-        "ssh_key_configured": {
-          "label": "مفتاح SSH مكوّن بالفعل",
-          "description": "حدد هذا إذا كان المفتاح العام SSH مثبتًا بالفعل على الجهاز المستهدف"
-        },
-        "ssh_password": {
-          "label": "كلمة مرور SSH (مؤقتة)",
-          "description": "كلمة مرور مؤقتة لإعداد مفتاح SSH الأولي فقط. اتركه فارغًا إذا كان مفتاح SSH مكوّنًا بالفعل. يتم استخدام كلمة المرور هذه مرة واحدة لنسخ المفتاح العام ويجب إزالتها بعد ذلك لأسباب أمنية."
-        }
-      },
-      "REPOSITORY": {
-        "description": "تكوين المستودع لتخزين النسخ الاحتياطية",
-        "name": {
-          "label": "اسم المستودع",
-          "description": "معرف اسم المستودع"
-        },
-        "credential": {
-          "label": "كلمة مرور الوصول",
-          "description": "كلمة مرور الوصول إلى المستودع (32 حرفًا، أبجدي رقمي + أحرف خاصة)"
-        },
-        "encryption": {
-          "label": "تمكين التشفير",
-          "description": "تمكين التشفير للمستودع"
-        },
-        "retention": {
-          "label": "سياسة الاحتفاظ",
-          "description": "إعدادات سياسة الاحتفاظ"
-        },
-        "schedule": {
-          "label": "جدول النسخ الاحتياطي",
-          "description": "تعبير cron للنسخ الاحتياطية التلقائية"
-        }
-      },
-      "STORAGE": {
-        "entityDescription": "تكوين التخزين لوجهات النسخ الاحتياطي",
-        "name": {
-          "label": "اسم التخزين",
-          "description": "اسم فريد لتكوين التخزين هذا"
-        },
-        "provider": {
-          "label": "موفر التخزين",
-          "description": "حدد نوع موفر التخزين"
-        },
-        "description": {
-          "label": "الوصف",
-          "description": "وصف اختياري لتكوين التخزين هذا"
-        },
-        "noVersioning": {
-          "label": "تعطيل الإصدار",
-          "description": "تعطيل التحكم في الإصدار لهذا التخزين"
-        },
-        "parameters": {
-          "label": "معاملات إضافية",
-          "description": "معاملات rclone إضافية للتكوين المتقدم"
-        }
-      },
-      "SCHEDULE": {
-        "description": "تكوين الجدولة للمهام التلقائية",
-        "cron": {
-          "label": "تعبير Cron",
-          "description": "تعبير cron الذي يحدد الجدول"
-        },
-        "timezone": {
-          "label": "المنطقة الزمنية",
-          "description": "المنطقة الزمنية لتنفيذ الجدول"
-        },
-        "enabled": {
-          "label": "تمكين الجدول",
-          "description": "ما إذا كان هذا الجدول نشطًا"
-        }
-      },
       "BRIDGE": {
-        "description": "تكوين الجسر لاتصال الشبكة",
+        "description": "تكوين الجسر للاتصال بالشبكة",
         "ip": {
-          "label": "عنوان IP",
-          "description": "عنوان IP لخادم الجسر"
+          "description": "عنوان IP لخادم الجسر",
+          "label": "عنوان IP"
         }
       },
-      "REGION": {
-        "description": "تكوين المنطقة للتوزيع الجغرافي",
-        "name": {
-          "label": "اسم المنطقة",
-          "description": "اسم المنطقة الجغرافية"
+      "CLONE": {
+        "description": "تكوين إعدادات استنساخ RBD",
+        "features": {
+          "description": "ميزات RBD للاستنساخ",
+          "label": "سمات"
         },
-        "code": {
-          "label": "رمز المنطقة",
-          "description": "رمز قصير للمنطقة"
+        "parent_image": {
+          "description": "اسم الصورة الأم",
+          "label": "صورة الوالدين"
+        },
+        "parent_pool": {
+          "description": "تجمع يحتوي على الصورة الأصلية",
+          "label": "تجمع الوالدين"
+        },
+        "parent_snapshot": {
+          "description": "اسم لقطة الوالدين",
+          "label": "لقطة الوالدين"
+        },
+        "size": {
+          "description": "حجم الصورة المستنسخة",
+          "label": "حجم الاستنساخ"
         }
       },
-      "TEAM": {
-        "description": "تكوين الفريق للهيكل التنظيمي",
-        "name": {
-          "label": "اسم الفريق",
-          "description": "اسم الفريق"
+      "CLUSTER": {
+        "config": {
+          "description": "خيارات تكوين المجموعة الإضافية",
+          "label": "إعدادات"
         },
-        "teamDescription": {
-          "label": "وصف الفريق",
-          "description": "وصف غرض الفريق ومسؤولياته"
+        "description": "قم بتكوين إعدادات مجموعة التخزين الموزعة Ceph",
+        "fsid": {
+          "description": "المعرف الفريد لمجموعة Ceph (تنسيق UUID)",
+          "label": "معرف نظام الملفات"
         },
-        "SSH_PRIVATE_KEY": {
-          "label": "مفتاح SSH الخاص",
-          "description": "مفتاح SSH الخاص المشفر بـ Base64 لعمليات الفريق"
+        "mds": {
+          "description": "قائمة عقد MDS (خادم بيانات التعريف).",
+          "label": "عقد حركة الديمقراطيين الاشتراكيين"
         },
-        "SSH_PUBLIC_KEY": {
-          "label": "مفتاح SSH العام",
-          "description": "مفتاح SSH العام لعمليات الفريق"
-        }
-      },
-      "USER": {
-        "description": "تكوين المستخدم للإعدادات الشخصية",
-        "SSH_PRIVATE_KEY": {
-          "label": "مفتاح SSH الخاص",
-          "description": "مفتاح SSH الخاص المشفر بـ Base64 لعمليات المستخدم"
+        "mgrs": {
+          "description": "قائمة العقد المدير في المجموعة",
+          "label": "عقد المدير"
         },
-        "SSH_PUBLIC_KEY": {
-          "label": "مفتاح SSH العام",
-          "description": "مفتاح SSH العام لعمليات المستخدم"
+        "monitors": {
+          "description": "قائمة عقد المراقبة في المجموعة",
+          "label": "عقد المراقبة"
+        },
+        "osds": {
+          "description": "قائمة عقد OSD (برنامج تخزين الكائنات).",
+          "label": "عقد OSD"
         }
       },
       "COMPANY": {
-        "description": "تكوين الشركة للإعدادات على مستوى المؤسسة",
-        "UNIVERSAL_USER_ID": {
-          "label": "معرف المستخدم العالمي",
-          "description": "معرف المستخدم العالمي لعمليات النظام"
-        },
-        "UNIVERSAL_USER_NAME": {
-          "label": "اسم المستخدم العالمي",
-          "description": "اسم المستخدم العالمي لعمليات النظام"
-        },
         "DOCKER_JSON_CONF": {
-          "label": "تكوين Docker",
-          "description": "تكوين مصادقة سجل Docker"
-        },
-        "SSH_PRIVATE_KEY": {
-          "label": "مفتاح SSH الخاص",
-          "description": "مفتاح SSH الخاص المشفر بـ Base64 لعمليات الشركة"
-        },
-        "SSH_PUBLIC_KEY": {
-          "label": "مفتاح SSH العام",
-          "description": "مفتاح SSH العام لعمليات الشركة"
+          "description": "تكوين مصادقة تسجيل Docker",
+          "label": "تكوين عامل الميناء"
         },
         "LOG_FILE": {
-          "label": "مسار ملف السجل",
-          "description": "المسار إلى ملف سجل النظام"
+          "description": "المسار إلى ملف سجل النظام",
+          "label": "مسار ملف السجل"
         },
         "PLUGINS": {
-          "label": "الإضافات",
-          "description": "تكوينات الإضافات مع صور الحاويات وحالة التفعيل"
+          "description": "تكوينات البرنامج المساعد مع صور الحاوية وحالة التنشيط",
+          "label": "الإضافات"
+        },
+        "SSH_PRIVATE_KEY": {
+          "description": "مفتاح SSH الخاص المشفر بـ Base64 لعمليات الشركة",
+          "label": "مفتاح SSH الخاص"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "مفتاح SSH العام لعمليات الشركة",
+          "label": "مفتاح SSH العام"
+        },
+        "UNIVERSAL_USER_ID": {
+          "description": "معرف المستخدم العالمي لعمليات النظام",
+          "label": "معرف المستخدم العالمي"
+        },
+        "UNIVERSAL_USER_NAME": {
+          "description": "اسم المستخدم العالمي لعمليات النظام",
+          "label": "اسم المستخدم العالمي"
+        },
+        "description": "تكوين الشركة للإعدادات على مستوى المؤسسة"
+      },
+      "IMAGE": {
+        "data_pool": {
+          "description": "تجمع منفصل لتخزين بيانات الصورة",
+          "label": "تجمع البيانات"
+        },
+        "description": "تكوين إعدادات صورة RBD",
+        "features": {
+          "description": "ميزات RBD لتمكين الصورة",
+          "label": "سمات"
+        },
+        "object_size": {
+          "description": "حجم الكائنات داخل الصورة",
+          "label": "حجم الكائن"
+        },
+        "size": {
+          "description": "حجم صورة RBD (على سبيل المثال، 10G، 1T)",
+          "label": "حجم الصورة"
+        },
+        "stripe_count": {
+          "description": "عدد الخطوط للصورة",
+          "label": "عدد الشريط"
+        },
+        "stripe_unit": {
+          "description": "حجم وحدة الشريط للصورة",
+          "label": "وحدة الشريط"
         }
+      },
+      "MACHINE": {
+        "datastore": {
+          "description": "مسار الدليل لتخزين البيانات. إذا كان موجودًا في نظام ملفات BTRFS، فسوف يستخدم الميزات الأصلية. بخلاف ذلك، سيتم إنشاء ملف تجمع تخزين BTRFS وتثبيته هنا لتمكين اللقطات والضغط",
+          "label": "مسار مخزن البيانات"
+        },
+        "description": "تكوين الجهاز للوصول إلى SSH وتخزينه",
+        "host_entry": {
+          "description": "إدخال مضيف معروف لـ SSH للتحقق من الأمان",
+          "label": "دخول المضيف"
+        },
+        "ip": {
+          "description": "عنوان IP الخاص بالجهاز",
+          "label": "عنوان IP"
+        },
+        "port": {
+          "description": "رقم منفذ SSH",
+          "label": "منفذ سش"
+        },
+        "ssh_key_configured": {
+          "description": "تحقق من ذلك إذا كان مفتاح SSH العام مثبتًا بالفعل على الجهاز المستهدف",
+          "label": "تم تكوين مفتاح SSH بالفعل"
+        },
+        "ssh_password": {
+          "description": "كلمة المرور المؤقتة لإعداد مفتاح SSH الأولي فقط. اتركه فارغًا إذا تم تكوين مفتاح SSH بالفعل. يتم استخدام كلمة المرور هذه مرة واحدة لنسخ المفتاح العام ويجب إزالتها بعد ذلك لأسباب أمنية.",
+          "label": "كلمة مرور SSH (مؤقتة)"
+        },
+        "user": {
+          "description": "اسم مستخدم SSH للاتصال",
+          "label": "اسم المستخدم"
+        }
+      },
+      "POOL": {
+        "application": {
+          "description": "نوع التطبيق للمجمع (على سبيل المثال، rbd، cephfs)",
+          "label": "طلب"
+        },
+        "crush_rule": {
+          "description": "اسم قاعدة CRUSH لوضع البيانات",
+          "label": "قاعدة سحق"
+        },
+        "description": "تكوين إعدادات تجمع تخزين Ceph",
+        "min_size": {
+          "description": "الحد الأدنى لعدد النسخ المتماثلة المطلوبة للإدخال/الإخراج",
+          "label": "الحد الأدنى للحجم"
+        },
+        "pg_num": {
+          "description": "عدد مجموعات المواضع للمسبح",
+          "label": "مجموعات المواضع"
+        },
+        "pgp_num": {
+          "description": "عدد مجموعات المواضع لأغراض المواضع",
+          "label": "رقم بي جي بي"
+        },
+        "size": {
+          "description": "عدد النسخ المتماثلة للكائنات الموجودة في التجمع",
+          "label": "حجم النسخ المتماثل"
+        }
+      },
+      "REGION": {
+        "code": {
+          "description": "رمز قصير للمنطقة",
+          "label": "رمز المنطقة"
+        },
+        "description": "تكوين المنطقة للتوزيع الجغرافي",
+        "name": {
+          "description": "اسم المنطقة الجغرافية",
+          "label": "اسم المنطقة"
+        }
+      },
+      "REPOSITORY": {
+        "credential": {
+          "description": "كلمة مرور الوصول إلى المستودع (32 حرفًا، أبجدية رقمية + أحرف خاصة)",
+          "label": "كلمة مرور الوصول"
+        },
+        "description": "تكوين المستودع لتخزين النسخ الاحتياطية",
+        "encryption": {
+          "description": "تمكين التشفير للمستودع",
+          "label": "تمكين التشفير"
+        },
+        "name": {
+          "description": "معرف اسم المستودع",
+          "label": "اسم المستودع"
+        },
+        "retention": {
+          "description": "إعدادات سياسة الاستبقاء",
+          "label": "سياسة الاحتفاظ"
+        },
+        "schedule": {
+          "description": "تعبير Cron للنسخ الاحتياطي الآلي",
+          "label": "جدول النسخ الاحتياطي"
+        }
+      },
+      "SNAPSHOT": {
+        "description": "تكوين إعدادات لقطة RBD",
+        "protected": {
+          "description": "ما إذا كانت اللقطة محمية من الحذف",
+          "label": "محمي"
+        },
+        "size": {
+          "description": "حجم اللقطة",
+          "label": "حجم اللقطة"
+        },
+        "timestamp": {
+          "description": "الطابع الزمني لإنشاء اللقطة",
+          "label": "الطابع الزمني"
+        }
+      },
+      "STORAGE": {
+        "description": {
+          "description": "وصف اختياري لتكوين التخزين هذا",
+          "label": "وصف"
+        },
+        "entityDescription": "تكوين التخزين لوجهات النسخ الاحتياطي",
+        "name": {
+          "description": "اسم فريد لتكوين التخزين هذا",
+          "label": "اسم التخزين"
+        },
+        "noVersioning": {
+          "description": "تعطيل التحكم في الإصدار لوحدة التخزين هذه",
+          "label": "تعطيل الإصدار"
+        },
+        "parameters": {
+          "description": "معلمات rclone إضافية للتكوين المتقدم",
+          "label": "معلمات إضافية"
+        },
+        "provider": {
+          "description": "حدد نوع موفر التخزين",
+          "label": "مزود التخزين"
+        }
+      },
+      "TEAM": {
+        "SSH_PRIVATE_KEY": {
+          "description": "مفتاح SSH الخاص المشفر بـ Base64 لعمليات الفريق",
+          "label": "مفتاح SSH الخاص"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "مفتاح SSH العام لعمليات الفريق",
+          "label": "مفتاح SSH العام"
+        },
+        "description": "تكوين الفريق للهيكل التنظيمي",
+        "name": {
+          "description": "اسم الفريق",
+          "label": "اسم الفريق"
+        },
+        "teamDescription": {
+          "description": "وصف غرض الفريق ومسؤولياته",
+          "label": "وصف الفريق"
+        }
+      },
+      "USER": {
+        "SSH_PRIVATE_KEY": {
+          "description": "مفتاح SSH الخاص المشفر بـ Base64 لعمليات المستخدم",
+          "label": "مفتاح SSH الخاص"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "مفتاح SSH العام لعمليات المستخدم",
+          "label": "مفتاح SSH العام"
+        },
+        "description": "تكوين المستخدم للإعدادات الشخصية"
       }
-    }
-  },
-  "fieldGenerator": {
-    "title": {
-      "ssh_keys": "إنشاء زوج مفاتيح SSH",
-      "repository_credential": "إنشاء بيانات اعتماد المستودع"
     },
-    "tooltip": "إنشاء قيمة",
-    "generate": "إنشاء",
-    "regenerate": "إعادة إنشاء",
-    "apply": "تطبيق",
-    "cancel": "إلغاء",
-    "copy": "نسخ",
-    "copied": "تم النسخ!",
-    "keyType": "نوع المفتاح",
-    "keySize": "حجم المفتاح",
-    "moreSecure": "أكثر أمانًا",
-    "comingSoon": "قريبًا",
-    "generationSuccess": "تم الإنشاء بنجاح",
-    "generationError": "فشل الإنشاء. يرجى المحاولة مرة أخرى.",
-    "applied": "تم تطبيق القيم بنجاح",
-    "copyError": "فشل النسخ إلى الحافظة"
+    "fields.CLONE.description": "تكوين إعدادات استنساخ RBD",
+    "fields.CLUSTER.description": "قم بتكوين إعدادات مجموعة التخزين الموزعة Ceph",
+    "fields.IMAGE.description": "تكوين إعدادات صورة RBD",
+    "fields.POOL.description": "تكوين إعدادات تجمع تخزين Ceph",
+    "fields.SNAPSHOT.description": "تكوين إعدادات لقطة RBD",
+    "fieldsMovedFromExtra": "تمت استعادة {{count}} الحقول من الحقول الإضافية: {{fields}}",
+    "fieldsMovedToExtra": "تم نقل {{count}} الحقل (الحقول) إلى الحقول الإضافية: {{fields}}",
+    "formatJson": "تنسيق جيسون",
+    "importJson": "استيراد جسون",
+    "invalidFormat": "التنسيق غير صالح. {{وصف}}",
+    "invalidJsonFormat": "تنسيق JSON غير صالح",
+    "isRequired": "{{الحقل}} مطلوب",
+    "jsonError": "خطأ JSON",
+    "maxLength": "الحد الأقصى للطول هو {{length}}",
+    "maxValue": "الحد الأقصى للقيمة هو {{value}}",
+    "minLength": "الحد الأدنى للطول هو {{طول}}",
+    "minValue": "الحد الأدنى للقيمة هو {{قيمة}}",
+    "mustBeArray": "يجب أن تكون مصفوفة",
+    "mustBeValidJson": "يجب أن يكون JSON صالحًا",
+    "mustBeValidJsonArray": "يجب أن تكون صفيف JSON صالحًا",
+    "noChangesToSave": "لا توجد تغييرات للحفظ",
+    "optionalFields": "الحقول الاختيارية",
+    "pleaseFixErrors": "الرجاء إصلاح أخطاء التحقق من الصحة قبل الحفظ",
+    "portPlaceholder": "رقم المنفذ (1-65535)",
+    "providerFields": "{{provider}} التكوين",
+    "providerRequiredFields": "الحقول المطلوبة لـ {{provider}}",
+    "rawJsonEditor": "محرر JSON الخام (وضع الخبراء)",
+    "rawJsonTooltip": "تحرير JSON المباشر - استخدمه بحذر!",
+    "requiredFields": "الحقول المطلوبة",
+    "resetToFormValues": "إعادة التعيين إلى قيم النموذج",
+    "saveVaultConfiguration": "حفظ تكوين Vault",
+    "sshPasswordRequiredWhenNoKey": "كلمة مرور SSH مطلوبة لإعداد المفتاح الأولي",
+    "systemCompatibility": {
+      "available": "متاح",
+      "btrfsAvailable": "BTRFS متاح",
+      "compatibilityStatus": "حالة التوافق",
+      "compatible": "متناسق",
+      "incompatible": "غير متوافق",
+      "kernelVersion": "نسخة النواة",
+      "knownIssues": "القضايا المعروفة",
+      "no": "لا",
+      "notInstalled": "غير مثبت",
+      "operatingSystem": "نظام التشغيل",
+      "osSetup": "إعداد نظام التشغيل",
+      "passwordRequired": "كلمة المرور مطلوبة",
+      "recommendations": "التوصيات",
+      "setupCompleted": "اكتمل الإعداد",
+      "setupRequired": "الإعداد مطلوب",
+      "sudoAvailable": "سودو متاح",
+      "systemInfo": "معلومات النظام",
+      "title": "توافق النظام",
+      "unknown": "مجهول",
+      "warning": "تحذير",
+      "yes": "نعم"
+    },
+    "testConnection": {
+      "button": "اتصال الاختبار",
+      "failed": "فشل اتصال SSH",
+      "initiated": "تم بدء اختبار اتصال SSH. يرجى التحقق من قائمة الانتظار للحصول على النتائج.",
+      "missingFields": "يرجى ملء عنوان IP واسم المستخدم وكلمة المرور قبل الاختبار",
+      "success": "تم اتصال SSH بنجاح",
+      "testing": "اختبار الاتصال..."
+    },
+    "unknownEntityDescription": "لم يتم تعريف نوع الكيان \"{{type}}\" في تعريفات المخزن.",
+    "unknownEntityType": "نوع كيان غير معروف",
+    "unsavedChanges": "التغييرات غير المحفوظة",
+    "validationErrors": "أخطاء التحقق:",
+    "vaultConfiguration": "تكوين القبو",
+    "vaultVersion": "نسخة الخزنة:",
+    "versionAutoIncrement": "سيتم زيادة الإصدار تلقائيًا عند الحفظ",
+    "versionWillIncrement": "سيتم زيادة الإصدار إلى {{version}}"
   },
-  "notifications": {
-    "title": "الإشعارات",
-    "empty": "لا توجد إشعارات",
-    "markAllRead": "وضع علامة مقروء على الكل",
-    "clearAll": "مسح الكل"
+  "warnings": {
+    "sandboxEnvironment": "بيئة رمل",
+    "sandboxMessage": "قد تتم إعادة ضبط البيانات أثناء التحديثات. للاختبار فقط."
   },
-  "nestedObjectEditor": {
-    "Image": "صورة",
-    "Active": "نشط",
-    "Add": "إضافة",
-    "Delete this entry?": "حذف هذا الإدخال؟",
-    "Yes": "نعم",
-    "No": "لا",
-    "Object": "كائن",
-    "Array": "مصفوفة",
-    "True": "صحيح",
-    "False": "خطأ",
-    "Enter key name": "أدخل اسم المفتاح",
-    "Show JSON": "عرض JSON",
-    "Hide JSON": "إخفاء JSON",
-    "No entries": "لا توجد إدخالات",
-    "Raw JSON Editor": "محرر JSON الخام",
-    "JSON Error": "خطأ JSON",
-    "Uniform Structure": "هيكل موحد",
-    "Fields": "الحقول",
-    "Container Images Detected": "تم اكتشاف صور الحاويات",
-    "Plugin Configuration Detected": "تم اكتشاف تكوين الإضافة",
-    "Uniform Structure Detected": "تم اكتشاف هيكل موحد"
-  }
+  "yes": "نعم",
+  "yesterday": "أمس"
 }

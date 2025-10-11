@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Table,
@@ -8,31 +8,21 @@ import {
   Badge,
   Tag,
   Space,
-  Alert,
-  Modal,
-  Form,
   Empty,
-  Radio,
   Tooltip,
-  Progress,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table/interface';
 import {
-  MoreOutlined,
   EditOutlined,
   DeleteOutlined,
-  KeyOutlined,
-  PlusOutlined,
   FunctionOutlined,
   HistoryOutlined,
   WifiOutlined,
   InboxOutlined,
-  DatabaseOutlined,
   TeamOutlined,
   GlobalOutlined,
   CloudServerOutlined,
   BranchesOutlined,
-  HddOutlined,
   DesktopOutlined,
   DashboardOutlined,
   CloudDownloadOutlined,
@@ -40,7 +30,6 @@ import {
   InfoCircleOutlined,
 } from '@/utils/optimizedIcons';
 import { useMachines } from '@/api/queries/machines';
-import { useDropdownData } from '@/api/queries/useDropdownData';
 import type { Machine } from '@/types';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
@@ -50,22 +39,16 @@ import { usePingFunction } from '@/services/pingService';
 import { showMessage } from '@/utils/messages';
 import { LocalActionsMenu } from './LocalActionsMenu';
 import { MachineRepositoryList } from './MachineRepositoryList';
-import { tokenService } from '@/services/tokenService';
 import { useLocalizedFunctions } from '@/services/functionsService';
-import { getLocalizedRelativeTime, formatTimestamp } from '@/utils/timeUtils';
 import { useRepositories } from '@/api/queries/repositories';
-import { useTeams } from '@/api/queries/teams';
-import { useTheme } from '@/context/ThemeContext';
 import { RemoteFileBrowserModal } from './RemoteFileBrowserModal';
 import { MachineVaultStatusPanel } from './MachineVaultStatusPanel';
 import { AssignToClusterModal } from './AssignToClusterModal';
 import { RemoveFromClusterModal } from './RemoveFromClusterModal';
 import { ViewAssignmentStatusModal } from './ViewAssignmentStatusModal';
-import MachineAssignmentStatusBadge from './MachineAssignmentStatusBadge';
 import MachineAssignmentStatusCell from './MachineAssignmentStatusCell';
-import { useGetMachineAssignmentStatus } from '@/api/queries/distributedStorage';
-import { useComponentStyles, useTableStyles } from '@/hooks/useComponentStyles';
-import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants';
+import { useComponentStyles } from '@/hooks/useComponentStyles';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
 
 
 interface MachineTableProps {
@@ -94,9 +77,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   teamFilter,
   showActions = true,
   className = '',
-  onCreateMachine,
   onEditMachine,
-  onVaultMachine,
   onFunctionsMachine,
   onDeleteMachine,
   onCreateRepository,
@@ -115,9 +96,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
   const isExpertMode = uiMode === 'expert';
   const { executePingForMachineAndWait } = usePingFunction();
-  const { theme } = useTheme();
   const styles = useComponentStyles();
-  const tableStyles = useTableStyles();
   
   // Ref for table container
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -127,22 +106,18 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const [internalExpandedRowKeys, setInternalExpandedRowKeys] = useState<string[]>([]);
   const [expansionTimestamps, setExpansionTimestamps] = useState<Record<string, number>>({});
   const [internalRefreshKeys, setInternalRefreshKeys] = useState<Record<string, number>>({});
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [showLoadingIndicator, setShowLoadingIndicator] = useState(false);
   const [loadingTimer, setLoadingTimer] = useState<NodeJS.Timeout | null>(null);
   const [expandingRowKey, setExpandingRowKey] = useState<string | null>(null);
-  const [currentToken, setCurrentToken] = useState<string>('');
-  
+  const [_isRefreshing, setIsRefreshing] = useState(false);
+
   // Bulk selection state
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
-  
+
   // Use external or internal state
   const expandedRowKeys = externalExpandedRowKeys !== undefined ? externalExpandedRowKeys : internalExpandedRowKeys;
   const setExpandedRowKeys = externalOnExpandedRowsChange || setInternalExpandedRowKeys;
   const refreshKeys = externalRefreshKeys !== undefined ? externalRefreshKeys : internalRefreshKeys;
-  const setRefreshKeys = externalRefreshKeys !== undefined 
-    ? () => {} // If external, parent manages refresh keys
-    : setInternalRefreshKeys;
   const [auditTraceModal, setAuditTraceModal] = useState<{
     open: boolean
     entityType: string | null
@@ -176,34 +151,16 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     };
   }, [loadingTimer]);
 
-  // Fetch token for LocalActionsMenu
-  useEffect(() => {
-    const fetchToken = async () => {
-      const token = await tokenService.getToken()
-      if (token) {
-        setCurrentToken(token)
-      }
-    }
-    fetchToken()
-  }, [])
-
   // Queries only - mutations are handled by parent
   const { data: machines = [], isLoading, refetch } = useMachines(teamFilter, enabled);
-  const { data: dropdownData } = useDropdownData();
-  const { data: teams } = useTeams();
   const { data: repositories = [] } = useRepositories(teamFilter);
-  
+
   // Dynamic page size
   const dynamicPageSize = useDynamicPageSize(tableContainerRef, {
     containerOffset: 170, // Account for filters, tabs, and other UI elements
     minRows: 5,
     maxRows: 50
   });
-
-
-
-  // Get unique values for filters
-  const teamsData = dropdownData?.teams || [];
 
   // Use machines directly without filtering
   const filteredMachines = machines;
@@ -286,12 +243,12 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
   // Get machine functions
   const { getFunctionsByCategory } = useLocalizedFunctions();
-  const machineFunctions = useMemo(() => 
-    getFunctionsByCategory('machine').filter(func => 
-      func.showInMenu !== false && 
-      func.name !== 'mount' && 
+  const machineFunctions = useMemo(() =>
+    getFunctionsByCategory('machine').filter(func =>
+      func && func.showInMenu !== false &&
+      func.name !== 'mount' &&
       func.name !== 'pull'
-    ), 
+    ),
     [getFunctionsByCategory]
   );
 
@@ -455,14 +412,14 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                     'data-testid': `machine-functions-${record.machineName}`,
                     children: [
                       ...machineFunctions.map((func) => ({
-                        key: `function-${func.name}`,
+                        key: `function-${func?.name || 'unknown'}`,
                         label: (
-                          <span title={func.description}>
-                            {func.name}
+                          <span title={func?.description || ''}>
+                            {func?.name || 'Unknown'}
                           </span>
                         ),
                         onClick: () => {
-                          if (onFunctionsMachine) {
+                          if (onFunctionsMachine && func?.name) {
                             onFunctionsMachine(record, func.name);
                             // Mark this machine for refresh when action completes
                             if (externalRefreshKeys === undefined) {
@@ -473,7 +430,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                             }
                           }
                         },
-                        'data-testid': `machine-function-${func.name}-${record.machineName}`
+                        'data-testid': `machine-function-${func?.name || 'unknown'}-${record.machineName}`
                       })),
                       {
                         type: 'divider'
@@ -577,8 +534,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             <LocalActionsMenu
               machine={record.machineName}
               teamName={record.teamName}
-              token={currentToken}
-              isMachineOnlyMenu={true}
             />
           </Space>
         ),
@@ -586,7 +541,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     }
 
     return baseColumns;
-  }, [isExpertMode, uiMode, showActions, t, handleDelete, dropdownData, onEditMachine, onVaultMachine, onFunctionsMachine, onCreateRepository, executePingForMachineAndWait, machineFunctions]);
+  }, [isExpertMode, uiMode, showActions, t, handleDelete, onEditMachine, onFunctionsMachine, onCreateRepository, executePingForMachineAndWait, machineFunctions, expandedRowKeys, externalRefreshKeys, setInternalRefreshKeys, setAssignClusterModal, setAuditTraceModal, setRemoteFileBrowserModal]);
 
   // Row selection configuration
   const rowSelection = isExpertMode ? {
@@ -775,7 +730,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           return;
         }
         // Add machine to each repository it has
-        machineRepos.forEach(repo => {
+        machineRepos.forEach((repo: any) => {
           const repoKey = repo.name;
           if (!result[repoKey]) result[repoKey] = [];
           if (!result[repoKey].find(m => m.machineName === machine.machineName)) {
@@ -789,10 +744,10 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           key = 'No Repositories';
         } else {
           // Priority-based status assignment
-          const hasInaccessible = machineRepos.some(r => !r.accessible);
-          const hasRunning = machineRepos.some(r => r.mounted && r.docker_running);
-          const hasStopped = machineRepos.some(r => r.mounted && !r.docker_running);
-          const hasUnmounted = machineRepos.some(r => !r.mounted);
+          const hasInaccessible = machineRepos.some((r: any) => !r.accessible);
+          const hasRunning = machineRepos.some((r: any) => r.mounted && r.docker_running);
+          const hasStopped = machineRepos.some((r: any) => r.mounted && !r.docker_running);
+          const hasUnmounted = machineRepos.some((r: any) => !r.mounted);
           
           if (hasInaccessible) {
             key = 'Inaccessible';
@@ -810,8 +765,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         // Group by grand repository
         const machineRepos = getMachineRepositories(machine);
         if (machineRepos.length === 0) return;
-        
-        machineRepos.forEach(repo => {
+
+        machineRepos.forEach((repo: any) => {
           let grandKey = 'No Grand Repository';
           if (repo.grandGuid) {
             const grandRepo = repositories.find(r => r.repositoryGuid === repo.grandGuid);
@@ -826,8 +781,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         });
         return;
       }
-      
-      if (key && groupBy !== 'repository') {
+
+      // Add machine to result for non-special grouping types
+      if (key) {
         if (!result[key]) result[key] = [];
         result[key].push(machine);
       }

@@ -87,8 +87,6 @@ const MarketplaceCard: React.FC<MarketplaceCardProps> = ({
     }
   }
 
-  const canDeploy = true // Always allow deploy, machine will be selected in modal
-
   if (viewMode === 'list') {
     return (
       <Card hoverable data-testid={dataTestId}>

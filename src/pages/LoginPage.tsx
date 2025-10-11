@@ -14,7 +14,7 @@ import LanguageSelector from '@/components/common/LanguageSelector'
 import logoBlack from '@/assets/logo_black.png'
 import logoWhite from '@/assets/logo_white.png'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
-import { DESIGN_TOKENS, spacing, borderRadius, fontSize } from '@/utils/styleConstants'
+import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants'
 import { ModalSize } from '@/types/modal'
 import { 
   isEncrypted, 
@@ -39,6 +39,7 @@ interface LoginForm {
   email: string
   password: string
   masterPassword?: string
+  rememberMe?: boolean
 }
 
 const FIELD_FOCUS_DELAY_MS = 100
@@ -117,7 +118,7 @@ const LoginPage: React.FC = () => {
   const { t } = useTranslation(['auth', 'common'])
   const verifyTFAMutation = useVerifyTFA()
   const styles = useComponentStyles()
-  const { trackUserAction, trackEvent } = useTelemetry()
+  const { trackUserAction } = useTelemetry()
 
   // Check URL parameters for registration flag
   useEffect(() => {
