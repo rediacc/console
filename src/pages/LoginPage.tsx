@@ -33,7 +33,6 @@ import { generateRandomEmail, generateRandomCompanyName, generateRandomPassword 
 import { configService } from '@/services/configService'
 import SandboxWarning from '@/components/common/SandboxWarning'
 import { apiConnectionService } from '@/services/apiConnectionService'
-import { versionService } from '@/services/versionService'
 
 const { Text, Link } = Typography
 
