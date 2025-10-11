@@ -1,4 +1,7 @@
-name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages (Development)
+
+# This workflow deploys the console on every push to main for development/preview purposes.
+# For versioned releases, see publish.yml which triggers on version tags.
 
 on:
   push:
