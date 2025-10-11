@@ -22,7 +22,7 @@ const API_PREFIX = '/StoredProcedure'
 // API URL will be determined dynamically based on connection health check
 let API_BASE_URL = ''
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   failure: number
   errors: string[]
   message: string
@@ -38,7 +38,7 @@ export interface ApiResponse<T = any> {
 
 class ApiClient {
   private client: AxiosInstance
-  private requestQueue: Promise<any> = Promise.resolve()
+  private requestQueue: Promise<unknown> = Promise.resolve()
   private isUpdatingToken = false
 
   private readonly HTTP_UNAUTHORIZED = 401
@@ -82,7 +82,6 @@ class ApiClient {
         const token = await tokenService.getToken()
         if (token) {
           config.headers['Rediacc-RequestToken'] = token
-          console.log('Adding token to request:', config.url, token.substring(0, 8) + '...')
         } else {
           console.warn('No token available for request:', config.url)
         }
@@ -166,20 +165,20 @@ class ApiClient {
     return response.data
   }
 
-  private async makeRequest<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+  private async makeRequest<T = unknown>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
     return this.queueRequest(() => this.client.post<ApiResponse<T>>(endpoint, data || {}))
   }
 
-  get = <T = any>(endpoint: string, params?: any): Promise<ApiResponse<T>> => 
+  get = <T = unknown>(endpoint: string, params?: unknown): Promise<ApiResponse<T>> =>
     this.makeRequest<T>(endpoint, params)
 
-  post = <T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> => 
+  post = <T = unknown>(endpoint: string, data: unknown): Promise<ApiResponse<T>> =>
     this.makeRequest<T>(endpoint, data)
 
-  put = <T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> => 
+  put = <T = unknown>(endpoint: string, data: unknown): Promise<ApiResponse<T>> =>
     this.makeRequest<T>(endpoint, data)
 
-  delete = <T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> => 
+  delete = <T = unknown>(endpoint: string, data: unknown): Promise<ApiResponse<T>> =>
     this.makeRequest<T>(endpoint, data)
 
   private async queueRequest<T>(request: () => Promise<AxiosResponse<ApiResponse<T>>>): Promise<ApiResponse<T>> {
