@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rediacc Console - Available Versions</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .version-list {
+            list-style: none;
+        }
+
+        .version-item {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .version-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .version-link {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            text-decoration: none;
+            color: #333;
+        }
+
+        .version-info {
+            flex: 1;
+        }
+
+        .version-tag {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .version-meta {
+            font-size: 0.9em;
+            color: #999;
+        }
+
+        .latest-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-left: 15px;
+        }
+
+        .arrow {
+            color: #667eea;
+            font-size: 1.5em;
+            margin-left: 15px;
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Rediacc Console</h1>
+        <p class="subtitle">Available Versions</p>
+
+        <ul class="version-list" id="versionList">
+            <!-- Versions will be inserted here -->
+        </ul>
+
+        <div class="footer">
+            <p>
+                <a href="/">← Back to latest version</a> |
+                <a href="https://github.com/rediacc/console" target="_blank">View on GitHub</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // This will be populated by the build script
+        const versions = [{"tag":"v0.0.2","path":"/versions/v0.0.2/","date":"2025-10-11","size":"5MB"}];
+
+        const versionList = document.getElementById('versionList');
+
+        versions.forEach((version, index) => {
+            const li = document.createElement('li');
+            li.className = 'version-item';
+
+            const isLatest = index === 0;
+
+            li.innerHTML = `
+                <a href="${version.path}" class="version-link">
+                    <div class="version-info">
+                        <div class="version-tag">${version.tag}</div>
+                        <div class="version-meta">
+                            Released: ${version.date} | Size: ${version.size}
+                        </div>
+                    </div>
+                    ${isLatest ? '<span class="latest-badge">Latest</span>' : ''}
+                    <span class="arrow">→</span>
+                </a>
+            `;
+
+            versionList.appendChild(li);
+        });
+    </script>
+</body>
+</html>
