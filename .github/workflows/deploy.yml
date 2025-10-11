@@ -37,6 +37,7 @@ jobs:
           NODE_ENV: production
           REDIACC_BUILD_TYPE: RELEASE
           VITE_APP_VERSION: ${{ github.sha }}
+          VITE_BASE_PATH: /
         run: npm run build
 
       - name: Create CNAME file
