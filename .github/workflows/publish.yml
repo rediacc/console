@@ -157,14 +157,16 @@ jobs:
           retention-days: 90
 
       - name: Setup gh-pages directory
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if git ls-remote --heads origin gh-pages | grep -q gh-pages; then
             echo "gh-pages branch exists, checking out..."
-            git clone --branch gh-pages --depth 1 https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/rediacc/console.git gh-pages
+            git clone --branch gh-pages --depth 1 https://x-access-token:${GITHUB_TOKEN}@github.com/rediacc/console.git gh-pages
           else
             echo "gh-pages branch does not exist, creating new directory..."
             mkdir -p gh-pages
-            (cd gh-pages && git init -b gh-pages && git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/rediacc/console.git)
+            (cd gh-pages && git init -b gh-pages && git remote add origin https://x-access-token:${GITHUB_TOKEN}@github.com/rediacc/console.git)
           fi
 
           # Verify directory exists and is accessible
@@ -192,17 +194,20 @@ jobs:
           echo "=== Checking for versions.json ==="
           cat gh-pages/versions.json || echo "versions.json not found!"
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
+      - name: Push to gh-pages branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd gh-pages
+          git add -A
 
-      - name: Upload artifact for GitHub Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: gh-pages
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Deploy version ${{ steps.detect-tag.outputs.tag_name }}"
+            git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/rediacc/console.git
+            git push origin gh-pages
+          fi
 
       - name: Generate Release Notes
         id: release-notes
