@@ -17,6 +17,7 @@ import AuthLayout from '@/components/layouts/AuthLayout'
 import MainLayout from '@/components/layouts/MainLayout'
 import LoginPage from '@/pages/LoginPage'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { getBasePath } from '@/utils/basePath'
 
 // Lazy load heavy pages
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
@@ -75,7 +76,7 @@ const AppContent: React.FC = () => {
 
   return (
       <AppProviders>
-          <BrowserRouter basename={import.meta.env.BASE_URL}>
+          <BrowserRouter basename={getBasePath()}>
             <TelemetryProvider>
               <ErrorBoundary>
                 <InteractionTracker>
