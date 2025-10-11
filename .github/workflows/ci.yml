@@ -207,6 +207,7 @@ jobs:
         env:
           REDIACC_BUILD_TYPE: ${{ matrix.build-type }}
           VITE_APP_VERSION: ${{ github.sha }}
+          VITE_BASE_PATH: /
           NODE_ENV: production
         run: npm run build
 
