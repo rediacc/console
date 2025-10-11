@@ -1,8 +1,10 @@
 name: Deploy to GitHub Pages
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Console CI"]
     branches: [main]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -18,6 +20,7 @@ jobs:
   build:
     name: Build Console
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
 
     steps:
       - name: Checkout code
@@ -38,9 +41,6 @@ jobs:
           REDIACC_BUILD_TYPE: RELEASE
           VITE_APP_VERSION: ${{ github.sha }}
         run: npm run build
-
-      - name: Create CNAME file
-        run: echo 'console.rediacc.com' > dist/CNAME
 
       - name: Create 404.html for SPA routing
         run: cp dist/index.html dist/404.html
