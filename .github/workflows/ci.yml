@@ -10,6 +10,10 @@ on:
     branches:
       - main
       - develop
+  merge_group:
+    branches:
+      - main
+      - develop
 
 jobs:
   # PR Validation Jobs (only run on pull_request)
