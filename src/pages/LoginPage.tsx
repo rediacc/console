@@ -11,6 +11,7 @@ import apiClient from '@/api/client'
 import { showMessage } from '@/utils/messages'
 import { useTheme } from '@/context/ThemeContext'
 import LanguageSelector from '@/components/common/LanguageSelector'
+import VersionSelector from '@/components/common/VersionSelector'
 import logoBlack from '@/assets/logo_black.png'
 import logoWhite from '@/assets/logo_white.png'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
@@ -110,7 +111,6 @@ const LoginPage: React.FC = () => {
     activationCode: string
   } | undefined>(undefined)
   const [isQuickRegistration, setIsQuickRegistration] = useState(false)
-  const [displayVersion, setDisplayVersion] = useState<string>('Development')
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const dispatch = useDispatch()
@@ -121,21 +121,6 @@ const LoginPage: React.FC = () => {
   const verifyTFAMutation = useVerifyTFA()
   const styles = useComponentStyles()
   const { trackUserAction } = useTelemetry()
-
-  // Fetch version information
-  useEffect(() => {
-    const fetchVersion = async () => {
-      try {
-        const versionInfo = await versionService.getVersion()
-        setDisplayVersion(versionService.formatVersion(versionInfo.version))
-      } catch (error) {
-        console.warn('Failed to fetch version', error)
-        // Keep default 'Development' if fetch fails
-      }
-    }
-
-    fetchVersion()
-  }, [])
 
   // Check URL parameters for registration flag
   useEffect(() => {
@@ -659,9 +644,7 @@ const LoginPage: React.FC = () => {
               </Text>
             ) : null
           })()}
-          <Text type="secondary" style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XS, opacity: 0.6 }}>
-            {displayVersion}
-          </Text>
+          <VersionSelector />
         </div>
       </Space>
     </Card>
