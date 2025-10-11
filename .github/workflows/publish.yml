@@ -135,6 +135,9 @@ jobs:
       - name: Create 404.html for SPA routing
         run: cp dist/index.html dist/404.html
 
+      - name: Create .nojekyll file
+        run: touch dist/.nojekyll
+
       - name: Create build info
         run: |
           cat > dist/version.json <<EOF
