@@ -153,12 +153,18 @@ jobs:
           path: dist/
           retention-days: 90
 
-      - name: Checkout gh-pages branch
-        uses: actions/checkout@v4
-        with:
-          ref: gh-pages
-          path: gh-pages
-          fetch-depth: 0
+      - name: Checkout gh-pages branch (or create if not exists)
+        run: |
+          if git ls-remote --heads origin gh-pages | grep gh-pages; then
+            echo "gh-pages branch exists, checking out..."
+            git clone --branch gh-pages --single-branch https://github.com/rediacc/console.git gh-pages
+          else
+            echo "gh-pages branch does not exist, creating new directory..."
+            mkdir -p gh-pages
+            cd gh-pages
+            git init
+            git remote add origin https://github.com/rediacc/console.git
+          fi
 
       - name: Configure Git
         run: |
