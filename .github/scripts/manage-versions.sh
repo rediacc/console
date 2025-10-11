@@ -412,9 +412,17 @@ deploy_version() {
 
     # Update root with latest version
     log_info "Updating root with latest version..."
+    log_info "Cleaning root directory files..."
     find "$gh_pages_dir" -maxdepth 1 -type f -delete
-    find "$gh_pages_dir" -maxdepth 1 -type d ! -name "$VERSIONS_DIR" ! -name "." ! -name ".git" -exec rm -rf {} +
-    cp -r "$build_dir"/* "$gh_pages_dir/"
+
+    log_info "Cleaning root directories (keeping versions, ., .git)..."
+    find "$gh_pages_dir" -maxdepth 1 -type d ! -name "$VERSIONS_DIR" ! -name "." ! -name ".git" -print
+    find "$gh_pages_dir" -maxdepth 1 -type d ! -name "$VERSIONS_DIR" ! -name "." ! -name ".git" -exec rm -rf {} \;
+
+    log_info "Copying build files to root..."
+    ls -la "$build_dir" | head -10
+    ls -la "$gh_pages_dir" || log_error "gh-pages directory not accessible"
+    cp -r "$build_dir"/* "$gh_pages_dir/" || log_error "Failed to copy files"
 
     # Generate versions index
     generate_versions_index "$gh_pages_dir"
