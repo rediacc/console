@@ -46,13 +46,13 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
     onChange?.(selectedValues)
   }
   
-  const filterOption = (input: string, option: any) => {
+  const filterOption = (input: string, option: any): boolean => {
     const machine = machines.find(m => m.machineName === option.value)
     if (!machine) return false
-    
-    return machine.machineName.toLowerCase().includes(input.toLowerCase()) ||
+
+    return !!(machine.machineName.toLowerCase().includes(input.toLowerCase()) ||
            machine.teamName.toLowerCase().includes(input.toLowerCase()) ||
-           (machine.bridgeName && machine.bridgeName.toLowerCase().includes(input.toLowerCase()))
+           (machine.bridgeName && machine.bridgeName.toLowerCase().includes(input.toLowerCase())))
   }
   
   const renderMachineOption = (machine: Machine) => {
@@ -85,9 +85,8 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
             >
               {machine.machineName}
             </Text>
-            <Tag 
-              color="#8FBC8F" 
-              size="small" 
+            <Tag
+              color="#8FBC8F"
               style={{
                 borderRadius: 'var(--border-radius-sm)',
                 ...styles.caption
@@ -97,9 +96,8 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
               {machine.teamName}
             </Tag>
             {machine.bridgeName && (
-              <Tag 
-                color="green" 
-                size="small" 
+              <Tag
+                color="green"
                 style={{
                   borderRadius: 'var(--border-radius-sm)',
                   ...styles.caption
@@ -209,9 +207,8 @@ export const SimpleMachineSelector: React.FC<{
   disabled?: boolean
   style?: React.CSSProperties
 }> = ({ teamName, value, onChange, placeholder, disabled, style }) => {
-  const { t } = useTranslation(['machines'])
+  const { t: _t } = useTranslation(['machines'])
   const { data: machines = [], isLoading } = useGetAvailableMachinesForClone(teamName, !disabled)
-  const styles = useComponentStyles()
   
   return (
     <AvailableMachinesSelector

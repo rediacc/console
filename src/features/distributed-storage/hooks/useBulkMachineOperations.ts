@@ -1,10 +1,10 @@
 import { useState, useCallback, useMemo } from 'react'
-import { MachineAssignmentService, MachineValidationService } from '../services'
 import { useMachineAssignment } from './useMachineAssignment'
 import type { Machine } from '@/types'
-import type { BulkOperationRequest, BulkValidationResult } from '../models/machine-assignment.model'
+import { MachineValidationService } from '../services'
 import { showMessage } from '@/utils/messages'
 import { useTranslation } from 'react-i18next'
+import type { BulkValidationResult } from '../models/machine-validation.model'
 
 export interface BulkOperationProgress {
   total: number

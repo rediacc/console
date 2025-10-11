@@ -1,85 +1,85 @@
 {
-  "title": "Paramètres",
   "company": {
-    "title": "Paramètres de l'entreprise",
-    "description": "Configurez les paramètres du coffre-fort de votre entreprise pour gérer les configurations à l'échelle de l'organisation.",
     "configureVault": "Configurer le coffre-fort",
-    "modalTitle": "Configurer le coffre-fort de l'entreprise"
+    "description": "Configurez les paramètres du coffre-fort de votre entreprise pour gérer les configurations à l'échelle de l'organisation.",
+    "modalTitle": "Configurer le coffre-fort de l'entreprise",
+    "title": "Paramètres de l'entreprise"
   },
   "personal": {
-    "title": "Paramètres personnels",
-    "description": "Configurez vos paramètres personnels du coffre-fort pour personnaliser votre expérience.",
     "configureVault": "Configurer le coffre-fort",
-    "modalTitle": "Configurer le coffre-fort utilisateur"
+    "description": "Configurez les paramètres de votre coffre-fort personnel pour personnaliser votre expérience.",
+    "modalTitle": "Configurer le coffre-fort utilisateur",
+    "title": "Paramètres personnels"
   },
+  "title": "Paramètres",
   "twoFactorAuth": {
-    "title": "Authentification à Deux Facteurs",
-    "status": {
-      "enabled": "L'Authentification à Deux Facteurs est Activée",
-      "disabled": "L'Authentification à Deux Facteurs est Désactivée",
-      "enabledDescription": "Votre compte est protégé par une couche de sécurité supplémentaire.",
-      "disabledDescription": "Ajoutez une couche de sécurité supplémentaire à votre compte."
-    },
-    "whatIs": {
-      "title": "Qu'est-ce que l'Authentification à Deux Facteurs ?",
-      "description": "L'Authentification à Deux Facteurs (TFA) ajoute une couche de sécurité supplémentaire à votre compte en exigeant un code temporel de votre téléphone en plus de votre mot de passe.",
-      "benefit1": "Protège votre compte même si votre mot de passe est compromis",
-      "benefit2": "Utilise l'algorithme standard de l'industrie TOTP (Mot de Passe à Usage Unique Basé sur le Temps)",
-      "benefit3": "Fonctionne avec les applications d'authentification populaires comme Google Authenticator, Authy ou Microsoft Authenticator"
-    },
-    "enable": "Activer l'Authentification à Deux Facteurs",
-    "disable": "Désactiver l'Authentification à Deux Facteurs",
-    "setupMethods": {
-      "qrCode": "Code QR",
-      "manual": "Saisie Manuelle"
-    },
-    "scanQRCode": "Scannez ce code QR avec votre application d'authentification",
-    "manualSetup": {
-      "title": "Configuration Manuelle",
-      "instructions": "Entrez cette clé secrète dans votre application d'authentification :"
-    },
-    "important": "Important",
-    "saveSecretWarning": "Conservez cette clé secrète dans un endroit sûr. Vous en aurez besoin pour récupérer l'accès à votre compte si vous perdez votre appareil d'authentification.",
-    "secretCopied": "Clé secrète copiée dans le presse-papiers",
-    "done": "Terminé",
-    "enableSuccess": {
-      "title": "Authentification à Deux Facteurs Activée !",
-      "subtitle": "Votre compte est maintenant protégé avec TFA.",
-      "verified": "TFA Vérifié avec Succès",
-      "verifiedDescription": "Votre application d'authentification a été configurée avec succès et l'authentification à deux facteurs est maintenant active sur votre compte."
-    },
-    "verification": {
-      "title": "Vérifiez Votre Authentificateur",
-      "subtitle": "Scannez le code QR ou entrez la clé secrète dans votre application d'authentification, puis entrez le code à 6 chiffres pour vérifier.",
-      "codeLabel": "Code de Vérification",
-      "codePlaceholder": "000000",
-      "codeRequired": "Le code de vérification est requis",
-      "codeLength": "Le code doit comporter exactement 6 chiffres",
-      "codeFormat": "Le code ne doit contenir que des chiffres",
-      "submit": "Vérifier et Activer TFA"
-    },
-    "enableModal": {
-      "title": "Activer l'Authentification à Deux Facteurs",
-      "warning": "Vérification de Sécurité Requise",
-      "warningDescription": "Veuillez entrer le mot de passe de votre compte pour activer l'authentification à deux facteurs.",
-      "passwordLabel": "Mot de Passe Actuel",
-      "passwordPlaceholder": "Entrez votre mot de passe actuel",
-      "passwordRequired": "Le mot de passe est requis",
-      "submit": "Activer TFA"
-    },
+    "disable": "Désactiver l'authentification à deux facteurs",
     "disableModal": {
-      "title": "Désactiver l'Authentification à Deux Facteurs",
-      "warning": "Avertissement de Sécurité",
-      "warningDescription": "Désactiver TFA rendra votre compte moins sécurisé. Vous devrez entrer votre mot de passe actuel et un code TFA valide pour continuer.",
-      "passwordLabel": "Mot de Passe Actuel",
-      "passwordPlaceholder": "Entrez votre mot de passe actuel",
-      "passwordRequired": "Le mot de passe est requis",
+      "codeFormat": "Le code ne doit contenir que des chiffres",
       "codeLabel": "Code TFA",
+      "codeLength": "Le code doit contenir exactement 6 chiffres",
       "codePlaceholder": "000000",
       "codeRequired": "Le code TFA est requis",
-      "codeLength": "Le code doit comporter exactement 6 chiffres",
+      "passwordLabel": "Mot de passe actuel",
+      "passwordPlaceholder": "Entrez votre mot de passe actuel",
+      "passwordRequired": "Le mot de passe est requis",
+      "submit": "Désactiver TFA",
+      "title": "Désactiver l'authentification à deux facteurs",
+      "warning": "Avertissement de sécurité",
+      "warningDescription": "La désactivation de TFA rendra votre compte moins sécurisé. Vous devrez entrer votre mot de passe actuel et un code TFA valide pour continuer."
+    },
+    "done": "Fait",
+    "enable": "Activer l'authentification à deux facteurs",
+    "enableModal": {
+      "passwordLabel": "Mot de passe actuel",
+      "passwordPlaceholder": "Entrez votre mot de passe actuel",
+      "passwordRequired": "Le mot de passe est requis",
+      "submit": "Activer TFA",
+      "title": "Activer l'authentification à deux facteurs",
+      "warning": "Vérification de sécurité requise",
+      "warningDescription": "Veuillez saisir le mot de passe de votre compte pour activer l'authentification à deux facteurs."
+    },
+    "enableSuccess": {
+      "subtitle": "Votre compte est désormais protégé avec TFA.",
+      "title": "Authentification à deux facteurs activée !",
+      "verified": "TFA vérifié avec succès",
+      "verifiedDescription": "Votre application d'authentification a été configurée avec succès et l'authentification à deux facteurs est désormais active sur votre compte."
+    },
+    "important": "Importante",
+    "manualSetup": {
+      "instructions": "Entrez cette clé secrète dans votre application d'authentification :",
+      "title": "Configuration manuelle"
+    },
+    "saveSecretWarning": "Conservez cette clé secrète dans un endroit sûr. Vous en aurez besoin pour récupérer l'accès à votre compte si vous perdez votre appareil d'authentification.",
+    "scanQRCode": "Scannez ce code QR avec votre application d'authentification",
+    "secretCopied": "Clé secrète copiée dans le presse-papiers",
+    "setupMethods": {
+      "manual": "Saisie manuelle",
+      "qrCode": "Code QR"
+    },
+    "status": {
+      "disabled": "L'authentification à deux facteurs est désactivée",
+      "disabledDescription": "Ajoutez une couche de sécurité supplémentaire à votre compte.",
+      "enabled": "L'authentification à deux facteurs est activée",
+      "enabledDescription": "Votre compte est protégé par une couche de sécurité supplémentaire."
+    },
+    "title": "Authentification à deux facteurs",
+    "verification": {
       "codeFormat": "Le code ne doit contenir que des chiffres",
-      "submit": "Désactiver TFA"
+      "codeLabel": "Le code de vérification",
+      "codeLength": "Le code doit contenir exactement 6 chiffres",
+      "codePlaceholder": "000000",
+      "codeRequired": "Un code de vérification est requis",
+      "submit": "Vérifier et activer TFA",
+      "subtitle": "Scannez le code QR ou saisissez la clé secrète dans votre application d'authentification, puis saisissez le code à 6 chiffres pour vérifier.",
+      "title": "Vérifiez votre authentificateur"
+    },
+    "whatIs": {
+      "benefit1": "Protège votre compte même si votre mot de passe est compromis",
+      "benefit2": "Utilise l'algorithme TOTP (Time-based One-Time Password) standard de l'industrie",
+      "benefit3": "Fonctionne avec les applications d'authentification populaires telles que Google Authenticator, Authy ou Microsoft Authenticator",
+      "description": "L'authentification à deux facteurs (TFA) ajoute une couche de sécurité supplémentaire à votre compte en exigeant un code temporel de votre téléphone en plus de votre mot de passe.",
+      "title": "Qu'est-ce que l'authentification à deux facteurs ?"
     }
   }
 }

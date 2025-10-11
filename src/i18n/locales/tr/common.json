@@ -1,395 +1,537 @@
 {
-  "navigation": {
-    "dashboard": "Kontrol Paneli",
-    "architecture": "Mimari",
-    "resources": "Kaynaklar",
-    "queue": "Kuyruk",
-    "system": "Sistem",
-    "audit": "Denetim",
-    "logout": "Çıkış",
-    "marketplace": "Marketplace"
-  },
   "actions": {
-    "edit": "Düzenle",
-    "delete": "Sil",
-    "search": "Ara",
-    "reset": "Sıfırla",
-    "cancel": "İptal",
-    "create": "Oluştur",
-    "save": "Kaydet",
-    "retry": "Tekrar Dene",
-    "refresh": "Yenile",
-    "fullscreen": "Tam Ekran",
-    "exitFullscreen": "Tam Ekrandan Çık",
     "addToQueue": "Kuyruğa Ekle",
-    "viewTrace": "İzlemeyi Görüntüle",
-    "close": "Kapat",
-    "back": "Geri"
+    "advanced": "Gelişmiş",
+    "back": "Geri",
+    "cancel": "İptal etmek",
+    "clearSelection": "Seçimi Temizle",
+    "close": "Kapalı",
+    "create": "Yaratmak",
+    "createResource": "{{resource}} oluştur",
+    "delete": "Silmek",
+    "edit": "Düzenlemek",
+    "editResource": "{{resource}} düzenle",
+    "editVault": "Apps Kasasını Düzenle",
+    "exitFullscreen": "Tam Ekrandan Çık",
+    "fullscreen": "Tam ekran",
+    "manage": "Üstesinden gelmek",
+    "refresh": "Yenile",
+    "remote": "Uzak",
+    "remove": "Kaldırmak",
+    "reset": "Sıfırla",
+    "retry": "Yeniden dene",
+    "runFunction": "Çalıştırma İşlevi",
+    "save": "Kaydetmek",
+    "search": "Aramak",
+    "trace": "İz",
+    "viewTrace": "İzlemeyi Görüntüle"
   },
-  "close": "Kapat",
+  "close": "Kapalı",
   "copiedToClipboard": "Panoya kopyalandı",
-  "copyFailed": "Panoya kopyalama başarısız",
-  "export": "Dışa Aktar",
-  "exportCSV": "CSV olarak dışa aktar",
-  "exportJSON": "JSON olarak dışa aktar",
-  "refresh": "Yenile",
-  "today": "Bugün",
-  "yesterday": "Dün",
-  "last7Days": "Son 7 Gün",
-  "last30Days": "Son 30 Gün",
-  "thisMonth": "Bu Ay",
-  "lastMonth": "Geçen Ay",
-  "messages": {
-    "success": "Başarılı",
-    "required": "Bu alan zorunludur",
-    "invalidEmail": "Geçersiz e-posta adresi",
-    "loading": "Yükleniyor...",
-    "error": "Hata"
-  },
-  "table": {
-    "actions": "İşlemler",
-    "showingRecords": "{{total}} kayıttan {{start}}-{{end}} arası gösteriliyor"
-  },
-  "status": {
-    "label": "Durum",
-    "initializing": "Başlatılıyor...",
-    "waitingForExecution": "Yürütme için bekliyor",
-    "processing": "İşleniyor",
-    "running": "Çalışıyor"
-  },
-  "language": {
-    "select": "Dil Seçin",
-    "en": "İngilizce",
-    "es": "İspanyolca",
-    "fr": "Fransızca",
-    "de": "Almanca",
-    "zh": "Çince",
-    "ja": "Japonca",
-    "ar": "Arapça",
-    "tr": "Türkçe",
-    "ru": "Rusça"
-  },
-  "theme": {
-    "light": "Açık",
-    "dark": "Koyu"
-  },
-  "uiMode": {
-    "simple": "Basit",
-    "expert": "Uzman",
-    "switching": "{{mode}} moduna geçiliyor..."
-  },
-  "general": {
-    "versionFormat": "s{{version}}",
-    "loading": "Yükleniyor...",
-    "showingRecords": "{{total}} kayıttan {{start}}-{{end}} arası gösteriliyor",
-    "defaultsApplied": "Varsayılan değerler uygulandı",
-    "important": "Önemli",
-    "cancel": "İptal"
-  },
-  "yes": "Evet",
-  "no": "Hayır",
+  "copyFailed": "Panoya kopyalanamadı",
+  "current": "Akım",
   "dashboard": {
     "availablePlans": "Mevcut Planlar",
-    "upgradeOptions": "Yükseltme Seçenekleri",
+    "comparePlansDescription": "Farklı abonelik katmanlarındaki özellikleri ve fiyatları karşılaştırın",
     "currentPlan": "Mevcut Plan",
-    "comparePlansDescription": "Farklı abonelik katmanlarındaki özellikleri ve fiyatlandırmayı karşılaştırın",
-    "elitePlanDescription": "Tüm özelliklerin açık olduğu en yüksek seviye plandansınız"
+    "elitePlanDescription": "Tüm özelliklerin kilidi açılmış en yüksek seviye planımızdasınız",
+    "upgradeOptions": "Yükseltme Seçenekleri"
   },
+  "export": "İhracat",
+  "exportCSV": "CSV olarak dışa aktar",
+  "exportJSON": "JSON olarak dışa aktar",
+  "fieldGenerator": {
+    "applied": "Değerler başarıyla uygulandı",
+    "apply": "Uygula",
+    "cancel": "İptal etmek",
+    "comingSoon": "yakında gelecek",
+    "copied": "Kopyalandı!",
+    "copy": "Kopyala",
+    "copyError": "Panoya kopyalanamadı",
+    "generate": "Oluştur",
+    "generationError": "Oluşturulamadı. Lütfen tekrar deneyin.",
+    "generationSuccess": "Başarıyla oluşturuldu",
+    "keySize": "Anahtar Boyutu",
+    "keyType": "Anahtar Türü",
+    "moreSecure": "daha güvenli",
+    "regenerate": "Yenile",
+    "title": {
+      "repository_credential": "Depo Kimlik Bilgisi Oluştur",
+      "ssh_keys": "SSH Anahtar Çifti Oluşturun"
+    },
+    "tooltip": "Değer üret"
+  },
+  "fields": {
+    "vault": "Kasa Yapılandırması"
+  },
+  "general": {
+    "cancel": "İptal etmek",
+    "defaultsApplied": "Varsayılan değerler uygulandı",
+    "important": "Önemli",
+    "loading": "Yükleniyor...",
+    "showingRecords": "{{total}} kayıttan {{start}}-{{end}} arası kayıtlar gösteriliyor",
+    "vaultVersion": "Kasa Sürümü",
+    "versionFormat": "v{{versiyon}}"
+  },
+  "language": {
+    "ar": "Arapça",
+    "de": "Almanca",
+    "en": "İngilizce",
+    "es": "İspanyol",
+    "fr": "Fransızca",
+    "ja": "Japonca",
+    "select": "Dil Seçiniz",
+    "tr": "Türkçe",
+    "zh": "Çince"
+  },
+  "last30Days": "Son 30 Gün",
+  "last7Days": "Son 7 Gün",
+  "lastMonth": "Geçen ay",
+  "messages": {
+    "error": "Hata",
+    "invalidEmail": "Geçersiz e-posta adresi",
+    "loading": "Yükleniyor...",
+    "required": "Bu alan zorunludur",
+    "success": "Başarı"
+  },
+  "navigation": {
+    "architecture": "Mimarlık",
+    "audit": "Denetim",
+    "closeMobileMenu": "Mobil menüyü kapat",
+    "dashboard": "Kontrol Paneli",
+    "distributedStorage": "Dağıtılmış Depolama",
+    "logout": "Oturumu kapat",
+    "mainNavigation": "Ana gezinme",
+    "marketplace": "Pazar yeri",
+    "openMobileMenu": "Mobil menüyü aç",
+    "queue": "Sıra",
+    "resources": "Kaynaklar",
+    "system": "Sistem"
+  },
+  "nestedObjectEditor": {
+    "Active": "Aktif",
+    "Add": "Eklemek",
+    "Array": "Sıralamak",
+    "Container Images Detected": "Kapsayıcı Görüntüleri Algılandı",
+    "Delete this entry?": "Bu giriş silinsin mi?",
+    "Enter key name": "Anahtar adını girin",
+    "False": "YANLIŞ",
+    "Fields": "Alanlar",
+    "Hide JSON": "JSON'u gizle",
+    "Image": "Resim",
+    "JSON Error": "JSON Hatası",
+    "No": "HAYIR",
+    "No entries": "Giriş yok",
+    "Object": "Nesne",
+    "Plugin Configuration Detected": "Eklenti Yapılandırması Algılandı",
+    "Raw JSON Editor": "Ham JSON Düzenleyici",
+    "Show JSON": "JSON'u göster",
+    "True": "Doğru",
+    "Uniform Structure": "Düzgün Yapı",
+    "Uniform Structure Detected": "Tekdüze Yapı Algılandı",
+    "Yes": "Evet"
+  },
+  "no": "HAYIR",
+  "noMatchingResults": "Eşleşen sonuç yok",
+  "none": "Hiçbiri",
+  "notifications": {
+    "clearAll": "Tümünü temizle",
+    "empty": "Bildirim yok",
+    "markAllRead": "Tümünü okundu olarak işaretle",
+    "title": "Bildirimler"
+  },
+  "refresh": "Yenile",
+  "status": {
+    "initializing": "Başlatılıyor...",
+    "label": "Durum",
+    "processing": "İşleme",
+    "running": "Koşma",
+    "waitingForExecution": "İnfaz bekleniyor"
+  },
+  "table": {
+    "actions": "Eylemler",
+    "showingRecords": "{{total}} kayıttan {{start}}-{{end}} arası kayıtlar gösteriliyor"
+  },
+  "theme": {
+    "dark": "Karanlık",
+    "light": "Işık"
+  },
+  "thisMonth": "Bu Ay",
+  "today": "Bugün",
+  "total": "Toplam",
+  "uiMode": {
+    "expert": "Uzman",
+    "simple": "Basit",
+    "switching": "{{mode}} moduna geçiliyor..."
+  },
+  "utilized": "Kullanılan",
   "vaultEditor": {
-    "vaultConfiguration": "Kasa Yapılandırması",
-    "vaultVersion": "Kasa Sürümü:",
-    "versionAutoIncrement": "Sürüm kaydedildiğinde otomatik olarak artacak",
-    "importJson": "JSON İçe Aktar",
-    "exportJson": "JSON Dışa Aktar",
-    "unsavedChanges": "Kaydedilmemiş değişiklikler",
-    "versionWillIncrement": "Sürüm {{version}} olarak artacak",
-    "saveVaultConfiguration": "Kasa Yapılandırmasını Kaydet",
-    "validationErrors": "Doğrulama Hataları:",
-    "pleaseFixErrors": "Lütfen kaydetmeden önce doğrulama hatalarını düzeltin",
-    "noChangesToSave": "Kaydedilecek değişiklik yok",
-    "unknownEntityType": "Bilinmeyen Varlık Türü",
-    "unknownEntityDescription": "\"{{type}}\" varlık türü kasa tanımlarında tanımlı değil.",
-    "requiredFields": "Zorunlu Alanlar",
-    "optionalFields": "İsteğe Bağlı Alanlar",
-    "extraFields": "Ekstra Alanlar (Şemada Yok)",
-    "extraFieldsTooltip": "Bu alanlar içe aktarıldı ancak şemada tanımlı değil",
-    "extraFieldsWarning": "Uyarı",
-    "extraFieldsWarningDescription": "Bu alanlar şemada tanımlı değil ve JSON yapısında 'extraFields' altında saklanacak.",
-    "rawJsonEditor": "Ham JSON Düzenleyici (Uzman Modu)",
-    "rawJsonTooltip": "Doğrudan JSON düzenleme - Dikkatli kullanın!",
-    "expertModeOnly": "Sadece Uzman Modu",
-    "expertModeDescription": "Doğrudan JSON düzenleme, doğru yapılmazsa sistem işlevselliğini bozabilir. Sadece kasa şemasını ve etkilerini anladığınızdan eminseniz değiştirin.",
-    "jsonError": "JSON Hatası",
-    "formatJson": "JSON'u Biçimlendir",
-    "resetToFormValues": "Form Değerlerine Sıfırla",
-    "isRequired": "{{field}} zorunludur",
-    "invalidFormat": "Geçersiz format. {{description}}",
-    "minLength": "Minimum uzunluk {{length}}",
-    "maxLength": "Maksimum uzunluk {{length}}",
-    "minValue": "Minimum değer {{value}}",
-    "maxValue": "Maksimum değer {{value}}",
-    "mustBeValidJson": "Geçerli JSON olmalı",
-    "mustBeArray": "Dizi olmalı",
-    "mustBeValidJsonArray": "Geçerli JSON dizisi olmalı",
-    "enterJsonObject": "JSON nesnesi girin",
-    "enterJsonArray": "JSON dizisi girin",
-    "portPlaceholder": "Port numarası (1-65535)",
-    "example": "Örnek:",
     "advanced": "Gelişmiş",
-    "failedToSerialize": "Veri JSON'a dönüştürülemedi",
-    "invalidJsonFormat": "Geçersiz JSON formatı",
+    "enterJsonArray": "JSON dizisine girin",
+    "enterJsonObject": "JSON nesnesini girin",
+    "example": "Örnek:",
+    "expertModeDescription": "Doğrudan JSON düzenlemesi, doğru şekilde yapılmazsa sistem işlevselliğini bozabilir. Yalnızca kasa şemasını ve sonuçlarını anlıyorsanız değişiklik yapın.",
+    "expertModeOnly": "Yalnızca Uzman Modu",
+    "exportJson": "JSON'u dışa aktar",
+    "extraFields": "Ekstra Alanlar (Şemada Değil)",
+    "extraFieldsTooltip": "Bu alanlar içe aktarıldı ancak şemada tanımlanmadı",
+    "extraFieldsWarning": "Uyarı",
+    "extraFieldsWarningDescription": "Bu alanlar şemada tanımlanmamıştır ve JSON yapısında 'extraFields' altında saklanacaktır.",
     "failedToParseJson": "JSON ayrıştırılamadı:",
-    "fieldsMovedToExtra": "{{count}} alan extraFields'a taşındı: {{fields}}",
-    "fieldsMovedFromExtra": "{{count}} alan extraFields'tan geri alındı: {{fields}}",
-    "sshPasswordRequiredWhenNoKey": "İlk anahtar kurulumu için SSH şifresi gerekli",
-    "providerFields": "{{provider}} Yapılandırması",
-    "providerRequiredFields": "{{provider}} için zorunlu alanlar",
-    "testConnection": {
-      "button": "Bağlantıyı Test Et",
-      "missingFields": "Test etmeden önce lütfen IP adresi, kullanıcı adı ve şifreyi doldurun",
-      "initiated": "SSH bağlantı testi başlatıldı. Sonuçlar için lütfen kuyruğu kontrol edin.",
-      "success": "SSH bağlantısı başarılı",
-      "failed": "SSH bağlantısı başarısız",
-      "testing": "Bağlantı test ediliyor..."
-    },
-    "systemCompatibility": {
-      "title": "Sistem Uyumluluğu",
-      "systemInfo": "Sistem Bilgileri",
-      "kernelVersion": "Çekirdek Sürümü",
-      "operatingSystem": "İşletim Sistemi",
-      "btrfsAvailable": "BTRFS Mevcut",
-      "compatibilityStatus": "Uyumluluk Durumu",
-      "compatible": "Uyumlu",
-      "warning": "Uyarı",
-      "incompatible": "Uyumsuz",
-      "unknown": "Bilinmiyor",
-      "knownIssues": "Bilinen Sorunlar",
-      "recommendations": "Öneriler",
-      "yes": "Evet",
-      "no": "Hayır"
-    },
+    "failedToSerialize": "Veriler JSON'a serileştirilemedi",
     "fields": {
-      "MACHINE": {
-        "description": "SSH erişimi ve depolama için makine yapılandırması",
-        "ip": {
-          "label": "IP Adresi",
-          "description": "Makinenin IP adresi"
-        },
-        "user": {
-          "label": "Kullanıcı Adı",
-          "description": "Bağlantı için SSH kullanıcı adı"
-        },
-        "datastore": {
-          "label": "Veri Deposu Yolu",
-          "description": "Veri depolamak için dizin yolu. BTRFS dosya sisteminde bulunuyorsa, yerel özellikleri kullanır. Aksi takdirde, anlık görüntüler ve sıkıştırmayı etkinleştirmek için bir BTRFS depolama havuzu dosyası oluşturulur ve buraya bağlanır"
-        },
-        "port": {
-          "label": "SSH Portu",
-          "description": "SSH port numarası"
-        },
-        "host_entry": {
-          "label": "Host Girişi",
-          "description": "Güvenlik doğrulaması için SSH bilinen host girişi"
-        },
-        "ssh_key_configured": {
-          "label": "SSH anahtarı zaten yapılandırılmış",
-          "description": "SSH genel anahtarı hedef makineye zaten yüklenmişse bunu işaretleyin"
-        },
-        "ssh_password": {
-          "label": "SSH Şifresi (Geçici)",
-          "description": "Sadece ilk SSH anahtar kurulumu için geçici şifre. SSH anahtarı zaten yapılandırılmışsa boş bırakın. Bu şifre genel anahtarı kopyalamak için bir kez kullanılır ve güvenlik için sonrasında kaldırılmalıdır."
-        }
-      },
-      "REPOSITORY": {
-        "description": "Yedekleme depolama için depo yapılandırması",
-        "name": {
-          "label": "Depo Adı",
-          "description": "Depo adı tanımlayıcısı"
-        },
-        "credential": {
-          "label": "Erişim Şifresi",
-          "description": "Depo erişim şifresi (32 karakter, alfanümerik + özel karakterler)"
-        },
-        "encryption": {
-          "label": "Şifrelemeyi Etkinleştir",
-          "description": "Depo için şifrelemeyi etkinleştir"
-        },
-        "retention": {
-          "label": "Saklama Politikası",
-          "description": "Saklama politikası ayarları"
-        },
-        "schedule": {
-          "label": "Yedekleme Programı",
-          "description": "Otomatik yedeklemeler için cron ifadesi"
-        }
-      },
-      "STORAGE": {
-        "entityDescription": "Yedekleme hedefleri için depolama yapılandırması",
-        "name": {
-          "label": "Depolama Adı",
-          "description": "Bu depolama yapılandırması için benzersiz ad"
-        },
-        "provider": {
-          "label": "Depolama Sağlayıcısı",
-          "description": "Depolama sağlayıcı türünü seçin"
-        },
-        "description": {
-          "label": "Açıklama",
-          "description": "Bu depolama yapılandırmasının isteğe bağlı açıklaması"
-        },
-        "noVersioning": {
-          "label": "Sürümlemeyi Devre Dışı Bırak",
-          "description": "Bu depolama için sürüm kontrolünü devre dışı bırak"
-        },
-        "parameters": {
-          "label": "Ek Parametreler",
-          "description": "Gelişmiş yapılandırma için ek rclone parametreleri"
-        }
-      },
-      "SCHEDULE": {
-        "description": "Otomatik görevler için program yapılandırması",
-        "cron": {
-          "label": "Cron İfadesi",
-          "description": "Programı tanımlayan cron ifadesi"
-        },
-        "timezone": {
-          "label": "Zaman Dilimi",
-          "description": "Program yürütme için zaman dilimi"
-        },
-        "enabled": {
-          "label": "Programı Etkinleştir",
-          "description": "Bu programın aktif olup olmadığı"
-        }
-      },
       "BRIDGE": {
         "description": "Ağ bağlantısı için köprü yapılandırması",
         "ip": {
-          "label": "IP Adresi",
-          "description": "Köprü sunucusunun IP adresi"
+          "description": "Köprü sunucusunun IP adresi",
+          "label": "IP Adresi"
         }
       },
-      "REGION": {
-        "description": "Coğrafi dağıtım için bölge yapılandırması",
-        "name": {
-          "label": "Bölge Adı",
-          "description": "Coğrafi bölgenin adı"
+      "CLONE": {
+        "description": "RBD klon ayarlarını yapılandırma",
+        "features": {
+          "description": "Klon için RBD özellikleri",
+          "label": "Özellikler"
         },
-        "code": {
-          "label": "Bölge Kodu",
-          "description": "Bölge için kısa kod"
+        "parent_image": {
+          "description": "Ana görüntünün adı",
+          "label": "Ana Resim"
+        },
+        "parent_pool": {
+          "description": "Ana görüntüyü içeren havuz",
+          "label": "Ebeveyn Havuzu"
+        },
+        "parent_snapshot": {
+          "description": "Ana anlık görüntünün adı",
+          "label": "Ebeveyn Anlık Görüntüsü"
+        },
+        "size": {
+          "description": "Klon görüntünün boyutu",
+          "label": "Klon Boyutu"
         }
       },
-      "TEAM": {
-        "description": "Organizasyon yapısı için takım yapılandırması",
-        "name": {
-          "label": "Takım Adı",
-          "description": "Takımın adı"
+      "CLUSTER": {
+        "config": {
+          "description": "Ek küme yapılandırma seçenekleri",
+          "label": "Yapılandırma"
         },
-        "teamDescription": {
-          "label": "Takım Açıklaması",
-          "description": "Takım amacı ve sorumlulukları açıklaması"
+        "description": "Ceph dağıtılmış depolama kümesi ayarlarını yapılandırma",
+        "fsid": {
+          "description": "Ceph kümesi için benzersiz tanımlayıcı (UUID biçimi)",
+          "label": "Dosya sistemi kimliği"
         },
-        "SSH_PRIVATE_KEY": {
-          "label": "SSH Özel Anahtarı",
-          "description": "Takım işlemleri için Base64 kodlanmış SSH özel anahtarı"
+        "mds": {
+          "description": "MDS (Meta Veri Sunucusu) düğümlerinin listesi",
+          "label": "MDS Düğümleri"
         },
-        "SSH_PUBLIC_KEY": {
-          "label": "SSH Genel Anahtarı",
-          "description": "Takım işlemleri için SSH genel anahtarı"
-        }
-      },
-      "USER": {
-        "description": "Kişisel ayarlar için kullanıcı yapılandırması",
-        "SSH_PRIVATE_KEY": {
-          "label": "SSH Özel Anahtarı",
-          "description": "Kullanıcı işlemleri için Base64 kodlanmış SSH özel anahtarı"
+        "mgrs": {
+          "description": "Kümedeki yönetici düğümlerinin listesi",
+          "label": "Yönetici Düğümleri"
         },
-        "SSH_PUBLIC_KEY": {
-          "label": "SSH Genel Anahtarı",
-          "description": "Kullanıcı işlemleri için SSH genel anahtarı"
+        "monitors": {
+          "description": "Kümedeki monitör düğümlerinin listesi",
+          "label": "Düğümleri izleyin"
+        },
+        "osds": {
+          "description": "OSD (Nesne Depolama Programı) düğümlerinin listesi",
+          "label": "OSD Düğümleri"
         }
       },
       "COMPANY": {
-        "description": "Organizasyon genelindeki ayarlar için şirket yapılandırması",
-        "UNIVERSAL_USER_ID": {
-          "label": "Evrensel Kullanıcı Kimliği",
-          "description": "Sistem işlemleri için evrensel kullanıcı kimliği"
-        },
-        "UNIVERSAL_USER_NAME": {
-          "label": "Evrensel Kullanıcı Adı",
-          "description": "Sistem işlemleri için evrensel kullanıcı adı"
-        },
         "DOCKER_JSON_CONF": {
-          "label": "Docker Yapılandırması",
-          "description": "Docker kayıt defteri kimlik doğrulama yapılandırması"
-        },
-        "SSH_PRIVATE_KEY": {
-          "label": "SSH Özel Anahtarı",
-          "description": "Şirket işlemleri için Base64 kodlanmış SSH özel anahtarı"
-        },
-        "SSH_PUBLIC_KEY": {
-          "label": "SSH Genel Anahtarı",
-          "description": "Şirket işlemleri için SSH genel anahtarı"
+          "description": "Docker kayıt defteri kimlik doğrulama yapılandırması",
+          "label": "Docker Yapılandırması"
         },
         "LOG_FILE": {
-          "label": "Log Dosyası Yolu",
-          "description": "Sistem log dosyasının yolu"
+          "description": "Sistem günlük dosyasının yolu",
+          "label": "Günlük Dosyası Yolu"
         },
         "PLUGINS": {
-          "label": "Eklentiler",
-          "description": "Konteyner görüntüleri ve etkinleştirme durumu ile eklenti yapılandırmaları"
+          "description": "Kapsayıcı görüntüleri ve etkinleştirme durumuyla birlikte eklenti yapılandırmaları",
+          "label": "Eklentiler"
+        },
+        "SSH_PRIVATE_KEY": {
+          "description": "Şirket operasyonları için Base64 kodlu SSH özel anahtarı",
+          "label": "SSH Özel Anahtarı"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "Şirket operasyonları için SSH ortak anahtarı",
+          "label": "SSH Genel Anahtarı"
+        },
+        "UNIVERSAL_USER_ID": {
+          "description": "Sistem işlemleri için evrensel kullanıcı kimliği",
+          "label": "Evrensel Kullanıcı Kimliği"
+        },
+        "UNIVERSAL_USER_NAME": {
+          "description": "Sistem işlemleri için evrensel kullanıcı adı",
+          "label": "Evrensel Kullanıcı Adı"
+        },
+        "description": "Kuruluş çapındaki ayarlar için şirket yapılandırması"
+      },
+      "IMAGE": {
+        "data_pool": {
+          "description": "Görüntü verilerini depolamak için ayrı havuz",
+          "label": "Veri Havuzu"
+        },
+        "description": "RBD görüntü ayarlarını yapılandırma",
+        "features": {
+          "description": "Görüntü için etkinleştirilecek RBD özellikleri",
+          "label": "Özellikler"
+        },
+        "object_size": {
+          "description": "Görüntüdeki nesnelerin boyutu",
+          "label": "Nesne Boyutu"
+        },
+        "size": {
+          "description": "RBD görüntüsünün boyutu (ör. 10G, 1T)",
+          "label": "Resim Boyutu"
+        },
+        "stripe_count": {
+          "description": "Görüntü için şerit sayısı",
+          "label": "Şerit Sayısı"
+        },
+        "stripe_unit": {
+          "description": "Resim için şerit birimi boyutu",
+          "label": "Şerit Ünitesi"
         }
+      },
+      "MACHINE": {
+        "datastore": {
+          "description": "Verileri depolamak için dizin yolu. BTRFS dosya sisteminde bulunuyorsa yerel özellikleri kullanır. Aksi takdirde, anlık görüntüleri ve sıkıştırmayı etkinleştirmek için bir BTRFS depolama havuzu dosyası oluşturulacak ve buraya bağlanacaktır.",
+          "label": "Veri Deposu Yolu"
+        },
+        "description": "SSH erişimi ve depolaması için makine yapılandırması",
+        "host_entry": {
+          "description": "Güvenlik doğrulaması için SSH bilinen ana makine girişi",
+          "label": "Ana Bilgisayar Girişi"
+        },
+        "ip": {
+          "description": "Makinenin IP adresi",
+          "label": "IP Adresi"
+        },
+        "port": {
+          "description": "SSH bağlantı noktası numarası",
+          "label": "SSH Bağlantı Noktası"
+        },
+        "ssh_key_configured": {
+          "description": "SSH ortak anahtarı hedef makinede zaten yüklüyse bunu kontrol edin",
+          "label": "SSH anahtarı zaten yapılandırılmış"
+        },
+        "ssh_password": {
+          "description": "Yalnızca ilk SSH anahtarı kurulumu için geçici şifre. SSH anahtarı zaten yapılandırılmışsa boş bırakın. Bu şifre bir kez genel anahtarı kopyalamak için kullanılır ve daha sonra güvenlik nedeniyle kaldırılmalıdır.",
+          "label": "SSH Şifresi (Geçici)"
+        },
+        "user": {
+          "description": "Bağlantı için SSH kullanıcı adı",
+          "label": "Kullanıcı adı"
+        }
+      },
+      "POOL": {
+        "application": {
+          "description": "Havuz için uygulama türü (ör. rbd, cephfs)",
+          "label": "Başvuru"
+        },
+        "crush_rule": {
+          "description": "Veri yerleştirme için CRUSH kural adı",
+          "label": "EZME Kuralı"
+        },
+        "description": "Ceph depolama havuzu ayarlarını yapılandırma",
+        "min_size": {
+          "description": "G/Ç için gereken minimum kopya sayısı",
+          "label": "Minimum Boyut"
+        },
+        "pg_num": {
+          "description": "Havuz için yerleşim grubu sayısı",
+          "label": "Yerleşim Grupları"
+        },
+        "pgp_num": {
+          "description": "Yerleşim amaçlarına yönelik yerleşim gruplarının sayısı",
+          "label": "PGP Numarası"
+        },
+        "size": {
+          "description": "Havuzdaki nesnelerin kopya sayısı",
+          "label": "Çoğaltma Boyutu"
+        }
+      },
+      "REGION": {
+        "code": {
+          "description": "Bölge için kısa kod",
+          "label": "Bölge Kodu"
+        },
+        "description": "Coğrafi dağıtım için bölge yapılandırması",
+        "name": {
+          "description": "Coğrafi bölgenin adı",
+          "label": "Bölge Adı"
+        }
+      },
+      "REPOSITORY": {
+        "credential": {
+          "description": "Depo erişim şifresi (32 karakter, alfanümerik + özel karakterler)",
+          "label": "Erişim Şifresi"
+        },
+        "description": "Yedekleme depolaması için havuz yapılandırması",
+        "encryption": {
+          "description": "Depo için şifrelemeyi etkinleştir",
+          "label": "Şifrelemeyi Etkinleştir"
+        },
+        "name": {
+          "description": "Depo adı tanımlayıcı",
+          "label": "Depo Adı"
+        },
+        "retention": {
+          "description": "Saklama politikası ayarları",
+          "label": "Saklama Politikası"
+        },
+        "schedule": {
+          "description": "Otomatik yedeklemeler için Cron ifadesi",
+          "label": "Yedekleme Programı"
+        }
+      },
+      "SNAPSHOT": {
+        "description": "RBD anlık görüntü ayarlarını yapılandırma",
+        "protected": {
+          "description": "Anlık görüntünün silinmeye karşı korunup korunmadığı",
+          "label": "Korumalı"
+        },
+        "size": {
+          "description": "Anlık görüntünün boyutu",
+          "label": "Anlık Görüntü Boyutu"
+        },
+        "timestamp": {
+          "description": "Anlık görüntünün oluşturulma zaman damgası",
+          "label": "Zaman damgası"
+        }
+      },
+      "STORAGE": {
+        "description": {
+          "description": "Bu depolama yapılandırmasının isteğe bağlı açıklaması",
+          "label": "Tanım"
+        },
+        "entityDescription": "Yedekleme hedefleri için depolama yapılandırması",
+        "name": {
+          "description": "Bu depolama yapılandırmasının benzersiz adı",
+          "label": "Depolama Adı"
+        },
+        "noVersioning": {
+          "description": "Bu depolama alanı için sürüm kontrolünü devre dışı bırakın",
+          "label": "Sürüm Oluşturmayı Devre Dışı Bırak"
+        },
+        "parameters": {
+          "description": "Gelişmiş yapılandırma için ek rclone parametreleri",
+          "label": "Ek Parametreler"
+        },
+        "provider": {
+          "description": "Depolama sağlayıcısı türünü seçin",
+          "label": "Depolama Sağlayıcısı"
+        }
+      },
+      "TEAM": {
+        "SSH_PRIVATE_KEY": {
+          "description": "Ekip operasyonları için Base64 kodlu SSH özel anahtarı",
+          "label": "SSH Özel Anahtarı"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "Ekip operasyonları için SSH ortak anahtarı",
+          "label": "SSH Genel Anahtarı"
+        },
+        "description": "Organizasyon yapısına göre ekip konfigürasyonu",
+        "name": {
+          "description": "Takımın adı",
+          "label": "Takım Adı"
+        },
+        "teamDescription": {
+          "description": "Ekibin amacının ve sorumluluklarının tanımı",
+          "label": "Takım Açıklaması"
+        }
+      },
+      "USER": {
+        "SSH_PRIVATE_KEY": {
+          "description": "Kullanıcı işlemleri için Base64 kodlu SSH özel anahtarı",
+          "label": "SSH Özel Anahtarı"
+        },
+        "SSH_PUBLIC_KEY": {
+          "description": "Kullanıcı işlemleri için SSH ortak anahtarı",
+          "label": "SSH Genel Anahtarı"
+        },
+        "description": "Kişisel ayarlar için kullanıcı yapılandırması"
       }
-    }
-  },
-  "fieldGenerator": {
-    "title": {
-      "ssh_keys": "SSH Anahtar Çifti Oluştur",
-      "repository_credential": "Depo Kimlik Bilgisi Oluştur"
     },
-    "tooltip": "Değer oluştur",
-    "generate": "Oluştur",
-    "regenerate": "Yeniden Oluştur",
-    "apply": "Uygula",
-    "cancel": "İptal",
-    "copy": "Kopyala",
-    "copied": "Kopyalandı!",
-    "keyType": "Anahtar Türü",
-    "keySize": "Anahtar Boyutu",
-    "moreSecure": "daha güvenli",
-    "comingSoon": "yakında",
-    "generationSuccess": "Başarıyla oluşturuldu",
-    "generationError": "Oluşturulamadı. Lütfen tekrar deneyin.",
-    "applied": "Değerler başarıyla uygulandı",
-    "copyError": "Panoya kopyalanamadı"
+    "fields.CLONE.description": "RBD klon ayarlarını yapılandırma",
+    "fields.CLUSTER.description": "Ceph dağıtılmış depolama kümesi ayarlarını yapılandırma",
+    "fields.IMAGE.description": "RBD görüntü ayarlarını yapılandırma",
+    "fields.POOL.description": "Ceph depolama havuzu ayarlarını yapılandırma",
+    "fields.SNAPSHOT.description": "RBD anlık görüntü ayarlarını yapılandırma",
+    "fieldsMovedFromExtra": "extraFields'tan geri yüklenen {{count}} alan: {{fields}}",
+    "fieldsMovedToExtra": "{{count}} alan extraFields'a taşındı: {{fields}}",
+    "formatJson": "JSON'u biçimlendir",
+    "importJson": "JSON'u içe aktar",
+    "invalidFormat": "Geçersiz biçim. {{Tanım}}",
+    "invalidJsonFormat": "Geçersiz JSON biçimi",
+    "isRequired": "{{alan}} gerekli",
+    "jsonError": "JSON Hatası",
+    "maxLength": "Maksimum uzunluk {{uzunluk}}",
+    "maxValue": "Maksimum değer: {{value}}",
+    "minLength": "Minimum uzunluk {{uzunluk}}",
+    "minValue": "Minimum değer: {{value}}",
+    "mustBeArray": "Bir dizi olmalı",
+    "mustBeValidJson": "Geçerli bir JSON olmalıdır",
+    "mustBeValidJsonArray": "Geçerli bir JSON dizisi olmalıdır",
+    "noChangesToSave": "Kaydedilecek değişiklik yok",
+    "optionalFields": "İsteğe Bağlı Alanlar",
+    "pleaseFixErrors": "Lütfen kaydetmeden önce doğrulama hatalarını düzeltin",
+    "portPlaceholder": "Bağlantı noktası numarası (1-65535)",
+    "providerFields": "{{sağlayıcı}} Yapılandırması",
+    "providerRequiredFields": "{{provider}} için gerekli alanlar",
+    "rawJsonEditor": "Ham JSON Düzenleyici (Uzman Modu)",
+    "rawJsonTooltip": "Doğrudan JSON düzenleme - Dikkatli kullanın!",
+    "requiredFields": "Zorunlu Alanlar",
+    "resetToFormValues": "Form Değerlerine Sıfırla",
+    "saveVaultConfiguration": "Kasa Yapılandırmasını Kaydet",
+    "sshPasswordRequiredWhenNoKey": "İlk anahtar kurulumu için SSH şifresi gereklidir",
+    "systemCompatibility": {
+      "available": "Mevcut",
+      "btrfsAvailable": "BTRFS Mevcut",
+      "compatibilityStatus": "Uyumluluk Durumu",
+      "compatible": "Uyumlu",
+      "incompatible": "Uyumsuz",
+      "kernelVersion": "Çekirdek Sürümü",
+      "knownIssues": "Bilinen Sorunlar",
+      "no": "HAYIR",
+      "notInstalled": "Kurulu Değil",
+      "operatingSystem": "İşletim Sistemi",
+      "osSetup": "İşletim Sistemi Kurulumu",
+      "passwordRequired": "Şifre Gerekli",
+      "recommendations": "Öneriler",
+      "setupCompleted": "Kurulum Tamamlandı",
+      "setupRequired": "Kurulum Gerekli",
+      "sudoAvailable": "Sudo Mevcut",
+      "systemInfo": "Sistem Bilgileri",
+      "title": "Sistem Uyumluluğu",
+      "unknown": "Bilinmiyor",
+      "warning": "Uyarı",
+      "yes": "Evet"
+    },
+    "testConnection": {
+      "button": "Bağlantıyı Test Et",
+      "failed": "SSH bağlantısı başarısız oldu",
+      "initiated": "SSH bağlantı testi başlatıldı. Lütfen sonuçlar için sırayı kontrol edin.",
+      "missingFields": "Lütfen test etmeden önce IP adresini, kullanıcı adını ve şifreyi girin",
+      "success": "SSH bağlantısı başarılı",
+      "testing": "Bağlantı test ediliyor..."
+    },
+    "unknownEntityDescription": "Varlık türü \"{{type}}\" kasa tanımlarında tanımlı değil.",
+    "unknownEntityType": "Bilinmeyen Varlık Türü",
+    "unsavedChanges": "Kaydedilmemiş değişiklikler",
+    "validationErrors": "Doğrulama Hataları:",
+    "vaultConfiguration": "Kasa Yapılandırması",
+    "vaultVersion": "Kasa Sürümü:",
+    "versionAutoIncrement": "Sürüm, kaydetme sırasında otomatik olarak artacaktır",
+    "versionWillIncrement": "Sürüm {{version}} değerine artırılacak"
   },
-  "notifications": {
-    "title": "Bildirimler",
-    "empty": "Bildirim yok",
-    "markAllRead": "Tümünü okundu işaretle",
-    "clearAll": "Tümünü temizle"
+  "warnings": {
+    "sandboxEnvironment": "Korumalı Alan Ortamı",
+    "sandboxMessage": "Güncellemeler sırasında veriler sıfırlanabilir. Yalnızca test amaçlıdır."
   },
-  "nestedObjectEditor": {
-    "Image": "Görüntü",
-    "Active": "Aktif",
-    "Add": "Ekle",
-    "Delete this entry?": "Bu girişi sil?",
-    "Yes": "Evet",
-    "No": "Hayır",
-    "Object": "Nesne",
-    "Array": "Dizi",
-    "True": "Doğru",
-    "False": "Yanlış",
-    "Enter key name": "Anahtar adı girin",
-    "Show JSON": "JSON'u Göster",
-    "Hide JSON": "JSON'u Gizle",
-    "No entries": "Giriş yok",
-    "Raw JSON Editor": "Ham JSON Düzenleyici",
-    "JSON Error": "JSON Hatası",
-    "Uniform Structure": "Tekdüze Yapı",
-    "Fields": "Alanlar",
-    "Container Images Detected": "Konteyner Görüntüleri Algılandı",
-    "Plugin Configuration Detected": "Eklenti Yapılandırması Algılandı",
-    "Uniform Structure Detected": "Tekdüze Yapı Algılandı"
-  }
+  "yes": "Evet",
+  "yesterday": "Dün"
 }

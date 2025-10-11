@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
-import ResourceFormWithVault from '@/components/forms/ResourceFormWithVault'
+import ResourceFormWithVault, { type FormFieldConfig } from '@/components/forms/ResourceFormWithVault'
 import VaultEditorModal from '@/components/common/VaultEditorModal'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 import TemplateSelector from '@/components/common/TemplateSelector'
@@ -29,14 +29,6 @@ import {
   createImageSchema,
   createSnapshotSchema,
   createCloneSchema,
-  CreateMachineForm,
-  CreateRepositoryForm,
-  CreateStorageForm,
-  CreateClusterForm,
-  CreatePoolForm,
-  CreateImageForm,
-  CreateSnapshotForm,
-  CreateCloneForm,
 } from '@/utils/validation'
 import { z } from 'zod'
 import { ModalSize } from '@/types/modal'
@@ -225,7 +217,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     }
 
     // Merge existingData to override defaults if provided
-    const finalDefaults = { ...baseDefaults, ...resourceDefaults[resourceType as keyof typeof resourceDefaults] }
+    const finalDefaults: any = { ...baseDefaults, ...resourceDefaults[resourceType as keyof typeof resourceDefaults] }
     if (existingData) {
       Object.keys(existingData).forEach(key => {
         if (existingData[key] !== undefined) {
@@ -297,7 +289,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
 
       // For repositories, set prefilled machine
       if (resourceType === 'repository' && existingData?.machineName) {
-        form.setValue('machineName', existingData.machineName)
+        form.setValue('machineName' as any, existingData.machineName)
       }
 
       // For machines, set default region and bridge
@@ -355,14 +347,14 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     (teamFilter && Array.isArray(teamFilter) && teamFilter.length === 1)
 
   // Field factories
-  const createNameField = () => ({
+  const createNameField = (): FormFieldConfig => ({
     name: `${resourceType}Name`,
     label: t(`${getResourceTranslationKey()}.${resourceType}Name`),
     placeholder: t(`${getResourceTranslationKey()}.placeholders.enter${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)}Name`),
     required: true,
   })
 
-  const createTeamField = () => ({
+  const createTeamField = (): FormFieldConfig => ({
     name: 'teamName',
     label: t('general.team'),
     placeholder: t('teams.placeholders.selectTeam'),
@@ -371,7 +363,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     options: mapToOptions(dropdownData?.teams),
   })
 
-  const createRegionField = () => ({
+  const createRegionField = (): FormFieldConfig => ({
     name: 'regionName',
     label: t('general.region'),
     placeholder: t('regions.placeholders.selectRegion'),
@@ -380,7 +372,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     options: mapToOptions(dropdownData?.regions),
   })
 
-  const createBridgeField = () => {
+  const createBridgeField = (): FormFieldConfig => {
     const currentRegion = form.getValues('regionName')
     const bridgeOptions = getFilteredBridges(currentRegion)
     return {
@@ -395,7 +387,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   }
 
   // Get form fields based on resource type and mode
-  const getFormFields = () => {
+  const getFormFields = (): FormFieldConfig[] => {
     const nameField = createNameField()
     
     if (mode === 'edit') {
@@ -420,10 +412,10 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         
         // Check if this is credential-only mode (either from Add Credential button or Repo Credentials tab)
         const isCredentialOnlyMode = (existingData?.repositoryGuid && existingData?.repositoryGuid.trim() !== '') || creationContext === 'credentials-only'
-        
+
         // Get machines for the team (use existingData teamName if available)
-        const teamName = existingData?.teamName || 'Private Team'
-        const teamMachines = dropdownData?.machinesByTeam?.find(t => t.teamName === teamName)?.machines || []
+        const _teamName = existingData?.teamName || 'Private Team'
+        const teamMachines = dropdownData?.machinesByTeam?.find(t => t.teamName === _teamName)?.machines || []
         
         // Only show machine selection if not prefilled and not in credential-only mode
         if (!isPrefilledMachine && !isCredentialOnlyMode) {
@@ -484,7 +476,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       const isCredentialOnlyMode = (existingData?.repositoryGuid && existingData?.repositoryGuid.trim() !== '') || creationContext === 'credentials-only'
       
       // Get machines for the selected team
-      const selectedTeamName = form.getValues('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
+      const selectedTeamName = (form.getValues as any)('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
       const teamMachines = dropdownData?.machinesByTeam?.find(t => t.teamName === selectedTeamName)?.machines || []
       
       // Only show machine selection if not prefilled and not in credential-only mode
@@ -539,7 +531,6 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       fields.push(nameField)
     } else if (resourceType === 'pool') {
       // Get clusters for the selected team
-      const selectedTeamName = form.getValues('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
       const teamClusters = existingData?.clusters || []
       
       fields.push({
@@ -554,7 +545,6 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       fields.push(nameField)
     } else if (resourceType === 'image') {
       // Image needs pool selection and machine assignment
-      const selectedTeamName = form.getValues('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
       const teamPools = existingData?.pools || []
       const availableMachines = existingData?.availableMachines || []
       
@@ -588,9 +578,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       }
     } else if (resourceType === 'snapshot') {
       // Snapshot needs pool and image selection
-      const selectedTeamName = form.getValues('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
       const teamPools = existingData?.pools || []
-      const selectedPoolName = form.getValues('poolName') || existingData?.poolName
+      const selectedPoolName = (form.getValues as any)('poolName') || existingData?.poolName
       const poolImages = existingData?.images || []
       
       if (!existingData?.poolName) {
@@ -617,11 +606,10 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       fields.push(nameField)
     } else if (resourceType === 'clone') {
       // Clone needs pool, image, and snapshot selection
-      const selectedTeamName = form.getValues('teamName') || existingData?.teamName || (isTeamPreselected ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : '')
       const teamPools = existingData?.pools || []
-      const selectedPoolName = form.getValues('poolName') || existingData?.poolName
+      const selectedPoolName = (form.getValues as any)('poolName') || existingData?.poolName
       const poolImages = existingData?.images || []
-      const selectedImageName = form.getValues('imageName') || existingData?.imageName
+      const selectedImageName = (form.getValues as any)('imageName') || existingData?.imageName
       const imageSnapshots = existingData?.snapshots || []
       
       if (!existingData?.poolName) {
@@ -715,8 +703,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         }
       }
 
-      if (isTeamPreselected || uiMode === 'simple') {
-        const team = uiMode === 'simple' ? 'Private Team' : (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter)
+      if (isTeamPreselected) {
+        const team = uiMode === 'expert' && teamFilter ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : 'Private Team'
         return `${createText} in ${team}`
       }
       return createText
@@ -726,9 +714,6 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
 
   // Handle form submission
   const handleSubmit = async (data: any) => {
-    // Get form fields configuration
-    const fields = getFormFields()
-    
     // Validate machine creation - check if SSH password is present without SSH key configured
     if (mode === 'create' && resourceType === 'machine') {
       const vaultData = data.machineVault ? JSON.parse(data.machineVault) : {}
@@ -1096,14 +1081,6 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           teamName={form.getValues('teamName') || (existingData?.teamName) || (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) || 'Private Team'}
           bridgeName={form.getValues('bridgeName') || 'Global Bridges'}
           onTestConnectionStateChange={setTestConnectionSuccess}
-          onOsSetupStatusChange={(completed) => {
-            // Auto-toggle setup checkbox based on OS setup status
-            // If setup is completed, uncheck the checkbox (no need to run setup again)
-            // If setup is not completed, check the checkbox (need to run setup)
-            if (completed !== null) {
-              setAutoSetupEnabled(!completed)
-            }
-          }}
           isModalOpen={open}
           beforeVaultContent={
             resourceType === 'repository' && mode === 'create' && !((existingData?.repositoryGuid && existingData?.repositoryGuid.trim() !== '') || creationContext === 'credentials-only') ? (
@@ -1193,6 +1170,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       {/* Template Preview Modal */}
       <TemplatePreviewModal
         visible={showTemplateDetails}
+        template={null}
         templateName={templateToView}
         onClose={() => {
           setShowTemplateDetails(false)

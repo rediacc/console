@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react'
 import { useDebouncedCallback, useDebouncedValidation } from '../utils/useDebounce'
 import { MachineValidationService } from '../services'
 import type { Machine } from '@/types'
-import type { ValidationResult, BulkValidationResult } from '../models'
+import type { ValidationResult } from '../models'
 
 export interface DebouncedValidationOptions {
   delay?: number
@@ -18,10 +18,7 @@ export const useDebouncedMachineValidation = (
   options: DebouncedValidationOptions = {}
 ) => {
   const {
-    delay = 300,
-    maxWait = 1000,
-    leading = false,
-    trailing = true
+    delay = 300
   } = options
 
   const [validationResults, setValidationResults] = useState<Record<string, ValidationResult>>({})
@@ -61,20 +58,22 @@ export const useDebouncedMachineValidation = (
         
         // Store individual results
         const newResults: Record<string, ValidationResult> = {}
-        
+
         result.validMachines.forEach(machine => {
-          newResults[machine.machineName] = {
+          const machineName = machine.machineName
+          newResults[machineName] = {
             isValid: true,
             errors: [],
-            warnings: result.warnings[machine.machineName] || []
+            warnings: result.warnings[machineName] || []
           }
         })
-        
+
         result.invalidMachines.forEach(machine => {
-          newResults[machine.machineName] = {
+          const machineName = machine.machineName
+          newResults[machineName] = {
             isValid: false,
-            errors: result.errors[machine.machineName] || [],
-            warnings: result.warnings[machine.machineName] || []
+            errors: result.errors[machineName] || [],
+            warnings: result.warnings[machineName] || []
           }
         })
         
@@ -130,18 +129,18 @@ export const useDebouncedMachineValidation = (
  * Hook for real-time validation as user types/selects
  */
 export const useRealtimeValidation = (
+  machines: Machine[],
   targetType: 'cluster' | 'image' | 'clone',
   delay: number = 500
 ) => {
-  const validator = useCallback((machines: Machine[]) => {
-    if (machines.length === 0) return true
-    
-    const result = MachineValidationService.validateBulkAssignment(machines, targetType)
+  const validator = useCallback((machineList: Machine[]) => {
+    if (machineList.length === 0) return true
+
+    const result = MachineValidationService.validateBulkAssignment(machineList, targetType)
     return result.allValid
   }, [targetType])
 
-  return useDebouncedValidation(
-    validator,
-    delay
-  )
+  // Use the validator with proper typing - pass machines as value
+  const debouncedValidate = useDebouncedValidation(machines, validator, delay)
+  return debouncedValidate
 }

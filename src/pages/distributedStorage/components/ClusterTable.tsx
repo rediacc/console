@@ -20,7 +20,6 @@ import AuditTraceModal from '@/components/common/AuditTraceModal'
 import { ManageClusterMachinesModal } from './ManageClusterMachinesModal'
 import { formatTimestampAsIs } from '@/utils/timeUtils'
 import { useTableStyles } from '@/hooks/useComponentStyles'
-import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge'
 
 interface ClusterTableProps {
   clusters: DistributedStorageCluster[]
@@ -194,7 +193,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
                   onRunFunction(record)
                 } else {
                   // Handle specific function
-                  onRunFunction({ ...record, preselectedFunction: key })
+                  onRunFunction({ ...record, preselectedFunction: key } as DistributedStorageCluster & { preselectedFunction: string })
                 }
               }
             }}

@@ -1,498 +1,433 @@
 {
-  "title": "الوظائف",
-  "systemFunctions": "وظائف النظام",
-  "selectMachine": "اختر جهازًا لعرض الوظائف المتاحة",
-  "selectMachinePrompt": "اختر جهازًا",
-  "noMachineSelected": "يرجى اختيار جهاز لعرض الوظائف",
-  "searchFunctions": "البحث في الوظائف...",
-  "selectFunction": "اختر وظيفة",
-  "selectFunctionToConfigure": "اختر وظيفة للتكوين",
-  "priorityHelp": "يتم معالجة المهام أولاً حسب الأولوية، ثم حسب العمر",
-  "priorityHighest": "الأعلى",
-  "priorityAboveNormal": "فوق العادي",
-  "priorityBelowNormal": "عادي",
-  "currentPriority": "الحالي",
-  "priorityHighestWarning": "الأولوية الأعلى (1)",
-  "priorityHighestDescription": "إرسال مهمة بأولوية قصوى سيلغي تلقائيًا أي مهام ذات أولوية قصوى موجودة لديك. استخدم فقط للمهام الحرجة العاجلة التي تحتاج إلى اهتمام فوري.",
-  "priorityHighWarning": "أولوية عالية (2)",
-  "priorityHighDescription": "يسمح بمهام متزامنة متعددة ذات أولوية عالية. استخدم للمهام المهمة التي تحتاج إلى معالجة أسرع.",
-  "priorityNormalWarning": "أولوية فوق العادية (3)",
-  "priorityNormalDescription": "أسرع من سرعة المعالجة القياسية. استخدم للمهام التي تحتاج إلى معالجة أسرع من المعتاد.",
-  "priorityLowWarning": "أولوية عادية (4)",
-  "priorityLowDescription": "سرعة المعالجة القياسية. موصى بها لمعظم العمليات والمهام اليومية.",
-  "priorityLowestWarning": "أولوية أدنى (5)",
-  "priorityLowestDescription": "أبطأ سرعة معالجة. استخدم لعمليات الدفعات أو المهام بدون قيود زمنية.",
-  "validationError": "خطأ في التحقق",
-  "missingRequiredParams": "يرجى ملء جميع المعلمات المطلوبة: {{params}}",
-  "copyFunction": "نسخ الوظيفة",
-  "copyFunctionPrompt": "نسخ هذه الوظيفة باسم جديد",
-  "newFunctionName": "اسم الوظيفة الجديد",
-  "enterNewFunctionName": "أدخل اسم الوظيفة الجديد",
-  "copySuccess": "تم نسخ الوظيفة بنجاح",
-  "copyError": "فشل نسخ الوظيفة",
-  "dockerFunctions": "وظائف الجسر (Docker)",
-  "bridgeFunctions": "وظائف الجسر",
+  "additionalOptions": "خيارات إضافية (متقدمة)",
   "availableFunctions": "الوظائف المتاحة",
-  "customFunction": "إنشاء وظيفة مخصصة",
-  "noFunctionsAvailable": "لا توجد وظائف متاحة",
-  "addFunction": "إضافة وظيفة",
-  "addAndConfigure": "إضافة وتكوين",
-  "configure": "تكوين",
-  "showDetails": "عرض التفاصيل",
-  "hideDetails": "إخفاء التفاصيل",
-  "dockerDetails": "تفاصيل Docker",
-  "description": "الوصف",
-  "details": "التفاصيل",
-  "functionName": "اسم الوظيفة",
-  "requiredVaultKeys": "مفاتيح الخزنة المطلوبة",
-  "optionalVaultKeys": "مفاتيح الخزنة الاختيارية",
-  "selectBridge": "اختر جسرًا",
-  "function": "الوظيفة",
-  "placeholders": {
-    "selectFunction": "اختر وظيفة"
-  },
   "categories": {
-    "all": "الكل",
-    "popular": "شائع",
-    "database": "قاعدة البيانات",
-    "storage": "التخزين",
-    "web": "الويب",
-    "monitoring": "المراقبة",
-    "messaging": "المراسلة",
-    "analytics": "التحليلات",
-    "security": "الأمان",
-    "development": "التطوير",
-    "media": "الوسائط",
-    "ai": "الذكاء الاصطناعي",
-    "productivity": "الإنتاجية",
-    "networking": "الشبكات",
-    "other": "أخرى"
-  },
-  "noDescription": "لا يوجد وصف متاح",
-  "enterFunctionName": "أدخل اسم الوظيفة",
-  "requiredVault": "الخزنة المطلوبة",
-  "requiredVaultDescription": "مفاتيح الخزنة التالية مطلوبة لتشغيل هذه الوظيفة:",
-  "optionalVault": "الخزنة الاختيارية",
-  "optionalVaultDescription": "مفاتيح الخزنة التالية اختيارية للتكوين الإضافي:",
-  "priority": "الأولوية",
-  "priorityLow": "منخفضة",
-  "priorityNormal": "عادية", 
-  "priorityHigh": "عالية",
-  "description": "الوصف (اختياري)",
-  "descriptionPlaceholder": "أضف وصفًا مخصصًا لعنصر قائمة الانتظار هذا",
-  "addToQueue": "إضافة إلى قائمة الانتظار",
-  "dockerComposeYaml": "Docker Compose YAML",
-  "dockerComposeFormat": "تستخدم هذه الوظيفة تنسيق Docker Compose",
-  "requiredKeysInfo": "تتطلب هذه الوظيفة المفاتيح التالية في الخزنة",
-  "optionalKeysInfo": "المفاتيح التالية اختيارية للتكوين الإضافي",
-  "dockerConfiguration": "تكوين Docker",
-  "dockerImage": "صورة Docker",
-  "dockerCommand": "أمر Docker",
-  "dockerEnvironment": "متغيرات البيئة",
-  "dockerVolumes": "الأحجام",
-  "dockerPorts": "المنافذ",
-  "loadingFunctions": "جارٍ تحميل الوظائف...",
-  "errorLoadingFunctions": "فشل تحميل الوظائف. يرجى المحاولة مرة أخرى.",
-  "retry": "إعادة المحاولة",
-  "loadError": "خطأ في التحميل",
-  "recommendedVaultKeys": "مفاتيح الخزنة الموصى بها",
-  "recommendedVaultKeysDescription": "هذه المفاتيح ليست مطلوبة ولكنها موصى بها:",
-  "dockerLimits": "حدود الموارد",
-  "memoryLimit": "حد الذاكرة",
-  "cpuLimit": "حد المعالج",
-  "noLimitsSet": "لم يتم تعيين حدود للموارد",
-  "composeServiceDetails": "تفاصيل الخدمة",
-  "composeServices": "الخدمات",
-  "serviceName": "اسم الخدمة",
-  "replicas": "النسخ المتماثلة",
-  "networks": "الشبكات",
-  "filterByCategory": "التصفية حسب الفئة",
-  "allCategories": "جميع الفئات",
-  "searchPlaceholder": "البحث بالاسم أو الفئة...",
-  "notAllowedKeys": "مفاتيح الخزنة غير المسموح بها",
-  "notAllowedKeysDescription": "لا تستخدم المفاتيح التالية (يديرها النظام تلقائيًا):",
-  "queueItemCreated": "تم إنشاء عنصر قائمة الانتظار",
-  "queueItemCreatedMessage": "تم إنشاء عنصر قائمة الانتظار بنجاح.",
-  "bridgeFeatures": "ميزات الجسر",
-  "categories": {
-    "machine": {
-      "name": "وظائف الآلة",
-      "description": "وظائف إعداد وصيانة النظام الأساسية"
-    },
-    "repository": {
-      "name": "وظائف المستودع",
-      "description": "إدارة وعمليات المستودع"
-    },
     "backup": {
-      "name": "وظائف النسخ الاحتياطي",
-      "description": "عمليات النسخ الاحتياطي والاستعادة"
-    },
-    "network": {
-      "name": "وظائف الشبكة",
-      "description": "عمليات الشبكة وتعيين المقابس"
+      "description": "عمليات النسخ الاحتياطي والاستعادة",
+      "name": "وظائف النسخ الاحتياطي"
     },
     "container": {
-      "name": "وظائف الحاوية",
-      "description": "عمليات إدارة حاوية Docker"
+      "description": "عمليات إدارة حاويات Docker",
+      "name": "وظائف الحاوية"
+    },
+    "machine": {
+      "description": "وظائف إعداد وصيانة النظام الأساسية",
+      "name": "وظائف الآلة"
+    },
+    "network": {
+      "description": "عمليات رسم خرائط الشبكة والمآخذ",
+      "name": "وظائف الشبكة"
+    },
+    "repository": {
+      "description": "إدارة المستودعات والعمليات",
+      "name": "وظائف المستودع"
     }
   },
+  "checkboxOptions": {
+    "mountRepositoryFirst": "جبل المستودع أولا",
+    "overrideExistingFile": "تجاوز الملف الموجود",
+    "preparationOnly": "التحضير فقط",
+    "unmountAfterStopping": "قم بإلغاء التحميل بعد التوقف"
+  },
+  "configure": "تكوين",
+  "currentPriority": "حاضِر",
+  "description": "الوصف (اختياري)",
+  "descriptionPlaceholder": "أضف وصفًا مخصصًا لعنصر قائمة الانتظار هذا",
   "functions": {
-    "setup": {
-      "name": "إعداد",
-      "description": "إعداد نظام التشغيل بالأدوات والتكوينات المطلوبة",
-      "params": {
-        "datastore_size": {
-          "label": "حجم مخزن البيانات",
-          "help": "حجم مخزن البيانات (مثل 95%، 100G)"
-        },
-        "source": {
-          "label": "المصدر",
-          "help": "مصدر الحزمة"
-        },
-        "rclone_source": {
-          "label": "مصدر تثبيت Rclone",
-          "help": "كيفية تثبيت rclone (install-script = نص رسمي، package-manager = apt/dnf، manual = تخطي)"
-        },
-        "docker_source": {
-          "label": "مصدر تثبيت Docker",
-          "help": "كيفية تثبيت Docker (docker-repo = مستودع رسمي، package-manager = حزم نظام التشغيل، snap = متجر snap، manual = تخطي)"
-        },
-        "install_amd_driver": {
-          "label": "تثبيت برنامج تشغيل AMD GPU",
-          "help": "تثبيت برامج تشغيل AMD GPU (auto = اكتشاف GPU أولاً، true = التثبيت دائمًا، false = تخطي)"
-        },
-        "install_nvidia_driver": {
-          "label": "تثبيت برنامج تشغيل NVIDIA GPU",
-          "help": "تثبيت برامج تشغيل NVIDIA GPU (auto = اكتشاف GPU أولاً، true = التثبيت دائمًا، false = تخطي)"
-        }
-      }
+    "clone": {
+      "description": "مستودع النسخ على نفس الجهاز",
+      "name": "استنساخ"
     },
-    "hello": {
-      "name": "مرحبا",
-      "description": "وظيفة اختبار بسيطة تطبع مرحبا من اسم المضيف"
-    },
-    "uninstall": {
-      "name": "إلغاء التثبيت",
-      "description": "تنظيف وإلغاء تثبيت مكونات النظام"
-    },
-    "new": {
-      "name": "جديد",
-      "description": "إنشاء مستودع جديد",
-      "params": {
-        "repo": {
-          "label": "المستودع",
-          "help": "اسم المستودع"
-        },
-        "size": {
-          "label": "الحجم",
-          "help": "حجم المستودع (مثل 10G)"
-        }
-      }
-    },
-    "mount": {
-      "name": "تحميل",
-      "description": "تحميل أنظمة ملفات المستودع",
-      "params": {
-        "repo": {
-          "label": "المستودع",
-          "help": "اسم (أسماء) المستودع، مفصولة بفواصل"
-        },
-        "from": {
-          "label": "من الآلة",
-          "help": "الآلة البعيدة للتحميل منها"
-        }
-      }
-    },
-    "unmount": {
-      "name": "إلغاء التحميل",
-      "description": "إلغاء تحميل أنظمة ملفات المستودع",
-      "params": {
-        "repo": {
-          "label": "المستودع",
-          "help": "اسم (أسماء) المستودع، مفصولة بفواصل"
-        },
-        "from": {
-          "label": "من الآلة",
-          "help": "الآلة البعيدة لإلغاء التحميل منها"
-        }
-      }
-    },
-    "up": {
-      "name": "تشغيل",
-      "description": "بدء خدمات المستودع باستخدام Rediaccfile",
-      "params": {
-        "repo": {
-          "label": "المستودع",
-          "help": "اسم (أسماء) المستودع، مفصولة بفواصل"
-        },
-        "option": {
-          "label": "الخيارات",
-          "help": "الخيارات (مثل prep-only)"
-        }
-      }
-    },
-    "down": {
-      "name": "إيقاف",
-      "description": "إيقاف خدمات المستودع",
-      "params": {
-        "repo": {
-          "label": "المستودع",
-          "help": "اسم (أسماء) المستودع، مفصولة بفواصل"
-        },
-        "option": {
-          "label": "خيارات",
-          "help": "خيارات إضافية"
-        }
-      }
-    },
-    "resize": {
-      "name": "تغيير الحجم",
-      "description": "تغيير حجم تخزين المستودع",
-      "params": {
-        "repo": {
-          "label": "المستودع",
-          "help": "اسم المستودع"
-        },
-        "size": {
-          "label": "الحجم الجديد",
-          "help": "الحجم الجديد (مثل 20G)"
-        }
-      }
-    },
-    "rm": {
-      "name": "حذف",
-      "description": "حذف المستودع",
-      "params": {
-        "repo": {
-          "label": "المستودع",
-          "help": "اسم المستودع"
-        }
-      }
-    },
-    "plugin": {
-      "name": "تفعيل المكون الإضافي",
-      "description": "تفعيل المكونات الإضافية للمستودع",
-      "params": {
-        "repo": {
-          "label": "المستودع",
-          "help": "اسم (أسماء) المستودع، مفصولة بفواصل"
-        },
-        "plugin": {
-          "label": "المكون الإضافي",
-          "help": "اسم (أسماء) المكون الإضافي، مفصولة بفواصل"
-        }
-      }
-    },
-    "plugout": {
-      "name": "إلغاء تفعيل المكون الإضافي",
-      "description": "إلغاء تفعيل المكونات الإضافية للمستودع",
-      "params": {
-        "repo": {
-          "label": "المستودع",
-          "help": "اسم (أسماء) المستودع، مفصولة بفواصل"
-        },
-        "plugin": {
-          "label": "المكون الإضافي",
-          "help": "اسم (أسماء) المكون الإضافي، مفصولة بفواصل"
-        }
-      }
-    },
-    "ownership": {
-      "name": "الملكية",
-      "description": "تغيير ملكية المستودع",
-      "params": {
-        "repo": {
-          "label": "المستودع",
-          "help": "اسم المستودع"
-        },
-        "from": {
-          "label": "المالك الحالي",
-          "help": "المالك الحالي"
-        },
-        "to": {
-          "label": "المالك الجديد",
-          "help": "المالك الجديد (الافتراضي: المستخدم العالمي)"
-        }
-      }
-    },
-    "list": {
-      "name": "قائمة الملفات البعيدة",
-      "description": "سرد الملفات في مواقع التخزين البعيدة",
-      "params": {
-        "from": {
-          "label": "موقع المصدر",
-          "help": "الجهاز أو نظام التخزين لسرد الملفات منه"
-        },
-        "path": {
-          "label": "المسار",
-          "help": "مسار اختياري داخل التخزين"
-        },
-        "format": {
-          "label": "تنسيق الإخراج",
-          "help": "تنسيق قائمة الملفات"
-        }
-      }
-    },
-    "push": {
-      "name": "دفع",
-      "description": "دفع المستودع إلى التخزين البعيد",
-      "params": {
-        "repo": {
-          "label": "المستودع",
-          "help": "اسم (أسماء) المستودع، مفصولة بفواصل"
-        },
-        "dest": {
-          "label": "اسم ملف الوجهة",
-          "help": "اسم ملف النسخة الاحتياطية"
-        },
-        "destinationType": {
-          "label": "نوع الوجهة",
-          "help": "اختر ما إذا كنت تريد الدفع إلى آلة أو تخزين"
-        },
-        "to": {
-          "label": "الوجهة",
-          "help": "اختر الآلة أو التخزين الوجهة"
-        },
-        "state": {
-          "label": "الحالة المطلوبة",
-          "help": "التحقق من أن المستودع متصل أو غير متصل قبل الدفع"
-        },
-        "option": {
-          "label": "الخيارات",
-          "help": "الخيارات (مثل override)"
-        }
-      }
-    },
-    "pull": {
-      "name": "Pull",
-      "description": "سحب المستودع من التخزين البعيد",
-      "params": {
-        "sourceType": {
-          "label": "نوع المصدر",
-          "help": "اختر ما إذا كنت تريد السحب من آلة أو تخزين"
-        },
-        "from": {
-          "label": "المصدر",
-          "help": "اختر الآلة أو التخزين المصدر"
-        },
-        "repo": {
-          "label": "المستودع",
-          "help": "اسم (أسماء) المستودع، مفصولة بفواصل"
-        }
-      }
-    },
-    "ping": {
-      "name": "ping",
-      "description": "اختبار اتصال الشبكة بالآلة"
-    },
-    "container_start": {
-      "name": "بدء_الحاوية",
-      "description": "بدء تشغيل حاوية Docker",
+    "container_inspect": {
+      "description": "فحص تفاصيل حاوية Docker",
+      "name": "حاوية_فحص",
       "params": {
         "container": {
-          "label": "الحاوية",
-          "help": "اسم الحاوية أو المعرف"
-        }
-      }
-    },
-    "container_stop": {
-      "name": "إيقاف_الحاوية",
-      "description": "إيقاف حاوية Docker قيد التشغيل",
-      "params": {
-        "container": {
-          "label": "الحاوية",
-          "help": "اسم الحاوية أو المعرف"
-        }
-      }
-    },
-    "container_restart": {
-      "name": "إعادة_تشغيل_الحاوية",
-      "description": "إعادة تشغيل حاوية Docker",
-      "params": {
-        "container": {
-          "label": "الحاوية",
-          "help": "اسم الحاوية أو المعرف"
-        }
-      }
-    },
-    "container_remove": {
-      "name": "إزالة_الحاوية",
-      "description": "إزالة حاوية Docker",
-      "params": {
-        "container": {
-          "label": "الحاوية",
-          "help": "اسم الحاوية أو المعرف"
-        },
-        "force": {
-          "label": "فرض الإزالة",
-          "help": "فرض إزالة الحاوية قيد التشغيل"
+          "help": "اسم الحاوية أو معرفها",
+          "label": "حاوية"
         }
       }
     },
     "container_logs": {
-      "name": "سجلات_الحاوية",
       "description": "عرض سجلات حاوية Docker",
+      "name": "Container_logs",
       "params": {
         "container": {
-          "label": "الحاوية",
-          "help": "اسم الحاوية أو المعرف"
-        },
-        "lines": {
-          "label": "السطور",
-          "help": "عدد السطور المراد عرضها (الافتراضي: 100)"
+          "help": "اسم الحاوية أو معرفها",
+          "label": "حاوية"
         },
         "follow": {
-          "label": "متابعة السجلات",
-          "help": "متابعة إخراج السجل في الوقت الفعلي"
-        }
-      }
-    },
-    "container_inspect": {
-      "name": "فحص_الحاوية",
-      "description": "فحص تفاصيل حاوية Docker",
-      "params": {
-        "container": {
-          "label": "الحاوية",
-          "help": "اسم الحاوية أو المعرف"
-        }
-      }
-    },
-    "container_stats": {
-      "name": "إحصائيات_الحاوية",
-      "description": "عرض إحصائيات استخدام موارد حاوية Docker",
-      "params": {
-        "container": {
-          "label": "الحاوية",
-          "help": "اسم الحاوية أو المعرف (اختياري - يعرض الكل إذا كان فارغًا)"
+          "help": "اتبع إخراج السجل في الوقت الحقيقي",
+          "label": "اتبع السجلات"
+        },
+        "lines": {
+          "help": "عدد الأسطر المراد إظهارها (الافتراضي: 100)",
+          "label": "خطوط"
         }
       }
     },
     "container_pause": {
-      "name": "إيقاف_مؤقت_للحاوية",
-      "description": "إيقاف مؤقت لحاوية Docker قيد التشغيل",
+      "description": "قم بإيقاف حاوية Docker قيد التشغيل مؤقتًا",
+      "name": "يوقف",
       "params": {
         "container": {
-          "label": "الحاوية",
-          "help": "اسم الحاوية أو المعرف"
+          "help": "اسم الحاوية أو معرفها",
+          "label": "حاوية"
+        }
+      }
+    },
+    "container_remove": {
+      "description": "قم بإزالة حاوية Docker",
+      "name": "يزيل",
+      "params": {
+        "container": {
+          "help": "اسم الحاوية أو معرفها",
+          "label": "حاوية"
+        },
+        "force": {
+          "help": "إزالة القوة للحاوية قيد التشغيل",
+          "label": "فرض الإزالة"
+        }
+      }
+    },
+    "container_restart": {
+      "description": "أعد تشغيل حاوية Docker",
+      "name": "إعادة تشغيل",
+      "params": {
+        "container": {
+          "help": "اسم الحاوية أو معرفها",
+          "label": "حاوية"
+        }
+      }
+    },
+    "container_start": {
+      "description": "بدء تشغيل حاوية Docker",
+      "name": "يبدأ",
+      "params": {
+        "container": {
+          "help": "اسم الحاوية أو معرفها",
+          "label": "حاوية"
+        }
+      }
+    },
+    "container_stats": {
+      "description": "عرض إحصائيات استخدام موارد حاوية Docker",
+      "name": "Container_stats",
+      "params": {
+        "container": {
+          "help": "اسم الحاوية أو معرفها (اختياري - يُظهر الكل إذا كان فارغًا)",
+          "label": "حاوية"
+        }
+      }
+    },
+    "container_stop": {
+      "description": "إيقاف تشغيل حاوية Docker",
+      "name": "قف",
+      "params": {
+        "container": {
+          "help": "اسم الحاوية أو معرفها",
+          "label": "حاوية"
         }
       }
     },
     "container_unpause": {
-      "name": "استئناف_الحاوية",
-      "description": "استئناف حاوية Docker المتوقفة مؤقتًا",
+      "description": "قم بإلغاء الإيقاف المؤقت لحاوية Docker المتوقفة مؤقتًا",
+      "name": "قم بإلغاء الإيقاف المؤقت",
       "params": {
         "container": {
-          "label": "الحاوية",
-          "help": "اسم الحاوية أو المعرف"
+          "help": "اسم الحاوية أو معرفها",
+          "label": "حاوية"
+        }
+      }
+    },
+    "down": {
+      "description": "إيقاف خدمات المستودع",
+      "name": "تحت",
+      "params": {
+        "option": {
+          "help": "خيارات إضافية",
+          "label": "خيارات"
+        },
+        "repo": {
+          "help": "اسم (أسماء) المستودع، مفصولة بفواصل",
+          "label": "مستودع"
+        }
+      }
+    },
+    "expand": {
+      "description": "قم بتوسيع مساحة تخزين المستودع عبر الإنترنت دون توقف",
+      "name": "يوسع",
+      "params": {
+        "grand": {
+          "help": "دليل المستودع الكبير",
+          "label": "المستودع الكبير"
+        },
+        "repo": {
+          "help": "اسم المستودع",
+          "label": "مستودع"
+        },
+        "size": {
+          "help": "الحجم الجديد (على سبيل المثال، 20 جم) - يجب أن يكون أكبر من الحجم الحالي",
+          "label": "حجم جديد"
+        }
+      }
+    },
+    "hello": {
+      "description": "وظيفة اختبار بسيطة تطبع الترحيب من اسم المضيف",
+      "name": "مرحبًا"
+    },
+    "list": {
+      "description": "قائمة الملفات في مواقع التخزين البعيدة",
+      "name": "قائمة الملفات البعيدة",
+      "params": {
+        "format": {
+          "help": "تنسيق قائمة الملفات",
+          "label": "تنسيق الإخراج"
+        },
+        "from": {
+          "help": "آلة أو نظام تخزين لسرد الملفات من",
+          "label": "موقع المصدر"
+        },
+        "path": {
+          "help": "مسار اختياري داخل التخزين",
+          "label": "طريق"
+        }
+      }
+    },
+    "mount": {
+      "description": "تركيب أنظمة ملفات المستودع",
+      "name": "جبل",
+      "params": {
+        "from": {
+          "help": "آلة بعيدة للتركيب منها",
+          "label": "من الآلة"
+        },
+        "repo": {
+          "help": "اسم (أسماء) المستودع، مفصولة بفواصل",
+          "label": "مستودع"
+        }
+      }
+    },
+    "new": {
+      "description": "إنشاء مستودع جديد",
+      "name": "جديد",
+      "params": {
+        "repo": {
+          "help": "اسم المستودع",
+          "label": "مستودع"
+        },
+        "size": {
+          "help": "حجم المستودع (على سبيل المثال، 10G)",
+          "label": "مقاس"
+        }
+      }
+    },
+    "ownership": {
+      "description": "تغيير ملكية المستودع",
+      "name": "ملكية",
+      "params": {
+        "from": {
+          "help": "المالك الحالي",
+          "label": "المالك الحالي"
+        },
+        "repo": {
+          "help": "اسم المستودع",
+          "label": "مستودع"
+        },
+        "to": {
+          "help": "المالك الجديد (الافتراضي: المستخدم العالمي)",
+          "label": "مالك جديد"
+        }
+      }
+    },
+    "ping": {
+      "description": "اختبار اتصال الشبكة بالجهاز",
+      "name": "بينغ"
+    },
+    "plugin": {
+      "description": "تفعيل المكونات الإضافية للمستودع",
+      "name": "البرنامج المساعد",
+      "params": {
+        "plugin": {
+          "help": "اسم (أسماء) البرنامج المساعد، مفصولة بفواصل",
+          "label": "البرنامج المساعد"
+        },
+        "repo": {
+          "help": "اسم (أسماء) المستودع، مفصولة بفواصل",
+          "label": "مستودع"
+        }
+      }
+    },
+    "plugout": {
+      "description": "قم بإلغاء تنشيط المكونات الإضافية للمستودع",
+      "name": "plugout",
+      "params": {
+        "plugin": {
+          "help": "اسم (أسماء) البرنامج المساعد، مفصولة بفواصل",
+          "label": "البرنامج المساعد"
+        },
+        "repo": {
+          "help": "اسم (أسماء) المستودع، مفصولة بفواصل",
+          "label": "مستودع"
+        }
+      }
+    },
+    "pull": {
+      "description": "سحب المستودع من التخزين البعيد",
+      "name": "يحذب",
+      "params": {
+        "from": {
+          "help": "حدد الجهاز المصدر أو وحدة التخزين",
+          "label": "مصدر"
+        },
+        "repo": {
+          "help": "اسم (أسماء) المستودع، مفصولة بفواصل",
+          "label": "مستودع"
+        },
+        "sourceType": {
+          "help": "حدد ما إذا كنت تريد السحب من جهاز أو من وحدة تخزين",
+          "label": "نوع المصدر"
+        }
+      }
+    },
+    "push": {
+      "description": "دفع المستودع إلى التخزين البعيد",
+      "name": "يدفع",
+      "params": {
+        "dest": {
+          "help": "اسم ملف النسخ الاحتياطي",
+          "label": "اسم الملف الوجهة"
+        },
+        "destinationType": {
+          "help": "حدد ما إذا كنت تريد الدفع إلى جهاز أو وحدة تخزين",
+          "label": "نوع الوجهة"
+        },
+        "option": {
+          "help": "الخيارات (على سبيل المثال، التجاوز)",
+          "label": "خيارات"
+        },
+        "repo": {
+          "help": "اسم (أسماء) المستودع، مفصولة بفواصل",
+          "label": "مستودع"
+        },
+        "state": {
+          "help": "التحقق من صحة المستودع متصل أو غير متصل قبل الدفع",
+          "label": "الدولة المطلوبة"
+        },
+        "to": {
+          "help": "حدد الجهاز الوجهة أو وحدة التخزين",
+          "label": "وجهة"
+        }
+      }
+    },
+    "resize": {
+      "description": "تغيير حجم تخزين المستودع (العملية دون اتصال بالإنترنت - يجب إلغاء تحميل المستودع)",
+      "name": "تغيير الحجم",
+      "params": {
+        "repo": {
+          "help": "اسم المستودع",
+          "label": "مستودع"
+        },
+        "size": {
+          "help": "الحجم الجديد (على سبيل المثال، 20 جم) - يمكن أن يكون أكبر أو أصغر من الحجم الحالي",
+          "label": "حجم جديد"
+        }
+      }
+    },
+    "rm": {
+      "description": "حذف المستودع",
+      "name": "جمهورية مقدونيا",
+      "params": {
+        "repo": {
+          "help": "اسم المستودع",
+          "label": "مستودع"
+        }
+      }
+    },
+    "setup": {
+      "description": "إعداد نظام التشغيل بالأدوات والتكوينات المطلوبة",
+      "name": "يثبت",
+      "params": {
+        "datastore_size": {
+          "help": "حجم مخزن البيانات (على سبيل المثال، 95%، 100 جيجا)",
+          "label": "حجم مخزن البيانات"
+        },
+        "docker_source": {
+          "help": "كيفية تثبيت Docker (docker-repo = المستودع الرسمي، مدير الحزم = حزم نظام التشغيل، snap = متجر snap، دليل = تخطي)",
+          "label": "مصدر تثبيت عامل الميناء"
+        },
+        "install_amd_driver": {
+          "help": "تثبيت برامج تشغيل AMD GPU (تلقائي = اكتشاف GPU أولاً، صحيح = التثبيت دائمًا، خطأ = تخطي)",
+          "label": "قم بتثبيت برنامج تشغيل AMD GPU"
+        },
+        "install_nvidia_driver": {
+          "help": "تثبيت برامج تشغيل NVIDIA GPU (تلقائي = اكتشاف GPU أولاً، صحيح = التثبيت دائمًا، خطأ = تخطي)",
+          "label": "قم بتثبيت برنامج تشغيل NVIDIA GPU"
+        },
+        "rclone_source": {
+          "help": "كيفية تثبيت rclone (install-script = البرنامج النصي الرسمي، package-manager = apt/dnf، manual =تخطي)",
+          "label": "مصدر تثبيت Rclone"
+        },
+        "source": {
+          "help": "مصدر الحزمة",
+          "label": "مصدر"
+        }
+      }
+    },
+    "uninstall": {
+      "description": "تنظيف وإلغاء تثبيت مكونات النظام",
+      "name": "إلغاء التثبيت"
+    },
+    "unmount": {
+      "description": "إلغاء تحميل أنظمة ملفات المستودع",
+      "name": "إلغاء تحميل",
+      "params": {
+        "from": {
+          "help": "الجهاز البعيد لإلغاء التحميل منه",
+          "label": "من الآلة"
+        },
+        "repo": {
+          "help": "اسم (أسماء) المستودع، مفصولة بفواصل",
+          "label": "مستودع"
+        }
+      }
+    },
+    "up": {
+      "description": "ابدأ خدمات المستودع باستخدام Rediaccfile",
+      "name": "أعلى",
+      "params": {
+        "option": {
+          "help": "الخيارات (على سبيل المثال، الإعدادية فقط)",
+          "label": "خيارات"
+        },
+        "repo": {
+          "help": "اسم (أسماء) المستودع، مفصولة بفواصل",
+          "label": "مستودع"
         }
       }
     }
   },
-  "checkboxOptions": {
-    "mountRepositoryFirst": "تحميل المستودع أولاً",
-    "preparationOnly": "التحضير فقط",
-    "unmountAfterStopping": "إلغاء التحميل بعد الإيقاف",
-    "overrideExistingFile": "استبدال الملف الموجود"
-  },
-  "additionalOptions": "خيارات إضافية (متقدم)"
+  "missingRequiredParams": "يرجى ملء جميع المعلمات المطلوبة: {{params}}",
+  "priority": "أولوية",
+  "priorityAboveNormal": "فوق العادي",
+  "priorityBelowNormal": "طبيعي",
+  "priorityHelp": "تتم معالجة المهام حسب الأولوية أولاً، ثم حسب العمر",
+  "priorityHigh": "عالي",
+  "priorityHighDescription": "يسمح بمهام متعددة ذات أولوية عالية متزامنة. يُستخدم للمهام المهمة التي تحتاج إلى معالجة أسرع.",
+  "priorityHighWarning": "أولوية عالية (2)",
+  "priorityHighest": "الأعلى",
+  "priorityHighestDescription": "سيؤدي إرسال مهمة ذات أولوية قصوى إلى إلغاء أي مهام موجودة ذات أولوية قصوى لديك تلقائيًا. استخدم فقط للمهام الحرجة العاجلة التي تحتاج إلى اهتمام فوري.",
+  "priorityHighestWarning": "الأولوية القصوى (1)",
+  "priorityLow": "قليل",
+  "priorityLowDescription": "سرعة المعالجة القياسية. يوصى به لمعظم العمليات والمهام اليومية.",
+  "priorityLowWarning": "الأولوية العادية (4)",
+  "priorityLowestDescription": "أبطأ سرعة المعالجة. يُستخدم للعمليات المجمعة أو المهام دون قيود زمنية.",
+  "priorityLowestWarning": "الأولوية الدنيا (5)",
+  "priorityNormal": "فوق العادي",
+  "priorityNormalDescription": "أسرع من سرعة المعالجة القياسية. يُستخدم للمهام التي تحتاج إلى معالجة أسرع من المعتاد.",
+  "priorityNormalWarning": "فوق الأولوية العادية (3)",
+  "searchFunctions": "وظائف البحث...",
+  "selectFunction": "حدد الوظيفة",
+  "selectFunctionToConfigure": "حدد وظيفة لتكوينها",
+  "validationError": "خطأ في التحقق"
 }

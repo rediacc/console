@@ -5,8 +5,8 @@ import { apiClient } from './client'
 export async function initializeApiClient() {
   try {
     // Perform the startup health check to determine which endpoint to use
-    const endpoint = await apiConnectionService.performStartupHealthCheck()
-    
+    await apiConnectionService.performStartupHealthCheck()
+
     // Get the API URL from config service (which now uses the selected endpoint)
     const apiUrl = await configService.getApiUrl()
     

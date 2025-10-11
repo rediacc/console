@@ -157,14 +157,14 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         <ReactMarkdown
           components={{
             code(props) {
-              const { node, inline, className, children, ...rest } = props
+              const { node, className, children, ref, ...rest } = props
+              const inline = (props as any).inline
               const match = /language-(\w+)/.exec(className || '')
               return !inline && match ? (
                 <SyntaxHighlighter
                   style={vscDarkPlus as any}
                   language={match[1]}
                   PreTag="div"
-                  {...rest}
                 >
                   {String(children).replace(/\n$/, '')}
                 </SyntaxHighlighter>

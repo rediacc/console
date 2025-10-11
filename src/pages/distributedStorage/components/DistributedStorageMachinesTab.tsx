@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState } from 'react'
 import { 
   Space, 
   Select, 
@@ -6,23 +6,17 @@ import {
   Button, 
   Card,
   Row,
-  Col,
-  Radio,
-  Dropdown,
-  Modal,
-  message
+  Col
 } from 'antd'
 import {
   SearchOutlined,
   FilterOutlined,
-  DesktopOutlined,
   ExportOutlined,
   CloudServerOutlined,
-  InfoCircleOutlined,
-  DeleteOutlined
+  InfoCircleOutlined
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
-import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { FilterableMachineTable } from './FilterableMachineTable'
 import { MachineAvailabilitySummary } from './MachineAvailabilitySummary'
 import { useMachines } from '@/api/queries/machines'
@@ -46,7 +40,6 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
   teamFilter
 }) => {
   const { t } = useTranslation(['distributedStorage', 'machines', 'common'])
-  const tableStyles = useTableStyles()
   const componentStyles = useComponentStyles()
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const isExpertMode = uiMode === 'expert'
@@ -109,12 +102,7 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
     
     return filtered
   }, [allMachines, searchText, assignmentFilter])
-  
-  // Machine table data source - we need to pass the filtered machines
-  const machineTableData = React.useMemo(() => {
-    return filteredMachines
-  }, [filteredMachines])
-  
+
   // Handlers
   const handleRefresh = () => {
     refetch()
@@ -145,25 +133,7 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
     
     showMessage('success', t('common:export.success'))
   }
-  
-  const handleRemoveAssignment = (machine: Machine) => {
-    if (machine.distributedStorageClusterName) {
-      Modal.confirm({
-        title: t('machines:confirmRemoveFromCluster'),
-        content: t('machines:removeFromClusterWarning', { 
-          machineName: machine.machineName,
-          clusterName: machine.distributedStorageClusterName 
-        }),
-        onOk: () => {
-          // TODO: Implement remove from cluster API call
-          showMessage('info', 'Remove from cluster functionality coming soon')
-        }
-      })
-    } else {
-      showMessage('warning', t('machines:noAssignmentToRemove'))
-    }
-  }
-  
+
   // Render bulk actions toolbar
   const renderBulkActionsToolbar = () => {
     if (!isExpertMode || selectedMachines.length === 0) return null

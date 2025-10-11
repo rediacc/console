@@ -1,17 +1,16 @@
 import React from 'react'
-import { Modal, Table, Tag, Timeline, Typography, Space, Alert, Spin, Empty, Button, Dropdown, message } from 'antd'
-import { 
-  PlusCircleOutlined, 
-  EditOutlined, 
-  DeleteOutlined, 
-  LockOutlined, 
-  KeyOutlined, 
-  UserOutlined, 
-  CheckCircleOutlined, 
+import { Modal, Table, Tag, Typography, Space, Alert, Spin, Button, Dropdown, message } from 'antd'
+import {
+  PlusCircleOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  LockOutlined,
+  KeyOutlined,
+  UserOutlined,
+  CheckCircleOutlined,
   CloseCircleOutlined,
   InfoCircleOutlined,
   HistoryOutlined,
-  ClockCircleOutlined,
   DownloadOutlined,
   FileTextOutlined,
   FileExcelOutlined,
@@ -25,7 +24,7 @@ import { formatTimestampAsIs } from '@/utils/timeUtils'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, createModalStyle } from '@/utils/styleConstants'
 
-const { Title, Text, Paragraph } = Typography
+const { Text } = Typography
 
 interface AuditTraceModalProps {
   open: boolean
@@ -209,7 +208,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       dataIndex: 'performedBy',
       key: 'performedBy',
       width: 200,
-      render: (user: string, record: AuditTraceRecord, index: number) => (
+      render: (user: string, _record: AuditTraceRecord, index: number) => (
         <span data-testid={`audit-trace-performed-by-${index}`}>
           {user || t('audit.system')}
         </span>
@@ -231,35 +230,36 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
     },
   ]
 
-  const renderTimelineView = () => {
-    if (!data?.records || data.records.length === 0) {
-      return <Empty description={t('audit.noRecords')} data-testid="audit-trace-empty-state" />
-    }
-
-    return (
-      <Timeline mode="left" data-testid="audit-trace-timeline">
-        {data.records.map((record, index) => (
-          <Timeline.Item 
-            key={index}
-            dot={getIcon(record.iconHint)}
-            color={getActionColor(record.actionType)}
-            data-testid={`audit-trace-timeline-item-${index}`}
-          >
-            <Space direction="vertical" size={0}>
-              <Space>
-                <Text strong>{record.actionType}</Text>
-                <Text type="secondary">{record.timeAgo}</Text>
-              </Space>
-              <Paragraph style={{ margin: 0 }}>{record.details}</Paragraph>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {t('audit.by')} {record.performedBy || t('audit.system')}
-              </Text>
-            </Space>
-          </Timeline.Item>
-        ))}
-      </Timeline>
-    )
-  }
+  // Alternative timeline view (commented out for now, may be used in future)
+  // const renderTimelineView = () => {
+  //   if (!data?.records || data.records.length === 0) {
+  //     return <Empty description={t('audit.noRecords')} data-testid="audit-trace-empty-state" />
+  //   }
+  //
+  //   return (
+  //     <Timeline mode="left" data-testid="audit-trace-timeline">
+  //       {data.records.map((record, index) => (
+  //         <Timeline.Item
+  //           key={index}
+  //           dot={getIcon(record.iconHint)}
+  //           color={getActionColor(record.actionType)}
+  //           data-testid={`audit-trace-timeline-item-${index}`}
+  //         >
+  //           <Space direction="vertical" size={0}>
+  //             <Space>
+  //               <Text strong>{record.actionType}</Text>
+  //               <Text type="secondary">{record.timeAgo}</Text>
+  //             </Space>
+  //             <Paragraph style={{ margin: 0 }}>{record.details}</Paragraph>
+  //             <Text type="secondary" style={{ fontSize: 12 }}>
+  //               {t('audit.by')} {record.performedBy || t('audit.system')}
+  //             </Text>
+  //           </Space>
+  //         </Timeline.Item>
+  //       ))}
+  //     </Timeline>
+  //   )
+  // }
 
   return (
     <Modal

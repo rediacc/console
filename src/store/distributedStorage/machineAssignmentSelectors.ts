@@ -164,8 +164,10 @@ export const selectOperationStatistics = createSelector(
     }
     
     history.forEach((op: any) => {
-      stats[op.result]++
-      stats.byType[op.type]++
+      const result = op.result as 'successful' | 'partial' | 'failed'
+      const opType = op.type as 'assign' | 'remove' | 'migrate'
+      stats[result]++
+      stats.byType[opType]++
     })
     
     return stats

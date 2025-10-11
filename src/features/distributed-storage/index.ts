@@ -7,8 +7,14 @@ export * from './services'
 // Hooks
 export * from './hooks'
 
-// Controllers
-export * from './controllers'
+// Controllers - only export types that don't conflict with models
+export type {
+  BulkOperationWorkflowOptions,
+  BulkOperationWorkflowResult,
+  MigrationPlan,
+  MigrationResult,
+  WorkflowStep
+} from './controllers/types'
 
 // Performance Components
 export * from './components/performance'

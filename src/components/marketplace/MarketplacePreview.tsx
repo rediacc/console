@@ -120,8 +120,6 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
     }
   }
 
-  const canDeploy = true // Team selection happens in deployment modal
-
   const renderFileContent = (file: { name: string; content: string }) => {
     const language = file.name.endsWith('.yaml') || file.name.endsWith('.yml') ? 'yaml' :
                     file.name.endsWith('.json') ? 'json' :
@@ -133,14 +131,14 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
       return (
         <ReactMarkdown
           components={{
-            code({node, inline, className, children, ...props}) {
+            code({node, className, children, ref, ...props}) {
+              const inline = (props as any).inline
               const match = /language-(\w+)/.exec(className || '')
               return !inline && match ? (
                 <SyntaxHighlighter
                   style={vscDarkPlus}
                   language={match[1]}
                   PreTag="div"
-                  {...props}
                 >
                   {String(children).replace(/\n$/, '')}
                 </SyntaxHighlighter>
@@ -224,18 +222,11 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
         </Button>
       ]}
     >
-      <Tabs 
-        activeKey={activeTab} 
-        onChange={setActiveTab} 
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
         data-testid="marketplace-preview-tabs"
         size="large"
-        style={{
-          '.ant-tabs-tab': {
-            minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
-            display: 'flex',
-            alignItems: 'center'
-          }
-        }}
       >
         <TabPane 
           tab={

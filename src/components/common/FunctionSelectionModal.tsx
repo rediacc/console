@@ -433,7 +433,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
         
         <Col span={preselectedFunction || isSimpleMode ? 24 : 14}>
           {selectedFunction ? (
-            <Space direction="vertical" size={'md'} style={{ width: '100%' }}>
+            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
               <Card title={`${t('functions:configure')}: ${selectedFunction.name}`} size="small">
                 <Paragraph>
                   {selectedFunction.description}
@@ -575,7 +575,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                     })
                                   } else {
                                     const numValue = typeof value === 'string' ? parseInt(value, 10) : value
-                                    if (!isNaN(numValue) && numValue > 0) {
+                                    if (!isNaN(numValue) && numValue > 0 && paramInfo.units) {
                                       const unit = functionParams[`${paramName}_unit`] || (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0])
                                       setFunctionParams({
                                         ...functionParams,
@@ -601,9 +601,9 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                   // Format as integer
                                   return value ? `${value}` : ''
                                 }}
-                                placeholder={paramInfo.units.includes('percentage') ? '95' : '100'}
+                                placeholder={paramInfo.units?.includes('percentage') ? '95' : '100'}
                                 min={1}
-                                max={paramInfo.units.includes('percentage') ? 100 : undefined}
+                                max={paramInfo.units?.includes('percentage') ? 100 : undefined}
                                 keyboard={true}
                                 step={1}
                                 precision={0}
@@ -611,7 +611,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                               />
                               <Select
                                 style={{ width: '35%' }}
-                                value={functionParams[`${paramName}_unit`] || (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0])}
+                                value={functionParams[`${paramName}_unit`] || (paramInfo.units?.[0] === 'percentage' ? '%' : paramInfo.units?.[0] || '')}
                                 onChange={(unit) => {
                                   const currentValue = functionParams[`${paramName}_value`]
                                   setFunctionParams({
@@ -620,7 +620,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                     [paramName]: currentValue ? `${currentValue}${unit}` : ''
                                   })
                                 }}
-                                options={paramInfo.units.map(unit => ({
+                                options={paramInfo.units?.map(unit => ({
                                   value: unit === 'percentage' ? '%' : unit,
                                   label: unit === 'percentage' ? '%' : unit === 'G' ? 'GB' : 'TB'
                                 }))}

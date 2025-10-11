@@ -4,7 +4,6 @@ import { RepositoryDetailPanel } from './RepositoryDetailPanel'
 import { ContainerDetailPanel } from './ContainerDetailPanel'
 import { Machine, Repository } from '@/types'
 import { useTheme } from '@/context/ThemeContext'
-import { useComponentStyles } from '@/hooks/useComponentStyles'
 
 interface ContainerData {
   id: string
@@ -52,7 +51,6 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
   onSplitWidthChange
 }) => {
   const { theme } = useTheme()
-  const componentStyles = useComponentStyles()
   const isDragging = useRef(false)
   const dragStartX = useRef(0)
   const dragStartWidth = useRef(0)
@@ -60,7 +58,7 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
   // State for fade transition
   const [opacity, setOpacity] = useState(1)
   const [currentData, setCurrentData] = useState(data)
-  const [isTransitioning, setIsTransitioning] = useState(false)
+  const [_isTransitioning, setIsTransitioning] = useState(false)
   const prevDataRef = useRef(data)
 
   // Handle data changes with fade transition

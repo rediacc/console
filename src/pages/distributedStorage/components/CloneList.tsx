@@ -15,8 +15,7 @@ import {
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import type { MenuProps } from 'antd'
-import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
-import { 
+import {
   useDistributedStorageRbdClones,
   useDeleteDistributedStorageRbdClone,
   useCreateDistributedStorageRbdClone,
@@ -25,8 +24,7 @@ import {
   type DistributedStorageRbdClone,
   type DistributedStorageRbdSnapshot,
   type DistributedStorageRbdImage,
-  type DistributedStoragePool,
-  type CloneMachine
+  type DistributedStoragePool
 } from '@/api/queries/distributedStorage'
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
@@ -43,7 +41,7 @@ interface CloneListProps {
   teamFilter: string | string[]
 }
 
-const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool, teamFilter }) => {
+const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
   const { t } = useTranslation('distributedStorage')
   const [modalState, setModalState] = useState<{
     open: boolean
@@ -93,14 +91,19 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool, teamFilter
   
   const handleRunFunction = async (functionName: string, clone?: DistributedStorageRbdClone) => {
     try {
-      const queueVault = buildQueueVault({
-        function: functionName,
+      const queueVault = await buildQueueVault({
+        functionName: functionName,
+        teamName: pool.teamName,
+        params: {
+          cluster_name: pool.clusterName,
+          pool_name: pool.poolName,
+          image_name: image.imageName,
+          snapshot_name: snapshot.snapshotName,
+          clone_name: clone?.cloneName || '',
+        },
         priority: 3,
-        cluster_name: pool.clusterName,
-        pool_name: pool.poolName,
-        image_name: image.imageName,
-        snapshot_name: snapshot.snapshotName,
-        clone_name: clone?.cloneName || '',
+        description: `Execute ${functionName}`,
+        addedVia: 'DistributedStorage'
       })
       
       const response = await managedQueueMutation.mutateAsync({
@@ -110,9 +113,10 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool, teamFilter
         queueVault,
         priority: 3
       })
-      
-      if (response.taskId) {
-        handleQueueItemCreated(response.taskId)
+
+      const taskId = response.taskId
+      if (taskId) {
+        handleQueueItemCreated(taskId)
       }
     } catch (error) {
       message.error(t('queue.createError'))
@@ -371,7 +375,7 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool, teamFilter
             expandedRowRender: (record) => <CloneMachineList clone={record} snapshot={snapshot} image={image} pool={pool} />,
             rowExpandable: () => true,
             expandedRowKeys,
-            onExpandedRowsChange: setExpandedRowKeys,
+            onExpandedRowsChange: (keys) => setExpandedRowKeys(keys as string[]),
           }}
         />
       </div>
@@ -418,7 +422,7 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool, teamFilter
       
       <QueueItemTraceModal
         visible={queueModalVisible}
-        onCancel={() => setQueueModalVisible(false)}
+        onClose={() => setQueueModalVisible(false)}
         taskId={queueModalTaskId}
       />
       

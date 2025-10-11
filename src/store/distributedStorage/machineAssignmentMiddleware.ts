@@ -1,14 +1,12 @@
 import { Middleware } from '@reduxjs/toolkit'
-import type { RootState } from '@/store/store'
 import { clearStaleValidations } from './machineAssignmentSlice'
 
 // Configuration
 const VALIDATION_CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 const VALIDATION_CLEANUP_INTERVAL = 60 * 1000 // Check every minute
-const OPERATION_HISTORY_LIMIT = 20
 
 // Middleware for managing side effects
-export const machineAssignmentMiddleware: Middleware<{}, RootState> = 
+export const machineAssignmentMiddleware: Middleware =
   (store) => {
     // Set up periodic validation cache cleanup
     const validationCleanupInterval = setInterval(() => {
@@ -27,23 +25,19 @@ export const machineAssignmentMiddleware: Middleware<{}, RootState> =
       
       // Handle specific actions
       switch (action.type) {
-        case 'machineAssignment/completeBulkOperation':
+        case 'machineAssignment/completeBulkOperation': {
           // Clear validations for machines that were part of the operation
           const state = store.getState()
           const operationResult = state.machineAssignment.lastOperationResult
-          
+
           if (operationResult) {
-            const affectedMachines = [
-              ...operationResult.successfulMachines,
-              ...operationResult.failedMachines
-            ]
-            
             // Clear validations after a delay to allow UI to show results
             setTimeout(() => {
               store.dispatch(clearStaleValidations(0)) // Clear all stale validations
             }, 2000)
           }
           break
+        }
           
         case 'machineAssignment/startBulkOperation':
           // Could add analytics tracking here
@@ -62,7 +56,7 @@ export const machineAssignmentMiddleware: Middleware<{}, RootState> =
   }
 
 // Middleware for persisting selection across page refreshes (optional)
-export const machineSelectionPersistenceMiddleware: Middleware<{}, RootState> = 
+export const machineSelectionPersistenceMiddleware: Middleware =
   (store) => (next) => (action: any) => {
     const result = next(action)
     
@@ -88,7 +82,7 @@ export const machineSelectionPersistenceMiddleware: Middleware<{}, RootState> =
   }
 
 // Middleware for logging operations (development only)
-export const machineAssignmentLoggingMiddleware: Middleware<{}, RootState> = 
+export const machineAssignmentLoggingMiddleware: Middleware =
   (store) => (next) => (action: any) => {
     if (import.meta.env.DEV) {
       if (action.type?.startsWith('machineAssignment/')) {
@@ -128,6 +122,7 @@ import { createAsyncThunk } from '@reduxjs/toolkit'
 import { MachineValidationService } from '@/features/distributed-storage'
 import type { Machine } from '@/types'
 import { setMultipleValidationResults } from './machineAssignmentSlice'
+import type { RootState } from '@/store/store'
 
 export const validateSelectedMachines = createAsyncThunk<
   void,
