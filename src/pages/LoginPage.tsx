@@ -32,6 +32,7 @@ import { generateRandomEmail, generateRandomCompanyName, generateRandomPassword 
 import { configService } from '@/services/configService'
 import SandboxWarning from '@/components/common/SandboxWarning'
 import { apiConnectionService } from '@/services/apiConnectionService'
+import { versionService } from '@/services/versionService'
 
 const { Text, Link } = Typography
 
@@ -109,6 +110,7 @@ const LoginPage: React.FC = () => {
     activationCode: string
   } | undefined>(undefined)
   const [isQuickRegistration, setIsQuickRegistration] = useState(false)
+  const [displayVersion, setDisplayVersion] = useState<string>('Development')
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const dispatch = useDispatch()
@@ -119,6 +121,21 @@ const LoginPage: React.FC = () => {
   const verifyTFAMutation = useVerifyTFA()
   const styles = useComponentStyles()
   const { trackUserAction } = useTelemetry()
+
+  // Fetch version information
+  useEffect(() => {
+    const fetchVersion = async () => {
+      try {
+        const versionInfo = await versionService.getVersion()
+        setDisplayVersion(versionService.formatVersion(versionInfo.version))
+      } catch (error) {
+        console.warn('Failed to fetch version', error)
+        // Keep default 'Development' if fetch fails
+      }
+    }
+
+    fetchVersion()
+  }, [])
 
   // Check URL parameters for registration flag
   useEffect(() => {
@@ -643,7 +660,7 @@ const LoginPage: React.FC = () => {
             ) : null
           })()}
           <Text type="secondary" style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XS, opacity: 0.6 }}>
-            {import.meta.env.VITE_APP_VERSION !== 'dev' ? (import.meta.env.VITE_APP_VERSION.startsWith('v') ? import.meta.env.VITE_APP_VERSION : `v${import.meta.env.VITE_APP_VERSION}`) : 'Development'}
+            {displayVersion}
           </Text>
         </div>
       </Space>
