@@ -1,0 +1,187 @@
+name: Publish Console Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., v1.0.0 or 1.0.0)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages-release"
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build and Publish Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for proper tag detection
+
+      - name: Detect or Create Tag
+        id: detect-tag
+        run: |
+          # Determine the version/tag to use
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            # Triggered by tag push - use that tag
+            TAG_NAME="${{ github.ref_name }}"
+            echo "Using existing tag from push: $TAG_NAME"
+            echo "tag_created=false" >> $GITHUB_OUTPUT
+          elif [ -n "${{ inputs.version }}" ]; then
+            # Manual trigger with version input
+            VERSION="${{ inputs.version }}"
+            # Normalize to v-prefixed format
+            if [[ "$VERSION" != v* ]]; then
+              TAG_NAME="v$VERSION"
+            else
+              TAG_NAME="$VERSION"
+            fi
+
+            # Check if tag already exists
+            if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+              echo "Tag $TAG_NAME already exists"
+              echo "tag_created=false" >> $GITHUB_OUTPUT
+            else
+              # Create new tag at current commit
+              echo "Creating new tag: $TAG_NAME"
+              git config user.name "github-actions[bot]"
+              git config user.email "github-actions[bot]@users.noreply.github.com"
+              git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
+              git push origin "$TAG_NAME"
+              echo "tag_created=true" >> $GITHUB_OUTPUT
+            fi
+          else
+            # Try to detect from current commit
+            TAG_NAME=$(git describe --exact-match --tags HEAD 2>/dev/null || echo "")
+            if [ -z "$TAG_NAME" ]; then
+              echo "Error: No version specified and not on a tag"
+              exit 1
+            fi
+            echo "Detected tag from current commit: $TAG_NAME"
+            echo "tag_created=false" >> $GITHUB_OUTPUT
+          fi
+
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "Final tag: $TAG_NAME"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build for production
+        env:
+          NODE_ENV: production
+          REDIACC_BUILD_TYPE: RELEASE
+          VITE_APP_VERSION: ${{ steps.detect-tag.outputs.tag_name }}
+          VITE_BASE_PATH: /
+        run: npm run build
+
+      - name: Create CNAME file
+        run: echo 'console.rediacc.com' > dist/CNAME
+
+      - name: Create 404.html for SPA routing
+        run: cp dist/index.html dist/404.html
+
+      - name: Create build info
+        run: |
+          cat > dist/version.json <<EOF
+          {
+            "version": "${{ steps.detect-tag.outputs.tag_name }}",
+            "buildDate": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "gitCommit": "$(git rev-parse HEAD)",
+            "gitCommitShort": "$(git rev-parse --short HEAD)"
+          }
+          EOF
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Upload distribution artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: console-${{ steps.detect-tag.outputs.tag_name }}
+          path: dist/
+          retention-days: 90
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Generate Release Notes
+        id: release-notes
+        run: |
+          cat > RELEASE_NOTES.md <<EOF
+          # Console Release ${{ steps.detect-tag.outputs.tag_name }}
+
+          ## Build Information
+          - **Version**: ${{ steps.detect-tag.outputs.tag_name }}
+          - **Build Date**: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)
+          - **Commit**: \`$(git rev-parse --short HEAD)\`
+          - **Deployed to**: https://console.rediacc.com
+
+          ## Installation
+
+          The web console is automatically deployed to [console.rediacc.com](https://console.rediacc.com).
+
+          ## What's Included
+
+          - Production-optimized React build
+          - All static assets (JS, CSS, images)
+          - Version information at \`/version.json\`
+
+          ## Deployment
+
+          This release has been automatically deployed to GitHub Pages.
+
+          ---
+          🤖 Built and deployed via GitHub Actions
+          EOF
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.detect-tag.outputs.tag_name }}
+          name: Console ${{ steps.detect-tag.outputs.tag_name }}
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deployment Summary
+        run: |
+          echo "## 🚀 Console Release Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.detect-tag.outputs.tag_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: https://console.rediacc.com" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Date**: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: \`$(git rev-parse --short HEAD)\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Verify deployment at https://console.rediacc.com" >> $GITHUB_STEP_SUMMARY
+          echo "2. Check version.json at https://console.rediacc.com/version.json" >> $GITHUB_STEP_SUMMARY
+          echo "3. Review the GitHub Release" >> $GITHUB_STEP_SUMMARY
