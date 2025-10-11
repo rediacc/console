@@ -4,8 +4,9 @@ import path from 'path'
 
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  // For web deployment, use /console/
-  base: process.env.NODE_ENV === 'production' ? '/console/' : '/',
+  // Use root path for custom domain (console.rediacc.com)
+  // If deploying to github.io/console, change to '/console/'
+  base: '/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
