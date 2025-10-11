@@ -174,6 +174,39 @@ cleanup_old_versions() {
     return 0
 }
 
+# Function to rewrite absolute paths to relative in HTML files
+rewrite_paths_to_relative() {
+    local version_path="$1"
+
+    log_info "Rewriting absolute paths to relative in versioned HTML files..."
+
+    # Find all HTML files and rewrite paths
+    find "$version_path" -name "*.html" -type f | while read -r html_file; do
+        # Create backup
+        cp "$html_file" "$html_file.bak"
+
+        # Rewrite absolute paths to relative (but not external URLs or root-only links)
+        # Replace href="/assets/ with href="./assets/
+        # Replace src="/assets/ with src="./assets/
+        # Replace href="/config. with href="./config.
+        # Replace src="/config. with src="./config.
+        # Replace href="/favicon. with href="./favicon.
+        sed -i \
+            -e 's|href="/assets/|href="./assets/|g' \
+            -e 's|src="/assets/|src="./assets/|g' \
+            -e 's|href="/config\.|href="./config.|g' \
+            -e 's|src="/config\.|src="./config.|g' \
+            -e 's|href="/favicon\.|href="./favicon.|g' \
+            -e 's|src="/favicon\.|src="./favicon.|g' \
+            "$html_file"
+
+        # Remove backup
+        rm "$html_file.bak"
+    done
+
+    log_success "Path rewriting completed"
+}
+
 # Function to generate versions index page
 generate_versions_index() {
     local gh_pages_dir="$1"
@@ -409,6 +442,9 @@ deploy_version() {
     log_info "Copying build to $VERSIONS_DIR/$version_tag/..."
     rm -rf "$version_path"
     cp -r "$build_dir" "$version_path"
+
+    # Rewrite paths for versioned deployment
+    rewrite_paths_to_relative "$version_path"
 
     # Update root with latest version
     log_info "Updating root with latest version..."
