@@ -77,22 +77,21 @@ jobs:
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
           echo "Final tag: $TAG_NAME"
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Get commit SHA from tag
+        id: get-sha
+        run: |
+          COMMIT_SHA=$(git rev-parse ${{ steps.detect-tag.outputs.tag_name }}^{commit})
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+          echo "Commit SHA: $COMMIT_SHA"
+
+      - name: Download build artifact from CI
+        uses: dawidd6/action-download-artifact@v3
         with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build for production
-        env:
-          NODE_ENV: production
-          REDIACC_BUILD_TYPE: RELEASE
-          VITE_APP_VERSION: ${{ steps.detect-tag.outputs.tag_name }}
-          VITE_BASE_PATH: /
-        run: npm run build
+          workflow: ci.yml
+          commit: ${{ steps.get-sha.outputs.commit_sha }}
+          name: build-RELEASE-${{ steps.get-sha.outputs.commit_sha }}
+          path: dist/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create CNAME file
         run: echo 'console.rediacc.com' > dist/CNAME
