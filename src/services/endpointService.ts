@@ -3,6 +3,8 @@
  * Manages API endpoint selection with predefined and custom endpoints
  */
 
+import { CONFIG_URLS } from '@/utils/apiConstants'
+
 export interface Endpoint {
   id: string
   name: string
@@ -28,7 +30,7 @@ class EndpointService {
    */
   private async fetchPredefinedEndpoints(): Promise<Endpoint[]> {
     try {
-      const response = await fetch('/configs/endpoints.json')
+      const response = await fetch(CONFIG_URLS.ENDPOINTS)
 
       if (!response.ok) {
         throw new Error(`Failed to fetch endpoints.json: ${response.status}`)

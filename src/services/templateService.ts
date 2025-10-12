@@ -1,4 +1,5 @@
 import { configService } from './configService'
+import { CONFIG_URLS } from '@/utils/apiConstants'
 
 interface Template {
   id?: string
@@ -42,7 +43,7 @@ class TemplateService {
    * Get the base URL for templates directory
    */
   private getTemplatesBaseUrl(): string {
-    return `${window.location.origin}/configs/templates`
+    return CONFIG_URLS.TEMPLATES_DIR
   }
 
   /**
@@ -58,15 +59,20 @@ class TemplateService {
    * Handles both id and name fields for backward compatibility
    */
   getTemplateDataUrl(template: { id?: string; name: string; download_url?: string }): string {
-    // If download_url is provided, use it
+    // If download_url is provided, use it (relative to templates directory)
     if (template.download_url) {
-      return `${window.location.origin}/configs/${template.download_url}`
+      // If download_url already includes the full path, use templates dir directly
+      if (template.download_url.startsWith('templates/')) {
+        return `${CONFIG_URLS.TEMPLATES_DIR}/${template.download_url.replace('templates/', '')}`
+      }
+      // Otherwise assume it's relative to configs
+      return `${CONFIG_URLS.TEMPLATES_DIR}/${template.download_url}`
     }
 
     // Prefer id over name
     const identifier = template.id || template.name
 
-    // Standard pattern: /configs/templates/{identifier}.json
+    // Standard pattern: templates/{identifier}.json
     return `${this.getTemplatesBaseUrl()}/${identifier}.json`
   }
 
