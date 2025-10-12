@@ -32,19 +32,21 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
   
   const styles = useComponentStyles()
   const formStyles = useFormStyles()
-  
+  const openRef = useRef(open)
+
   // Fetch available machines
   const { data: availableMachines = [], isLoading: loadingMachines } = useGetAvailableMachinesForClone(
     teamName,
     open && !!image
   )
-  
-  // Reset selected machine when modal opens/closes
-  useEffect(() => {
+
+  // Sync state with open prop during render
+  if (open !== openRef.current) {
+    openRef.current = open
     if (!open) {
       setSelectedMachine('')
     }
-  }, [open])
+  }
   
   const handleOk = async () => {
     if (!image || !selectedMachine) return

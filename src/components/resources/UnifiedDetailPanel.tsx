@@ -56,41 +56,31 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
   const dragStartWidth = useRef(0)
   
   // State for fade transition
-  const [opacity, setOpacity] = useState(1)
+  const [opacity, _setOpacity] = useState(1)
   const [currentData, setCurrentData] = useState(data)
-  const [_isTransitioning, setIsTransitioning] = useState(false)
+  const [_isTransitioning, _setIsTransitioning] = useState(false)
   const prevDataRef = useRef(data)
 
-  // Handle data changes with fade transition
-  useEffect(() => {
+  // Sync data during render
+  if (data !== prevDataRef.current) {
     // Check if data has actually changed (different entity)
     if (!data || !prevDataRef.current) {
       setCurrentData(data)
-      setOpacity(1)
-      prevDataRef.current = data
-      return
-    }
-
-    const prevId = 'machineName' in prevDataRef.current ? prevDataRef.current.machineName :
-                   'repositoryName' in prevDataRef.current ? prevDataRef.current.repositoryName :
-                   'id' in prevDataRef.current ? prevDataRef.current.id : null
-
-    const currentId = 'machineName' in data ? data.machineName :
-                      'repositoryName' in data ? data.repositoryName :
-                      'id' in data ? data.id : null
-
-    if (prevId !== currentId) {
-      // Data has changed, update immediately without transitions
-      setCurrentData(data)
-      setOpacity(1)
-      setIsTransitioning(false)
       prevDataRef.current = data
     } else {
-      // Same entity, just update without transition
+      const prevId = 'machineName' in prevDataRef.current ? prevDataRef.current.machineName :
+                     'repositoryName' in prevDataRef.current ? prevDataRef.current.repositoryName :
+                     'id' in prevDataRef.current ? prevDataRef.current.id : null
+
+      const currentId = 'machineName' in data ? data.machineName :
+                        'repositoryName' in data ? data.repositoryName :
+                        'id' in data ? data.id : null
+
+      // Data has changed, update immediately
       setCurrentData(data)
       prevDataRef.current = data
     }
-  }, [data])
+  }
 
   // Handle resize
   const handleMouseDown = (e: React.MouseEvent) => {

@@ -71,29 +71,19 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   const [functionDescription, setFunctionDescription] = useState('')
   const [functionSearchTerm, setFunctionSearchTerm] = useState('')
   const [selectedMachine, setSelectedMachine] = useState<string>('')
-  const previousFunctionNameRef = useRef<string | null>(null)
 
   // Fetch repositories for the current team
   const { data: repositories } = useRepositories(teamName)
-  
+
   // Fetch machines and storage for destination dropdown
   const { data: machinesData } = useMachines(teamName)
   const { data: storageData } = useStorage(teamName)
 
-  // Initialize parameters when function is selected
-  useEffect(() => {
-    if (!selectedFunction) return
-
-    const functionChanged = previousFunctionNameRef.current !== selectedFunction.name
-
-    // Only initialize if function changed or no params exist
-    if (!functionChanged && Object.keys(functionParams).length > 0) {
-      return
-    }
-
+  // Function to initialize parameters for a given function
+  const initializeParams = (func: QueueFunction) => {
     const defaultInitialParams: Record<string, any> = {}
 
-    Object.entries(selectedFunction.params).forEach(([paramName, paramInfo]) => {
+    Object.entries(func.params).forEach(([paramName, paramInfo]) => {
       // Check if we have an initial value from props
       if (initialParams[paramName] !== undefined && !hiddenParams.includes(paramName)) {
         defaultInitialParams[paramName] = initialParams[paramName]
@@ -130,33 +120,44 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
       }
 
       // Special handling for destination-dropdown: set current machine as default
-      if (paramInfo.ui === 'destination-dropdown' && currentMachineName && functionChanged) {
+      if (paramInfo.ui === 'destination-dropdown' && currentMachineName) {
         // Check if there's a destinationType parameter with value 'machine'
-        const destinationTypeParam = selectedFunction.params['destinationType']
+        const destinationTypeParam = func.params['destinationType']
         if (destinationTypeParam && (defaultInitialParams['destinationType'] === 'machine' || destinationTypeParam.default === 'machine')) {
           defaultInitialParams[paramName] = currentMachineName
         }
       }
     })
 
-    // Update params and track function name
-    setFunctionParams(defaultInitialParams)
-    previousFunctionNameRef.current = selectedFunction.name
-  }, [selectedFunction, initialParams, hiddenParams, currentMachineName, functionParams])
+    return defaultInitialParams
+  }
+
+  // Handler for selecting a function
+  const handleSelectFunction = (func: QueueFunction) => {
+    setSelectedFunction(func)
+    setFunctionParams(initializeParams(func))
+  }
 
   // Handle preselected function - only when modal opens
   const wasOpenRef = useRef(false)
-  useEffect(() => {
-    // Only act when modal transitions from closed to open
-    if (open && !wasOpenRef.current) {
-      if (preselectedFunction && localizedFunctions[preselectedFunction]) {
-        setSelectedFunction(localizedFunctions[preselectedFunction] as QueueFunction)
-      }
-      wasOpenRef.current = true
-    } else if (!open) {
-      wasOpenRef.current = false
+  const openRef = useRef(open)
+
+  // When modal opens with a preselected function, initialize synchronously during render
+  if (open && !wasOpenRef.current && !openRef.current) {
+    if (preselectedFunction && localizedFunctions[preselectedFunction]) {
+      const func = localizedFunctions[preselectedFunction] as QueueFunction
+      // Initialize synchronously
+      setSelectedFunction(func)
+      setFunctionParams(initializeParams(func))
     }
-  }, [open, preselectedFunction, localizedFunctions])
+    wasOpenRef.current = true
+  }
+
+  if (!open && wasOpenRef.current) {
+    wasOpenRef.current = false
+  }
+
+  openRef.current = open
 
   // Filter functions based on allowed categories and search term
   const filteredFunctions = useMemo(() => {
@@ -278,7 +279,6 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
     setFunctionDescription('')
     setFunctionSearchTerm('')
     setSelectedMachine('')
-    previousFunctionNameRef.current = null
   }
 
   const handleCancel = () => {
@@ -289,7 +289,6 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
     setFunctionDescription('')
     setFunctionSearchTerm('')
     setSelectedMachine('')
-    previousFunctionNameRef.current = null
     onCancel()
   }
 
@@ -360,7 +359,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                   {funcs.map(func => (
                     <div
                       key={func.name}
-                      onClick={() => setSelectedFunction(func)}
+                      onClick={() => handleSelectFunction(func)}
                       style={{
                         padding: 'var(--space-sm) var(--space-md)',
                         marginBottom: 'var(--space-xs)',

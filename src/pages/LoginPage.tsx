@@ -12,6 +12,7 @@ import { showMessage } from '@/utils/messages'
 import { useTheme } from '@/context/ThemeContext'
 import LanguageSelector from '@/components/common/LanguageSelector'
 import VersionSelector from '@/components/common/VersionSelector'
+import EndpointSelector from '@/components/common/EndpointSelector'
 import logoBlack from '@/assets/logo_black.png'
 import logoWhite from '@/assets/logo_white.png'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
@@ -32,7 +33,6 @@ import RegistrationModal from '@/components/auth/RegistrationModal'
 import { generateRandomEmail, generateRandomCompanyName, generateRandomPassword } from '@/utils/cryptoGenerators'
 import { configService } from '@/services/configService'
 import SandboxWarning from '@/components/common/SandboxWarning'
-import { apiConnectionService } from '@/services/apiConnectionService'
 
 const { Text, Link } = Typography
 
@@ -623,26 +623,11 @@ const LoginPage: React.FC = () => {
           </Text>
         </div>
 
-        {/* Endpoint and Version display */}
+        {/* Endpoint and Version selectors */}
         <div style={{ textAlign: 'center', marginTop: spacing('LG') }}>
-          {(() => {
-            const endpointInfo = apiConnectionService.getEndpointInfo()
-            return endpointInfo ? (
-              <Text 
-                type={endpointInfo.warning ? "warning" : "secondary"} 
-                style={{ 
-                  fontSize: DESIGN_TOKENS.FONT_SIZE.XS, 
-                  opacity: endpointInfo.warning ? 0.9 : 0.7,
-                  display: 'block',
-                  marginBottom: spacing('XS'),
-                  fontWeight: endpointInfo.warning ? DESIGN_TOKENS.FONT_WEIGHT.MEDIUM : 'normal'
-                }}
-              >
-                {endpointInfo.warning && '⚠️ '}
-                {endpointInfo.label}
-              </Text>
-            ) : null
-          })()}
+          <div style={{ marginBottom: spacing('XS') }}>
+            <EndpointSelector />
+          </div>
           <VersionSelector />
         </div>
       </Space>
