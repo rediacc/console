@@ -44,16 +44,17 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
   }, [])
 
   // Debounced function
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedCallback = useCallback(
-    ((...args: Parameters<T>) => {
+    (...args: Parameters<T>) => {
       cancel()
-      
+
       timeoutRef.current = setTimeout(() => {
         callbackRef.current(...args)
       }, delay)
-    }) as T,
-    [delay, cancel, ...dependencies]
-  )
+    },
+    [delay, cancel]
+  ) as T
 
   // Cleanup on unmount
   useEffect(() => {
