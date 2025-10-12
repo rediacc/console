@@ -1,5 +1,5 @@
 import React, { useEffect, lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Spin } from 'antd'
 import { selectIsAuthenticated } from '@/store/auth/authSelectors'
@@ -32,18 +32,39 @@ const MarketplacePage = lazy(() => import('@/pages/marketplace/MarketplacePage')
 // Loading component
 const PageLoader: React.FC = () => {
   const styles = useComponentStyles()
-  
+
   return (
-    <div 
+    <div
       data-testid="page-loader"
-      style={{ 
-        ...styles.flexCenter, 
-        minHeight: '400px' 
+      style={{
+        ...styles.flexCenter,
+        minHeight: '400px'
       }}
     >
       <Spin size="large" />
     </div>
   )
+}
+
+// Component to handle GitHub Pages 404 redirect via sessionStorage
+const RedirectHandler: React.FC = () => {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    // Check if we were redirected from a 404 page
+    const redirectPath = sessionStorage.getItem('redirect_path')
+
+    if (redirectPath) {
+      // Clear the redirect path immediately to prevent loops
+      sessionStorage.removeItem('redirect_path')
+
+      // Navigate to the intended path
+      console.log('[RedirectHandler] Redirecting to stored path:', redirectPath)
+      navigate(redirectPath, { replace: true })
+    }
+  }, [navigate])
+
+  return null
 }
 
 const AppContent: React.FC = () => {
@@ -77,6 +98,7 @@ const AppContent: React.FC = () => {
   return (
       <AppProviders>
           <BrowserRouter basename={getBasePath()}>
+            <RedirectHandler />
             <TelemetryProvider>
               <ErrorBoundary>
                 <InteractionTracker>

@@ -133,7 +133,45 @@ jobs:
         run: echo 'console.rediacc.com' > dist/CNAME
 
       - name: Create 404.html for SPA routing
-        run: cp dist/index.html dist/404.html
+        run: |
+          cat > dist/404.html <<'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Redirecting...</title>
+            <script>
+              // GitHub Pages SPA redirect for versioned deployments
+              (function() {
+                var path = window.location.pathname;
+                var search = window.location.search;
+
+                // Check if this is a versioned path
+                var versionMatch = path.match(/^\/versions\/(v[0-9]+\.[0-9]+\.[0-9]+)(\/.*)?$/);
+
+                if (versionMatch) {
+                  // Store the intended path and redirect to version root
+                  var version = versionMatch[1];
+                  var subPath = (versionMatch[2] || '/').replace(/^\//, '');
+
+                  // Store in sessionStorage for the app to pick up
+                  sessionStorage.setItem('redirect_path', '/' + subPath + search);
+
+                  // Redirect to the version's root
+                  window.location.replace('/versions/' + version + '/');
+                } else {
+                  // For root paths, store and redirect to root
+                  sessionStorage.setItem('redirect_path', path + search);
+                  window.location.replace('/');
+                }
+              })();
+            </script>
+          </head>
+          <body>
+            <p>Redirecting...</p>
+          </body>
+          </html>
+          EOF
 
       - name: Create .nojekyll file
         run: touch dist/.nojekyll
