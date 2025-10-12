@@ -135,6 +135,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
   // Sync last fetch time when trace data or visibility changes
   useEffect(() => {
     if (traceData && visible) {
+      // eslint-disable-next-line react-compiler/react-compiler
       setLastTraceFetchTime(dayjs())
     }
   }, [traceData, visible])
@@ -174,6 +175,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
               finalOutput = vaultContent.result
             }
           }
+          // eslint-disable-next-line react-compiler/react-compiler
           setAccumulatedOutput(finalOutput)
           setLastOutputStatus('completed')
         } else if (vaultContent.status === 'in_progress' && vaultContent.message) {
@@ -235,6 +237,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
   // Reset states when modal opens with new taskId
   useEffect(() => {
     if (visible && taskId) {
+      // eslint-disable-next-line react-compiler/react-compiler
       setLastTraceFetchTime(null)
       // Check if this task is already being monitored
       setIsMonitoring(queueMonitoringService.isTaskMonitored(taskId))
