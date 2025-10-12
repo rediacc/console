@@ -541,7 +541,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     }
 
     return baseColumns;
-  }, [isExpertMode, uiMode, showActions, t, handleDelete, onEditMachine, onFunctionsMachine, onCreateRepository, executePingForMachineAndWait, machineFunctions, expandedRowKeys, externalRefreshKeys, setInternalRefreshKeys, setAssignClusterModal, setAuditTraceModal, setRemoteFileBrowserModal]);
+  }, [isExpertMode, uiMode, showActions, t, handleDelete, onEditMachine, onFunctionsMachine, onCreateRepository, executePingForMachineAndWait, machineFunctions, expandedRowKeys, externalRefreshKeys, setInternalRefreshKeys, setAssignClusterModal, setAuditTraceModal, setRemoteFileBrowserModal, onRowClick]);
 
   // Row selection configuration
   const rowSelection = isExpertMode ? {
@@ -790,7 +790,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     });
     
     return result;
-  }, [filteredMachines, groupBy, repositories]);
+  }, [filteredMachines, groupBy, repositories, getMachineRepositories]);
 
   // Render grouped table view
   const renderGroupedTableView = () => {
