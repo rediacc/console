@@ -1,4 +1,4 @@
-name: Publish Console Release
+name: 📦 Publish - Release (Tags)
 
 on:
   push:
@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   publish:
-    name: Build and Publish Release
+    name: 🎁 Build and Publish Release
     runs-on: ubuntu-latest
 
     steps:
