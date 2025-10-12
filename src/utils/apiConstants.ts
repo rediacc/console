@@ -24,10 +24,10 @@ export const JSON_API_BASE_URL = isDevelopment ? '' : 'https://json.rediacc.com'
  */
 export const CONFIG_URLS = {
   /** Templates list endpoint */
-  TEMPLATES: `${JSON_API_BASE_URL}/templates.json`,
+  TEMPLATES: `${JSON_API_BASE_URL}/configs/templates.json`,
 
   /** Templates directory (for individual template JSON files) */
-  TEMPLATES_DIR: `${JSON_API_BASE_URL}/templates`,
+  TEMPLATES_DIR: `${JSON_API_BASE_URL}/configs/templates`,
 
   /** API endpoints configuration */
   ENDPOINTS: `${JSON_API_BASE_URL}/configs/endpoints.json`,
