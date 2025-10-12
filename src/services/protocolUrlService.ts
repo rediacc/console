@@ -63,7 +63,15 @@ class ProtocolUrlService {
     const { apiConnectionService } = await import('./apiConnectionService')
 
     // Get current API URL to include in protocol URL
-    const apiUrl = await apiConnectionService.getApiUrl()
+    let apiUrl = await apiConnectionService.getApiUrl()
+
+    // Convert relative API URL to absolute URL for CLI usage
+    // Production builds use '/api' which works in browsers but not in CLI
+    if (apiUrl.startsWith('/')) {
+      const protocol = window.location.protocol
+      const host = window.location.host
+      apiUrl = `${protocol}//${host}${apiUrl}`
+    }
 
     // Create fresh fork token for this action (ensures new token per click)
     const actionKey = action || 'default'
