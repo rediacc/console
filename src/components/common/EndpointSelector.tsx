@@ -27,8 +27,8 @@ const EndpointSelector: React.FC = () => {
         // Get currently selected endpoint or determine from connection service
         let selected = endpointService.getSelectedEndpoint();
 
-        // If no saved selection and we're on localhost, auto-select localhost endpoint
-        if (!selected && endpointService.isLocalhost()) {
+        // ALWAYS auto-select localhost when running locally (takes precedence over saved selection)
+        if (endpointService.isLocalhost()) {
           const localhostEndpoint = allEndpoints.find(e => e.type === 'localhost');
           if (localhostEndpoint) {
             selected = localhostEndpoint;
@@ -36,7 +36,7 @@ const EndpointSelector: React.FC = () => {
           }
         }
 
-        // If still no selection, get from connection service
+        // If no selection (not localhost), get from connection service
         if (!selected) {
           const connectionInfo = apiConnectionService.getSelectedEndpoint();
           if (connectionInfo) {
