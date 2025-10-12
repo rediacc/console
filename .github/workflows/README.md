@@ -9,28 +9,42 @@ This directory contains GitHub Actions workflows for the Rediacc Console.
 Runs on every pull request and push to `main`/`develop` branches.
 
 **Jobs:**
+- **PR Validation**: Title format, description, size checks, conflict detection
 - **Lint**: ESLint code quality checks
-- **Type Check**: TypeScript type validation (currently informational)
+- **Type Check**: TypeScript type validation
 - **Build**: Production build testing (both DEBUG and RELEASE modes)
 - **Security Scan**: npm audit for vulnerabilities
 - **Bundle Size**: Analyzes bundle size and warns if > 10MB
 - **CI Summary**: Aggregates all results
 
 **Artifacts:**
-- Build outputs for both DEBUG and RELEASE modes (retained for 7 days)
+- Build outputs for both DEBUG and RELEASE modes (retained for 90 days)
 - Security audit reports (retained for 30 days)
 
-### 2. `pr-checks.yml` - PR Quality Gates
+### 2. `publish.yml` - Release Deployment
 
-Validates pull request quality and conventions.
+Triggered by version tags (e.g., `v1.0.0`) or manual workflow dispatch.
 
-**Checks:**
-- PR title follows Conventional Commits format
-- PR description is adequate
-- References issues (warning if missing)
-- Labels are present (warning if missing)
-- PR size analysis (warns if > 1000 lines or > 30 files)
-- Merge conflict detection
+**Process:**
+1. Detects or creates version tag
+2. Finds successful CI run for the tagged commit
+3. Downloads RELEASE build artifact from CI
+4. Deploys to GitHub Pages with version management:
+   - Updates root with latest version
+   - Preserves `/versions/vX.Y.Z/` subdirectories
+   - Maintains `version.json` and `versions.json`
+   - Auto-cleans old versions (keeps 3 most recent, max 128MB total)
+5. Creates GitHub Release with notes
+
+**Deployment URLs:**
+- **Latest**: https://console.rediacc.com
+- **Specific version**: https://console.rediacc.com/versions/v0.0.6/
+- **All versions**: https://console.rediacc.com/versions/
+
+**Version Management:**
+- Old versions automatically cleaned to maintain 128MB limit
+- Always keeps at least 3 most recent versions
+- Each version accessible via its own subdirectory
 
 **Conventional Commit Types:**
 - `feat`: New feature
@@ -67,6 +81,36 @@ Located at `.github/dependabot.yml`, this configures automated dependency update
 - Runs monthly
 - Updates action versions
 - Commits prefixed with `chore(ci)`
+
+## Deployment Process
+
+**Development Workflow:**
+```bash
+# 1. Make changes and test locally
+npm run dev
+
+# 2. Create PR (triggers ci.yml)
+git checkout -b feature/my-feature
+git push origin feature/my-feature
+
+# 3. Merge to main (triggers ci.yml, creates artifact)
+# CI builds and stores artifacts for 90 days
+
+# 4. When ready to release:
+git tag v0.0.7
+git push origin v0.0.7
+
+# 5. publish.yml automatically:
+#    - Downloads CI artifact
+#    - Deploys to console.rediacc.com
+#    - Creates versioned copy at /versions/v0.0.7/
+#    - Creates GitHub Release
+```
+
+**Testing Before Release:**
+- Run locally: `npm run dev`
+- Use Cloudflare tunnel for remote testing
+- Download CI artifacts to test specific builds
 
 ## Local Testing
 
