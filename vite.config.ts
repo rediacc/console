@@ -24,6 +24,12 @@ export default defineConfig(({ mode }) => ({
       'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()'
     },
     proxy: {
+      '/configs/endpoints.json': {
+        target: 'https://json.rediacc.com',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => '/configs/endpoints.json',
+      },
       '/configs/templates.json': {
         target: 'https://json.rediacc.com',
         changeOrigin: true,

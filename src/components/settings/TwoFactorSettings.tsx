@@ -34,19 +34,26 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
   const [showSuccess, setShowSuccess] = useState(false)
   const [showVerification, setShowVerification] = useState(false)
   const [verificationForm] = Form.useForm()
-  
-  // Refresh TFA status when modal opens and reset states
-  useEffect(() => {
+  const openRef = useRef(open)
+
+  // Sync state with open prop during render
+  if (open !== openRef.current) {
+    openRef.current = open
     if (open) {
       // Reset states when modal opens
       setShowSuccess(false)
       setShowVerification(false)
       setTwoFASecret('')
       verificationForm.resetFields()
-      // Fetch fresh status
+    }
+  }
+
+  // Fetch status when modal opens (effect is OK for async operations)
+  useEffect(() => {
+    if (open) {
       refetchTFAStatus()
     }
-  }, [open, refetchTFAStatus, verificationForm])
+  }, [open, refetchTFAStatus])
 
   const handleEnableTFA = async (values: { password: string }) => {
     try {

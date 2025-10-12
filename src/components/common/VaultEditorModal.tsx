@@ -39,8 +39,14 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
   const [showValidationErrors, setShowValidationErrors] = useState(false)
   const importExportHandlers = useRef<{ handleImport: (file: any) => boolean; handleExport: () => void } | null>(null)
   const styles = useComponentStyles()
+  const initialVaultRef = useRef(initialVault)
+  const initialVersionRef = useRef(initialVersion)
 
-  useEffect(() => {
+  // Sync state with initial props during render
+  if (initialVault !== initialVaultRef.current || initialVersion !== initialVersionRef.current) {
+    initialVaultRef.current = initialVault
+    initialVersionRef.current = initialVersion
+
     try {
       const parsed = JSON.parse(initialVault)
       setVaultData(parsed)
@@ -49,10 +55,9 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
     }
     setVaultVersion(initialVersion)
     setHasChanges(false)
-    // Don't reset isValid to avoid blocking
     setValidationErrors([])
     setShowValidationErrors(false)
-  }, [initialVault, initialVersion])
+  }
 
   const handleVaultChange = (data: Record<string, any>, changed: boolean) => {
     setVaultData(data)
