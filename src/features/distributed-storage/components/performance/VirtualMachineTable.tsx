@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef, useEffect } from 'react'
 import { FixedSizeList as List } from 'react-window'
-import { InfiniteLoader } from 'react-window-infinite-loader'
+import * as InfiniteLoaderModule from 'react-window-infinite-loader'
 import { Checkbox, Space, Spin } from 'antd'
 import { Machine } from '@/types'
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell'
@@ -183,7 +183,7 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
     if (loadMore && hasMore) {
       // v2.0.0 API changed: isRowLoaded/rowCount/loadMoreRows props, onRowsRendered in children
       // Types are incomplete in v2.0.0 but runtime works correctly
-      const InfiniteLoaderAny = InfiniteLoader as any
+      const InfiniteLoader = (InfiniteLoaderModule as any).InfiniteLoader
       const renderList = ({ onRowsRendered }: any) => (
         <List
           ref={(list) => {
@@ -203,13 +203,13 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
       )
 
       return (
-        <InfiniteLoaderAny
+        <InfiniteLoader
           isRowLoaded={isItemLoaded}
           rowCount={itemCount}
           loadMoreRows={loadMoreItems}
         >
           {renderList}
-        </InfiniteLoaderAny>
+        </InfiniteLoader>
       )
     }
 
