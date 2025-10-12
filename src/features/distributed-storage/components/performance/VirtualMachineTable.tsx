@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef, useEffect } from 'react'
 import { FixedSizeList as List } from 'react-window'
-import InfiniteLoader from 'react-window-infinite-loader'
+import { InfiniteLoader } from 'react-window-infinite-loader'
 import { Checkbox, Space, Spin } from 'antd'
 import { Machine } from '@/types'
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell'
