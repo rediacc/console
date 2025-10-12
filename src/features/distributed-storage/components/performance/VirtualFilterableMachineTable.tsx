@@ -102,10 +102,19 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
     setDisplayedCount(prev => Math.min(prev + pageSize, filteredMachines.length))
   }, [pageSize, filteredMachines.length])
 
-  // Reset displayed count when filters change
-  useEffect(() => {
+  // Reset displayed count when filters change (during render)
+  const debouncedSearchRef = useRef(debouncedSearch)
+  const assignmentFilterRef = useRef(assignmentFilter)
+  const pageSizeRef = useRef(pageSize)
+
+  if (debouncedSearch !== debouncedSearchRef.current ||
+      assignmentFilter !== assignmentFilterRef.current ||
+      pageSize !== pageSizeRef.current) {
+    debouncedSearchRef.current = debouncedSearch
+    assignmentFilterRef.current = assignmentFilter
+    pageSizeRef.current = pageSize
     setDisplayedCount(pageSize)
-  }, [debouncedSearch, assignmentFilter, pageSize])
+  }
 
   const hasMore = displayedCount < filteredMachines.length
 

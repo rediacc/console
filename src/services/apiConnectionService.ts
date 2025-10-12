@@ -5,13 +5,13 @@
  */
 
 import axios from 'axios'
+import { endpointService } from './endpointService'
 
 export type BuildType = 'DEBUG' | 'RELEASE'
-export type EndpointType = 'localhost' | 'sandbox' | 'production'
 
 interface EndpointConfig {
   url: string
-  type: EndpointType
+  type: string  // Flexible type: 'localhost', 'sandbox', 'production', 'us', 'eu', 'custom', etc.
   isAvailable: boolean
 }
 
@@ -70,6 +70,19 @@ class ApiConnectionService {
     }
 
     console.log(`[API Connection] Build type: ${this.buildType}`)
+
+    // Check if user has manually selected an endpoint (takes precedence)
+    const userSelectedEndpoint = endpointService.getSelectedEndpoint()
+    if (userSelectedEndpoint) {
+      this.selectedEndpoint = {
+        url: userSelectedEndpoint.url,
+        type: userSelectedEndpoint.type,
+        isAvailable: true
+      }
+      this.healthCheckPerformed = true
+      console.log(`[API Connection] Using user-selected endpoint: ${userSelectedEndpoint.name} (${userSelectedEndpoint.url})`)
+      return this.selectedEndpoint
+    }
 
     // RELEASE builds: Use relative /api path for production (same domain)
     // This ensures production deployments ONLY use their own backend

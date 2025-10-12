@@ -23,18 +23,31 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
   const [internalValue, setInternalValue] = useState(value);
   const [error, setError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const valueRef = useRef(value);
 
-  useEffect(() => {
+  // Sync state with value prop during render
+  if (value !== valueRef.current) {
+    valueRef.current = value;
     setInternalValue(value);
-    validateJson(value);
-  }, [value]);
+    // Validate immediately
+    if (!value.trim()) {
+      setError(null);
+    } else {
+      try {
+        JSON.parse(value);
+        setError(null);
+      } catch (e) {
+        setError((e as Error).message);
+      }
+    }
+  }
 
   const validateJson = (text: string) => {
     if (!text.trim()) {
       setError(null);
       return;
     }
-    
+
     try {
       JSON.parse(text);
       setError(null);

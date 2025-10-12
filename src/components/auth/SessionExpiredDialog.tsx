@@ -14,14 +14,22 @@ export const SessionExpiredDialog: React.FC = () => {
   const isVisible = useSelector((state: RootState) => state.auth.showSessionExpiredDialog)
 
   const [countdown, setCountdown] = useState(COUNTDOWN_DURATION)
+  const isVisibleRef = useRef(isVisible)
 
+  // Reset countdown when dialog opens (synchronously during render)
+  if (isVisible && !isVisibleRef.current) {
+    // Dialog just opened - reset countdown synchronously
+    if (countdown !== COUNTDOWN_DURATION) {
+      setCountdown(COUNTDOWN_DURATION)
+    }
+  }
+  isVisibleRef.current = isVisible
+
+  // Run timer when dialog is visible
   useEffect(() => {
     if (!isVisible) {
       return
     }
-
-    // Reset countdown when dialog opens - use updater function to avoid synchronous setState warning
-    setCountdown(() => COUNTDOWN_DURATION)
 
     const timer = setInterval(() => {
       setCountdown((prev) => {
@@ -34,6 +42,7 @@ export const SessionExpiredDialog: React.FC = () => {
     }, 1000)
 
     return () => clearInterval(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isVisible])
 
   const handleStayLoggedOut = () => {

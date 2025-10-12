@@ -46,16 +46,19 @@ export const useBackgroundRefresh = (
     nextRefresh: null
   })
 
+  // Store scheduleNextRefresh in a ref to avoid dependency issues
+  const scheduleNextRefreshRef = useRef<() => void>(() => {})
+
   // Handle visibility change
   useEffect(() => {
     if (!onlyWhenVisible) return
 
     const handleVisibilityChange = () => {
       visibilityRef.current = document.visibilityState === 'visible'
-      
+
       // Resume refresh when becoming visible
       if (visibilityRef.current && enabled) {
-        scheduleNextRefresh()
+        scheduleNextRefreshRef.current()
       }
     }
 
@@ -145,12 +148,17 @@ export const useBackgroundRefresh = (
     if (!enabled) return
 
     setState(prev => ({ ...prev, nextRefresh: calculateNextRefresh() }))
-    
+
     intervalRef.current = setTimeout(() => {
       refresh()
-      scheduleNextRefresh()
+      scheduleNextRefreshRef.current()
     }, interval)
   }, [enabled, interval, refresh, calculateNextRefresh])
+
+  // Update the ref whenever scheduleNextRefresh changes
+  useEffect(() => {
+    scheduleNextRefreshRef.current = scheduleNextRefresh
+  }, [scheduleNextRefresh])
 
   // Manual refresh
   const manualRefresh = useCallback(async () => {

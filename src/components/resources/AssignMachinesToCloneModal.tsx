@@ -61,15 +61,17 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
   // Mutations
   const assignMutation = useUpdateCloneMachineAssignments()
   const removeMutation = useUpdateCloneMachineRemovals()
-  
-  // Reset state when modal opens/closes
-  useEffect(() => {
+  const openRef = useRef(open)
+
+  // Sync state with open prop during render
+  if (open !== openRef.current) {
+    openRef.current = open
     if (open) {
       setSelectedMachines([])
       setRemovingMachines([])
       setActiveTab('assign')
     }
-  }, [open])
+  }
   
   const handleAssign = async () => {
     if (!clone || selectedMachines.length === 0) return
