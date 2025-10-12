@@ -87,7 +87,13 @@ class TemplateService {
 
     try {
       const url = await this.getTemplatesListUrl()
-      const response = await fetch(url)
+      // Use simple CORS request (no preflight needed)
+      const response = await fetch(url, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'omit',
+        cache: forceRefresh ? 'reload' : 'default'
+      })
 
       if (!response.ok) {
         throw new Error(`Failed to fetch templates: ${response.status} ${response.statusText}`)
@@ -117,7 +123,13 @@ class TemplateService {
   async fetchTemplateData(template: { id?: string; name: string; download_url?: string }): Promise<any> {
     try {
       const url = this.getTemplateDataUrl(template)
-      const response = await fetch(url)
+      // Use simple CORS request (no preflight needed)
+      const response = await fetch(url, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'omit',
+        cache: 'default'
+      })
 
       if (!response.ok) {
         throw new Error(`Failed to fetch template data: ${response.status} ${response.statusText}`)

@@ -30,7 +30,13 @@ class EndpointService {
    */
   private async fetchPredefinedEndpoints(): Promise<Endpoint[]> {
     try {
-      const response = await fetch(CONFIG_URLS.ENDPOINTS)
+      // Use simple CORS request (no preflight needed)
+      const response = await fetch(CONFIG_URLS.ENDPOINTS, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'omit',
+        cache: 'default'
+      })
 
       if (!response.ok) {
         throw new Error(`Failed to fetch endpoints.json: ${response.status}`)

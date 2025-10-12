@@ -56,7 +56,13 @@ export const fetchPricingConfig = async (): Promise<PricingConfig | null> => {
 
   try {
     // Always fetch the base pricing.json (English content)
-    const response = await fetch(CONFIG_URLS.PRICING);
+    // Use simple CORS request (no preflight needed)
+    const response = await fetch(CONFIG_URLS.PRICING, {
+      method: 'GET',
+      mode: 'cors',
+      credentials: 'omit',
+      cache: 'default'
+    });
     if (!response.ok) {
       throw new Error(`Failed to fetch pricing: ${response.status}`);
     }
