@@ -4,14 +4,23 @@
  */
 
 /**
- * Base URL for JSON configuration files hosted on json.rediacc.com
- * This ensures configs are fetched from the correct source regardless of
- * how the console is accessed (direct URL, tunnel, proxy, etc.)
+ * Check if running in development mode (localhost with Vite proxy)
  */
-export const JSON_API_BASE_URL = 'https://json.rediacc.com'
+const isDevelopment =
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1'
 
 /**
- * Full URLs for configuration endpoints
+ * Base URL for JSON configuration files
+ * - Development (localhost): Use relative URLs to leverage Vite proxy
+ * - Production: Use absolute URLs to avoid cloudflare tunnel issues
+ */
+export const JSON_API_BASE_URL = isDevelopment ? '' : 'https://json.rediacc.com'
+
+/**
+ * Configuration endpoints
+ * In development: relative paths that Vite proxies to json.rediacc.com
+ * In production: absolute URLs pointing directly to json.rediacc.com
  */
 export const CONFIG_URLS = {
   /** Templates list endpoint */
