@@ -45,8 +45,7 @@ export const useDebouncedMachineValidation = (
         setIsValidating(false)
       }
     },
-    delay,
-    [validateMachine]
+    delay
   )
 
   // Bulk validation with debouncing
@@ -55,7 +54,7 @@ export const useDebouncedMachineValidation = (
       setIsValidating(true)
       try {
         const result = MachineValidationService.validateBulkAssignment(machines, targetType)
-        
+
         // Store individual results
         const newResults: Record<string, ValidationResult> = {}
 
@@ -76,15 +75,14 @@ export const useDebouncedMachineValidation = (
             warnings: result.warnings[machineName] || []
           }
         })
-        
+
         setValidationResults(newResults)
         return result
       } finally {
         setIsValidating(false)
       }
     },
-    delay,
-    []
+    delay
   )
 
   // Clear validation results

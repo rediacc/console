@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback, useEffect } from 'react'
+import React, { useMemo, useState, useCallback } from 'react'
 import { Input, Select, Space, Button, Badge } from 'antd'
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import { VirtualMachineTable } from './VirtualMachineTable'
@@ -102,10 +102,19 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
     setDisplayedCount(prev => Math.min(prev + pageSize, filteredMachines.length))
   }, [pageSize, filteredMachines.length])
 
-  // Reset displayed count when filters change
-  useEffect(() => {
+  // Reset displayed count when filters change (during render)
+  const [prevDebouncedSearch, setPrevDebouncedSearch] = useState(debouncedSearch)
+  const [prevAssignmentFilter, setPrevAssignmentFilter] = useState(assignmentFilter)
+  const [prevPageSize, setPrevPageSize] = useState(pageSize)
+
+  if (debouncedSearch !== prevDebouncedSearch ||
+      assignmentFilter !== prevAssignmentFilter ||
+      pageSize !== prevPageSize) {
+    setPrevDebouncedSearch(debouncedSearch)
+    setPrevAssignmentFilter(assignmentFilter)
+    setPrevPageSize(pageSize)
     setDisplayedCount(pageSize)
-  }, [debouncedSearch, assignmentFilter, pageSize])
+  }
 
   const hasMore = displayedCount < filteredMachines.length
 

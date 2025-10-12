@@ -131,13 +131,15 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
   const { mutate: cancelQueueItem, isPending: isCancelling } = useCancelQueueItem()
   const { theme } = useTheme()
   const consoleOutputRef = useRef<HTMLDivElement>(null)
+  const [prevTraceData, setPrevTraceData] = useState(traceData)
+  const [prevVisible, setPrevVisible] = useState(visible)
 
-  // Update last fetch time when trace data is loaded
-  useEffect(() => {
-    if (traceData && visible) {
-      setLastTraceFetchTime(dayjs())
-    }
-  }, [traceData, visible])
+  // Sync last fetch time during render
+  if ((traceData !== prevTraceData || visible !== prevVisible) && traceData && visible) {
+    setPrevTraceData(traceData)
+    setPrevVisible(visible)
+    setLastTraceFetchTime(dayjs())
+  }
 
   // Auto-scroll console output to bottom when output updates
   useEffect(() => {
@@ -147,13 +149,20 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
   }, [accumulatedOutput])
 
   // Handle accumulating console output
-  useEffect(() => {
+  const [prevResponseVaultContent, setPrevResponseVaultContent] = useState(traceData?.responseVaultContent)
+  const [prevLastOutputStatus, setPrevLastOutputStatus] = useState(lastOutputStatus)
+  const [prevAccumulatedOutput, setPrevAccumulatedOutput] = useState(accumulatedOutput)
+
+  // Process console output during render if vault content changed
+  if (traceData?.responseVaultContent !== prevResponseVaultContent) {
+    setPrevResponseVaultContent(traceData?.responseVaultContent)
+
     if (traceData?.responseVaultContent?.hasContent && traceData.responseVaultContent.vaultContent) {
       try {
-        const vaultContent = typeof traceData.responseVaultContent.vaultContent === 'string' 
-          ? JSON.parse(traceData.responseVaultContent.vaultContent) 
+        const vaultContent = typeof traceData.responseVaultContent.vaultContent === 'string'
+          ? JSON.parse(traceData.responseVaultContent.vaultContent)
           : traceData.responseVaultContent.vaultContent || {}
-        
+
         if (vaultContent.status === 'completed') {
           // For completed status, replace accumulated output with final result
           let finalOutput = ''
@@ -162,7 +171,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
               const result = JSON.parse(vaultContent.result)
               // Extract command output from the cleaned response structure
               finalOutput = result.command_output || ''
-              
+
               // If no command output but we have a message, show it
               if (!finalOutput && result.message) {
                 finalOutput = `[${result.status}] ${result.message}`
@@ -174,25 +183,38 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
               finalOutput = vaultContent.result
             }
           }
-          setAccumulatedOutput(finalOutput)
-          setLastOutputStatus('completed')
+          if (finalOutput !== prevAccumulatedOutput) {
+            setAccumulatedOutput(finalOutput)
+            setPrevAccumulatedOutput(finalOutput)
+          }
+          if (prevLastOutputStatus !== 'completed') {
+            setLastOutputStatus('completed')
+            setPrevLastOutputStatus('completed')
+          }
         } else if (vaultContent.status === 'in_progress' && vaultContent.message) {
           // For in-progress updates, check if we should append or replace
           const newMessage = vaultContent.message
-          if (newMessage && lastOutputStatus !== 'completed') {
-            setAccumulatedOutput(prev => {
-              // If the new message starts with the current content, only append the difference
-              if (newMessage.startsWith(prev)) {
-                const newContent = newMessage.substring(prev.length)
-                return prev + newContent
-              } else {
-                // Otherwise, replace the entire content
-                return newMessage
-              }
-            })
-            setLastOutputStatus('in_progress')
+          if (newMessage && prevLastOutputStatus !== 'completed') {
+            const currentOutput = prevAccumulatedOutput
+            let newOutput: string
+            // If the new message starts with the current content, only append the difference
+            if (newMessage.startsWith(currentOutput)) {
+              const newContent = newMessage.substring(currentOutput.length)
+              newOutput = currentOutput + newContent
+            } else {
+              // Otherwise, replace the entire content
+              newOutput = newMessage
+            }
+            if (newOutput !== prevAccumulatedOutput) {
+              setAccumulatedOutput(newOutput)
+              setPrevAccumulatedOutput(newOutput)
+            }
+            if (prevLastOutputStatus !== 'in_progress') {
+              setLastOutputStatus('in_progress')
+              setPrevLastOutputStatus('in_progress')
+            }
           }
-        } else if (!accumulatedOutput) {
+        } else if (!prevAccumulatedOutput) {
           // Handle initial load for already completed tasks or other formats
           let initialOutput = ''
           if (vaultContent.result && typeof vaultContent.result === 'string') {
@@ -200,7 +222,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
               const result = JSON.parse(vaultContent.result)
               // Extract command output from the cleaned response structure
               initialOutput = result.command_output || ''
-              
+
               // If no command output but we have a message, show it
               if (!initialOutput && result.message) {
                 initialOutput = `[${result.status}] ${result.message}`
@@ -224,28 +246,34 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
           }
           if (initialOutput) {
             setAccumulatedOutput(initialOutput)
+            setPrevAccumulatedOutput(initialOutput)
           }
         }
       } catch (error) {
         // Error processing console output
       }
     }
-  }, [traceData?.responseVaultContent, lastOutputStatus, accumulatedOutput])
+  }
 
-  // Reset last fetch time when modal is opened with new taskId
-  useEffect(() => {
-    if (visible && taskId) {
-      setLastTraceFetchTime(null)
-      // Check if this task is already being monitored
-      setIsMonitoring(queueMonitoringService.isTaskMonitored(taskId))
-      // Reset collapsed state and simple mode when opening modal
-      setActiveKeys(['overview'])
-      setSimpleMode(true) // Default to simple mode
-      // Reset accumulated output when opening modal with new task
-      setAccumulatedOutput('')
-      setLastOutputStatus('')
-    }
-  }, [taskId, visible, uiMode])
+  // Reset states when modal opens with new taskId (during render)
+  const [prevTaskId, setPrevTaskId] = useState(taskId)
+  const [prevUiMode, setPrevUiMode] = useState(uiMode)
+
+  if ((taskId !== prevTaskId || visible !== prevVisible || uiMode !== prevUiMode) && visible && taskId) {
+    setPrevTaskId(taskId)
+    setPrevUiMode(uiMode)
+    setLastTraceFetchTime(null)
+    // Check if this task is already being monitored
+    setIsMonitoring(queueMonitoringService.isTaskMonitored(taskId))
+    // Reset collapsed state and simple mode when opening modal
+    setActiveKeys(['overview'])
+    setSimpleMode(true) // Default to simple mode
+    // Reset accumulated output when opening modal with new task
+    setAccumulatedOutput('')
+    setLastOutputStatus('')
+    setPrevAccumulatedOutput('')
+    setPrevLastOutputStatus('')
+  }
   
   // Monitor status changes and notify parent component
   useEffect(() => {
