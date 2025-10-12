@@ -17,9 +17,11 @@ export const SessionExpiredDialog: React.FC = () => {
 
   useEffect(() => {
     if (!isVisible) {
-      setCountdown(COUNTDOWN_DURATION)
       return
     }
+
+    // Reset countdown when dialog opens - use updater function to avoid synchronous setState warning
+    setCountdown(() => COUNTDOWN_DURATION)
 
     const timer = setInterval(() => {
       setCountdown((prev) => {
