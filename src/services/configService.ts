@@ -1,5 +1,6 @@
 
 import { apiConnectionService } from './apiConnectionService'
+import { CONFIG_URLS } from '@/utils/apiConstants'
 
 interface AppConfig {
   apiUrl: string
@@ -173,7 +174,7 @@ class ConfigService {
 
   async getTemplatesUrl(): Promise<string> {
     const config = await this.getConfig()
-    return config.templatesUrl || '/configs/templates.json'
+    return config.templatesUrl || CONFIG_URLS.TEMPLATES
   }
 
   // Check if configuration is from runtime (nginx) or build-time (vite)

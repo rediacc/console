@@ -1,5 +1,7 @@
 // Pricing service to fetch centralized pricing configuration
 
+import { CONFIG_URLS } from '@/utils/apiConstants'
+
 export interface PricingConfig {
   baseMonthlyPrices: {
     [key: string]: {
@@ -54,7 +56,7 @@ export const fetchPricingConfig = async (): Promise<PricingConfig | null> => {
 
   try {
     // Always fetch the base pricing.json (English content)
-    const response = await fetch('/configs/pricing.json');
+    const response = await fetch(CONFIG_URLS.PRICING);
     if (!response.ok) {
       throw new Error(`Failed to fetch pricing: ${response.status}`);
     }
