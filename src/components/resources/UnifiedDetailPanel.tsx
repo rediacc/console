@@ -68,14 +68,6 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
       setCurrentData(data)
       setPrevData(data)
     } else {
-      const prevId = 'machineName' in prevData ? prevData.machineName :
-                     'repositoryName' in prevData ? prevData.repositoryName :
-                     'id' in prevData ? prevData.id : null
-
-      const currentId = 'machineName' in data ? data.machineName :
-                        'repositoryName' in data ? data.repositoryName :
-                        'id' in data ? data.id : null
-
       // Data has changed, update immediately
       setCurrentData(data)
       setPrevData(data)

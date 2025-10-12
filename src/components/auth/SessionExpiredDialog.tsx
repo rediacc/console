@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Modal, Button, Typography, Space } from 'antd'
 import { useDispatch, useSelector } from 'react-redux'
 import { ClockCircleOutlined, LogoutOutlined } from '@/utils/optimizedIcons'
