@@ -101,11 +101,11 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
   const [rawJsonValue, setRawJsonValue] = useState('')
   const [rawJsonError, setRawJsonError] = useState<string | null>(null)
   const [structureInfo, setStructureInfo] = useState<ReturnType<typeof detectStructurePattern>>({ isUniform: false })
-  const valueRef = useRef(value)
+  const [prevValue, setPrevValue] = useState(value)
 
   // Sync state with props when value changes (during render, not in effect)
-  if (value !== valueRef.current) {
-    valueRef.current = value
+  if (value !== prevValue) {
+    setPrevValue(value)
     const entriesArray = Object.entries(value).map(([key, val]) => ({
       key,
       value: val,

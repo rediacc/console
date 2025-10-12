@@ -59,18 +59,18 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
   const [opacity, _setOpacity] = useState(1)
   const [currentData, setCurrentData] = useState(data)
   const [_isTransitioning, _setIsTransitioning] = useState(false)
-  const prevDataRef = useRef(data)
+  const [prevData, setPrevData] = useState(data)
 
   // Sync data during render
-  if (data !== prevDataRef.current) {
+  if (data !== prevData) {
     // Check if data has actually changed (different entity)
-    if (!data || !prevDataRef.current) {
+    if (!data || !prevData) {
       setCurrentData(data)
-      prevDataRef.current = data
+      setPrevData(data)
     } else {
-      const prevId = 'machineName' in prevDataRef.current ? prevDataRef.current.machineName :
-                     'repositoryName' in prevDataRef.current ? prevDataRef.current.repositoryName :
-                     'id' in prevDataRef.current ? prevDataRef.current.id : null
+      const prevId = 'machineName' in prevData ? prevData.machineName :
+                     'repositoryName' in prevData ? prevData.repositoryName :
+                     'id' in prevData ? prevData.id : null
 
       const currentId = 'machineName' in data ? data.machineName :
                         'repositoryName' in data ? data.repositoryName :
@@ -78,7 +78,7 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
 
       // Data has changed, update immediately
       setCurrentData(data)
-      prevDataRef.current = data
+      setPrevData(data)
     }
   }
 

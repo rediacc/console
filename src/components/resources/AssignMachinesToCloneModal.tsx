@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Modal, Select, Space, Typography, Spin, Alert, Table, Tag, Empty, Button, Tabs } from 'antd'
 import { CloudServerOutlined, CopyOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
@@ -61,11 +61,11 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
   // Mutations
   const assignMutation = useUpdateCloneMachineAssignments()
   const removeMutation = useUpdateCloneMachineRemovals()
-  const openRef = useRef(open)
+  const [prevOpen, setPrevOpen] = useState(open)
 
   // Sync state with open prop during render
-  if (open !== openRef.current) {
-    openRef.current = open
+  if (open !== prevOpen) {
+    setPrevOpen(open)
     if (open) {
       setSelectedMachines([])
       setRemovingMachines([])
