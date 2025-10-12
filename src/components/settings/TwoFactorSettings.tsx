@@ -34,11 +34,11 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
   const [showSuccess, setShowSuccess] = useState(false)
   const [showVerification, setShowVerification] = useState(false)
   const [verificationForm] = Form.useForm()
-  const openRef = useRef(open)
+  const [prevOpen, setPrevOpen] = useState(open)
 
   // Sync state with open prop during render
-  if (open !== openRef.current) {
-    openRef.current = open
+  if (open !== prevOpen) {
+    setPrevOpen(open)
     if (open) {
       // Reset states when modal opens
       setShowSuccess(false)

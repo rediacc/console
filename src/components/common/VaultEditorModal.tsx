@@ -39,13 +39,13 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
   const [showValidationErrors, setShowValidationErrors] = useState(false)
   const importExportHandlers = useRef<{ handleImport: (file: any) => boolean; handleExport: () => void } | null>(null)
   const styles = useComponentStyles()
-  const initialVaultRef = useRef(initialVault)
-  const initialVersionRef = useRef(initialVersion)
+  const [prevInitialVault, setPrevInitialVault] = useState(initialVault)
+  const [prevInitialVersion, setPrevInitialVersion] = useState(initialVersion)
 
   // Sync state with initial props during render
-  if (initialVault !== initialVaultRef.current || initialVersion !== initialVersionRef.current) {
-    initialVaultRef.current = initialVault
-    initialVersionRef.current = initialVersion
+  if (initialVault !== prevInitialVault || initialVersion !== prevInitialVersion) {
+    setPrevInitialVault(initialVault)
+    setPrevInitialVersion(initialVersion)
 
     try {
       const parsed = JSON.parse(initialVault)
