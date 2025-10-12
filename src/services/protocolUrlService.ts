@@ -58,8 +58,12 @@ class ProtocolUrlService {
   async generateUrl(params: ProtocolUrlParams): Promise<string> {
     const { team, machine, repository, action, queryParams } = params
 
-    // Import forkTokenService dynamically to avoid circular dependencies
+    // Import services dynamically to avoid circular dependencies
     const { createFreshForkToken } = await import('./forkTokenService')
+    const { apiConnectionService } = await import('./apiConnectionService')
+
+    // Get current API URL to include in protocol URL
+    const apiUrl = await apiConnectionService.getApiUrl()
 
     // Create fresh fork token for this action (ensures new token per click)
     const actionKey = action || 'default'
@@ -85,10 +89,14 @@ class ProtocolUrlService {
     // Build base URL
     let url = `${this.PROTOCOL_SCHEME}://${pathParts.join('/')}`
 
-    // Add query parameters if any
-    if (queryParams && Object.keys(queryParams).length > 0) {
-      const searchParams = new URLSearchParams()
+    // Build query parameters
+    const searchParams = new URLSearchParams()
 
+    // Add API URL as the first query parameter (critical for domain matching)
+    searchParams.append('apiUrl', apiUrl)
+
+    // Add other query parameters if any
+    if (queryParams && Object.keys(queryParams).length > 0) {
       Object.entries(queryParams).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           // Convert boolean to yes/no for consistency with CLI
@@ -99,11 +107,11 @@ class ProtocolUrlService {
           }
         }
       })
+    }
 
-      const queryString = searchParams.toString()
-      if (queryString) {
-        url += `?${queryString}`
-      }
+    const queryString = searchParams.toString()
+    if (queryString) {
+      url += `?${queryString}`
     }
 
     return url
