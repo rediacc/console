@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react'
+import React, { useState, useMemo, useRef } from 'react'
 import { Modal, Row, Col, Card, Input, Space, Form, Slider, Empty, Typography, Tag, Button, Select, Tooltip, InputNumber, Alert, Checkbox } from 'antd'
 import { ExclamationCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useRef } from 'react'
 import { Modal, Button, Space, message, Typography, Tag, Upload, Tooltip } from 'antd'
 import { InfoCircleOutlined, UploadOutlined, DownloadOutlined, CloseOutlined, SaveOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
