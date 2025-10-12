@@ -181,31 +181,35 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
 
   const content = useMemo(() => {
     if (loadMore && hasMore) {
-      return (
-        <InfiniteLoader
-          isItemLoaded={isItemLoaded}
+      // v2.0.0 API changed: isRowLoaded/rowCount/loadMoreRows props, onRowsRendered in children
+      // Types are incomplete in v2.0.0 but runtime works correctly
+      const InfiniteLoaderAny = InfiniteLoader as any
+      const renderList = ({ onRowsRendered }: any) => (
+        <List
+          ref={(list) => {
+            // @ts-expect-error - listRef.current is readonly but we need to assign for keyboard navigation
+            listRef.current = list
+          }}
+          height={height}
           itemCount={itemCount}
-          loadMoreItems={loadMoreItems}
+          itemSize={rowHeight}
+          onItemsRendered={onRowsRendered}
+          overscanCount={5}
+          data-testid="virtual-machine-list"
+          width="100%"
         >
-          {({ onItemsRendered, ref }: { onItemsRendered: any; ref: any }) => (
-            <List
-              ref={(list) => {
-                ref(list)
-                // @ts-expect-error - listRef.current is readonly but we need to assign for keyboard navigation
-                listRef.current = list
-              }}
-              height={height}
-              itemCount={itemCount}
-              itemSize={rowHeight}
-              onItemsRendered={onItemsRendered}
-              overscanCount={5}
-              data-testid="virtual-machine-list"
-              width="100%"
-            >
-              {Row}
-            </List>
-          )}
-        </InfiniteLoader>
+          {Row}
+        </List>
+      )
+
+      return (
+        <InfiniteLoaderAny
+          isRowLoaded={isItemLoaded}
+          rowCount={itemCount}
+          loadMoreRows={loadMoreItems}
+        >
+          {renderList}
+        </InfiniteLoaderAny>
       )
     }
 
