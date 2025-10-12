@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useRef } from 'react'
 import { Modal, Button, Space, message, Typography, Tag, Upload, Tooltip } from 'antd'
 import { InfoCircleOutlined, UploadOutlined, DownloadOutlined, CloseOutlined, SaveOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
@@ -39,8 +39,14 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
   const [showValidationErrors, setShowValidationErrors] = useState(false)
   const importExportHandlers = useRef<{ handleImport: (file: any) => boolean; handleExport: () => void } | null>(null)
   const styles = useComponentStyles()
+  const [prevInitialVault, setPrevInitialVault] = useState(initialVault)
+  const [prevInitialVersion, setPrevInitialVersion] = useState(initialVersion)
 
-  useEffect(() => {
+  // Sync state with initial props during render
+  if (initialVault !== prevInitialVault || initialVersion !== prevInitialVersion) {
+    setPrevInitialVault(initialVault)
+    setPrevInitialVersion(initialVersion)
+
     try {
       const parsed = JSON.parse(initialVault)
       setVaultData(parsed)
@@ -49,10 +55,9 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
     }
     setVaultVersion(initialVersion)
     setHasChanges(false)
-    // Don't reset isValid to avoid blocking
     setValidationErrors([])
     setShowValidationErrors(false)
-  }, [initialVault, initialVersion])
+  }
 
   const handleVaultChange = (data: Record<string, any>, changed: boolean) => {
     setVaultData(data)

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 
 interface SimpleJsonEditorProps {
@@ -23,18 +23,31 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
   const [internalValue, setInternalValue] = useState(value);
   const [error, setError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [prevValue, setPrevValue] = useState(value);
 
-  useEffect(() => {
+  // Sync state with value prop during render
+  if (value !== prevValue) {
+    setPrevValue(value);
     setInternalValue(value);
-    validateJson(value);
-  }, [value]);
+    // Validate immediately
+    if (!value.trim()) {
+      setError(null);
+    } else {
+      try {
+        JSON.parse(value);
+        setError(null);
+      } catch (e) {
+        setError((e as Error).message);
+      }
+    }
+  }
 
   const validateJson = (text: string) => {
     if (!text.trim()) {
       setError(null);
       return;
     }
-    
+
     try {
       JSON.parse(text);
       setError(null);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Modal, Select, Space, Typography, Spin, Alert } from 'antd'
 import { CloudServerOutlined, FileImageOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
@@ -32,19 +32,21 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
   
   const styles = useComponentStyles()
   const formStyles = useFormStyles()
-  
+  const [prevOpen, setPrevOpen] = useState(open)
+
   // Fetch available machines
   const { data: availableMachines = [], isLoading: loadingMachines } = useGetAvailableMachinesForClone(
     teamName,
     open && !!image
   )
-  
-  // Reset selected machine when modal opens/closes
-  useEffect(() => {
+
+  // Sync state with open prop during render
+  if (open !== prevOpen) {
+    setPrevOpen(open)
     if (!open) {
       setSelectedMachine('')
     }
-  }, [open])
+  }
   
   const handleOk = async () => {
     if (!image || !selectedMachine) return

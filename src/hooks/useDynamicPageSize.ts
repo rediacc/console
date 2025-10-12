@@ -44,11 +44,16 @@ export const useDynamicPageSize = (
     setPageSize(newPageSize);
   }, [tableContainerRef, rowHeight, headerHeight, paginationHeight, containerOffset, minRows, maxRows]);
 
-  // Debounced version to avoid too frequent updates
-  const debouncedCalculatePageSize = useCallback(
-    debounce(calculatePageSize, 300),
-    [calculatePageSize]
-  );
+  // Store debounced function in a ref to avoid recreating it
+  const debouncedCalculatePageSizeRef = useRef<ReturnType<typeof debounce> | null>(null);
+
+  // Create debounced function only once or when calculatePageSize changes
+  useEffect(() => {
+    debouncedCalculatePageSizeRef.current = debounce(calculatePageSize, 300);
+    return () => {
+      debouncedCalculatePageSizeRef.current?.cancel();
+    };
+  }, [calculatePageSize]);
 
   useEffect(() => {
     // Initial calculation
@@ -57,23 +62,26 @@ export const useDynamicPageSize = (
     // Set up ResizeObserver for the container
     if (tableContainerRef.current && window.ResizeObserver) {
       resizeObserverRef.current = new ResizeObserver(() => {
-        debouncedCalculatePageSize();
+        debouncedCalculatePageSizeRef.current?.();
       });
       resizeObserverRef.current.observe(tableContainerRef.current);
     }
 
     // Also listen to window resize as a fallback
-    window.addEventListener('resize', debouncedCalculatePageSize);
+    const handleResize = () => {
+      debouncedCalculatePageSizeRef.current?.();
+    };
+    window.addEventListener('resize', handleResize);
 
     // Cleanup
     return () => {
       if (resizeObserverRef.current) {
         resizeObserverRef.current.disconnect();
       }
-      window.removeEventListener('resize', debouncedCalculatePageSize);
-      debouncedCalculatePageSize.cancel();
+      window.removeEventListener('resize', handleResize);
+      debouncedCalculatePageSizeRef.current?.cancel();
     };
-  }, [calculatePageSize, debouncedCalculatePageSize, tableContainerRef]);
+  }, [calculatePageSize, tableContainerRef]);
 
   return pageSize;
 };

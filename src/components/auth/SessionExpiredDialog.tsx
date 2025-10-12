@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Modal, Button, Typography, Space } from 'antd'
 import { useDispatch, useSelector } from 'react-redux'
 import { ClockCircleOutlined, LogoutOutlined } from '@/utils/optimizedIcons'
@@ -14,10 +14,20 @@ export const SessionExpiredDialog: React.FC = () => {
   const isVisible = useSelector((state: RootState) => state.auth.showSessionExpiredDialog)
 
   const [countdown, setCountdown] = useState(COUNTDOWN_DURATION)
+  const isVisibleRef = useRef(isVisible)
 
+  // Reset countdown when dialog opens (synchronously during render)
+  if (isVisible && !isVisibleRef.current) {
+    // Dialog just opened - reset countdown synchronously
+    if (countdown !== COUNTDOWN_DURATION) {
+      setCountdown(COUNTDOWN_DURATION)
+    }
+  }
+  isVisibleRef.current = isVisible
+
+  // Run timer when dialog is visible
   useEffect(() => {
     if (!isVisible) {
-      setCountdown(COUNTDOWN_DURATION)
       return
     }
 
@@ -32,6 +42,7 @@ export const SessionExpiredDialog: React.FC = () => {
     }, 1000)
 
     return () => clearInterval(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isVisible])
 
   const handleStayLoggedOut = () => {

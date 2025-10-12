@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useRef } from 'react'
 import { Modal, Row, Col, Card, Input, Space, Form, Slider, Empty, Typography, Tag, Button, Select, Tooltip, InputNumber, Alert, Checkbox } from 'antd'
 import { ExclamationCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
@@ -71,129 +71,93 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   const [functionDescription, setFunctionDescription] = useState('')
   const [functionSearchTerm, setFunctionSearchTerm] = useState('')
   const [selectedMachine, setSelectedMachine] = useState<string>('')
-  const [previousFunctionName, setPreviousFunctionName] = useState<string | null>(null)
 
   // Fetch repositories for the current team
   const { data: repositories } = useRepositories(teamName)
-  
+
   // Fetch machines and storage for destination dropdown
   const { data: machinesData } = useMachines(teamName)
   const { data: storageData } = useStorage(teamName)
 
-  // Initialize parameters when function is selected
-  useEffect(() => {
-    if (selectedFunction) {
-      const functionChanged = previousFunctionName !== selectedFunction.name
-      
-      // Initialize params if function changed or no params exist
-      setFunctionParams(prevParams => {
-        // If we already have params and function hasn't changed, don't reinitialize
-        if (Object.keys(prevParams).length > 0 && !functionChanged) {
-          return prevParams
+  // Function to initialize parameters for a given function
+  const initializeParams = (func: QueueFunction) => {
+    const defaultInitialParams: Record<string, any> = {}
+
+    Object.entries(func.params).forEach(([paramName, paramInfo]) => {
+      // Check if we have an initial value from props
+      if (initialParams[paramName] !== undefined && !hiddenParams.includes(paramName)) {
+        defaultInitialParams[paramName] = initialParams[paramName]
+        // For size parameters, also set the unit and value fields
+        if (paramInfo.format === 'size' && paramInfo.units) {
+          const match = String(initialParams[paramName]).match(/^(\d+)([%GT]?)$/)
+          if (match) {
+            const [, value, unit] = match
+            defaultInitialParams[`${paramName}_value`] = parseInt(value)
+            defaultInitialParams[`${paramName}_unit`] = unit || (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0])
+          }
         }
-        
-        const defaultInitialParams: Record<string, any> = {}
-        
-        Object.entries(selectedFunction.params).forEach(([paramName, paramInfo]) => {
-          // Check if we have an initial value from props
-          if (initialParams[paramName] !== undefined && !hiddenParams.includes(paramName)) {
-            defaultInitialParams[paramName] = initialParams[paramName]
-            // For size parameters, also set the unit and value fields
-            if (paramInfo.format === 'size' && paramInfo.units) {
-              const match = String(initialParams[paramName]).match(/^(\d+)([%GT]?)$/)
-              if (match) {
-                const [, value, unit] = match
-                defaultInitialParams[`${paramName}_value`] = parseInt(value)
-                defaultInitialParams[`${paramName}_unit`] = unit || (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0])
-              }
-            }
-          } else if (paramInfo.format === 'size' && paramInfo.units) {
-            // Initialize with default values for size parameters
-            if (paramInfo.default) {
-              const match = paramInfo.default.match(/^(\d+)([%GT]?)$/)
-              if (match) {
-                const [, value, unit] = match
-                defaultInitialParams[`${paramName}_value`] = parseInt(value)
-                defaultInitialParams[`${paramName}_unit`] = unit || (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0])
-                defaultInitialParams[paramName] = paramInfo.default
-              }
-            } else {
-              // Set default unit
-              const defaultUnit = paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0]
-              defaultInitialParams[`${paramName}_unit`] = defaultUnit
-            }
-          } else if (paramInfo.options && paramInfo.options.length > 0) {
-            // Initialize dropdown parameters with default value
-            defaultInitialParams[paramName] = paramInfo.default || paramInfo.options[0]
-          } else if (paramInfo.default) {
-            // Initialize other parameters with default value
+      } else if (paramInfo.format === 'size' && paramInfo.units) {
+        // Initialize with default values for size parameters
+        if (paramInfo.default) {
+          const match = paramInfo.default.match(/^(\d+)([%GT]?)$/)
+          if (match) {
+            const [, value, unit] = match
+            defaultInitialParams[`${paramName}_value`] = parseInt(value)
+            defaultInitialParams[`${paramName}_unit`] = unit || (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0])
             defaultInitialParams[paramName] = paramInfo.default
           }
-          
-          // Special handling for destination-dropdown: set current machine as default
-          if (paramInfo.ui === 'destination-dropdown' && currentMachineName && functionChanged) {
-            // Check if there's a destinationType parameter with value 'machine'
-            const destinationTypeParam = selectedFunction.params['destinationType']
-            if (destinationTypeParam && (defaultInitialParams['destinationType'] === 'machine' || destinationTypeParam.default === 'machine')) {
-              defaultInitialParams[paramName] = currentMachineName
-            }
-          }
-        })
-        
-        return defaultInitialParams
-      })
-      
-      // Update previous function name
-      setPreviousFunctionName(selectedFunction.name)
-    }
-  }, [selectedFunction, initialParams, hiddenParams, previousFunctionName, currentMachineName])
+        } else {
+          // Set default unit
+          const defaultUnit = paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0]
+          defaultInitialParams[`${paramName}_unit`] = defaultUnit
+        }
+      } else if (paramInfo.options && paramInfo.options.length > 0) {
+        // Initialize dropdown parameters with default value
+        defaultInitialParams[paramName] = paramInfo.default || paramInfo.options[0]
+      } else if (paramInfo.default) {
+        // Initialize other parameters with default value
+        defaultInitialParams[paramName] = paramInfo.default
+      }
 
-  // Handle preselected function
-  useEffect(() => {
-    if (preselectedFunction && localizedFunctions[preselectedFunction] && open) {
-      setSelectedFunction(localizedFunctions[preselectedFunction] as QueueFunction)
-    }
-  }, [preselectedFunction, localizedFunctions, open])
-  
-  // Reset params when modal opens/closes to ensure clean state
-  useEffect(() => {
-    if (!open) {
-      // Reset all state when modal closes
-      setFunctionParams({})
-      setFunctionDescription('')
-      setFunctionSearchTerm('')
-      setSelectedMachine('')
-      setPreviousFunctionName(null)
-      // Don't reset selectedFunction here as it might be preselected
-    } else if (open && preselectedFunction) {
-      // When modal opens with a preselected function, force reinitialization
-      setFunctionParams({})
-      setPreviousFunctionName(null)
-    }
-  }, [open, preselectedFunction])
+      // Special handling for destination-dropdown: set current machine as default
+      if (paramInfo.ui === 'destination-dropdown' && currentMachineName) {
+        // Check if there's a destinationType parameter with value 'machine'
+        const destinationTypeParam = func.params['destinationType']
+        if (destinationTypeParam && (defaultInitialParams['destinationType'] === 'machine' || destinationTypeParam.default === 'machine')) {
+          defaultInitialParams[paramName] = currentMachineName
+        }
+      }
+    })
 
-  // Re-apply initial params when they change and modal is open
-  useEffect(() => {
-    if (open && selectedFunction && Object.keys(initialParams).length > 0) {
-      setFunctionParams(prevParams => {
-        const newParams = { ...prevParams }
-        
-        // Apply each initial param
-        Object.entries(initialParams).forEach(([paramName, value]) => {
-          if (!hiddenParams.includes(paramName)) {
-            newParams[paramName] = value
-            
-            // For the state parameter in push function, ensure it's set
-            if (paramName === 'state' && selectedFunction.name === 'push') {
-              newParams[paramName] = value
-            }
-          }
-        })
-        
-        return newParams
-      })
+    return defaultInitialParams
+  }
+
+  // Handler for selecting a function
+  const handleSelectFunction = (func: QueueFunction) => {
+    setSelectedFunction(func)
+    setFunctionParams(initializeParams(func))
+  }
+
+  // Handle preselected function - only when modal opens
+  const wasOpenRef = useRef(false)
+  const openRef = useRef(open)
+
+  // When modal opens with a preselected function, initialize synchronously during render
+  if (open && !wasOpenRef.current && !openRef.current) {
+    if (preselectedFunction && localizedFunctions[preselectedFunction]) {
+      const func = localizedFunctions[preselectedFunction] as QueueFunction
+      // Initialize synchronously
+      setSelectedFunction(func)
+      setFunctionParams(initializeParams(func))
     }
-  }, [open, initialParams, selectedFunction, hiddenParams])
+    wasOpenRef.current = true
+  }
+
+  if (!open && wasOpenRef.current) {
+    wasOpenRef.current = false
+  }
+
+  openRef.current = open
 
   // Filter functions based on allowed categories and search term
   const filteredFunctions = useMemo(() => {
@@ -307,7 +271,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
       description: functionDescription || selectedFunction.description,
       selectedMachine: selectedMachine || undefined
     })
-    
+
     // Reset form
     setSelectedFunction(null)
     setFunctionParams({})
@@ -315,7 +279,6 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
     setFunctionDescription('')
     setFunctionSearchTerm('')
     setSelectedMachine('')
-    setPreviousFunctionName(null)
   }
 
   const handleCancel = () => {
@@ -326,7 +289,6 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
     setFunctionDescription('')
     setFunctionSearchTerm('')
     setSelectedMachine('')
-    setPreviousFunctionName(null)
     onCancel()
   }
 
@@ -397,7 +359,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                   {funcs.map(func => (
                     <div
                       key={func.name}
-                      onClick={() => setSelectedFunction(func)}
+                      onClick={() => handleSelectFunction(func)}
                       style={{
                         padding: 'var(--space-sm) var(--space-md)',
                         marginBottom: 'var(--space-xs)',

@@ -24,8 +24,7 @@ export function useDebounce<T>(value: T, delay: number): T {
  */
 export function useDebouncedCallback<T extends (...args: any[]) => any>(
   callback: T,
-  delay: number,
-  dependencies: React.DependencyList = []
+  delay: number
 ): [T, () => void] {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const callbackRef = useRef(callback)
@@ -44,16 +43,17 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
   }, [])
 
   // Debounced function
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedCallback = useCallback(
-    ((...args: Parameters<T>) => {
+    (...args: Parameters<T>) => {
       cancel()
-      
+
       timeoutRef.current = setTimeout(() => {
         callbackRef.current(...args)
       }, delay)
-    }) as T,
-    [delay, cancel, ...dependencies]
-  )
+    },
+    [delay, cancel]
+  ) as T
 
   // Cleanup on unmount
   useEffect(() => {
