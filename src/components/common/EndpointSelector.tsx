@@ -45,6 +45,12 @@ const EndpointSelector: React.FC = () => {
         }
 
         setSelectedEndpoint(selected);
+
+        // If we have a selected endpoint, update the API client immediately
+        if (selected) {
+          apiClient.updateApiUrl(selected.url);
+          console.log(`[EndpointSelector] Applied saved endpoint: ${selected.name} (${selected.url})`);
+        }
       } catch (error) {
         console.warn('Failed to fetch endpoints', error);
       } finally {
