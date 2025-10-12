@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Select, Typography, Modal, Form, Input, Space, Button, Spin } from 'antd';
+import { Select, Typography, Modal, Form, Input, Space, Button } from 'antd';
 import { ApiOutlined, PlusOutlined, DeleteOutlined, LoadingOutlined } from '@/utils/optimizedIcons';
 import { endpointService, Endpoint } from '@/services/endpointService';
 import { apiConnectionService } from '@/services/apiConnectionService';
