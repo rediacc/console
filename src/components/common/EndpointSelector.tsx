@@ -278,9 +278,11 @@ const EndpointSelector: React.FC = () => {
         {/* Predefined and custom endpoints */}
         {endpoints.map((endpoint) => {
           const health = healthStatus[endpoint.id];
-          const isHealthy = health?.isHealthy || endpoint.type === 'localhost'; // Always show localhost as healthy
+          // Default to healthy until proven otherwise (optimistic approach)
+          const isHealthy = health?.isHealthy ?? true;
           const isChecking = health?.checking;
-          const isDisabled = !isHealthy && endpoint.type !== 'localhost'; // Never disable localhost
+          // Only disable if we've checked and it's unhealthy (not localhost)
+          const isDisabled = (health !== undefined && !health.isHealthy && !health.checking) && endpoint.type !== 'localhost';
 
           // Label for selected value (with health indicator but without version)
           const labelContent = (
