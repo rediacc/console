@@ -4,21 +4,30 @@
  */
 
 /**
- * Base URL for JSON configuration files hosted on json.rediacc.com
- * Uses absolute URLs with proper fetch options to avoid CORS preflight issues
+ * Check if running in development mode (localhost with Vite proxy)
  */
-export const JSON_API_BASE_URL = 'https://json.rediacc.com'
+const isDevelopment =
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1'
 
 /**
- * Configuration endpoints - direct absolute URLs to json.rediacc.com
- * Note: templates.json is at root, other configs are in /configs/ directory
+ * Base URL for JSON configuration files
+ * - Development (localhost): Use relative URLs to leverage Vite proxy (avoids CORS preflight)
+ * - Production: Use absolute URLs to work correctly through nginx proxy
+ */
+export const JSON_API_BASE_URL = isDevelopment ? '' : 'https://json.rediacc.com'
+
+/**
+ * Configuration endpoints
+ * Proxies are necessary because GitHub Pages returns 405 for OPTIONS (CORS preflight).
+ * Using proxies makes requests same-origin, avoiding preflight entirely.
  */
 export const CONFIG_URLS = {
   /** Templates list endpoint */
-  TEMPLATES: `${JSON_API_BASE_URL}/templates.json`,
+  TEMPLATES: `${JSON_API_BASE_URL}/configs/templates.json`,
 
   /** Templates directory (for individual template JSON files) */
-  TEMPLATES_DIR: `${JSON_API_BASE_URL}/templates`,
+  TEMPLATES_DIR: `${JSON_API_BASE_URL}/configs/templates`,
 
   /** API endpoints configuration */
   ENDPOINTS: `${JSON_API_BASE_URL}/configs/endpoints.json`,
