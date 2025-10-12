@@ -30,17 +30,17 @@ export default defineConfig(({ mode }) => ({
         secure: true,
         rewrite: (path) => '/configs/endpoints.json',
       },
-      '/configs/templates.json': {
+      '/templates.json': {
         target: 'https://json.rediacc.com',
         changeOrigin: true,
         secure: true,
         rewrite: (path) => '/templates.json',
       },
-      '/configs/templates/': {
+      '/templates/': {
         target: 'https://json.rediacc.com',
         changeOrigin: true,
         secure: true,
-        rewrite: (path) => path.replace('/configs', ''),
+        rewrite: (path) => path,
       },
       '/configs/pricing.json': {
         target: 'https://json.rediacc.com',
