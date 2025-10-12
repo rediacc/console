@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef, useEffect } from 'react'
 import { FixedSizeList as List } from 'react-window'
-import InfiniteLoader from 'react-window-infinite-loader'
+import * as InfiniteLoaderModule from 'react-window-infinite-loader'
 import { Checkbox, Space, Spin } from 'antd'
 import { Machine } from '@/types'
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell'
@@ -181,30 +181,34 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
 
   const content = useMemo(() => {
     if (loadMore && hasMore) {
+      // v2.0.0 API changed: isRowLoaded/rowCount/loadMoreRows props, onRowsRendered in children
+      // Types are incomplete in v2.0.0 but runtime works correctly
+      const InfiniteLoader = (InfiniteLoaderModule as any).InfiniteLoader
+      const renderList = ({ onRowsRendered }: any) => (
+        <List
+          ref={(list) => {
+            // @ts-expect-error - listRef.current is readonly but we need to assign for keyboard navigation
+            listRef.current = list
+          }}
+          height={height}
+          itemCount={itemCount}
+          itemSize={rowHeight}
+          onItemsRendered={onRowsRendered}
+          overscanCount={5}
+          data-testid="virtual-machine-list"
+          width="100%"
+        >
+          {Row}
+        </List>
+      )
+
       return (
         <InfiniteLoader
-          isItemLoaded={isItemLoaded}
-          itemCount={itemCount}
-          loadMoreItems={loadMoreItems}
+          isRowLoaded={isItemLoaded}
+          rowCount={itemCount}
+          loadMoreRows={loadMoreItems}
         >
-          {({ onItemsRendered, ref }: { onItemsRendered: any; ref: any }) => (
-            <List
-              ref={(list) => {
-                ref(list)
-                // @ts-expect-error - listRef.current is readonly but we need to assign for keyboard navigation
-                listRef.current = list
-              }}
-              height={height}
-              itemCount={itemCount}
-              itemSize={rowHeight}
-              onItemsRendered={onItemsRendered}
-              overscanCount={5}
-              data-testid="virtual-machine-list"
-              width="100%"
-            >
-              {Row}
-            </List>
-          )}
+          {renderList}
         </InfiniteLoader>
       )
     }
