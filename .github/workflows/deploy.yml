@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages (Development)
+name: 🚀 Deploy - Development (Main)
 
 # This workflow deploys the console on every push to main for development/preview purposes.
 # For versioned releases, see publish.yml which triggers on version tags.
@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build Console
+    name: 🏗️ Build for Development
     runs-on: ubuntu-latest
 
     steps:
@@ -58,7 +58,7 @@ jobs:
           path: dist
 
   deploy:
-    name: Deploy to GitHub Pages
+    name: 🌐 Deploy to Pages
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

@@ -14,7 +14,7 @@ on:
 jobs:
   # PR Validation Jobs (only run on pull_request)
   pr-validation:
-    name: Validate PR
+    name: 📋 PR - Validate Format
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -63,7 +63,7 @@ jobs:
             }
 
   pr-size-check:
-    name: PR Size Check
+    name: 📊 PR - Size Check
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -118,7 +118,7 @@ jobs:
             core.summary.addRaw(comment).write();
 
   pr-conflict-check:
-    name: Check for Conflicts
+    name: 🔀 PR - Conflict Check
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -143,7 +143,7 @@ jobs:
 
   # Code Quality Jobs (run on all events)
   lint:
-    name: Lint Code
+    name: ✨ Code Quality - Lint
     runs-on: ubuntu-latest
 
     steps:
@@ -163,7 +163,7 @@ jobs:
         run: npm run lint
 
   type-check:
-    name: TypeScript Type Check
+    name: 🔍 Code Quality - TypeScript
     runs-on: ubuntu-latest
 
     steps:
@@ -183,7 +183,7 @@ jobs:
         run: npx tsc --noEmit
 
   build:
-    name: Build Application
+    name: 🏗️ Build - DEBUG & RELEASE
     runs-on: ubuntu-latest
 
     strategy:
@@ -232,7 +232,7 @@ jobs:
           retention-days: 90
 
   test-api:
-    name: API Integration Tests
+    name: 🧪 Tests - API Integration
     runs-on: ubuntu-latest
     if: false  # Enable when test-api.mjs is implemented
 
@@ -253,7 +253,7 @@ jobs:
         run: node test-api.mjs
 
   security-scan:
-    name: Security Scan
+    name: 🔒 Security - Vulnerability Scan
     runs-on: ubuntu-latest
 
     steps:
@@ -284,7 +284,7 @@ jobs:
           retention-days: 30
 
   bundle-size:
-    name: Bundle Size Analysis
+    name: 📦 Analysis - Bundle Size
     runs-on: ubuntu-latest
 
     steps:
@@ -332,7 +332,7 @@ jobs:
           fi
 
   ci-summary:
-    name: CI Summary
+    name: ✅ CI Summary
     runs-on: ubuntu-latest
     needs: [lint, type-check, build, security-scan, bundle-size]
     if: always()
