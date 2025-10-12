@@ -176,7 +176,7 @@ export const useBackgroundRefresh = (
   // Start/stop refresh
   useEffect(() => {
     if (enabled) {
-      scheduleNextRefresh()
+      scheduleNextRefreshRef.current()
     } else if (intervalRef.current) {
       clearTimeout(intervalRef.current)
       intervalRef.current = null
@@ -187,7 +187,7 @@ export const useBackgroundRefresh = (
         clearTimeout(intervalRef.current)
       }
     }
-  }, [enabled, scheduleNextRefresh])
+  }, [enabled])
 
   return {
     ...state,
@@ -209,7 +209,7 @@ export const useSmartRefresh = (
   machines: Machine[],
   teamName: string
 ) => {
-  const [lastActivity, setLastActivity] = useState(Date.now())
+  const [lastActivity, setLastActivity] = useState(() => Date.now())
   const [refreshInterval, setRefreshInterval] = useState(30000) // Start at 30s
   
   // Track user activity
