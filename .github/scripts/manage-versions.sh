@@ -188,10 +188,18 @@ rewrite_paths_to_relative() {
         # Rewrite absolute paths to relative (but not external URLs or root-only links)
         # Replace href="/assets/ with href="./assets/
         # Replace src="/assets/ with src="./assets/
+        # Replace href="/console/assets/ with href="./assets/ (for old builds)
+        # Replace src="/console/assets/ with src="./assets/ (for old builds)
         # Replace href="/config. with href="./config.
         # Replace src="/config. with src="./config.
         # Replace href="/favicon. with href="./favicon.
         sed -i \
+            -e 's|href="/console/assets/|href="./assets/|g' \
+            -e 's|src="/console/assets/|src="./assets/|g' \
+            -e 's|href="/console/config\.|href="./config.|g' \
+            -e 's|src="/console/config\.|src="./config.|g' \
+            -e 's|href="/console/favicon\.|href="./favicon.|g' \
+            -e 's|src="/console/favicon\.|src="./favicon.|g' \
             -e 's|href="/assets/|href="./assets/|g' \
             -e 's|src="/assets/|src="./assets/|g' \
             -e 's|href="/config\.|href="./config.|g' \
