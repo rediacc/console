@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Modal, Select, Space, Typography, Spin, Alert } from 'antd'
 import { CloudServerOutlined, FileImageOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
@@ -32,7 +32,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
   
   const styles = useComponentStyles()
   const formStyles = useFormStyles()
-  const openRef = useRef(open)
+  const [prevOpen, setPrevOpen] = useState(open)
 
   // Fetch available machines
   const { data: availableMachines = [], isLoading: loadingMachines } = useGetAvailableMachinesForClone(
@@ -41,8 +41,8 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
   )
 
   // Sync state with open prop during render
-  if (open !== openRef.current) {
-    openRef.current = open
+  if (open !== prevOpen) {
+    setPrevOpen(open)
     if (!open) {
       setSelectedMachine('')
     }

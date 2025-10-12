@@ -23,11 +23,11 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
   const [internalValue, setInternalValue] = useState(value);
   const [error, setError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const valueRef = useRef(value);
+  const [prevValue, setPrevValue] = useState(value);
 
   // Sync state with value prop during render
-  if (value !== valueRef.current) {
-    valueRef.current = value;
+  if (value !== prevValue) {
+    setPrevValue(value);
     setInternalValue(value);
     // Validate immediately
     if (!value.trim()) {

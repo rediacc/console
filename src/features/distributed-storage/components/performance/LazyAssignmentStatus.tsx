@@ -69,13 +69,13 @@ export const LazyAssignmentStatus: React.FC<LazyAssignmentStatusProps> = ({
   }, [priority, isVisible])
 
   // Track status loaded state during render
-  const assignmentDataRef = useRef(assignmentData)
-  const hasLoadedRef = useRef(hasLoaded)
+  const [prevAssignmentData, setPrevAssignmentData] = useState(assignmentData)
+  const [prevHasLoaded, setPrevHasLoaded] = useState(hasLoaded)
 
-  if (assignmentData !== assignmentDataRef.current && assignmentData && !hasLoadedRef.current) {
-    assignmentDataRef.current = assignmentData
+  if (assignmentData !== prevAssignmentData && assignmentData && !prevHasLoaded) {
+    setPrevAssignmentData(assignmentData)
     setHasLoaded(true)
-    hasLoadedRef.current = true
+    setPrevHasLoaded(true)
     if (onStatusLoaded) {
       onStatusLoaded(assignmentData.assignmentType)
     }
@@ -183,13 +183,13 @@ export const ProgressiveMachineStatusLoader: React.FC<{
   }, [isLoading, loadedCount, machines.length, batchSize, batchDelay])
   
   // Auto-load batches during render
-  const loadedCountRef = useRef(loadedCount)
-  const isLoadingRef = useRef(isLoading)
+  const [prevLoadedCount, setPrevLoadedCount] = useState(loadedCount)
+  const [prevIsLoading, setPrevIsLoading] = useState(isLoading)
 
-  if ((loadedCount !== loadedCountRef.current || isLoading !== isLoadingRef.current) &&
+  if ((loadedCount !== prevLoadedCount || isLoading !== prevIsLoading) &&
       loadedCount < machines.length && !isLoading) {
-    loadedCountRef.current = loadedCount
-    isLoadingRef.current = isLoading
+    setPrevLoadedCount(loadedCount)
+    setPrevIsLoading(isLoading)
     loadNextBatch()
   }
   
