@@ -190,23 +190,9 @@ const MarketplacePage: React.FC = () => {
   }
 
   return (
-    <div>
-      {/* Header */}
-      <Row gutter={[24, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24}>
-          <Space direction="vertical" size="small" style={{ width: '100%' }}>
-            <Title level={2} style={{ ...styles.heading2, margin: 0 }}>
-              {t('marketplace:title')}
-            </Title>
-            <Text type="secondary">
-              {t('marketplace:subtitle')}
-            </Text>
-          </Space>
-        </Col>
-      </Row>
-
+    <div style={{ padding: 24 }}>
       {/* Search and Controls */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 32 }}>
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} md={8}>
           <Search
             placeholder={t('marketplace:searchPlaceholder')}

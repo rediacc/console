@@ -179,19 +179,6 @@ const DashboardPage = () => {
 
   return (
     <div style={{ padding: isMobile ? 16 : 24 }}>
-      {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <Title level={2}>Dashboard</Title>
-        <Text type="secondary">Welcome to {dashboard.companyInfo.CompanyName}</Text>
-        {isMobile && (
-          <div style={{ marginTop: 8 }}>
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              Tap sections below to expand/collapse content
-            </Text>
-          </div>
-        )}
-      </div>
-
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         {/* Alerts - Moved to top for immediate visibility */}
         {dashboard.activeSubscription?.IsExpiringSoon === 1 && (

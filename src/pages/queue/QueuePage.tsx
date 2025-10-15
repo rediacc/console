@@ -1,13 +1,12 @@
-import React, { useState, useMemo, useRef } from 'react'
+import React, { useState, useMemo } from 'react'
 import { Typography, Button, Space, Modal, Select, Card, Tag, Badge, Tabs, Row, Col, Statistic, Tooltip, DatePicker, Checkbox, Dropdown, Input, Alert } from 'antd'
-import { ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, WarningOutlined, GlobalOutlined, ClockCircleOutlined, ReloadOutlined, ExportOutlined, DownOutlined, HistoryOutlined, SearchOutlined, InfoCircleOutlined } from '@/utils/optimizedIcons'
+import { ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, WarningOutlined, GlobalOutlined, ClockCircleOutlined, ReloadOutlined, ExportOutlined, DownOutlined, HistoryOutlined, SearchOutlined, InfoCircleOutlined, CloseOutlined } from '@/utils/optimizedIcons'
 import { useQueueItems, useCancelQueueItem, QueueFilters } from '@/api/queries/queue'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import ResourceListView from '@/components/common/ResourceListView'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import { showMessage } from '@/utils/messages'
 import dayjs from 'dayjs'
-import { useDynamicPageSize } from '@/hooks/useDynamicPageSize'
 import { useTranslation } from 'react-i18next'
 import { formatTimestampAsIs } from '@/utils/timeUtils'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
@@ -23,7 +22,7 @@ const QueuePage: React.FC = () => {
   const [filters, setFilters] = useState<QueueFilters>({
     teamName: '',
     includeCompleted: true,
-    includeCancelled: false,  // Don't show cancelled tasks by default
+    includeCancelled: true,  // Always include for proper tab filtering
     staleThresholdMinutes: 10,
     maxRecords: 1000
   })
@@ -32,19 +31,23 @@ const QueuePage: React.FC = () => {
   const [taskIdFilter, setTaskIdFilter] = useState<string>('')
   const [traceModalVisible, setTraceModalVisible] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
-  
+
+  // Pagination state for each tab
+  const [activePageSize, setActivePageSize] = useState(20)
+  const [activePage, setActivePage] = useState(1)
+  const [completedPageSize, setCompletedPageSize] = useState(20)
+  const [completedPage, setCompletedPage] = useState(1)
+  const [cancelledPageSize, setCancelledPageSize] = useState(20)
+  const [cancelledPage, setCancelledPage] = useState(1)
+  const [failedPageSize, setFailedPageSize] = useState(20)
+  const [failedPage, setFailedPage] = useState(1)
+
   // GUID validation regex
   const isValidGuid = (value: string) => {
     const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     return guidRegex.test(value)
   }
-  
-  // Refs for table containers
-  const activeTableRef = useRef<HTMLDivElement>(null)
-  const completedTableRef = useRef<HTMLDivElement>(null)
-  const cancelledTableRef = useRef<HTMLDivElement>(null)
-  const failedTableRef = useRef<HTMLDivElement>(null)
-  
+
   // Combine team selection with filters
   // Dynamically adjust filters based on active tab
   const queryFilters = useMemo(() => ({
@@ -63,34 +66,9 @@ const QueuePage: React.FC = () => {
   const { data: queueData, isLoading, refetch, isRefetching } = useQueueItems(queryFilters)
   const { data: dropdownData } = useDropdownData()
   const cancelQueueItemMutation = useCancelQueueItem()
-  
+
   const isFetching = isLoading || isRefetching
-  
-  // Dynamic page sizes for resultSets with minimum size for small screens
-  const activePageSize = useDynamicPageSize(activeTableRef, {
-    containerOffset: 300, // Account for filters, stats cards, tabs
-    minRows: 8, // Minimum for small screens
-    maxRows: 50
-  })
-  
-  const completedPageSize = useDynamicPageSize(completedTableRef, {
-    containerOffset: 300,
-    minRows: 8,
-    maxRows: 50
-  })
-  
-  const cancelledPageSize = useDynamicPageSize(cancelledTableRef, {
-    containerOffset: 300,
-    minRows: 8,
-    maxRows: 50
-  })
-  
-  const failedPageSize = useDynamicPageSize(failedTableRef, {
-    containerOffset: 300,
-    minRows: 8,
-    maxRows: 50
-  })
-  
+
   // Handle export functionality
   const handleExport = (format: 'csv' | 'json') => {
     const dataToExport = queueData?.items || []
@@ -409,324 +387,227 @@ const QueuePage: React.FC = () => {
   ]
 
 
-  // Calculate container style for full height layout using design system
-  const containerStyle: React.CSSProperties = {
-    ...styles.container,
-    height: 'calc(100vh - 64px - 48px)', // viewport - header - content margin
-    ...styles.flexColumn as React.CSSProperties,
-    overflow: 'hidden'
-  }
-
   return (
-    <div style={containerStyle} data-testid="queue-page-container">
-      <Row gutter={[16, 16]} align="middle" style={{ marginBottom: 16 }}>
-        <Col>
-          <Title level={2} style={styles.heading2}>Queue Management</Title>
-        </Col>
-      </Row>
-
-      <Card style={{ ...styles.card, ...styles.marginBottom.md }} data-testid="queue-filters-card">
-        <Row gutter={[16, 16]} align="middle">
-          <Col xs={24} sm={12} md={6}>
-            <label htmlFor="queue-filter-team" style={{ display: 'block', marginBottom: 8 }}>
-              <Text type="secondary">Team</Text>
-            </label>
-            <Select
-              id="queue-filter-team"
-              style={{ width: '100%' }}
-              placeholder="Select a team to view queue items"
-              value={viewTeam || undefined}
-              onChange={(value) => {
-                setViewTeam(value || '')
-                setFilters({ ...filters, machineName: '' })
-              }}
-              allowClear
-              showSearch
-              filterOption={(input, option) =>
-                (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
-              }
-              options={dropdownData?.teams || []}
-              data-testid="queue-filter-team"
-              aria-label="Select team to filter queue items"
-            />
-          </Col>
-
-          {viewTeam && (
-            <Col xs={24} sm={12} md={6}>
-              <label htmlFor="queue-filter-machine" style={{ display: 'block', marginBottom: 8 }}>
-                <Text type="secondary">Machine</Text>
-              </label>
+    <div style={{ padding: 24 }} data-testid="queue-page-container">
+      {/* Ultra-Compact Filter & Stats Bar */}
+      <Card
+        size="small"
+        style={{ marginBottom: 16, padding: '8px 12px' }}
+        data-testid="queue-filters-card"
+      >
+        <Row gutter={[8, 8]} align="middle" wrap>
+          {/* Filters Section */}
+          <Col flex="auto">
+            <Space size={8} wrap>
               <Select
-                id="queue-filter-machine"
-                style={{ width: '100%' }}
-                placeholder="All machines"
-                value={filters.machineName || undefined}
-                onChange={(value) => setFilters({ ...filters, machineName: value || '' })}
+                size="small"
+                style={{ minWidth: 150 }}
+                placeholder="Team"
+                value={viewTeam || undefined}
+                onChange={(value) => {
+                  setViewTeam(value || '')
+                  setFilters({ ...filters, machineName: '' })
+                }}
                 allowClear
                 showSearch
                 filterOption={(input, option) =>
                   (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
                 }
-                options={dropdownData?.machinesByTeam?.find(t => t.teamName === viewTeam)?.machines || []}
-                data-testid="queue-filter-machine"
-                aria-label="Select machine to filter queue items"
+                options={dropdownData?.teams || []}
+                data-testid="queue-filter-team"
               />
-            </Col>
-          )}
 
-          <Col xs={24} sm={12} md={6}>
-            <label htmlFor="queue-filter-status" style={{ display: 'block', marginBottom: 8 }}>
-              <Text type="secondary">Status</Text>
-            </label>
-            <Select
-              id="queue-filter-status"
-              mode="multiple"
-              style={{ width: '100%' }}
-              placeholder="All statuses"
-              value={statusFilter}
-              onChange={setStatusFilter}
-              allowClear
-              data-testid="queue-filter-status"
-              aria-label="Select statuses to filter queue items"
-            >
-              <Select.Option value="PENDING" data-testid="queue-filter-status-option-pending">Pending</Select.Option>
-              <Select.Option value="ACTIVE" data-testid="queue-filter-status-option-active">Active</Select.Option>
-              <Select.Option value="STALE" data-testid="queue-filter-status-option-stale">Stale</Select.Option>
-              <Select.Option value="CANCELLING" data-testid="queue-filter-status-option-cancelling">Cancelling</Select.Option>
-              <Select.Option value="COMPLETED" data-testid="queue-filter-status-option-completed">Completed</Select.Option>
-              <Select.Option value="FAILED" data-testid="queue-filter-status-option-failed">Failed</Select.Option>
-              <Select.Option value="CANCELLED" data-testid="queue-filter-status-option-cancelled">Cancelled</Select.Option>
-            </Select>
-          </Col>
+              <Select
+                size="small"
+                mode="multiple"
+                style={{ minWidth: 150 }}
+                placeholder="Status"
+                value={statusFilter}
+                onChange={setStatusFilter}
+                allowClear
+                maxTagCount="responsive"
+                data-testid="queue-filter-status"
+              >
+                <Select.Option value="PENDING">Pending</Select.Option>
+                <Select.Option value="ACTIVE">Active</Select.Option>
+                <Select.Option value="STALE">Stale</Select.Option>
+                <Select.Option value="CANCELLING">Cancelling</Select.Option>
+                <Select.Option value="COMPLETED">Completed</Select.Option>
+                <Select.Option value="FAILED">Failed</Select.Option>
+                <Select.Option value="CANCELLED">Cancelled</Select.Option>
+              </Select>
 
-          <Col xs={24} sm={12} md={6}>
-            <label htmlFor="queue-filter-date" style={{ display: 'block', marginBottom: 8 }}>
-              <Text type="secondary">Date Range</Text>
-            </label>
-            <RangePicker
-              id="queue-filter-date"
-              style={{ width: '100%' }}
-              showTime
-              format="YYYY-MM-DD HH:mm:ss"
-              value={dateRange}
-              onChange={(dates) => setDateRange(dates)}
-              presets={[
-                { label: 'Today', value: [dayjs().startOf('day'), dayjs().endOf('day')] },
-                { label: 'Yesterday', value: [dayjs().subtract(1, 'day').startOf('day'), dayjs().subtract(1, 'day').endOf('day')] },
-                { label: 'Last 7 Days', value: [dayjs().subtract(7, 'day').startOf('day'), dayjs()] },
-                { label: 'Last 30 Days', value: [dayjs().subtract(30, 'day').startOf('day'), dayjs()] },
-                { label: 'This Month', value: [dayjs().startOf('month'), dayjs().endOf('month')] },
-                { label: 'Last Month', value: [dayjs().subtract(1, 'month').startOf('month'), dayjs().subtract(1, 'month').endOf('month')] },
-              ]}
-              data-testid="queue-filter-date"
-              aria-label="Select date range to filter queue items"
-            />
-          </Col>
-        </Row>
+              <RangePicker
+                size="small"
+                format="YYYY-MM-DD"
+                value={dateRange}
+                onChange={(dates) => setDateRange(dates)}
+                placeholder={['Start', 'End']}
+                presets={[
+                  { label: 'Today', value: [dayjs().startOf('day'), dayjs().endOf('day')] },
+                  { label: 'Last 7D', value: [dayjs().subtract(7, 'day').startOf('day'), dayjs()] },
+                  { label: 'Last 30D', value: [dayjs().subtract(30, 'day').startOf('day'), dayjs()] },
+                ]}
+                data-testid="queue-filter-date"
+              />
 
-        <Row gutter={[16, 16]} style={{ marginTop: 16 }} align="middle">
-          <Col xs={24} sm={12} md={6}>
-            <label htmlFor="queue-filter-taskid" style={{ display: 'block', marginBottom: 8 }}>
-              <Text type="secondary">Task ID</Text>
-            </label>
-            <Input
-              id="queue-filter-taskid"
-              placeholder="Filter by Task ID (GUID format)"
-              value={taskIdFilter}
-              onChange={(e) => setTaskIdFilter(e.target.value)}
-              prefix={<SearchOutlined />}
-              allowClear
-              status={taskIdFilter && !isValidGuid(taskIdFilter) ? 'error' : undefined}
-              autoComplete="off"
-              data-testid="queue-filter-taskid"
-              aria-label="Filter queue items by Task ID"
-              aria-describedby={taskIdFilter && !isValidGuid(taskIdFilter) ? 'taskid-error' : undefined}
-            />
-            {taskIdFilter && !isValidGuid(taskIdFilter) && (
-              <Text id="taskid-error" type="danger" style={{ fontSize: '12px' }}>
-                Invalid GUID format
-              </Text>
-            )}
-          </Col>
-
-          <Col xs={24} sm={12} md={6}>
-            <div style={{ marginBottom: 8 }}>
-              <Text type="secondary">Options</Text>
-            </div>
-            <Space direction="vertical">
-              <Tooltip title={activeTab === 'completed' ? 'Automatically enabled when viewing Completed tab' : ''}>
-                <Checkbox
-                  checked={activeTab === 'completed' ? true : filters.includeCompleted}
-                  disabled={activeTab === 'completed'}
-                  onChange={(e) => setFilters({ ...filters, includeCompleted: e.target.checked })}
-                  data-testid="queue-checkbox-include-completed"
-                >
-                  Include Completed
-                </Checkbox>
-              </Tooltip>
-              <Tooltip title={activeTab === 'cancelled' ? 'Automatically enabled when viewing Cancelled tab' : ''}>
-                <Checkbox
-                  checked={activeTab === 'cancelled' ? true : filters.includeCancelled}
-                  disabled={activeTab === 'cancelled'}
-                  onChange={(e) => setFilters({ ...filters, includeCancelled: e.target.checked })}
-                  data-testid="queue-checkbox-include-cancelled"
-                >
-                  Include Cancelled
-                </Checkbox>
-              </Tooltip>
               <Checkbox
                 checked={filters.onlyStale}
                 onChange={(e) => setFilters({ ...filters, onlyStale: e.target.checked })}
                 data-testid="queue-checkbox-only-stale"
               >
-                Only Stale Items
+                Stale Only
               </Checkbox>
+
+              {viewTeam && (
+                <>
+                  <Select
+                    size="small"
+                    style={{ minWidth: 130 }}
+                    placeholder="Machine"
+                    value={filters.machineName || undefined}
+                    onChange={(value) => setFilters({ ...filters, machineName: value || '' })}
+                    allowClear
+                    showSearch
+                    filterOption={(input, option) =>
+                      (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+                    }
+                    options={dropdownData?.machinesByTeam?.find(t => t.teamName === viewTeam)?.machines || []}
+                    data-testid="queue-filter-machine"
+                  />
+
+                  <Input
+                    size="small"
+                    placeholder="Task ID"
+                    value={taskIdFilter}
+                    onChange={(e) => setTaskIdFilter(e.target.value)}
+                    prefix={<SearchOutlined />}
+                    allowClear
+                    status={taskIdFilter && !isValidGuid(taskIdFilter) ? 'error' : undefined}
+                    style={{ width: 200 }}
+                    data-testid="queue-filter-taskid"
+                  />
+                </>
+              )}
+
+              {/* Active Filter Pills - Inline */}
+              {(viewTeam || dateRange || statusFilter.length > 0 || (taskIdFilter && isValidGuid(taskIdFilter)) || filters.onlyStale) && (
+                <>
+                  {viewTeam && (
+                    <Tag closable onClose={() => setViewTeam('')} color="blue">
+                      {dropdownData?.teams?.find(t => t.value === viewTeam)?.label || viewTeam}
+                    </Tag>
+                  )}
+                  {dateRange && (
+                    <Tag closable onClose={() => setDateRange(null)} color="blue">
+                      {dateRange[0]?.format('MM/DD')}→{dateRange[1]?.format('MM/DD')}
+                    </Tag>
+                  )}
+                  {statusFilter.map(status => (
+                    <Tag
+                      key={status}
+                      closable
+                      onClose={() => setStatusFilter(statusFilter.filter(s => s !== status))}
+                      color="blue"
+                    >
+                      {status}
+                    </Tag>
+                  ))}
+                  {taskIdFilter && isValidGuid(taskIdFilter) && (
+                    <Tag closable onClose={() => setTaskIdFilter('')} color="blue">
+                      {taskIdFilter.substring(0, 8)}...
+                    </Tag>
+                  )}
+                  {filters.onlyStale && (
+                    <Tag closable onClose={() => setFilters({ ...filters, onlyStale: false })} color="orange">
+                      Stale
+                    </Tag>
+                  )}
+                  <Button
+                    type="link"
+                    size="small"
+                    onClick={() => {
+                      setViewTeam('')
+                      setDateRange(null)
+                      setStatusFilter([])
+                      setTaskIdFilter('')
+                      setFilters({ ...filters, onlyStale: false })
+                    }}
+                    style={{ padding: '0 4px', height: 'auto' }}
+                  >
+                    Clear
+                  </Button>
+                </>
+              )}
             </Space>
           </Col>
 
-          <Col style={{ marginLeft: 'auto' }}>
-            <Space>
-              <Button 
-                icon={<ReloadOutlined />} 
-                style={styles.touchTarget}
-                onClick={() => refetch()} 
-                loading={isFetching} 
-                data-testid="queue-refresh-button"
-              >
-                Refresh
-              </Button>
+          {/* Statistics Section - Inline */}
+          <Col flex="none">
+            <Space size={12} split={<span style={{ color: '#d9d9d9' }}>|</span>}>
+              <Space size={4}>
+                <ThunderboltOutlined style={{ fontSize: 12 }} />
+                <Text type="secondary" style={{ fontSize: 12 }}>Total:</Text>
+                <Text strong style={{ fontSize: 12 }}>{(queueData?.statistics as any)?.totalCount || 0}</Text>
+              </Space>
+              <Space size={4}>
+                <PlayCircleOutlined style={{ fontSize: 12, color: '#1890ff' }} />
+                <Text type="secondary" style={{ fontSize: 12 }}>Active:</Text>
+                <Text strong style={{ fontSize: 12, color: '#1890ff' }}>
+                  {((queueData?.statistics as any)?.pendingCount || 0) +
+                   ((queueData?.statistics as any)?.assignedCount || 0) +
+                   ((queueData?.statistics as any)?.processingCount || 0)}
+                </Text>
+              </Space>
+              <Space size={4}>
+                <ExclamationCircleOutlined style={{ fontSize: 12, color: '#ff4d4f' }} />
+                <Text type="secondary" style={{ fontSize: 12 }}>Failed:</Text>
+                <Text strong style={{ fontSize: 12, color: '#ff4d4f' }}>{(queueData?.statistics as any)?.failedCount || 0}</Text>
+              </Space>
+              <Space size={4}>
+                <WarningOutlined style={{ fontSize: 12, color: '#faad14' }} />
+                <Text type="secondary" style={{ fontSize: 12 }}>Stale:</Text>
+                <Text strong style={{ fontSize: 12, color: '#faad14' }}>{(queueData?.statistics as any)?.staleCount || 0}</Text>
+              </Space>
+            </Space>
+          </Col>
+
+          {/* Actions Section */}
+          <Col flex="none">
+            <Space size={4}>
+              <Tooltip title="Refresh">
+                <Button
+                  size="small"
+                  icon={<ReloadOutlined />}
+                  onClick={() => refetch()}
+                  loading={isFetching}
+                  data-testid="queue-refresh-button"
+                />
+              </Tooltip>
               <Dropdown
                 menu={{
                   items: [
-                    {
-                      key: 'csv',
-                      label: 'Export as CSV',
-                      onClick: () => handleExport('csv')
-                    },
-                    {
-                      key: 'json',
-                      label: 'Export as JSON',
-                      onClick: () => handleExport('json')
-                    }
+                    { key: 'csv', label: 'Export as CSV', onClick: () => handleExport('csv') },
+                    { key: 'json', label: 'Export as JSON', onClick: () => handleExport('json') }
                   ]
                 }}
               >
-                <Button 
-                  icon={<ExportOutlined />} 
-                  style={styles.touchTarget}
-                  data-testid="queue-export-dropdown"
-                >
-                  Export <DownOutlined />
-                </Button>
+                <Tooltip title="Export">
+                  <Button
+                    size="small"
+                    icon={<ExportOutlined />}
+                    data-testid="queue-export-dropdown"
+                  />
+                </Tooltip>
               </Dropdown>
             </Space>
           </Col>
         </Row>
       </Card>
 
-      {/* Queue Statistics */}
-      <Row gutter={16} style={styles.marginBottom.md} data-testid="queue-statistics-row">
-            <Col xs={24} sm={12} md={8} lg={4} xl={3}>
-              <Card style={styles.card}>
-                <Statistic
-                  title="Total"
-                  value={(queueData?.statistics as any)?.totalCount || 0}
-                  prefix={<ThunderboltOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={4} xl={3}>
-              <Card style={styles.card}>
-                <Statistic
-                  title="Pending"
-                  value={(queueData?.statistics as any)?.pendingCount || 0}
-                  valueStyle={{ color: '#8c8c8c' }}
-                  prefix={<ClockCircleOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={4} xl={3}>
-              <Card style={styles.card}>
-                <Statistic
-                  title="Assigned"
-                  value={(queueData?.statistics as any)?.assignedCount || 0}
-                  valueStyle={{ color: '#1890ff' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={4} xl={3}>
-              <Card style={styles.card}>
-                <Statistic
-                  title="Processing"
-                  value={(queueData?.statistics as any)?.processingCount || 0}
-                  valueStyle={{ color: '#1890ff' }}
-                  prefix={<PlayCircleOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={4} xl={3}>
-              <Card style={styles.card}>
-                <Statistic
-                  title="Completed"
-                  value={(queueData?.statistics as any)?.completedCount || 0}
-                  valueStyle={{ color: '#52c41a' }}
-                  prefix={<CheckCircleOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={4} xl={3}>
-              <Card style={styles.card}>
-                <Statistic
-                  title="Failed"
-                  value={(queueData?.statistics as any)?.failedCount || 0}
-                  valueStyle={{ color: '#ff4d4f' }}
-                  prefix={<ExclamationCircleOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={4} xl={3}>
-              <Card style={styles.card}>
-                <Statistic
-                  title="Cancelling"
-                  value={(queueData?.statistics as any)?.cancellingCount || 0}
-                  valueStyle={{ color: '#faad14' }}
-                  prefix={<PlayCircleOutlined spin />}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={4} xl={3}>
-              <Card style={styles.card}>
-                <Statistic
-                  title="Cancelled"
-                  value={(queueData?.statistics as any)?.cancelledCount || 0}
-                  valueStyle={{ color: '#ff4d4f' }}
-                  prefix={<CloseCircleOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={4} xl={3}>
-              <Card style={styles.card}>
-                <Statistic
-                  title="Stale"
-                  value={(queueData?.statistics as any)?.staleCount || 0}
-                  valueStyle={{ color: '#faad14' }}
-                  prefix={<WarningOutlined />}
-                />
-              </Card>
-            </Col>
-          </Row>
-
-          <Tabs
+      <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              minHeight: 0,
-              overflow: 'hidden'
-            }}
-            className="full-height-tabs"
             data-testid="queue-tabs"
           >
             <Tabs.TabPane 
@@ -741,40 +622,28 @@ const QueuePage: React.FC = () => {
               key="active"
               data-testid="queue-tabpane-active"
             >
-              <div ref={activeTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }} data-testid="queue-table-active-container">
-                <Alert
-                  message={t('queue:tabs.active.description')}
-                  type="info"
-                  showIcon
-                  icon={<InfoCircleOutlined />}
-                  style={{ marginBottom: 16 }}
-                  closable
-                  data-testid="queue-alert-active"
-                />
-                <ResourceListView
-                  loading={isLoading || isRefetching}
-                  data={queueData?.items?.filter((item: any) => !['COMPLETED', 'CANCELLED', 'FAILED'].includes(item.healthStatus)) || []}
-                  columns={queueColumns}
-                  rowKey="taskId"
-                  searchPlaceholder="Search queue items..."
-                  enableDynamicPageSize={true}
-                  containerStyle={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                  }}
-                  tableStyle={{ 
-                    height: 'calc(100vh - 520px)', // Adjusted for Alert component
-                    minHeight: '400px' // Minimum height for small screens
-                  }}
-                  pagination={{
-                    pageSize: activePageSize,
-                    showSizeChanger: false,
-                    showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
-                    position: ['bottomRight'],
-                  }}
-                />
-              </div>
+              <ResourceListView
+                loading={isLoading || isRefetching}
+                data={queueData?.items?.filter((item: any) => !['COMPLETED', 'CANCELLED', 'FAILED'].includes(item.healthStatus)) || []}
+                columns={queueColumns}
+                rowKey="taskId"
+                searchPlaceholder="Search queue items..."
+                pagination={{
+                  current: activePage,
+                  pageSize: activePageSize,
+                  showSizeChanger: true,
+                  pageSizeOptions: ['10', '20', '50', '100'],
+                  showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
+                  onChange: (page, size) => {
+                    setActivePage(page);
+                    if (size !== activePageSize) {
+                      setActivePageSize(size);
+                      setActivePage(1);
+                    }
+                  },
+                  position: ['bottomRight'],
+                }}
+              />
             </Tabs.TabPane>
             
             <Tabs.TabPane 
@@ -789,40 +658,28 @@ const QueuePage: React.FC = () => {
               key="completed"
               data-testid="queue-tabpane-completed"
             >
-              <div ref={completedTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }} data-testid="queue-table-completed-container">
-                <Alert
-                  message={t('queue:tabs.completed.description')}
-                  type="success"
-                  showIcon
-                  icon={<CheckCircleOutlined />}
-                  style={{ marginBottom: 16 }}
-                  closable
-                  data-testid="queue-alert-completed"
-                />
-                <ResourceListView
-                  loading={isLoading || isRefetching}
-                  data={queueData?.items?.filter((item: any) => item.healthStatus === 'COMPLETED') || []}
-                  columns={queueColumns}
-                  rowKey="taskId"
-                  searchPlaceholder="Search completed items..."
-                  enableDynamicPageSize={true}
-                  containerStyle={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                  }}
-                  tableStyle={{ 
-                    height: 'calc(100vh - 520px)',
-                    minHeight: '400px'
-                  }}
-                  pagination={{
-                    pageSize: completedPageSize,
-                    showSizeChanger: false,
-                    showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
-                    position: ['bottomRight'],
-                  }}
-                />
-              </div>
+              <ResourceListView
+                loading={isLoading || isRefetching}
+                data={queueData?.items?.filter((item: any) => item.healthStatus === 'COMPLETED') || []}
+                columns={queueColumns}
+                rowKey="taskId"
+                searchPlaceholder="Search completed items..."
+                pagination={{
+                  current: completedPage,
+                  pageSize: completedPageSize,
+                  showSizeChanger: true,
+                  pageSizeOptions: ['10', '20', '50', '100'],
+                  showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
+                  onChange: (page, size) => {
+                    setCompletedPage(page);
+                    if (size !== completedPageSize) {
+                      setCompletedPageSize(size);
+                      setCompletedPage(1);
+                    }
+                  },
+                  position: ['bottomRight'],
+                }}
+              />
             </Tabs.TabPane>
             
             <Tabs.TabPane 
@@ -837,40 +694,28 @@ const QueuePage: React.FC = () => {
               key="cancelled"
               data-testid="queue-tabpane-cancelled"
             >
-              <div ref={cancelledTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }} data-testid="queue-table-cancelled-container">
-                <Alert
-                  message={t('queue:tabs.cancelled.description')}
-                  type="warning"
-                  showIcon
-                  icon={<CloseCircleOutlined />}
-                  style={{ marginBottom: 16 }}
-                  closable
-                  data-testid="queue-alert-cancelled"
-                />
-                <ResourceListView
-                  loading={isLoading || isRefetching}
-                  data={queueData?.items?.filter((item: any) => item.healthStatus === 'CANCELLED') || []}
-                  columns={queueColumns}
-                  rowKey="taskId"
-                  searchPlaceholder="Search cancelled items..."
-                  enableDynamicPageSize={true}
-                  containerStyle={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                  }}
-                  tableStyle={{ 
-                    height: 'calc(100vh - 520px)',
-                    minHeight: '400px'
-                  }}
-                  pagination={{
-                    pageSize: cancelledPageSize,
-                    showSizeChanger: false,
-                    showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
-                    position: ['bottomRight'],
-                  }}
-                />
-              </div>
+              <ResourceListView
+                loading={isLoading || isRefetching}
+                data={queueData?.items?.filter((item: any) => item.healthStatus === 'CANCELLED') || []}
+                columns={queueColumns}
+                rowKey="taskId"
+                searchPlaceholder="Search cancelled items..."
+                pagination={{
+                  current: cancelledPage,
+                  pageSize: cancelledPageSize,
+                  showSizeChanger: true,
+                  pageSizeOptions: ['10', '20', '50', '100'],
+                  showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
+                  onChange: (page, size) => {
+                    setCancelledPage(page);
+                    if (size !== cancelledPageSize) {
+                      setCancelledPageSize(size);
+                      setCancelledPage(1);
+                    }
+                  },
+                  position: ['bottomRight'],
+                }}
+              />
             </Tabs.TabPane>
             
             <Tabs.TabPane 
@@ -885,40 +730,28 @@ const QueuePage: React.FC = () => {
               key="failed"
               data-testid="queue-tabpane-failed"
             >
-              <div ref={failedTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }} data-testid="queue-table-failed-container">
-                <Alert
-                  message={t('queue:tabs.failed.description')}
-                  type="error"
-                  showIcon
-                  icon={<ExclamationCircleOutlined />}
-                  style={{ marginBottom: 16 }}
-                  closable
-                  data-testid="queue-alert-failed"
-                />
-                <ResourceListView
-                  loading={isLoading || isRefetching}
-                  data={queueData?.items?.filter((item: any) => item.healthStatus === 'FAILED') || []}
-                  columns={queueColumns}
-                  rowKey="taskId"
-                  searchPlaceholder="Search failed items..."
-                  enableDynamicPageSize={true}
-                  containerStyle={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                  }}
-                  tableStyle={{ 
-                    height: 'calc(100vh - 520px)',
-                    minHeight: '400px'
-                  }}
-                  pagination={{
-                    pageSize: failedPageSize,
-                    showSizeChanger: false,
-                    showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
-                    position: ['bottomRight'],
-                  }}
-                />
-              </div>
+              <ResourceListView
+                loading={isLoading || isRefetching}
+                data={queueData?.items?.filter((item: any) => item.healthStatus === 'FAILED') || []}
+                columns={queueColumns}
+                rowKey="taskId"
+                searchPlaceholder="Search failed items..."
+                pagination={{
+                  current: failedPage,
+                  pageSize: failedPageSize,
+                  showSizeChanger: true,
+                  pageSizeOptions: ['10', '20', '50', '100'],
+                  showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
+                  onChange: (page, size) => {
+                    setFailedPage(page);
+                    if (size !== failedPageSize) {
+                      setFailedPageSize(size);
+                      setFailedPage(1);
+                    }
+                  },
+                  position: ['bottomRight'],
+                }}
+              />
             </Tabs.TabPane>
           </Tabs>
 

@@ -1621,7 +1621,7 @@ const SystemPage: React.FC = () => {
     : [usersTab, teamsTab, permissionsTab, userSessionsTab]
 
   return (
-    <>
+    <div style={{ padding: 24 }}>
       {/* Settings Section */}
       <Space direction="vertical" size={24} style={{ width: '100%', marginBottom: 24 }}>
         <Title level={3}>{t('title')}</Title>
@@ -2908,7 +2908,7 @@ const SystemPage: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
-    </>
+    </div>
   )
 }
 
