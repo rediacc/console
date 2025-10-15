@@ -49,6 +49,7 @@ import { ViewAssignmentStatusModal } from './ViewAssignmentStatusModal';
 import MachineAssignmentStatusCell from './MachineAssignmentStatusCell';
 import { useComponentStyles } from '@/hooks/useComponentStyles';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import { featureFlags } from '@/config/featureFlags';
 
 
 interface MachineTableProps {
@@ -337,8 +338,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       }
     }
 
-    // Distributed Storage Assignment Status column - show in expert mode
-    if (!onRowClick && isExpertMode) {
+    // Distributed Storage Assignment Status column - show in expert mode with feature flag
+    if (!onRowClick && isExpertMode && featureFlags.isEnabled('assignToCluster')) {
       baseColumns.push({
         title: t('machines:assignmentStatus.title'),
         key: 'assignmentStatus',
@@ -475,9 +476,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                     },
                     'data-testid': `machine-test-${record.machineName}`
                   },
-                  ...(isExpertMode ? [{
+                  ...(isExpertMode && featureFlags.isEnabled('assignToCluster') ? [{
                     key: 'assignCluster',
-                    label: record.distributedStorageClusterName 
+                    label: record.distributedStorageClusterName
                       ? t('machines:changeClusterAssignment')
                       : t('machines:assignToCluster'),
                     icon: <CloudServerOutlined />,
@@ -543,8 +544,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     return baseColumns;
   }, [isExpertMode, uiMode, showActions, t, handleDelete, onEditMachine, onFunctionsMachine, onCreateRepository, executePingForMachineAndWait, machineFunctions, expandedRowKeys, externalRefreshKeys, setInternalRefreshKeys, setAssignClusterModal, setAuditTraceModal, setRemoteFileBrowserModal, onRowClick]);
 
-  // Row selection configuration
-  const rowSelection = isExpertMode ? {
+  // Row selection configuration - only show checkboxes if assignToCluster feature is enabled
+  const rowSelection = (isExpertMode && featureFlags.isEnabled('assignToCluster')) ? {
     selectedRowKeys,
     onChange: (newSelectedRowKeys: React.Key[]) => {
       setSelectedRowKeys(newSelectedRowKeys as string[]);
@@ -555,9 +556,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     }),
   } : undefined;
 
-  // Render bulk actions toolbar
+  // Render bulk actions toolbar - only if feature is enabled
   const renderBulkActionsToolbar = () => {
-    if (!isExpertMode || selectedRowKeys.length === 0) return null;
+    if (!isExpertMode || !featureFlags.isEnabled('assignToCluster') || selectedRowKeys.length === 0) return null;
 
     return (
       <div style={{ 
