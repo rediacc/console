@@ -1,8 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Card, Space, Typography, DatePicker, Select, Button, Table, Tag, Input, Row, Col, Empty, Dropdown, message, Alert, Tooltip, theme } from 'antd';
-import { 
-  HistoryOutlined, 
-  FilterOutlined, 
+import {
+  HistoryOutlined,
+  FilterOutlined,
   ReloadOutlined,
   SearchOutlined,
   CheckCircleOutlined,
@@ -20,7 +20,6 @@ import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { useComponentStyles } from '@/hooks/useComponentStyles';
 import type { ColumnsType } from 'antd/es/table';
-import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -29,13 +28,14 @@ const AuditPage = () => {
   const { t: _t } = useTranslation('system');
   const { token } = theme.useToken();
   const styles = useComponentStyles();
-  const tableRef = useRef<HTMLDivElement>(null);
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([
     dayjs().subtract(7, 'days'),
     dayjs()
   ]);
   const [entityFilter, setEntityFilter] = useState<string | undefined>();
   const [searchText, setSearchText] = useState('');
+  const [pageSize, setPageSize] = useState(25);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Ensure dates are always defined before passing to the hook
   // Use ISO 8601 format (with 'T' separator) for proper JSON datetime parsing
@@ -47,13 +47,6 @@ const AuditPage = () => {
     endDate,
     entityFilter,
     maxRecords: 1000
-  });
-
-  const pageSize = useDynamicPageSize(tableRef, {
-    containerOffset: 200, // Account for table header, pagination, and internal padding
-    minRows: 10,
-    maxRows: 100,
-    rowHeight: 55
   });
 
   const getActionIcon = (action: string) => {
@@ -274,41 +267,10 @@ const AuditPage = () => {
     }
   ];
 
-  // Calculate container height using design system
-  const containerStyle: React.CSSProperties = {
-    ...styles.container,
-    height: 'calc(100vh - 64px - 48px)', // viewport - header - content margin
-    overflow: 'hidden',
-    ...styles.flexColumn as React.CSSProperties
-  };
-
-  const cardStyle: React.CSSProperties = {
-    ...styles.card,
-    flex: 1,
-    ...styles.flexColumn as React.CSSProperties,
-    overflow: 'hidden'
-  };
-
-  const cardBodyStyle: React.CSSProperties = {
-    flex: 1,
-    overflow: 'hidden',
-    ...styles.padding.md,
-    ...styles.flexColumn as React.CSSProperties
-  };
-
   return (
-    <div style={containerStyle}>
-      {/* Header */}
-      <div style={{ marginBottom: 16, flexShrink: 0 }}>
-        <Title level={2} style={{ ...styles.heading2, marginBottom: 8 }}>
-          <HistoryOutlined style={{ marginRight: 8 }} />
-          Audit Logs
-        </Title>
-        <Text type="secondary">Track all activities and changes in your organization</Text>
-      </div>
-
+    <div style={{ padding: 24 }}>
       {/* Filters */}
-      <Card data-testid="audit-filter-card" style={{ marginBottom: 16, flexShrink: 0 }}>
+      <Card data-testid="audit-filter-card" style={{ marginBottom: 16 }}>
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <Row gutter={[24, 16]}>
             <Col xs={24} sm={24} md={8}>
@@ -433,59 +395,63 @@ const AuditPage = () => {
       )}
 
       {/* Audit Logs Table */}
-      <Card data-testid="audit-table-card" style={cardStyle} styles={{ body: cardBodyStyle }}>
-        <div ref={tableRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          <Table
-            data-testid="audit-table"
-            columns={columns}
-            dataSource={filteredLogs}
-            loading={isLoading}
-            rowKey={(record) => `${record.timestamp}-${record.action}-${record.entityName}`}
-            pagination={{
-              total: filteredLogs?.length || 0,
-              pageSize: pageSize,
-              showSizeChanger: false,
-              showTotal: (total, range) => `Showing ${range[0]}-${range[1]} of ${total} logs`,
-              position: ['bottomRight'],
-              className: 'audit-table-pagination'
-            }}
-            scroll={{ x: 'max-content' }}
-            className="full-height-table"
-            style={{ flex: 1 }}
-            sticky
-            locale={{
-              emptyText: (
-                <Empty 
-                  description={
-                    <Space direction="vertical" align="center">
-                      <Text type="secondary">
-                        {isError
-                          ? "Unable to load audit logs"
-                          : (filteredLogs?.length === 0 && auditLogs && auditLogs.length > 0)
-                            ? "No logs match your current filters"
-                            : "No audit logs found for the selected date range"
-                        }
-                      </Text>
-                      {!isError && (
-                        <Button 
-                          type="link" 
-                          style={styles.touchTarget}
-                          onClick={() => {
-                            setSearchText('');
-                            setEntityFilter(undefined);
-                            setDateRange([dayjs().subtract(30, 'days'), dayjs()]);
-                          }}
-                        >
-                          Clear filters and expand date range
-                        </Button>
-                      )}
-                    </Space>
-                  }
-                />
-              )
-            }}
-          />
-        </div>
+      <Card data-testid="audit-table-card">
+        <Table
+          data-testid="audit-table"
+          columns={columns}
+          dataSource={filteredLogs}
+          loading={isLoading}
+          rowKey={(record) => `${record.timestamp}-${record.action}-${record.entityName}`}
+          pagination={{
+            current: currentPage,
+            pageSize: pageSize,
+            total: filteredLogs?.length || 0,
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '25', '50', '100'],
+            showTotal: (total, range) => `Showing ${range[0]}-${range[1]} of ${total} logs`,
+            onChange: (page, size) => {
+              setCurrentPage(page);
+              if (size !== pageSize) {
+                setPageSize(size);
+                setCurrentPage(1); // Reset to first page when page size changes
+              }
+            },
+            position: ['bottomRight'],
+            className: 'audit-table-pagination'
+          }}
+          scroll={{ x: 'max-content' }}
+          locale={{
+            emptyText: (
+              <Empty
+                description={
+                  <Space direction="vertical" align="center">
+                    <Text type="secondary">
+                      {isError
+                        ? "Unable to load audit logs"
+                        : (filteredLogs?.length === 0 && auditLogs && auditLogs.length > 0)
+                          ? "No logs match your current filters"
+                          : "No audit logs found for the selected date range"
+                      }
+                    </Text>
+                    {!isError && (
+                      <Button
+                        type="link"
+                        style={styles.touchTarget}
+                        onClick={() => {
+                          setSearchText('');
+                          setEntityFilter(undefined);
+                          setDateRange([dayjs().subtract(30, 'days'), dayjs()]);
+                        }}
+                      >
+                        Clear filters and expand date range
+                      </Button>
+                    )}
+                  </Space>
+                }
+              />
+            )
+          }}
+        />
       </Card>
     </div>
   );

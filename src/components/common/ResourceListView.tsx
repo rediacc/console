@@ -1,7 +1,6 @@
-import React, { useRef } from 'react'
+import React from 'react'
 import { Card, Table, Input, Spin, Empty, TableProps, Space, Typography, Button, Tooltip } from 'antd'
 import { SearchOutlined, PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons'
-import { useDynamicPageSize } from '@/hooks/useDynamicPageSize'
 
 const { Text } = Typography
 
@@ -21,9 +20,6 @@ interface ResourceListViewProps<T = any> {
   pagination?: TableProps<T>['pagination']
   onRow?: TableProps<T>['onRow']
   rowSelection?: TableProps<T>['rowSelection']
-  tableStyle?: React.CSSProperties
-  containerStyle?: React.CSSProperties
-  enableDynamicPageSize?: boolean
   // Enhanced empty state props
   onCreateNew?: () => void
   onRefresh?: () => void
@@ -46,51 +42,31 @@ function ResourceListView<T = any>({
   pagination,
   onRow,
   rowSelection,
-  tableStyle,
-  containerStyle,
-  enableDynamicPageSize = false,
   onCreateNew,
   onRefresh,
   createButtonText = 'Create New',
   emptyDescription,
   resourceType = 'items',
 }: ResourceListViewProps<T>) {
-  const tableContainerRef = useRef<HTMLDivElement>(null)
-  
-  // Use dynamic page size if enabled
-  const dynamicPageSize = useDynamicPageSize(tableContainerRef, {
-    containerOffset: 120, // Account for card header and search bar
-    minRows: 5,
-    maxRows: 50
-  })
-  const cardBodyStyle: React.CSSProperties = containerStyle?.height ? {
-    padding: 'var(--space-md)', // Design system spacing
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    overflow: 'hidden'
-  } : {}
 
   return (
-    <Card 
-      style={containerStyle} 
-      styles={{ body: cardBodyStyle }}
+    <Card
       data-testid="resource-list-container"
     >
       {(title || onSearch || filters || actions) && (
-        <div style={{ marginBottom: 'var(--space-md)', flexShrink: 0 }}>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            flexWrap: 'wrap', 
+        <div style={{ marginBottom: 'var(--space-md)' }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
             gap: 'var(--space-md)'
           }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 'var(--space-md)', 
-              flex: 1 
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--space-md)',
+              flex: 1
             }}>
               {title}
               {onSearch && (
@@ -98,7 +74,7 @@ function ResourceListView<T = any>({
                   key={searchPlaceholder}
                   placeholder={searchPlaceholder}
                   onSearch={onSearch}
-                  style={{ 
+                  style={{
                     width: 300,
                     minHeight: '44px' // Accessibility compliance
                   }}
@@ -113,9 +89,9 @@ function ResourceListView<T = any>({
               </div>
             </div>
             {actions && (
-              <div style={{ 
-                display: 'flex', 
-                gap: 'var(--space-sm)' 
+              <div style={{
+                display: 'flex',
+                gap: 'var(--space-sm)'
               }} data-testid="resource-list-actions">
                 {actions}
               </div>
@@ -124,10 +100,7 @@ function ResourceListView<T = any>({
         </div>
       )}
 
-      <div 
-        ref={tableContainerRef}
-        style={containerStyle?.height ? { flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' } : {}}
-      >
+      <div>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '50px 0' }} data-testid="resource-list-loading">
             <Spin size="large" />
@@ -192,11 +165,10 @@ function ResourceListView<T = any>({
             dataSource={data}
             rowKey={rowKey}
             pagination={pagination !== false ? {
-              showSizeChanger: !enableDynamicPageSize,
+              showSizeChanger: true,
               showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
-              pageSizeOptions: enableDynamicPageSize ? undefined : ['10', '20', '50', '100'],
-              pageSize: enableDynamicPageSize ? dynamicPageSize : undefined,
-              defaultPageSize: enableDynamicPageSize ? undefined : 20,
+              pageSizeOptions: ['10', '20', '50', '100'],
+              defaultPageSize: 20,
               ...pagination,
             } : false}
             onRow={(record, index) => {
@@ -207,9 +179,7 @@ function ResourceListView<T = any>({
               }
             }}
             rowSelection={rowSelection}
-            scroll={{ x: 'max-content', y: tableStyle?.height || 450 }}
-            style={{ height: '100%' }}
-            sticky
+            scroll={{ x: 'max-content' }}
             data-testid="resource-list-table"
           />
         )}

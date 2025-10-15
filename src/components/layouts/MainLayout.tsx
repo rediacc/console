@@ -248,7 +248,8 @@ const MainLayout: React.FC = () => {
     .map(({ showInSimple, requiresPlan, featureFlag, ...item }) => item)
 
   // Determine if current page needs no-scroll behavior
-  const noScrollPages = ['/audit', '/resources', '/queue']
+  // All pages are now scrollable, so no pages need the no-scroll class
+  const noScrollPages: string[] = []
   const isNoScrollPage = noScrollPages.includes(location.pathname)
 
   return (

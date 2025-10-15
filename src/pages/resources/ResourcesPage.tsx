@@ -63,7 +63,6 @@ import {
 
 import { useDropdownData } from '@/api/queries/useDropdownData'
 // Validation schemas now handled in UnifiedResourceModal
-import { useDynamicPageSize } from '@/hooks/useDynamicPageSize'
 import { type QueueFunction } from '@/api/queries/queue'
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import TeamSelector from '@/components/common/TeamSelector'
@@ -83,7 +82,7 @@ const ResourcesPage: React.FC = () => {
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null)
   const [selectedRepositoryFromMachine, setSelectedRepositoryFromMachine] = useState<Repository | null>(null)
   const [selectedContainerFromMachine, setSelectedContainerFromMachine] = useState<any | null>(null)
-  
+
   // Unified modal state
   const [unifiedModalState, setUnifiedModalState] = useState<{
     open: boolean
@@ -93,11 +92,7 @@ const ResourcesPage: React.FC = () => {
     preselectedFunction?: string
     creationContext?: 'credentials-only' | 'normal'
   }>({ open: false, resourceType: 'machine', mode: 'create' })
-  
-  // Refs for table containers
-  const repositoryTableRef = useRef<HTMLDivElement>(null)
-  const storageTableRef = useRef<HTMLDivElement>(null)
-  
+
   // Team state - removed create team functionality (exists in System page)
   
 
@@ -301,21 +296,12 @@ const ResourcesPage: React.FC = () => {
   
   // Rclone import wizard state
   const [rcloneImportWizardOpen, setRcloneImportWizardOpen] = useState(false)
-  
-  // Dynamic page sizes for resultSets
-  const repositoryPageSize = useDynamicPageSize(repositoryTableRef, {
-    containerOffset: 220, // Account for tab headers, pagination, and padding
-    minRows: 5,
-    maxRows: 50,
-    rowHeight: 55 // Typical row height with padding
-  })
-  
-  const storagePageSize = useDynamicPageSize(storageTableRef, {
-    containerOffset: 220,
-    minRows: 5,
-    maxRows: 50,
-    rowHeight: 55
-  })
+
+  // Pagination state for repository and storage tables
+  const [repositoryPageSize, setRepositoryPageSize] = useState(15)
+  const [repositoryPage, setRepositoryPage] = useState(1)
+  const [storagePageSize, setStoragePageSize] = useState(15)
+  const [storagePage, setStoragePage] = useState(1)
 
   // Set default selected team on startup
   const hasInitializedTeam = useRef(false)
@@ -1182,7 +1168,7 @@ const ResourcesPage: React.FC = () => {
         </Tooltip>
       ),
       children: (
-        <div ref={repositoryTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <>
           {repositoriesLoading ? (
             <div style={{ textAlign: 'center', padding: '100px 0' }}>
               <Spin size="large" />
@@ -1203,17 +1189,24 @@ const ResourcesPage: React.FC = () => {
               rowKey="repositoryName"
               scroll={{ x: 'max-content' }}
               pagination={{
-                total: repositories?.length || 0,
+                current: repositoryPage,
                 pageSize: repositoryPageSize,
-                showSizeChanger: false,
+                total: repositories?.length || 0,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50', '100'],
                 showTotal: (total, range) => `${t('common:general.showingRecords', { start: range[0], end: range[1], total })}`,
+                onChange: (page, size) => {
+                  setRepositoryPage(page);
+                  if (size !== repositoryPageSize) {
+                    setRepositoryPageSize(size);
+                    setRepositoryPage(1); // Reset to first page when page size changes
+                  }
+                },
                 position: ['bottomRight'],
               }}
-              style={{ flex: 1 }}
-              sticky
             />
           )}
-        </div>
+        </>
       ),
     },
     {
@@ -1226,7 +1219,7 @@ const ResourcesPage: React.FC = () => {
         </Tooltip>
       ),
       children: (
-        <div ref={storageTableRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <>
           {storagesLoading ? (
             <div style={{ textAlign: 'center', padding: '100px 0' }}>
               <Spin size="large" />
@@ -1247,41 +1240,27 @@ const ResourcesPage: React.FC = () => {
               rowKey="storageName"
               scroll={{ x: 'max-content' }}
               pagination={{
-                total: storages?.length || 0,
+                current: storagePage,
                 pageSize: storagePageSize,
-                showSizeChanger: false,
+                total: storages?.length || 0,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50', '100'],
                 showTotal: (total, range) => `${t('common:general.showingRecords', { start: range[0], end: range[1], total })}`,
+                onChange: (page, size) => {
+                  setStoragePage(page);
+                  if (size !== storagePageSize) {
+                    setStoragePageSize(size);
+                    setStoragePage(1); // Reset to first page when page size changes
+                  }
+                },
                 position: ['bottomRight'],
               }}
-              style={{ flex: 1 }}
-              sticky
             />
           )}
-        </div>
+        </>
       ),
     },
   ]
-
-  // Calculate available height for full-height layout using design system
-  const containerStyle: React.CSSProperties = {
-    ...styles.container,
-    height: 'calc(100vh - 64px - 48px)', // viewport - header - content margin
-    overflow: 'hidden',
-    ...styles.flexColumn as React.CSSProperties
-  }
-
-  const cardStyle: React.CSSProperties = {
-    ...styles.card,
-    height: '100%',
-    ...styles.flexColumn as React.CSSProperties
-  }
-
-  const cardBodyStyle: React.CSSProperties = {
-    flex: 1,
-    overflow: 'hidden',
-    ...styles.padding.md,
-    ...styles.flexColumn as React.CSSProperties
-  }
 
   // Enhanced tab navigation with arrow keys for accessibility
   const handleTabKeyDown = (event: React.KeyboardEvent) => {
@@ -1303,9 +1282,8 @@ const ResourcesPage: React.FC = () => {
   return (
     <>
       {uiMode !== 'simple' ? (
-        <Row gutter={0} style={containerStyle}>
-          <Col span={24} style={{ height: '100%' }}>
-            <Card style={cardStyle} styles={{ body: cardBodyStyle }}>
+        <div style={{ padding: 24 }}>
+          <Card>
               <div style={{ marginBottom: 16 }}>
                 <div style={{ 
                   display: 'flex', 
@@ -1444,12 +1422,10 @@ const ResourcesPage: React.FC = () => {
                 />
               )}
             </Card>
-          </Col>
-        </Row>
+        </div>
       ) : (
-        <Row gutter={0} style={containerStyle}>
-          <Col span={24} style={{ height: '100%' }}>
-            <Card style={cardStyle} styles={{ body: cardBodyStyle }}>
+        <div style={{ padding: 24 }}>
+          <Card>
               <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
                 <div>
                   <Title level={4} style={{ ...styles.heading4, margin: 0 }}>
@@ -1546,8 +1522,7 @@ const ResourcesPage: React.FC = () => {
                 tabIndex={0}
               />
             </Card>
-          </Col>
-        </Row>
+        </div>
       )}
 
 
