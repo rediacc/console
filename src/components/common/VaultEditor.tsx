@@ -1323,16 +1323,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                           machineVault: testMachineVault,
                           teamVault: teamVaultData // Pass actual team vault with SSH keys
                         })
-                        
-                        // Create queue item
-                        createQueueItem({
-                          teamName,
-                          bridgeName,
-                          machineName: '', // Send empty string for bridge-only queue items
-                          queueVault: queueVault.substring(0, 100) + '...', // Log first 100 chars
-                          priority: 1
-                        });
-                        
+
+                        // Create queue item for SSH connection test
                         createQueueItem({
                           teamName,
                           bridgeName,
