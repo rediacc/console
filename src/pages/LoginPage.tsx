@@ -18,6 +18,7 @@ import logoWhite from '@/assets/logo_white.png'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants'
 import { ModalSize } from '@/types/modal'
+import { featureFlags } from '@/config/featureFlags'
 import { 
   isEncrypted, 
   validateMasterPassword, 
@@ -275,7 +276,7 @@ const LoginPage: React.FC = () => {
         vault_protocol_state: vaultProtocolState?.toString() || 'none'
       })
 
-      navigate('/dashboard')
+      navigate('/resources')
     } catch (error: any) {
       // Track login failure
       trackUserAction('login_failure', 'login_form', {
@@ -331,10 +332,10 @@ const LoginPage: React.FC = () => {
           vaultCompany: vaultCompany,
           companyEncryptionEnabled: companyHasEncryption,
         }))
-        
+
         // Close modal and navigate
         setShowTFAModal(false)
-        navigate('/dashboard')
+        navigate('/resources')
       }
     } catch (error: any) {
       // Error is handled by the mutation
@@ -469,9 +470,9 @@ const LoginPage: React.FC = () => {
           </Form.Item>
 
           {/* Progressive disclosure: Show master password field only when needed */}
-          {(vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED || 
-            vaultProtocolState === VaultProtocolState.INVALID_PASSWORD || 
-            showAdvancedOptions) && (
+          {(vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED ||
+            vaultProtocolState === VaultProtocolState.INVALID_PASSWORD ||
+            (showAdvancedOptions && featureFlags.isEnabled('loginAdvancedOptions'))) && (
             <Form.Item
               name="masterPassword"
               label={
@@ -513,8 +514,9 @@ const LoginPage: React.FC = () => {
           )}
           
           {/* Show advanced options toggle when master password is not yet shown */}
-          {!(vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED || 
-            vaultProtocolState === VaultProtocolState.INVALID_PASSWORD || 
+          {featureFlags.isEnabled('loginAdvancedOptions') &&
+           !(vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED ||
+            vaultProtocolState === VaultProtocolState.INVALID_PASSWORD ||
             showAdvancedOptions) && (
             <div style={{ textAlign: 'center', marginBottom: spacing('MD'), marginTop: spacing('SM') }}>
               <Button

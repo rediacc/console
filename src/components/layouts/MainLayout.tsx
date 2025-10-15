@@ -37,7 +37,7 @@ import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants'
 import SandboxWarning from '@/components/common/SandboxWarning'
 import { useTelemetry } from '@/components/common/TelemetryProvider'
-import { apiConnectionService } from '@/services/apiConnectionService'
+import { featureFlags } from '@/config/featureFlags'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
@@ -47,7 +47,6 @@ const MainLayout: React.FC = () => {
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false)
-  const [isDevelopment, setIsDevelopment] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
   const dispatch = useDispatch()
@@ -93,16 +92,6 @@ const MainLayout: React.FC = () => {
     updateCompanyData()
   }, [companyData, company, dispatch])
 
-  // Check if we're in development environment
-  useEffect(() => {
-    const checkEnvironment = () => {
-      const endpointInfo = apiConnectionService.getEndpointInfo()
-      setIsDevelopment(endpointInfo?.type === 'localhost')
-    }
-
-    checkEnvironment()
-  }, [])
-
   // Define all menu items with visibility flags
   const allMenuItems = [
     // Non-scrolling pages group
@@ -119,7 +108,7 @@ const MainLayout: React.FC = () => {
       label: t('navigation.distributedStorage'),
       showInSimple: false, // Show in expert mode only
       requiresPlan: ['ELITE', 'PREMIUM', 'Elite', 'Premium'], // Support both uppercase and proper case
-      requiresDevelopment: true, // Only show in local development
+      featureFlag: 'distributedStorage', // Beta feature - managed by feature flags
       'data-testid': 'main-nav-distributed-storage',
     },
     {
@@ -127,7 +116,7 @@ const MainLayout: React.FC = () => {
       icon: <ShoppingOutlined />,
       label: t('navigation.marketplace'),
       showInSimple: false,
-      requiresDevelopment: true, // Only show in local development
+      featureFlag: 'marketplace', // Beta feature - managed by feature flags
       'data-testid': 'main-nav-marketplace',
     },
     {
@@ -155,6 +144,7 @@ const MainLayout: React.FC = () => {
       icon: <PartitionOutlined />,
       label: t('navigation.architecture'),
       showInSimple: false,
+      featureFlag: 'architecture', // Beta feature - managed by feature flags
       'data-testid': 'main-nav-architecture',
     },
     {
@@ -248,14 +238,14 @@ const MainLayout: React.FC = () => {
         }
       }
 
-      // Check development environment requirements
-      if (item.requiresDevelopment && !isDevelopment) {
+      // Check feature flag requirements (replaces requiresDevelopment)
+      if (item.featureFlag && !featureFlags.isEnabled(item.featureFlag)) {
         return false
       }
 
       return true
     })
-    .map(({ showInSimple, requiresPlan, requiresDevelopment, ...item }) => item)
+    .map(({ showInSimple, requiresPlan, featureFlag, ...item }) => item)
 
   // Determine if current page needs no-scroll behavior
   const noScrollPages = ['/audit', '/resources', '/queue']

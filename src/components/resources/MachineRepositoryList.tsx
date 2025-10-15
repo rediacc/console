@@ -16,6 +16,7 @@ import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 import { LocalActionsMenu } from './LocalActionsMenu'
 import { showMessage } from '@/utils/messages'
 import { useAppSelector } from '@/store/store'
+import { featureFlags } from '@/config/featureFlags'
 
 const { Text } = Typography
 
@@ -1495,7 +1496,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         </div>
 
         {/* Plugin Containers Table */}
-        {pluginContainers.length > 0 && (
+        {featureFlags.isEnabled('plugins') && pluginContainers.length > 0 && (
           <div style={{ marginTop: 16 }} data-testid="machine-repo-list-plugins-section">
             <Table
               columns={containerColumnsWithRepo}
@@ -1699,7 +1700,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       ellipsis: true,
       render: (name: string, record: Repository) => {
         const isExpanded = expandedRows.includes(record.name)
-        const hasExpandableContent = record.mounted && (record.has_services || record.container_count > 0 || record.plugin_count > 0)
+        const hasExpandableContent = record.mounted && (record.has_services || record.container_count > 0 || (featureFlags.isEnabled('plugins') && record.plugin_count > 0))
 
         // Look up repository data to determine if it's a clone or original
         const repositoryData = teamRepositories.find(r => r.repositoryName === record.name)
@@ -2030,7 +2031,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           expandedRowRender: renderExpandedRow,
           expandedRowKeys: expandedRows,
           onExpandedRowsChange: (keys) => setExpandedRows(keys as string[]),
-          rowExpandable: (record) => record.mounted && (record.has_services || record.container_count > 0 || record.plugin_count > 0),
+          rowExpandable: (record) => record.mounted && (record.has_services || record.container_count > 0 || (featureFlags.isEnabled('plugins') && record.plugin_count > 0)),
           expandIcon: () => null, // Hide default expand icon
           expandRowByClick: false, // We'll handle this manually
         }}
@@ -2038,7 +2039,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           emptyText: t('resources:repositories.noRepositories')
         }}
         onRow={(record) => {
-          const hasExpandableContent = record.mounted && (record.has_services || record.container_count > 0 || record.plugin_count > 0)
+          const hasExpandableContent = record.mounted && (record.has_services || record.container_count > 0 || (featureFlags.isEnabled('plugins') && record.plugin_count > 0))
           return {
             onClick: (e) => {
               const target = e.target as HTMLElement
