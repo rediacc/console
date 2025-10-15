@@ -152,6 +152,13 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     };
   }, [loadingTimer]);
 
+  // Reset to 'machine' view when entering Simple mode
+  React.useEffect(() => {
+    if (uiMode === 'simple' && groupBy !== 'machine') {
+      setGroupBy('machine');
+    }
+  }, [uiMode, groupBy]);
+
   // Queries only - mutations are handled by parent
   const { data: machines = [], isLoading, refetch } = useMachines(teamFilter, enabled);
   const { data: repositories = [] } = useRepositories(teamFilter);
@@ -616,6 +623,12 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
   // Render view mode toggle
   const renderViewToggle = () => {
+    // In simple mode, hide all grouping buttons
+    if (uiMode === 'simple') {
+      return null;
+    }
+
+    // In expert/normal mode, show all grouping buttons
     return (
       <div style={{ marginBottom: 16 }}>
         <Space wrap size="small">
@@ -629,9 +642,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               aria-label={t('machines:machine')}
             />
           </Tooltip>
-          
+
           <div style={{ width: 1, height: 24, backgroundColor: 'var(--color-border)', margin: '0 8px' }} />
-          
+
           <Tooltip title={t('machines:groupByBridge')}>
             <Button
               type={groupBy === 'bridge' ? 'primary' : 'default'}
@@ -642,7 +655,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               aria-label={t('machines:groupByBridge')}
             />
           </Tooltip>
-          
+
           <Tooltip title={t('machines:groupByTeam')}>
             <Button
               type={groupBy === 'team' ? 'primary' : 'default'}
@@ -653,7 +666,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               aria-label={t('machines:groupByTeam')}
             />
           </Tooltip>
-          
+
           {isExpertMode && (
             <Tooltip title={t('machines:groupByRegion')}>
               <Button
@@ -666,7 +679,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               />
             </Tooltip>
           )}
-          
+
           <Tooltip title={t('machines:groupByRepository')}>
             <Button
               type={groupBy === 'repository' ? 'primary' : 'default'}
@@ -677,7 +690,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               aria-label={t('machines:groupByRepository')}
             />
           </Tooltip>
-          
+
           <Tooltip title={t('machines:groupByStatus')}>
             <Button
               type={groupBy === 'status' ? 'primary' : 'default'}
@@ -688,7 +701,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               aria-label={t('machines:groupByStatus')}
             />
           </Tooltip>
-          
+
           <Tooltip title={t('machines:groupByGrand')}>
             <Button
               type={groupBy === 'grand' ? 'primary' : 'default'}
