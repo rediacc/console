@@ -18,6 +18,7 @@ import MainLayout from '@/components/layouts/MainLayout'
 import LoginPage from '@/pages/LoginPage'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { getBasePath } from '@/utils/basePath'
+import { featureFlags } from '@/config/featureFlags'
 
 // Lazy load heavy pages
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
@@ -77,10 +78,14 @@ const AppContent: React.FC = () => {
     const initialize = async () => {
       // Initialize API client with correct URL
       await initializeApiClient()
-      
+
+      // Initialize feature flags after API connection is established
+      // This determines if we're in local development mode or production
+      featureFlags.updateDevelopmentState()
+
       // Migrate any existing localStorage data to secure memory storage
       await migrateFromLocalStorage()
-      
+
       // Check for existing auth data on mount
       const authData = await getAuthData()
       if (authData.token && authData.email) {
@@ -91,7 +96,7 @@ const AppContent: React.FC = () => {
         }))
       }
     }
-    
+
     initialize()
   }, [dispatch])
 
@@ -114,7 +119,7 @@ const AppContent: React.FC = () => {
                   (isAuthenticated || showSessionExpiredDialog || stayLoggedOutMode) ? <MainLayout /> : <Navigate to="/login" replace />
                 }
               >
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/" element={<Navigate to="/resources" replace />} />
 
                 {/* Dashboard */}
                 <Route path="/dashboard" element={
