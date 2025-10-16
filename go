@@ -62,6 +62,8 @@ if [ -n "$SYSTEM_HTTP_PORT" ]; then
     export VITE_API_URL="http://${SYSTEM_DOMAIN}:${SYSTEM_HTTP_PORT_ACTUAL:-$SYSTEM_HTTP_PORT}/api"
 fi
 export VITE_APP_VERSION=${TAG:-dev}
+# Export hCaptcha site key if configured (empty string disables captcha)
+export VITE_HCAPTCHA_SITE_KEY=${HCAPTCHA_SITE_KEY:-""}
 
 # Function to run development server
 function dev() {
