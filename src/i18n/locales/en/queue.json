@@ -22,6 +22,8 @@
   },
   "onlyStale": "Only Stale Items",
   "options": "Options",
+  "priorityTooltipP1": "Timeout: 33 seconds (quick tasks only)",
+  "priorityTooltipTier": "Timeout: 2-96 hours (depends on subscription tier)",
   "queueManager": {
     "alreadyHasPriority1": "You already have a highest priority task running on bridge {{bridgeName}}. Please wait for it to complete.",
     "buttonLabel": "Highest Priority",
