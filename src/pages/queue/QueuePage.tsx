@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react'
-import { Typography, Button, Space, Modal, Select, Card, Tag, Badge, Tabs, Row, Col, Statistic, Tooltip, DatePicker, Checkbox, Dropdown, Input, Alert } from 'antd'
-import { ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, WarningOutlined, GlobalOutlined, ClockCircleOutlined, ReloadOutlined, ExportOutlined, DownOutlined, HistoryOutlined, SearchOutlined, InfoCircleOutlined, CloseOutlined } from '@/utils/optimizedIcons'
+import { Typography, Button, Space, Modal, Select, Card, Tag, Badge, Tabs, Row, Col, Tooltip, DatePicker, Checkbox, Dropdown, Input } from 'antd'
+import { ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, WarningOutlined, GlobalOutlined, ClockCircleOutlined, ReloadOutlined, ExportOutlined, HistoryOutlined, SearchOutlined } from '@/utils/optimizedIcons'
 import { useQueueItems, useCancelQueueItem, QueueFilters } from '@/api/queries/queue'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import ResourceListView from '@/components/common/ResourceListView'
@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next'
 import { formatTimestampAsIs } from '@/utils/timeUtils'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 const { RangePicker } = DatePicker
 
 const QueuePage: React.FC = () => {
