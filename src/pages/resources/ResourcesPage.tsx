@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { Card, Tabs, Button, Space, Modal, Tag, Typography, Table, Row, Col, Empty, Spin, Tooltip } from 'antd'
+import { Card, Tabs, Button, Space, Modal, Tag, Typography, Table, Empty, Spin, Tooltip } from 'antd'
 import { useLocation } from 'react-router-dom'
 import {
   PlusOutlined,
