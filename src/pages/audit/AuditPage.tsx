@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, Space, Typography, DatePicker, Select, Button, Table, Tag, Input, Row, Col, Empty, Dropdown, message, Alert, Tooltip, theme } from 'antd';
 import {
-  HistoryOutlined,
   FilterOutlined,
   ReloadOutlined,
   SearchOutlined,
@@ -21,7 +20,7 @@ import dayjs from 'dayjs';
 import { useComponentStyles } from '@/hooks/useComponentStyles';
 import type { ColumnsType } from 'antd/es/table';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { RangePicker } = DatePicker;
 
 const AuditPage = () => {
