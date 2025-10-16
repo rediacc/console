@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { Typography, Button, Space, Modal, Select, Card, Tag, Badge, Tabs, Row, Col, Tooltip, DatePicker, Checkbox, Dropdown, Input } from 'antd'
-import { ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, WarningOutlined, GlobalOutlined, ClockCircleOutlined, ReloadOutlined, ExportOutlined, HistoryOutlined, SearchOutlined, InfoCircleOutlined } from '@/utils/optimizedIcons'
+import { ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, WarningOutlined, GlobalOutlined, ClockCircleOutlined, ReloadOutlined, ExportOutlined, HistoryOutlined, SearchOutlined } from '@/utils/optimizedIcons'
 import { useQueueItems, useCancelQueueItem, QueueFilters } from '@/api/queries/queue'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import ResourceListView from '@/components/common/ResourceListView'
