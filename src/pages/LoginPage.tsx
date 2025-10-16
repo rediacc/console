@@ -104,6 +104,14 @@ const LoginPage: React.FC = () => {
   const [twoFACode, setTwoFACode] = useState('')
   const [showRegistration, setShowRegistration] = useState(false)
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
+  const [endpointSelectorVisible, setEndpointSelectorVisible] = useState(() => {
+    // Default visibility based on build type
+    return featureFlags.getBuildType() === 'DEBUG'
+  })
+  const [versionSelectorVisible, setVersionSelectorVisible] = useState(() => {
+    // Default visibility based on build type
+    return featureFlags.getBuildType() === 'DEBUG'
+  })
   const [quickRegistrationData, setQuickRegistrationData] = useState<{
     email: string
     password: string
@@ -126,11 +134,11 @@ const LoginPage: React.FC = () => {
   useEffect(() => {
     const checkRegistrationMode = async () => {
       const registerParam = searchParams.get('register')
-      
+
       if (registerParam === 'quick') {
         // Check if we're in sandbox mode
         const instanceName = await configService.getInstanceName()
-        
+
         if (instanceName.toLowerCase() === 'sandbox') {
           // Generate random registration data for quick registration
           const randomData = {
@@ -139,13 +147,13 @@ const LoginPage: React.FC = () => {
             companyName: generateRandomCompanyName(),
             activationCode: '111111' // Fixed code for sandbox quick registration
           }
-          
+
           console.log('🚀 Quick Registration Mode (Sandbox Only)', {
             email: randomData.email,
             company: randomData.companyName,
             message: 'Using verification code: 111111'
           })
-          
+
           setQuickRegistrationData(randomData)
           setIsQuickRegistration(true)
           setShowRegistration(true)
@@ -159,19 +167,81 @@ const LoginPage: React.FC = () => {
         // Manual registration mode
         setShowRegistration(true)
       }
-      
+
       // Clean up the URL to remove the parameter
       if (registerParam) {
         searchParams.delete('register')
-        const newUrl = searchParams.toString() 
+        const newUrl = searchParams.toString()
           ? `${window.location.pathname}?${searchParams.toString()}`
           : window.location.pathname
         window.history.replaceState({}, '', newUrl)
       }
     }
-    
+
     checkRegistrationMode()
   }, [searchParams])
+
+  // Keyboard shortcut handler for global power mode (Ctrl+Shift+E)
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+        e.preventDefault()
+
+        // Toggle global power mode
+        const newState = featureFlags.togglePowerMode()
+
+        // Update visibility for both selectors
+        setEndpointSelectorVisible(newState)
+        setVersionSelectorVisible(newState)
+
+        // Show toast with current state
+        showMessage('info', newState ? 'Advanced options enabled' : 'Advanced options disabled')
+
+        // Console log for debugging
+        console.log(`[PowerMode] Global power mode ${newState ? 'enabled' : 'disabled'} via Ctrl+Shift+E`)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyPress)
+    return () => window.removeEventListener('keydown', handleKeyPress)
+  }, [])
+
+  // Health check completion callback
+  const handleHealthCheckComplete = (hasHealthyEndpoint: boolean) => {
+    const buildType = featureFlags.getBuildType()
+    const powerModeEnabled = featureFlags.isPowerModeEnabled()
+
+    console.log('[LoginPage] Health check complete:', {
+      buildType,
+      hasHealthyEndpoint,
+      powerModeEnabled,
+      currentVisibility: {
+        endpoint: endpointSelectorVisible,
+        version: versionSelectorVisible
+      }
+    })
+
+    // Determine visibility based on build type and health status
+    if (buildType === 'DEBUG') {
+      // DEBUG: Always show both
+      setEndpointSelectorVisible(true)
+      setVersionSelectorVisible(true)
+    } else if (buildType === 'RELEASE') {
+      if (powerModeEnabled) {
+        // Power mode overrides everything - show both
+        setEndpointSelectorVisible(true)
+        setVersionSelectorVisible(true)
+      } else if (!hasHealthyEndpoint) {
+        // Fallback: show both when endpoint health fails
+        setEndpointSelectorVisible(true)
+        setVersionSelectorVisible(true)
+      } else {
+        // Hide both when healthy and no power mode
+        setEndpointSelectorVisible(false)
+        setVersionSelectorVisible(false)
+      }
+    }
+  }
 
   const handleLogin = async (values: LoginForm) => {
     setLoading(true)
@@ -340,7 +410,7 @@ const LoginPage: React.FC = () => {
     } catch (error: any) {
       // Error is handled by the mutation
       // Clear the temporarily set token on error
-      await tokenService.clearToken()
+      tokenService.clearToken()
     }
   }
 
@@ -627,10 +697,31 @@ const LoginPage: React.FC = () => {
 
         {/* Endpoint and Version selectors */}
         <div style={{ textAlign: 'center', marginTop: spacing('LG') }}>
-          <div style={{ marginBottom: spacing('XS') }}>
-            <EndpointSelector />
-          </div>
-          <VersionSelector />
+          {/* Advanced Options Container - Power Mode Features */}
+          {(endpointSelectorVisible || versionSelectorVisible) && (
+            <div style={{
+              padding: spacing('MD'),
+              borderRadius: borderRadius('LG'),
+              backgroundColor: 'var(--color-fill-quaternary, rgba(0, 0, 0, 0.02))',
+              border: '1px solid var(--color-border-secondary)',
+              marginBottom: spacing('MD')
+            }}>
+              {/* Endpoint Selector */}
+              {endpointSelectorVisible && (
+                <div style={{ marginBottom: versionSelectorVisible ? spacing('SM') : 0 }}>
+                  <EndpointSelector onHealthCheckComplete={handleHealthCheckComplete} />
+                </div>
+              )}
+
+              {/* Version Selector (Dropdown Mode) */}
+              {versionSelectorVisible && (
+                <VersionSelector showDropdown={true} />
+              )}
+            </div>
+          )}
+
+          {/* Always-visible version display (Static Text Mode) */}
+          <VersionSelector showDropdown={false} />
         </div>
       </Space>
     </Card>
