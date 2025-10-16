@@ -21,7 +21,8 @@ import { LanguageLink } from '@/components/common/languageLink'
 
 const { Step } = Steps
 const { Text } = Typography
-const hCaptchaSiteKey = "6c56894a-a4f2-485e-a250-824adfec4656";//process.env.REACT_APP_HCAPTCHA_SITE_KEY || 
+const hCaptchaSiteKey = import.meta.env.VITE_HCAPTCHA_SITE_KEY || ''
+const isCaptchaEnabled = !!hCaptchaSiteKey 
 
 interface RegistrationModalProps {
   visible: boolean
@@ -106,8 +107,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   }, [currentStep, autoFillData, autoSubmit, verificationForm])
 
   const handleRegistration = async (values: RegistrationForm) => {
-    // Check hCaptcha token
-    if (!hCaptchaToken) {
+    // Check hCaptcha token only if captcha is enabled
+    if (isCaptchaEnabled && !hCaptchaToken) {
       setError(t('auth:registration.captchaRequired', 'Please complete the captcha'))
       return
     }
@@ -360,18 +361,20 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           </Checkbox>
         </Form.Item>
 
-        {/* HCaptcha */}
-        <div style={{ flex: '0 0 auto' }}>
-          <HCaptcha
-            sitekey={hCaptchaSiteKey}
-            onVerify={onHCaptchaChange}
-            onExpire={onHCaptchaExpire}
-            onError={onHCaptchaError}
-            ref={hCaptchaRef}
-            theme="light"
-            size="normal"
-          />
-        </div>
+        {/* HCaptcha - only render if enabled */}
+        {isCaptchaEnabled && (
+          <div style={{ flex: '0 0 auto' }}>
+            <HCaptcha
+              sitekey={hCaptchaSiteKey}
+              onVerify={onHCaptchaChange}
+              onExpire={onHCaptchaExpire}
+              onError={onHCaptchaError}
+              ref={hCaptchaRef}
+              theme="light"
+              size="normal"
+            />
+          </div>
+        )}
       </div>
 
       <Form.Item style={{ marginBottom: 0 }}>
@@ -381,7 +384,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           block
           size="large"
           loading={loading}
-          disabled={!hCaptchaToken}
+          disabled={isCaptchaEnabled && !hCaptchaToken}
           style={{
             // Button styles handled by CSS
             marginTop: 8
