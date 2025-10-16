@@ -7,7 +7,11 @@ import { DESIGN_TOKENS } from '@/utils/styleConstants';
 const { Option } = Select;
 const { Text } = Typography;
 
-const VersionSelector: React.FC = () => {
+interface VersionSelectorProps {
+  showDropdown?: boolean;
+}
+
+const VersionSelector: React.FC<VersionSelectorProps> = ({ showDropdown }) => {
   const [versions, setVersions] = useState<string[]>([]);
   const [currentVersion, setCurrentVersion] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,22 +39,35 @@ const VersionSelector: React.FC = () => {
     fetchVersions();
   }, []);
 
-  // Don't show dropdown in local development
-  if (versionService.isLocalDevelopment()) {
-    return (
-      <Text type="secondary" style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XS, opacity: 0.6 }}>
-        {displayVersion}
-      </Text>
-    );
-  }
-
-  // Show static text if loading or only one version
-  if (loading || versions.length <= 1) {
+  // If showDropdown is explicitly false, always show static text
+  if (showDropdown === false) {
     return (
       <Text type="secondary" style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XS, opacity: 0.6 }}>
         {loading ? '...' : displayVersion}
       </Text>
     );
+  }
+
+  // If showDropdown is explicitly true, always show dropdown (even if loading or single version)
+  // If undefined, use auto-detect logic for backward compatibility
+  if (showDropdown === undefined) {
+    // Auto-detect: Don't show dropdown in local development
+    if (versionService.isLocalDevelopment()) {
+      return (
+        <Text type="secondary" style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XS, opacity: 0.6 }}>
+          {displayVersion}
+        </Text>
+      );
+    }
+
+    // Auto-detect: Show static text if loading or only one version
+    if (loading || versions.length <= 1) {
+      return (
+        <Text type="secondary" style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XS, opacity: 0.6 }}>
+          {loading ? '...' : displayVersion}
+        </Text>
+      );
+    }
   }
 
   const handleVersionChange = (value: string) => {
