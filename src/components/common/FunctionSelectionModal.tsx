@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react'
-import { Modal, Row, Col, Card, Input, Space, Form, Slider, Empty, Typography, Tag, Button, Select, Tooltip, InputNumber, Alert, Checkbox } from 'antd'
-import { ExclamationCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons'
+import { Modal, Row, Col, Card, Input, Space, Form, Slider, Empty, Typography, Tag, Button, Select, Tooltip, InputNumber, Alert, Checkbox, Popover } from 'antd'
+import { ExclamationCircleOutlined, WarningOutlined, QuestionCircleOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
@@ -136,6 +136,15 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   const handleSelectFunction = (func: QueueFunction) => {
     setSelectedFunction(func)
     setFunctionParams(initializeParams(func))
+
+    // Auto-select P1 for quick tasks (functions that typically complete in under 33 seconds)
+    const quickTasks = ['ping', 'hello', 'ssh_test', 'health_check']
+    if (quickTasks.includes(func.name) || func.name.includes('test') || func.name.includes('check')) {
+      setFunctionPriority(1)
+    } else {
+      // Reset to default priority for other functions
+      setFunctionPriority(4)
+    }
   }
 
   // Handle preselected function - only when modal opens
@@ -379,8 +388,14 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                       }}
                       data-testid={`function-modal-item-${func.name}`}
                     >
-                      <Text strong>{func.name}</Text>
-                      <br />
+                      <div>
+                        <Text strong>{func.name}</Text>
+                        {(['ping', 'hello', 'ssh_test', 'health_check'].includes(func.name) || func.name.includes('test') || func.name.includes('check')) && (
+                          <Tag color="orange" style={{ marginLeft: 8, fontSize: 11 }}>
+                            ⚡ {t('functions:quickTaskBadge')}
+                          </Tag>
+                        )}
+                      </div>
                       <Text type="secondary" style={{ fontSize: 12 }}>
                         {func.description}
                       </Text>
@@ -772,7 +787,57 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                   
                   {/* Priority - Hidden when function is preselected or in simple mode */}
                   {!preselectedFunction && !isSimpleMode && (
-                    <Form.Item label={t('functions:priority')} help={t('functions:priorityHelp')}>
+                    <Form.Item
+                      label={
+                        <Space size={4}>
+                          {t('functions:priority')}
+                          <Popover
+                            content={
+                              <div style={{ maxWidth: 400 }}>
+                                <div style={{ marginBottom: 12 }}>
+                                  <Text strong>{t('functions:priorityPopoverLevels')}</Text>
+                                </div>
+                                <div style={{ marginBottom: 8 }}>
+                                  <Tag color="red">P1 ({t('functions:priorityHighest')})</Tag>
+                                  <Text style={{ fontSize: 12 }}>
+                                    {t('functions:priorityPopoverP1')}
+                                  </Text>
+                                </div>
+                                <div style={{ marginBottom: 8 }}>
+                                  <Tag color="orange">P2 ({t('functions:priorityHigh')})</Tag>
+                                  <Text style={{ fontSize: 12 }}>
+                                    {t('functions:priorityPopoverP2')}
+                                  </Text>
+                                </div>
+                                <div style={{ marginBottom: 8 }}>
+                                  <Tag color="gold">P3 ({t('functions:priorityNormal')})</Tag>
+                                  <Text style={{ fontSize: 12 }}>
+                                    {t('functions:priorityPopoverP3')}
+                                  </Text>
+                                </div>
+                                <div style={{ marginBottom: 8 }}>
+                                  <Tag color="blue">P4 ({t('functions:priorityBelowNormal')})</Tag>
+                                  <Text style={{ fontSize: 12 }}>
+                                    {t('functions:priorityPopoverP4')}
+                                  </Text>
+                                </div>
+                                <div>
+                                  <Tag color="green">P5 ({t('functions:priorityLow')})</Tag>
+                                  <Text style={{ fontSize: 12 }}>
+                                    {t('functions:priorityPopoverP5')}
+                                  </Text>
+                                </div>
+                              </div>
+                            }
+                            title={t('functions:priorityPopoverTitle')}
+                            trigger="click"
+                          >
+                            <QuestionCircleOutlined style={{ color: '#1890ff', cursor: 'pointer' }} />
+                          </Popover>
+                        </Space>
+                      }
+                      help={t('functions:priorityHelp')}
+                    >
                       <div>
                       <Slider
                         min={1}
@@ -821,14 +886,19 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                       {functionPriority && (
                         <Alert
                           message={
-                            functionPriority === 1 ? t('functions:priorityHighestWarning') :
+                            functionPriority === 1 ? t('functions:priorityHighestTimeout') :
                             functionPriority === 2 ? t('functions:priorityHighWarning') :
                             functionPriority === 3 ? t('functions:priorityNormalWarning') :
                             functionPriority === 4 ? t('functions:priorityLowWarning') :
                             t('functions:priorityLowestWarning')
                           }
                           description={
-                            functionPriority === 1 ? t('functions:priorityHighestDescription') :
+                            functionPriority === 1 ? (
+                              <>
+                                <div style={{ marginBottom: 8 }}>{t('functions:priorityHighestTimeoutWarning')}</div>
+                                <div style={{ marginTop: 8, fontStyle: 'italic' }}>{t('functions:priorityHighestDescription')}</div>
+                              </>
+                            ) :
                             functionPriority === 2 ? t('functions:priorityHighDescription') :
                             functionPriority === 3 ? t('functions:priorityNormalDescription') :
                             functionPriority === 4 ? t('functions:priorityLowDescription') :

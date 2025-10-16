@@ -199,21 +199,32 @@ const QueuePage: React.FC = () => {
         if (!priorityLabel || !record.priority) {
           return <Text type="secondary">-</Text>
         }
-        
+
         const priorityConfig = {
-          1: { color: 'red', icon: <ExclamationCircleOutlined /> },
-          2: { color: 'orange', icon: undefined },
-          3: { color: 'gold', icon: undefined },
-          4: { color: 'blue', icon: undefined },
-          5: { color: 'green', icon: undefined }
+          1: { color: 'red', icon: <ExclamationCircleOutlined />, timeout: '33s' },
+          2: { color: 'orange', icon: undefined, timeout: 'Tier timeout' },
+          3: { color: 'gold', icon: undefined, timeout: 'Tier timeout' },
+          4: { color: 'blue', icon: undefined, timeout: 'Tier timeout' },
+          5: { color: 'green', icon: undefined, timeout: 'Tier timeout' }
         }
-        
+
         const config = priorityConfig[record.priority as keyof typeof priorityConfig] || priorityConfig[3]
-        
+
         return (
-          <Tag color={config.color} icon={config.icon}>
-            {priorityLabel}
-          </Tag>
+          <Tooltip title={
+            <div>
+              <div style={{ marginBottom: 4 }}><strong>{priorityLabel}</strong></div>
+              <div style={{ fontSize: 12 }}>
+                {record.priority === 1
+                  ? t('queue:priorityTooltipP1')
+                  : t('queue:priorityTooltipTier')}
+              </div>
+            </div>
+          }>
+            <Tag color={config.color} icon={config.icon}>
+              {priorityLabel}
+            </Tag>
+          </Tooltip>
         )
       },
       sorter: (a: any, b: any) => (a.priority || 3) - (b.priority || 3),
