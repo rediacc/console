@@ -18,7 +18,13 @@ interface EndpointHealth {
   checking?: boolean;
 }
 
-const EndpointSelector: React.FC = () => {
+interface EndpointSelectorProps {
+  onHealthCheckComplete?: (hasHealthyEndpoint: boolean) => void;
+}
+
+const EndpointSelector: React.FC<EndpointSelectorProps> = ({
+  onHealthCheckComplete
+}) => {
   const [endpoints, setEndpoints] = useState<Endpoint[]>([]);
   const [selectedEndpoint, setSelectedEndpoint] = useState<Endpoint | null>(null);
   const [loading, setLoading] = useState(true);
@@ -28,6 +34,7 @@ const EndpointSelector: React.FC = () => {
   const [isCheckingHealth, setIsCheckingHealth] = useState(false);
 
   const HEALTH_CACHE_DURATION = 10000; // 10 seconds
+  const HEALTH_CHECK_TIMEOUT = 2500; // 2.5 seconds
 
   /**
    * Check health for a single endpoint
@@ -35,7 +42,7 @@ const EndpointSelector: React.FC = () => {
   const checkEndpointHealth = async (endpoint: Endpoint): Promise<EndpointHealth> => {
     try {
       const response = await axios.get(`${endpoint.url}/Health`, {
-        timeout: 3000,
+        timeout: HEALTH_CHECK_TIMEOUT,
         validateStatus: (status) => status < 500
       });
 
@@ -56,7 +63,7 @@ const EndpointSelector: React.FC = () => {
   /**
    * Check health for all endpoints
    */
-  const checkAllEndpointsHealth = async (endpointsList: Endpoint[]) => {
+  const checkAllEndpointsHealth = async (endpointsList: Endpoint[]): Promise<Record<string, EndpointHealth>> => {
     setIsCheckingHealth(true);
     const healthChecks: Record<string, EndpointHealth> = {};
 
@@ -84,6 +91,8 @@ const EndpointSelector: React.FC = () => {
     await Promise.all(promises);
     setHealthStatus(healthChecks);
     setIsCheckingHealth(false);
+
+    return healthChecks;
   };
 
   useEffect(() => {
@@ -122,6 +131,9 @@ const EndpointSelector: React.FC = () => {
         }
 
         setEndpoints(allEndpoints);
+
+        // Run health checks on all endpoints
+        const healthChecks = await checkAllEndpointsHealth(allEndpoints);
 
         // Get currently selected endpoint or determine from connection service
         let selected = endpointService.getSelectedEndpoint();
@@ -164,6 +176,12 @@ const EndpointSelector: React.FC = () => {
           apiClient.updateApiUrl(selected.url);
           console.log(`[EndpointSelector] Applied endpoint: ${selected.name} (${selected.url})`);
         }
+
+        // Notify parent about health check completion
+        if (onHealthCheckComplete) {
+          const hasHealthyEndpoint = Object.values(healthChecks).some(h => h.isHealthy);
+          onHealthCheckComplete(hasHealthyEndpoint);
+        }
       } catch (error) {
         console.warn('Failed to fetch endpoints', error);
       } finally {
@@ -172,7 +190,7 @@ const EndpointSelector: React.FC = () => {
     };
 
     fetchEndpointsAndSelection();
-  }, []);
+  }, [onHealthCheckComplete]);
 
   const handleEndpointChange = async (value: string) => {
     if (value === '__add_custom__') {
@@ -278,11 +296,11 @@ const EndpointSelector: React.FC = () => {
         {/* Predefined and custom endpoints */}
         {endpoints.map((endpoint) => {
           const health = healthStatus[endpoint.id];
-          // Default to healthy until proven otherwise (optimistic approach)
-          const isHealthy = health?.isHealthy ?? true;
+          // Default to unhealthy until proven otherwise (pessimistic approach)
+          const isHealthy = health?.isHealthy ?? false;
           const isChecking = health?.checking;
-          // Only disable if we've checked and it's unhealthy (not localhost)
-          const isDisabled = (health !== undefined && !health.isHealthy && !health.checking) && endpoint.type !== 'localhost';
+          // Disable if not checked yet or unhealthy (except localhost which is always enabled)
+          const isDisabled = (!health || (!health.isHealthy && !health.checking)) && endpoint.type !== 'localhost';
 
           // Label for selected value (with health indicator but without version)
           const labelContent = (

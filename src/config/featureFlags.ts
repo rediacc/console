@@ -16,11 +16,13 @@ export interface FeatureFlag {
   requiresLocalhost?: boolean  // Only show when connected to localhost
   requiresBuildType?: 'DEBUG' | 'RELEASE'  // Only show in specific build type
   requiresExpertMode?: boolean  // Requires expert UI mode (checked separately in components)
+  requiresPowerMode?: boolean  // Can be revealed via keyboard shortcuts (session-only)
   description?: string  // Description of the feature
 }
 
 class FeatureFlags {
   private isDevelopment = false
+  private isPowerModeActive: boolean = false  // Global power mode state (session-only)
 
   constructor() {
     // Will be initialized after API connection is established
@@ -76,6 +78,20 @@ class FeatureFlags {
       description: 'Plugin containers system - vault-based feature for custom service containers'
     },
 
+    // API Endpoint Selector - Power mode feature
+    apiEndpointSelector: {
+      enabled: false,
+      requiresPowerMode: true,
+      description: 'API endpoint selector dropdown for switching between API backends'
+    },
+
+    // Version Selector - Power mode feature
+    versionSelector: {
+      enabled: false,
+      requiresPowerMode: true,
+      description: 'Version selector dropdown for switching between deployed versions'
+    },
+
     // Example: Future feature that's disabled for everyone
     // newFeatureX: {
     //   enabled: false,
@@ -100,6 +116,11 @@ class FeatureFlags {
 
     // Feature doesn't exist or is explicitly disabled
     if (!flag || !flag.enabled) {
+      return false
+    }
+
+    // Check power mode requirement
+    if (flag.requiresPowerMode && !this.isPowerModeActive) {
       return false
     }
 
@@ -169,6 +190,39 @@ class FeatureFlags {
   getBuildType(): 'DEBUG' | 'RELEASE' {
     const buildType = import.meta.env.VITE_BUILD_TYPE || 'DEBUG'
     return buildType === 'RELEASE' ? 'RELEASE' : 'DEBUG'
+  }
+
+  /**
+   * Toggle global power mode (session-only, not persisted)
+   * @returns The new power mode state after toggle
+   */
+  togglePowerMode(): boolean {
+    this.isPowerModeActive = !this.isPowerModeActive
+
+    if (import.meta.env.DEV) {
+      console.log(`[PowerMode] Global power mode ${this.isPowerModeActive ? 'enabled' : 'disabled'}`)
+    }
+
+    return this.isPowerModeActive
+  }
+
+  /**
+   * Enable global power mode (session-only, not persisted)
+   */
+  enablePowerMode(): void {
+    this.isPowerModeActive = true
+
+    if (import.meta.env.DEV) {
+      console.log('[PowerMode] Global power mode enabled')
+    }
+  }
+
+  /**
+   * Check if global power mode is enabled
+   * @returns true if power mode is active
+   */
+  isPowerModeEnabled(): boolean {
+    return this.isPowerModeActive
   }
 }
 
