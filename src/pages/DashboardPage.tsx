@@ -30,7 +30,6 @@ import {
 import { borderRadius } from '@/utils/styleConstants';
 import { useDashboard } from '../api/queries/dashboard';
 import { useRecentAuditLogs } from '../api/queries/audit';
-import { fetchPricingConfig, getPlanPrice, PricingConfig } from '../api/pricingService';
 import { useTheme } from '@/context/ThemeContext';
 import DistributedStorageDashboardWidget from '../components/dashboard/DistributedStorageDashboardWidget';
 
@@ -54,8 +53,6 @@ const DESCRIPTION_TRUNCATE_LENGTH = 80; // Shorter for mobile readability
 const DashboardPage = () => {
   const { data: dashboard, isLoading, error } = useDashboard();
   const { data: auditLogs, isLoading: auditLoading } = useRecentAuditLogs(RECENT_AUDIT_LOGS_COUNT);
-  const [pricing, setPricing] = useState<PricingConfig | null>(null);
-  const [pricingLoading, setPricingLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const { theme: currentTheme } = useTheme();
   const { token } = theme.useToken();
@@ -70,23 +67,6 @@ const DashboardPage = () => {
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Fetch pricing configuration
-  useEffect(() => {
-    const loadPricing = async () => {
-      setPricingLoading(true);
-      try {
-        const pricingData = await fetchPricingConfig();
-        setPricing(pricingData);
-      } catch (error) {
-        setPricing(null);
-      } finally {
-        setPricingLoading(false);
-      }
-    };
-    
-    loadPricing();
   }, []);
 
   if (isLoading) {
@@ -674,53 +654,6 @@ const DashboardPage = () => {
                       </Col>
                     </Row>
                   </div>
-
-                  {/* Billing Info */}
-                  {!pricingLoading && pricing && (
-                    <div style={{ 
-                      padding: '16px', 
-                      backgroundColor: currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout, 
-                      borderRadius: borderRadius('LG'),
-                      border: `1px solid ${token.colorBorder}`
-                    }}>
-                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Text strong>Monthly Cost</Text>
-                          <Title level={3} style={{ margin: 0 }} data-testid="dashboard-stat-monthly-cost">
-                            ${(() => {
-                              let totalMonthlyCost = 0;
-                              
-                              // Calculate from all active subscriptions if available
-                              if (dashboard.allActiveSubscriptions && dashboard.allActiveSubscriptions.length > 0) {
-                                dashboard.allActiveSubscriptions.forEach(sub => {
-                                  const planPrice = getPlanPrice(pricing, sub.planCode);
-                                  if (planPrice !== null && sub.isTrial !== 1) {
-                                    totalMonthlyCost += planPrice * sub.quantity;
-                                  }
-                                });
-                              } else if (dashboard.billingInfo && dashboard.activeSubscription) {
-                                // Fallback to single subscription calculation
-                                totalMonthlyCost = dashboard.billingInfo.Price * (dashboard.activeSubscription.Quantity || 1);
-                              }
-                              
-                              return totalMonthlyCost.toFixed(2);
-                            })()}
-                          </Title>
-                        </div>
-                        <Text type="secondary">
-                          {dashboard.allActiveSubscriptions && dashboard.allActiveSubscriptions.length > 1
-                            ? `Total from ${dashboard.allActiveSubscriptions.length} active subscriptions`
-                            : dashboard.billingInfo 
-                              ? `Billed ${dashboard.billingInfo.BillingInterval}ly • ${dashboard.billingInfo.Currency.toUpperCase()}`
-                              : 'Monthly subscription cost'
-                          }
-                        </Text>
-                        {dashboard.activeSubscription?.IsTrial === 1 && (
-                          <Tag color="blue">Trial Period</Tag>
-                        )}
-                      </Space>
-                    </div>
-                  )}
                 </Space>
               ) : (
                 <Empty description="No active subscription" />
@@ -844,16 +777,6 @@ const DashboardPage = () => {
                                 Up to {plan.MaxUsers} users • {plan.Description}
                               </Text>
                             </div>
-                            {!pricingLoading && pricing && (
-                              (() => {
-                                const planPrice = getPlanPrice(pricing, plan.PlanCode);
-                                return planPrice !== null && (
-                                  <Text strong style={{ fontSize: 16, minWidth: 80, textAlign: 'right' }}>
-                                    {planPrice === 0 ? 'Free' : `$${planPrice}/mo`}
-                                  </Text>
-                                );
-                              })()
-                            )}
                           </div>
                         </div>
                       ));
