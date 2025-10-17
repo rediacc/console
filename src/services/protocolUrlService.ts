@@ -3,7 +3,7 @@
  * Generates and handles rediacc:// URLs for desktop app integration
  */
 
-export type ProtocolAction = 'terminal' | 'desktop'
+export type ProtocolAction = 'terminal' | 'desktop' | 'vscode'
 
 export interface ProtocolError {
   type: 'timeout' | 'exception' | 'not-installed' | 'permission-denied'
@@ -46,6 +46,11 @@ export interface WindowParams {
   height?: number
   theme?: 'dark' | 'light'
   lang?: 'en' | 'ar' | 'de'
+}
+
+export interface VSCodeParams {
+  path?: string  // Optional: specific directory to open in VSCode
+  windowParams?: WindowParams  // Optional: window customization
 }
 
 class ProtocolUrlService {
@@ -220,6 +225,24 @@ class ProtocolUrlService {
         action: 'stats',
         ...containerParams,
         ...windowParams
+      }
+    })
+  }
+
+  /**
+   * Generate a VSCode-specific URL
+   * This will launch VSCode with SSH remote connection to the repository or machine
+   */
+  async generateVSCodeUrl(
+    baseParams: Omit<ProtocolUrlParams, 'action' | 'queryParams'>,
+    vscodeParams?: VSCodeParams
+  ): Promise<string> {
+    return await this.generateUrl({
+      ...baseParams,
+      action: 'vscode',
+      queryParams: {
+        ...vscodeParams?.path ? { path: vscodeParams.path } : {},
+        ...vscodeParams?.windowParams || {}
       }
     })
   }
@@ -557,7 +580,8 @@ class ProtocolUrlService {
     return {
       navigate: await this.generateUrl(baseParams),
       terminal: await this.generateTerminalUrl(baseParams),
-      desktop: await this.generateDesktopUrl(baseParams)
+      desktop: await this.generateDesktopUrl(baseParams),
+      vscode: await this.generateVSCodeUrl(baseParams)
     }
   }
 }

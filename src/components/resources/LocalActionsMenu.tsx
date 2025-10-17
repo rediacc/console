@@ -3,7 +3,8 @@ import { Dropdown, Button, message, Tooltip } from 'antd'
 import {
   DesktopOutlined,
   CodeOutlined,
-  BuildOutlined
+  BuildOutlined,
+  FileTextOutlined
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
@@ -91,6 +92,8 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
           url = await protocolUrlService.generateTerminalUrl(baseParams)
         } else if (action === 'desktop') {
           url = await protocolUrlService.generateDesktopUrl(baseParams)
+        } else if (action === 'vscode') {
+          url = await protocolUrlService.generateVSCodeUrl(baseParams)
         } else {
           // Default to desktop action for custom actions like sync, plugin, browser
           url = await protocolUrlService.generateUrl(baseParams)
@@ -219,6 +222,17 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       ),
       onClick: () => handleOpenInDesktop(),
       'data-testid': `local-actions-open-${repository}`
+    },
+    {
+      key: 'vscode',
+      icon: <FileTextOutlined style={styles.icon.small} />,
+      label: (
+        <span style={styles.body}>
+          {t('resources:localActions.openInVSCode')}
+        </span>
+      ),
+      onClick: () => handleOpenInDesktop('vscode'),
+      'data-testid': `local-actions-vscode-${repository}`
     },
     {
       key: 'terminal',

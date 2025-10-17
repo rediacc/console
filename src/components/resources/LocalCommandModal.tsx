@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { Modal, Tabs, Form, Input, Checkbox, Button, Space, Typography, message, Radio, theme, Spin } from 'antd'
-import { CopyOutlined, CodeOutlined, WindowsOutlined, AppleOutlined, DesktopOutlined } from '@/utils/optimizedIcons'
+import { CopyOutlined, CodeOutlined, WindowsOutlined, AppleOutlined, DesktopOutlined, FileTextOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { createFreshForkToken } from '@/services/forkTokenService'
+import { apiConnectionService } from '@/services/apiConnectionService'
 
 const { Text, Paragraph } = Typography
 const { TabPane } = Tabs
@@ -30,7 +31,7 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
 }) => {
   const { t } = useTranslation()
   const { token: themeToken } = theme.useToken()
-  const [activeTab, setActiveTab] = useState('terminal')
+  const [activeTab, setActiveTab] = useState('vscode')
   const [os, setOs] = useState<'unix' | 'windows'>('unix')
   const [useDocker, setUseDocker] = useState(false)
   const [useNetworkHost, setUseNetworkHost] = useState(true)  // Default to true for localhost access
@@ -51,6 +52,35 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
       setApiUrl(`${protocol}//${host}/api`)
     }
   }, [visible])
+
+  // Helper function to build protocol URL
+  const buildProtocolUrl = (token: string, action: string, params?: Record<string, string>) => {
+    const team = 'Default'  // Default team as placeholder
+    const encodedToken = encodeURIComponent(token)
+    const encodedTeam = encodeURIComponent(team)
+    const encodedMachine = encodeURIComponent(machine)
+    const encodedRepo = repository ? encodeURIComponent(repository) : ''
+
+    // Build path: rediacc://token/team/machine[/repository]/action
+    let path = `rediacc://${encodedToken}/${encodedTeam}/${encodedMachine}`
+    if (encodedRepo) {
+      path += `/${encodedRepo}`
+    }
+    path += `/${action}`
+
+    // Build query parameters
+    const queryParams = new URLSearchParams()
+    queryParams.append('apiUrl', apiUrl)
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) {
+          queryParams.append(key, value)
+        }
+      })
+    }
+
+    return `${path}?${queryParams.toString()}`
+  }
 
   // Generate fork token only when needed (on copy)
   const generateForkTokenForCopy = async (action: string): Promise<string> => {
@@ -83,80 +113,54 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
 
 
   const buildTermCommand = (token: string = '<SECURE_TOKEN>') => {
-    const apiEnvCmd = os === 'windows'
-      ? `set REDIACC_API_URL=${apiUrl}`
-      : `export REDIACC_API_URL="${apiUrl}"`
+    const params: Record<string, string> = {}
+    if (termCommand) {
+      params.command = termCommand
+    }
+
+    const protocolUrl = buildProtocolUrl(token, 'terminal', params)
 
     const networkFlag = useDocker && useNetworkHost ? ' --network=host' : ''
     const baseCommand = useDocker
-      ? `docker run -it --rm${networkFlag} -e SYSTEM_API_URL="${apiUrl}" rediacc/cli term`
-      : (os === 'windows' ? 'rediacc.bat term' : 'rediacc term')
-    const tokenParam = ` --token "${token}"`
-    const teamParam = ' --team Default'  // Default team as placeholder
-    const machineParam = ` --machine ${machine}`
-    const repoParam = repository ? ` --repo ${repository}` : ''
-    const commandParam = termCommand ? ` --command "${termCommand}"` : ''
+      ? `docker run -it --rm${networkFlag} -e SYSTEM_API_URL="${apiUrl}" rediacc/cli`
+      : (os === 'windows' ? 'rediacc.bat' : 'rediacc')
 
-    const termCmd = `${baseCommand}${tokenParam}${teamParam}${machineParam}${repoParam}${commandParam}`
-
-    return useDocker ? termCmd : `${apiEnvCmd} && ${termCmd}`
+    return `${baseCommand} protocol run "${protocolUrl}"`
   }
 
   const buildDesktopCommand = (token: string = '<SECURE_TOKEN>') => {
-    const apiEnvCmd = os === 'windows'
-      ? `set REDIACC_API_URL=${apiUrl}`
-      : `export REDIACC_API_URL="${apiUrl}"`
+    const protocolUrl = buildProtocolUrl(token, 'desktop')
 
     const networkFlag = useDocker && useNetworkHost ? ' --network=host' : ''
     const baseCommand = useDocker
-      ? `docker run -it --rm${networkFlag} -e SYSTEM_API_URL="${apiUrl}" rediacc/cli desktop`
-      : (os === 'windows' ? 'rediacc.bat desktop' : 'rediacc desktop')
-    const tokenParam = ` --token "${token}"`
-    const teamParam = ' --team Default'  // Default team as placeholder
-    const machineParam = ` --machine ${machine}`
-    const repoParam = repository ? ` --repo ${repository}` : ''
+      ? `docker run -it --rm${networkFlag} -e SYSTEM_API_URL="${apiUrl}" rediacc/cli`
+      : (os === 'windows' ? 'rediacc.bat' : 'rediacc')
 
-    const desktopCmd = `${baseCommand}${tokenParam}${teamParam}${machineParam}${repoParam}`
+    return `${baseCommand} protocol run "${protocolUrl}"`
+  }
 
-    return useDocker ? desktopCmd : `${apiEnvCmd} && ${desktopCmd}`
+  const buildVSCodeCommand = (token: string = '<SECURE_TOKEN>') => {
+    const protocolUrl = buildProtocolUrl(token, 'vscode')
+
+    const networkFlag = useDocker && useNetworkHost ? ' --network=host' : ''
+    const baseCommand = useDocker
+      ? `docker run -it --rm${networkFlag} -e SYSTEM_API_URL="${apiUrl}" rediacc/cli`
+      : (os === 'windows' ? 'rediacc.bat' : 'rediacc')
+
+    return `${baseCommand} protocol run "${protocolUrl}"`
   }
 
   // Fallback versions without token (for error cases)
   const buildTermCommandWithoutToken = () => {
-    const apiEnvCmd = os === 'windows'
-      ? `set REDIACC_API_URL=${apiUrl}`
-      : `export REDIACC_API_URL="${apiUrl}"`
-
-    const networkFlag = useDocker && useNetworkHost ? ' --network=host' : ''
-    const baseCommand = useDocker
-      ? `docker run -it --rm${networkFlag} -e SYSTEM_API_URL="${apiUrl}" rediacc/cli term`
-      : (os === 'windows' ? 'rediacc.bat term' : 'rediacc term')
-    const teamParam = ' --team Default'  // Default team as placeholder
-    const machineParam = ` --machine ${machine}`
-    const repoParam = repository ? ` --repo ${repository}` : ''
-    const commandParam = termCommand ? ` --command "${termCommand}"` : ''
-
-    const termCmd = `${baseCommand}${teamParam}${machineParam}${repoParam}${commandParam}`
-
-    return useDocker ? termCmd : `${apiEnvCmd} && ${termCmd}`
+    return buildTermCommand('MISSING_TOKEN')
   }
 
   const buildDesktopCommandWithoutToken = () => {
-    const apiEnvCmd = os === 'windows'
-      ? `set REDIACC_API_URL=${apiUrl}`
-      : `export REDIACC_API_URL="${apiUrl}"`
+    return buildDesktopCommand('MISSING_TOKEN')
+  }
 
-    const networkFlag = useDocker && useNetworkHost ? ' --network=host' : ''
-    const baseCommand = useDocker
-      ? `docker run -it --rm${networkFlag} -e SYSTEM_API_URL="${apiUrl}" rediacc/cli desktop`
-      : (os === 'windows' ? 'rediacc.bat desktop' : 'rediacc desktop')
-    const teamParam = ' --team Default'  // Default team as placeholder
-    const machineParam = ` --machine ${machine}`
-    const repoParam = repository ? ` --repo ${repository}` : ''
-
-    const desktopCmd = `${baseCommand}${teamParam}${machineParam}${repoParam}`
-
-    return useDocker ? desktopCmd : `${apiEnvCmd} && ${desktopCmd}`
+  const buildVSCodeCommandWithoutToken = () => {
+    return buildVSCodeCommand('MISSING_TOKEN')
   }
 
   const copyToClipboard = async () => {
@@ -167,9 +171,14 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
       const token = await generateForkTokenForCopy(activeTab)
 
       // Build command with real token
-      const commandWithToken = activeTab === 'desktop'
-        ? buildDesktopCommand(token)
-        : buildTermCommand(token)
+      let commandWithToken: string
+      if (activeTab === 'desktop') {
+        commandWithToken = buildDesktopCommand(token)
+      } else if (activeTab === 'vscode') {
+        commandWithToken = buildVSCodeCommand(token)
+      } else {
+        commandWithToken = buildTermCommand(token)
+      }
 
       // Copy to clipboard
       await navigator.clipboard.writeText(commandWithToken)
@@ -181,9 +190,14 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
       // If token generation fails, copy command without token (fallback)
       try {
         // Build command without token environment variables
-        const fallbackCommand = activeTab === 'desktop'
-          ? buildDesktopCommandWithoutToken()
-          : buildTermCommandWithoutToken()
+        let fallbackCommand: string
+        if (activeTab === 'desktop') {
+          fallbackCommand = buildDesktopCommandWithoutToken()
+        } else if (activeTab === 'vscode') {
+          fallbackCommand = buildVSCodeCommandWithoutToken()
+        } else {
+          fallbackCommand = buildTermCommandWithoutToken()
+        }
 
         await navigator.clipboard.writeText(fallbackCommand)
         message.warning('Copied without secure token - please login manually')
@@ -205,6 +219,8 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
         return buildTermCommand()
       case 'desktop':
         return buildDesktopCommand()
+      case 'vscode':
+        return buildVSCodeCommand()
       default:
         return buildTermCommand()
     }
@@ -235,9 +251,45 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
             </Radio.Button>
           </Radio.Group>
         </Form.Item>
+
+        <Form.Item style={{ marginBottom: 0 }}>
+          <Checkbox
+            checked={useDocker}
+            onChange={(e) => setUseDocker(e.target.checked)}
+          >
+            {t('resources:localCommandBuilder.useDocker')}
+            <Text type="secondary" style={{ marginLeft: 8 }}>
+              {t('resources:localCommandBuilder.useDockerHelp')}
+            </Text>
+          </Checkbox>
+        </Form.Item>
+
+        {useDocker && (
+          <Form.Item style={{ marginBottom: 0, marginTop: 8 }}>
+            <Checkbox
+              checked={useNetworkHost}
+              onChange={(e) => setUseNetworkHost(e.target.checked)}
+            >
+              Use host networking (--network=host)
+              <Text type="secondary" style={{ marginLeft: 8 }}>
+                Required for localhost API access (e.g., http://localhost:7322)
+              </Text>
+            </Checkbox>
+          </Form.Item>
+        )}
       </Form>
 
       <Tabs activeKey={activeTab} onChange={setActiveTab}>
+        <TabPane tab={t('resources:localCommandBuilder.vscodeTab')} key="vscode" icon={<FileTextOutlined />}>
+          <Form layout="vertical">
+            <Form.Item help={t('resources:localCommandBuilder.vscodeHelp')}>
+              <Text type="secondary">
+                {t('resources:localCommandBuilder.vscodeDescription')}
+              </Text>
+            </Form.Item>
+          </Form>
+        </TabPane>
+
         <TabPane tab={t('resources:localCommandBuilder.terminalTab')} key="terminal" icon={<CodeOutlined />}>
           <Form layout="vertical">
             <Form.Item
@@ -266,32 +318,6 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
       </Tabs>
 
       <div style={{ marginTop: 24 }}>
-        <Form.Item>
-          <Checkbox
-            checked={useDocker}
-            onChange={(e) => setUseDocker(e.target.checked)}
-          >
-            {t('resources:localCommandBuilder.useDocker')}
-            <Text type="secondary" style={{ marginLeft: 8 }}>
-              {t('resources:localCommandBuilder.useDockerHelp')}
-            </Text>
-          </Checkbox>
-        </Form.Item>
-
-        {useDocker && (
-          <Form.Item>
-            <Checkbox
-              checked={useNetworkHost}
-              onChange={(e) => setUseNetworkHost(e.target.checked)}
-            >
-              Use host networking (--network=host)
-              <Text type="secondary" style={{ marginLeft: 8 }}>
-                Required for localhost API access (e.g., http://localhost:7322)
-              </Text>
-            </Checkbox>
-          </Form.Item>
-        )}
-
         <div style={{
           padding: 16,
           backgroundColor: themeToken.colorFillAlter,
