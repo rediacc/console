@@ -22,21 +22,11 @@ interface ActiveSubscription {
   AutoRenew: boolean;
 }
 
-interface BillingInfo {
-  Price: number;
-  Currency: string;
-  BillingInterval: string;
-  IntervalCount: number;
-  StripePriceId: string;
-}
-
 interface AvailablePlan {
   PlanCode: string;
   PlanName: string;
   Description: string;
   MaxUsers: number;
-  DefaultPrice: number;
-  Currency: string;
   IsCurrentPlan: number;
 }
 
@@ -153,7 +143,6 @@ export interface DistributedStorageStats {
 interface DashboardData {
   companyInfo: CompanyInfo;
   activeSubscription: ActiveSubscription | null;
-  billingInfo: BillingInfo | null;
   availablePlans: AvailablePlan[];
   resources: ResourceLimit[];
   accountHealth: AccountHealth;
@@ -229,9 +218,6 @@ export const useDashboard = () => {
       }
       if (typeof parsedData.activeSubscription === 'string') {
         parsedData.activeSubscription = JSON.parse(parsedData.activeSubscription);
-      }
-      if (typeof parsedData.billingInfo === 'string') {
-        parsedData.billingInfo = JSON.parse(parsedData.billingInfo);
       }
       if (typeof parsedData.accountHealth === 'string') {
         parsedData.accountHealth = JSON.parse(parsedData.accountHealth);
