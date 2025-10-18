@@ -6,14 +6,9 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   SafetyCertificateOutlined,
-  UserOutlined,
-  CloudOutlined,
-  TeamOutlined,
   ExclamationCircleOutlined,
   CrownOutlined,
   DesktopOutlined,
-  ApiOutlined,
-  EnvironmentOutlined,
   InboxOutlined,
   HistoryOutlined,
   CloseCircleOutlined,
@@ -25,7 +20,8 @@ import {
   ThunderboltOutlined,
   WarningOutlined,
   FieldTimeOutlined,
-  RobotOutlined
+  RobotOutlined,
+  TeamOutlined
 } from '@/utils/optimizedIcons';
 import { borderRadius } from '@/utils/styleConstants';
 import { useDashboard } from '../api/queries/dashboard';
@@ -36,13 +32,8 @@ import DistributedStorageDashboardWidget from '../components/dashboard/Distribut
 const { Title, Text, Paragraph } = Typography;
 
 const resourceIcons: Record<string, React.ReactNode> = {
-  'User': <UserOutlined />,
-  'Team': <TeamOutlined />,
-  'Region': <EnvironmentOutlined />,
-  'Bridge': <ApiOutlined />,
   'Machine': <DesktopOutlined />,
-  'Repo': <InboxOutlined />,
-  'Storage': <CloudOutlined />
+  'Repo': <InboxOutlined />
 };
 
 // Constants
@@ -160,7 +151,7 @@ const DashboardPage = () => {
   return (
     <div style={{ padding: isMobile ? 16 : 24 }}>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        {/* Alerts - Moved to top for immediate visibility */}
+        {/* 1. Alerts - Immediate visibility of critical issues */}
         {dashboard.activeSubscription?.IsExpiringSoon === 1 && (
           <Alert
             message="Subscription Expiring Soon"
@@ -183,161 +174,18 @@ const DashboardPage = () => {
           />
         )}
 
-        {/* Account Health & Queue Statistics - Side by side */}
-        <Row gutter={[16, 16]}>
-          {/* Account Health Card */}
-          <Col xs={24} lg={12}>
-            <Card 
-              data-testid="dashboard-account-health-card"
-              title={
-                <Space>
-                  <SafetyCertificateOutlined />
-                  <span>Account Health</span>
-                </Space>
-              }
-              style={{ height: '100%' }}
-            >
-              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Text>Overall Status</Text>
-                  <Tag color={getStatusType(dashboard.accountHealth.SubscriptionStatus)}>
-                    {dashboard.accountHealth.SubscriptionStatus}
-                  </Tag>
-                </div>
-                
-                <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                  <Space>
-                    {dashboard.accountHealth.ResourcesAtLimit > 0 ? (
-                      <ExclamationCircleOutlined style={{ color: token.colorWarning }} />
-                    ) : (
-                      <CheckCircleOutlined style={{ color: token.colorSuccess }} />
-                    )}
-                    <Text>{dashboard.accountHealth.ResourcesAtLimit} resources at limit</Text>
-                  </Space>
-                  
-                  <Space>
-                    <ClockCircleOutlined style={{ color: token.colorTextSecondary }} />
-                    <Text>{dashboard.accountHealth.ResourcesNearLimit} resources near limit</Text>
-                  </Space>
-                </Space>
-
-                <div style={{ paddingTop: 12, borderTop: `1px solid ${token.colorBorder}` }}>
-                  <Text strong>{dashboard.accountHealth.UpgradeRecommendation}</Text>
-                </div>
-              </Space>
-            </Card>
-          </Col>
-
-          {/* Queue Overview Card */}
-          <Col xs={24} lg={12}>
-            {dashboard.queueStats ? (
-              <Card 
-                title={
-                  <Space>
-                    <RobotOutlined />
-                    <span>Queue Overview</span>
-                  </Space>
-                }
-                extra={
-                  <Link to="/queue" style={{ color: token.colorPrimary }} data-testid="dashboard-queue-manage-link">Manage</Link>
-                }
-                style={{ height: '100%' }}
-                data-testid="dashboard-card-queue-overview"
-              >
-                <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                  {/* Status Grid */}
-                  <Row gutter={[16, 16]}>
-                    <Col span={6}>
-                      <Statistic
-                        title="Pending"
-                        value={dashboard.queueStats.PendingCount || 0}
-                        valueStyle={{ color: token.colorWarning }}
-                        prefix={<ClockCircleOutlined />}
-                        data-testid="dashboard-stat-pending"
-                      />
-                    </Col>
-                    <Col span={6}>
-                      <Statistic
-                        title="Processing"
-                        value={dashboard.queueStats.ActiveCount || 0}
-                        valueStyle={{ color: token.colorInfo }}
-                        prefix={<SyncOutlined spin />}
-                        data-testid="dashboard-stat-processing"
-                      />
-                    </Col>
-                    <Col span={6}>
-                      <Statistic
-                        title="Completed"
-                        value={dashboard.queueStats.CompletedCount || 0}
-                        valueStyle={{ color: token.colorSuccess }}
-                        prefix={<CheckCircleOutlined />}
-                        data-testid="dashboard-stat-completed"
-                      />
-                    </Col>
-                    <Col span={6}>
-                      <Statistic
-                        title="Failed"
-                        value={dashboard.queueStats.FailedCount || 0}
-                        valueStyle={{ color: token.colorError }}
-                        prefix={<ExclamationCircleOutlined />}
-                        data-testid="dashboard-stat-failed"
-                      />
-                    </Col>
-                  </Row>
-
-                  {/* Queue Alerts */}
-                  {(dashboard.queueStats.HasStaleItems === 1 ||
-                    dashboard.queueStats.HasOldPendingItems === 1) && (
-                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                      {dashboard.queueStats.HasStaleItems === 1 && (
-                        <Alert
-                          message={`${dashboard.queueStats.StaleCount || 0} stale items`}
-                          type="warning"
-                          showIcon
-                          icon={<WarningOutlined />}
-                          data-testid="dashboard-alert-stale-items"
-                        />
-                      )}
-                      {dashboard.queueStats.HasOldPendingItems === 1 && (
-                        <Alert
-                          message={`Oldest: ${Math.floor((dashboard.queueStats.OldestPendingAgeMinutes || 0) / 60)}h`}
-                          type="info"
-                          showIcon
-                          icon={<FieldTimeOutlined />}
-                          data-testid="dashboard-alert-old-pending"
-                        />
-                      )}
-                    </Space>
-                  )}
-                </Space>
-              </Card>
-            ) : (
-              <Card
-                title={
-                  <Space>
-                    <RobotOutlined />
-                    <span>Queue Overview</span>
-                  </Space>
-                }
-                style={{ height: '100%' }}
-                data-testid="dashboard-card-queue-overview-empty"
-              >
-                <Empty description="No queue data available" />
-              </Card>
-            )}
-          </Col>
-        </Row>
-
-        {/* Resource Usage */}
-        <Card 
+        {/* 2. Resource Usage - Critical capacity monitoring */}
+        <Card
           title="Resource Usage"
           extra={<Text type="secondary">Monitor your resource consumption against plan limits</Text>}
           data-testid="dashboard-card-resource-usage"
         >
           <Row gutter={[16, 24]}>
-            {dashboard.resources.map((resource) => (
+            {dashboard.resources
+              .filter((resource) => resource.ResourceType === 'Machine' || resource.ResourceType === 'Repo')
+              .map((resource) => (
               <Col key={resource.ResourceType} xs={24} sm={12} md={8}>
-                <div style={{ 
+                <div style={{
                   padding: '16px',
                   borderRadius: borderRadius('LG'),
                   border: `1px solid ${token.colorBorderSecondary}`,
@@ -355,11 +203,11 @@ const DashboardPage = () => {
                         {resource.CurrentUsage} / {resource.ResourceLimit === 0 ? '∞' : resource.ResourceLimit}
                       </Text>
                     </div>
-                    <Progress 
-                      percent={resource.ResourceLimit === 0 ? 0 : resource.UsagePercentage} 
+                    <Progress
+                      percent={resource.ResourceLimit === 0 ? 0 : resource.UsagePercentage}
                       status={getProgressStatus(resource.UsagePercentage)}
-                      strokeColor={resource.IsLimitReached === 1 ? 
-                        (currentTheme === 'dark' ? '#ff6b6b' : token.colorError) : 
+                      strokeColor={resource.IsLimitReached === 1 ?
+                        (currentTheme === 'dark' ? '#ff6b6b' : token.colorError) :
                         (currentTheme === 'dark' ? '#7d9b49' : token.colorPrimary)}
                       data-testid={`dashboard-progress-${resource.ResourceType.toLowerCase()}`}
                       style={{ margin: '8px 0' }}
@@ -374,77 +222,265 @@ const DashboardPage = () => {
           </Row>
         </Card>
 
-        {/* Recent Activity - Audit Logs */}
-        <Card 
+        {/* 3. Subscription & Plan Details - Plan context and limits */}
+        <Card
           title={
             <Space>
-              <HistoryOutlined />
-              <span>Recent Activity</span>
+              <CrownOutlined />
+              <span>Subscription & Plan Details - {dashboard.planLimits.PlanCode}</span>
+              {dashboard.allActiveSubscriptions && dashboard.allActiveSubscriptions.length > 0 && (
+                <Badge count={dashboard.allActiveSubscriptions.length} style={{ backgroundColor: '#333333' }} />
+              )}
             </Space>
           }
-          extra={
-            <Link to="/audit" style={{ color: token.colorPrimary }} data-testid="dashboard-activity-viewall-link">View All</Link>
-          }
-          data-testid="dashboard-card-recent-activity"
+          data-testid="dashboard-card-subscription-plans"
         >
-          {auditLoading ? (
-            <div style={{ textAlign: 'center', padding: '20px' }}>
-              <Spin />
-            </div>
-          ) : auditLogs && auditLogs.length > 0 ? (
-            <Timeline
-              items={auditLogs
-                .filter(log => {
-                  // Filter out repetitive low-value activities
-                  const action = log.action.toLowerCase();
-                  const isTokenValidation = action.includes('token') && action.includes('validat');
-                  const isRoutineAuth = action.includes('login') && action.includes('success');
-                  
-                  // Show only meaningful activities, skip routine validations
-                  return !isTokenValidation && !isRoutineAuth;
-                })
-                .slice(0, 5) // Show max 5 meaningful activities
-                .map((log, index) => ({
-                key: index,
-                dot: getActionIcon(log.action),
-                children: (
-                  <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <Space size={8}>
-                        <Text strong style={{ fontSize: 14 }}>{log.action.replace(/_/g, ' ')}</Text>
-                        <Tag>{log.entity}</Tag>
-                      </Space>
-                      <Text type="secondary" style={{ fontSize: 11, flexShrink: 0, marginLeft: 8 }}>
-                        {formatTimestamp(log.timestamp)}
-                      </Text>
-                    </div>
-                    <Text type="secondary" style={{ fontSize: 12, lineHeight: 1.4 }}>
-                      {log.entityName} {log.actionByUser && `• ${log.actionByUser}`}
-                    </Text>
-                    {log.details && log.details.trim() && (
-                      <Text type="secondary" style={{ fontSize: 11, opacity: 0.8 }}>
-                        {log.details.length > DESCRIPTION_TRUNCATE_LENGTH ? `${log.details.substring(0, DESCRIPTION_TRUNCATE_LENGTH)}...` : log.details}
-                      </Text>
-                    )}
-                  </Space>
-                )
-              }))}
-            />
-          ) : (
-            <Empty 
-              description="No recent activity" 
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              style={{ padding: '20px 0' }}
-            />
-          )}
+          {/* Row 1: Subscription Overview */}
+          <Row gutter={[24, 24]}>
+            {/* Current Subscription Section */}
+            <Col xs={24} md={dashboard.allActiveSubscriptions && dashboard.allActiveSubscriptions.length > 0 ? 12 : 24}>
+              {dashboard.activeSubscription ? (
+                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 12 }}>CURRENT SUBSCRIPTION</Text>
+                    <Title level={4} style={{ margin: '8px 0 16px 0' }}>{dashboard.activeSubscription.PlanCode}</Title>
+
+                    <Row gutter={[16, 16]}>
+                      <Col span={12}>
+                        <Statistic
+                          title="Active Licenses"
+                          value={dashboard.activeSubscription.TotalActivePurchases}
+                          valueStyle={{ color: token.colorText }}
+                          data-testid="dashboard-stat-active-licenses"
+                        />
+                      </Col>
+                      <Col span={12}>
+                        <Statistic
+                          title="Days Remaining"
+                          value={dashboard.activeSubscription.DaysRemaining}
+                          valueStyle={{ color: dashboard.activeSubscription.DaysRemaining <= CRITICAL_DAYS_THRESHOLD ? token.colorError : token.colorText }}
+                          data-testid="dashboard-stat-days-remaining"
+                        />
+                      </Col>
+                    </Row>
+                  </div>
+                </Space>
+              ) : (
+                <Empty description="No active subscription" />
+              )}
+            </Col>
+
+            {/* Active Licenses Section */}
+            {dashboard.allActiveSubscriptions && dashboard.allActiveSubscriptions.length > 0 && (
+              <Col xs={24} md={12}>
+                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 12 }}>ALL ACTIVE LICENSES</Text>
+                    <Title level={4} style={{ margin: '8px 0' }}>{dashboard.allActiveSubscriptions.length} Total</Title>
+                  </div>
+                  <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      {dashboard.allActiveSubscriptions.map((sub, index) => (
+                        <div key={index} style={{
+                          padding: '12px',
+                          backgroundColor: currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout,
+                          borderRadius: 6,
+                          border: `1px solid ${token.colorBorder}`
+                        }}
+                        data-testid={`dashboard-license-item-${index}`}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                            <Space>
+                              <Text strong>{sub.planName}</Text>
+                              <Badge count={`×${sub.quantity}`} style={{ backgroundColor: '#52c41a' }} />
+                              {sub.isTrial === 1 && <Tag color="blue">Trial</Tag>}
+                            </Space>
+                            <Text type={sub.daysRemaining <= CRITICAL_DAYS_THRESHOLD ? 'danger' : 'secondary'} style={{ fontSize: 12 }}>
+                              {sub.daysRemaining} {sub.daysRemaining === 1 ? 'day' : 'days'} remaining
+                            </Text>
+                          </div>
+                          <Tooltip title={`From ${new Date(sub.startDate).toLocaleDateString()} to ${new Date(sub.endDate).toLocaleDateString()}`}>
+                            <Progress
+                              data-testid={`dashboard-progress-subscription-${sub.planCode}`}
+                              percent={(() => {
+                                // Calculate total subscription duration in days
+                                const startDate = new Date(sub.startDate);
+                                const endDate = new Date(sub.endDate);
+                                const now = new Date();
+
+                                // If we haven't started yet, show 0%
+                                if (now < startDate) return 0;
+
+                                // If we're past the end date, show 100%
+                                if (now > endDate) return 100;
+
+                                // Calculate total duration and elapsed time
+                                const totalDuration = endDate.getTime() - startDate.getTime();
+                                const elapsedDuration = now.getTime() - startDate.getTime();
+
+                                // Calculate percentage
+                                const percentConsumed = Math.max(0, Math.min(100, (elapsedDuration / totalDuration) * 100));
+
+                                return Math.round(percentConsumed);
+                              })()}
+                              showInfo={false}
+                              size="small"
+                              strokeColor={sub.daysRemaining <= CRITICAL_DAYS_THRESHOLD ?
+                                (currentTheme === 'dark' ? '#ff6b6b' : token.colorError) :
+                                (currentTheme === 'dark' ? '#7d9b49' : token.colorPrimary)}
+                            />
+                          </Tooltip>
+                        </div>
+                      ))}
+                    </Space>
+                  </div>
+                </Space>
+              </Col>
+            )}
+          </Row>
+
+          {/* Row 2: Plan Capabilities */}
+          <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
+            <Col xs={24}>
+              <div>
+                <Text type="secondary" style={{ fontSize: 12, marginBottom: 16, display: 'block' }}>PLAN CAPABILITIES</Text>
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} sm={12} md={6}>
+                    <Statistic
+                      title="Max Active Jobs"
+                      value={dashboard.planLimits.MaxActiveJobs}
+                      valueStyle={{ color: token.colorPrimary }}
+                    />
+                  </Col>
+                  <Col xs={24} sm={12} md={6}>
+                    <Statistic
+                      title="Max Reserved Jobs"
+                      value={dashboard.planLimits.MaxReservedJobs}
+                      valueStyle={{ color: token.colorPrimary }}
+                    />
+                  </Col>
+                  <Col xs={24} sm={12} md={6}>
+                    <Statistic
+                      title="Job Timeout"
+                      value={dashboard.planLimits.JobTimeoutHours}
+                      suffix="hours"
+                      valueStyle={{ color: token.colorPrimary }}
+                    />
+                  </Col>
+                  <Col xs={24} sm={12} md={6}>
+                    <Statistic
+                      title="Max Repo Size"
+                      value={dashboard.planLimits.MaxRepoSize}
+                      suffix="GB"
+                      valueStyle={{ color: token.colorPrimary }}
+                    />
+                  </Col>
+                </Row>
+              </div>
+            </Col>
+          </Row>
         </Card>
 
-        {/* Queue Details - Team and Machine breakdown */}
+        {/* 4. Queue Overview - Operations snapshot */}
+        {dashboard.queueStats ? (
+          <Card
+            title={
+              <Space>
+                <RobotOutlined />
+                <span>Queue Overview</span>
+              </Space>
+            }
+            extra={
+              <Link to="/queue" style={{ color: token.colorPrimary }} data-testid="dashboard-queue-manage-link">Manage</Link>
+            }
+            data-testid="dashboard-card-queue-overview"
+          >
+            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+              {/* Status Grid */}
+              <Row gutter={[16, 16]}>
+                <Col span={6}>
+                  <Statistic
+                    title="Pending"
+                    value={dashboard.queueStats.PendingCount || 0}
+                    valueStyle={{ color: token.colorWarning }}
+                    prefix={<ClockCircleOutlined />}
+                    data-testid="dashboard-stat-pending"
+                  />
+                </Col>
+                <Col span={6}>
+                  <Statistic
+                    title="Processing"
+                    value={dashboard.queueStats.ActiveCount || 0}
+                    valueStyle={{ color: token.colorInfo }}
+                    prefix={<SyncOutlined spin />}
+                    data-testid="dashboard-stat-processing"
+                  />
+                </Col>
+                <Col span={6}>
+                  <Statistic
+                    title="Completed"
+                    value={dashboard.queueStats.CompletedCount || 0}
+                    valueStyle={{ color: token.colorSuccess }}
+                    prefix={<CheckCircleOutlined />}
+                    data-testid="dashboard-stat-completed"
+                  />
+                </Col>
+                <Col span={6}>
+                  <Statistic
+                    title="Failed"
+                    value={dashboard.queueStats.FailedCount || 0}
+                    valueStyle={{ color: token.colorError }}
+                    prefix={<ExclamationCircleOutlined />}
+                    data-testid="dashboard-stat-failed"
+                  />
+                </Col>
+              </Row>
+
+              {/* Queue Alerts */}
+              {(dashboard.queueStats.HasStaleItems === 1 ||
+                dashboard.queueStats.HasOldPendingItems === 1) && (
+                <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                  {dashboard.queueStats.HasStaleItems === 1 && (
+                    <Alert
+                      message={`${dashboard.queueStats.StaleCount || 0} stale items`}
+                      type="warning"
+                      showIcon
+                      icon={<WarningOutlined />}
+                      data-testid="dashboard-alert-stale-items"
+                    />
+                  )}
+                  {dashboard.queueStats.HasOldPendingItems === 1 && (
+                    <Alert
+                      message={`Oldest: ${Math.floor((dashboard.queueStats.OldestPendingAgeMinutes || 0) / 60)}h`}
+                      type="info"
+                      showIcon
+                      icon={<FieldTimeOutlined />}
+                      data-testid="dashboard-alert-old-pending"
+                    />
+                  )}
+                </Space>
+              )}
+            </Space>
+          </Card>
+        ) : (
+          <Card
+            title={
+              <Space>
+                <RobotOutlined />
+                <span>Queue Overview</span>
+              </Space>
+            }
+            data-testid="dashboard-card-queue-overview-empty"
+          >
+            <Empty description="No queue data available" />
+          </Card>
+        )}
+
+        {/* 5. Queue Details - Detailed queue breakdown */}
         {dashboard.queueStats && (
           (Array.isArray(dashboard.queueStats.TeamIssues) && dashboard.queueStats.TeamIssues.length > 0) ||
           (Array.isArray(dashboard.queueStats.MachineIssues) && dashboard.queueStats.MachineIssues.length > 0)
         ) && (
-          <Card 
+          <Card
             title={
               <Space>
                 <RobotOutlined />
@@ -456,9 +492,9 @@ const DashboardPage = () => {
             <Row gutter={[16, 16]}>
               {/* Today's Activity */}
               <Col xs={24} lg={8}>
-                <div style={{ 
-                  padding: '16px', 
-                  backgroundColor: currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout, 
+                <div style={{
+                  padding: '16px',
+                  backgroundColor: currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout,
                   borderRadius: borderRadius('LG'),
                   border: `1px solid ${token.colorBorder}`,
                   height: '100%'
@@ -605,181 +641,114 @@ const DashboardPage = () => {
           </Card>
         )}
 
-        {/* Distributed Storage Machine Statistics - Premium/Elite only */}
+        {/* 6. Distributed Storage - Storage statistics (Premium/Elite only) */}
         {dashboard.featureAccess?.HasAdvancedAnalytics === 1 && dashboard.distributedStorageStats && (
           <DistributedStorageDashboardWidget stats={dashboard.distributedStorageStats} />
         )}
 
-        {/* Subscription & Plans Card - Full Width */}
-        <Card 
+        {/* 7. Account Health - System health monitoring */}
+        <Card
+          data-testid="dashboard-account-health-card"
           title={
             <Space>
-              <CrownOutlined />
-              <span>Subscription & Plans</span>
-              {dashboard.allActiveSubscriptions && dashboard.allActiveSubscriptions.length > 0 && (
-                <Badge count={dashboard.allActiveSubscriptions.length} style={{ backgroundColor: '#333333' }} />
-              )}
+              <SafetyCertificateOutlined />
+              <span>Account Health</span>
             </Space>
           }
-          data-testid="dashboard-card-subscription-plans"
         >
-          <Row gutter={[24, 24]}>
-            {/* Current Subscription Section */}
-            <Col xs={24} md={8}>
-              {dashboard.activeSubscription ? (
-                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                  <div>
-                    <Text type="secondary" style={{ fontSize: 12 }}>CURRENT SUBSCRIPTION</Text>
-                    <Title level={4} style={{ margin: '8px 0 16px 0' }}>{dashboard.activeSubscription.PlanCode}</Title>
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Text>Overall Status</Text>
+              <Tag color={getStatusType(dashboard.accountHealth.SubscriptionStatus)}>
+                {dashboard.accountHealth.SubscriptionStatus}
+              </Tag>
+            </div>
 
-                    <Row gutter={[16, 16]}>
-                      <Col span={12}>
-                        <Statistic
-                          title="Active Licenses"
-                          value={dashboard.activeSubscription.TotalActivePurchases}
-                          valueStyle={{ color: token.colorText }}
-                          data-testid="dashboard-stat-active-licenses"
-                        />
-                      </Col>
-                      <Col span={12}>
-                        <Statistic
-                          title="Days Remaining"
-                          value={dashboard.activeSubscription.DaysRemaining}
-                          valueStyle={{ color: dashboard.activeSubscription.DaysRemaining <= CRITICAL_DAYS_THRESHOLD ? token.colorError : token.colorText }}
-                          data-testid="dashboard-stat-days-remaining"
-                        />
-                      </Col>
-                    </Row>
-                  </div>
-                </Space>
-              ) : (
-                <Empty description="No active subscription" />
-              )}
-            </Col>
+            <Space direction="vertical" size="small" style={{ width: '100%' }}>
+              <Space>
+                {dashboard.accountHealth.ResourcesAtLimit > 0 ? (
+                  <ExclamationCircleOutlined style={{ color: token.colorWarning }} />
+                ) : (
+                  <CheckCircleOutlined style={{ color: token.colorSuccess }} />
+                )}
+                <Text>{dashboard.accountHealth.ResourcesAtLimit} resources at limit</Text>
+              </Space>
 
-            {/* Active Licenses Section */}
-            {dashboard.allActiveSubscriptions && dashboard.allActiveSubscriptions.length > 0 && (
-              <Col xs={24} md={8}>
-                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                  <div>
-                    <Text type="secondary" style={{ fontSize: 12 }}>ALL ACTIVE LICENSES</Text>
-                    <Title level={4} style={{ margin: '8px 0' }}>{dashboard.allActiveSubscriptions.length} Total</Title>
-                  </div>
-                  <div style={{ maxHeight: 200, overflowY: 'auto' }}>
-                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                      {dashboard.allActiveSubscriptions.map((sub, index) => (
-                        <div key={index} style={{ 
-                          padding: '12px', 
-                          backgroundColor: currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout, 
-                          borderRadius: 6,
-                          border: `1px solid ${token.colorBorder}`
-                        }}
-                        data-testid={`dashboard-license-item-${index}`}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                            <Space>
-                              <Text strong>{sub.planName}</Text>
-                              <Badge count={`×${sub.quantity}`} style={{ backgroundColor: '#52c41a' }} />
-                              {sub.isTrial === 1 && <Tag color="blue">Trial</Tag>}
-                            </Space>
-                            <Text type={sub.daysRemaining <= CRITICAL_DAYS_THRESHOLD ? 'danger' : 'secondary'} style={{ fontSize: 12 }}>
-                              {sub.daysRemaining} {sub.daysRemaining === 1 ? 'day' : 'days'} remaining
-                            </Text>
-                          </div>
-                          <Tooltip title={`From ${new Date(sub.startDate).toLocaleDateString()} to ${new Date(sub.endDate).toLocaleDateString()}`}>
-                            <Progress 
-                              data-testid={`dashboard-progress-subscription-${sub.planCode}`}
-                              percent={(() => {
-                                // Calculate total subscription duration in days
-                                const startDate = new Date(sub.startDate);
-                                const endDate = new Date(sub.endDate);
-                                const now = new Date();
-                                
-                                // If we haven't started yet, show 0%
-                                if (now < startDate) return 0;
-                                
-                                // If we're past the end date, show 100%
-                                if (now > endDate) return 100;
-                                
-                                // Calculate total duration and elapsed time
-                                const totalDuration = endDate.getTime() - startDate.getTime();
-                                const elapsedDuration = now.getTime() - startDate.getTime();
-                                
-                                // Calculate percentage
-                                const percentConsumed = Math.max(0, Math.min(100, (elapsedDuration / totalDuration) * 100));
-                                
-                                return Math.round(percentConsumed);
-                              })()}
-                              showInfo={false}
-                              size="small"
-                              strokeColor={sub.daysRemaining <= CRITICAL_DAYS_THRESHOLD ? 
-                                (currentTheme === 'dark' ? '#ff6b6b' : token.colorError) : 
-                                (currentTheme === 'dark' ? '#7d9b49' : token.colorPrimary)}
-                            />
-                          </Tooltip>
-                        </div>
-                      ))}
-                    </Space>
-                  </div>
-                </Space>
-              </Col>
-            )}
+              <Space>
+                <ClockCircleOutlined style={{ color: token.colorTextSecondary }} />
+                <Text>{dashboard.accountHealth.ResourcesNearLimit} resources near limit</Text>
+              </Space>
+            </Space>
 
-            {/* Available Plans Section */}
-            {dashboard.availablePlans.length > 0 && (
-              <Col xs={24} md={dashboard.allActiveSubscriptions && dashboard.allActiveSubscriptions.length > 0 ? 8 : 16}>
-                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                  <div>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      {(() => {
-                        const currentPlan = dashboard.availablePlans.find(plan => plan.IsCurrentPlan === 1);
-                        return currentPlan && currentPlan.PlanCode !== 'ELITE' ? 'UPGRADE OPTIONS' : 'AVAILABLE PLANS';
-                      })()}
+            <div style={{ paddingTop: 12, borderTop: `1px solid ${token.colorBorder}` }}>
+              <Text strong>{dashboard.accountHealth.UpgradeRecommendation}</Text>
+            </div>
+          </Space>
+        </Card>
+
+        {/* 8. Recent Activity - Historical activity log */}
+        <Card
+          title={
+            <Space>
+              <HistoryOutlined />
+              <span>Recent Activity</span>
+            </Space>
+          }
+          extra={
+            <Link to="/audit" style={{ color: token.colorPrimary }} data-testid="dashboard-activity-viewall-link">View All</Link>
+          }
+          data-testid="dashboard-card-recent-activity"
+        >
+          {auditLoading ? (
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <Spin />
+            </div>
+          ) : auditLogs && auditLogs.length > 0 ? (
+            <Timeline
+              items={auditLogs
+                .filter(log => {
+                  // Filter out repetitive low-value activities
+                  const action = log.action.toLowerCase();
+                  const isTokenValidation = action.includes('token') && action.includes('validat');
+                  const isRoutineAuth = action.includes('login') && action.includes('success');
+
+                  // Show only meaningful activities, skip routine validations
+                  return !isTokenValidation && !isRoutineAuth;
+                })
+                .slice(0, 5) // Show max 5 meaningful activities
+                .map((log, index) => ({
+                key: index,
+                dot: getActionIcon(log.action),
+                children: (
+                  <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Space size={8}>
+                        <Text strong style={{ fontSize: 14 }}>{log.action.replace(/_/g, ' ')}</Text>
+                        <Tag>{log.entity}</Tag>
+                      </Space>
+                      <Text type="secondary" style={{ fontSize: 11, flexShrink: 0, marginLeft: 8 }}>
+                        {formatTimestamp(log.timestamp)}
+                      </Text>
+                    </div>
+                    <Text type="secondary" style={{ fontSize: 12, lineHeight: 1.4 }}>
+                      {log.entityName} {log.actionByUser && `• ${log.actionByUser}`}
                     </Text>
-                    <Title level={4} style={{ margin: '8px 0' }}>Choose Your Plan</Title>
-                  </div>
-                  <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                    {(() => {
-                      const planHierarchy = ['COMMUNITY', 'ADVANCED', 'PREMIUM', 'ELITE'];
-                      const currentPlan = dashboard.availablePlans.find(plan => plan.IsCurrentPlan === 1);
-                      const currentPlanIndex = currentPlan ? planHierarchy.indexOf(currentPlan.PlanCode) : -1;
-                      
-                      const filteredPlans = dashboard.availablePlans
-                        .filter(plan => {
-                          const planIndex = planHierarchy.indexOf(plan.PlanCode);
-                          return planIndex >= currentPlanIndex;
-                        });
-                      
-                      return filteredPlans.map((plan) => (
-                        <div 
-                          key={plan.PlanCode} 
-                          style={{ 
-                            padding: '12px 16px',
-                            backgroundColor: plan.IsCurrentPlan === 1 
-                              ? (currentTheme === 'dark' ? token.colorBgElevated : token.colorBgContainer)
-                              : (currentTheme === 'dark' ? token.colorBgContainer : token.colorBgLayout),
-                            borderRadius: 6,
-                            border: plan.IsCurrentPlan === 1 
-                              ? `2px solid ${token.colorPrimary}` 
-                              : `1px solid ${token.colorBorder}`
-                          }}
-                          data-testid={`dashboard-plan-item-${plan.PlanCode.toLowerCase()}`}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ flex: 1 }}>
-                              <Space>
-                                <Text strong>{plan.PlanCode}</Text>
-                                {plan.IsCurrentPlan === 1 && <Tag color="success">Current</Tag>}
-                              </Space>
-                            </div>
-                          </div>
-                        </div>
-                      ));
-                    })()}
+                    {log.details && log.details.trim() && (
+                      <Text type="secondary" style={{ fontSize: 11, opacity: 0.8 }}>
+                        {log.details.length > DESCRIPTION_TRUNCATE_LENGTH ? `${log.details.substring(0, DESCRIPTION_TRUNCATE_LENGTH)}...` : log.details}
+                      </Text>
+                    )}
                   </Space>
-                </Space>
-              </Col>
-            )}
-          </Row>
+                )
+              }))}
+            />
+          ) : (
+            <Empty
+              description="No recent activity"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              style={{ padding: '20px 0' }}
+            />
+          )}
         </Card>
 
       </Space>
