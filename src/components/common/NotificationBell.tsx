@@ -21,6 +21,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
+import 'dayjs/locale/es'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing } from '@/utils/styleConstants'
 
@@ -30,11 +31,20 @@ const { Text } = Typography
 
 const NotificationBell: React.FC = () => {
   const dispatch = useDispatch()
-  const { t } = useTranslation('common')
+  const { t, i18n } = useTranslation('common')
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const styles = useComponentStyles()
-  
+
   const { notifications, unreadCount } = useSelector((state: RootState) => state.notifications)
+
+  // Update dayjs locale when language changes
+  React.useEffect(() => {
+    const dayjsLocaleMap: Record<string, string> = {
+      en: 'en',
+      es: 'es'
+    }
+    dayjs.locale(dayjsLocaleMap[i18n.language] || 'en')
+  }, [i18n.language])
 
   const getIcon = (type: NotificationType) => {
     switch (type) {
@@ -143,7 +153,7 @@ const NotificationBell: React.FC = () => {
                       <Space>
                         <Text strong={!notification.read}>{notification.title}</Text>
                         <Tag color={getTypeColor(notification.type)} style={{ marginLeft: spacing('XS') }}>
-                          {notification.type.toUpperCase()}
+                          {t(`notifications.types.${notification.type}`).toUpperCase()}
                         </Tag>
                       </Space>
                       <Button
