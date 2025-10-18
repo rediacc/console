@@ -29,7 +29,7 @@ import { useRecentAuditLogs } from '../api/queries/audit';
 import { useTheme } from '@/context/ThemeContext';
 import DistributedStorageDashboardWidget from '../components/dashboard/DistributedStorageDashboardWidget';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 const resourceIcons: Record<string, React.ReactNode> = {
   'Machine': <DesktopOutlined />,
@@ -155,7 +155,7 @@ const DashboardPage = () => {
         {dashboard.activeSubscription?.IsExpiringSoon === 1 && (
           <Alert
             message="Subscription Expiring Soon"
-            description={`Your ${dashboard.activeSubscription.PlanCode} subscription expires in ${dashboard.activeSubscription.DaysRemaining} days.${!dashboard.activeSubscription.AutoRenew ? ' Enable auto-renewal to avoid service interruption.' : ''}`}
+            description={`Your ${dashboard.activeSubscription.PlanCode} subscription expires in ${dashboard.activeSubscription.DaysRemaining} days.`}
             type="warning"
             showIcon
             icon={<ClockCircleOutlined />}
@@ -290,7 +290,7 @@ const DashboardPage = () => {
                         data-testid={`dashboard-license-item-${index}`}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                             <Space>
-                              <Text strong>{sub.planName}</Text>
+                              <Text strong>{sub.planCode}</Text>
                               <Badge count={`×${sub.quantity}`} style={{ backgroundColor: '#52c41a' }} />
                               {sub.isTrial === 1 && <Tag color="blue">Trial</Tag>}
                             </Space>

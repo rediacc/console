@@ -276,7 +276,7 @@ const DistributedStoragePage: React.FC = () => {
                   <br /><br />
                   <strong>Debug Info:</strong>
                   <br />
-                  Current Plan: {planName || 'No plan detected'}
+                  Current Plan: {planCode || 'No plan detected'}
                   <br />
                   Has Access: {String(hasDistributedStorageAccess)}
                   <br />
