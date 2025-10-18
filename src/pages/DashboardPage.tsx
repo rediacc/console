@@ -164,7 +164,7 @@ const DashboardPage = () => {
         {dashboard.activeSubscription?.IsExpiringSoon === 1 && (
           <Alert
             message="Subscription Expiring Soon"
-            description={`Your ${dashboard.activeSubscription.PlanName} subscription expires in ${dashboard.activeSubscription.DaysRemaining} days.${!dashboard.activeSubscription.AutoRenew ? ' Enable auto-renewal to avoid service interruption.' : ''}`}
+            description={`Your ${dashboard.activeSubscription.PlanCode} subscription expires in ${dashboard.activeSubscription.DaysRemaining} days.${!dashboard.activeSubscription.AutoRenew ? ' Enable auto-renewal to avoid service interruption.' : ''}`}
             type="warning"
             showIcon
             icon={<ClockCircleOutlined />}
@@ -630,11 +630,8 @@ const DashboardPage = () => {
                 <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                   <div>
                     <Text type="secondary" style={{ fontSize: 12 }}>CURRENT SUBSCRIPTION</Text>
-                    <Title level={4} style={{ margin: '8px 0' }}>{dashboard.activeSubscription.PlanName}</Title>
-                    <Paragraph type="secondary" style={{ marginBottom: 16 }}>
-                      {dashboard.activeSubscription.PlanDescription}
-                    </Paragraph>
-                    
+                    <Title level={4} style={{ margin: '8px 0 16px 0' }}>{dashboard.activeSubscription.PlanCode}</Title>
+
                     <Row gutter={[16, 16]}>
                       <Col span={12}>
                         <Statistic
@@ -770,12 +767,9 @@ const DashboardPage = () => {
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ flex: 1 }}>
                               <Space>
-                                <Text strong>{plan.PlanName}</Text>
+                                <Text strong>{plan.PlanCode}</Text>
                                 {plan.IsCurrentPlan === 1 && <Tag color="success">Current</Tag>}
                               </Space>
-                              <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-                                Up to {plan.MaxUsers} users • {plan.Description}
-                              </Text>
                             </div>
                           </div>
                         </div>

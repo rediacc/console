@@ -228,10 +228,10 @@ const MainLayout: React.FC = () => {
         if (!companyData?.activeSubscription) {
           return false
         }
-        const currentPlan = companyData.activeSubscription.PlanName
-        // Check if current plan matches any required plan (case-insensitive)
+        const currentPlan = companyData.activeSubscription.PlanCode
+        // Check if current plan matches any required plan (already uppercase)
         const hasRequiredPlan = item.requiresPlan.some(
-          requiredPlan => requiredPlan.toUpperCase() === currentPlan?.toUpperCase()
+          requiredPlan => requiredPlan.toUpperCase() === currentPlan
         )
         if (!hasRequiredPlan) {
           return false
@@ -667,9 +667,9 @@ const MainLayout: React.FC = () => {
               </Text>
             )}
             {companyData?.activeSubscription && !isMobile && (
-              <Badge 
-                count={companyData.activeSubscription.PlanName} 
-                style={{ 
+              <Badge
+                count={companyData.activeSubscription.PlanCode}
+                style={{
                   backgroundColor: 'var(--color-primary)',
                   fontSize: DESIGN_TOKENS.FONT_SIZE.XS,
                   fontWeight: DESIGN_TOKENS.FONT_WEIGHT.SEMIBOLD,

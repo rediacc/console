@@ -3,13 +3,11 @@ import { apiClient } from '../client';
 
 interface CompanyInfo {
   CompanyName: string;
-  StripeCustomerId: string | null;
 }
 
 interface ActiveSubscription {
   Edition: string;
-  PlanName: string;
-  PlanDescription: string;
+  PlanCode: string;
   Quantity: number;
   TotalActivePurchases: number;
   StartDate: string;
@@ -19,14 +17,10 @@ interface ActiveSubscription {
   IsActive: number;
   IsTrial: number;
   IsExpiringSoon: number;
-  AutoRenew: boolean;
 }
 
 interface AvailablePlan {
   PlanCode: string;
-  PlanName: string;
-  Description: string;
-  MaxUsers: number;
   IsCurrentPlan: number;
 }
 
@@ -39,7 +33,6 @@ interface ResourceLimit {
   UsagePercentage: number;
   PlanComparison: Array<{
     PlanCode: string;
-    PlanName: string;
     Limit: number;
   }>;
 }
@@ -60,13 +53,11 @@ interface FeatureAccess {
 
 interface SubscriptionDetail {
   planCode: string;
-  planName: string;
   quantity: number;
   startDate: string;
   endDate: string;
   daysRemaining: number;
   status: string;
-  stripeSubscriptionId: string | null;
   isTrial: number;
 }
 
