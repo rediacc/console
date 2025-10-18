@@ -61,15 +61,14 @@ const DistributedStoragePage: React.FC = () => {
   console.log('DistributedStorage Debug:', {
     companyData,
     activeSubscription: companyData?.activeSubscription,
-    planName: companyData?.activeSubscription?.PlanName,
+    planCode: companyData?.activeSubscription?.PlanCode,
     fullCompanyData: JSON.stringify(companyData, null, 2)
   })
-  
-  const planName = companyData?.activeSubscription?.PlanName
-  const hasDistributedStorageAccess = planName?.toUpperCase() === 'ELITE' ||
-                                     planName?.toUpperCase() === 'PREMIUM'
 
-  console.log('hasDistributedStorageAccess:', hasDistributedStorageAccess, 'planName:', planName)
+  const planCode = companyData?.activeSubscription?.PlanCode
+  const hasDistributedStorageAccess = planCode === 'ELITE' || planCode === 'PREMIUM'
+
+  console.log('hasDistributedStorageAccess:', hasDistributedStorageAccess, 'planCode:', planCode)
 
   // Distributed storage queries - must be called unconditionally
   const { data: clusters = [], isLoading: clustersLoading, refetch: refetchClusters } = useDistributedStorageClusters(
