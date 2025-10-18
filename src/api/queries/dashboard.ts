@@ -19,11 +19,6 @@ interface ActiveSubscription {
   IsExpiringSoon: number;
 }
 
-interface AvailablePlan {
-  PlanCode: string;
-  IsCurrentPlan: number;
-}
-
 interface ResourceLimit {
   ResourceType: string;
   ResourceLimit: number;
@@ -31,10 +26,6 @@ interface ResourceLimit {
   CurrentUsage: number;
   IsLimitReached: number;
   UsagePercentage: number;
-  PlanComparison: Array<{
-    PlanCode: string;
-    Limit: number;
-  }>;
 }
 
 interface AccountHealth {
@@ -49,6 +40,14 @@ interface FeatureAccess {
   HasPrioritySupport: number;
   HasDedicatedAccount: number;
   HasCustomBranding: number;
+}
+
+interface PlanLimits {
+  MaxActiveJobs: number;
+  MaxReservedJobs: number;
+  JobTimeoutHours: number;
+  MaxRepoSize: number;
+  PlanCode: string;
 }
 
 interface SubscriptionDetail {
@@ -134,10 +133,10 @@ export interface DistributedStorageStats {
 interface DashboardData {
   companyInfo: CompanyInfo;
   activeSubscription: ActiveSubscription | null;
-  availablePlans: AvailablePlan[];
   resources: ResourceLimit[];
   accountHealth: AccountHealth;
   featureAccess: FeatureAccess;
+  planLimits: PlanLimits;
   queueStats?: QueueStats;
   distributedStorageStats?: DistributedStorageStats;
   allActiveSubscriptions?: SubscriptionDetail[];
@@ -215,6 +214,9 @@ export const useDashboard = () => {
       }
       if (typeof parsedData.featureAccess === 'string') {
         parsedData.featureAccess = JSON.parse(parsedData.featureAccess);
+      }
+      if (typeof parsedData.planLimits === 'string') {
+        parsedData.planLimits = JSON.parse(parsedData.planLimits);
       }
       if (typeof parsedData.queueStats === 'string') {
         parsedData.queueStats = JSON.parse(parsedData.queueStats);
