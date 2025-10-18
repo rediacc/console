@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Select, Typography } from 'antd';
 import { TagOutlined } from '@/utils/optimizedIcons';
 import { versionService } from '@/services/versionService';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import {
+  StyledSelect,
+  VersionText,
+  OptionContent,
+  EmojiIcon
+} from './styles';
 
-const { Option } = Select;
-const { Text } = Typography;
+const { Option } = StyledSelect;
 
 interface VersionSelectorProps {
   showDropdown?: boolean;
@@ -42,9 +46,9 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({ showDropdown }) => {
   // If showDropdown is explicitly false, always show static text
   if (showDropdown === false) {
     return (
-      <Text type="secondary" style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XS, opacity: 0.6 }}>
+      <VersionText type="secondary">
         {loading ? '...' : displayVersion}
-      </Text>
+      </VersionText>
     );
   }
 
@@ -54,23 +58,24 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({ showDropdown }) => {
     // Auto-detect: Don't show dropdown in local development
     if (versionService.isLocalDevelopment()) {
       return (
-        <Text type="secondary" style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XS, opacity: 0.6 }}>
+        <VersionText type="secondary">
           {displayVersion}
-        </Text>
+        </VersionText>
       );
     }
 
     // Auto-detect: Show static text if loading or only one version
     if (loading || versions.length <= 1) {
       return (
-        <Text type="secondary" style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XS, opacity: 0.6 }}>
+        <VersionText type="secondary">
           {loading ? '...' : displayVersion}
-        </Text>
+        </VersionText>
       );
     }
   }
 
-  const handleVersionChange = (value: string) => {
+  const handleVersionChange = (value: unknown) => {
+    const versionValue = value as string;
     // Get current route path (e.g., /login, /dashboard)
     const currentPath = window.location.pathname;
 
@@ -78,12 +83,12 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({ showDropdown }) => {
     const routePath = currentPath.replace(/^\/versions\/v\d+\.\d+\.\d+/, '') || '/login';
 
     let newUrl: string;
-    if (value === 'latest') {
+    if (versionValue === 'latest') {
       // Navigate to root deployment
       newUrl = `${window.location.origin}${routePath}`;
     } else {
       // Navigate to versioned deployment
-      newUrl = `${window.location.origin}/versions/${value}${routePath}`;
+      newUrl = `${window.location.origin}/versions/${versionValue}${routePath}`;
     }
 
     // Full page reload to ensure proper base path detection
@@ -94,37 +99,32 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({ showDropdown }) => {
   const selectedValue = currentVersion || 'latest';
 
   return (
-    <Select
+    <StyledSelect
       value={selectedValue}
       onChange={handleVersionChange}
-      style={{
-        fontSize: DESIGN_TOKENS.FONT_SIZE.XS,
-        width: 120
-      }}
+      style={{ width: 120 }}
       size="small"
       suffixIcon={<TagOutlined style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XS }} />}
       popupMatchSelectWidth={false}
       data-testid="version-selector"
-      dropdownStyle={{
-        fontSize: DESIGN_TOKENS.FONT_SIZE.XS
-      }}
     >
       {/* Latest option */}
       <Option key="latest" value="latest" data-testid="version-option-latest">
-        <span style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XS }}>
-          📍 Latest
-        </span>
+        <OptionContent>
+          <EmojiIcon>📍</EmojiIcon>
+          Latest
+        </OptionContent>
       </Option>
 
       {/* All version options */}
       {versions.map((version) => (
         <Option key={version} value={version} data-testid={`version-option-${version}`}>
-          <span style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XS }}>
+          <OptionContent>
             {version}
-          </span>
+          </OptionContent>
         </Option>
       ))}
-    </Select>
+    </StyledSelect>
   );
 };
 

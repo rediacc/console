@@ -18,12 +18,16 @@ const AuthLayout: React.FC = () => {
   
   return (
     <Layout style={{ minHeight: '100vh', ...backgroundStyle }} data-testid="auth-layout-container">
-      <div style={{ 
-        position: 'absolute', 
-        top: spacing('CONTAINER'), 
-        right: spacing('CONTAINER'), 
-        zIndex: DESIGN_TOKENS.Z_INDEX.DROPDOWN 
-      }} data-testid="auth-layout-theme-toggle-wrapper">
+      <div 
+        style={{ 
+          position: 'absolute', 
+          top: spacing('CONTAINER'), 
+          right: spacing('CONTAINER'), 
+          zIndex: DESIGN_TOKENS.Z_INDEX.DROPDOWN 
+        }} 
+        className="auth-theme-toggle-wrapper"
+        data-testid="auth-layout-theme-toggle-wrapper"
+      >
         <ThemeToggle data-testid="auth-layout-theme-toggle" />
       </div>
       <Content
@@ -32,6 +36,7 @@ const AuthLayout: React.FC = () => {
           padding: spacing('CONTAINER'),
         }}
         data-testid="auth-layout-content"
+        className="auth-layout-content"
       >
         <Outlet />
       </Content>
