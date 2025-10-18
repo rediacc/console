@@ -138,7 +138,13 @@
     "clearAll": "Clear all",
     "empty": "No notifications",
     "markAllRead": "Mark all as read",
-    "title": "Notifications"
+    "title": "Notifications",
+    "types": {
+      "success": "Success",
+      "error": "Error",
+      "warning": "Warning",
+      "info": "Information"
+    }
   },
   "refresh": "Refresh",
   "status": {
