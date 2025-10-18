@@ -2,6 +2,8 @@ import React from 'react';
 import { Select } from 'antd';
 import { GlobalOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
+import dayjs from 'dayjs';
+import 'dayjs/locale/es';
 const { Option } = Select;
 
 interface Language {
@@ -29,6 +31,13 @@ const LanguageSelector: React.FC = () => {
     await i18n.changeLanguage(value);
     // Force a re-render of the entire app by updating the document direction for RTL languages
     document.documentElement.dir = value === 'ar' ? 'rtl' : 'ltr';
+
+    // Set dayjs locale globally
+    const dayjsLocaleMap: Record<string, string> = {
+      en: 'en',
+      es: 'es'
+    };
+    dayjs.locale(dayjsLocaleMap[value] || 'en');
   };
 
   const selectorStyle = {

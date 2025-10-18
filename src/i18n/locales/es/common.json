@@ -138,7 +138,13 @@
     "clearAll": "Borrar todo",
     "empty": "Sin notificaciones",
     "markAllRead": "Marcar todo como leído",
-    "title": "Notificaciones"
+    "title": "Notificaciones",
+    "types": {
+      "success": "Éxito",
+      "error": "Error",
+      "warning": "Advertencia",
+      "info": "Información"
+    }
   },
   "refresh": "Refrescar",
   "status": {

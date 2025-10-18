@@ -11,15 +11,10 @@ const recentErrors = new Map<string, number>()
 const ERROR_DEDUP_WINDOW_MS = 1000 // 1 second window for deduplication
 const ERROR_CLEANUP_THRESHOLD_MS = ERROR_DEDUP_WINDOW_MS * 2
 
-const NOTIFICATION_TITLES: Record<MessageType, string> = {
-  success: 'Success',
-  error: 'Error',
-  warning: 'Warning',
-  info: 'Information'
+const getNotificationTitle = (type: MessageType): string => {
+  const titleKey = `notifications.types.${type}`
+  return i18n.t(`common:${titleKey}`) || 'Notification'
 }
-
-const getNotificationTitle = (type: MessageType): string => 
-  NOTIFICATION_TITLES[type] ?? 'Notification'
 
 export const showMessage = (type: MessageType, content: string) => {
   // For error messages, check if we've shown this recently
