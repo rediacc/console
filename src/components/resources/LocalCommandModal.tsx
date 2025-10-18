@@ -3,7 +3,6 @@ import { Modal, Tabs, Form, Input, Checkbox, Button, Space, Typography, message,
 import { CopyOutlined, CodeOutlined, WindowsOutlined, AppleOutlined, DesktopOutlined, FileTextOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { createFreshForkToken } from '@/services/forkTokenService'
-import { apiConnectionService } from '@/services/apiConnectionService'
 
 const { Text, Paragraph } = Typography
 const { TabPane } = Tabs
