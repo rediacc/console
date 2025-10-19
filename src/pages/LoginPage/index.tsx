@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
-import { Card, Form, Input, Button, Typography, Space, Alert, Tooltip, Modal } from 'antd'
+import { Form, Button, Typography, Space, Alert, Tooltip, Modal } from 'antd'
 import { UserOutlined, LockOutlined, KeyOutlined, InfoCircleOutlined, SafetyCertificateOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { loginSuccess } from '@/store/auth/authSlice'
@@ -15,8 +15,7 @@ import VersionSelector from '@/components/common/VersionSelector'
 import EndpointSelector from '@/components/common/EndpointSelector'
 import logoBlack from '@/assets/logo_black.png'
 import logoWhite from '@/assets/logo_white.png'
-import { useComponentStyles } from '@/hooks/useComponentStyles'
-import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants'
+import { spacing } from '@/utils/styleConstants'
 import { ModalSize } from '@/types/modal'
 import { featureFlags } from '@/config/featureFlags'
 import { 
@@ -34,8 +33,30 @@ import RegistrationModal from '@/components/auth/RegistrationModal'
 import { generateRandomEmail, generateRandomCompanyName, generateRandomPassword } from '@/utils/cryptoGenerators'
 import { configService } from '@/services/configService'
 import SandboxWarning from '@/components/common/SandboxWarning'
+import {
+  LoginCard,
+  LoginContainer,
+  LanguageSelectorWrapper,
+  LogoContainer,
+  StyledAlert,
+  FormLabel,
+  MasterPasswordLabel,
+  MasterPasswordFormItem,
+  AdvancedOptionsContainer,
+  AdvancedOptionsButton,
+  LoginButton,
+  RegisterContainer,
+  RegisterLink,
+  SelectorsContainer,
+  TFAModalTitle,
+  TFACodeInput,
+  TFAButtonContainer,
+  TFAVerifyButton,
+  StyledInput,
+  StyledPasswordInput,
+} from './styles'
 
-const { Text, Link } = Typography
+const { Text } = Typography
 
 interface LoginForm {
   email: string
@@ -127,18 +148,17 @@ const LoginPage: React.FC = () => {
   const { theme } = useTheme()
   const { t } = useTranslation(['auth', 'common'])
   const verifyTFAMutation = useVerifyTFA()
-  const styles = useComponentStyles()
   const { trackUserAction } = useTelemetry()
 
   // Check URL parameters for registration flag
   useEffect(() => {
     const checkRegistrationMode = async () => {
       const registerParam = searchParams.get('register')
-
+      
       if (registerParam === 'quick') {
         // Check if we're in sandbox mode
         const instanceName = await configService.getInstanceName()
-
+        
         if (instanceName.toLowerCase() === 'sandbox') {
           // Generate random registration data for quick registration
           const randomData = {
@@ -147,13 +167,13 @@ const LoginPage: React.FC = () => {
             companyName: generateRandomCompanyName(),
             activationCode: '111111' // Fixed code for sandbox quick registration
           }
-
+          
           console.log('🚀 Quick Registration Mode (Sandbox Only)', {
             email: randomData.email,
             company: randomData.companyName,
             message: 'Using verification code: 111111'
           })
-
+          
           setQuickRegistrationData(randomData)
           setIsQuickRegistration(true)
           setShowRegistration(true)
@@ -167,17 +187,17 @@ const LoginPage: React.FC = () => {
         // Manual registration mode
         setShowRegistration(true)
       }
-
+      
       // Clean up the URL to remove the parameter
       if (registerParam) {
         searchParams.delete('register')
-        const newUrl = searchParams.toString()
+        const newUrl = searchParams.toString() 
           ? `${window.location.pathname}?${searchParams.toString()}`
           : window.location.pathname
         window.history.replaceState({}, '', newUrl)
       }
     }
-
+    
     checkRegistrationMode()
   }, [searchParams])
 
@@ -417,58 +437,33 @@ const LoginPage: React.FC = () => {
   return (
     <>
       <SandboxWarning />
-      <Card
-        style={{
-          ...styles.card,
-          width: DESIGN_TOKENS.DIMENSIONS.CARD_WIDTH_LG,
-          backdropFilter: 'blur(8px)',
-        }}
-      >
-      <Space direction="vertical" size={spacing('XL')} style={{ width: '100%' }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: -spacing('SM') }}>
-          <LanguageSelector />
-        </div>
-        
-        <div style={{ 
-          ...styles.flexCenter,
-          height: spacing('XXXXXL'),
-          marginTop: -spacing('SM'),
-        }}>
-          <img
-            src={theme === 'dark' ? logoWhite : logoBlack}
-            alt="Rediacc Logo"
-            style={{
-              height: spacing('XL'),
-              width: 'auto',
-              maxWidth: 150,
-              objectFit: 'contain',
-            }}
-          />
-        </div>
+      <LoginCard>
+        <LoginContainer>
+          <Space direction="vertical" size={spacing('XL')} style={{ width: '100%' }}>
+            <LanguageSelectorWrapper>
+              <LanguageSelector />
+            </LanguageSelectorWrapper>
+            
+            <LogoContainer>
+              <img
+                src={theme === 'dark' ? logoWhite : logoBlack}
+                alt="Rediacc Logo"
+              />
+            </LogoContainer>
 
-        {error && (
-          <Alert
-            message={error}
-            type="error"
-            showIcon
-            closable
-            onClose={() => setError(null)}
-            style={{
-              borderRadius: borderRadius('LG'),
-              border: '2px solid var(--color-error)',
-              backgroundColor: 'var(--color-bg-error)',
-              padding: spacing('MD'),
-              boxShadow: DESIGN_TOKENS.SHADOWS.ERROR_FIELD,
-              fontSize: DESIGN_TOKENS.FONT_SIZE.SM,
-              fontWeight: DESIGN_TOKENS.FONT_WEIGHT.MEDIUM,
-              marginBottom: spacing('MD')
-            }}
-            data-testid="login-error-alert"
-            id="login-error-message"
-            role="alert"
-            aria-live="polite"
-          />
-        )}
+            {error && (
+              <StyledAlert
+                message={error}
+                type="error"
+                showIcon
+                closable
+                onClose={() => setError(null)}
+                data-testid="login-error-alert"
+                id="login-error-message"
+                role="alert"
+                aria-live="polite"
+              />
+            )}
 
         <Form
           form={form}
@@ -477,262 +472,170 @@ const LoginPage: React.FC = () => {
           layout="vertical"
           requiredMark={false}
         >
-          <Form.Item
-            name="email"
-            label={
-              <label htmlFor="login-email-input" style={{ 
-                fontSize: DESIGN_TOKENS.FONT_SIZE.SM, 
-                fontWeight: DESIGN_TOKENS.FONT_WEIGHT.MEDIUM, 
-                color: 'var(--color-text-primary)',
-                marginBottom: spacing('SM'),
-                display: 'block'
-              }}>
-                {t('auth:login.email')}
-              </label>
-            }
+            <Form.Item
+              name="email"
+              label={
+                <FormLabel htmlFor="login-email-input">
+                  {t('auth:login.email')}
+                </FormLabel>
+              }
             rules={[
               { required: true, message: t('common:messages.required') },
               { type: 'email', message: t('common:messages.invalidEmail') },
             ]}
             validateStatus={error ? 'error' : undefined}
           >
-            <Input
+            <StyledInput
               id="login-email-input"
               prefix={<UserOutlined />}
               placeholder={t('auth:login.emailPlaceholder')}
               size="large"
               autoComplete="email"
               data-testid="login-email-input"
-              // Styles handled by CSS
               aria-label={t('auth:login.email')}
               aria-describedby="email-error"
             />
           </Form.Item>
 
-          <Form.Item
-            name="password"
-            label={
-              <label htmlFor="login-password-input" style={{ 
-                fontSize: DESIGN_TOKENS.FONT_SIZE.SM, 
-                fontWeight: DESIGN_TOKENS.FONT_WEIGHT.MEDIUM, 
-                color: 'var(--color-text-primary)',
-                marginBottom: spacing('SM'),
-                display: 'block'
-              }}>
-                {t('auth:login.password')}
-              </label>
-            }
+            <Form.Item
+              name="password"
+              label={
+                <FormLabel htmlFor="login-password-input">
+                  {t('auth:login.password')}
+                </FormLabel>
+              }
             rules={[{ required: true, message: t('common:messages.required') }]}
             style={{ marginBottom: spacing('LG') }}
             validateStatus={error ? 'error' : undefined}
           >
-            <Input.Password
+            <StyledPasswordInput
               id="login-password-input"
               prefix={<LockOutlined />}
               placeholder={t('auth:login.passwordPlaceholder')}
               size="large"
               autoComplete="current-password"
               data-testid="login-password-input"
-              // Styles handled by CSS
               aria-label={t('auth:login.password')}
               aria-describedby="password-error"
             />
           </Form.Item>
 
-          {/* Progressive disclosure: Show master password field only when needed */}
-          {(vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED ||
-            vaultProtocolState === VaultProtocolState.INVALID_PASSWORD ||
-            (showAdvancedOptions && featureFlags.isEnabled('loginAdvancedOptions'))) && (
-            <Form.Item
-              name="masterPassword"
-              label={
-                <label htmlFor="login-master-password-input" style={{ 
-                  fontSize: DESIGN_TOKENS.FONT_SIZE.SM, 
-                  fontWeight: DESIGN_TOKENS.FONT_WEIGHT.MEDIUM, 
-                  color: 'var(--color-text-primary)',
-                  marginBottom: spacing('SM'),
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: spacing('SM')
-                }}>
-                  <span>{t('auth:login.masterPassword')}</span>
-                  <Tooltip title={t('auth:login.masterPasswordTooltip')}>
-                    <InfoCircleOutlined style={{ color: 'var(--color-text-tertiary)' }} />
-                  </Tooltip>
-                </label>
-              }
-              validateStatus={vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED || vaultProtocolState === VaultProtocolState.INVALID_PASSWORD ? 'error' : undefined}
-              required={vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED}
-              style={{
-                animation: 'fadeIn 0.3s ease-out'
-              }}
-            >
-              <Input.Password
-                id="login-master-password-input"
-                prefix={<KeyOutlined />}
-                placeholder={t('auth:login.masterPasswordPlaceholder')}
+            {/* Progressive disclosure: Show master password field only when needed */}
+            {(vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED ||
+              vaultProtocolState === VaultProtocolState.INVALID_PASSWORD ||
+              (showAdvancedOptions && featureFlags.isEnabled('loginAdvancedOptions'))) && (
+              <MasterPasswordFormItem>
+                <Form.Item
+                  name="masterPassword"
+                  label={
+                    <MasterPasswordLabel htmlFor="login-master-password-input">
+                      <span>{t('auth:login.masterPassword')}</span>
+                      <Tooltip title={t('auth:login.masterPasswordTooltip')}>
+                        <InfoCircleOutlined />
+                      </Tooltip>
+                    </MasterPasswordLabel>
+                  }
+                  validateStatus={vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED || vaultProtocolState === VaultProtocolState.INVALID_PASSWORD ? 'error' : undefined}
+                  required={vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED}
+                >
+                  <StyledPasswordInput
+                    id="login-master-password-input"
+                    prefix={<KeyOutlined />}
+                    placeholder={t('auth:login.masterPasswordPlaceholder')}
+                    size="large"
+                    autoComplete="off"
+                    data-testid="login-master-password-input"
+                    aria-label={t('auth:login.masterPassword')}
+                    aria-describedby="master-password-error"
+                  />
+                </Form.Item>
+              </MasterPasswordFormItem>
+            )}
+          
+            {/* Show advanced options toggle when master password is not yet shown */}
+            {featureFlags.isEnabled('loginAdvancedOptions') &&
+             !(vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED ||
+              vaultProtocolState === VaultProtocolState.INVALID_PASSWORD ||
+              showAdvancedOptions) && (
+              <AdvancedOptionsContainer>
+                <AdvancedOptionsButton
+                  type="text"
+                  size="small"
+                  onClick={() => {
+                    setShowAdvancedOptions(true)
+                    setTimeout(() => {
+                      form.getFieldInstance('masterPassword')?.focus()
+                    }, 100)
+                  }}
+                >
+                  {t('auth:login.needMasterPassword')} →
+                </AdvancedOptionsButton>
+              </AdvancedOptionsContainer>
+            )}
+
+            <Form.Item style={{ marginBottom: spacing('LG') }}>
+              <LoginButton
+                type="primary"
+                htmlType="submit"
                 size="large"
-                autoComplete="off"
-                data-testid="login-master-password-input"
-                style={{
-                  ...styles.input,
-                }}
-                aria-label={t('auth:login.masterPassword')}
-                aria-describedby="master-password-error"
-              />
-            </Form.Item>
-          )}
-          
-          {/* Show advanced options toggle when master password is not yet shown */}
-          {featureFlags.isEnabled('loginAdvancedOptions') &&
-           !(vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED ||
-            vaultProtocolState === VaultProtocolState.INVALID_PASSWORD ||
-            showAdvancedOptions) && (
-            <div style={{ textAlign: 'center', marginBottom: spacing('MD'), marginTop: spacing('SM') }}>
-              <Button
-                type="text"
-                size="small"
-                style={{ 
-                  color: 'var(--color-text-tertiary)', 
-                  fontSize: DESIGN_TOKENS.FONT_SIZE.SM,
-                  height: 'auto',
-                  padding: `${spacing('XS')}px ${spacing('SM')}px`,
-                  borderRadius: borderRadius('MD'),
-                  transition: DESIGN_TOKENS.TRANSITIONS.DEFAULT
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--color-fill-tertiary, rgba(0, 0, 0, 0.04))';
-                  e.currentTarget.style.color = 'var(--color-text-secondary)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.color = 'var(--color-text-tertiary)';
-                }}
-                onClick={() => {
-                  setShowAdvancedOptions(true)
-                  setTimeout(() => {
-                    form.getFieldInstance('masterPassword')?.focus()
-                  }, 100)
-                }}
+                block
+                loading={loading}
+                data-testid="login-submit-button"
               >
-                {t('auth:login.needMasterPassword')} →
-              </Button>
-            </div>
-          )}
-
-          <Form.Item style={{ marginBottom: spacing('LG') }}>
-            <Button
-              type="primary"
-              htmlType="submit"
-              size="large"
-              block
-              loading={loading}
-              style={{
-                background: 'var(--color-primary)',
-                borderColor: 'var(--color-primary)',
-                height: DESIGN_TOKENS.DIMENSIONS.INPUT_HEIGHT_LG,
-                fontSize: DESIGN_TOKENS.FONT_SIZE.BASE,
-                fontWeight: DESIGN_TOKENS.FONT_WEIGHT.SEMIBOLD,
-                boxShadow: DESIGN_TOKENS.SHADOWS.BUTTON_DEFAULT,
-                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-              }}
-              onMouseEnter={(e) => {
-                if (!loading) {
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = DESIGN_TOKENS.SHADOWS.BUTTON_HOVER;
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!loading) {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = DESIGN_TOKENS.SHADOWS.BUTTON_DEFAULT;
-                }
-              }}
-              data-testid="login-submit-button"
-            >
-              {loading ? t('auth:login.signingIn') : t('auth:login.signIn')}
-            </Button>
-          </Form.Item>
+                {loading ? t('auth:login.signingIn') : t('auth:login.signIn')}
+              </LoginButton>
+            </Form.Item>
           
-        </Form>
+          </Form>
 
-        <div style={{ textAlign: 'center', marginTop: spacing('SM') }}>
-          <Text type="secondary" style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.SM }}>
-            {t('auth:login.noAccount')}{' '}
-            <Link 
-              onClick={() => setShowRegistration(true)} 
-              style={{ 
-                color: 'var(--color-primary)',
-                fontWeight: DESIGN_TOKENS.FONT_WEIGHT.MEDIUM,
-                textDecoration: 'none',
-                borderRadius: borderRadius('SM'),
-                padding: '2px 4px',
-                margin: '-2px -4px',
-                transition: DESIGN_TOKENS.TRANSITIONS.DEFAULT
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--color-primary-bg, rgba(85, 107, 47, 0.1))';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.outline = '2px solid var(--color-primary)';
-                e.currentTarget.style.outlineOffset = '2px';
-                e.currentTarget.style.backgroundColor = 'var(--color-primary-bg, rgba(85, 107, 47, 0.1))';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.outline = 'none';
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-              tabIndex={0}
-              role="button"
-              aria-label={t('auth:login.register')}
-              data-testid="login-register-link"
-            >
-              {t('auth:login.register')}
-            </Link>
-          </Text>
-        </div>
+            <RegisterContainer>
+              <Text type="secondary">
+                {t('auth:login.noAccount')}{' '}
+                <RegisterLink
+                  onClick={() => setShowRegistration(true)}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={t('auth:login.register')}
+                  data-testid="login-register-link"
+                >
+                  {t('auth:login.register')}
+                </RegisterLink>
+              </Text>
+            </RegisterContainer>
 
-        {/* Endpoint and Version selectors */}
-        <div style={{ textAlign: 'center', marginTop: spacing('LG') }}>
-          {/* Advanced Options Container - Power Mode Features */}
-          {(endpointSelectorVisible || versionSelectorVisible) && (
-            <div style={{
-              padding: spacing('MD'),
-              borderRadius: borderRadius('LG'),
-              backgroundColor: 'var(--color-fill-quaternary, rgba(0, 0, 0, 0.02))',
-              border: '1px solid var(--color-border-secondary)',
-              marginBottom: spacing('MD')
-            }}>
-              {/* Endpoint Selector */}
-              {endpointSelectorVisible && (
-                <div style={{ marginBottom: versionSelectorVisible ? spacing('SM') : 0 }}>
-                  <EndpointSelector onHealthCheckComplete={handleHealthCheckComplete} />
-                </div>
+            {/* Endpoint and Version selectors */}
+            <SelectorsContainer>
+              {/* Advanced Options Container - Power Mode Features */}
+              {(endpointSelectorVisible || versionSelectorVisible) && (
+                <AdvancedOptionsContainer>
+                  {/* Endpoint Selector */}
+                  {endpointSelectorVisible && (
+                    <div style={{ marginBottom: versionSelectorVisible ? spacing('SM') : 0 }}>
+                      <EndpointSelector onHealthCheckComplete={handleHealthCheckComplete} />
+                    </div>
+                  )}
+
+                  {/* Version Selector (Dropdown Mode) */}
+                  {versionSelectorVisible && (
+                    <VersionSelector showDropdown={true} />
+                  )}
+                </AdvancedOptionsContainer>
               )}
 
-              {/* Version Selector (Dropdown Mode) */}
-              {versionSelectorVisible && (
-                <VersionSelector showDropdown={true} />
-              )}
-            </div>
-          )}
-
-          {/* Always-visible version display (Static Text Mode) */}
-          <VersionSelector showDropdown={false} />
-        </div>
-      </Space>
-    </Card>
+              {/* Always-visible version display (Static Text Mode) */}
+              <VersionSelector showDropdown={false} />
+            </SelectorsContainer>
+          </Space>
+        </LoginContainer>
+      </LoginCard>
 
       {/* TFA Verification Modal */}
       <Modal
         title={
-          <Space>
-            <SafetyCertificateOutlined style={{ color: 'var(--color-primary)' }} />
+          <TFAModalTitle>
+            <SafetyCertificateOutlined />
             <span>{t('login.twoFactorAuth.title')}</span>
-          </Space>
+          </TFAModalTitle>
         }
         open={showTFAModal}
         onCancel={() => {
@@ -766,20 +669,19 @@ const LoginPage: React.FC = () => {
                 { pattern: /^\d{6}$/, message: t('login.twoFactorAuth.codeFormat') }
               ]}
             >
-              <Input
+              <TFACodeInput
                 size="large"
                 placeholder={t('login.twoFactorAuth.codePlaceholder')}
                 value={twoFACode}
                 onChange={(e) => setTwoFACode(e.target.value)}
                 autoComplete="off"
                 maxLength={6}
-                style={{ textAlign: 'center', fontSize: DESIGN_TOKENS.FONT_SIZE.XL, letterSpacing: spacing('SM') + 'px' }}
                 data-testid="tfa-code-input"
               />
             </Form.Item>
             
             <Form.Item style={{ marginBottom: 0 }}>
-              <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+              <TFAButtonContainer>
                 <Button
                   onClick={() => {
                     setShowTFAModal(false)
@@ -789,21 +691,16 @@ const LoginPage: React.FC = () => {
                 >
                   {t('common:general.cancel')}
                 </Button>
-                <Button
+                <TFAVerifyButton
                   type="primary"
                   htmlType="submit"
                   loading={verifyTFAMutation.isPending}
                   disabled={twoFACode.length !== 6}
-                  style={{
-                    background: 'var(--color-primary)',
-                    borderColor: 'var(--color-primary)',
-                    ...styles.touchTarget,
-                  }}
                   data-testid="tfa-verify-button"
                 >
                   {t('login.twoFactorAuth.verify')}
-                </Button>
-              </Space>
+                </TFAVerifyButton>
+              </TFAButtonContainer>
             </Form.Item>
           </Form>
         </Space>

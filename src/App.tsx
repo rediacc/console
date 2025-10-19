@@ -19,6 +19,7 @@ import LoginPage from '@/pages/LoginPage'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { getBasePath } from '@/utils/basePath'
 import { featureFlags } from '@/config/featureFlags'
+import { GlobalStyles } from '@/styles/GlobalStyles'
 
 // Lazy load heavy pages
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
@@ -102,6 +103,7 @@ const AppContent: React.FC = () => {
 
   return (
       <AppProviders>
+        <GlobalStyles />
           <BrowserRouter basename={getBasePath()}>
             <RedirectHandler />
             <TelemetryProvider>
