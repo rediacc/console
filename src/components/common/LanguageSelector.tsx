@@ -27,8 +27,8 @@ const languages: Language[] = [
 const LanguageSelector: React.FC = () => {
   const { i18n } = useTranslation();
 
-  const handleChange = async (value: string) => {
-    await i18n.changeLanguage(value);
+  const handleChange = (value: string) => {
+    i18n.changeLanguage(value);
     // Force a re-render of the entire app by updating the document direction for RTL languages
     document.documentElement.dir = value === 'ar' ? 'rtl' : 'ltr';
 
@@ -40,18 +40,13 @@ const LanguageSelector: React.FC = () => {
     dayjs.locale(dayjsLocaleMap[value] || 'en');
   };
 
-  const selectorStyle = {
-    // Don't apply input styles to Select - it has different DOM structure
-    width: 140
-  };
-
   return (
     <Select
       value={i18n.language}
       onChange={handleChange}
-      style={selectorStyle}
       suffixIcon={<GlobalOutlined />}
       popupMatchSelectWidth={false}
+      style={{ width: 140 }}
       data-testid="language-selector"
     >
       {languages.map((lang) => (

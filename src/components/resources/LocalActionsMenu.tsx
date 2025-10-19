@@ -258,7 +258,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       ),
       onClick: () => setShowCommandModal(true),
       'data-testid': `local-actions-cli-commands-${repository}`
-    }
+    },
   ]
 
   return (
@@ -273,16 +273,9 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       >
         <Tooltip title={isContainerMenu ? t('resources:localActions.containerLocal') : t('resources:localActions.local')}>
           <Button
-            size="small"
-            icon={<DesktopOutlined style={styles.icon.small} />}
+            size='small'
+            icon={<DesktopOutlined />}
             loading={isCheckingProtocol}
-            style={{
-              ...styles.buttonSecondary,
-              ...styles.touchTargetSmall,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
             data-testid={isContainerMenu ? `local-actions-dropdown-${containerId}` : `local-actions-dropdown-${repository}`}
             aria-label={isContainerMenu ? t('resources:localActions.containerLocal') : t('resources:localActions.local')}
           />
