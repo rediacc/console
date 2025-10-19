@@ -200,7 +200,6 @@ export const createCardStyle = (width?: number | string) => ({
   boxShadow: DESIGN_TOKENS.SHADOWS.CARD,
   border: '1px solid var(--color-border-secondary)',  // As per style guide
   background: 'var(--color-bg-primary)',
-  padding: DESIGN_TOKENS.SPACING['3'],  // 24px padding as per style guide
 })
 
 export const createModalStyle = (width?: number) => ({
@@ -209,7 +208,6 @@ export const createModalStyle = (width?: number) => ({
   borderRadius: DESIGN_TOKENS.BORDER_RADIUS.XL,  // Modals: 12px border radius
   boxShadow: DESIGN_TOKENS.SHADOWS.MODAL,
   border: 'none',
-  background: 'var(--color-bg-primary)',
   padding: DESIGN_TOKENS.SPACING['4'],  // 32px padding as per style guide
 })
 

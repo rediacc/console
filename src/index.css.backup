@@ -1,0 +1,3710 @@
+@import 'antd/dist/reset.css';
+@import './styles/modals.css';
+
+:root {
+  /* Design system shadows - matching style-guide.md */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1);
+  
+  /* Component-specific shadows */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-modal: 0 20px 25px rgba(0, 0, 0, 0.1);
+  --shadow-base: var(--shadow-sm);  /* Alias for backward compatibility */
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6; /* Improved readability */
+}
+
+/* Typography hierarchy - matching style-guide.md */
+.ant-typography h1 {
+  font-size: 36px;    /* H1: 36px / 2.25rem */
+  line-height: 1.25;   /* Tight line height */
+  font-weight: 700;    /* Bold */
+  margin-bottom: 24px;
+  letter-spacing: -0.5px;
+}
+
+.ant-typography h2 {
+  font-size: 30px;    /* H2: 30px / 1.875rem */
+  line-height: 1.25;   /* Tight line height */
+  font-weight: 600;    /* Semibold */
+  margin-bottom: 20px;
+  letter-spacing: -0.25px;
+}
+
+.ant-typography h3 {
+  font-size: 24px;    /* H3: 24px / 1.5rem */
+  line-height: 1.5;    /* Normal line height */
+  font-weight: 600;    /* Semibold */
+  margin-bottom: 16px;
+}
+
+.ant-typography h4 {
+  font-size: 20px;    /* H4: 20px / 1.25rem */
+  line-height: 1.5;    /* Normal line height */
+  font-weight: 600;    /* Semibold */
+  margin-bottom: 12px;
+}
+
+.ant-typography h5 {
+  font-size: 18px;    /* H5: 18px / 1.125rem */
+  line-height: 1.5;    /* Normal line height */
+  font-weight: 500;    /* Medium */
+  margin-bottom: 8px;
+}
+
+.ant-typography h6 {
+  font-size: 16px;    /* H6: same as body */
+  line-height: 1.5;    /* Normal line height */
+  font-weight: 500;    /* Medium */
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ant-typography p,
+.ant-typography div {
+  font-size: 16px;    /* Body: 16px / 1rem */
+  line-height: 1.5;    /* Normal: 1.5 */
+  margin-bottom: 12px;
+}
+
+.ant-typography small {
+  font-size: 12px;    /* Caption: 12px / 0.75rem */
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+/* Design system spacing scale - 8px base system (matching style-guide.md) */
+:root {
+  --space-0-5: 4px;    /* 0.5 * base */
+  --space-1: 8px;      /* 1 * base */
+  --space-1-5: 12px;   /* 1.5 * base */
+  --space-2: 16px;     /* 2 * base */
+  --space-2-5: 20px;   /* 2.5 * base */
+  --space-3: 24px;     /* 3 * base */
+  --space-4: 32px;     /* 4 * base */
+  --space-5: 40px;     /* 5 * base */
+  --space-6: 48px;     /* 6 * base */
+  --space-8: 64px;     /* 8 * base */
+  --space-10: 80px;    /* 10 * base */
+  --space-12: 96px;    /* 12 * base */
+  
+  /* Legacy aliases for backward compatibility */
+  --space-xs: var(--space-0-5);
+  --space-sm: var(--space-1);
+  --space-md: var(--space-2);
+  --space-lg: var(--space-3);
+  --space-xl: var(--space-4);
+  --space-2xl: var(--space-5);
+  --space-3xl: var(--space-6);
+  --space-base: var(--space-1);
+  --space-container: var(--space-3);
+}
+
+/* Consistent number formatting */
+.number-format {
+  font-feature-settings: 'tnum' 1; /* Tabular numbers for better alignment */
+  font-variant-numeric: tabular-nums;
+}
+
+/* Systematic spacing utilities - using design system tokens */
+.spacing-0-5 { margin: var(--space-0-5); }
+.spacing-1 { margin: var(--space-1); }
+.spacing-2 { margin: var(--space-2); }
+.spacing-3 { margin: var(--space-3); }
+.spacing-4 { margin: var(--space-4); }
+.spacing-5 { margin: var(--space-5); }
+
+.spacing-bottom-0-5 { margin-bottom: var(--space-0-5); }
+.spacing-bottom-1 { margin-bottom: var(--space-1); }
+.spacing-bottom-2 { margin-bottom: var(--space-2); }
+.spacing-bottom-3 { margin-bottom: var(--space-3); }
+.spacing-bottom-4 { margin-bottom: var(--space-4); }
+.spacing-bottom-5 { margin-bottom: var(--space-5); }
+
+/* Apply tabular numbers to statistics and metrics */
+.ant-statistic-content,
+.ant-progress-text,
+.metric-number {
+  font-feature-settings: 'tnum' 1;
+  font-variant-numeric: tabular-nums;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ant Design overrides */
+.ant-layout {
+  min-height: 100vh;
+}
+
+/* No-scroll pages (Audit, Resources, Queue) */
+.no-scroll-page {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.no-scroll-page .ant-layout {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.no-scroll-page .ant-layout-content {
+  overflow: hidden;
+}
+
+.ant-layout-sider {
+  background: var(--color-bg-primary);
+  box-shadow: 1px 0 4px var(--color-shadow);
+}
+
+.ant-menu-light {
+  background: transparent;
+}
+
+.ant-menu-item-selected {
+  background-color: rgba(85, 107, 47, 0.1) !important;
+  border-right: 3px solid var(--color-primary) !important;
+  color: var(--color-primary) !important;
+  font-weight: 600;
+  position: relative;
+}
+
+.ant-menu-item-selected::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: var(--color-primary) !important;
+  border-radius: 2px 0 0 2px;
+}
+
+/* Enhanced navigation context indicators */
+.ant-menu-item-selected .anticon {
+  color: var(--color-primary) !important;
+}
+
+/* Navigation menu standardization - design principles */
+.ant-menu {
+  font-size: 14px;
+}
+
+.ant-menu-item,
+.ant-menu-submenu-title {
+  display: flex !important;
+  align-items: center !important;
+  min-height: 44px !important;  /* WCAG AA touch target */
+  padding: 10px 24px !important;
+  margin: 4px 8px !important;
+  border-radius: 6px !important;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+  font-weight: 500;
+}
+
+.ant-menu-item:hover,
+.ant-menu-submenu-title:hover {
+  background-color: var(--color-bg-hover) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.ant-menu-item .anticon,
+.ant-menu-submenu-title .anticon {
+  margin-right: 12px !important;
+  font-size: 20px !important;  /* Icon MD size from style guide */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  vertical-align: middle;
+}
+
+.ant-menu-item-selected .anticon {
+  color: var(--color-primary) !important;
+  font-weight: 600;
+}
+
+/* Breadcrumb styling for page context */
+.page-breadcrumb {
+  margin-bottom: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+
+.page-breadcrumb .ant-breadcrumb {
+  font-size: 13px;
+}
+
+.page-breadcrumb .ant-breadcrumb-link {
+  color: var(--color-text-secondary);
+  transition: color 0.2s ease;
+}
+
+.page-breadcrumb .ant-breadcrumb-link:hover {
+  color: var(--color-primary);
+}
+
+/* Menu divider styling */
+.ant-menu-item-divider {
+  height: 1px !important;
+  margin: 12px 16px !important;
+  background: var(--color-border-secondary) !important;
+  opacity: 0.6;
+}
+
+.ant-layout-header {
+  background: var(--color-bg-primary);
+  padding: 0 24px;
+  box-shadow: 0 1px 4px var(--color-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ant-card {
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-border-primary);
+}
+
+.ant-table-wrapper .ant-table-pagination {
+  margin: 16px 0;
+}
+
+.ant-btn-primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.ant-btn-primary:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Dark theme scrollbar */
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Modern table scrollbar */
+.ant-table-body::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.ant-table-body::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 5px;
+}
+
+.ant-table-body::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+  transition: all 0.3s;
+}
+
+.ant-table-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* Dark theme modern table scrollbar */
+[data-theme="dark"] .ant-table-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="dark"] .ant-table-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Enhanced loading states and skeletons */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg-primary) 100%);
+  border-radius: 8px;
+  position: relative;
+}
+
+.loading-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Skeleton for tables */
+.table-skeleton {
+  animation: skeleton-pulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes skeleton-pulse {
+  0% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* Enhanced skeleton rows */
+.skeleton-row {
+  height: 48px;
+  background: linear-gradient(90deg, var(--color-bg-secondary) 25%, var(--color-bg-tertiary) 50%, var(--color-bg-secondary) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-wave 2s infinite;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+@keyframes skeleton-wave {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Button loading states */
+.ant-btn-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.ant-btn-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: button-loading 1.5s infinite;
+}
+
+@keyframes button-loading {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Enhanced empty states */
+.ant-empty {
+  padding: var(--space-5xl) var(--space-2xl);
+  text-align: center;
+}
+
+.ant-empty-image {
+  margin-bottom: var(--space-xl);
+  opacity: 0.6;
+  filter: grayscale(20%);
+}
+
+.ant-empty-description {
+  font-size: 16px;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-2xl);
+  line-height: 1.6;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Empty state with actions */
+.empty-state-with-actions {
+  padding: var(--space-5xl) var(--space-2xl);
+  background: var(--color-bg-secondary);
+  border-radius: 12px;
+  border: 2px dashed var(--color-border-secondary);
+  text-align: center;
+  margin: var(--space-2xl) 0;
+  transition: all 0.3s ease;
+}
+
+.empty-state-with-actions:hover {
+  border-color: var(--color-primary);
+  background: rgba(85, 107, 47, 0.05);
+}
+
+.empty-state-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-md);
+}
+
+.empty-state-description {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-2xl);
+  line-height: 1.6;
+}
+
+.empty-state-actions {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.empty-state-actions .ant-btn {
+  min-width: 120px;
+  height: 40px;
+  font-weight: 500;
+}
+
+/* Contextual empty states */
+.empty-repositories {
+  background: linear-gradient(135deg, rgba(85, 107, 47, 0.05) 0%, rgba(85, 107, 47, 0.02) 100%);
+}
+
+.empty-machines {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, rgba(34, 197, 94, 0.02) 100%);
+}
+
+.empty-storage {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(59, 130, 246, 0.02) 100%);
+}
+
+/* Chart container */
+.chart-container {
+  padding: 24px;
+  background: var(--color-bg-primary);
+  border-radius: 8px;
+  box-shadow: var(--shadow-base);
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-badge-active {
+  background: rgba(40, 167, 69, 0.1);
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.status-badge-inactive {
+  background: rgba(220, 53, 69, 0.1);
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+.status-badge-pending {
+  background: rgba(253, 126, 20, 0.1);
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+/* Table row selection styles */
+.ant-table-tbody > tr.ant-table-row-selected > td {
+  background: rgba(85, 107, 47, 0.08) !important;
+}
+
+.ant-table-tbody > tr.ant-table-row-selected:hover > td {
+  background: rgba(85, 107, 47, 0.12) !important;
+}
+
+/* Custom selected row background for light theme */
+[data-theme="light"] .selected-row {
+  background-color: rgba(85, 107, 47, 0.08) !important;
+}
+
+[data-theme="light"] .selected-row:hover {
+  background-color: rgba(85, 107, 47, 0.12) !important;
+}
+
+/* Custom selected row background for dark theme */
+[data-theme="dark"] .selected-row {
+  background-color: rgba(85, 107, 47, 0.15) !important;
+}
+
+[data-theme="dark"] .selected-row:hover {
+  background-color: rgba(85, 107, 47, 0.2) !important;
+}
+
+/* UI Mode Transitions - optimized for performance */
+.ant-menu-item {
+  transition: background-color 0.15s ease, opacity 0.15s ease !important;
+}
+
+.ant-table-thead > tr > th,
+.ant-table-tbody > tr > td {
+  transition: background-color 0.15s ease, color 0.15s ease !important;
+}
+
+/* Smooth icon transitions */
+.ui-mode-icon {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.ui-mode-icon:hover {
+  transform: scale(1.1);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+/* Transition state animation */
+.mode-transition {
+  animation: fadeInOut 0.6s ease-in-out;
+}
+
+/* Tab styling for dark theme - Active tabs should be brighter */
+[data-theme="dark"] .ant-tabs-tab {
+  color: var(--color-text-tertiary);
+  transition: all 0.3s ease;
+}
+
+[data-theme="dark"] .ant-tabs-tab:hover {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .ant-tabs-tab-active {
+  background-color: var(--color-bg-tertiary) !important;
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--color-text-primary) !important;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .ant-tabs-ink-bar {
+  background-color: var(--color-primary);
+}
+
+/* Additional contrast for active tab in dark theme */
+[data-theme="dark"] .ant-tabs-card .ant-tabs-tab-active {
+  background-color: #4a4a4a !important;
+  border-color: var(--color-border-secondary) !important;
+}
+
+[data-theme="dark"] .ant-tabs-card .ant-tabs-tab {
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-border-primary);
+}
+
+/* Logout button styling */
+.logout-button {
+  color: var(--color-text-tertiary) !important;
+}
+
+.logout-button:hover {
+  color: var(--color-primary) !important;
+  background-color: rgba(85, 107, 47, 0.08) !important;
+}
+
+/* Logout button styling for dark theme */
+[data-theme="dark"] .logout-button {
+  color: var(--color-text-secondary) !important;
+}
+
+[data-theme="dark"] .logout-button:hover {
+  color: var(--color-primary) !important;
+  background-color: rgba(85, 107, 47, 0.15) !important;
+}
+
+/* Notification Bell Dropdown styles */
+.notification-dropdown {
+  background-color: var(--color-bg-primary);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.notification-dropdown-header {
+  border-bottom: 1px solid var(--color-border-primary);
+}
+
+.notification-dropdown .ant-list-item {
+  border-bottom: 1px solid var(--color-border-primary);
+}
+
+.notification-dropdown .ant-list-item-unread {
+  background-color: rgba(85, 107, 47, 0.05);
+}
+
+.notification-dropdown .ant-list-item-read {
+  background-color: var(--color-bg-primary);
+}
+
+.notification-dropdown .ant-list-item:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.notification-message {
+  color: var(--color-text-primary);
+}
+
+/* Notification Bell Dropdown for dark theme */
+[data-theme="dark"] .notification-dropdown {
+  background-color: var(--color-bg-secondary) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important;
+}
+
+[data-theme="dark"] .notification-dropdown-header {
+  border-bottom-color: var(--color-border-primary) !important;
+}
+
+[data-theme="dark"] .notification-dropdown .ant-list-item {
+  border-bottom-color: var(--color-border-primary) !important;
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .notification-dropdown .ant-list-item-unread {
+  background-color: rgba(85, 107, 47, 0.1) !important;
+}
+
+[data-theme="dark"] .notification-dropdown .ant-list-item-read {
+  background-color: var(--color-bg-secondary) !important;
+}
+
+[data-theme="dark"] .notification-dropdown .ant-list-item:hover {
+  background-color: var(--color-bg-hover) !important;
+}
+
+[data-theme="dark"] .notification-dropdown .ant-typography {
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] .notification-dropdown .notification-message {
+  color: var(--color-text-secondary) !important;
+}
+
+[data-theme="dark"] .notification-dropdown .ant-empty-description {
+  color: var(--color-text-secondary) !important;
+}
+
+/* Ant Design DatePicker/RangePicker for dark theme */
+[data-theme="dark"] .ant-picker-dropdown {
+  background: var(--color-bg-secondary);
+  box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.48), 0 6px 16px 0 rgba(0, 0, 0, 0.32), 0 9px 28px 8px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .ant-picker-panel-container {
+  background: var(--color-bg-secondary);
+}
+
+[data-theme="dark"] .ant-picker-header {
+  color: var(--color-text-primary);
+  border-bottom-color: var(--color-border-primary);
+}
+
+[data-theme="dark"] .ant-picker-header button {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .ant-picker-header button:hover {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-picker-content th {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .ant-picker-cell {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-picker-cell-in-view {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-picker-cell-disabled {
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .ant-picker-cell:hover .ant-picker-cell-inner {
+  background: var(--color-bg-hover);
+}
+
+[data-theme="dark"] .ant-picker-cell-selected .ant-picker-cell-inner {
+  background: var(--color-primary);
+}
+
+[data-theme="dark"] .ant-picker-cell-today .ant-picker-cell-inner {
+  border-color: var(--color-primary);
+}
+
+[data-theme="dark"] .ant-picker-footer {
+  border-top-color: var(--color-border-primary);
+  background: var(--color-bg-secondary);
+}
+
+[data-theme="dark"] .ant-picker-today-btn {
+  color: var(--color-primary);
+}
+
+[data-theme="dark"] .ant-picker-today-btn:hover {
+  color: var(--color-primary-hover);
+}
+
+/* Fix for OK button in RangePicker */
+[data-theme="dark"] .ant-picker-ok .ant-btn-primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .ant-picker-ok .ant-btn-primary:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .ant-picker-ok .ant-btn-primary:focus {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff !important;
+}
+
+/* Time picker panel for dark theme */
+[data-theme="dark"] .ant-picker-time-panel {
+  border-left-color: var(--color-border-primary);
+}
+
+[data-theme="dark"] .ant-picker-time-panel-column > li {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-picker-time-panel-column > li:hover {
+  background: var(--color-bg-hover);
+}
+
+[data-theme="dark"] .ant-picker-time-panel-column > li.ant-picker-time-panel-cell-selected {
+  background: var(--color-bg-hover);
+  font-weight: 600;
+}
+
+[data-theme="dark"] .ant-picker-time-panel-column > li.ant-picker-time-panel-cell-disabled {
+  color: var(--color-text-muted);
+}
+
+/* Preset buttons for dark theme */
+[data-theme="dark"] .ant-picker-presets button {
+  color: var(--color-primary);
+  border-color: var(--color-border-primary);
+}
+
+[data-theme="dark"] .ant-picker-presets button:hover {
+  color: var(--color-primary-hover);
+  border-color: var(--color-primary);
+  background: rgba(85, 107, 47, 0.08);
+}
+
+/* Ant Design Tooltip for dark theme */
+[data-theme="dark"] .ant-tooltip {
+  background: transparent;
+}
+
+[data-theme="dark"] .ant-tooltip-inner {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .ant-tooltip-arrow-content {
+  background-color: var(--color-bg-tertiary);
+}
+
+/* Ant Design Popover for dark theme */
+[data-theme="dark"] .ant-popover {
+  background: transparent;
+}
+
+[data-theme="dark"] .ant-popover-inner {
+  background-color: var(--color-bg-secondary);
+  box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.48), 0 6px 16px 0 rgba(0, 0, 0, 0.32), 0 9px 28px 8px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .ant-popover-title {
+  border-bottom-color: var(--color-border-primary);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-popover-inner-content {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-popover-arrow-content {
+  background-color: var(--color-bg-secondary);
+}
+
+/* FieldGenerator popover specific styles for dark theme */
+[data-theme="dark"] .ant-popover label {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-popover .ant-radio-wrapper {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-popover .ant-radio-wrapper-disabled span {
+  color: var(--color-text-muted) !important;
+}
+
+/* Fix generated values display in dark theme */
+[data-theme="dark"] .ant-popover pre,
+[data-theme="dark"] .ant-popover code {
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-tertiary);
+}
+
+/* Ensure all text in popovers is visible in dark mode */
+[data-theme="dark"] .ant-popover .ant-space-item {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-popover .ant-alert {
+  background-color: var(--color-bg-tertiary);
+  border-color: var(--color-border-secondary);
+}
+
+[data-theme="dark"] .ant-popover .ant-alert-message {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ant-popover .ant-alert-description {
+  color: var(--color-text-secondary);
+}
+
+/* VaultEditor JSON display in dark theme */
+[data-theme="dark"] .ant-card pre {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-primary);
+}
+
+/* Architecture page D3 visualization text for dark theme */
+[data-theme="dark"] svg text {
+  fill: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] svg .node-label {
+  fill: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] svg line,
+[data-theme="dark"] svg path {
+  stroke: rgba(255, 255, 255, 0.3) !important;
+}
+
+[data-theme="dark"] svg circle {
+  stroke: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Progress bars in dark theme - make them brighter */
+[data-theme="dark"] .ant-progress-inner {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .ant-progress-bg {
+  background-color: #7d9b49 !important;
+}
+
+[data-theme="dark"] .ant-progress-success-bg {
+  background-color: #73d13d !important;
+}
+
+/* Override inline stroke colors for better visibility in dark mode */
+[data-theme="dark"] .ant-progress .ant-progress-inner:not(.ant-progress-circle-gradient) .ant-progress-circle-path {
+  stroke: #7d9b49 !important;
+}
+
+[data-theme="dark"] .ant-progress .ant-progress-bg,
+[data-theme="dark"] .ant-progress .ant-progress-success-bg {
+  background-color: #7d9b49 !important;
+}
+
+/* Specific override for Resource Usage progress bars with inline strokeColor */
+[data-theme="dark"] .ant-card:has(.ant-progress) .ant-progress-inner:not(.ant-progress-circle-gradient) path:first-child {
+  stroke: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .ant-card:has(.ant-progress) .ant-progress-inner:not(.ant-progress-circle-gradient) path:last-child {
+  stroke: #7d9b49 !important;
+}
+
+/* Status-specific colors for progress bars in dark mode */
+[data-theme="dark"] .ant-progress-status-success .ant-progress-bg,
+[data-theme="dark"] .ant-progress-status-success .ant-progress-inner:not(.ant-progress-circle-gradient) path:last-child {
+  stroke: #73d13d !important;
+  background-color: #73d13d !important;
+}
+
+[data-theme="dark"] .ant-progress-status-exception .ant-progress-bg,
+[data-theme="dark"] .ant-progress-status-exception .ant-progress-inner:not(.ant-progress-circle-gradient) path:last-child {
+  stroke: #ff6b6b !important;
+  background-color: #ff6b6b !important;
+}
+
+[data-theme="dark"] .ant-progress-status-normal .ant-progress-bg,
+[data-theme="dark"] .ant-progress-status-normal .ant-progress-inner:not(.ant-progress-circle-gradient) path:last-child {
+  stroke: #faad14 !important;
+  background-color: #faad14 !important;
+}
+
+/* Force all progress bars in dark mode to use bright colors - override inline styles */
+[data-theme="dark"] .ant-progress-line .ant-progress-outer .ant-progress-inner .ant-progress-bg {
+  background-color: #7d9b49 !important;
+  opacity: 1 !important;
+}
+
+/* Specifically target Resource Usage progress bars */
+[data-theme="dark"] .ant-card-body .ant-progress .ant-progress-bg[style*="556b2f"] {
+  background-color: #7d9b49 !important;
+}
+
+[data-theme="dark"] .ant-card-body .ant-progress .ant-progress-bg[style*="ff4d4f"] {
+  background-color: #ff6b6b !important;
+}
+
+/* Override any inline style attribute for progress bars in dark mode */
+[data-theme="dark"] .ant-progress-line .ant-progress-bg {
+  background-color: #7d9b49 !important;
+}
+
+[data-theme="dark"] .ant-progress-status-exception .ant-progress-line .ant-progress-bg {
+  background-color: #ff6b6b !important;
+}
+
+/* Target the actual div element that has inline styles */
+[data-theme="dark"] .ant-progress .ant-progress-inner .ant-progress-bg[style] {
+  background-color: #7d9b49 !important;
+  filter: brightness(1.5) !important;
+}
+
+/* For progress bars with error status */
+[data-theme="dark"] .ant-progress-status-exception .ant-progress-inner .ant-progress-bg[style] {
+  background-color: #ff6b6b !important;
+  filter: brightness(1) !important;
+}
+
+/* Target Progress component with inline strokeColor */
+[data-theme="dark"] .ant-progress[style*="--progress-line-stroke-color"] {
+  --progress-line-stroke-color: #7d9b49 !important;
+}
+
+/* Use attribute selector to override inline styles more specifically */
+[data-theme="dark"] div[class*="ant-progress"] div[style*="background-color: rgb(85, 107, 47)"] {
+  background-color: #7d9b49 !important;
+}
+
+[data-theme="dark"] div[class*="ant-progress"] div[style*="background-color: #556b2f"] {
+  background-color: #7d9b49 !important;
+}
+
+/* Also brighten the track background */
+[data-theme="dark"] .ant-progress-line .ant-progress-inner {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Full height tabs for Resources page */
+.full-height-tabs {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-tabs > .ant-tabs-nav {
+  flex-shrink: 0;
+  margin-bottom: 16px;
+}
+
+.full-height-tabs .ant-tabs-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-tabs .ant-tabs-content-holder {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-tabs .ant-tabs-tabpane {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.full-height-tabs .ant-tabs-tabpane-hidden {
+  display: none !important;
+}
+
+/* Ensure table container takes full height */
+.full-height-tabs .ant-table-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.full-height-tabs .ant-spin-nested-loading {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-tabs .ant-spin-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.full-height-tabs .ant-table {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.full-height-tabs .ant-table-container {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-tabs .ant-table-body {
+  flex: 1;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+}
+
+/* Full height table container */
+.ant-table-wrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.ant-table {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.ant-table-container {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Sticky table header */
+.ant-table-sticky-holder {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  overflow: hidden;
+}
+
+.ant-table-sticky-scroll {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+}
+
+/* Table body scroll only */
+.ant-table-body {
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+}
+
+/* Ensure header stays fixed */
+.ant-table-thead > tr > th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--color-bg-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-theme="dark"] .ant-table-thead > tr > th {
+  background: var(--color-bg-primary);
+}
+
+/* Prevent header text wrapping */
+.ant-table-thead > tr > th > div {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Resources page specific styles */
+.resources-full-height-card .ant-card-body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Fix for table scroll in full height containers */
+.ant-spin-nested-loading {
+  height: 100%;
+}
+
+.ant-spin-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.ant-table-wrapper .ant-table {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Modern scroll behavior */
+.ant-table-body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+  scroll-behavior: smooth;
+}
+
+[data-theme="dark"] .ant-table-body {
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+/* Smooth scroll animation */
+.ant-table-body,
+.ant-table-body-inner {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbar until hover on container */
+.ant-table-wrapper:not(:hover) .ant-table-body::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+/* Show scrollbar on table hover */
+.ant-table-wrapper:hover .ant-table-body::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .ant-table-wrapper:hover .ant-table-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Fade in/out animation for scrollbar */
+.ant-table-body::-webkit-scrollbar-thumb {
+  transition: background 0.3s ease;
+}
+
+/* Sidebar menu scrollbar */
+.ant-layout-sider .ant-menu {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+}
+
+.ant-layout-sider .ant-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ant-layout-sider .ant-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ant-layout-sider .ant-menu::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+.ant-layout-sider .ant-menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .ant-layout-sider .ant-menu::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .ant-layout-sider .ant-menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Full height machine table */
+.full-height-machine-table {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-machine-table > div:first-child {
+  flex-shrink: 0;
+}
+
+.full-height-machine-table .ant-table-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.full-height-machine-table .ant-table {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.full-height-machine-table .ant-table-container {
+  flex: 1;
+  overflow: hidden;
+}
+
+.full-height-machine-table .ant-table-body {
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+}
+
+/* Force table scroll for tab content */
+.full-height-tabs .ant-tabs-tabpane-active .ant-table-wrapper {
+  height: 100%;
+}
+
+.full-height-tabs .ant-tabs-tabpane-active .ant-table-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-tabs .ant-tabs-tabpane-active .ant-table-header {
+  flex-shrink: 0;
+}
+
+.full-height-tabs .ant-tabs-tabpane-active .ant-table-body {
+  flex: 1;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  min-height: 0;
+}
+
+/* Full height table styles for audit page */
+.full-height-table {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-table .ant-table-wrapper {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.full-height-table .ant-table {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-table .ant-table-container {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-table .ant-table-header {
+  flex-shrink: 0;
+}
+
+.full-height-table .ant-table-body {
+  flex: 1;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  min-height: 0;
+}
+
+/* Ensure sticky headers work in full-height-table */
+.full-height-table .ant-table-thead > tr > th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+/* Custom scrollbar for full-height-table */
+.full-height-table .ant-table-body::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.full-height-table .ant-table-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.full-height-table .ant-table-body::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.full-height-table .ant-table-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .full-height-table .ant-table-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .full-height-table .ant-table-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Ensure table pagination stays at bottom */
+.full-height-table .ant-table-pagination {
+  margin: 16px 0 0 0;
+  padding: 0;
+}
+
+/* Auth Layout mobile responsive */
+@media (max-width: 768px) {
+  .auth-layout-content {
+    padding: 0 !important;
+  }
+  
+  /* Move theme toggle to bottom on mobile */
+  .auth-theme-toggle-wrapper {
+    position: fixed !important;
+    top: auto !important;
+    bottom: 24px !important;
+    right: 24px !important;
+    z-index: 1000 !important;
+  }
+}
+
+/* Comprehensive mobile responsive design improvements */
+@media (max-width: 768px) {
+  /* Dashboard mobile layout optimizations - margin now controlled by MainLayout */
+  
+  /* Dashboard cards mobile optimization */
+  .ant-card {
+    margin-bottom: 16px;
+    border-radius: 8px;
+  }
+  
+  .ant-card-head {
+    padding: 16px 20px 12px;
+    min-height: auto;
+  }
+  
+  .ant-card-body {
+    padding: 16px 20px 20px;
+  }
+  
+  /* Enhanced typography scaling for mobile with better hierarchy */
+  .ant-typography h1 {
+    font-size: 24px !important;
+    font-weight: 700 !important;
+    margin-bottom: 16px !important;
+    line-height: 1.3;
+  }
+  
+  .ant-typography h2 {
+    font-size: 20px !important;
+    font-weight: 600 !important;
+    margin-bottom: 12px !important;
+    line-height: 1.4;
+  }
+  
+  .ant-typography h3 {
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    margin-bottom: 8px !important;
+    line-height: 1.4;
+  }
+  
+  .ant-typography h4 {
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    margin-bottom: 8px !important;
+    line-height: 1.5;
+  }
+  
+  /* Enhanced spacing system */
+  .ant-card {
+    margin-bottom: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+  
+  .ant-card-head {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--ant-border-color);
+  }
+  
+  .ant-card-body {
+    padding: 20px 24px 24px;
+  }
+  
+  /* Progress bars better visibility on mobile */
+  .ant-progress {
+    margin: 8px 0;
+  }
+  
+  .ant-progress-text {
+    font-size: 12px;
+  }
+  
+  /* Statistics component mobile improvements */
+  .ant-statistic {
+    text-align: center;
+  }
+  
+  .ant-statistic-title {
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .ant-statistic-content {
+    font-size: 20px !important;
+  }
+  
+  /* Timeline mobile improvements */
+  .ant-timeline {
+    padding-left: 16px;
+  }
+  
+  .ant-timeline-item-content {
+    margin-left: 16px;
+  }
+  
+  /* Space component mobile adjustments */
+  .ant-space-item {
+    margin-bottom: 8px !important;
+  }
+  
+  /* Badge positioning on mobile */
+  .ant-badge {
+    font-size: 11px;
+  }
+  
+  /* Tag sizing for mobile */
+  .ant-tag {
+    font-size: 11px;
+    padding: 2px 6px;
+    margin: 2px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Enhanced touch targets for small screens */
+  .ant-input-lg,
+  .ant-input-password-lg,
+  .ant-btn-lg {
+    height: 48px !important;
+    font-size: 16px !important;
+  }
+  
+  /* Critical - Ensure ALL interactive elements meet 44px minimum */
+  .ant-btn,
+  .ant-select-selector,
+  .ant-switch,
+  .ant-checkbox-wrapper,
+  .ant-radio-wrapper,
+  .ant-tabs-tab,
+  .ant-menu-item,
+  .ant-dropdown-trigger,
+  .ant-radio-button-wrapper,
+  .ant-pagination-item,
+  .ant-table-pagination .ant-pagination-item {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    touch-action: manipulation;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  /* Enhanced touch targets for specific table elements */
+  .ant-table-thead > tr > th .ant-table-column-sorter,
+  .ant-table-filter-trigger,
+  .ant-table-expand-icon-th .ant-table-row-expand-icon {
+    min-height: 44px;
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+  }
+  
+  /* Navigation and header touch improvements */
+  .ant-layout-header .ant-btn {
+    min-height: 48px !important;
+    min-width: 48px !important;
+  }
+  
+  /* Sidebar menu enhanced touch targets */
+  .ant-menu-item,
+  .ant-menu-submenu-title {
+    min-height: 48px !important;
+    padding: 0 24px !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  
+  /* Resources page mobile fixes - margin now controlled by MainLayout */
+  
+  /* Group by radio buttons mobile optimization */
+  .ant-radio-group {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+  
+  .ant-radio-button-wrapper {
+    flex: none !important;
+    text-align: center !important;
+    padding: 12px 8px !important;
+    font-size: 12px !important;
+    border-radius: 6px !important;
+    margin: 0 !important;
+    min-height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    word-break: break-word !important;
+  }
+  
+  /* Make Group By label stack above buttons on mobile */
+  .ant-space:has(.ant-radio-group) {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    width: 100% !important;
+  }
+  
+  /* Mobile-specific Group By container */
+  [data-testid="machine-view-toggle"] {
+    width: 100% !important;
+  }
+  
+  /* Action buttons container mobile fix */
+  .ant-space {
+    flex-wrap: wrap !important;
+    width: 100% !important;
+  }
+  
+  .ant-space-item {
+    flex: 1 1 auto !important;
+    min-width: 120px !important;
+  }
+  
+  .ant-btn {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+  
+  /* Table action buttons and interactive elements */
+  .ant-table .ant-btn,
+  .ant-table .ant-dropdown-trigger,
+  .ant-table .ant-switch {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 8px;
+  }
+  
+  /* Menu items enhanced touch targets */
+  .ant-menu-item,
+  .ant-menu-submenu-title {
+    min-height: 48px;
+    line-height: 48px;
+    padding: 0 20px;
+  }
+  
+  /* Tab items enhanced touch targets */
+  .ant-tabs-tab {
+    min-height: 48px;
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+  
+  /* Dashboard specific mobile improvements - margin now controlled by MainLayout */
+  
+  .ant-card-head-title {
+    font-size: 16px;
+    font-weight: 600;
+  }
+  
+  /* Grid system adjustments for mobile */
+  .ant-col {
+    margin-bottom: 12px;
+  }
+  
+  /* Better mobile spacing for dashboard */
+  .ant-space {
+    width: 100% !important;
+  }
+  
+  .ant-space-item {
+    margin-bottom: 12px !important;
+  }
+  
+  /* Enhanced focus indicators for mobile */
+  .ant-btn:focus,
+  .ant-select-focused .ant-select-selector,
+  .ant-radio-button-wrapper:focus {
+    box-shadow: 0 0 0 1px var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+    outline: none !important;
+  }
+  
+  /* Mobile card header fixes */
+  .ant-card-head {
+    padding: 12px 16px !important;
+  }
+  
+  .ant-card-body {
+    padding: 16px !important;
+  }
+  
+  /* Mobile table wrapper improvements */
+  .ant-table-wrapper {
+    margin: 0 -8px !important;
+  }
+  
+  /* Mobile responsive Group By improvements */
+  [data-testid="machine-view-toggle"] .ant-radio-button-wrapper .ant-space {
+    flex-direction: column !important;
+    gap: 4px !important;
+  }
+  
+  [data-testid="machine-view-toggle"] .ant-radio-button-wrapper .anticon {
+    font-size: 16px !important;
+  }
+  
+  /* Mobile tabs optimization */
+  .ant-tabs-nav {
+    margin-bottom: 16px !important;
+  }
+  
+  .ant-tabs-tab {
+    padding: 12px 16px !important;
+    font-size: 14px !important;
+  }
+  
+  /* Prevent text overflow on mobile */
+  .ant-typography {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  /* Modal improvements on mobile */
+  .ant-modal {
+    margin: 12px !important;
+    max-width: calc(100vw - 24px) !important;
+    top: 20px !important;
+  }
+  
+  .ant-modal-content {
+    border-radius: 12px !important;
+    max-height: calc(100vh - 40px) !important;
+    overflow: hidden;
+  }
+  
+  .ant-modal-body {
+    padding: 16px !important;
+    max-height: calc(100vh - 160px) !important;
+    overflow-y: auto !important;
+  }
+  
+  /* Registration modal specific mobile improvements */
+  .ant-modal .ant-steps {
+    margin-bottom: 16px;
+  }
+  
+  .ant-steps-item-title {
+    font-size: 12px !important;
+  }
+  
+  /* Better spacing for form items on mobile */
+  .ant-form-item {
+    margin-bottom: 20px;
+  }
+  
+  /* Language selector mobile adjustments */
+  .ant-select-dropdown {
+    max-height: 200px;
+  }
+  
+  /* Improved text readability on mobile */
+  .ant-typography {
+    line-height: 1.6;
+  }
+  
+  .ant-typography p {
+    margin-bottom: 12px;
+  }
+  
+  /* Better mobile table handling */
+  .ant-table {
+    font-size: 13px;
+  }
+  
+  .ant-table-thead > tr > th {
+    padding: 12px 8px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  
+  .ant-table-tbody > tr > td {
+    padding: 12px 8px;
+  }
+  
+  /* Mobile table scroll improvement */
+  .ant-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Prevent horizontal viewport overflow */
+  .ant-table {
+    min-width: 100%;
+    table-layout: fixed;
+  }
+  
+  /* Mobile-specific column widths */
+  .ant-table-thead > tr > th:first-child,
+  .ant-table-tbody > tr > td:first-child {
+    min-width: 120px;
+    max-width: 150px;
+  }
+  
+  /* Action column mobile optimization */
+  .ant-table-thead > tr > th:last-child,
+  .ant-table-tbody > tr > td:last-child {
+    min-width: 180px;
+    max-width: 200px;
+  }
+  
+  /* Team selector mobile fix */
+  .ant-select {
+    width: 100% !important;
+    min-width: 200px !important;
+  }
+}
+
+/* Tablet responsive design (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+  /* Dashboard tablet layout optimizations - margin now controlled by MainLayout */
+  
+  /* Tablet-optimized card spacing */
+  .ant-card {
+    margin-bottom: 20px;
+  }
+  
+  .ant-card-body {
+    padding: 20px;
+  }
+  
+  /* Improved touch targets for tablet */
+  .ant-btn {
+    min-height: 40px;
+    padding: 8px 16px;
+    touch-action: manipulation;
+  }
+  
+  /* Table improvements for tablet */
+  .ant-table {
+    font-size: 14px;
+  }
+  
+  .ant-table-thead > tr > th {
+    padding: 12px 16px;
+  }
+  
+  .ant-table-tbody > tr > td {
+    padding: 12px 16px;
+  }
+  
+  /* VaultEditor tablet improvements */
+  .vault-editor-form {
+    padding: 16px;
+  }
+  
+  .vault-editor-form .ant-form-item {
+    margin-bottom: var(--space-lg);
+  }
+  
+  .vault-editor-form .ant-form-item-label {
+    padding-bottom: var(--space-xs);
+  }
+  
+  .vault-editor-form .ant-input,
+  .vault-editor-form .ant-input-password,
+  .vault-editor-form .ant-select-selector,
+  .vault-editor-form .ant-input-number {
+    min-height: 40px;
+    font-size: 16px;
+  }
+  
+  .vault-editor-form .ant-btn {
+    min-height: 44px;
+    padding: 8px 20px;
+    font-size: 16px;
+  }
+  
+  .vault-editor-form .ant-collapse-header {
+    padding: 16px 20px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  
+  .vault-editor-form .ant-collapse-content-box {
+    padding: 0 20px 20px 20px;
+  }
+  
+  /* Better spacing for form elements on tablet */
+  .vault-editor-form .ant-space {
+    gap: 12px;
+  }
+  
+  .vault-editor-form .ant-form-item-label > label {
+    font-size: 15px;
+    font-weight: 500;
+  }
+  
+  /* Tooltip improvements for tablet */
+  .vault-editor-form .ant-tooltip {
+    font-size: 14px;
+  }
+  
+  /* Icon sizing for tablet */
+  .vault-editor-form .anticon {
+    font-size: 16px;
+  }
+  
+  /* Statistics better spacing on tablet */
+  .ant-statistic-content {
+    font-size: 24px;
+  }
+  
+  /* Progress bars tablet optimization */
+  .ant-progress {
+    margin: 12px 0;
+  }
+  
+  /* Grid adjustments for tablet */
+  .ant-row {
+    margin-left: -12px !important;
+    margin-right: -12px !important;
+  }
+  
+  .ant-col {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+}
+
+/* Dashboard visual hierarchy improvements */
+/* Resource Usage section enhanced contrast and typography */
+.ant-card[data-testid="dashboard-card-resource-usage"] .ant-typography {
+  font-weight: 600;
+}
+
+.ant-card[data-testid="dashboard-card-resource-usage"] .ant-statistic-title {
+  font-weight: 500;
+  color: var(--color-text-primary);
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.ant-card[data-testid="dashboard-card-resource-usage"] .ant-statistic-content {
+  font-weight: 700;
+  font-size: 18px;
+}
+
+/* Progress bars enhanced visibility */
+.ant-card[data-testid="dashboard-card-resource-usage"] .ant-progress {
+  margin: 12px 0 8px 0;
+}
+
+.ant-card[data-testid="dashboard-card-resource-usage"] .ant-progress-inner {
+  background-color: rgba(0, 0, 0, 0.06);
+  height: 8px;
+  border-radius: 4px;
+}
+
+[data-theme="dark"] .ant-card[data-testid="dashboard-card-resource-usage"] .ant-progress-inner {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Resource usage numerical data enhanced contrast */
+.ant-card[data-testid="dashboard-card-resource-usage"] .ant-typography-caption {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+/* Dashboard cards improved visual separation */
+.ant-card {
+  border: 1px solid var(--color-border-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.3s ease;
+}
+
+.ant-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .ant-card {
+  border-color: var(--color-border-secondary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .ant-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+/* Table visual hierarchy improvements - matching design principles */
+.ant-table-thead > tr > th {
+  font-weight: 600;
+  font-size: 14px;  /* Body Small from style guide */
+  color: var(--color-text-secondary);
+  background: var(--color-bg-secondary);
+  border-bottom: 2px solid var(--color-border-primary);
+  padding: 16px;  /* 2 * base unit */
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: left;  /* Default left alignment */
+}
+
+/* Smart column alignment based on content type */
+.ant-table-thead > tr > th.column-number,
+.ant-table-tbody > tr > td.column-number {
+  text-align: right !important;  /* Right-align numbers */
+}
+
+.ant-table-thead > tr > th.column-center,
+.ant-table-tbody > tr > td.column-center {
+  text-align: center !important;  /* Center-align status/badges */
+}
+
+.ant-table-tbody > tr > td {
+  font-size: 16px;  /* Body size from style guide */
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border-secondary);
+  padding: 16px;  /* Consistent with header */
+  vertical-align: middle;
+}
+
+/* Numeric data formatting */
+.ant-table-tbody > tr > td.numeric-cell {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  text-align: right;
+}
+
+/* Row hover state */
+.ant-table-tbody > tr:hover > td {
+  background: var(--color-bg-hover);
+}
+
+/* Enhanced table sorting indicators */
+.ant-table-thead > tr > th.ant-table-column-sort {
+  background: rgba(85, 107, 47, 0.08);
+  position: relative;
+}
+
+.ant-table-thead > tr > th .ant-table-column-sorters {
+  transition: all 0.2s ease;
+  padding: var(--space-xs);
+  border-radius: 4px;
+}
+
+.ant-table-thead > tr > th .ant-table-column-sorters:hover {
+  background: rgba(85, 107, 47, 0.1);
+  transform: translateY(-1px);
+}
+
+.ant-table-column-sorter {
+  color: var(--color-text-tertiary);
+  transition: color 0.2s ease;
+}
+
+.ant-table-column-sorter-up.active,
+.ant-table-column-sorter-down.active {
+  color: var(--color-primary);
+  font-weight: bold;
+}
+
+/* Table action improvements - WCAG compliant */
+.ant-table .ant-btn-group {
+  display: flex;
+  gap: 8px;  /* 1 * base unit */
+  align-items: center;
+}
+
+.ant-table .ant-btn-icon-only {
+  min-width: 44px !important;  /* WCAG touch target */
+  height: 44px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0 !important;
+}
+
+.ant-table .ant-btn-icon-only:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Compact mode for dense tables - only when necessary */
+.ant-table-compact .ant-btn-icon-only {
+  min-width: 36px !important;
+  height: 36px !important;
+}
+
+/* Bulk actions toolbar */
+.bulk-actions-toolbar {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: 8px;
+  padding: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  box-shadow: 0 2px 8px rgba(85, 107, 47, 0.08);
+}
+
+.bulk-actions-toolbar .ant-typography {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.bulk-actions-toolbar .ant-space {
+  flex-wrap: wrap;
+}
+
+/* Statistics enhanced visual weight */
+.ant-statistic-title {
+  font-weight: 500;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.ant-statistic-content {
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Badge and Tag enhanced contrast */
+.ant-badge {
+  font-weight: 600;
+}
+
+.ant-tag {
+  font-weight: 500;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+}
+
+/* Timeline enhanced hierarchy */
+.ant-timeline-item-content {
+  margin-left: 20px;
+  padding-left: 12px;
+}
+
+.ant-timeline-item-head {
+  border: 2px solid var(--color-bg-primary);
+  background: var(--color-primary);
+}
+
+/* Card visual hierarchy improvements */
+.ant-card-head-title {
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--color-text-primary);
+  line-height: 1.4;
+  letter-spacing: -0.25px;
+}
+
+.ant-card-extra {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+/* Section headers hierarchy */
+.section-header {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-lg);
+  letter-spacing: -0.25px;
+  border-bottom: 2px solid var(--color-border-secondary);
+  padding-bottom: var(--space-sm);
+}
+
+.subsection-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-md);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Content hierarchy */
+.content-primary {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-text-primary);
+  line-height: 1.6;
+}
+
+.content-secondary {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.content-caption {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+  line-height: 1.4;
+}
+
+/* Form Elements Standardization - matching style-guide.md */
+/* Input, Select, Picker styling moved to antdTheme.ts */
+/* Vertically center labels with input fields in horizontal forms */
+.ant-form-horizontal .ant-form-item-row {
+  display: flex;
+  align-items: flex-start; /* Start from top to control alignment manually */
+}
+
+/* Ensure label column is vertically centered while maintaining right alignment */
+.ant-form-horizontal .ant-form-item-label {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end; /* Keep labels right-aligned */
+  min-height: 44px; /* Match input height */
+  padding-top: 0 !important; /* Remove any default padding */
+  padding-bottom: 0 !important;
+}
+
+/* Ensure the label text itself is centered */
+.ant-form-horizontal .ant-form-item-label > label {
+  display: flex;
+  align-items: center;
+  height: 44px; /* Match input height exactly */
+  margin: 0; /* Remove any margins */
+}
+
+/* Apply to vault editor forms as well */
+.vault-editor-form.ant-form-horizontal .ant-form-item-row {
+  display: flex;
+  align-items: flex-start; /* Start from top to control alignment manually */
+}
+
+.vault-editor-form.ant-form-horizontal .ant-form-item-label {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end; /* Keep labels right-aligned */
+  min-height: 44px;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Also apply to all vault-editor form labels to ensure vertical centering */
+.vault-editor-form .ant-form-item-label {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 44px;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Ensure vault editor label text is properly centered */
+.vault-editor-form .ant-form-item-label > label {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  margin: 0;
+}
+
+/* Input affix wrapper styling moved to styled components */
+
+/* Focus states for better accessibility */
+/* Input focus moved to styled components */
+.ant-select-focused .ant-select-selector,
+.ant-picker-focused {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 1px var(--color-primary) !important;
+  outline: none !important;
+}
+
+/* Button standardization moved to antdTheme.ts */
+
+/* Card standardization - matching style-guide.md */
+.ant-card {
+  border-radius: 8px !important;  /* Large border radius for cards */
+  border: 1px solid var(--color-border-secondary) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+  padding: 0 !important;
+}
+
+.ant-card-head {
+  border-bottom: 1px solid var(--color-border-secondary) !important;
+  padding: 16px 24px !important;
+}
+
+.ant-card-body {
+  padding: 24px !important;  /* 24px padding as per style guide */
+}
+
+/* Modal standardization - matching style-guide.md */
+.ant-modal-content {
+  border-radius: 12px !important;  /* X-Large border radius for modals */
+  box-shadow: 0 20px 25px rgba(0,0,0,0.1) !important;
+  padding: 0 !important;
+}
+
+.ant-modal-header {
+  padding: 24px 32px !important;
+  border-bottom: 1px solid var(--color-border-secondary) !important;
+}
+
+.ant-modal-body {
+  padding: 32px !important;  /* 32px padding as per style guide */
+}
+
+.ant-modal-footer {
+  padding: 16px 32px !important;
+  border-top: 1px solid var(--color-border-secondary) !important;
+}
+
+/* Alert visual improvements */
+.ant-alert {
+  border-radius: 8px;
+  border: 1px solid currentColor;
+  font-weight: 500;
+  padding: var(--space-lg);
+}
+
+.ant-alert-message {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: var(--space-xs);
+}
+
+.ant-alert-description {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* Contextual alerts */
+.ant-alert-info {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.ant-alert-success {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.ant-alert-warning {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.ant-alert-error {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Alert with actions */
+.ant-alert-with-description .ant-alert-action {
+  margin-top: var(--space-md);
+}
+
+.ant-alert .ant-btn {
+  font-size: 12px;
+  height: 28px;
+  padding: 0 var(--space-md);
+}
+
+/* Micro-interactions and enhanced user feedback */
+/* Button hover states with smooth transitions */
+.ant-btn {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(0);
+}
+
+.ant-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(85, 107, 47, 0.15);
+}
+
+.ant-btn:active {
+  transform: translateY(0);
+  transition-duration: 0.1s;
+}
+
+/* Card hover interactions */
+.ant-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(0);
+}
+
+.ant-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Progress bar animation on data change */
+.ant-progress .ant-progress-bg {
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+}
+
+/* Statistics number animation */
+.ant-statistic-content-value {
+  transition: all 0.3s ease;
+}
+
+.ant-statistic:hover .ant-statistic-content-value {
+  transform: scale(1.02);
+}
+
+/* Badge pulse animation for new notifications */
+.ant-badge-count {
+  animation: badgePulse 2s infinite;
+}
+
+@keyframes badgePulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* Tag hover effects */
+.ant-tag {
+  transition: all 0.2s ease;
+  cursor: default;
+}
+
+.ant-tag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Timeline item hover effects */
+.ant-timeline-item {
+  transition: all 0.2s ease;
+}
+
+
+.ant-timeline-item:hover .ant-timeline-item-head {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 4px rgba(85, 107, 47, 0.1);
+}
+
+/* Alert hover interactions */
+.ant-alert {
+  transition: all 0.2s ease;
+}
+
+.ant-alert:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Loading state improvements */
+.ant-spin-dot-item {
+  transition: all 0.3s ease;
+}
+
+/* Table row interaction improvements */
+.ant-table-tbody > tr {
+  position: relative;
+}
+
+.ant-table-tbody > tr:hover {
+  background-color: var(--color-bg-hover);
+}
+
+
+/* Table selection improvements */
+.ant-table-tbody > tr.ant-table-row-selected {
+  background-color: rgba(85, 107, 47, 0.08);
+  border-left: 3px solid var(--color-primary);
+}
+
+.ant-table-tbody > tr.ant-table-row-selected:hover {
+  background-color: rgba(85, 107, 47, 0.12);
+}
+
+/* Table pagination improvements */
+.ant-pagination {
+  padding: var(--space-lg) 0;
+  border-top: 1px solid var(--color-border-secondary);
+  margin-top: var(--space-lg);
+}
+
+.ant-pagination .ant-pagination-item {
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.ant-pagination .ant-pagination-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(85, 107, 47, 0.15);
+}
+
+.ant-pagination .ant-pagination-item-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  font-weight: 600;
+}
+
+.ant-pagination .ant-pagination-item-active a {
+  color: white;
+}
+
+/* Navigation menu item hover effects */
+.ant-menu-item {
+  transition: all 0.2s ease;
+}
+
+
+.ant-menu-item::after {
+  transition: all 0.3s ease;
+}
+
+/* Enhanced focus management and accessibility */
+/* High-visibility focus indicators for WCAG 2.1 AA compliance */
+/* Input focus moved to styled components */
+.ant-select-focused .ant-select-selector,
+.ant-btn:focus,
+.ant-switch:focus,
+.ant-checkbox-wrapper:focus-within,
+.ant-radio-wrapper:focus-within,
+.ant-tabs-tab:focus,
+.ant-menu-item:focus,
+.ant-dropdown-trigger:focus,
+.ant-table-tbody > tr:focus,
+.ant-table-thead > tr > th button:focus,
+.ant-pagination-item:focus,
+.ant-pagination-prev:focus,
+.ant-pagination-next:focus,
+.ant-avatar:focus,
+.ant-badge:focus,
+[data-testid]:focus {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 1px var(--color-primary) !important;
+  outline: none !important;
+  position: relative;
+  z-index: 10;
+  transition: all 0.2s ease !important;
+}
+
+/* Enhanced keyboard navigation indicators */
+.ant-btn:focus-visible,
+.ant-menu-item:focus-visible,
+.ant-tabs-tab:focus-visible,
+.ant-table-row:focus-visible,
+.ant-dropdown-trigger:focus-visible {
+  background-color: rgba(85, 107, 47, 0.08) !important;
+  border-radius: 4px;
+}
+
+/* Table-specific focus indicators */
+.ant-table-tbody > tr:focus {
+  background-color: rgba(85, 107, 47, 0.05) !important;
+}
+
+/* Action button focus indicators */
+.ant-table .ant-btn:focus,
+.ant-space .ant-btn:focus {
+  box-shadow: 0 0 0 1px var(--color-primary) !important;
+  outline: none !important;
+}
+
+/* Radio button focus indicators for Group By section */
+.ant-radio-button-wrapper:focus {
+  box-shadow: 0 0 0 1px var(--color-primary) !important;
+  outline: none !important;
+  z-index: 10;
+  position: relative;
+}
+
+/* Skip navigation for screen readers */
+.skip-navigation {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  background: var(--color-primary);
+  color: white;
+  padding: 12px 20px;
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: 0 0 8px 0;
+  z-index: 9999;
+  transition: top 0.3s ease;
+}
+
+.skip-navigation:focus {
+  top: 0;
+}
+
+/* Ensure clickable elements have proper focus outline */
+[tabindex="0"]:focus,
+[role="button"]:focus,
+[role="link"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 1px var(--color-primary);
+  border-radius: 4px;
+}
+
+/* Enhanced focus for dark theme */
+/* Input focus moved to styled components */
+[data-theme="dark"] .ant-select-focused .ant-select-selector,
+[data-theme="dark"] .ant-btn:focus,
+[data-theme="dark"] .ant-tabs-tab:focus,
+[data-theme="dark"] .ant-menu-item:focus,
+[data-theme="dark"] .ant-table-tbody > tr:focus {
+  border-color: #7d9b49 !important;
+  box-shadow: 0 0 0 1px #7d9b49 !important;
+  outline: none !important;
+}
+
+[data-theme="dark"] .ant-table-tbody > tr:focus {
+  background-color: rgba(125, 155, 73, 0.08) !important;
+}
+
+[data-theme="dark"] .ant-radio-button-wrapper:focus {
+  box-shadow: 0 0 0 1px #7d9b49 !important;
+  outline: none !important;
+}
+
+/* Modal and confirmation dialog improvements */
+.ant-modal-content {
+  outline: none;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.ant-modal-content:focus-within {
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(85, 107, 47, 0.1);
+}
+
+/* Confirmation dialog enhancements */
+.ant-modal-confirm .ant-modal-header {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.02) 100%);
+  border-bottom: 2px solid rgba(239, 68, 68, 0.15);
+  padding: var(--space-xl) var(--space-2xl);
+}
+
+.ant-modal-confirm .ant-modal-body {
+  padding: var(--space-2xl);
+  text-align: center;
+}
+
+.ant-modal-confirm .anticon {
+  font-size: 48px;
+  margin-bottom: var(--space-xl);
+  color: #f56565;
+  filter: drop-shadow(0 2px 8px rgba(245, 101, 101, 0.3));
+}
+
+.ant-modal-confirm .ant-modal-confirm-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-md);
+  line-height: 1.4;
+}
+
+.ant-modal-confirm .ant-modal-confirm-content {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin-bottom: var(--space-2xl);
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ant-modal-confirm .ant-modal-confirm-btns {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.ant-modal-confirm .ant-btn {
+  min-width: 100px;
+  height: 40px;
+  font-weight: 500;
+  border-radius: 8px;
+}
+
+.ant-modal-confirm .ant-btn-primary.ant-btn-dangerous {
+  background: #dc2626;
+  border-color: #dc2626;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+}
+
+.ant-modal-confirm .ant-btn-primary.ant-btn-dangerous:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+}
+
+/* Warning-specific confirmation dialogs */
+.ant-modal-confirm-warning .anticon {
+  color: #f59e0b;
+  filter: drop-shadow(0 2px 8px rgba(245, 158, 11, 0.3));
+}
+
+.ant-modal-confirm-warning .ant-modal-header {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(245, 158, 11, 0.02) 100%);
+  border-bottom: 2px solid rgba(245, 158, 11, 0.15);
+}
+
+/* Info confirmation dialogs */
+.ant-modal-confirm-info .anticon {
+  color: #3b82f6;
+  filter: drop-shadow(0 2px 8px rgba(59, 130, 246, 0.3));
+}
+
+.ant-modal-confirm-info .ant-modal-header {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0.02) 100%);
+  border-bottom: 2px solid rgba(59, 130, 246, 0.15);
+}
+
+/* Button focus states with better contrast */
+.ant-btn-primary:focus {
+  background: var(--color-primary-hover) !important;
+  border-color: var(--color-primary-hover) !important;
+}
+
+/* Link focus indicators */
+a:focus,
+.ant-typography a:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-primary), 0 0 0 4px rgba(85, 107, 47, 0.25);
+  border-radius: 4px;
+  text-decoration: none;
+}
+
+/* Skip to content link for keyboard users */
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--color-primary);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  text-decoration: none;
+  z-index: 10000;
+  transition: top 0.3s ease;
+}
+
+.skip-to-content:focus {
+  top: 6px;
+}
+
+/* Light mode Radio Group buttons - improved visibility and hierarchy */
+.light-mode-radio-group .ant-radio-button-wrapper {
+  border-color: var(--color-border-primary);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-primary);
+  transition: all 0.3s;
+  font-weight: 500;
+  position: relative;
+}
+
+.light-mode-radio-group .ant-radio-button-wrapper:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: var(--color-bg-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(85, 107, 47, 0.15);
+}
+
+.light-mode-radio-group .ant-radio-button-wrapper-checked {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-bg-primary);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(85, 107, 47, 0.25);
+  transform: translateY(-1px);
+}
+
+.light-mode-radio-group .ant-radio-button-wrapper-checked:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  color: var(--color-bg-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(85, 107, 47, 0.3);
+}
+
+/* Group By section improvements */
+.light-mode-radio-group .ant-radio-button-wrapper .ant-space {
+  align-items: center;
+  justify-content: center;
+  min-height: 20px;
+}
+
+.light-mode-radio-group .ant-radio-button-wrapper .anticon {
+  font-size: 14px;
+  margin-right: 6px;
+}
+
+/* Group By label enhancement */
+[data-testid="machine-view-toggle"] {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-secondary);
+}
+
+/* Improved spacing for Group By section */
+.ant-space:has([data-testid="machine-view-toggle"]) {
+  margin-bottom: 20px;
+}
+
+.ant-space:has([data-testid="machine-view-toggle"]) > .ant-space-item:first-child {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Enhanced visual hierarchy for Group By section */
+.light-mode-radio-group {
+  background: var(--color-bg-secondary);
+  padding: 2px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-secondary);
+}
+
+/* Group by section tooltips and guidance */
+.light-mode-radio-group .ant-radio-button-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(85, 107, 47, 0.02) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.light-mode-radio-group .ant-radio-button-wrapper:hover::before {
+  opacity: 1;
+}
+
+.light-mode-radio-group .ant-radio-button-wrapper-checked::before {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  opacity: 1;
+}
+
+/* Icon colors in Radio buttons */
+.light-mode-radio-group .ant-radio-button-wrapper .anticon {
+  transition: color 0.3s;
+}
+
+.light-mode-radio-group .ant-radio-button-wrapper-checked .anticon {
+  color: var(--color-bg-primary);
+}
+
+/* Machine Vault Status Panel Styles */
+.machine-vault-status-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mobile responsiveness for the panel */
+@media (max-width: 768px) {
+  .machine-vault-status-panel {
+    width: 100vw !important;
+    right: -100vw;
+  }
+  
+  .machine-vault-status-panel[style*="right: 0"] {
+    right: 0 !important;
+  }
+}
+
+/* Panel header sticky positioning */
+.machine-vault-status-panel > div:first-child {
+  flex-shrink: 0;
+}
+
+/* Panel content scrolling */
+.machine-vault-status-panel > div:last-child {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Table row hover effect for clickable rows */
+.ant-table-row {
+  transition: background-color 0.2s ease;
+}
+
+.ant-table-row:hover {
+  background-color: var(--color-bg-hover);
+}
+
+[data-theme="dark"] .ant-table-row:hover {
+  background-color: var(--color-bg-hover);
+}
+
+/* Panel animations */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Panel shadow for depth */
+.machine-vault-status-panel {
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .machine-vault-status-panel {
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.24);
+}
+
+/* Panel close button hover effect */
+.machine-vault-status-panel button[type="text"]:hover {
+  background-color: var(--color-bg-hover);
+}
+
+/* Panel content spacing */
+.machine-vault-status-panel .ant-collapse {
+  background: transparent;
+  border: none;
+}
+
+.machine-vault-status-panel .ant-collapse-item {
+  border: 1px solid var(--color-border-primary);
+  margin-bottom: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.machine-vault-status-panel .ant-collapse-header {
+  background: var(--color-bg-secondary);
+  font-weight: 500;
+}
+
+[data-theme="dark"] .machine-vault-status-panel .ant-collapse-header {
+  background: var(--color-bg-tertiary);
+}
+
+/* Panel description list styling */
+.machine-vault-status-panel .ant-descriptions-item-label {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.machine-vault-status-panel .ant-descriptions-item-content {
+  color: var(--color-text-primary);
+}
+
+/* Machine Repository List - Smooth expand/collapse animations */
+.ant-table-expanded-row > .ant-table-cell {
+  animation: expandRow 0.3s ease-out;
+}
+
+@keyframes expandRow {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Smooth rotation for expand chevron icon */
+.ant-table-row .anticon-right {
+  transition: transform 0.3s ease;
+}
+
+/* Repository table hover states */
+.ant-table-tbody > tr.ant-table-row {
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.ant-table-tbody > tr.ant-table-row:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="dark"] .ant-table-tbody > tr.ant-table-row:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Subtle background for clone repository rows */
+.repository-clone-row {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="dark"] .repository-clone-row {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Nested table hover states for containers and plugins */
+.ant-table-expanded-row .ant-table-tbody > tr.ant-table-row {
+  transition: background-color 0.3s ease;
+}
+
+.ant-table-expanded-row .ant-table-tbody > tr.ant-table-row:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="dark"] .ant-table-expanded-row .ant-table-tbody > tr.ant-table-row:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Machine table specific styles */
+.ant-table-tbody > tr.ant-table-row.ant-table-row-selected {
+  background-color: rgba(85, 107, 47, 0.08);
+}
+
+.ant-table-tbody > tr.ant-table-row.ant-table-row-selected:hover {
+  background-color: rgba(85, 107, 47, 0.12);
+}
+
+/* Hide Ant Design's default expand column */
+.ant-table-expand-icon-th,
+.ant-table-row-expand-icon-cell {
+  display: none !important;
+}
+
+/* Panel switch animations */
+.machine-vault-status-panel,
+.repository-detail-panel,
+.container-detail-panel {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Smooth panel content transitions */
+.panel-transition-wrapper {
+  transition: opacity 0.3s ease;
+}
+
+/* Panel scrollbar styling */
+.machine-vault-status-panel::-webkit-scrollbar,
+.repository-detail-panel::-webkit-scrollbar,
+.container-detail-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.machine-vault-status-panel::-webkit-scrollbar-track,
+.repository-detail-panel::-webkit-scrollbar-track,
+.container-detail-panel::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.machine-vault-status-panel::-webkit-scrollbar-thumb,
+.repository-detail-panel::-webkit-scrollbar-thumb,
+.container-detail-panel::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.machine-vault-status-panel::-webkit-scrollbar-thumb:hover,
+.repository-detail-panel::-webkit-scrollbar-thumb:hover,
+.container-detail-panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Mobile table optimization for better mobile experience */
+@media (max-width: 768px) {
+  .ant-table {
+    font-size: 12px;
+  }
+  
+  .ant-table-thead > tr > th {
+    padding: 8px 4px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  
+  .ant-table-tbody > tr > td {
+    padding: 8px 4px;
+    font-size: 12px;
+  }
+  
+  /* Enhanced touch targets for table buttons - minimum 44px */
+  .ant-table-tbody > tr > td .ant-btn {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    padding: 8px 12px;
+    font-size: 12px;
+    touch-action: manipulation;
+  }
+  
+  .ant-table-tbody > tr > td .ant-space {
+    gap: 8px !important;
+    flex-wrap: wrap;
+  }
+  
+  /* Machine table specific mobile optimizations */
+  .ant-table-tbody > tr > td .ant-dropdown-trigger {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    padding: 8px;
+    touch-action: manipulation;
+  }
+  
+  /* Improve horizontal scrolling for wide tables */
+  .ant-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Enhanced table scroll behavior */
+  .ant-table-container {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  
+  /* Ensure minimum column widths for readability */
+  .ant-table-thead > tr > th:first-child,
+  .ant-table-tbody > tr > td:first-child {
+    min-width: 140px;
+    position: sticky;
+    left: 0;
+    background: var(--ant-table-header-bg);
+    z-index: 1;
+  }
+  
+  /* Action column optimization for mobile */
+  .ant-table-thead > tr > th:last-child,
+  .ant-table-tbody > tr > td:last-child {
+    min-width: 180px;
+    position: sticky;
+    right: 0;
+    background: var(--ant-table-row-bg);
+    z-index: 1;
+  }
+  
+  /* Better visual hierarchy for table actions */
+  .ant-table-tbody > tr > td:last-child {
+    border-left: 1px solid var(--ant-border-color);
+    box-shadow: -2px 0 4px rgba(0, 0, 0, 0.05);
+  }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 480px) {
+  .ant-table-tbody > tr > td .ant-space {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px !important;
+  }
+  
+  .ant-table-tbody > tr > td .ant-btn,
+  .ant-table-tbody > tr > td .ant-dropdown-trigger {
+    width: 100%;
+    margin-bottom: 2px;
+    font-size: 10px;
+  }
+  
+  /* Make cards stack better on very small screens */
+  .ant-card {
+    margin-bottom: 8px;
+  }
+}
+
+/* VaultEditor mobile responsive improvements */
+@media (max-width: 768px) {
+  .vault-editor-form {
+    overflow-x: hidden !important;
+  }
+  
+  .vault-editor-form .ant-form-item {
+    margin-bottom: var(--space-md);
+  }
+  
+  .vault-editor-form .ant-form-item-label {
+    text-align: left !important;
+    padding-bottom: var(--space-xs);
+  }
+  
+  .vault-editor-form .ant-form-item-label > label {
+    font-size: 14px;
+    font-weight: 500;
+  }
+  
+  .vault-editor-form .ant-input,
+  .vault-editor-form .ant-input-password,
+  .vault-editor-form .ant-select-selector,
+  .vault-editor-form .ant-input-number {
+    min-height: 44px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  
+  .vault-editor-form .ant-input-group-addon {
+    min-height: 44px !important;
+    display: flex;
+    align-items: center;
+  }
+  
+  .vault-editor-form .ant-collapse {
+    border: none;
+  }
+  
+  .vault-editor-form .ant-collapse-item {
+    border-bottom: 1px solid var(--color-border);
+  }
+  
+  .vault-editor-form .ant-collapse-header {
+    padding: var(--space-md) !important;
+    font-weight: 600;
+  }
+  
+  .vault-editor-form .ant-collapse-content-box {
+    padding: 0 var(--space-md) var(--space-md) var(--space-md) !important;
+  }
+  
+  .vault-editor-form .ant-space {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  
+  .vault-editor-form .ant-btn {
+    min-height: 44px !important;
+    padding: 0 var(--space-md);
+    touch-action: manipulation;
+    margin: var(--space-xs) 0;
+  }
+  
+  .vault-editor-form .ant-space .ant-space-item {
+    margin-bottom: var(--space-sm);
+  }
+  
+  .vault-editor-form .ant-space-horizontal .ant-space-item {
+    margin-right: var(--space-sm);
+  }
+  
+  /* Better touch targets for interactive elements */
+  .vault-editor-form .anticon[role="button"],
+  .vault-editor-form .ant-tooltip,
+  .vault-editor-form .ant-dropdown-trigger {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+  }
+}
+
+@media (max-width: 480px) {
+  .vault-editor-form .ant-form-item-label > label {
+    font-size: 13px;
+  }
+  
+  .vault-editor-form .ant-input,
+  .vault-editor-form .ant-input-password,
+  .vault-editor-form .ant-select-selector,
+  .vault-editor-form .ant-input-number {
+    min-height: 48px !important;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  .vault-editor-form .ant-collapse-header {
+    padding: 12px !important;
+    font-size: 14px;
+  }
+  
+  .vault-editor-form .ant-btn {
+    min-height: 48px !important;
+    font-size: 16px;
+    width: 100%;
+  }
+}
+
+/* VaultEditor focus indicators for WCAG compliance */
+.vault-editor-form .ant-input:focus,
+.vault-editor-form .ant-input-password:focus,
+.vault-editor-form .ant-select-focused .ant-select-selector,
+.vault-editor-form .ant-input-number:focus,
+.vault-editor-form .ant-switch:focus,
+.vault-editor-form .ant-btn:focus,
+.vault-editor-form .ant-collapse-header:focus,
+.vault-editor-form .ant-tooltip:focus,
+.vault-editor-form .anticon:focus {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 2px var(--color-primary), 0 0 0 4px rgba(85, 107, 47, 0.25) !important;
+  outline: none !important;
+  z-index: 1;
+}
+
+/* Enhanced focus visibility for dark theme in vault editor */
+[data-theme="dark"] .vault-editor-form .ant-input:focus,
+[data-theme="dark"] .vault-editor-form .ant-input-password:focus,
+[data-theme="dark"] .vault-editor-form .ant-select-focused .ant-select-selector,
+[data-theme="dark"] .vault-editor-form .ant-input-number:focus,
+[data-theme="dark"] .vault-editor-form .ant-switch:focus,
+[data-theme="dark"] .vault-editor-form .ant-btn:focus,
+[data-theme="dark"] .vault-editor-form .ant-collapse-header:focus {
+  border-color: #7d9b49 !important;
+  box-shadow: 0 0 0 4px rgba(125, 155, 73, 0.3) !important;
+  outline: 3px solid #7d9b49 !important;
+}
+
+/* Skip to content links for screen readers */
+.vault-editor-form .sr-only:focus {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  z-index: 999999;
+  width: auto;
+  height: auto;
+  padding: 8px 16px;
+  background: var(--color-primary);
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  clip: auto;
+}
+
+/* Keyboard navigation indicator for collapse panels */
+.vault-editor-form .ant-collapse-header:focus-visible {
+  background-color: rgba(85, 107, 47, 0.08) !important;
+  border-radius: 8px;
+}
+
+/* Focus trap styles for modal contexts */
+.vault-editor-form [data-focus-trap-active] {
+  position: relative;
+  z-index: 1;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .vault-editor-form .ant-input:focus,
+  .vault-editor-form .ant-btn:focus,
+  .vault-editor-form .ant-select-focused .ant-select-selector {
+    outline: none !important;
+    box-shadow: 0 0 0 3px currentColor !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .vault-editor-form .ant-collapse-header:focus-visible {
+    transform: none;
+    transition: none;
+  }
+  
+  .vault-editor-form * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Consistent error state styling for VaultEditor */
+.vault-editor-form .ant-form-item-has-error .ant-input,
+.vault-editor-form .ant-form-item-has-error .ant-input-password,
+.vault-editor-form .ant-form-item-has-error .ant-select-selector,
+.vault-editor-form .ant-form-item-has-error .ant-input-number {
+  border-color: #ff4d4f !important;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2) !important;
+  background-color: rgba(255, 77, 79, 0.02);
+}
+
+.vault-editor-form .ant-form-item-has-error .ant-form-item-explain-error {
+  color: #ff4d4f;
+  font-size: 13px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.vault-editor-form .ant-form-item-has-error .ant-form-item-explain-error::before {
+  content: '⚠';
+  color: #ff4d4f;
+  font-weight: bold;
+}
+
+/* Error states for different input types */
+.vault-editor-form .ant-form-item-has-error .ant-switch {
+  background-color: rgba(255, 77, 79, 0.1);
+  border: 2px solid #ff4d4f;
+}
+
+.vault-editor-form .ant-form-item-has-error .ant-input-number:focus,
+.vault-editor-form .ant-form-item-has-error .ant-input:focus,
+.vault-editor-form .ant-form-item-has-error .ant-input-password:focus {
+  border-color: #ff4d4f !important;
+  box-shadow: 0 0 0 4px rgba(255, 77, 79, 0.15) !important;
+  outline: 2px solid #ff4d4f !important;
+}
+
+/* Error indicator in form labels */
+.vault-editor-form .ant-form-item-has-error .ant-form-item-label > label {
+  color: #ff4d4f !important;
+  font-weight: 600;
+}
+
+.vault-editor-form .ant-form-item-has-error .ant-form-item-label > label::after {
+  content: ' *';
+  color: #ff4d4f;
+  font-weight: bold;
+}
+
+/* Success states for comparison */
+.vault-editor-form .ant-form-item-has-success .ant-input,
+.vault-editor-form .ant-form-item-has-success .ant-input-password,
+.vault-editor-form .ant-form-item-has-success .ant-select-selector,
+.vault-editor-form .ant-form-item-has-success .ant-input-number {
+  border-color: #52c41a;
+  box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.2);
+  background-color: rgba(82, 196, 26, 0.02);
+}
+
+.vault-editor-form .ant-form-item-has-success .ant-form-item-label > label {
+  color: #52c41a;
+}
+
+/* Warning states */
+.vault-editor-form .ant-form-item-has-warning .ant-input,
+.vault-editor-form .ant-form-item-has-warning .ant-input-password,
+.vault-editor-form .ant-form-item-has-warning .ant-select-selector,
+.vault-editor-form .ant-form-item-has-warning .ant-input-number {
+  border-color: #faad14;
+  box-shadow: 0 0 0 2px rgba(250, 173, 20, 0.2);
+  background-color: rgba(250, 173, 20, 0.02);
+}
+
+.vault-editor-form .ant-form-item-has-warning .ant-form-item-label > label {
+  color: #faad14;
+}
+
+.vault-editor-form .ant-form-item-has-warning .ant-form-item-explain {
+  color: #faad14;
+}
+
+/* Dark theme error states */
+[data-theme="dark"] .vault-editor-form .ant-form-item-has-error .ant-input,
+[data-theme="dark"] .vault-editor-form .ant-form-item-has-error .ant-input-password,
+[data-theme="dark"] .vault-editor-form .ant-form-item-has-error .ant-select-selector,
+[data-theme="dark"] .vault-editor-form .ant-form-item-has-error .ant-input-number {
+  border-color: #ff7875;
+  box-shadow: 0 0 0 2px rgba(255, 120, 117, 0.3);
+  background-color: rgba(255, 120, 117, 0.05);
+}
+
+[data-theme="dark"] .vault-editor-form .ant-form-item-has-error .ant-form-item-explain-error {
+  color: #ff7875;
+}
+
+[data-theme="dark"] .vault-editor-form .ant-form-item-has-error .ant-form-item-label > label {
+  color: #ff7875 !important;
+}
+
+/* NestedObjectEditor visual hierarchy improvements */
+.ant-collapse-item {
+  border-bottom: 1px solid var(--color-border-secondary) !important;
+  margin-bottom: var(--space-sm);
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+.ant-collapse-header {
+  background: var(--color-fill-tertiary) !important;
+  padding: var(--space-sm) var(--space-md) !important;
+  font-weight: 500;
+  border-radius: 8px 8px 0 0 !important;
+}
+
+.ant-collapse-content {
+  background: var(--color-fill-quaternary) !important;
+  border-top: 1px solid var(--color-border-secondary);
+}
+
+.ant-collapse-content-box {
+  padding: var(--space-md) !important;
+}
+
+/* Improved spacing for nested object cards */
+.ant-card-small .ant-card-body {
+  padding: var(--space-md);
+}
+
+.ant-card-small .ant-card-head {
+  padding: 0 var(--space-md);
+  min-height: 40px;
+}
+
+.ant-card-small .ant-card-head-title {
+  padding: var(--space-sm) 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Tag visual improvements for better hierarchy */
+.ant-tag {
+  border-radius: 6px;
+  font-weight: 500;
+  padding: 2px 8px;
+  margin: 2px 4px 2px 0;
+}
+
+/* Empty state improvements */
+.ant-empty {
+  padding: var(--space-lg) var(--space-md);
+}
+
+.ant-empty-description {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+/* VaultEditor micro-interactions for better perceived performance */
+.vault-editor-form .ant-input,
+.vault-editor-form .ant-input-password,
+.vault-editor-form .ant-select-selector,
+.vault-editor-form .ant-input-number {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vault-editor-form .ant-input:hover,
+.vault-editor-form .ant-input-password:hover,
+.vault-editor-form .ant-select-selector:hover,
+.vault-editor-form .ant-input-number:hover {
+  border-color: var(--color-primary-hover);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.vault-editor-form .ant-btn {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center;
+}
+
+.vault-editor-form .ant-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.vault-editor-form .ant-btn:active {
+  transform: translateY(0);
+  transition-duration: 0.1s;
+}
+
+/* Collapse panel micro-interactions */
+.vault-editor-form .ant-collapse-header {
+  transition: all 0.2s ease;
+}
+
+.vault-editor-form .ant-collapse-header:hover {
+  background: var(--color-fill-secondary) !important;
+}
+
+/* Card hover effects */
+.vault-editor-form .ant-card {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vault-editor-form .ant-card:hover {
+  border-color: var(--color-border-secondary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+/* Icon micro-interactions */
+.vault-editor-form .anticon {
+  transition: all 0.2s ease;
+}
+
+.vault-editor-form .anticon:hover {
+  color: var(--color-primary);
+  transform: scale(1.1);
+}
+
+/* Tag interactions */
+.vault-editor-form .ant-tag {
+  transition: all 0.2s ease;
+  cursor: default;
+}
+
+.vault-editor-form .ant-tag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Switch micro-interactions */
+.vault-editor-form .ant-switch {
+  transition: all 0.2s ease;
+}
+
+.vault-editor-form .ant-switch:hover {
+  box-shadow: 0 0 0 6px rgba(85, 107, 47, 0.1);
+}
+
+/* Form validation state transitions */
+.vault-editor-form .ant-form-item-has-error {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+/* Success state celebration */
+.vault-editor-form .ant-form-item-has-success .ant-input,
+.vault-editor-form .ant-form-item-has-success .ant-input-password,
+.vault-editor-form .ant-form-item-has-success .ant-select-selector,
+.vault-editor-form .ant-form-item-has-success .ant-input-number {
+  animation: success-pulse 0.6s ease-out;
+}
+
+@keyframes success-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(82, 196, 26, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(82, 196, 26, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(82, 196, 26, 0);
+  }
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Select, Typography, Modal, Form, Input, Space, Button } from 'antd';
+import { Modal, Form, Input, Space, Button } from 'antd';
 import { ApiOutlined, PlusOutlined, DeleteOutlined, LoadingOutlined } from '@/utils/optimizedIcons';
 import { endpointService, Endpoint } from '@/services/endpointService';
 import { apiConnectionService } from '@/services/apiConnectionService';
@@ -7,9 +7,23 @@ import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { showMessage } from '@/utils/messages';
 import apiClient from '@/api/client';
 import axios from 'axios';
+import {
+  StyledSelect,
+  LoadingText,
+  EndpointUrlText,
+  OptionWrapper,
+  OptionLeft,
+  OptionRight,
+  HealthIndicator,
+  EndpointName,
+  VersionLabel,
+  EmojiIcon,
+  LabelContent,
+  AddCustomOption,
+  EndpointNameText
+} from './styles';
 
-const { Option } = Select;
-const { Text } = Typography;
+const { Option } = StyledSelect;
 
 interface EndpointHealth {
   isHealthy: boolean;
@@ -192,13 +206,14 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
     fetchEndpointsAndSelection();
   }, [onHealthCheckComplete]);
 
-  const handleEndpointChange = async (value: string) => {
-    if (value === '__add_custom__') {
+  const handleEndpointChange = async (value: unknown) => {
+    const endpointValue = value as string;
+    if (endpointValue === '__add_custom__') {
       setShowCustomModal(true);
       return;
     }
 
-    const endpoint = endpoints.find(e => e.id === value);
+    const endpoint = endpoints.find(e => e.id === endpointValue);
     if (!endpoint) return;
 
     // Save selection
@@ -260,9 +275,9 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
   // Show loading state
   if (loading) {
     return (
-      <Text type="secondary" style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XS, opacity: 0.6 }}>
+      <LoadingText type="secondary">
         Loading...
-      </Text>
+      </LoadingText>
     );
   }
 
@@ -272,26 +287,19 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
   return (
     <>
       <div style={{ display: 'inline-block' }}>
-        <Select
+        <StyledSelect
           value={displayValue}
           onChange={handleEndpointChange}
-          onDropdownVisibleChange={(open) => {
-            if (open && endpoints.length > 0) {
-              // Check health when dropdown opens
-              checkAllEndpointsHealth(endpoints);
-            }
-          }}
-          style={{
-            fontSize: DESIGN_TOKENS.FONT_SIZE.XS,
-            width: 200
-          }}
+          // onDropdownVisibleChange={(open) => {
+          //   if (open && endpoints.length > 0) {
+          //     // Check health when dropdown opens
+          //     checkAllEndpointsHealth(endpoints);
+          //   }
+          // }}
           size="small"
-          suffixIcon={<ApiOutlined style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XS }} />}
+          suffixIcon={<ApiOutlined style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XL, alignSelf: 'flex-end' }} />}
           popupMatchSelectWidth={false}
           data-testid="endpoint-selector"
-          dropdownStyle={{
-            fontSize: DESIGN_TOKENS.FONT_SIZE.XS
-          }}
         >
         {/* Predefined and custom endpoints */}
         {endpoints.map((endpoint) => {
@@ -304,22 +312,19 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
 
           // Label for selected value (with health indicator but without version)
           const labelContent = (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <LabelContent>
               {isChecking ? (
                 <LoadingOutlined style={{ fontSize: 10, color: 'var(--color-warning)' }} />
               ) : (
-                <span style={{
-                  fontSize: 10,
-                  color: isHealthy ? 'var(--color-success)' : 'var(--color-error)'
-                }}>
+                <HealthIndicator $isHealthy={isHealthy}>
                   ●
-                </span>
+                </HealthIndicator>
               )}
               <span>
-                {endpoint.icon && `${endpoint.icon} `}
+                {endpoint.icon && <EmojiIcon>{endpoint.icon}</EmojiIcon>}
                 {endpoint.name}
               </span>
-            </span>
+            </LabelContent>
           );
 
           return (
@@ -330,42 +335,29 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
               disabled={isDisabled}
               label={labelContent}
             >
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                fontSize: DESIGN_TOKENS.FONT_SIZE.XS,
-                gap: 8
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <OptionWrapper>
+                <OptionLeft>
                   {/* Health indicator */}
                   {isChecking ? (
                     <LoadingOutlined style={{ fontSize: 10, color: 'var(--color-warning)' }} />
                   ) : (
-                    <span style={{
-                      fontSize: 10,
-                      color: isHealthy ? 'var(--color-success)' : 'var(--color-error)'
-                    }}>
-                      {isHealthy ? '●' : '●'}
-                    </span>
+                    <HealthIndicator $isHealthy={isHealthy} $isChecking={isChecking}>
+                      ●
+                    </HealthIndicator>
                   )}
 
-                  <span style={{ opacity: isDisabled ? 0.5 : 1 }}>
-                    {endpoint.icon && `${endpoint.icon} `}
-                    {endpoint.name}
-                  </span>
-                </div>
+                  <EndpointName $disabled={isDisabled}>
+                    {endpoint.icon && <EmojiIcon>{endpoint.icon}</EmojiIcon>}
+                    <EndpointNameText>{endpoint.name}</EndpointNameText>
+                  </EndpointName>
+                </OptionLeft>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+                <OptionRight>
                   {/* Version display */}
                   {health?.version && (
-                    <span style={{
-                      fontSize: DESIGN_TOKENS.FONT_SIZE.XS,
-                      color: 'var(--color-text-quaternary)',
-                      opacity: 0.7
-                    }}>
+                    <VersionLabel>
                       v{health.version}
-                    </span>
+                    </VersionLabel>
                   )}
 
                   {/* Delete button for custom endpoints */}
@@ -378,35 +370,30 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
                       onClick={(e) => handleRemoveCustomEndpoint(endpoint.id, e)}
                     />
                   )}
-                </div>
-              </div>
+                </OptionRight>
+              </OptionWrapper>
             </Option>
           );
         })}
 
         {/* Add custom endpoint option */}
         <Option key="__add_custom__" value="__add_custom__" data-testid="endpoint-option-add-custom">
-          <span style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XS, color: 'var(--color-primary)' }}>
+          <AddCustomOption>
             <PlusOutlined /> Add Custom Endpoint...
-          </span>
+          </AddCustomOption>
         </Option>
-      </Select>
+      </StyledSelect>
 
       {/* Display selected endpoint URL */}
       {selectedEndpoint && (
-        <div style={{
-          fontSize: DESIGN_TOKENS.FONT_SIZE.XS,
-          color: 'var(--color-text-tertiary)',
-          marginTop: 4,
-          textAlign: 'center'
-        }}>
+        <EndpointUrlText>
           {selectedEndpoint.url}
           {isCheckingHealth && (
             <span style={{ marginLeft: 8 }}>
               <LoadingOutlined style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.XS }} />
             </span>
           )}
-        </div>
+        </EndpointUrlText>
       )}
     </div>
 
