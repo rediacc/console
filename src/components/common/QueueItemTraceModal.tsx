@@ -199,8 +199,8 @@ const ConsoleOutput: React.FC<ConsoleOutputProps> = ({ content, theme, consoleOu
   }
 
   return (
-    <div 
-      ref={consoleOutputRef}
+    <div
+      ref={consoleOutputRef as any}
       data-testid="queue-trace-console-output"
       style={{ 
         backgroundColor: theme === 'dark' ? '#1f1f1f' : '#f5f5f5',
