@@ -115,9 +115,13 @@ class ApiClient {
           duration
         )
 
+        // CRITICAL: Save token BEFORE checking for errors
+        // If the server sent a token, it means the token was rotated in the database
+        // (even if subsequent operations failed), so we MUST save it to stay synchronized
+        await this.handleTokenRotation(responseData)
+
         if (responseData.failure !== 0) return this.handleApiFailure(responseData)
 
-        await this.handleTokenRotation(responseData)
         return response
       },
       (error) => {
