@@ -33,7 +33,6 @@ import type { UploadFile } from 'antd/es/upload/interface'
 import { useTranslation } from 'react-i18next'
 import vaultDefinitions from '../../data/vaults.json'
 import storageProviders from '../../data/storageProviders.json'
-import { useAppSelector } from '@/store/store'
 import FieldGenerator from './FieldGenerator'
 import { useCreateQueueItem, useQueueItemTrace } from '@/api/queries/queue'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
@@ -140,7 +139,6 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   const [osSetupCompleted, setOsSetupCompleted] = useState<boolean | null>(null)
   const formatJsonRef = useRef<(() => void) | null>(null)
 
-  const uiMode = useAppSelector((state) => state.ui.uiMode)
   const styles = useComponentStyles()
   
   // Queue vault builder

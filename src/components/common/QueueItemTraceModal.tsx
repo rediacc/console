@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Spin, Row, Col, Tabs, Collapse, Steps, Progress, Statistic, Alert, Divider, Badge, Tooltip, Segmented } from 'antd'
-import { ReloadOutlined, HistoryOutlined, FileTextOutlined, BellOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, RightOutlined, UserOutlined, RetweetOutlined, WarningOutlined, RocketOutlined, TeamOutlined, DashboardOutlined, ThunderboltOutlined, HourglassOutlined, ExclamationCircleOutlined, CrownOutlined, CodeOutlined, QuestionCircleOutlined } from '@/utils/optimizedIcons'
+import { ReloadOutlined, HistoryOutlined, FileTextOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, RightOutlined, UserOutlined, RetweetOutlined, WarningOutlined, RocketOutlined, TeamOutlined, DashboardOutlined, ThunderboltOutlined, HourglassOutlined, ExclamationCircleOutlined, CodeOutlined, QuestionCircleOutlined } from '@/utils/optimizedIcons'
 import { useQueueItemTrace, useRetryFailedQueueItem, useCancelQueueItem } from '@/api/queries/queue'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -110,6 +110,7 @@ const extractProgressMessage = (output: string): string | null => {
     if (match && match[1]) {
       // Clean up the message - remove any ANSI color codes and trim
       const message = match[1]
+        // eslint-disable-next-line no-control-regex
         .replace(/\x1b\[[0-9;]*m/g, '')  // Remove ANSI color codes
         .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')  // Remove any emojis (just in case)
         .trim()
@@ -342,6 +343,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
   }, [traceData?.responseVaultContent, lastOutputStatus, accumulatedOutput])
 
   // Extract progress percentage and message from console output
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const percentage = extractMostRecentProgress(accumulatedOutput)
     const message = extractProgressMessage(accumulatedOutput)
@@ -410,38 +412,6 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
         refetchTrace()
       }
     })
-  }
-
-  const handleToggleMonitoring = (shouldMonitor?: boolean) => {
-    if (!taskId || !traceData?.queueDetails) return
-
-    const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
-    const retryCount = normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0
-    const permanentlyFailed = normalizeProperty(traceData.queueDetails, 'permanentlyFailed', 'PermanentlyFailed')
-
-    const lastFailureReason = normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason')
-
-    // Don't allow monitoring completed, cancelled, cancelling, or permanently failed tasks
-    if (status === 'COMPLETED' || status === 'CANCELLED' || status === 'CANCELLING' ||
-        (status === 'FAILED' && (permanentlyFailed || retryCount >= 2)) ||
-        (status === 'PENDING' && retryCount >= 2 && lastFailureReason)) {
-      showMessage('warning', 'Cannot monitor completed, cancelled, or permanently failed tasks')
-      return
-    }
-
-    const targetState = shouldMonitor !== undefined ? shouldMonitor : !isMonitoring
-
-    if (!targetState) {
-      queueMonitoringService.removeTask(taskId)
-      setIsMonitoring(false)
-      showMessage('info', 'Background monitoring disabled for this task')
-    } else {
-      const teamName = traceData.queueDetails.teamName || ''
-      const machineName = traceData.queueDetails.machineName || ''
-      queueMonitoringService.addTask(taskId, teamName, machineName, status, retryCount, lastFailureReason)
-      setIsMonitoring(true)
-      showMessage('success', 'Background monitoring enabled. You will be notified when the task status changes.')
-    }
   }
 
   const handleClose = () => {
@@ -566,26 +536,6 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
         return { color: 'cyan', icon: null, label: 'Lowest' }
       default:
         return { color: 'default', icon: null, label: 'Normal' }
-    }
-  }
-
-  // Helper function to calculate progress percentage
-  const getProgressPercentage = () => {
-    if (!traceData?.queueDetails) return 0
-    const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
-
-    switch (status) {
-      case 'COMPLETED':
-        return 100
-      case 'FAILED':
-      case 'CANCELLED':
-        return 100
-      case 'PROCESSING':
-        return 66
-      case 'ASSIGNED':
-        return 33
-      default:
-        return 15  // PENDING
     }
   }
 

@@ -1129,7 +1129,13 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                     children: (
                       <TemplateSelector
                         value={selectedTemplate}
-                        onChange={setSelectedTemplate}
+                        onChange={(templateId) => {
+                          if (Array.isArray(templateId)) {
+                            setSelectedTemplate(templateId[0] || null)
+                          } else {
+                            setSelectedTemplate(templateId)
+                          }
+                        }}
                         onViewDetails={(templateName) => {
                           setTemplateToView(templateName)
                           setShowTemplateDetails(true)
