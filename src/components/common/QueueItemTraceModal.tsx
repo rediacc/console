@@ -50,6 +50,23 @@ const formatDurationFull = (seconds: number): string => {
   return `${minutes} minute${minutes !== 1 ? 's' : ''}`
 }
 
+// Helper function to extract all percentages from console output and return the maximum
+const extractMaxPercentage = (output: string): number | null => {
+  if (!output) return null
+
+  // Match all occurrences of "X%" where X is a number
+  const percentageMatches = output.match(/(\d+(?:\.\d+)?)%/g)
+
+  if (!percentageMatches || percentageMatches.length === 0) return null
+
+  // Extract numeric values and find the maximum
+  const percentages = percentageMatches.map(match => parseFloat(match.replace('%', '')))
+  const maxPercentage = Math.max(...percentages)
+
+  // Clamp to valid range (0-100)
+  return Math.min(100, Math.max(0, maxPercentage))
+}
+
 // Helper function to extract timestamp from trace logs for specific action
 const getTimelineTimestamp = (traceLogs: any[], action: string, fallbackAction?: string): string | null => {
   if (!traceLogs || traceLogs.length === 0) return null
@@ -126,6 +143,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
   const [simpleMode, setSimpleMode] = useState(true) // Default to simple mode
   const [accumulatedOutput, setAccumulatedOutput] = useState<string>('') // Store accumulated console output
   const [lastOutputStatus, setLastOutputStatus] = useState<string>('') // Track the last status to detect completion
+  const [consoleProgress, setConsoleProgress] = useState<number | null>(null) // Progress percentage from console output
+  const [isSimpleConsoleExpanded, setIsSimpleConsoleExpanded] = useState(false) // Console collapse state for simple mode
+  const [isDetailedConsoleExpanded, setIsDetailedConsoleExpanded] = useState(false) // Console collapse state for detailed mode
   const { data: traceData, isLoading: isTraceLoading, refetch: refetchTrace } = useQueueItemTrace(taskId, visible)
   const { mutate: retryFailedItem, isPending: isRetrying } = useRetryFailedQueueItem()
   const { mutate: cancelQueueItem, isPending: isCancelling } = useCancelQueueItem()
@@ -234,6 +254,12 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
     }
   }, [traceData?.responseVaultContent, lastOutputStatus, accumulatedOutput])
 
+  // Extract progress percentage from console output
+  useEffect(() => {
+    const percentage = extractMaxPercentage(accumulatedOutput)
+    setConsoleProgress(percentage)
+  }, [accumulatedOutput])
+
   // Reset states when modal opens with new taskId
   useEffect(() => {
     if (visible && taskId) {
@@ -247,6 +273,10 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
       // Reset accumulated output when opening modal with new task
       setAccumulatedOutput('')
       setLastOutputStatus('')
+      // Reset console progress and collapse states
+      setConsoleProgress(null)
+      setIsSimpleConsoleExpanded(false)
+      setIsDetailedConsoleExpanded(false)
     }
   }, [taskId, visible, uiMode])
   
@@ -447,7 +477,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
   const getProgressPercentage = () => {
     if (!traceData?.queueDetails) return 0
     const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
-    
+
     switch (status) {
       case 'COMPLETED':
         return 100
@@ -455,33 +485,33 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
       case 'CANCELLED':
         return 100
       case 'PROCESSING':
-        return 60
+        return 66
       case 'ASSIGNED':
-        return 30
+        return 33
       default:
-        return 10
+        return 15  // PENDING
     }
   }
 
-  // Get current step for Steps component
+  // Get current step for Steps component (3 steps: Assigned, Processing, Completed)
   const getCurrentStep = () => {
     if (!traceData?.queueDetails) return 0
     const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
-    
+
     switch (status) {
       case 'COMPLETED':
-        return 3
+        return 2
       case 'FAILED':
       case 'CANCELLED':
         return -1
       case 'CANCELLING':
-        return 2  // Show as processing (with cancelling description)
+        return 1  // Show as processing (with cancelling description)
       case 'PROCESSING':
-        return 2
-      case 'ASSIGNED':
         return 1
-      default:
+      case 'ASSIGNED':
         return 0
+      default:
+        return 0  // PENDING - will show as waiting for assignment
     }
   }
 
@@ -518,56 +548,6 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
       style={createModalStyle(1200)}
       destroyOnHidden
       footer={[
-        // Monitor control - always show on the left if there's queue details
-        traceData?.queueDetails ? (
-          <div key="monitor-switch" style={{ float: 'left', marginRight: 'auto' }}>
-            <Space align="center" size={12}>
-              <Text type="secondary">Notifications:</Text>
-              <Segmented
-                data-testid="queue-trace-monitoring-switch"
-                value={isMonitoring ? 'on' : 'off'}
-                onChange={(value) => handleToggleMonitoring(value === 'on')}
-                disabled={
-                  !traceData?.queueDetails ||
-                  normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' ||
-                  normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED' ||
-                  normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLING' ||
-                  (normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED' && 
-                   ((normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0) >= 2 ||
-                    normalizeProperty(traceData.queueDetails, 'permanentlyFailed', 'PermanentlyFailed'))) ||
-                  (normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'PENDING' && 
-                   (normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0) >= 2 &&
-                   normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason'))
-                }
-                options={[
-                  {
-                    label: (
-                      <Tooltip title="Get notified when task status changes">
-                        <Space size={4}>
-                          <BellOutlined style={{ fontSize: 14 }} />
-                          <span>Monitor</span>
-                        </Space>
-                      </Tooltip>
-                    ),
-                    value: 'on'
-                  },
-                  {
-                    label: (
-                      <Tooltip title="No notifications for this task">
-                        <Space size={4}>
-                          <span style={{ opacity: 0.5 }}>🔕</span>
-                          <span>Off</span>
-                        </Space>
-                      </Tooltip>
-                    ),
-                    value: 'off'
-                  }
-                ]}
-                style={{ minHeight: 32 }}
-              />
-            </Space>
-          </div>
-        ) : null,
         // Show Cancel button for PENDING, ASSIGNED, or PROCESSING tasks that can be cancelled
         // Style and text vary based on staleness level
         (traceData?.queueDetails &&
@@ -734,45 +714,6 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             />
           )}
 
-          {/* Final Status Alert - Shows when task is completed, failed, or cancelled */}
-          {traceData.queueDetails && (
-            normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' ||
-            normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED' ||
-            (normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED' && 
-             (normalizeProperty(traceData.queueDetails, 'permanentlyFailed', 'PermanentlyFailed') ||
-              (normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0) >= 2))
-          ) && (
-            <Alert
-              data-testid="queue-trace-alert-final-status"
-              message={
-                normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' 
-                  ? t('queue:taskStatus.completedTitle')
-                  : normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED'
-                  ? t('queue:taskStatus.cancelledTitle')
-                  : t('queue:taskStatus.failedTitle')
-              }
-              description={
-                normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' 
-                  ? `The task finished successfully after ${formatDurationFull(traceData.queueDetails.totalDurationSeconds)}.`
-                  : normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED'
-                  ? t('queue:taskStatus.cancelledDescription')
-                  : t('queue:taskStatus.failedDescription', { retries: normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0 })
-              }
-              type={
-                normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' 
-                  ? "success" 
-                  : "error"
-              }
-              showIcon
-              icon={
-                normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' 
-                  ? <CheckCircleOutlined />
-                  : <CloseCircleOutlined />
-              }
-              style={{ marginBottom: 16 }}
-            />
-          )}
-
           {/* Failure Reason Alert */}
           {traceData.queueDetails && normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason') && 
            normalizeProperty(traceData.queueDetails, 'status', 'Status') !== 'CANCELLING' && (
@@ -832,69 +773,70 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   </Space>
                 </div>
 
-                {/* Progress Bar */}
-                <Progress
-                  data-testid="queue-trace-progress"
-                  className="queue-trace-progress" 
-                  percent={getProgressPercentage()} 
-                  status={
-                    getSimplifiedStatus().status === 'Failed' || getSimplifiedStatus().status === 'Cancelled' ? 'exception' :
-                    getSimplifiedStatus().status === 'Completed' ? 'success' : 'active'
-                  }
-                  strokeColor={{
-                    '0%': '#108ee9',
-                    '100%': getSimplifiedStatus().status === 'Failed' || getSimplifiedStatus().status === 'Cancelled' ? '#ff4d4f' : '#87d068'
-                  }}
-                />
-
                 {/* Steps */}
                 <Steps
                   data-testid="queue-trace-steps"
-                  className="queue-trace-steps" 
-                  current={getCurrentStep()} 
+                  className="queue-trace-steps"
+                  current={getCurrentStep()}
                   status={getCurrentStep() === -1 ? 'error' : undefined}
                   size="small"
                 >
-                  <Step title="Created" description={traceData.queueDetails.createdTime ? formatTimestampAsIs(traceData.queueDetails.createdTime, 'time') : ''} />
                   <Step title="Assigned" description={traceData.queueDetails.assignedTime ? formatTimestampAsIs(traceData.queueDetails.assignedTime, 'time') : 'Waiting'} />
                   <Step title="Processing" description={
                     (() => {
                       const currentStep = getCurrentStep()
                       const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
                       const processingTimestamp = getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_PROCESSING', 'QUEUE_ITEM_RESPONSE_UPDATED')
-                      
+
                       // If currently processing
                       if (status === 'PROCESSING') {
                         return processingTimestamp || 'In Progress'
                       }
-                      
+
                       // If cancelling
                       if (status === 'CANCELLING') {
                         return 'Cancelling...'
                       }
-                      
-                      // If we've reached or passed processing stage (step 2 or higher)
-                      if (currentStep >= 2) {
+
+                      // If we've reached or passed processing stage (step 1 or higher)
+                      if (currentStep >= 1) {
                         return processingTimestamp || 'Processed'
                       }
-                      
+
                       // Haven't reached processing yet
                       return ''
                     })()
                   } />
-                  <Step 
-                    title="Completed" 
+                  <Step
+                    title="Completed"
                     description={
-                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' ? 
+                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'COMPLETED' ?
                         `Done${getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_COMPLETED') ? ' - ' + getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_COMPLETED') : ''}` :
-                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED' ? 
+                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'FAILED' ?
                         `Failed${getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_FAILED') ? ' - ' + getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_FAILED') : ''}` :
-                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED' ? 
+                      normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLED' ?
                         `Cancelled${getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_CANCELLED') ? ' - ' + getTimelineTimestamp(traceData.traceLogs, 'QUEUE_ITEM_CANCELLED') : ''}` :
                       normalizeProperty(traceData.queueDetails, 'status', 'Status') === 'CANCELLING' ? 'Cancelling' : ''
                     }
                   />
                 </Steps>
+
+                {/* Progress Bar - Only shown when percentage is found in console output */}
+                {consoleProgress !== null && (
+                  <Progress
+                    data-testid="queue-trace-progress"
+                    className="queue-trace-progress"
+                    percent={consoleProgress}
+                    status={
+                      getSimplifiedStatus().status === 'Failed' || getSimplifiedStatus().status === 'Cancelled' ? 'exception' :
+                      getSimplifiedStatus().status === 'Completed' ? 'success' : 'active'
+                    }
+                    strokeColor={{
+                      '0%': '#108ee9',
+                      '100%': getSimplifiedStatus().status === 'Failed' || getSimplifiedStatus().status === 'Cancelled' ? '#ff4d4f' : '#87d068'
+                    }}
+                  />
+                )}
 
                 {/* Key Info */}
                 <Row gutter={[spacing('MD'), spacing('MD')]} style={{ textAlign: 'center' }}>
@@ -934,31 +876,38 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
 
           {/* Console Output for Simple Mode */}
           {simpleMode && (
-            <Card 
-              data-testid="queue-trace-simple-console"
-              title={
-                <Space>
-                  <CodeOutlined />
-                  <Text>Response (Console)</Text>
-                  {traceData?.queueDetails?.status === 'PROCESSING' && (
-                    <Tag icon={<SyncOutlined spin />} color="processing">
-                      Live Output
-                    </Tag>
-                  )}
-                </Space>
-              }
-              style={{ ...styles.card, marginTop: spacing('MD') }}
+            <Collapse
+              data-testid="queue-trace-simple-console-collapse"
+              activeKey={isSimpleConsoleExpanded ? ['console'] : []}
+              onChange={(keys) => setIsSimpleConsoleExpanded(keys.includes('console'))}
+              style={{ marginTop: spacing('MD') }}
+              expandIcon={({ isActive }) => <RightOutlined rotate={isActive ? 90 : 0} />}
             >
-              <ConsoleOutput
-                content={accumulatedOutput
-                  .replace(/\\r\\n/g, '\n')
-                  .replace(/\\n/g, '\n')
-                  .replace(/\\r/g, '\r')}
-                theme={theme}
-                consoleOutputRef={consoleOutputRef}
-                isEmpty={!traceData?.responseVaultContent?.hasContent}
-              />
-            </Card>
+              <Panel
+                header={
+                  <Space>
+                    <CodeOutlined />
+                    <Text>Response (Console)</Text>
+                    {traceData?.queueDetails?.status === 'PROCESSING' && (
+                      <Tag icon={<SyncOutlined spin />} color="processing">
+                        Live Output
+                      </Tag>
+                    )}
+                  </Space>
+                }
+                key="console"
+              >
+                <ConsoleOutput
+                  content={accumulatedOutput
+                    .replace(/\\r\\n/g, '\n')
+                    .replace(/\\n/g, '\n')
+                    .replace(/\\r/g, '\r')}
+                  theme={theme}
+                  consoleOutputRef={consoleOutputRef}
+                  isEmpty={!traceData?.responseVaultContent?.hasContent}
+                />
+              </Panel>
+            </Collapse>
           )}
 
           {/* Detailed View with All 7 Result Sets */}
@@ -1031,14 +980,6 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                               <Tag color={getPriorityInfo(normalizeProperty(traceData.queueDetails, 'priority', 'Priority')).color}>
                                 {getPriorityInfo(normalizeProperty(traceData.queueDetails, 'priority', 'Priority')).label}
                               </Tag>
-                              {(normalizeProperty(traceData.queueDetails, 'priority', 'Priority') === 1 || 
-                                normalizeProperty(traceData.queueDetails, 'priority', 'Priority') === 2) && 
-                                traceData.planInfo && 
-                                (traceData.planInfo.planName === 'Premium' || traceData.planInfo.planName === 'Elite') && (
-                                <Tooltip title="Using high priority slot">
-                                  <CrownOutlined style={{ color: '#faad14' }} />
-                                </Tooltip>
-                              )}
                             </Space>
                           </Descriptions.Item>
                         </Descriptions>
@@ -1096,32 +1037,37 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
 
                   {/* Right Column - Response Console */}
                   <Col xs={24} lg={12}>
-                    <Card 
-                      data-testid="queue-trace-detailed-console"
-                      title={
-                        <Space>
-                          <CodeOutlined />
-                          <Text>Response (Console)</Text>
-                          {traceData.queueDetails?.status === 'PROCESSING' && (
-                            <Tag icon={<SyncOutlined spin />} color="processing">
-                              Live Output
-                            </Tag>
-                          )}
-                        </Space>
-                      }
-                      size="small"
-                      style={{ height: '100%' }}
+                    <Collapse
+                      data-testid="queue-trace-detailed-console-collapse"
+                      activeKey={isDetailedConsoleExpanded ? ['console'] : []}
+                      onChange={(keys) => setIsDetailedConsoleExpanded(keys.includes('console'))}
+                      expandIcon={({ isActive }) => <RightOutlined rotate={isActive ? 90 : 0} />}
                     >
-                      <ConsoleOutput
-                        content={accumulatedOutput
-                          .replace(/\\r\\n/g, '\n')
-                          .replace(/\\n/g, '\n')
-                          .replace(/\\r/g, '\r')}
-                        theme={theme}
-                        consoleOutputRef={consoleOutputRef}
-                        isEmpty={!traceData.responseVaultContent?.hasContent}
-                      />
-                    </Card>
+                      <Panel
+                        header={
+                          <Space>
+                            <CodeOutlined />
+                            <Text>Response (Console)</Text>
+                            {traceData.queueDetails?.status === 'PROCESSING' && (
+                              <Tag icon={<SyncOutlined spin />} color="processing">
+                                Live Output
+                              </Tag>
+                            )}
+                          </Space>
+                        }
+                        key="console"
+                      >
+                        <ConsoleOutput
+                          content={accumulatedOutput
+                            .replace(/\\r\\n/g, '\n')
+                            .replace(/\\n/g, '\n')
+                            .replace(/\\r/g, '\r')}
+                          theme={theme}
+                          consoleOutputRef={consoleOutputRef}
+                          isEmpty={!traceData.responseVaultContent?.hasContent}
+                        />
+                      </Panel>
+                    </Collapse>
                   </Col>
                 </Row>
               </Panel>
@@ -1605,14 +1551,14 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                     <Card>
                       <Statistic
                         title="Processing Capacity"
-                        value={`${traceData.machineStats.activeProcessingCount}/${traceData.planInfo?.maxConcurrentTasks || 'N/A'}`}
+                        value={`${traceData.machineStats.activeProcessingCount}/${traceData.machineStats.maxConcurrentTasks || 'N/A'}`}
                         prefix={<DashboardOutlined />}
-                        valueStyle={{ color: traceData.machineStats.activeProcessingCount >= (traceData.planInfo?.maxConcurrentTasks || 0) ? '#ff4d4f' : '#52c41a' }}
+                        valueStyle={{ color: traceData.machineStats.activeProcessingCount >= (traceData.machineStats.maxConcurrentTasks || 0) ? '#ff4d4f' : '#52c41a' }}
                       />
-                      <Progress 
-                        percent={traceData.planInfo ? Math.min(100, (traceData.machineStats.activeProcessingCount / traceData.planInfo.maxConcurrentTasks) * 100) : 0} 
+                      <Progress
+                        percent={traceData.machineStats.maxConcurrentTasks ? Math.min(100, (traceData.machineStats.activeProcessingCount / traceData.machineStats.maxConcurrentTasks) * 100) : 0}
                         showInfo={false}
-                        strokeColor={traceData.machineStats.activeProcessingCount >= (traceData.planInfo?.maxConcurrentTasks || 0) ? '#ff4d4f' : '#52c41a'}
+                        strokeColor={traceData.machineStats.activeProcessingCount >= (traceData.machineStats.maxConcurrentTasks || 0) ? '#ff4d4f' : '#52c41a'}
                       />
                     </Card>
                   </Col>
@@ -1626,7 +1572,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                       {traceData.machineStats.currentQueueDepth > 50 && (
                         <Text>⚠️ High queue depth detected. Tasks may experience delays.</Text>
                       )}
-                      {traceData.machineStats.activeProcessingCount >= (traceData.planInfo?.maxConcurrentTasks || 0) && (
+                      {traceData.machineStats.activeProcessingCount >= (traceData.machineStats.maxConcurrentTasks || 0) && (
                         <Text>⚠️ Machine at full capacity. New tasks will wait in queue.</Text>
                       )}
                       {traceData.machineStats.currentQueueDepth === 0 && traceData.machineStats.activeProcessingCount === 0 && (
@@ -1636,74 +1582,6 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   }
                   type={traceData.machineStats.currentQueueDepth > 50 ? 'warning' : 'info'}
                 />
-              </Panel>
-            )}
-
-            {/* Result Set 7: Subscription Context */}
-            {traceData.planInfo && (
-              <Panel 
-                data-testid="queue-trace-panel-subscription"
-                header={
-                  <Space>
-                    <CrownOutlined />
-                    <span>Subscription Context</span>
-                    <Text type="secondary" style={{ fontSize: '12px' }}>(Result Set 7 - Plan Info)</Text>
-                  </Space>
-                } 
-                key="subscription"
-              >
-                <Card>
-                  <Row gutter={[16, 16]}>
-                    <Col span={8}>
-                      <Card type="inner">
-                        <Statistic
-                          title="Current Plan"
-                          value={traceData.planInfo.planName}
-                          prefix={traceData.planInfo.planName === 'Elite' ? <CrownOutlined style={{ color: '#faad14' }} /> : traceData.planInfo.planName === 'Premium' ? <RocketOutlined style={{ color: '#1890ff' }} /> : null}
-                        />
-                      </Card>
-                    </Col>
-                    <Col span={8}>
-                      <Card type="inner">
-                        <Statistic
-                          title="Subscription Status"
-                          value={traceData.planInfo.subscriptionStatus}
-                          valueStyle={{ color: traceData.planInfo.subscriptionStatus === 'Active' ? '#52c41a' : '#ff4d4f' }}
-                        />
-                      </Card>
-                    </Col>
-                    <Col span={8}>
-                      <Card type="inner">
-                        <Statistic
-                          title="Max Concurrent Tasks"
-                          value={traceData.planInfo.maxConcurrentTasks}
-                          suffix="tasks"
-                        />
-                      </Card>
-                    </Col>
-                  </Row>
-                  
-                  {(traceData.planInfo.planName === 'Premium' || traceData.planInfo.planName === 'Elite') && (
-                    <>
-                      <Divider />
-                      <Alert
-                        data-testid="queue-trace-premium-alert"
-                        message="Premium Features"
-                        description={
-                          <Space direction="vertical">
-                            <Text>✓ High priority slots available (Priority 1-2)</Text>
-                            <Text>✓ Increased concurrent task limit</Text>
-                            {traceData.planInfo.planName === 'Elite' && (
-                              <Text>✓ Maximum performance and priority access</Text>
-                            )}
-                          </Space>
-                        }
-                        type="success"
-                        icon={<CrownOutlined />}
-                      />
-                    </>
-                  )}
-                </Card>
               </Panel>
             )}
               </Collapse>
