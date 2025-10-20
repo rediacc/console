@@ -92,6 +92,66 @@ class FeatureFlags {
       description: 'Version selector dropdown for switching between deployed versions'
     },
 
+    // Queue Management - Expert mode feature
+    queueManagement: {
+      enabled: false,
+      requiresLocalhost: true,
+      requiresExpertMode: true,
+      description: 'Queue page for viewing and managing task queues'
+    },
+
+    // Audit Logs - Expert mode feature
+    auditLogs: {
+      enabled: false,
+      requiresLocalhost: true,
+      requiresExpertMode: true,
+      description: 'Audit logs page for viewing system activity and changes'
+    },
+
+    // Vault Version Columns - Expert mode feature
+    vaultVersionColumns: {
+      enabled: false,
+      requiresLocalhost: true,
+      requiresExpertMode: true,
+      description: 'Show vault version columns in resource tables for debugging purposes'
+    },
+
+    // Advanced Vault Editor - Expert mode feature
+    advancedVaultEditor: {
+      enabled: true,
+      requiresLocalhost: true,
+      requiresExpertMode: true,
+      description: 'Raw JSON editor panel in vault editor - advanced/dangerous feature'
+    },
+
+    // Regions & Infrastructure - Expert mode feature
+    regionsInfrastructure: {
+      enabled: false,
+      requiresLocalhost: true,
+      requiresExpertMode: true,
+      description: 'Regions and infrastructure management section in System page'
+    },
+
+    // Danger Zone - Expert mode feature
+    dangerZone: {
+      enabled: false,
+      requiresLocalhost: true,
+      requiresExpertMode: true,
+      description: 'Danger Zone section including block users, export/import data, and encryption settings'
+    },
+
+    // Disable Bridge - Always hidden for all users
+    disableBridge: {
+      enabled: true,
+      description: 'Hide all bridge-related UI components including bridge tables, forms, and fields'
+    },
+
+    // Hide Danger Zone - DEPRECATED: Use dangerZone flag instead (kept for backwards compatibility)
+    hideDangerZone: {
+      enabled: true,
+      description: '[DEPRECATED] Use dangerZone flag instead. Hide the Danger Zone section including block users, export/import data, and encryption settings'
+    },
+
     // Example: Future feature that's disabled for everyone
     // newFeatureX: {
     //   enabled: false,

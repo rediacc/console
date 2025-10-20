@@ -105,7 +105,6 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
 }) => {
   const { t } = useTranslation()
   const styles = useComponentStyles()
-  const [includeGui, setIncludeGui] = useState(true)
   const [useUserInstall, setUseUserInstall] = useState(false)
   const [activeTab, setActiveTab] = useState('quick')
 
@@ -115,7 +114,6 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
   )
 
   const installOptions: InstallOptions = {
-    includeGui,
     useUser: useUserInstall
   }
 
@@ -158,21 +156,14 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
 
       <div>
         <Title level={5}>{t('resources:pipInstall.step1Install')}</Title>
-        <CommandDisplay 
+        <CommandDisplay
           command={pipInstallationService.generateInstallCommand(installOptions)}
           description={t('resources:pipInstall.installCommandDesc')}
         />
-        
+
         <Space style={{ marginTop: spacing('XS') }}>
-          <Checkbox 
-            checked={includeGui} 
-            onChange={(e) => setIncludeGui(e.target.checked)}
-            data-testid="pip-install-gui-checkbox"
-          >
-            {t('resources:pipInstall.includeGuiSupport')}
-          </Checkbox>
-          <Checkbox 
-            checked={useUserInstall} 
+          <Checkbox
+            checked={useUserInstall}
             onChange={(e) => setUseUserInstall(e.target.checked)}
             data-testid="pip-install-user-checkbox"
           >
@@ -182,10 +173,10 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
       </div>
 
       <div>
-        <Title level={5}>{t('resources:pipInstall.step2Register')}</Title>
-        <CommandDisplay 
-          command={pipInstallationService.generateProtocolCommand()}
-          description={t('resources:pipInstall.registerCommandDesc')}
+        <Title level={5}>{t('resources:pipInstall.step2Setup')}</Title>
+        <CommandDisplay
+          command={pipInstallationService.generateSetupCommand()}
+          description={t('resources:pipInstall.setupCommandDesc')}
         />
       </div>
 

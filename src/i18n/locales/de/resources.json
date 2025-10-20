@@ -11,9 +11,7 @@
     "exportSuccess": "Audit-Verlauf exportiert als {{format}}",
     "lastActivity": "Letzte Aktivität",
     "noRecords": "Keine Prüfdatensätze gefunden",
-    "olderRecordsNotVisible": "Einige ältere Datensätze sind aufgrund Ihrer Abonnementstufe nicht sichtbar",
     "performedBy": "Aufgeführt von",
-    "retentionInfo": "Zeigt {{days}} Tage Verlauf ({{tier}} Stufe)",
     "system": "System",
     "timestamp": "Zeitstempel",
     "title": "Audit-Verlauf – {{name}}",
@@ -92,9 +90,9 @@
     "downloadCli": "Laden Sie die Rediacc-CLI herunter von",
     "howToInstall": "Anleitung zur Installation",
     "installationSteps": "Installationsschritte",
-    "linuxInstructions": "Linux: Führen Sie ./rediacc --register-protocol aus",
+    "linuxInstructions": "Linux: Führen Sie ./rediacc protocol register aus",
     "local": "Lokal",
-    "macosInstructions": "macOS: Führen Sie ./rediacc --register-protocol aus",
+    "macosInstructions": "macOS: Führen Sie ./rediacc protocol register aus",
     "noPluginsRunning": "Keine Plugins laufen",
     "openContainerTerminal": "Offener Containerterminal",
     "openInDesktop": "In der Desktop-App öffnen",
@@ -109,7 +107,7 @@
     "troubleshootingBrowser": "Starten Sie Ihren Browser nach der Registrierung neu",
     "troubleshootingRestart": "Melden Sie sich unter Linux ab und wieder an",
     "viewContainerLogs": "Containerprotokolle anzeigen",
-    "windowsInstructions": "Windows: Führen Sie rediacc.bat -RegisterProtocol als Administrator aus"
+    "windowsInstructions": "Windows: Führen Sie rediacc.bat protocol register als Administrator aus"
   },
   "localCommandBuilder": {
     "action": "Aktion",
@@ -180,7 +178,6 @@
     "commonIssues": "Häufige Installationsprobleme",
     "copyAllCommands": "Alle Befehle kopieren",
     "error": "Fehler",
-    "includeGuiSupport": "GUI-Unterstützung einbinden (empfohlen)",
     "installCommandDesc": "Installieren Sie die Rediacc-CLI von PyPI",
     "installRediaccCli": "Installieren Sie die Rediacc-CLI",
     "installationGuide": "Installationsanleitung",

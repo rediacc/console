@@ -178,7 +178,7 @@
     },
     "list": {
       "description": "List files in remote storage locations",
-      "name": "List Remote Files",
+      "name": "list files",
       "params": {
         "format": {
           "help": "Format for the file listing",
@@ -272,9 +272,27 @@
         }
       }
     },
+    "apply_template": {
+      "description": "Apply a template configuration to this repository",
+      "name": "templates",
+      "params": {
+        "grand": {
+          "help": "Grand repository GUID",
+          "label": "Grand Repository"
+        },
+        "repo": {
+          "help": "Repository name",
+          "label": "Repository"
+        },
+        "tmpl": {
+          "help": "Select a template to apply to the repository",
+          "label": "Template"
+        }
+      }
+    },
     "pull": {
       "description": "Pull repository from remote storage",
-      "name": "Pull",
+      "name": "pull",
       "params": {
         "from": {
           "help": "Select the source machine or storage",
@@ -440,5 +458,8 @@
   "searchFunctions": "Search functions...",
   "selectFunction": "Select Function",
   "selectFunctionToConfigure": "Select a function to configure",
-  "validationError": "Validation Error"
+  "validationError": "Validation Error",
+  "onlinePushWarningTitle": "Online Push Warning",
+  "onlinePushWarningMessage": "Pushing a mounted repository while services are running may cause data inconsistencies.",
+  "onlinePushLearnMore": "Learn more about online vs offline pushes →"
 }

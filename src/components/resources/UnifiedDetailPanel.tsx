@@ -1,9 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { Button, Tooltip } from 'antd'
+import { DoubleLeftOutlined, DesktopOutlined, InboxOutlined, ContainerOutlined } from '@/utils/optimizedIcons'
 import { MachineVaultStatusPanel } from './MachineVaultStatusPanel'
 import { RepositoryDetailPanel } from './RepositoryDetailPanel'
 import { ContainerDetailPanel } from './ContainerDetailPanel'
 import { Machine, Repository } from '@/types'
 import { useTheme } from '@/context/ThemeContext'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
 
 interface ContainerData {
   id: string
@@ -40,6 +43,9 @@ interface UnifiedDetailPanelProps {
   onClose: () => void
   splitWidth: number
   onSplitWidthChange: (width: number) => void
+  isCollapsed?: boolean
+  onToggleCollapse?: () => void
+  collapsedWidth?: number
 }
 
 export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
@@ -48,9 +54,13 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
   visible,
   onClose,
   splitWidth,
-  onSplitWidthChange
+  onSplitWidthChange,
+  isCollapsed = false,
+  onToggleCollapse,
+  collapsedWidth = 50
 }) => {
   const { theme } = useTheme()
+  const styles = useComponentStyles()
   const isDragging = useRef(false)
   const dragStartX = useRef(0)
   const dragStartWidth = useRef(0)
@@ -115,82 +125,131 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
   if (!visible || !currentData) return null
 
   // Determine actual type based on currentData if not explicitly provided
-  const actualType = type || (currentData && 'machineName' in currentData ? 'machine' : 
+  const actualType = type || (currentData && 'machineName' in currentData ? 'machine' :
                              currentData && 'repositoryName' in currentData ? 'repository' : 'container')
+
+  // Get icon for the resource type
+  const getResourceIcon = () => {
+    switch (actualType) {
+      case 'machine':
+        return <DesktopOutlined style={{ fontSize: 20, color: '#556b2f' }} />
+      case 'repository':
+        return <InboxOutlined style={{ fontSize: 20, color: '#8FBC8F' }} />
+      case 'container':
+        return <ContainerOutlined style={{ fontSize: 20, color: '#1890ff' }} />
+    }
+  }
+
+  const actualWidth = isCollapsed ? collapsedWidth : splitWidth
 
   return (
     <div
       style={{
         position: 'relative',
-        width: splitWidth,
+        width: actualWidth,
         height: '100%',
         borderLeft: `1px solid ${theme === 'dark' ? '#303030' : '#f0f0f0'}`,
         display: 'flex',
         flexShrink: 0,
         opacity,
-        transition: 'opacity 0.3s ease',
+        transition: 'width 0.3s ease-in-out, opacity 0.3s ease',
       }}
       data-testid="unified-detail-panel"
     >
-      {/* Resize Handle */}
-      <div
-        style={{
-          position: 'absolute',
-          left: -3,
-          top: 0,
-          bottom: 0,
-          width: 6,
-          cursor: 'ew-resize',
-          zIndex: 10,
-          backgroundColor: 'transparent',
-        }}
-        onMouseDown={handleMouseDown}
-        data-testid="unified-detail-resize-handle"
-      >
+      {/* Resize Handle - Only visible when expanded */}
+      {!isCollapsed && (
         <div
           style={{
             position: 'absolute',
-            left: 2,
+            left: -3,
             top: 0,
             bottom: 0,
-            width: 2,
-            backgroundColor: theme === 'dark' ? '#303030' : '#f0f0f0',
-            transition: 'background-color 0.2s',
+            width: 6,
+            cursor: 'ew-resize',
+            zIndex: 10,
+            backgroundColor: 'transparent',
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#1890ff'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = theme === 'dark' ? '#303030' : '#f0f0f0'
-          }}
-        />
-      </div>
+          onMouseDown={handleMouseDown}
+          data-testid="unified-detail-resize-handle"
+        >
+          <div
+            style={{
+              position: 'absolute',
+              left: 2,
+              top: 0,
+              bottom: 0,
+              width: 2,
+              backgroundColor: theme === 'dark' ? '#303030' : '#f0f0f0',
+              transition: 'background-color 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#1890ff'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = theme === 'dark' ? '#303030' : '#f0f0f0'
+            }}
+          />
+        </div>
+      )}
 
-      {/* Content */}
-      <div style={{ flex: 1, overflow: 'hidden' }} data-testid="unified-detail-content">
-        {actualType === 'machine' ? (
-          <MachineVaultStatusPanel
-            machine={currentData as Machine}
-            visible={visible}
-            onClose={onClose}
-            splitView={true}
-          />
-        ) : actualType === 'repository' ? (
-          <RepositoryDetailPanel
-            repository={currentData as Repository}
-            visible={visible}
-            onClose={onClose}
-            splitView={true}
-          />
-        ) : (
-          <ContainerDetailPanel
-            container={currentData as ContainerData}
-            visible={visible}
-            onClose={onClose}
-            splitView={true}
-          />
-        )}
-      </div>
+      {/* Collapsed State - Toggle button */}
+      {isCollapsed ? (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            width: '100%',
+            padding: '16px 0',
+            gap: 16,
+          }}
+          data-testid="unified-detail-collapsed"
+        >
+          <Tooltip title="Expand Panel" placement="left">
+            <Button
+              type="text"
+              icon={<DoubleLeftOutlined />}
+              onClick={onToggleCollapse}
+              style={{
+                ...styles.touchTarget,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              data-testid="unified-detail-expand-button"
+              aria-label="Expand Panel"
+            />
+          </Tooltip>
+          {getResourceIcon()}
+        </div>
+      ) : (
+        /* Expanded State - Full Content */
+        <div style={{ flex: 1, overflow: 'hidden' }} data-testid="unified-detail-content">
+          {actualType === 'machine' ? (
+            <MachineVaultStatusPanel
+              machine={currentData as Machine}
+              visible={visible}
+              onClose={onToggleCollapse || onClose}
+              splitView={true}
+            />
+          ) : actualType === 'repository' ? (
+            <RepositoryDetailPanel
+              repository={currentData as Repository}
+              visible={visible}
+              onClose={onToggleCollapse || onClose}
+              splitView={true}
+            />
+          ) : (
+            <ContainerDetailPanel
+              container={currentData as ContainerData}
+              visible={visible}
+              onClose={onToggleCollapse || onClose}
+              splitView={true}
+            />
+          )}
+        </div>
+      )}
     </div>
   )
 }

@@ -124,6 +124,7 @@ const MainLayout: React.FC = () => {
       icon: <ThunderboltOutlined />,
       label: t('navigation.queue'),
       showInSimple: false,
+      featureFlag: 'queueManagement', // Expert mode feature - managed by feature flags
       'data-testid': 'main-nav-queue',
     },
     {
@@ -131,6 +132,7 @@ const MainLayout: React.FC = () => {
       icon: <HistoryOutlined />,
       label: t('navigation.audit'),
       showInSimple: false,
+      featureFlag: 'auditLogs', // Expert mode feature - managed by feature flags
       'data-testid': 'main-nav-audit',
     },
     {

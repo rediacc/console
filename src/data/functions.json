@@ -334,6 +334,32 @@
         }
       }
     },
+    "apply_template": {
+      "name": "apply_template",
+      "category": "repository",
+      "showInMenu": true,
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
+      "params": {
+        "repo": {
+          "type": "string",
+          "required": true
+        },
+        "grand": {
+          "type": "string",
+          "required": true
+        },
+        "tmpl": {
+          "type": "string",
+          "required": true,
+          "ui": "template-selector",
+          "description": "Base64 encoded template JSON"
+        }
+      }
+    },
     "ownership": {
       "name": "ownership",
       "category": "repository",

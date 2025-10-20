@@ -10,7 +10,7 @@ export interface MutationConfig<T> {
   invalidateKeys: string[] | ((variables: T) => string[])
   successMessage: (variables: T) => string
   errorMessage?: string
-  transformData?: (data: T) => any
+  transformData?: (data: T) => any | Promise<any>
 }
 
 export const createMutation = <T>(config: MutationConfig<T>) => () => {
@@ -30,7 +30,7 @@ export const createMutation = <T>(config: MutationConfig<T>) => () => {
       })
 
       try {
-        const transformedData = config.transformData ? config.transformData(data) : data
+        const transformedData = config.transformData ? await config.transformData(data) : data
         const response = await apiClient[method](config.endpoint, transformedData)
 
         const duration = performance.now() - startTime

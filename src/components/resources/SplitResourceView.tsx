@@ -53,10 +53,20 @@ interface SplitResourceViewProps {
   onMachineRepositoryClick?: (machine: Machine, repository: any) => void
   onMachineContainerClick?: (machine: Machine, container: ContainerData) => void
   onRefreshMachines?: () => Promise<any>
+  isPanelCollapsed?: boolean
+  onTogglePanelCollapse?: () => void
 }
 
 export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
-  const { type, selectedResource, onResourceSelect, onMachineRepositoryClick, onMachineContainerClick } = props
+  const {
+    type,
+    selectedResource,
+    onResourceSelect,
+    onMachineRepositoryClick,
+    onMachineContainerClick,
+    isPanelCollapsed = true,
+    onTogglePanelCollapse
+  } = props
   
   // Calculate 25% of window width for the panel
   const calculatePanelWidth = () => {
@@ -86,6 +96,10 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
     onResourceSelect(null)
   }
 
+  // Determine the actual width of the panel based on collapsed state
+  const COLLAPSED_PANEL_WIDTH = 50 // Width when collapsed, showing only toggle button
+  const actualPanelWidth = isPanelCollapsed ? COLLAPSED_PANEL_WIDTH : splitWidth
+
   // For machine type, render machine table and detail panel
   if (type === 'machine') {
     return (
@@ -100,9 +114,9 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
         data-testid="split-resource-view-container"
       >
         {/* Left Panel - Machine Table */}
-        <div 
+        <div
           style={{
-            width: selectedResource ? `calc(100% - ${splitWidth}px)` : '100%',
+            width: selectedResource ? `calc(100% - ${actualPanelWidth}px)` : '100%',
             height: '100%',
             overflow: 'auto',
             minWidth: 300, // Minimum width to prevent crushing the table
@@ -122,13 +136,16 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
         {/* Right Panel - Detail Panel */}
         {selectedResource && (
           <UnifiedDetailPanel
-            type={'machineName' in selectedResource ? 'machine' : 
+            type={'machineName' in selectedResource ? 'machine' :
                   'repositoryName' in selectedResource ? 'repository' : 'container'}
             data={selectedResource}
             visible={true}
             onClose={handlePanelClose}
             splitWidth={splitWidth}
             onSplitWidthChange={setSplitWidth}
+            isCollapsed={isPanelCollapsed}
+            onToggleCollapse={onTogglePanelCollapse}
+            collapsedWidth={COLLAPSED_PANEL_WIDTH}
           />
         )}
       </div>

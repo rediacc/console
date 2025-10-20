@@ -59,15 +59,18 @@ import {
   useImportCompanyData
 } from '@/api/queries/company'
 import { showMessage } from '@/utils/messages'
+import { featureFlags } from '@/config/featureFlags'
 
 // User queries
-import { 
-  useUsers, 
-  useCreateUser, 
-  useDeactivateUser, 
+import {
+  useUsers,
+  useCreateUser,
+  useDeactivateUser,
   useAssignUserPermissions,
-  useUpdateUserPassword, 
-  User 
+  useUpdateUserPassword,
+  useUserVault,
+  useUpdateUserVault,
+  User
 } from '@/api/queries/users'
 
 // Permission queries
@@ -228,7 +231,9 @@ const SystemPage: React.FC = () => {
   // Settings hooks
   const { data: companyVault } = useCompanyVault()
   const updateVaultMutation = useUpdateCompanyVault()
-  
+  const { data: userVault, refetch: refetchUserVault } = useUserVault()
+  const updateUserVaultMutation = useUpdateUserVault()
+
   // Danger zone hooks
   const blockUserRequestsMutation = useUpdateCompanyBlockUserRequests()
   const exportVaultsQuery = useGetCompanyVaults()
@@ -331,9 +336,11 @@ const SystemPage: React.FC = () => {
     setCompanyVaultModalOpen(false)
   }
 
-  const handleUpdateUserVault = async (_vault: string, _version: number) => {
-    // TODO: Implement user vault update when API is available
-    // User vault update: vault, version
+  const handleUpdateUserVault = async (vault: string, version: number) => {
+    await updateUserVaultMutation.mutateAsync({
+      userVault: vault,
+      vaultVersion: version,
+    })
     setUserVaultModalOpen(false)
   }
 
@@ -1163,7 +1170,7 @@ const SystemPage: React.FC = () => {
         </Space>
       ),
     },
-    ...(uiMode === 'expert' ? [{
+    ...(featureFlags.isEnabled('vaultVersionColumns') ? [{
       title: 'Vault Version',
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
@@ -1254,7 +1261,7 @@ const SystemPage: React.FC = () => {
         </Space>
       ),
     },
-    {
+    ...(!featureFlags.isEnabled('disableBridge') ? [{
       title: tOrg('regions.bridges'),
       dataIndex: 'bridgeCount',
       key: 'bridgeCount',
@@ -1265,8 +1272,8 @@ const SystemPage: React.FC = () => {
           <span>{count}</span>
         </Space>
       ),
-    },
-    ...(uiMode === 'expert' ? [{
+    }] : []),
+    ...(featureFlags.isEnabled('vaultVersionColumns') ? [{
       title: tOrg('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
@@ -1386,7 +1393,7 @@ const SystemPage: React.FC = () => {
         return <Tag color={color} icon={icon}>{mode}</Tag>
       },
     },
-    ...(uiMode === 'expert' ? [{
+    ...(featureFlags.isEnabled('vaultVersionColumns') ? [{
       title: tOrg('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
@@ -1673,7 +1680,10 @@ const SystemPage: React.FC = () => {
                     <Button
                       type="primary"
                       icon={<SettingOutlined />}
-                      onClick={() => setUserVaultModalOpen(true)}
+                      onClick={() => {
+                        refetchUserVault()
+                        setUserVaultModalOpen(true)
+                      }}
                       size="large"
                       data-testid="system-user-vault-button"
                       aria-label={t('personal.configureVault')}
@@ -1939,9 +1949,9 @@ const SystemPage: React.FC = () => {
         onSave={handleUpdateUserVault}
         entityType="USER"
         title={t('personal.modalTitle')}
-        initialVault={'{}'}
-        initialVersion={1}
-        loading={false}
+        initialVault={userVault?.vault || '{}'}
+        initialVersion={userVault?.vaultVersion || 1}
+        loading={updateUserVaultMutation.isPending}
       />
 
       <Modal
@@ -2048,7 +2058,7 @@ const SystemPage: React.FC = () => {
 
 
       {/* Regions & Infrastructure Section */}
-      {uiMode === 'expert' && (
+      {featureFlags.isEnabled('regionsInfrastructure') && (
         <>
           <Title level={3} style={{ marginTop: 48, marginBottom: 24 }}>{tSystem('regionsInfrastructure.title')}</Title>
           
@@ -2093,154 +2103,158 @@ const SystemPage: React.FC = () => {
               })}
             />
           </Col>
-          
-          <Col span={24}>
-            <Card>
-              <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <Title level={4} style={{ margin: 0 }}>
-                    {selectedRegion ? tOrg('regions.bridgesInRegion', { region: selectedRegion }) : tOrg('bridges.title')}
-                  </Title>
-                  {!selectedRegion && (
-                    <Text type="secondary" style={{ fontSize: 14 }}>
-                      {tOrg('regions.selectRegionToView')}
-                    </Text>
+
+          {!featureFlags.isEnabled('disableBridge') && (
+            <Col span={24}>
+              <Card>
+                <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <Title level={4} style={{ margin: 0 }}>
+                      {selectedRegion ? tOrg('regions.bridgesInRegion', { region: selectedRegion }) : tOrg('bridges.title')}
+                    </Title>
+                    {!selectedRegion && (
+                      <Text type="secondary" style={{ fontSize: 14 }}>
+                        {tOrg('regions.selectRegionToView')}
+                      </Text>
+                    )}
+                  </div>
+                  {selectedRegion && (
+                    <Tooltip title={tOrg('bridges.createBridge')}>
+                      <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={() => {
+                          openUnifiedModal('bridge', 'create', { regionName: selectedRegion })
+                        }}
+                        data-testid="system-create-bridge-button"
+                        aria-label={tOrg('bridges.createBridge')}
+                      />
+                    </Tooltip>
                   )}
                 </div>
-                {selectedRegion && (
-                  <Tooltip title={tOrg('bridges.createBridge')}>
-                    <Button 
-                      type="primary" 
-                      icon={<PlusOutlined />}
-                      onClick={() => {
-                        openUnifiedModal('bridge', 'create', { regionName: selectedRegion })
-                      }}
-                      data-testid="system-create-bridge-button"
-                      aria-label={tOrg('bridges.createBridge')}
-                    />
-                  </Tooltip>
-                )}
-              </div>
-              
-              {!selectedRegion ? (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={tOrg('regions.selectRegionPrompt')}
-                  style={{ padding: '40px 0' }}
-                />
-              ) : bridgesLoading ? (
-                <div style={{ textAlign: 'center', padding: '100px 0' }}>
-                  <Spin size="large" />
-                  <div style={{ marginTop: 16, color: 'var(--ant-color-text-secondary)' }}>
-                    {t('common:general.loading')}
+
+                {!selectedRegion ? (
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description={tOrg('regions.selectRegionPrompt')}
+                    style={{ padding: '40px 0' }}
+                  />
+                ) : bridgesLoading ? (
+                  <div style={{ textAlign: 'center', padding: '100px 0' }}>
+                    <Spin size="large" />
+                    <div style={{ marginTop: 16, color: 'var(--ant-color-text-secondary)' }}>
+                      {t('common:general.loading')}
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <Table
-                  columns={bridgeColumns}
-                  dataSource={bridgesList}
-                  rowKey="bridgeName"
-                  pagination={{
-                    total: bridgesList.length || 0,
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    showTotal: (total) => tOrg('bridges.totalBridges', { total }),
-                  }}
-                  locale={{
-                    emptyText: tOrg('bridges.noBridges'),
-                  }}
-                  data-testid="system-bridge-table"
-                />
-              )}
-            </Card>
-          </Col>
+                ) : (
+                  <Table
+                    columns={bridgeColumns}
+                    dataSource={bridgesList}
+                    rowKey="bridgeName"
+                    pagination={{
+                      total: bridgesList.length || 0,
+                      pageSize: 10,
+                      showSizeChanger: true,
+                      showTotal: (total) => tOrg('bridges.totalBridges', { total }),
+                    }}
+                    locale={{
+                      emptyText: tOrg('bridges.noBridges'),
+                    }}
+                    data-testid="system-bridge-table"
+                  />
+                )}
+              </Card>
+            </Col>
+          )}
         </Row>
       </Card>
         </>
       )}
 
-      <Modal
-        title={`Bridge Token - ${bridgeCredentialsModal.bridge?.bridgeName || ''}`}
-        open={bridgeCredentialsModal.open}
-        onCancel={() => setBridgeCredentialsModal({ open: false })}
-        footer={[
-          <Button 
-            key="close" 
-            onClick={() => setBridgeCredentialsModal({ open: false })}
-          >
-            Close
-          </Button>
-        ]}
-        className={ModalSize.Medium}
-      >
-        {(() => {
-          const bridge = bridgeCredentialsModal.bridge
-          if (!bridge) return null
-          
-          // Bridge credentials is the token directly
-          const token = bridge.bridgeCredentials
-          
-          // Check if we have the necessary access
-          if (bridge.hasAccess === 0) {
+      {!featureFlags.isEnabled('disableBridge') && (
+        <Modal
+          title={`Bridge Token - ${bridgeCredentialsModal.bridge?.bridgeName || ''}`}
+          open={bridgeCredentialsModal.open}
+          onCancel={() => setBridgeCredentialsModal({ open: false })}
+          footer={[
+            <Button
+              key="close"
+              onClick={() => setBridgeCredentialsModal({ open: false })}
+            >
+              Close
+            </Button>
+          ]}
+          className={ModalSize.Medium}
+        >
+          {(() => {
+            const bridge = bridgeCredentialsModal.bridge
+            if (!bridge) return null
+
+            // Bridge credentials is the token directly
+            const token = bridge.bridgeCredentials
+
+            // Check if we have the necessary access
+            if (bridge.hasAccess === 0) {
+              return (
+                <Alert
+                  message="Access Denied"
+                  description="You don't have the necessary permissions to view bridge credentials. Please contact an administrator."
+                  type="error"
+                  showIcon
+                />
+              )
+            }
+
+            if (!token) {
+              return (
+                <Alert
+                  message="No Bridge Token Available"
+                  description="Bridge credentials are not available. This could be because you don't have the necessary permissions, or the bridge credentials vault has not been created. Administrators can use 'Reset Auth' to generate new credentials."
+                  type="info"
+                  showIcon
+                />
+              )
+            }
+
             return (
-              <Alert
-                message="Access Denied"
-                description="You don't have the necessary permissions to view bridge credentials. Please contact an administrator."
-                type="error"
-                showIcon
-              />
+              <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                <Alert
+                  message="Bridge Authentication Token"
+                  description="This token is used by the bridge to authenticate its first connection to the system. After the first successful use, the bridge will receive a new token for subsequent requests. If this token has already been used, you'll need to use 'Reset Auth' to generate new credentials."
+                  type="warning"
+                  showIcon
+                />
+
+                <div>
+                  <Text strong>Token:</Text>
+                  <Space.Compact style={{ marginTop: 8, width: '100%' }}>
+                    <Input
+                      value={token}
+                      readOnly
+                      style={{ width: '100%' }}
+                      autoComplete="off"
+                    />
+                    <Button
+                      icon={<CopyOutlined />}
+                      onClick={() => {
+                        navigator.clipboard.writeText(token)
+                        message.success('Token copied to clipboard')
+                      }}
+                    />
+                  </Space.Compact>
+                </div>
+
+                <Alert
+                  message="Important"
+                  description="Keep this token secure. It provides access to process queue items on behalf of your organization. If you suspect the token has been compromised, use 'Reset Auth' immediately."
+                  type="info"
+                  showIcon
+                />
+              </Space>
             )
-          }
-          
-          if (!token) {
-            return (
-              <Alert
-                message="No Bridge Token Available"
-                description="Bridge credentials are not available. This could be because you don't have the necessary permissions, or the bridge credentials vault has not been created. Administrators can use 'Reset Auth' to generate new credentials."
-                type="info"
-                showIcon
-              />
-            )
-          }
-          
-          return (
-            <Space direction="vertical" size="large" style={{ width: '100%' }}>
-              <Alert
-                message="Bridge Authentication Token"
-                description="This token is used by the bridge to authenticate its first connection to the system. After the first successful use, the bridge will receive a new token for subsequent requests. If this token has already been used, you'll need to use 'Reset Auth' to generate new credentials."
-                type="warning"
-                showIcon
-              />
-              
-              <div>
-                <Text strong>Token:</Text>
-                <Space.Compact style={{ marginTop: 8, width: '100%' }}>
-                  <Input
-                    value={token}
-                    readOnly
-                    style={{ width: '100%' }}
-                    autoComplete="off"
-                  />
-                  <Button
-                    icon={<CopyOutlined />}
-                    onClick={() => {
-                      navigator.clipboard.writeText(token)
-                      message.success('Token copied to clipboard')
-                    }}
-                  />
-                </Space.Compact>
-              </div>
-              
-              <Alert
-                message="Important"
-                description="Keep this token secure. It provides access to process queue items on behalf of your organization. If you suspect the token has been compromised, use 'Reset Auth' immediately."
-                type="info"
-                showIcon
-              />
-            </Space>
-          )
-        })()}
-      </Modal>
+          })()}
+        </Modal>
+      )}
 
       {/* Audit Trace Modal */}
       <AuditTraceModal
@@ -2276,7 +2290,7 @@ const SystemPage: React.FC = () => {
       />
 
       {/* Danger Zone Section */}
-      {uiMode === 'expert' && (
+      {featureFlags.isEnabled('dangerZone') && (
         <>
           <Title level={3} style={{ marginTop: 48, marginBottom: 24, color: '#ff4d4f' }}>
             <WarningOutlined /> {tSystem('dangerZone.title')}
@@ -2533,8 +2547,8 @@ const SystemPage: React.FC = () => {
                 rules={[
                   { required: true, message: tSystem('dangerZone.updateMasterPassword.modal.newPasswordRequired') },
                   { min: 12, message: tSystem('dangerZone.updateMasterPassword.modal.newPasswordMinLength') },
-                  { 
-                    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+                  {
+                    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])/,
                     message: tSystem('dangerZone.updateMasterPassword.modal.newPasswordPattern')
                   }
                 ]}
@@ -2607,54 +2621,56 @@ const SystemPage: React.FC = () => {
       </Modal>
 
       {/* Reset Bridge Authorization Modal */}
-      <Modal
-        title="Reset Bridge Authorization"
-        open={resetAuthModal.open}
-        onCancel={() => setResetAuthModal({ open: false, bridgeName: '', isCloudManaged: false })}
-        footer={[
-          <Button 
-            key="cancel" 
-            onClick={() => setResetAuthModal({ open: false, bridgeName: '', isCloudManaged: false })}
-          >
-            Cancel
-          </Button>,
-          <Button 
-            key="reset" 
-            type="primary" 
-            danger
-            loading={resetBridgeAuthMutation.isPending}
-            onClick={handleResetBridgeAuth}
-          >
-            Reset Authorization
-          </Button>
-        ]}
-      >
-        <Space direction="vertical" style={{ width: '100%' }} size={16}>
-          <Alert
-            message="Warning"
-            description={`Are you sure you want to reset authorization for bridge "${resetAuthModal.bridgeName}"? This will generate new credentials.`}
-            type="warning"
-            showIcon
-          />
-          
-          <Form layout="vertical">
-            <Form.Item 
-              label="Cloud Management"
-              help="Check this box if this bridge should be managed by cloud services. Only Global Bridges can be cloud managed."
+      {!featureFlags.isEnabled('disableBridge') && (
+        <Modal
+          title="Reset Bridge Authorization"
+          open={resetAuthModal.open}
+          onCancel={() => setResetAuthModal({ open: false, bridgeName: '', isCloudManaged: false })}
+          footer={[
+            <Button
+              key="cancel"
+              onClick={() => setResetAuthModal({ open: false, bridgeName: '', isCloudManaged: false })}
             >
-              <Checkbox
-                checked={resetAuthModal.isCloudManaged}
-                onChange={(e) => setResetAuthModal(prev => ({ 
-                  ...prev, 
-                  isCloudManaged: e.target.checked 
-                }))}
+              Cancel
+            </Button>,
+            <Button
+              key="reset"
+              type="primary"
+              danger
+              loading={resetBridgeAuthMutation.isPending}
+              onClick={handleResetBridgeAuth}
+            >
+              Reset Authorization
+            </Button>
+          ]}
+        >
+          <Space direction="vertical" style={{ width: '100%' }} size={16}>
+            <Alert
+              message="Warning"
+              description={`Are you sure you want to reset authorization for bridge "${resetAuthModal.bridgeName}"? This will generate new credentials.`}
+              type="warning"
+              showIcon
+            />
+
+            <Form layout="vertical">
+              <Form.Item
+                label="Cloud Management"
+                help="Check this box if this bridge should be managed by cloud services. Only Global Bridges can be cloud managed."
               >
-                Enable Cloud Management
-              </Checkbox>
-            </Form.Item>
-          </Form>
-        </Space>
-      </Modal>
+                <Checkbox
+                  checked={resetAuthModal.isCloudManaged}
+                  onChange={(e) => setResetAuthModal(prev => ({
+                    ...prev,
+                    isCloudManaged: e.target.checked
+                  }))}
+                >
+                  Enable Cloud Management
+                </Checkbox>
+              </Form.Item>
+            </Form>
+          </Space>
+        </Modal>
+      )}
 
       {/* Master Password Update Success Modal */}
       <Modal
@@ -2733,7 +2749,7 @@ const SystemPage: React.FC = () => {
                 <li>Contains at least one uppercase letter</li>
                 <li>Contains at least one lowercase letter</li>
                 <li>Contains at least one number</li>
-                <li>Contains at least one special character (@$!%*?&)</li>
+                <li>Contains at least one special character</li>
               </ul>
             }
             type="info"
@@ -2748,7 +2764,7 @@ const SystemPage: React.FC = () => {
               { required: true, message: 'Please enter your new password' },
               { min: 8, message: 'Password must be at least 8 characters long' },
               {
-                pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+                pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])/,
                 message: 'Password must contain uppercase, lowercase, number and special character',
               },
             ]}
