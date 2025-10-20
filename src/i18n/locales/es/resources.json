@@ -11,9 +11,7 @@
     "exportSuccess": "Historial de auditoría exportado como {{format}}",
     "lastActivity": "Última actividad",
     "noRecords": "No se encontraron registros de auditoría",
-    "olderRecordsNotVisible": "Algunos registros más antiguos no son visibles debido a su nivel de suscripción",
     "performedBy": "Realizado por",
-    "retentionInfo": "Mostrando {{days}} días de historial ({{tier}} nivel)",
     "system": "Sistema",
     "timestamp": "Marca de tiempo",
     "title": "Historial de auditoría: {{name}}",
@@ -92,9 +90,9 @@
     "downloadCli": "Descargue Rediacc CLI desde",
     "howToInstall": "Cómo instalar",
     "installationSteps": "Pasos de instalación",
-    "linuxInstructions": "Linux: Ejecute ./rediacc --register-protocol",
+    "linuxInstructions": "Linux: Ejecute ./rediacc protocol register",
     "local": "Local",
-    "macosInstructions": "macOS: Ejecute ./rediacc --register-protocol",
+    "macosInstructions": "macOS: Ejecute ./rediacc protocol register",
     "noPluginsRunning": "No hay complementos ejecutándose",
     "openContainerTerminal": "Terminal de contenedores abierta",
     "openInDesktop": "Abrir en la aplicación de escritorio",
@@ -109,7 +107,7 @@
     "troubleshootingBrowser": "Reinicie su navegador después del registro",
     "troubleshootingRestart": "En Linux, cierre sesión y vuelva a iniciarla",
     "viewContainerLogs": "Ver registros de contenedores",
-    "windowsInstructions": "Windows: ejecute rediacc.bat -RegisterProtocol como administrador"
+    "windowsInstructions": "Windows: ejecute rediacc.bat protocol register como administrador"
   },
   "localCommandBuilder": {
     "action": "Acción",
@@ -180,7 +178,6 @@
     "commonIssues": "Problemas comunes de instalación",
     "copyAllCommands": "Copiar todos los comandos",
     "error": "Error",
-    "includeGuiSupport": "Incluye soporte para GUI (recomendado)",
     "installCommandDesc": "Instale la CLI de Rediacc desde PyPI",
     "installRediaccCli": "Instalar la CLI de Rediacc",
     "installationGuide": "Guía de instalación",

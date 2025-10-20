@@ -171,3 +171,41 @@ export const useDeleteUserRequest = createMutation<{ requestId: string }>({
   errorMessage: 'Failed to terminate user session',
   transformData: (data) => ({ requestId: data.requestId })
 })
+
+// Get current user's vault data
+export const useUserVault = () => {
+  return useQuery({
+    queryKey: ['user-vault'],
+    queryFn: async () => {
+      const response = await apiClient.get('/GetUserVault')
+      const vaultData = response.resultSets[1]?.data[0]
+
+      if (vaultData) {
+        return {
+          vault: vaultData.vaultContent || '{}',
+          vaultVersion: vaultData.vaultVersion || 1,
+          userCredential: vaultData.userCredential
+        }
+      }
+
+      return {
+        vault: '{}',
+        vaultVersion: 1,
+        userCredential: null
+      }
+    },
+  })
+}
+
+// Update current user's vault
+export const useUpdateUserVault = createMutation<{ userVault: string; vaultVersion: number }>({
+  endpoint: '/UpdateUserVault',
+  method: 'post',
+  invalidateKeys: ['user-vault'],
+  successMessage: () => 'User vault updated successfully',
+  errorMessage: 'Failed to update user vault',
+  transformData: (data) => ({
+    userVault: data.userVault,
+    vaultVersion: data.vaultVersion
+  })
+})

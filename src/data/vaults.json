@@ -192,25 +192,13 @@
     "USER": {
       "descriptionKey": "fields.USER.description",
       "required": [],
-      "optional": ["SSH_PRIVATE_KEY", "SSH_PUBLIC_KEY"],
-      "fields": {
-        "SSH_PRIVATE_KEY": {
-          "type": "string",
-          "sensitive": true,
-          "format": "base64",
-          "example": "Base64 encoded private key. Example: LS0tLS1CRUdJTi0tLS0t"
-        },
-        "SSH_PUBLIC_KEY": {
-          "type": "string",
-          "pattern": "^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/=]+ .+$",
-          "example": "Public SSH key. Example: ssh-rsa AAAAB3NzaC1yc2E... user@email.com"
-        }
-      }
+      "optional": [],
+      "fields": {}
     },
     "COMPANY": {
       "descriptionKey": "fields.COMPANY.description",
       "required": ["UNIVERSAL_USER_ID", "UNIVERSAL_USER_NAME", "DOCKER_JSON_CONF"],
-      "optional": ["SSH_PRIVATE_KEY", "SSH_PUBLIC_KEY", "LOG_FILE", "PLUGINS"],
+      "optional": ["LOG_FILE", "PLUGINS"],
       "fields": {
         "UNIVERSAL_USER_ID": {
           "type": "string",
@@ -257,17 +245,6 @@
               }
             }
           }
-        },
-        "SSH_PRIVATE_KEY": {
-          "type": "string",
-          "sensitive": true,
-          "format": "base64",
-          "example": "Base64 encoded private key. Example: LS0tLS1CRUdJTi0tLS0t"
-        },
-        "SSH_PUBLIC_KEY": {
-          "type": "string",
-          "pattern": "^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/=]+ .+$",
-          "example": "Company SSH key. Example: ssh-rsa AAAAB3NzaC1yc2E... company-key"
         },
         "PLUGINS": {
           "type": "object",
