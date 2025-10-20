@@ -13,8 +13,8 @@ import {
   Statistic
 } from 'antd'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
-import { 
-  CloseOutlined,
+import {
+  DoubleRightOutlined,
   AppstoreOutlined,
   CloudServerOutlined,
   CodeOutlined,
@@ -135,49 +135,78 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
 
   return (
     <>
-      {/* Header with close button */}
-      <div style={{
-        padding: splitView ? '16px 24px' : '16px 24px 0',
-        borderBottom: `1px solid ${theme === 'dark' ? '#303030' : '#f0f0f0'}`,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-      }}
-      data-testid="container-detail-header">
-        <Title level={4} style={{ margin: 0 }} data-testid="container-detail-title">
-          {isPlugin ? t('resources:containers.pluginDetails') : t('resources:containers.containerDetails')}
-        </Title>
-        {!splitView && (
-          <Button
-            type="text"
-            icon={<CloseOutlined />}
-            onClick={onClose}
-            style={{ ...componentStyles.touchTarget, marginRight: -8 }}
-            data-testid="container-detail-close"
-          />
-        )}
-      </div>
-
-      {/* Content */}
-      <div style={{
-        padding: '24px',
-        height: splitView ? 'calc(100% - 57px)' : undefined,
-        overflow: 'auto',
-      }}>
-        <div style={{ marginBottom: 16 }}>
-          <Space size="small" style={{ marginBottom: 8 }}>
-            <Tag color={isPlugin ? "blue" : "cyan"} icon={isPlugin ? <ApiOutlined /> : <AppstoreOutlined />} data-testid="container-detail-name-tag">
-              {isPlugin ? `Plugin: ${pluginName}` : container.name}
-            </Tag>
-            <Tag 
+      {/* Panel */}
+      <div
+        className="container-detail-panel"
+        data-testid="container-detail-panel"
+        style={splitView ? {
+          height: '100%',
+          backgroundColor: theme === 'dark' ? '#141414' : '#fff',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+        } : {
+          position: 'fixed',
+          top: 0,
+          right: visible ? 0 : '-520px',
+          bottom: 0,
+          width: '520px',
+          maxWidth: '100vw',
+          backgroundColor: theme === 'dark' ? '#141414' : '#fff',
+          boxShadow: '-2px 0 8px rgba(0, 0, 0, 0.15)',
+          zIndex: 1000,
+          transition: 'right 0.3s ease-in-out',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            padding: '16px 24px',
+            borderBottom: `1px solid ${theme === 'dark' ? '#303030' : '#f0f0f0'}`,
+            position: 'sticky',
+            top: 0,
+            backgroundColor: theme === 'dark' ? '#141414' : '#fff',
+            zIndex: splitView ? 0 : 1,
+          }}
+          data-testid="container-detail-header"
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Space>
+              {isPlugin ? (
+                <ApiOutlined style={{ fontSize: 24, color: '#1890ff' }} />
+              ) : (
+                <AppstoreOutlined style={{ fontSize: 24, color: '#52c41a' }} />
+              )}
+              <Title level={4} style={{ margin: 0 }} data-testid="container-detail-title">
+                {isPlugin ? pluginName : container.name}
+              </Title>
+            </Space>
+            <Button
+              type="text"
+              icon={<DoubleRightOutlined />}
+              onClick={onClose}
+              style={componentStyles.touchTarget}
+              data-testid="container-detail-collapse"
+              aria-label="Collapse Panel"
+            />
+          </div>
+          <Space wrap style={{ marginTop: 8 }}>
+            <Tag
               color={container.state === 'running' ? 'success' : 'default'}
               icon={container.state === 'running' ? <PlayCircleOutlined /> : <PauseCircleOutlined />}
               data-testid="container-detail-state-tag"
             >
               {container.state}
             </Tag>
+            <Tag color="blue" icon={<FolderOutlined />} data-testid="container-detail-repo-tag">
+              Repository: {container.repository}
+            </Tag>
           </Space>
         </div>
+
+        {/* Content */}
+        <div style={{ padding: '24px' }} data-testid="container-detail-content">
 
         {container && (
           <>
@@ -382,6 +411,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             </Card>
           </>
         )}
+        </div>
       </div>
     </>
   )

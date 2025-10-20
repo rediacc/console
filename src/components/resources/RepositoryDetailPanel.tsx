@@ -15,7 +15,7 @@ import {
 } from 'antd'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import {
-  CloseOutlined,
+  DoubleRightOutlined,
   DatabaseOutlined,
   ClockCircleOutlined,
   HddOutlined,
@@ -238,10 +238,11 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
             </Space>
             <Button
               type="text"
-              icon={<CloseOutlined />}
+              icon={<DoubleRightOutlined />}
               onClick={onClose}
               style={componentStyles.touchTarget}
-              data-testid="repo-detail-close"
+              data-testid="repo-detail-collapse"
+              aria-label="Collapse Panel"
             />
           </div>
           <Space wrap style={{ marginTop: 8 }}>

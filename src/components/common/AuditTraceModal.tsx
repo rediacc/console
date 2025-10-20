@@ -347,15 +347,6 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
                   </Button>
                 </Dropdown>
               </div>
-
-              {data.summary.hasOlderRecords && (
-                <Alert
-                  message={t('audit.olderRecordsNotVisible')}
-                  type="warning"
-                  showIcon
-                  data-testid="audit-trace-older-records-alert"
-                />
-              )}
             </Space>
           )}
 
@@ -381,18 +372,6 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
 
           {/* Alternative Timeline View (could be toggled) */}
           {/* {renderTimelineView()} */}
-          
-          {/* Bottom retention info */}
-          {data.summary && (
-            <div style={{ marginTop: spacing('LG'), textAlign: 'center' }} data-testid="audit-trace-retention-info">
-              <Text type="secondary">
-                {t('audit.retentionInfo', {
-                  days: data.summary.auditRetentionDays,
-                  tier: data.summary.subscriptionTier
-                })}
-              </Text>
-            </div>
-          )}
         </>
       ) : null}
     </Modal>

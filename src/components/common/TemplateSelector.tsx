@@ -21,15 +21,17 @@ interface Template {
 }
 
 interface TemplateSelectorProps {
-  value?: string | null
-  onChange?: (templateId: string | null) => void
+  value?: string | string[] | null
+  onChange?: (templateId: string | string[] | null) => void
   onViewDetails?: (templateName: string) => void
+  multiple?: boolean
 }
 
-const TemplateSelector: React.FC<TemplateSelectorProps> = ({ 
-  value, 
-  onChange, 
-  onViewDetails 
+const TemplateSelector: React.FC<TemplateSelectorProps> = ({
+  value,
+  onChange,
+  onViewDetails,
+  multiple = false
 }) => {
   const { t } = useTranslation(['resources', 'common'])
   const [templates, setTemplates] = useState<Template[]>([])
@@ -112,18 +114,20 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
           marginBottom: spacing('SM')
         }}>
           <Text type="secondary" style={{ fontSize: fontSize('SM') }}>
-            {t('resources:templates.selectOptional')}
+            {multiple
+              ? t('resources:templates.selectMultiple', { defaultValue: 'Select templates (optional, multiple allowed)' })
+              : t('resources:templates.selectOptional')}
           </Text>
-          {value && (
-            <Button 
-              size="small" 
+          {((multiple && Array.isArray(value) && value.length > 0) || (!multiple && value)) && (
+            <Button
+              size="small"
               style={{
                 // Height managed by CSS
                 borderRadius: borderRadius('MD'),
                 fontSize: fontSize('SM')
               }}
               data-testid="resource-modal-template-clear-button"
-              onClick={() => onChange?.(null)}
+              onClick={() => onChange?.(multiple ? [] : null)}
             >
               {t('resources:templates.clearSelection')}
             </Button>
@@ -133,10 +137,29 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
       <Row gutter={[spacing('MD'), spacing('MD')]}>
         {templates.map((template) => {
-          const isSelected = value === (template.id || template.name)
+          const templateId = template.id || template.name
+          const isSelected = multiple
+            ? Array.isArray(value) && value.includes(templateId)
+            : value === templateId
+
+          const handleClick = () => {
+            if (multiple) {
+              const currentSelection = Array.isArray(value) ? value : []
+              if (isSelected) {
+                // Deselect
+                onChange?.(currentSelection.filter(id => id !== templateId))
+              } else {
+                // Select
+                onChange?.([...currentSelection, templateId])
+              }
+            } else {
+              // Single selection mode
+              onChange?.(isSelected ? null : templateId)
+            }
+          }
 
           return (
-            <Col key={template.name} xs={24} sm={12} md={8}>
+            <Col key={template.name} xs={24} sm={12} md={6}>
               <Card
                 hoverable
                 data-testid={`resource-modal-template-card-${template.name}`}
@@ -151,7 +174,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                   transition: DESIGN_TOKENS.TRANSITIONS.HOVER,
                   padding: spacing('MD')
                 }}
-                onClick={() => onChange?.(isSelected ? null : (template.id || template.name))}
+                onClick={handleClick}
               >
                 {isSelected && (
                   <CheckCircleOutlined 
@@ -213,9 +236,10 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             </Col>
           )
         })}
-        
+
         {/* No Template Option */}
-        <Col xs={24} sm={12} md={8}>
+        {!multiple && (
+        <Col xs={24} sm={12} md={6}>
           <Card
             hoverable
             data-testid="resource-modal-template-card-none"
@@ -286,6 +310,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             </Space>
           </Card>
         </Col>
+        )}
       </Row>
     </div>
   )

@@ -15,8 +15,8 @@ import {
   Badge
 } from 'antd'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
-import { 
-  CloseOutlined,
+import {
+  DoubleRightOutlined,
   DesktopOutlined,
   DatabaseOutlined,
   GlobalOutlined,
@@ -251,10 +251,11 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
             </Space>
             <Button
               type="text"
-              icon={<CloseOutlined />}
+              icon={<DoubleRightOutlined />}
               onClick={onClose}
               style={componentStyles.touchTarget}
-              data-testid="vault-status-close"
+              data-testid="vault-status-collapse"
+              aria-label="Collapse Panel"
             />
           </div>
           <Space wrap style={{ marginTop: 8 }}>

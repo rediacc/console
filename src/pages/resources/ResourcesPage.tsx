@@ -19,6 +19,7 @@ import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS } from '@/utils/styleConstants'
+import { featureFlags } from '@/config/featureFlags'
 import UnifiedResourceModal, { ResourceType } from '@/components/common/UnifiedResourceModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import ConnectivityTestModal from '@/components/common/ConnectivityTestModal'
@@ -82,6 +83,7 @@ const ResourcesPage: React.FC = () => {
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null)
   const [selectedRepositoryFromMachine, setSelectedRepositoryFromMachine] = useState<Repository | null>(null)
   const [selectedContainerFromMachine, setSelectedContainerFromMachine] = useState<any | null>(null)
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(true) // Panel starts collapsed
 
   // Unified modal state
   const [unifiedModalState, setUnifiedModalState] = useState<{
@@ -131,8 +133,15 @@ const ResourcesPage: React.FC = () => {
   const handleMachineSelect = (machine: Machine | null) => {
     setSelectedMachine(machine)
     if (machine) {
-      setSelectedRepositoryFromMachine(null) // Close repository panel
+      setSelectedRepositoryFromMachine(null) // Clear repository panel
+      setSelectedContainerFromMachine(null) // Clear container panel
     }
+    // Panel state (collapsed/expanded) remains unchanged
+  }
+
+  // Handler to toggle panel collapse state
+  const handleTogglePanelCollapse = () => {
+    setIsPanelCollapsed(!isPanelCollapsed)
   }
   
   // Handler for repository click from machine list
@@ -156,20 +165,23 @@ const ResourcesPage: React.FC = () => {
     
     if (actualRepository) {
       setSelectedRepositoryFromMachine(actualRepository)
-      setSelectedMachine(null) // Close machine panel when repository is selected
+      setSelectedMachine(null) // Clear machine panel when repository is selected
+      setSelectedContainerFromMachine(null) // Clear container panel
     } else {
       // If we can't find the repository, still show what we have
       setSelectedRepositoryFromMachine(mappedRepository)
-      setSelectedMachine(null) // Close machine panel when repository is selected
+      setSelectedMachine(null) // Clear machine panel when repository is selected
       setSelectedContainerFromMachine(null)
     }
+    // Panel state (collapsed/expanded) remains unchanged
   }
   
   // Handler for container click from machine list
   const handleMachineContainerClick = (_machine: Machine, container: any) => {
-    setSelectedMachine(null)
-    setSelectedRepositoryFromMachine(null)
+    setSelectedMachine(null) // Clear machine panel
+    setSelectedRepositoryFromMachine(null) // Clear repository panel
     setSelectedContainerFromMachine(container)
+    // Panel state (collapsed/expanded) remains unchanged
   }
   
   // Machine mutations
@@ -258,6 +270,15 @@ const ResourcesPage: React.FC = () => {
   const { data: repositories = [], isLoading: repositoriesLoading, refetch: refetchRepositories } = useRepositories(
     selectedTeams.length > 0 ? selectedTeams : undefined
   )
+
+  // Filter repositories to show only originals (exclude clones) for Repo (Credentials) view
+  // A repository is a clone if its grandGuid differs from its repositoryGuid
+  const originalRepositories = React.useMemo(() => {
+    return repositories.filter(repo =>
+      !repo.grandGuid || repo.grandGuid === repo.repositoryGuid
+    )
+  }, [repositories])
+
   const createRepositoryMutation = useCreateRepository()
   const updateRepositoryNameMutation = useUpdateRepositoryName()
   const deleteRepositoryMutation = useDeleteRepository()
@@ -872,7 +893,7 @@ const ResourcesPage: React.FC = () => {
       ellipsis: true,
       render: (teamName: string) => <Tag color="#8FBC8F">{teamName}</Tag>,
     },
-    ...(uiMode === 'expert' ? [{
+    ...(featureFlags.isEnabled('vaultVersionColumns') ? [{
       title: t('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
@@ -957,7 +978,7 @@ const ResourcesPage: React.FC = () => {
       ellipsis: true,
       render: (teamName: string) => <Tag color="#8FBC8F">{teamName}</Tag>,
     },
-    ...(uiMode === 'expert' ? [{
+    ...(featureFlags.isEnabled('vaultVersionColumns') ? [{
       title: t('general.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
@@ -1075,7 +1096,7 @@ const ResourcesPage: React.FC = () => {
       ),
       children: (
         <SplitResourceView
-          type="machine" 
+          type="machine"
           teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
           showFilters={true}
           showActions={true}
@@ -1110,13 +1131,13 @@ const ResourcesPage: React.FC = () => {
             if (machine.teamName !== selectedTeams[0]) {
               setSelectedTeams([machine.teamName])
             }
-            
+
             // For credential-only mode, start with empty vault so user must enter their own credential
             let vaultContent = undefined
             if (repositoryGuid) {
               vaultContent = JSON.stringify({ credential: '' })
             }
-            
+
             // Open the repository creation modal with prefilled machine
             openUnifiedModal('repository', 'create', {
               machineName: machine.machineName,
@@ -1155,6 +1176,8 @@ const ResourcesPage: React.FC = () => {
           }}
           onMachineRepositoryClick={handleMachineRepositoryClick}
           onMachineContainerClick={handleMachineContainerClick}
+          isPanelCollapsed={isPanelCollapsed}
+          onTogglePanelCollapse={handleTogglePanelCollapse}
         />
       ),
     },
@@ -1176,7 +1199,7 @@ const ResourcesPage: React.FC = () => {
                 {t('common:general.loading')}
               </div>
             </div>
-          ) : repositories.length === 0 ? (
+          ) : originalRepositories.length === 0 ? (
             <Empty
               description={t('repositories.noRepositories')}
               style={{ margin: 'auto' }}
@@ -1185,13 +1208,13 @@ const ResourcesPage: React.FC = () => {
             <Table
               data-testid="resources-repository-table"
               columns={repositoryColumns}
-              dataSource={repositories}
+              dataSource={originalRepositories}
               rowKey="repositoryName"
               scroll={{ x: 'max-content' }}
               pagination={{
                 current: repositoryPage,
                 pageSize: repositoryPageSize,
-                total: repositories?.length || 0,
+                total: originalRepositories?.length || 0,
                 showSizeChanger: true,
                 pageSizeOptions: ['10', '20', '50', '100'],
                 showTotal: (total, range) => `${t('common:general.showingRecords', { start: range[0], end: range[1], total })}`,

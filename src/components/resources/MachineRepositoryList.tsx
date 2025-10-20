@@ -1780,6 +1780,14 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           onClick: () => handleRunFunction(record, 'push')
         })
 
+        // Apply Template - always available
+        menuItems.push({
+          key: 'apply_template',
+          label: t('functions:functions.apply_template.name'),
+          icon: <AppstoreOutlined style={componentStyles.icon.small} />,
+          onClick: () => handleRunFunction(record, 'apply_template')
+        })
+
         // ADVANCED SUBMENU FOR STORAGE OPERATIONS
         const advancedSubmenuItems = []
 

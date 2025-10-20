@@ -4,7 +4,6 @@
  */
 
 export interface InstallOptions {
-  includeGui?: boolean
   useUser?: boolean
   useVirtualEnv?: boolean
   version?: string
@@ -34,36 +33,40 @@ class PipInstallationService {
    */
   generateInstallCommand(options: InstallOptions = {}): string {
     const parts = ['pip install']
-    
+
     if (options.useUser) {
       parts.push('--user')
     }
-    
+
     if (options.upgrade) {
       parts.push('--upgrade')
     }
-    
-    // Package name with optional extras
+
+    // Package name
     let packageName = 'rediacc'
-    if (options.includeGui) {
-      packageName += '[gui]'
-    }
-    
+
     // Add version if specified
     if (options.version) {
       packageName += `==${options.version}`
     }
-    
+
     parts.push(packageName)
-    
+
     return parts.join(' ')
   }
 
   /**
-   * Generate protocol registration command
+   * Generate setup command (includes protocol registration and dependency checks)
+   */
+  generateSetupCommand(): string {
+    return 'rediacc setup'
+  }
+
+  /**
+   * Generate protocol registration command (for manual registration)
    */
   generateProtocolCommand(): string {
-    return 'rediacc --register-protocol'
+    return 'rediacc protocol register'
   }
 
   /**
@@ -120,12 +123,12 @@ class PipInstallationService {
     return {
       install: this.generateInstallCommand(options),
       postInstall: [
-        this.generateProtocolCommand(),
+        this.generateSetupCommand(),
         platform === 'windows' ? 'Restart your browser' : 'Restart your browser or log out/in'
       ],
       verify: [
         'rediacc --version',
-        'rediacc --check-protocol'
+        'rediacc protocol status'
       ]
     }
   }
@@ -205,10 +208,10 @@ class PipInstallationService {
   getVirtualEnvInstructions(): { description: string; commands: string[] } {
     const platform = this.detectPlatform()
     const pythonCmd = platform === 'windows' ? 'python' : 'python3'
-    const activateCmd = platform === 'windows' 
-      ? 'rediacc-env\\Scripts\\activate' 
+    const activateCmd = platform === 'windows'
+      ? 'rediacc-env\\Scripts\\activate'
       : 'source rediacc-env/bin/activate'
-    
+
     return {
       description: 'Using a virtual environment (recommended for development):',
       commands: [
@@ -219,10 +222,10 @@ class PipInstallationService {
         activateCmd,
         '',
         '# Install Rediacc CLI',
-        this.generateInstallCommand({ includeGui: true }),
+        this.generateInstallCommand(),
         '',
-        '# Register protocol (still needed)',
-        this.generateProtocolCommand()
+        '# Run setup (checks dependencies and registers protocol)',
+        this.generateSetupCommand()
       ]
     }
   }
@@ -235,7 +238,7 @@ class PipInstallationService {
       description: 'To uninstall Rediacc CLI:',
       commands: [
         '# Unregister protocol handler first',
-        'rediacc --unregister-protocol',
+        'rediacc protocol unregister',
         '',
         '# Uninstall package',
         'pip uninstall rediacc',
