@@ -40,6 +40,7 @@ import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import { useTeams } from '@/api/queries/teams'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, borderRadius, fontSize } from '@/utils/styleConstants'
+import { featureFlags } from '@/config/featureFlags'
 
 const { Text } = Typography
 
@@ -137,7 +138,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   const [isTestingConnection, setIsTestingConnection] = useState(false)
   const [testConnectionSuccess, setTestConnectionSuccess] = useState(false)
   const [osSetupCompleted, setOsSetupCompleted] = useState<boolean | null>(null)
-  
+  const formatJsonRef = useRef<(() => void) | null>(null)
+
   const uiMode = useAppSelector((state) => state.ui.uiMode)
   const styles = useComponentStyles()
   
@@ -1626,7 +1628,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
             </Collapse.Panel>
           )}
 
-          {uiMode === 'expert' && (
+          {featureFlags.isEnabled('advancedVaultEditor') && (
             <Collapse.Panel
               header={
                 <Space>
@@ -1659,12 +1661,30 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                   style={{ marginBottom: 16 }}
                 />
               )}
-              
+
+              <div style={{ marginBottom: spacing('SM'), display: 'flex', justifyContent: 'flex-end' }}>
+                <Button
+                  size="small"
+                  type="default"
+                  onClick={() => formatJsonRef.current?.()}
+                  style={{
+                    borderRadius: borderRadius('MD'),
+                    fontSize: fontSize('SM')
+                  }}
+                  data-testid="vault-editor-format-json"
+                >
+                  Format
+                </Button>
+              </div>
+
               <SimpleJsonEditor
                 value={rawJsonValue}
                 onChange={handleRawJsonChange}
                 height="400px"
                 data-testid="vault-editor-raw-json"
+                onFormatReady={(formatFn) => {
+                  formatJsonRef.current = formatFn
+                }}
               />
             </Collapse.Panel>
           )}

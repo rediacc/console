@@ -11,9 +11,7 @@
     "exportSuccess": "تم تصدير سجل التدقيق بتنسيق {{format}}",
     "lastActivity": "النشاط الأخير",
     "noRecords": "لم يتم العثور على سجلات التدقيق",
-    "olderRecordsNotVisible": "بعض السجلات القديمة غير مرئية بسبب فئة الاشتراك الخاصة بك",
     "performedBy": "يؤديها",
-    "retentionInfo": "عرض {{days}} يوم من التاريخ (مستوى {{tier}})",
     "system": "نظام",
     "timestamp": "الطابع الزمني",
     "title": "سجل التدقيق - {{name}}",
@@ -92,9 +90,9 @@
     "downloadCli": "قم بتنزيل Rediacc CLI من",
     "howToInstall": "كيفية التثبيت",
     "installationSteps": "خطوات التثبيت",
-    "linuxInstructions": "Linux: قم بتشغيل ./rediacc --register-protocol",
+    "linuxInstructions": "Linux: قم بتشغيل ./rediacc protocol register",
     "local": "محلي",
-    "macosInstructions": "نظام التشغيل MacOS: قم بتشغيل ./rediacc --register-protocol",
+    "macosInstructions": "نظام التشغيل MacOS: قم بتشغيل ./rediacc protocol register",
     "noPluginsRunning": "لا توجد مكونات إضافية قيد التشغيل",
     "openContainerTerminal": "فتح محطة الحاويات",
     "openInDesktop": "افتح في تطبيق سطح المكتب",
@@ -109,7 +107,7 @@
     "troubleshootingBrowser": "أعد تشغيل المتصفح بعد التسجيل",
     "troubleshootingRestart": "في نظام التشغيل Linux، قم بتسجيل الخروج ثم العودة مرة أخرى",
     "viewContainerLogs": "عرض سجلات الحاوية",
-    "windowsInstructions": "Windows: قم بتشغيل rediacc.bat -RegisterProtocol كمسؤول"
+    "windowsInstructions": "Windows: قم بتشغيل rediacc.bat protocol register كمسؤول"
   },
   "localCommandBuilder": {
     "action": "فعل",
@@ -180,7 +178,6 @@
     "commonIssues": "مشكلات التثبيت الشائعة",
     "copyAllCommands": "نسخ كافة الأوامر",
     "error": "خطأ",
-    "includeGuiSupport": "تضمين دعم واجهة المستخدم الرسومية (مستحسن)",
     "installCommandDesc": "قم بتثبيت Rediacc CLI من PyPI",
     "installRediaccCli": "قم بتثبيت Rediacc CLI",
     "installationGuide": "دليل التثبيت",

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 
 interface SimpleJsonEditorProps {
@@ -9,6 +9,7 @@ interface SimpleJsonEditorProps {
   className?: string;
   language?: string;
   'data-testid'?: string;
+  onFormatReady?: (formatFn: () => void) => void;
 }
 
 export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
@@ -17,7 +18,8 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
   readOnly = false,
   height = '400px',
   className = '',
-  'data-testid': dataTestId
+  'data-testid': dataTestId,
+  onFormatReady
 }) => {
   const { theme } = useTheme();
   const [internalValue, setInternalValue] = useState(value);
@@ -65,7 +67,7 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
 
   const formatJson = () => {
     if (!internalValue.trim()) return;
-    
+
     try {
       const parsed = JSON.parse(internalValue);
       const formatted = JSON.stringify(parsed, null, 2);
@@ -76,6 +78,13 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
       setError((e as Error).message);
     }
   };
+
+  // Pass format function to parent
+  useEffect(() => {
+    if (onFormatReady) {
+      onFormatReady(formatJson);
+    }
+  }, [onFormatReady]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Tab') {
@@ -136,47 +145,8 @@ export const SimpleJsonEditor: React.FC<SimpleJsonEditorProps> = ({
     borderRadius: '0 0 8px 8px'
   };
 
-  const buttonStyles: React.CSSProperties = {
-    position: 'absolute',
-    top: 'var(--space-sm)',
-    right: 'var(--space-sm)',
-    padding: 'var(--space-xs) var(--space-md)', // Design system spacing
-    backgroundColor: 'var(--color-bg-secondary)',
-    color: 'var(--color-text-primary)',
-    border: `1px solid var(--color-border-primary)`,
-    borderRadius: '6px', // Design system border radius
-    fontSize: '12px',
-    fontWeight: '500',
-    cursor: 'pointer',
-    zIndex: 10,
-    minHeight: '32px',
-    minWidth: '60px',
-    transition: 'all 0.2s ease',
-    boxShadow: 'var(--shadow-sm)'
-  };
-
   return (
     <div className={className} style={containerStyles}>
-      {!readOnly && (
-        <button
-          type="button"
-          onClick={formatJson}
-          style={buttonStyles}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)';
-            e.currentTarget.style.transform = 'translateY(-1px)';
-            e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--color-bg-secondary)';
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-          }}
-        >
-          Format
-        </button>
-      )}
-      
       <textarea
         ref={textareaRef}
         value={internalValue}

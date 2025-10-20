@@ -485,9 +485,9 @@ class ProtocolUrlService {
         platform: 'Windows',
         instructions: [
           'Download and install Rediacc CLI',
-          'Open PowerShell as Administrator',
-          'Navigate to the Rediacc CLI directory',
-          'Run: rediacc.bat -RegisterProtocol',
+          'Open PowerShell or Command Prompt',
+          'Run: rediacc protocol register',
+          'For system-wide: rediacc protocol register --system-wide (requires Admin)',
           'Restart your browser'
         ]
       },
@@ -496,8 +496,8 @@ class ProtocolUrlService {
         instructions: [
           'Download and install Rediacc CLI',
           'Open Terminal',
-          'Navigate to the Rediacc CLI directory',
-          'Run: ./rediacc --register-protocol',
+          'Run: ./rediacc protocol register',
+          'For system-wide: sudo ./rediacc protocol register --system-wide',
           'You may need to grant permission when prompted'
         ]
       },
@@ -506,8 +506,8 @@ class ProtocolUrlService {
         instructions: [
           'Download and install Rediacc CLI',
           'Open Terminal',
-          'Navigate to the Rediacc CLI directory',
-          'Run: ./rediacc --register-protocol',
+          'Run: ./rediacc protocol register',
+          'For system-wide: sudo ./rediacc protocol register --system-wide',
           'Log out and log back in for changes to take effect'
         ]
       }

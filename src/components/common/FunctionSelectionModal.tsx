@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react'
-import { Modal, Row, Col, Card, Input, Space, Form, Slider, Empty, Typography, Tag, Button, Select, Tooltip, InputNumber, Alert, Checkbox, Popover } from 'antd'
+import { Modal, Row, Col, Card, Input, Space, Form, Slider, Empty, Typography, Tag, Button, Select, Tooltip, InputNumber, Alert, Checkbox, Popover, message } from 'antd'
 import { ExclamationCircleOutlined, WarningOutlined, QuestionCircleOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
@@ -10,6 +10,9 @@ import { useRepositories } from '@/api/queries/repositories'
 import { useMachines } from '@/api/queries/machines'
 import { useStorage } from '@/api/queries/storage'
 import { ModalSize } from '@/types/modal'
+import TemplateSelector from '@/components/common/TemplateSelector'
+import TemplatePreviewModal from '@/components/common/TemplatePreviewModal'
+import { templateService } from '@/services/templateService'
 
 const { Search } = Input
 const { Text, Paragraph } = Typography
@@ -71,6 +74,9 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   const [functionDescription, setFunctionDescription] = useState('')
   const [functionSearchTerm, setFunctionSearchTerm] = useState('')
   const [selectedMachine, setSelectedMachine] = useState<string>('')
+  const [selectedTemplates, setSelectedTemplates] = useState<string[]>([])
+  const [showTemplateDetails, setShowTemplateDetails] = useState(false)
+  const [templateToView, setTemplateToView] = useState<string | null>(null)
 
   // Fetch repositories for the current team
   const { data: repositories } = useRepositories(teamName)
@@ -204,54 +210,66 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   // Check if all required parameters are filled
   const areRequiredParamsFilled = useMemo(() => {
     if (!selectedFunction) return false
-    
+
     return Object.entries(selectedFunction.params)
       .filter(([paramName]) => !hiddenParams.includes(paramName))
       .every(([paramName, paramInfo]) => {
         if (!paramInfo.required) return true
-        
+
+        // For template-selector, check selectedTemplates state
+        if (paramInfo.ui === 'template-selector') {
+          return selectedTemplates.length > 0
+        }
+
         const paramValue = functionParams[paramName]
-        
+
         // For size parameters, check the value part
         if (paramInfo.format === 'size' && paramInfo.units) {
           const valueParam = functionParams[`${paramName}_value`]
           return valueParam !== undefined && valueParam !== null && valueParam !== ''
         }
-        
+
         // For other parameters, check the main value
         return paramValue !== undefined && paramValue !== null && paramValue !== ''
       })
-  }, [selectedFunction, functionParams, hiddenParams])
+  }, [selectedFunction, functionParams, hiddenParams, selectedTemplates])
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedFunction) return
     if (showMachineSelection && !selectedMachine) return
-    
+
     // Validate required parameters
     const missingParams: string[] = []
     Object.entries(selectedFunction.params)
       .filter(([paramName]) => !hiddenParams.includes(paramName))
       .forEach(([paramName, paramInfo]) => {
         if (paramInfo.required) {
-          const paramValue = functionParams[paramName]
-          
-          // Check if parameter has a value
-          if (paramValue === undefined || paramValue === null || paramValue === '') {
-            missingParams.push(paramInfo.label || paramName)
-          }
-          
-          // For size parameters, also check if the value part is filled
-          if (paramInfo.format === 'size' && paramInfo.units) {
-            const valueParam = functionParams[`${paramName}_value`]
-            if (!valueParam || valueParam === '') {
-              if (!missingParams.includes(paramInfo.label || paramName)) {
-                missingParams.push(paramInfo.label || paramName)
+          // Special handling for template-selector - check selectedTemplates state
+          if (paramInfo.ui === 'template-selector') {
+            if (selectedTemplates.length === 0) {
+              missingParams.push(paramInfo.label || paramName)
+            }
+          } else {
+            const paramValue = functionParams[paramName]
+
+            // Check if parameter has a value
+            if (paramValue === undefined || paramValue === null || paramValue === '') {
+              missingParams.push(paramInfo.label || paramName)
+            }
+
+            // For size parameters, also check if the value part is filled
+            if (paramInfo.format === 'size' && paramInfo.units) {
+              const valueParam = functionParams[`${paramName}_value`]
+              if (!valueParam || valueParam === '') {
+                if (!missingParams.includes(paramInfo.label || paramName)) {
+                  missingParams.push(paramInfo.label || paramName)
+                }
               }
             }
           }
         }
       })
-    
+
     // If there are missing parameters, show error and return
     if (missingParams.length > 0) {
       Modal.error({
@@ -260,7 +278,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
       })
       return
     }
-    
+
     // Clean up the params - remove the helper _value and _unit fields
     const cleanedParams = Object.entries(functionParams).reduce((acc, [key, value]) => {
       if (!key.endsWith('_value') && !key.endsWith('_unit')) {
@@ -268,11 +286,52 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
       }
       return acc
     }, {} as Record<string, any>)
-    
+
     // Merge visible params with default params
     const allParams = { ...defaultParams, ...cleanedParams }
-    
-    
+
+    // Handle template encoding for template-selector parameters
+    if (selectedTemplates.length > 0) {
+      for (const [paramName, paramInfo] of Object.entries(selectedFunction.params)) {
+        if (paramInfo.ui === 'template-selector') {
+          try {
+            if (selectedTemplates.length === 1) {
+              // Single template: use the existing service method
+              const encodedTemplate = await templateService.getEncodedTemplateDataById(selectedTemplates[0])
+              allParams[paramName] = encodedTemplate
+            } else {
+              // Multiple templates: fetch and merge them
+              const templateDataList = await Promise.all(
+                selectedTemplates.map(templateId => templateService.fetchTemplateData({ name: templateId }))
+              )
+
+              // Merge all templates into one structure
+              const mergedTemplate = {
+                name: selectedTemplates.join('+'),
+                files: templateDataList.flatMap(template => template.files || [])
+              }
+
+              // Encode the merged template using the same method as templateService
+              const encoder = new TextEncoder()
+              const uint8Array = encoder.encode(JSON.stringify(mergedTemplate))
+              let binaryString = ''
+              for (let i = 0; i < uint8Array.length; i++) {
+                binaryString += String.fromCharCode(uint8Array[i])
+              }
+              const encodedTemplate = btoa(binaryString)
+
+              allParams[paramName] = encodedTemplate
+            }
+          } catch (error) {
+            console.error('Failed to encode templates:', error)
+            message.error(t('resources:templates.failedToLoadTemplate'))
+            return
+          }
+        }
+      }
+    }
+
+
     onSubmit({
       function: selectedFunction,
       params: allParams,
@@ -288,6 +347,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
     setFunctionDescription('')
     setFunctionSearchTerm('')
     setSelectedMachine('')
+    setSelectedTemplates([])
   }
 
   const handleCancel = () => {
@@ -298,10 +358,12 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
     setFunctionDescription('')
     setFunctionSearchTerm('')
     setSelectedMachine('')
+    setSelectedTemplates([])
     onCancel()
   }
 
   return (
+    <>
     <Modal
       title={
         <Space direction="vertical" size={4}>
@@ -419,87 +481,85 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                 <Form layout="horizontal" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }}>
                   {/* Show additional info for push function */}
                   {selectedFunction.name === 'push' && functionParams.dest && (
-                    <Alert
-                      type="info"
-                      showIcon
-                      style={{ 
-                        marginBottom: 'var(--space-md)',
-                        borderRadius: '8px',
-                        border: '1px solid var(--color-info)'
-                      }}
-                      message="Push Operation Details"
-                      description={
-                        <Space direction="vertical" size="small">
-                          <div>
-                            <Text strong>Destination Filename: </Text>
-                            <Text code>{functionParams.dest}</Text>
-                          </div>
-                          {additionalContext?.parentRepository && (
-                            <div>
-                              <Text strong>Repository Lineage: </Text>
-                              <Space>
-                                <Tag color="blue">{additionalContext.parentRepository}</Tag>
-                                <Text type="secondary">→</Text>
-                                <Tag color="#8FBC8F">{additionalContext.sourceRepository}</Tag>
-                                <Text type="secondary">→</Text>
-                                <Tag color="green">{functionParams.dest}</Tag>
+                    <Row gutter={16} style={{ marginBottom: 'var(--space-md)' }}>
+                      <Col span={functionParams.state === 'online' ? 14 : 24}>
+                        <Alert
+                          type="info"
+                          showIcon
+                          style={{
+                            borderRadius: '8px',
+                            border: '1px solid var(--color-info)',
+                            height: '100%'
+                          }}
+                          message="Push Operation Details"
+                          description={
+                            <Space direction="vertical" size="small">
+                              <div>
+                                <Text strong>Destination Filename: </Text>
+                                <Text code>{functionParams.dest}</Text>
+                              </div>
+                              {additionalContext?.parentRepository && (
+                                <div>
+                                  <Text strong>Repository Lineage: </Text>
+                                  <Space>
+                                    <Tag color="blue">{additionalContext.parentRepository}</Tag>
+                                    <Text type="secondary">→</Text>
+                                    <Tag color="#8FBC8F">{additionalContext.sourceRepository}</Tag>
+                                    <Text type="secondary">→</Text>
+                                    <Tag color="green">{functionParams.dest}</Tag>
+                                  </Space>
+                                </div>
+                              )}
+                              {!additionalContext?.parentRepository && additionalContext?.sourceRepository && (
+                                <div>
+                                  <Text strong>Source Repository: </Text>
+                                  <Tag color="#8FBC8F">{additionalContext.sourceRepository}</Tag>
+                                  <Text type="secondary"> (Original)</Text>
+                                </div>
+                              )}
+                              <div>
+                                <Text type="secondary" style={{ fontSize: '12px' }}>
+                                  {functionParams.state === 'online'
+                                    ? 'The repository will be pushed in online state (mounted).'
+                                    : 'The repository will be pushed in offline state (unmounted).'}
+                                </Text>
+                              </div>
+                            </Space>
+                          }
+                        />
+                      </Col>
+                      {functionParams.state === 'online' && (
+                        <Col span={10}>
+                          <Alert
+                            type="warning"
+                            showIcon
+                            style={{
+                              borderRadius: '8px',
+                              border: '1px solid var(--color-warning)',
+                              height: '100%'
+                            }}
+                            message={t('functions:onlinePushWarningTitle')}
+                            description={
+                              <Space direction="vertical" size="small">
+                                <Text type="secondary" style={{ fontSize: '12px' }}>
+                                  {t('functions:onlinePushWarningMessage')}
+                                </Text>
+                                <div style={{ marginTop: '8px' }}>
+                                  <a
+                                    href="https://docs.rediacc.com/concepts/repository-push-operations"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ fontSize: '12px' }}
+                                  >
+                                    {t('functions:onlinePushLearnMore')}
+                                  </a>
+                                </div>
                               </Space>
-                            </div>
-                          )}
-                          {!additionalContext?.parentRepository && additionalContext?.sourceRepository && (
-                            <div>
-                              <Text strong>Source Repository: </Text>
-                              <Tag color="#8FBC8F">{additionalContext.sourceRepository}</Tag>
-                              <Text type="secondary"> (Original)</Text>
-                            </div>
-                          )}
-                          <div>
-                            <Text type="secondary" style={{ fontSize: '12px' }}>
-                              {functionParams.state === 'online' 
-                                ? 'The repository will be pushed in online state (mounted).' 
-                                : 'The repository will be pushed in offline state (unmounted).'}
-                            </Text>
-                          </div>
-                          {functionParams.state === 'online' && (
-                            <Alert
-                              type="warning"
-                              showIcon
-                              style={{ 
-                                marginTop: 'var(--space-sm)',
-                                borderRadius: '8px',
-                                border: '1px solid var(--color-warning)'
-                              }}
-                              message="Online Push Warning"
-                              description={
-                                <Space direction="vertical" size="small">
-                                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                                    Pushing a mounted repository while services are running may cause data inconsistencies.
-                                  </Text>
-                                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                                    <strong>Potential issues:</strong>
-                                  </Text>
-                                  <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
-                                    <li style={{ fontSize: '12px' }}>
-                                      <Text type="secondary">Database services may have open transactions that could be interrupted</Text>
-                                    </li>
-                                    <li style={{ fontSize: '12px' }}>
-                                      <Text type="secondary">Applications actively writing files may result in partial or corrupted data</Text>
-                                    </li>
-                                    <li style={{ fontSize: '12px' }}>
-                                      <Text type="secondary">File locks and temporary files may be included in the snapshot</Text>
-                                    </li>
-                                  </ul>
-                                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                                    <strong>Recommendation:</strong> Online pushes are convenient for regular backups without service interruption. 
-                                    However, periodically perform offline pushes (unmount first) to ensure you have fully consistent backups for critical recovery scenarios.
-                                  </Text>
-                                </Space>
-                              }
-                            />
-                          )}
-                        </Space>
-                      }
-                    />
+                            }
+                          />
+                        </Col>
+                      )}
+                    </Row>
                   )}
                   {/* Machine Selection */}
                   {showMachineSelection && (
@@ -536,6 +596,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                           }
                           required={paramInfo.required}
                           help={paramInfo.help || ''}
+                          {...(paramInfo.ui === 'template-selector' ? { wrapperCol: { span: 24 }, labelCol: { span: 0 } } : {})}
                         >
                           {isSizeParam ? (
                             <Space.Compact style={{ width: '100%' }}>
@@ -723,6 +784,19 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                               }
                               disabled={!functionParams['sourceType']}
                               data-testid={`function-modal-param-${paramName}`}
+                            />
+                          ) : paramInfo.ui === 'template-selector' ? (
+                            <TemplateSelector
+                              value={selectedTemplates}
+                              onChange={(templateIds) => {
+                                setSelectedTemplates(Array.isArray(templateIds) ? templateIds : [])
+                                // We don't set the functionParams here yet - we'll encode it on submit
+                              }}
+                              onViewDetails={(templateName) => {
+                                setTemplateToView(templateName)
+                                setShowTemplateDetails(true)
+                              }}
+                              multiple={true}
                             />
                           ) : paramInfo.ui === 'checkbox' && paramInfo.checkboxOptions ? (
                             <Space direction="vertical" style={{ width: '100%' }}>
@@ -945,6 +1019,28 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
         </Col>
       </Row>
     </Modal>
+
+    {/* Template Preview Modal */}
+    <TemplatePreviewModal
+      visible={showTemplateDetails}
+      template={null}
+      templateName={templateToView}
+      onClose={() => {
+        setShowTemplateDetails(false)
+        setTemplateToView(null)
+      }}
+      onUseTemplate={(templateName) => {
+        const templateId = typeof templateName === 'string' ? templateName : templateName.name
+        // Add to selection if not already selected
+        if (!selectedTemplates.includes(templateId)) {
+          setSelectedTemplates([...selectedTemplates, templateId])
+        }
+        setShowTemplateDetails(false)
+        setTemplateToView(null)
+      }}
+      context="repository-creation"
+    />
+    </>
   )
 }
 

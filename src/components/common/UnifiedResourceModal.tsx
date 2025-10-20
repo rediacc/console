@@ -32,6 +32,7 @@ import {
 } from '@/utils/validation'
 import { z } from 'zod'
 import { ModalSize } from '@/types/modal'
+import { featureFlags } from '@/config/featureFlags'
 
 const { Text } = Typography
 
@@ -247,15 +248,24 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     })) || []
   }
 
-  // Clear bridge selection when region changes
+  // Clear bridge selection when region changes, or auto-select if bridge disabled
   useEffect(() => {
     if (resourceType === 'machine') {
       const subscription = form.watch((value, { name }) => {
         if (name === 'regionName' && value.regionName) {
           const currentBridge = form.getValues('bridgeName')
           const filteredBridges = getFilteredBridges(value.regionName)
-          if (currentBridge && !filteredBridges.find((b: any) => b.value === currentBridge)) {
-            form.setValue('bridgeName', '')
+
+          // If bridge feature is disabled, auto-select first available bridge
+          if (featureFlags.isEnabled('disableBridge')) {
+            if (filteredBridges.length > 0) {
+              form.setValue('bridgeName', filteredBridges[0].value)
+            }
+          } else {
+            // Normal behavior: clear bridge if it's not valid for the new region
+            if (currentBridge && !filteredBridges.find((b: any) => b.value === currentBridge)) {
+              form.setValue('bridgeName', '')
+            }
           }
         }
       })
@@ -293,14 +303,16 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       }
 
       // For machines, set default region and bridge
+      // NOTE: Even when disableBridge is enabled and bridge field is hidden,
+      // we still auto-select the first bridge to satisfy backend requirements
       if (resourceType === 'machine' && dropdownData?.regions && dropdownData.regions.length > 0) {
         const firstRegion = dropdownData.regions[0].value
         form.setValue('regionName', firstRegion)
-        
+
         const regionBridges = dropdownData.bridgesByRegion?.find(
           (region: any) => region.regionName === firstRegion
         )
-        
+
         if (regionBridges?.bridges && regionBridges.bridges.length > 0) {
           const firstBridge = regionBridges.bridges[0].value
           form.setValue('bridgeName', firstBridge)
@@ -316,6 +328,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         [`${resourceType}Name`]: existingData[`${resourceType}Name`],
         ...(resourceType === 'machine' && {
           regionName: existingData.regionName,
+          // NOTE: bridgeName is preserved even when disableBridge is enabled and field is hidden
           bridgeName: existingData.bridgeName,
         }),
         ...(resourceType === 'bridge' && {
@@ -389,9 +402,17 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   // Get form fields based on resource type and mode
   const getFormFields = (): FormFieldConfig[] => {
     const nameField = createNameField()
-    
+
     if (mode === 'edit') {
-      if (resourceType === 'machine') return [nameField, createRegionField(), createBridgeField()]
+      if (resourceType === 'machine') {
+        const fields = [nameField, createRegionField()]
+        // Hide bridge field when disableBridge flag is enabled
+        // Note: existing bridgeName value is preserved and sent to backend
+        if (!featureFlags.isEnabled('disableBridge')) {
+          fields.push(createBridgeField())
+        }
+        return fields
+      }
       if (resourceType === 'bridge') return [nameField, createRegionField()]
       // For repositories in edit mode, we still need to show the vault fields
       // so users can update credentials if needed
@@ -460,9 +481,15 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
 
     const fields = []
     if (!isTeamPreselected) fields.push(createTeamField())
-    
+
     if (resourceType === 'machine') {
-      fields.push(createRegionField(), createBridgeField(), nameField)
+      fields.push(createRegionField())
+      // Hide bridge field when disableBridge flag is enabled
+      // Note: bridgeName value is still auto-selected and sent to backend
+      if (!featureFlags.isEnabled('disableBridge')) {
+        fields.push(createBridgeField())
+      }
+      fields.push(nameField)
     } else if (resourceType === 'bridge') {
       fields.push(createRegionField(), nameField)
     } else if (resourceType === 'repository') {
