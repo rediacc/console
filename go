@@ -63,7 +63,7 @@ if [ -n "$SYSTEM_HTTP_PORT" ]; then
 fi
 export VITE_APP_VERSION=${TAG:-dev}
 # Export hCaptcha site key if configured (empty string disables captcha)
-export VITE_HCAPTCHA_SITE_KEY=${HCAPTCHA_SITE_KEY:-""}
+export VITE_HCAPTCHA_SITE_KEY=${HCAPTCHA_SITE_KEY:-"6c56894a-a4f2-485e-a250-824adfec4656"}
 
 # Function to run development server
 function dev() {
