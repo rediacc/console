@@ -161,7 +161,9 @@
   },
   "theme": {
     "dark": "Oscura",
-    "light": "Ligera"
+    "light": "Ligera",
+    "switchToDark": "Cambiar a modo oscuro",
+    "switchToLight": "Cambiar a modo claro"
   },
   "thisMonth": "este mes",
   "today": "Hoy",
