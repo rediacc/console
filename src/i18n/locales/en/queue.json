@@ -40,16 +40,25 @@
   "selectStatus": "All statuses",
   "selectTeam": "Select a team to view queue items",
   "statistics": {
+    "active": "Active",
+    "failed": "Failed",
     "processing": "Processing",
+    "stale": "Stale",
     "timeSinceAssigned": "Time Since Assigned",
+    "total": "Total",
     "totalDuration": "Total Duration"
   },
   "status": "Status",
+  "statusActive": "Active",
+  "statusAssigned": "Assigned",
   "statusCancelled": "Cancelled",
+  "statusCancelling": "Cancelling",
   "statusCompleted": "Completed",
   "statusFailed": "Failed",
   "statusPending": "Pending",
+  "statusProcessing": "Processing",
   "statusRunning": "Running",
+  "statusStale": "Stale",
   "tabs": {
     "active": {
       "description": "This section displays all active tasks including pending items waiting for assignment, tasks being processed by machines, and tasks in the process of being cancelled.",
