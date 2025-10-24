@@ -15,7 +15,7 @@ const { Text } = Typography
 const { RangePicker } = DatePicker
 
 const QueuePage: React.FC = () => {
-  const { t } = useTranslation(['queue'])
+  const { t } = useTranslation(['queue', 'common'])
   const styles = useComponentStyles()
   const [viewTeam, setViewTeam] = useState<string>('') // Team for viewing queue items
   const [activeTab, setActiveTab] = useState<string>('active') // Track which tab is active
@@ -586,7 +586,7 @@ const QueuePage: React.FC = () => {
           {/* Actions Section */}
           <Col flex="none">
             <Space size={4}>
-              <Tooltip title="Refresh">
+              <Tooltip title={t('common:actions.refresh')}>
                 <Button
                   size="small"
                   icon={<ReloadOutlined />}
@@ -598,12 +598,12 @@ const QueuePage: React.FC = () => {
               <Dropdown
                 menu={{
                   items: [
-                    { key: 'csv', label: 'Export as CSV', onClick: () => handleExport('csv') },
-                    { key: 'json', label: 'Export as JSON', onClick: () => handleExport('json') }
+                    { key: 'csv', label: t('common:exportCSV'), onClick: () => handleExport('csv') },
+                    { key: 'json', label: t('common:exportJSON'), onClick: () => handleExport('json') }
                   ]
                 }}
               >
-                <Tooltip title="Export">
+                <Tooltip title={t('common:export')}>
                   <Button
                     size="small"
                     icon={<ExportOutlined />}

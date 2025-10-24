@@ -205,6 +205,10 @@
         "repo": {
           "help": "Repository name(s), comma-separated",
           "label": "Repository"
+        },
+        "checkpoint": {
+          "help": "Restore containers from checkpoint if available (requires CRIU)",
+          "label": "Enable Checkpoint Restore"
         }
       }
     },
@@ -332,6 +336,10 @@
           "help": "Validate repository is online or offline before pushing",
           "label": "Required State"
         },
+        "checkpoint": {
+          "help": "Enable hot backup mode with checkpoint (requires CRIU, zero downtime for online repos)",
+          "label": "Enable Checkpoint"
+        },
         "to": {
           "help": "Select the destination machine or storage",
           "label": "Destination"
@@ -411,6 +419,10 @@
         "repo": {
           "help": "Repository name(s), comma-separated",
           "label": "Repository"
+        },
+        "checkpoint": {
+          "help": "Create checkpoint before unmounting (requires CRIU)",
+          "label": "Create Checkpoint"
         }
       }
     },
