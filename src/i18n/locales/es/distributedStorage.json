@@ -22,7 +22,7 @@
   "assignmentStatus": {
     "available": "Disponible",
     "clone": "Clon",
-    "cluster": "Grupo",
+    "cluster": "Clúster",
     "image": "Imagen"
   },
   "clones": {
@@ -58,27 +58,27 @@
     "title": "Clústeres"
   },
   "common": {
-    "actions": "Comportamiento",
+    "actions": "Acciones",
     "cancel": "Cancelar",
-    "close": "Cerca",
+    "close": "Cerrar",
     "confirm": "Confirmar",
     "delete": "Borrar",
     "details": "Detalles",
     "edit": "Editar",
     "error": "Error",
     "loading": "Cargando...",
-    "refresh": "Refrescar",
-    "save": "Ahorrar",
+    "refresh": "Actualizar",
+    "save": "Guardar",
     "success": "Éxito"
   },
   "dashboard": {
     "avgMachinesPerCluster": "Promedio de máquinas/clúster",
-    "clusterSummary": "Resumen del grupo",
+    "clusterSummary": "Resumen del Clúster",
     "machineUtilization": "Utilización de la máquina",
     "subtitle": "{{total}} máquinas totales en todos los equipos",
     "teamBreakdown": "Distribución de máquinas de equipo",
     "title": "Máquinas de almacenamiento distribuido",
-    "totalClusters": "Total de conglomerados",
+    "totalClusters": "Total de Clústeres",
     "utilizationDetails": "{{used}} de {{total}} máquinas en uso"
   },
   "description": "Administre clústeres, grupos, imágenes e instantáneas de almacenamiento distribuido",
@@ -97,7 +97,7 @@
     "title": "Imágenes"
   },
   "machineSection": {
-    "manageAssignment": "Administrar tarea",
+    "manageAssignment": "Gestionar Asignación",
     "notAssigned": "No asignado a ningún recurso de almacenamiento distribuido",
     "title": "Almacenamiento distribuido",
     "viewDetails": "Ver detalles"
@@ -105,7 +105,7 @@
   "machines": {
     "actions": {
       "exportReport": "Informe de exportación",
-      "removeAssignment": "Eliminar tarea",
+      "removeAssignment": "Eliminar Asignación",
       "viewDetails": "Ver detalles"
     },
     "filters": {
@@ -124,28 +124,28 @@
   },
   "pools": {
     "configureVault": "Configurar bóveda",
-    "create": "Crear grupo",
-    "createPool": "Crear grupo",
+    "create": "Crear Conjunto",
+    "createPool": "Crear Conjunto",
     "crush": "Regla de aplastamiento",
-    "deletePool": "Eliminar grupo",
-    "editPool": "Editar grupo",
+    "deletePool": "Eliminar Conjunto",
+    "editPool": "Editar Conjunto",
     "minSize": "Tamaño mínimo",
-    "name": "Nombre de la piscina",
-    "noPools": "No se encontraron piscinas",
+    "name": "Nombre del Conjunto",
+    "noPools": "No se encontraron conjuntos",
     "pgNum": "Número de PG",
     "pgpNum": "Número PGP",
-    "poolDetails": "Detalles de la piscina",
-    "poolId": "ID de piscina",
+    "poolDetails": "Detalles del Conjunto",
+    "poolId": "ID del Conjunto",
     "size": "Tamaño",
-    "title": "Quinielas"
+    "title": "Conjuntos"
   },
   "snapshots": {
     "title": "Instantáneas"
   },
   "tabs": {
     "clusters": "Clústeres",
-    "machines": "maquinas",
-    "pools": "Quinielas"
+    "machines": "Máquinas",
+    "pools": "Conjuntos"
   },
   "title": "Almacenamiento distribuido",
   "warnings": {
