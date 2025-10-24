@@ -896,7 +896,7 @@ const SystemPage: React.FC = () => {
   // Permission columns
   const permissionColumns = [
     {
-      title: 'Group Name',
+      title: tSystem('tables.permissionGroups.groupName'),
       dataIndex: 'permissionGroupName',
       key: 'permissionGroupName',
       render: (text: string) => (
@@ -907,7 +907,7 @@ const SystemPage: React.FC = () => {
       ),
     },
     {
-      title: 'Users',
+      title: tSystem('tables.permissionGroups.users'),
       dataIndex: 'userCount',
       key: 'userCount',
       width: 100,
@@ -918,7 +918,7 @@ const SystemPage: React.FC = () => {
       ),
     },
     {
-      title: 'Permissions',
+      title: tSystem('tables.permissionGroups.permissions'),
       dataIndex: 'permissionCount',
       key: 'permissionCount',
       width: 120,
@@ -929,12 +929,12 @@ const SystemPage: React.FC = () => {
       ),
     },
     {
-      title: 'Actions',
+      title: tSystem('tables.permissionGroups.actions'),
       key: 'actions',
       width: 350,
       render: (_: any, record: PermissionGroup) => (
         <Space>
-          <Tooltip title="Permissions">
+          <Tooltip title={tSystem('actions.permissions')}>
             <Button
               type="primary"
               size="small"
@@ -944,10 +944,10 @@ const SystemPage: React.FC = () => {
                 setIsManageModalOpen(true)
               }}
               data-testid={`system-permission-group-manage-button-${record.permissionGroupName}`}
-              aria-label="Permissions"
+              aria-label={tSystem('actions.permissions')}
             />
           </Tooltip>
-          <Tooltip title="Assign User">
+          <Tooltip title={tSystem('actions.assignUser')}>
             <Button
               type="primary"
               size="small"
@@ -957,10 +957,10 @@ const SystemPage: React.FC = () => {
                 setIsAssignModalOpen(true)
               }}
               data-testid={`system-permission-group-assign-user-button-${record.permissionGroupName}`}
-              aria-label="Assign User"
+              aria-label={tSystem('actions.assignUser')}
             />
           </Tooltip>
-          <Tooltip title="Trace">
+          <Tooltip title={tSystem('actions.trace')}>
             <Button
               type="primary"
               size="small"
@@ -974,7 +974,7 @@ const SystemPage: React.FC = () => {
                 })
               }}
               data-testid={`system-permission-group-trace-button-${record.permissionGroupName}`}
-              aria-label="Trace"
+              aria-label={tSystem('actions.trace')}
             />
           </Tooltip>
           <Popconfirm
@@ -985,15 +985,15 @@ const SystemPage: React.FC = () => {
             cancelText="No"
             okButtonProps={{ danger: true }}
           >
-            <Tooltip title="Delete">
-              <Button 
+            <Tooltip title={tCommon('actions.delete')}>
+              <Button
                 type="primary"
                 danger
                 size="small"
                 icon={<DeleteOutlined />}
                 loading={deleteGroupMutation.isPending}
                 data-testid={`system-permission-group-delete-button-${record.permissionGroupName}`}
-                aria-label="Delete"
+                aria-label={tCommon('actions.delete')}
               />
             </Tooltip>
           </Popconfirm>
@@ -1005,7 +1005,7 @@ const SystemPage: React.FC = () => {
   // User columns
   const userColumns = [
     {
-      title: 'Email',
+      title: tSystem('tables.users.email'),
       dataIndex: 'userEmail',
       key: 'userEmail',
       render: (email: string) => (
@@ -1016,7 +1016,7 @@ const SystemPage: React.FC = () => {
       ),
     },
     {
-      title: 'Status',
+      title: tSystem('tables.users.status'),
       dataIndex: 'activated',
       key: 'activated',
       width: 120,
@@ -1029,7 +1029,7 @@ const SystemPage: React.FC = () => {
       ),
     },
     {
-      title: 'Permission Group',
+      title: tSystem('tables.users.permissionGroup'),
       dataIndex: 'permissionGroupName',
       key: 'permissionGroupName',
       render: (group: string) => group ? (
@@ -1039,18 +1039,18 @@ const SystemPage: React.FC = () => {
       ),
     },
     {
-      title: 'Last Active',
+      title: tSystem('tables.users.lastActive'),
       dataIndex: 'lastActive',
       key: 'lastActive',
       render: (date: string) => date ? new Date(date).toLocaleDateString() : 'Never',
     },
     {
-      title: 'Actions',
+      title: tSystem('tables.users.actions'),
       key: 'actions',
       width: 300,
       render: (_: any, record: User) => (
         <Space>
-          <Tooltip title="Permissions">
+          <Tooltip title={tSystem('actions.permissions')}>
             <Button
               type="primary"
               size="small"
@@ -1060,10 +1060,10 @@ const SystemPage: React.FC = () => {
                 setSelectedUserGroup(record.permissionGroupName || '')
               }}
               data-testid={`system-user-permissions-button-${record.userEmail}`}
-              aria-label="Permissions"
+              aria-label={tSystem('actions.permissions')}
             />
           </Tooltip>
-          <Tooltip title="Trace">
+          <Tooltip title={tSystem('actions.trace')}>
             <Button
               type="primary"
               size="small"
@@ -1077,7 +1077,7 @@ const SystemPage: React.FC = () => {
                 })
               }}
               data-testid={`system-user-trace-button-${record.userEmail}`}
-              aria-label="Trace"
+              aria-label={tSystem('actions.trace')}
             />
           </Tooltip>
           {record.activated && (
@@ -1089,15 +1089,15 @@ const SystemPage: React.FC = () => {
               cancelText="No"
               okButtonProps={{ danger: true }}
             >
-              <Tooltip title="Deactivate">
-                <Button 
+              <Tooltip title={tSystem('actions.deactivate')}>
+                <Button
                   type="primary"
                   danger
                   size="small"
                   icon={<StopOutlined />}
                   loading={deactivateUserMutation.isPending}
                   data-testid={`system-user-deactivate-button-${record.userEmail}`}
-                  aria-label="Deactivate"
+                  aria-label={tSystem('actions.deactivate')}
                 />
               </Tooltip>
             </Popconfirm>
@@ -1113,7 +1113,7 @@ const SystemPage: React.FC = () => {
   // Team columns
   const teamColumns = [
     {
-      title: 'Team Name',
+      title: tSystem('tables.teams.teamName'),
       dataIndex: 'teamName',
       key: 'teamName',
       render: (text: string) => (
@@ -1124,7 +1124,7 @@ const SystemPage: React.FC = () => {
       ),
     },
     {
-      title: 'Members',
+      title: tSystem('tables.teams.members'),
       dataIndex: 'memberCount',
       key: 'memberCount',
       width: 100,
@@ -1135,7 +1135,7 @@ const SystemPage: React.FC = () => {
       ),
     },
     {
-      title: 'Machines',
+      title: tSystem('tables.teams.machines'),
       dataIndex: 'machineCount',
       key: 'machineCount',
       width: 100,
@@ -1147,7 +1147,7 @@ const SystemPage: React.FC = () => {
       ),
     },
     {
-      title: 'Repositories',
+      title: tSystem('tables.teams.repositories'),
       dataIndex: 'repoCount',
       key: 'repoCount',
       width: 120,
@@ -1159,7 +1159,7 @@ const SystemPage: React.FC = () => {
       ),
     },
     {
-      title: 'Storage',
+      title: tSystem('tables.teams.storage'),
       dataIndex: 'storageCount',
       key: 'storageCount',
       width: 100,
@@ -1171,29 +1171,29 @@ const SystemPage: React.FC = () => {
       ),
     },
     ...(featureFlags.isEnabled('vaultVersionColumns') ? [{
-      title: 'Vault Version',
+      title: tSystem('tables.teams.vaultVersion'),
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
       width: 120,
       render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>,
     }] : []),
     {
-      title: 'Actions',
+      title: tSystem('tables.teams.actions'),
       key: 'actions',
       width: 350,
       render: (_: any, record: Team) => (
         <Space>
-          <Tooltip title="Edit">
-            <Button 
-              type="primary" 
+          <Tooltip title={tSystem('actions.edit')}>
+            <Button
+              type="primary"
               size="small"
               icon={<EditOutlined />}
               onClick={() => openUnifiedModal('team', 'edit', record)}
               data-testid={`system-team-edit-button-${record.teamName}`}
-              aria-label="Edit"
+              aria-label={tSystem('actions.edit')}
             />
           </Tooltip>
-          <Tooltip title="Members">
+          <Tooltip title={tSystem('actions.members')}>
             <Button
               type="primary"
               size="small"
@@ -1203,10 +1203,10 @@ const SystemPage: React.FC = () => {
                 setIsManageTeamModalOpen(true)
               }}
               data-testid={`system-team-members-button-${record.teamName}`}
-              aria-label="Members"
+              aria-label={tSystem('actions.members')}
             />
           </Tooltip>
-          <Tooltip title="Trace">
+          <Tooltip title={tSystem('actions.trace')}>
             <Button
               type="primary"
               size="small"
@@ -1220,7 +1220,7 @@ const SystemPage: React.FC = () => {
                 })
               }}
               data-testid={`system-team-trace-button-${record.teamName}`}
-              aria-label="Trace"
+              aria-label={tSystem('actions.trace')}
             />
           </Tooltip>
           <Popconfirm
@@ -1231,15 +1231,15 @@ const SystemPage: React.FC = () => {
             cancelText="No"
             okButtonProps={{ danger: true }}
           >
-            <Tooltip title="Delete">
-              <Button 
-                type="primary" 
+            <Tooltip title={tCommon('actions.delete')}>
+              <Button
+                type="primary"
                 danger
                 size="small"
                 icon={<DeleteOutlined />}
                 loading={deleteTeamMutation.isPending}
                 data-testid={`system-team-delete-button-${record.teamName}`}
-                aria-label="Delete"
+                aria-label={tCommon('actions.delete')}
               />
             </Tooltip>
           </Popconfirm>
@@ -1296,7 +1296,7 @@ const SystemPage: React.FC = () => {
               aria-label={tOrg('general.edit')}
             />
           </Tooltip>
-          <Tooltip title="Trace">
+          <Tooltip title={tSystem('actions.trace')}>
             <Button
               type="primary"
               size="small"
@@ -1310,7 +1310,7 @@ const SystemPage: React.FC = () => {
                 })
               }}
               data-testid={`system-region-trace-button-${record.regionName}`}
-              aria-label="Trace"
+              aria-label={tSystem('actions.trace')}
             />
           </Tooltip>
           <Popconfirm
@@ -1416,31 +1416,31 @@ const SystemPage: React.FC = () => {
               aria-label={tOrg('general.edit')}
             />
           </Tooltip>
-          <Tooltip title="Token">
+          <Tooltip title={tSystem('actions.token')}>
             <Button
               type="primary"
               size="small"
               icon={<KeyOutlined />}
               onClick={() => setBridgeCredentialsModal({ open: true, bridge: record })}
               data-testid={`system-bridge-token-button-${record.bridgeName}`}
-              aria-label="Token"
+              aria-label={tSystem('actions.token')}
             />
           </Tooltip>
-          <Tooltip title="Reset Auth">
-            <Button 
-              type="primary" 
+          <Tooltip title={tSystem('actions.resetAuth')}>
+            <Button
+              type="primary"
               size="small"
               icon={<SyncOutlined />}
-              onClick={() => setResetAuthModal({ 
-                open: true, 
-                bridgeName: record.bridgeName, 
-                isCloudManaged: false 
+              onClick={() => setResetAuthModal({
+                open: true,
+                bridgeName: record.bridgeName,
+                isCloudManaged: false
               })}
               data-testid={`system-bridge-reset-auth-button-${record.bridgeName}`}
-              aria-label="Reset Auth"
+              aria-label={tSystem('actions.resetAuth')}
             />
           </Tooltip>
-          <Tooltip title="Trace">
+          <Tooltip title={tSystem('actions.trace')}>
             <Button
               type="primary"
               size="small"
@@ -1454,7 +1454,7 @@ const SystemPage: React.FC = () => {
                 })
               }}
               data-testid={`system-bridge-trace-button-${record.bridgeName}`}
-              aria-label="Trace"
+              aria-label={tSystem('actions.trace')}
             />
           </Tooltip>
           <Popconfirm
