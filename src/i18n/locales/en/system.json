@@ -2,16 +2,19 @@
   "actions": {
     "addMember": "Add Member",
     "addPermission": "Add Permission",
+    "assignUser": "Assign User",
     "changePassword": "Change Password",
     "configureVault": "Configure Vault",
     "createGroup": "Create Group",
     "createTeam": "Create Team",
     "createUser": "Create User",
     "deactivate": "Deactivate",
+    "edit": "Edit",
     "members": "Members",
     "permissions": "Permissions",
     "resetAuth": "Reset Auth",
     "token": "Token",
+    "trace": "Trace",
     "twoFactorAuth": "Two-Factor Authentication"
   },
   "architecture": {
@@ -179,6 +182,30 @@
   },
   "regionsInfrastructure": {
     "title": "Regions & Infrastructure"
+  },
+  "tables": {
+    "permissionGroups": {
+      "actions": "Actions",
+      "groupName": "Group Name",
+      "permissions": "Permissions",
+      "users": "Users"
+    },
+    "teams": {
+      "actions": "Actions",
+      "machines": "Machines",
+      "members": "Members",
+      "repositories": "Repositories",
+      "storage": "Storage",
+      "teamName": "Team Name",
+      "vaultVersion": "Vault Version"
+    },
+    "users": {
+      "actions": "Actions",
+      "email": "Email",
+      "lastActive": "Last Active",
+      "permissionGroup": "Permission Group",
+      "status": "Status"
+    }
   },
   "userSessions": {
     "active": "Active",

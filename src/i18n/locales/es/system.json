@@ -2,16 +2,19 @@
   "actions": {
     "addMember": "Agregar miembro",
     "addPermission": "Agregar permiso",
+    "assignUser": "Asignar usuario",
     "changePassword": "Cambiar la contraseña",
     "configureVault": "Configurar bóveda",
     "createGroup": "Crear grupo",
     "createTeam": "Crear equipo",
     "createUser": "Crear usuario",
     "deactivate": "Desactivar",
+    "edit": "Editar",
     "members": "Miembros",
     "permissions": "Permisos",
     "resetAuth": "Restablecer autenticación",
-    "token": "Simbólica",
+    "token": "Token",
+    "trace": "Rastro",
     "twoFactorAuth": "Autenticación de dos factores"
   },
   "architecture": {
@@ -179,6 +182,30 @@
   },
   "regionsInfrastructure": {
     "title": "Regiones e infraestructura"
+  },
+  "tables": {
+    "permissionGroups": {
+      "actions": "Acciones",
+      "groupName": "Nombre del grupo",
+      "permissions": "Permisos",
+      "users": "Usuarios"
+    },
+    "teams": {
+      "actions": "Acciones",
+      "machines": "Máquinas",
+      "members": "Miembros",
+      "repositories": "Repositorios",
+      "storage": "Almacenamiento",
+      "teamName": "Nombre del equipo",
+      "vaultVersion": "Versión de bóveda"
+    },
+    "users": {
+      "actions": "Acciones",
+      "email": "Correo electrónico",
+      "lastActive": "Última actividad",
+      "permissionGroup": "Grupo de permisos",
+      "status": "Estado"
+    }
   },
   "userSessions": {
     "active": "Activa",
