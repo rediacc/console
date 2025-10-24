@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next'
 import { formatTimestampAsIs } from '@/utils/timeUtils'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 
-const { Text } = Typography
+const { Text, Title } = Typography
 const { RangePicker } = DatePicker
 
 const QueuePage: React.FC = () => {
@@ -400,6 +400,7 @@ const QueuePage: React.FC = () => {
 
   return (
     <div style={{ padding: 24 }} data-testid="queue-page-container">
+      <Title level={2} style={{ ...styles.heading2, marginBottom: 16 }}>{t('title')}</Title>
       {/* Ultra-Compact Filter & Stats Bar */}
       <Card
         size="small"
