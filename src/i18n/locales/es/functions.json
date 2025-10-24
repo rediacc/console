@@ -160,7 +160,7 @@
     },
     "down": {
       "description": "Detener servicios de repositorio",
-      "name": "abajo",
+      "name": "detener",
       "params": {
         "option": {
           "help": "Opciones adicionales",
@@ -310,7 +310,7 @@
     },
     "push": {
       "description": "Enviar el repositorio al almacenamiento remoto",
-      "name": "empujar",
+      "name": "enviar",
       "params": {
         "dest": {
           "help": "Nombre del archivo de copia de seguridad",
@@ -412,7 +412,7 @@
     },
     "up": {
       "description": "Iniciar servicios de repositorio usando Rediaccfile",
-      "name": "arriba",
+      "name": "iniciar",
       "params": {
         "option": {
           "help": "Opciones (por ejemplo, solo preparación)",
