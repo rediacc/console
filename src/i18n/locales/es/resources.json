@@ -157,6 +157,8 @@
     "useDockerHelp": "Ejecute el comando usando la imagen de Docker rediacc/cli",
     "useLoginAuth": "Utilice autenticación de inicio de sesión en lugar de token",
     "useLoginAuthHelp": "Inicie sesión con {{email}} (se le solicitará la contraseña)",
+    "useNetworkHost": "Usar red de host (--network=host)",
+    "useNetworkHostHelp": "Requerido para acceso a API localhost (ej., http://localhost:7322)",
     "verify": "Verificar",
     "verifyHelp": "Utilice sumas de verificación para verificar todas las transferencias",
     "vscodeDescription": "Inicie VS Code con conexión remota SSH al repositorio",
