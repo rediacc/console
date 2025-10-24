@@ -498,6 +498,7 @@
     "machines": "Machines",
     "placeholders": {
       "enterTeamName": "Enter team name",
+      "searchTeams": "Search teams by name...",
       "selectTeam": "Select team"
     },
     "resourcesInTeam": "Resources in {{team}}",
