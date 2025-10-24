@@ -325,7 +325,7 @@
     "failedToSubmit": "No se pudo enviar la solicitud de lista de repositorios",
     "fetchingRepositories": "Obteniendo repositorios...",
     "filePaths": "Rutas de archivos",
-    "functionsFor": "Funciones para {{nombre}}",
+    "functionsFor": "Funciones para {{name}}",
     "guid": "GUID del repositorio",
     "guidHelperText": "Opcional: especifique un GUID personalizado para el repositorio. Déjelo vacío para que se genere automáticamente.",
     "hasActiveClonesMessage": "Este repositorio '{{name}}' tiene {{count}} clones activos que dependen de él.",
@@ -431,7 +431,7 @@
     "waitingInQueue": "Esperando en cola..."
   },
   "resourceTabs": {
-    "machines": "maquinas",
+    "machines": "Máquinas",
     "machinesDescription": "Gestione y supervise sus máquinas",
     "repositories": "Repositorio (credenciales)",
     "repositoriesDescription": "Administrar las credenciales y configuraciones del repositorio",
@@ -495,7 +495,7 @@
     "createTeam": "Agregar equipo",
     "deleteTeam": "Eliminar equipo",
     "editTeam": "Editar equipo",
-    "machines": "maquinas",
+    "machines": "Máquinas",
     "placeholders": {
       "enterTeamName": "Introduce el nombre del equipo",
       "selectTeam": "Seleccionar equipo"
@@ -507,7 +507,7 @@
     "selectTeamToView": "Seleccione un equipo arriba para ver y administrar sus recursos",
     "teamName": "Nombre del equipo",
     "teamResources": "Recursos del equipo",
-    "title": "equipos",
+    "title": "Equipos",
     "validation": {
       "teamNamePattern": "El nombre del equipo solo puede contener letras, números, guiones y guiones bajos.",
       "teamNameRequired": "Por favor ingresa el nombre del equipo"
