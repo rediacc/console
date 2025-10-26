@@ -22,6 +22,8 @@
   },
   "onlyStale": "Yalnızca Eski Öğeler",
   "options": "Seçenekler",
+  "priorityTooltipP1": "Zaman aşımı: 33 saniye (yalnızca hızlı görevler)",
+  "priorityTooltipTier": "Zaman aşımı: 2-96 saat (abonelik katmanına bağlıdır)",
   "queueManager": {
     "alreadyHasPriority1": "{{bridgeName}} köprüsünde zaten çalışan en yüksek öncelikli bir göreviniz var. Lütfen tamamlanmasını bekleyin.",
     "buttonLabel": "En Yüksek Öncelik",

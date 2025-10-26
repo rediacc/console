@@ -34,6 +34,24 @@
   "description": "Beschreibung (optional)",
   "descriptionPlaceholder": "Fügen Sie eine benutzerdefinierte Beschreibung für dieses Warteschlangenelement hinzu",
   "functions": {
+    "apply_template": {
+      "description": "Wenden Sie eine Vorlagenkonfiguration auf dieses Repository an",
+      "name": "Vorlagen",
+      "params": {
+        "grand": {
+          "help": "GUID des großen Repositorys",
+          "label": "Großes Repository"
+        },
+        "repo": {
+          "help": "Repository-Name",
+          "label": "Repository"
+        },
+        "tmpl": {
+          "help": "Wählen Sie eine Vorlage aus, die Sie auf das Repository anwenden möchten",
+          "label": "Vorlage"
+        }
+      }
+    },
     "clone": {
       "description": "Klonen Sie das Repository auf demselben Computer",
       "name": "Klon"
@@ -408,6 +426,9 @@
     }
   },
   "missingRequiredParams": "Bitte geben Sie alle erforderlichen Parameter ein: {{params}}",
+  "onlinePushLearnMore": "Erfahren Sie mehr über Online- und Offline-Pushs →",
+  "onlinePushWarningMessage": "Das Pushen eines gemounteten Repositorys während der Ausführung von Diensten kann zu Dateninkonsistenzen führen.",
+  "onlinePushWarningTitle": "Online-Push-Warnung",
   "priority": "Priorität",
   "priorityAboveNormal": "Über dem Normalwert",
   "priorityBelowNormal": "Normal",
@@ -417,6 +438,8 @@
   "priorityHighWarning": "Hohe Priorität (2)",
   "priorityHighest": "Höchste",
   "priorityHighestDescription": "Durch das Senden einer Aufgabe mit der höchsten Priorität werden alle bestehenden Aufgaben mit der höchsten Priorität automatisch abgebrochen. Nur für dringende kritische Aufgaben verwenden, die sofortige Aufmerksamkeit erfordern.",
+  "priorityHighestTimeout": "P1-Aufgaben-Timeout nach 33 Sekunden",
+  "priorityHighestTimeoutWarning": "Am besten für schnelle Vorgänge wie SSH-Tests, Gesundheitsprüfungen und Statusabfragen geeignet. Für längere kritische Aufgaben verwenden Sie P2 (tierbasiertes Timeout: 2–96 Stunden).",
   "priorityHighestWarning": "Höchste Priorität (1)",
   "priorityLow": "Niedrig",
   "priorityLowDescription": "Standardverarbeitungsgeschwindigkeit. Empfohlen für die meisten Einsätze und alltäglichen Aufgaben.",
@@ -426,6 +449,15 @@
   "priorityNormal": "Über dem Normalwert",
   "priorityNormalDescription": "Schneller als die Standardverarbeitungsgeschwindigkeit. Verwenden Sie diese Option für Aufgaben, die eine schnellere Verarbeitung als normal erfordern.",
   "priorityNormalWarning": "Über der normalen Priorität (3)",
+  "priorityPopoverLevels": "Prioritätsstufen:",
+  "priorityPopoverP1": "33-Sekunden-Timeout. Für schnelle Vorgänge wie SSH-Tests, Gesundheitsprüfungen und Statusabfragen. Reservierte Slots zur sofortigen Ausführung.",
+  "priorityPopoverP2": "Tier-Timeout (2–96 Stunden). Reservierte Slots. Für wichtige kritische Aufgaben.",
+  "priorityPopoverP3": "Tier-Timeout (2–96 Stunden). Normale Slots. Für Aufgaben, die eine schnellere Bearbeitung erfordern.",
+  "priorityPopoverP4": "Tier-Timeout (2–96 Stunden). Standardverarbeitung für die meisten Vorgänge.",
+  "priorityPopoverP5": "Tier-Timeout (2–96 Stunden). Für Batch-Operationen ohne zeitliche Einschränkungen.",
+  "priorityPopoverTitle": "Prioritätssystem",
+  "quickTaskBadge": "Schnelle Aufgabe",
+  "quickTaskDescription": "In weniger als 30 Sekunden abgeschlossen",
   "searchFunctions": "Suchfunktionen...",
   "selectFunction": "Wählen Sie Funktion",
   "selectFunctionToConfigure": "Wählen Sie eine Funktion zum Konfigurieren aus",

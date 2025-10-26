@@ -111,6 +111,7 @@
   "nestedObjectEditor": {
     "Active": "Активный",
     "Add": "Добавлять",
+    "Add New Entry": "Добавить новую запись",
     "Array": "Множество",
     "Container Images Detected": "Обнаружены образы контейнеров",
     "Delete this entry?": "Удалить эту запись?",
@@ -138,7 +139,13 @@
     "clearAll": "Очистить все",
     "empty": "Нет уведомлений",
     "markAllRead": "Отметить все как прочитанное",
-    "title": "Уведомления"
+    "title": "Уведомления",
+    "types": {
+      "error": "Ошибка",
+      "info": "Информация",
+      "success": "Успех",
+      "warning": "Предупреждение"
+    }
   },
   "refresh": "Обновить",
   "status": {
