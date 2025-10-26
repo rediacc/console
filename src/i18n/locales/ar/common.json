@@ -111,6 +111,7 @@
   "nestedObjectEditor": {
     "Active": "نشيط",
     "Add": "يضيف",
+    "Add New Entry": "إضافة إدخال جديد",
     "Array": "صفيف",
     "Container Images Detected": "تم اكتشاف صور الحاوية",
     "Delete this entry?": "هل تريد حذف هذا الإدخال؟",
@@ -138,7 +139,13 @@
     "clearAll": "مسح الكل",
     "empty": "لا الإخطارات",
     "markAllRead": "وضع علامة على الكل كمقروءة",
-    "title": "إشعارات"
+    "title": "إشعارات",
+    "types": {
+      "error": "خطأ",
+      "info": "معلومة",
+      "success": "نجاح",
+      "warning": "تحذير"
+    }
   },
   "refresh": "ينعش",
   "status": {

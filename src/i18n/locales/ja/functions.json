@@ -34,6 +34,24 @@
   "description": "説明 (オプション)",
   "descriptionPlaceholder": "このキューアイテムのカスタム説明を追加します",
   "functions": {
+    "apply_template": {
+      "description": "テンプレート設定をこのリポジトリに適用します",
+      "name": "テンプレート",
+      "params": {
+        "grand": {
+          "help": "グランド リポジトリ GUID",
+          "label": "グランドリポジトリ"
+        },
+        "repo": {
+          "help": "リポジトリ名",
+          "label": "リポジトリ"
+        },
+        "tmpl": {
+          "help": "リポジトリに適用するテンプレートを選択します",
+          "label": "テンプレート"
+        }
+      }
+    },
     "clone": {
       "description": "同じマシン上にリポジトリのクローンを作成する",
       "name": "クローン"
@@ -408,6 +426,9 @@
     }
   },
   "missingRequiredParams": "必須パラメータをすべて入力してください: {{params}}",
+  "onlinePushLearnMore": "オンライン プッシュとオフライン プッシュの詳細についてはこちらをご覧ください→",
+  "onlinePushWarningMessage": "サービスの実行中にマウントされたリポジトリをプッシュすると、データの不整合が発生する可能性があります。",
+  "onlinePushWarningTitle": "オンラインプッシュの警告",
   "priority": "優先度",
   "priorityAboveNormal": "正常以上",
   "priorityBelowNormal": "普通",
@@ -417,6 +438,8 @@
   "priorityHighWarning": "高優先度 (2)",
   "priorityHighest": "最高",
   "priorityHighestDescription": "最も優先度の高いタスクを送信すると、既存の最も優先度の高いタスクが自動的にキャンセルされます。 すぐに対処する必要がある緊急の重要なタスクにのみ使用してください。",
+  "priorityHighestTimeout": "P1 タスクは 33 秒後にタイムアウトします",
+  "priorityHighestTimeoutWarning": "SSH テスト、ヘルスチェック、ステータスクエリなどの素早い操作に最適です。 長時間にわたる重要なタスクの場合は、P2 (階層ベースのタイムアウト: 2 ～ 96 時間) を使用します。",
   "priorityHighestWarning": "最優先(1)",
   "priorityLow": "低い",
   "priorityLowDescription": "標準的な処理速度。 ほとんどの操作や日常業務に推奨されます。",
@@ -426,6 +449,15 @@
   "priorityNormal": "正常以上",
   "priorityNormalDescription": "標準の処理速度よりも高速です。 通常よりも迅速な処理が必要なタスクに使用します。",
   "priorityNormalWarning": "通常以上の優先度 (3)",
+  "priorityPopoverLevels": "優先レベル:",
+  "priorityPopoverP1": "33秒のタイムアウト。 SSH テスト、ヘルスチェック、ステータスクエリなどの迅速な操作用。 即時実行用に予約されたスロット。",
+  "priorityPopoverP2": "層のタイムアウト (2 ～ 96 時間)。 予約済みスロット。 重要な重要なタスクに。",
+  "priorityPopoverP3": "層のタイムアウト (2 ～ 96 時間)。 通常のスロット。 より高速な処理が必要なタスク向け。",
+  "priorityPopoverP4": "層のタイムアウト (2 ～ 96 時間)。 ほとんどの操作の標準処理。",
+  "priorityPopoverP5": "層のタイムアウト (2 ～ 96 時間)。 時間制限のないバッチ操作向け。",
+  "priorityPopoverTitle": "優先制度",
+  "quickTaskBadge": "クイックタスク",
+  "quickTaskDescription": "30秒以内に完了します",
   "searchFunctions": "検索機能...",
   "selectFunction": "機能選択",
   "selectFunctionToConfigure": "設定する機能を選択してください",

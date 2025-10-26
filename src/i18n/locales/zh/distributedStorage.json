@@ -1,5 +1,34 @@
 {
+  "assignment": {
+    "actions": {
+      "assignToCluster": "分配给集群",
+      "assignedToClone": "分配给克隆",
+      "assignedToImage": "分配给图像",
+      "reassignedImage": "重新分配的图像",
+      "removedFromClone": "从克隆中删除",
+      "removedFromCluster": "从集群中删除"
+    },
+    "assignedTo": "分配给{{type}}：{{name}}",
+    "assignedToClone": "分配给克隆",
+    "assignedToCluster": "分配给集群",
+    "assignedToImage": "分配给图像",
+    "available": "可用的",
+    "currentAssignment": "当前任务",
+    "history": "作业历史",
+    "none": "没有任何",
+    "status": "分配状态",
+    "viewStatus": "查看分配状态"
+  },
+  "assignmentStatus": {
+    "available": "可用的",
+    "clone": "克隆",
+    "cluster": "簇",
+    "image": "图像"
+  },
   "clones": {
+    "addMachine": "添加机器",
+    "assignMachines": "分配机器",
+    "assignedMachines": "分配的机器",
     "clone": "Clone",
     "cloneName": "Clone Name",
     "clones": "Clones",
@@ -8,38 +37,86 @@
     "createdSuccess": "Clone created successfully",
     "deleteError": "Failed to delete clone",
     "deletedSuccess": "Clone deleted successfully",
+    "exportMachines": "出口机器",
+    "machineManager": "机器经理",
     "noClones": "No clones",
-    "parentSnapshot": "Parent Snapshot"
+    "noMachinesAssigned": "没有计算机分配给此克隆",
+    "parentSnapshot": "Parent Snapshot",
+    "removeMachine": "移除机器",
+    "removeSelectedMachines": "删除选定的机器",
+    "searchMachines": "搜索机...",
+    "statistics": "统计数据",
+    "title": "克隆",
+    "totalMachines": "机器总数"
   },
   "clusters": {
     "active": "Active",
+    "assignMachines": "分配机器",
     "assignedMachines": "Assigned Machines",
+    "availableMachines": "可用机器",
     "cluster": "Cluster",
+    "clusterDetails": "集群详细信息",
     "clusterName": "Cluster Name",
     "clusterNamePlaceholder": "Enter cluster name",
     "clusterNameRequired": "Cluster name is required",
     "clusterNodes": "Cluster Nodes",
     "clusters": "Clusters",
+    "configureVault": "配置保管库",
     "confirmDelete": "Delete Cluster",
     "create": "Create Cluster",
+    "createCluster": "创建集群",
     "createDescription": "Use the Remote button to run cluster creation functions. This will only create the cluster configuration entry.",
     "createError": "Failed to create cluster",
     "createInfo": "Important",
     "createdSuccess": "Cluster created successfully",
+    "deleteCluster": "删除集群",
     "deleteError": "Failed to delete cluster",
     "deleteWarning": "Are you sure you want to delete cluster '{{name}}'? This action cannot be undone.",
     "deletedSuccess": "Cluster deleted successfully",
+    "editCluster": "编辑集群",
     "error": "Error",
+    "fsid": "FSID",
     "inactive": "Inactive",
     "machineName": "Machine Name",
+    "manageMachines": "管理机器",
     "manager": "Manager",
     "monitor": "Monitor",
+    "monitorHosts": "监控主机",
+    "name": "集群名称",
     "noClusters": "No clusters configured yet",
+    "noMachinesAssigned": "没有机器分配给该集群",
     "osd": "OSD",
+    "removeFromCluster": "从集群中删除",
     "role": "Role",
+    "secretKey": "秘密钥匙",
     "status": "Status",
+    "title": "集群",
     "updateError": "Failed to update cluster",
     "updatedSuccess": "Cluster updated successfully"
+  },
+  "common": {
+    "actions": "行动",
+    "cancel": "取消",
+    "close": "关闭",
+    "confirm": "确认",
+    "delete": "删除",
+    "details": "细节",
+    "edit": "编辑",
+    "error": "错误",
+    "loading": "加载中...",
+    "refresh": "刷新",
+    "save": "节省",
+    "success": "成功"
+  },
+  "dashboard": {
+    "avgMachinesPerCluster": "平均机器/集群",
+    "clusterSummary": "集群总结",
+    "machineUtilization": "机器利用率",
+    "subtitle": "所有团队的机器总数为 {{total}}",
+    "teamBreakdown": "团队机器分配",
+    "title": "分布式存储机",
+    "totalClusters": "总簇数",
+    "utilizationDetails": "正在使用的机器中有 {{used}} 台，共 {{total}} 台"
   },
   "description": "Manage Ceph distributed storage clusters, pools, and images",
   "errors": {
@@ -77,6 +154,7 @@
     "snapshot_rollback": "Rollback to Snapshot"
   },
   "images": {
+    "assignedMachine": "指定机器",
     "create": "Create Image",
     "createError": "Failed to create image",
     "createdSuccess": "Image created successfully",
@@ -86,17 +164,52 @@
     "image": "Image",
     "imageName": "Image Name",
     "images": "Images",
+    "name": "图片名称",
     "noImages": "No images in this pool",
+    "reassignMachine": "重新分配机器",
+    "reassignmentModal": {
+      "currentAssignment": "当前任务",
+      "noMachineAssigned": "当前没有分配机器",
+      "selectNewMachine": "选择新机器",
+      "title": "将图像重新分配给机器",
+      "warning": "警告：将映像重新分配给其他计算机将使其在当前计算机上不可用，直到迁移数据为止。"
+    },
+    "reassignmentSuccess": "图像机分配已成功更新",
     "size": "Size",
+    "title": "图片",
     "updateError": "Failed to update image",
     "updatedSuccess": "Image updated successfully"
   },
+  "machineSection": {
+    "manageAssignment": "管理分配",
+    "notAssigned": "未分配给任何分布式存储资源",
+    "title": "分布式存储",
+    "viewDetails": "查看详情"
+  },
   "machines": {
+    "actions": {
+      "exportReport": "出口报告",
+      "removeAssignment": "删除分配",
+      "viewDetails": "查看详情"
+    },
     "assignError": "Failed to assign machine",
     "assignMachine": "Assign Machine",
     "assignedSuccess": "Machine assigned successfully",
+    "filters": {
+      "allStatuses": "所有状态",
+      "assignmentStatus": "分配状态",
+      "searchPlaceholder": "搜索机..."
+    },
     "selectMachines": "Select Machines",
     "selectMachinesDescription": "Select machines to assign to this cluster",
+    "summary": {
+      "assignedToClones": "分配给克隆",
+      "assignedToClusters": "分配给集群",
+      "assignedToImages": "分配给图像",
+      "available": "可用的",
+      "title": "机器可用性",
+      "total": "机器总数"
+    },
     "unassignError": "Failed to unassign machine",
     "unassignMachine": "Unassign Machine",
     "unassignedSuccess": "Machine unassigned successfully"
@@ -110,23 +223,36 @@
     "cluster": "Cluster",
     "clusterPrefix": "Cluster",
     "clusterRequired": "Cluster selection is required",
+    "configureVault": "配置保管库",
     "confirmDelete": "Delete Pool",
     "create": "Create Pool",
     "createDescription": "Use the Remote button to run pool creation functions. This will only create the pool configuration entry.",
     "createError": "Failed to create pool",
     "createInfo": "Important",
+    "createPool": "创建池",
     "createdSuccess": "Pool created successfully",
+    "crush": "粉碎规则",
     "deleteError": "Failed to delete pool",
+    "deletePool": "删除池",
     "deleteWarning": "Are you sure you want to delete pool '{{name}}'? This action cannot be undone.",
     "deletedSuccess": "Pool deleted successfully",
+    "editPool": "编辑池",
+    "minSize": "最小尺寸",
+    "name": "矿池名称",
     "noPools": "No pools configured yet",
+    "pgNum": "PG号",
+    "pgpNum": "PGP 号码",
     "pool": "Pool",
+    "poolDetails": "矿池详情",
+    "poolId": "池 ID",
     "poolName": "Pool Name",
     "poolNamePlaceholder": "Enter pool name",
     "poolNameRequired": "Pool name is required",
     "pools": "Pools",
     "rbdImages": "RBD Images",
     "selectCluster": "Select a cluster",
+    "size": "尺寸",
+    "title": "泳池",
     "updateError": "Failed to update pool",
     "updatedSuccess": "Pool updated successfully"
   },
@@ -140,10 +266,12 @@
     "protected": "Protected",
     "snapshot": "Snapshot",
     "snapshotName": "Snapshot Name",
-    "snapshots": "Snapshots"
+    "snapshots": "Snapshots",
+    "title": "快照"
   },
   "tabs": {
     "clusters": "Clusters",
+    "machines": "机器",
     "pools": "Pools"
   },
   "title": "Distributed Storage",
@@ -153,5 +281,13 @@
     "managePool": "Manage pool configuration and images",
     "runFunction": "Execute remote Ceph functions",
     "viewAuditTrace": "View audit history for this item"
+  },
+  "warnings": {
+    "dataLoss": "警告：如果迁移不当，删除计算机可能会导致数据丢失。",
+    "exclusivity": "计算机一次只能分配给一种资源（集群、映像或克隆）。",
+    "exclusivityClone": "该机器当前已分配给克隆。 必须先将其从克隆中删除，然后才能将其分配到其他地方。",
+    "exclusivityCluster": "该机器当前已分配到一个集群。 必须先将其从集群中删除，然后才能将其分配到其他地方。",
+    "exclusivityImage": "该机器当前已分配给一个映像。 必须先重新分配映像，然后才能将本机用于其他地方。",
+    "reassignment": "重新分配资源需要仔细规划以避免服务中断。"
   }
 }

@@ -111,6 +111,7 @@
   "nestedObjectEditor": {
     "Active": "Activa",
     "Add": "Agregar",
+    "Add New Entry": "Agregar nueva entrada",
     "Array": "Formación",
     "Container Images Detected": "Imágenes de contenedor detectadas",
     "Delete this entry?": "¿Eliminar esta entrada?",
@@ -140,10 +141,10 @@
     "markAllRead": "Marcar todo como leído",
     "title": "Notificaciones",
     "types": {
-      "success": "Éxito",
       "error": "Error",
-      "warning": "Advertencia",
-      "info": "Información"
+      "info": "Información",
+      "success": "Éxito",
+      "warning": "Advertencia"
     }
   },
   "refresh": "Refrescar",

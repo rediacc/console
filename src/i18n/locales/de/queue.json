@@ -22,6 +22,8 @@
   },
   "onlyStale": "Nur veraltete Artikel",
   "options": "Optionen",
+  "priorityTooltipP1": "Timeout: 33 Sekunden (nur schnelle Aufgaben)",
+  "priorityTooltipTier": "Timeout: 2–96 Stunden (abhängig von der Abonnementstufe)",
   "queueManager": {
     "alreadyHasPriority1": "Auf der Brücke {{bridgeName}} wird bereits eine Aufgabe mit der höchsten Priorität ausgeführt. Bitte warten Sie, bis der Vorgang abgeschlossen ist.",
     "buttonLabel": "Höchste Priorität",

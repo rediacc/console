@@ -34,6 +34,28 @@
   "description": "描述（可选）",
   "descriptionPlaceholder": "为此队列项添加自定义描述",
   "functions": {
+    "apply_template": {
+      "description": "将模板配置应用到此存储库",
+      "name": "模板",
+      "params": {
+        "grand": {
+          "help": "大存储库 GUID",
+          "label": "大存储库"
+        },
+        "repo": {
+          "help": "存储库名称",
+          "label": "存储库"
+        },
+        "tmpl": {
+          "help": "选择要应用于存储库的模板",
+          "label": "模板"
+        }
+      }
+    },
+    "clone": {
+      "description": "在同一台机器上克隆存储库",
+      "name": "克隆"
+    },
     "container_inspect": {
       "description": "检查Docker容器详情",
       "name": "容器检查",
@@ -147,6 +169,24 @@
         "repo": {
           "help": "仓库名称（多个用逗号分隔）",
           "label": "仓库"
+        }
+      }
+    },
+    "expand": {
+      "description": "在线扩展存储库存储，零停机时间",
+      "name": "扩张",
+      "params": {
+        "grand": {
+          "help": "大存储库 GUID",
+          "label": "大存储库"
+        },
+        "repo": {
+          "help": "存储库名称",
+          "label": "存储库"
+        },
+        "size": {
+          "help": "新大小（例如 20G）- 必须大于当前大小",
+          "label": "新尺寸"
         }
       }
     },
@@ -386,6 +426,9 @@
     }
   },
   "missingRequiredParams": "请填写所有必需参数：{{params}}",
+  "onlinePushLearnMore": "了解有关在线推送与离线推送的更多信息 →",
+  "onlinePushWarningMessage": "在服务运行时推送已挂载的存储库可能会导致数据不一致。",
+  "onlinePushWarningTitle": "在线推送警告",
   "priority": "优先级",
   "priorityAboveNormal": "高于正常",
   "priorityBelowNormal": "正常",
@@ -395,6 +438,8 @@
   "priorityHighWarning": "高优先级 (2)",
   "priorityHighest": "最高",
   "priorityHighestDescription": "提交最高优先级任务将自动取消您现有的任何最高优先级任务。仅用于需要立即关注的紧急关键任务。",
+  "priorityHighestTimeout": "P1 任务在 33 秒后超时",
+  "priorityHighestTimeoutWarning": "最适合 SSH 测试、运行状况检查和状态查询等快速操作。 对于较长的关键任务，请使用 P2（基于层的超时：2-96 小时）。",
   "priorityHighestWarning": "最高优先级 (1)",
   "priorityLow": "低",
   "priorityLowDescription": "标准处理速度。推荐用于大多数操作和日常任务。",
@@ -404,6 +449,15 @@
   "priorityNormal": "高于正常",
   "priorityNormalDescription": "比标准处理速度更快。用于需要比正常更快处理的任务。",
   "priorityNormalWarning": "高于正常优先级 (3)",
+  "priorityPopoverLevels": "优先级：",
+  "priorityPopoverP1": "33 秒超时。 用于 SSH 测试、健康检查和状态查询等快速操作。 为立即执行保留的插槽。",
+  "priorityPopoverP2": "层超时（2-96 小时）。 预留槽位。 用于重要的关键任务。",
+  "priorityPopoverP3": "层超时（2-96 小时）。 普通插槽。 对于需要更快处理的任务。",
+  "priorityPopoverP4": "层超时（2-96 小时）。 大多数操作的标准处理。",
+  "priorityPopoverP5": "层超时（2-96 小时）。 适用于没有时间限制的批量操作。",
+  "priorityPopoverTitle": "优先权制度",
+  "quickTaskBadge": "快速任务",
+  "quickTaskDescription": "30 秒内完成",
   "searchFunctions": "搜索功能...",
   "selectFunction": "选择功能",
   "selectFunctionToConfigure": "选择要配置的功能",

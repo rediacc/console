@@ -145,10 +145,10 @@ export const DESIGN_TOKENS = {
     MODAL: '0 20px 25px rgba(0,0,0,0.1)', // Modals use XL shadow
     // CSS variable references
     BASE: 'var(--shadow-base)',
-    // Specific shadows (keeping olive green theme)
+    // Specific shadows (olive green theme)
     BUTTON_HOVER: '0 6px 20px rgba(85, 107, 47, 0.35)',
     BUTTON_DEFAULT: '0 4px 12px rgba(85, 107, 47, 0.25)',
-    ERROR_FIELD: '0 4px 16px rgba(255, 107, 107, 0.25)',
+    ERROR_FIELD: '0 4px 16px rgba(220, 53, 69, 0.25)',
     SIDEBAR: '2px 0 8px rgba(0,0,0,0.06)',
     SIDEBAR_DARK: '2px 0 8px rgba(0,0,0,0.3)',
     HEADER: '0 2px 8px rgba(0,0,0,0.06)',

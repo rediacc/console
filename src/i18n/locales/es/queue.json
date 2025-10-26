@@ -22,6 +22,8 @@
   },
   "onlyStale": "Sólo artículos obsoletos",
   "options": "Opciones",
+  "priorityTooltipP1": "Tiempo de espera: 33 segundos (solo tareas rápidas)",
+  "priorityTooltipTier": "Tiempo de espera: 2-96 horas (depende del nivel de suscripción)",
   "queueManager": {
     "alreadyHasPriority1": "Ya tienes una tarea de máxima prioridad ejecutándose en el puente {{bridgeName}}. Espere a que se complete.",
     "buttonLabel": "Prioridad más alta",

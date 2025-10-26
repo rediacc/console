@@ -22,6 +22,8 @@
   },
   "onlyStale": "العناصر التي لا معنى لها فقط",
   "options": "خيارات",
+  "priorityTooltipP1": "المهلة: 33 ثانية (المهام السريعة فقط)",
+  "priorityTooltipTier": "المهلة: 2-96 ساعة (يعتمد على فئة الاشتراك)",
   "queueManager": {
     "alreadyHasPriority1": "لديك بالفعل مهمة ذات أولوية قصوى تعمل على الجسر {{bridgeName}}. يرجى الانتظار حتى يكتمل.",
     "buttonLabel": "الأولوية القصوى",

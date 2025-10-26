@@ -34,6 +34,24 @@
   "description": "Açıklama (isteğe bağlı)",
   "descriptionPlaceholder": "Bu kuyruk öğesi için özel bir açıklama ekleyin",
   "functions": {
+    "apply_template": {
+      "description": "Bu depoya bir şablon yapılandırması uygulayın",
+      "name": "şablonlar",
+      "params": {
+        "grand": {
+          "help": "Büyük depo GUID'si",
+          "label": "Büyük Depo"
+        },
+        "repo": {
+          "help": "Depo adı",
+          "label": "Depo"
+        },
+        "tmpl": {
+          "help": "Depoya uygulanacak şablonu seçin",
+          "label": "Şablon"
+        }
+      }
+    },
     "clone": {
       "description": "Depoyu aynı makinede klonlayın",
       "name": "klon"
@@ -408,6 +426,9 @@
     }
   },
   "missingRequiredParams": "Lütfen gerekli tüm parametreleri girin: {{params}}",
+  "onlinePushLearnMore": "Çevrimiçi ve çevrimdışı itmeler hakkında daha fazla bilgi edinin →",
+  "onlinePushWarningMessage": "Hizmetler çalışırken takılı bir havuzun itilmesi veri tutarsızlıklarına neden olabilir.",
+  "onlinePushWarningTitle": "Çevrimiçi Anlık Uyarı",
   "priority": "Öncelik",
   "priorityAboveNormal": "Normalin üstünde",
   "priorityBelowNormal": "Normal",
@@ -417,6 +438,8 @@
   "priorityHighWarning": "Yüksek Öncelik (2)",
   "priorityHighest": "En yüksek",
   "priorityHighestDescription": "En yüksek öncelikli bir görevi gönderdiğinizde, mevcut en yüksek öncelikli görevlerinizin tümü otomatik olarak iptal edilir. Yalnızca acil müdahale gerektiren acil kritik görevler için kullanın.",
+  "priorityHighestTimeout": "P1 görevleri 33 saniye sonra zaman aşımına uğradı",
+  "priorityHighestTimeoutWarning": "SSH testleri, durum kontrolleri ve durum sorguları gibi hızlı işlemler için en iyisi. Daha uzun kritik görevler için P2'yi kullanın (katmana dayalı zaman aşımı: 2-96 saat).",
   "priorityHighestWarning": "En Yüksek Öncelik (1)",
   "priorityLow": "Düşük",
   "priorityLowDescription": "Standart işlem hızı. Çoğu operasyon ve günlük görevler için önerilir.",
@@ -426,6 +449,15 @@
   "priorityNormal": "Normalin üstünde",
   "priorityNormalDescription": "Standart işlem hızından daha hızlı. Normalden daha hızlı işlenmesi gereken görevler için kullanın.",
   "priorityNormalWarning": "Normal Önceliğin Üstünde (3)",
+  "priorityPopoverLevels": "Öncelik Seviyeleri:",
+  "priorityPopoverP1": "33 saniyelik mola. SSH testleri, durum kontrolleri ve durum sorguları gibi hızlı işlemler için. Anında yürütme için ayrılmış yuvalar.",
+  "priorityPopoverP2": "Katman zaman aşımı (2-96 saat). Rezerve slotlar. Önemli kritik görevler için.",
+  "priorityPopoverP3": "Katman zaman aşımı (2-96 saat). Normal yuvalar. Daha hızlı işlem gerektiren görevler için.",
+  "priorityPopoverP4": "Katman zaman aşımı (2-96 saat). Çoğu işlem için standart işleme.",
+  "priorityPopoverP5": "Katman zaman aşımı (2-96 saat). Zaman kısıtlaması olmayan toplu işlemler için.",
+  "priorityPopoverTitle": "Öncelik Sistemi",
+  "quickTaskBadge": "Hızlı Görev",
+  "quickTaskDescription": "30 saniyeden kısa sürede tamamlanır",
   "searchFunctions": "Arama işlevleri...",
   "selectFunction": "İşlev Seç",
   "selectFunctionToConfigure": "Yapılandırmak için bir işlev seçin",
