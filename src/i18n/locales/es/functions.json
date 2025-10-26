@@ -34,6 +34,24 @@
   "description": "Descripción (opcional)",
   "descriptionPlaceholder": "Agregue una descripción personalizada para este elemento de la cola",
   "functions": {
+    "apply_template": {
+      "description": "Aplicar una configuración de plantilla a este repositorio",
+      "name": "plantillas",
+      "params": {
+        "grand": {
+          "help": "GUID del gran repositorio",
+          "label": "Gran repositorio"
+        },
+        "repo": {
+          "help": "Nombre del repositorio",
+          "label": "Repositorio"
+        },
+        "tmpl": {
+          "help": "Seleccione una plantilla para aplicar al repositorio",
+          "label": "Plantilla"
+        }
+      }
+    },
     "clone": {
       "description": "Clonar repositorio en la misma máquina",
       "name": "clon"
@@ -408,6 +426,9 @@
     }
   },
   "missingRequiredParams": "Complete todos los parámetros requeridos: {{params}}",
+  "onlinePushLearnMore": "Obtenga más información sobre los push en línea y fuera de línea →",
+  "onlinePushWarningMessage": "Enviar un repositorio montado mientras se ejecutan los servicios puede provocar inconsistencias en los datos.",
+  "onlinePushWarningTitle": "Advertencia de inserción en línea",
   "priority": "Prioridad",
   "priorityAboveNormal": "Por encima de lo normal",
   "priorityBelowNormal": "Normal",
@@ -417,6 +438,8 @@
   "priorityHighWarning": "Alta prioridad (2)",
   "priorityHighest": "más alto",
   "priorityHighestDescription": "Al enviar una tarea de mayor prioridad se cancelarán automáticamente todas las tareas existentes de mayor prioridad que tenga. Úselo solo para tareas críticas urgentes que necesitan atención inmediata.",
+  "priorityHighestTimeout": "Las tareas P1 se agotan después de 33 segundos.",
+  "priorityHighestTimeoutWarning": "Lo mejor para operaciones rápidas como pruebas SSH, controles de estado y consultas de estado. Para tareas críticas más largas, utilice P2 (tiempo de espera basado en niveles: 2-96 horas).",
   "priorityHighestWarning": "Prioridad más alta (1)",
   "priorityLow": "Bajo",
   "priorityLowDescription": "Velocidad de procesamiento estándar. Recomendado para la mayoría de operaciones y tareas del día a día.",
@@ -426,6 +449,15 @@
   "priorityNormal": "Por encima de lo normal",
   "priorityNormalDescription": "Más rápido que la velocidad de procesamiento estándar. Úselo para tareas que necesitan un procesamiento más rápido de lo normal.",
   "priorityNormalWarning": "Prioridad superior a lo normal (3)",
+  "priorityPopoverLevels": "Niveles de prioridad:",
+  "priorityPopoverP1": "Tiempo muerto de 33 segundos. Para operaciones rápidas como pruebas SSH, controles de estado y consultas de estado. Slots reservados para ejecución inmediata.",
+  "priorityPopoverP2": "Tiempo de espera de nivel (2-96 h). Plazas reservadas. Para tareas críticas importantes.",
+  "priorityPopoverP3": "Tiempo de espera de nivel (2-96 h). Ranuras normales. Para tareas que necesitan un procesamiento más rápido.",
+  "priorityPopoverP4": "Tiempo de espera de nivel (2-96 h). Procesamiento estándar para la mayoría de las operaciones.",
+  "priorityPopoverP5": "Tiempo de espera de nivel (2-96 h). Para operaciones por lotes sin limitaciones de tiempo.",
+  "priorityPopoverTitle": "Sistema de Prioridad",
+  "quickTaskBadge": "Tarea rápida",
+  "quickTaskDescription": "Se completa en menos de 30 segundos.",
   "searchFunctions": "Funciones de búsqueda...",
   "selectFunction": "Seleccionar función",
   "selectFunctionToConfigure": "Seleccione una función para configurar",

@@ -111,6 +111,7 @@
   "nestedObjectEditor": {
     "Active": "Aktif",
     "Add": "Eklemek",
+    "Add New Entry": "Yeni Giriş Ekle",
     "Array": "Sıralamak",
     "Container Images Detected": "Kapsayıcı Görüntüleri Algılandı",
     "Delete this entry?": "Bu giriş silinsin mi?",
@@ -138,7 +139,13 @@
     "clearAll": "Tümünü temizle",
     "empty": "Bildirim yok",
     "markAllRead": "Tümünü okundu olarak işaretle",
-    "title": "Bildirimler"
+    "title": "Bildirimler",
+    "types": {
+      "error": "Hata",
+      "info": "Bilgi",
+      "success": "Başarı",
+      "warning": "Uyarı"
+    }
   },
   "refresh": "Yenile",
   "status": {

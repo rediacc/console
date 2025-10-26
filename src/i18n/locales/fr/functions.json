@@ -34,6 +34,24 @@
   "description": "Description (facultatif)",
   "descriptionPlaceholder": "Ajouter une description personnalisée pour cet élément de file d'attente",
   "functions": {
+    "apply_template": {
+      "description": "Appliquer une configuration de modèle à ce référentiel",
+      "name": "modèles",
+      "params": {
+        "grand": {
+          "help": "GUID du grand référentiel",
+          "label": "Grand dépôt"
+        },
+        "repo": {
+          "help": "Nom du référentiel",
+          "label": "Dépôt"
+        },
+        "tmpl": {
+          "help": "Sélectionnez un modèle à appliquer au référentiel",
+          "label": "Modèle"
+        }
+      }
+    },
     "clone": {
       "description": "Cloner le référentiel sur la même machine",
       "name": "cloner"
@@ -408,6 +426,9 @@
     }
   },
   "missingRequiredParams": "Veuillez remplir tous les paramètres requis : {{params}}",
+  "onlinePushLearnMore": "En savoir plus sur les push en ligne et hors ligne →",
+  "onlinePushWarningMessage": "Le fait de pousser un référentiel monté pendant que les services sont en cours d'exécution peut entraîner des incohérences de données.",
+  "onlinePushWarningTitle": "Avertissement push en ligne",
   "priority": "Priorité",
   "priorityAboveNormal": "Au-dessus de la normale",
   "priorityBelowNormal": "Normale",
@@ -417,6 +438,8 @@
   "priorityHighWarning": "Haute priorité (2)",
   "priorityHighest": "Le plus haut",
   "priorityHighestDescription": "La soumission d’une tâche la plus prioritaire annulera automatiquement toutes les tâches existantes ayant la plus haute priorité. À utiliser uniquement pour les tâches critiques urgentes nécessitant une attention immédiate.",
+  "priorityHighestTimeout": "Délai d'expiration des tâches P1 après 33 secondes",
+  "priorityHighestTimeoutWarning": "Idéal pour les opérations rapides telles que les tests SSH, les contrôles de santé et les requêtes d'état. Pour les tâches critiques plus longues, utilisez P2 (délai d'expiration basé sur le niveau : 2 à 96 heures).",
   "priorityHighestWarning": "Priorité la plus élevée (1)",
   "priorityLow": "Faible",
   "priorityLowDescription": "Vitesse de traitement standard. Recommandé pour la plupart des opérations et tâches quotidiennes.",
@@ -426,6 +449,15 @@
   "priorityNormal": "Au-dessus de la normale",
   "priorityNormalDescription": "Plus rapide que la vitesse de traitement standard. À utiliser pour les tâches nécessitant un traitement plus rapide que la normale.",
   "priorityNormalWarning": "Au-dessus de la priorité normale (3)",
+  "priorityPopoverLevels": "Niveaux de priorité :",
+  "priorityPopoverP1": "Délai d'attente de 33 secondes. Pour des opérations rapides telles que les tests SSH, les contrôles de santé et les requêtes d'état. Emplacements réservés pour une exécution immédiate.",
+  "priorityPopoverP2": "Délai d'expiration du niveau (2-96 h). Emplacements réservés. Pour les tâches critiques importantes.",
+  "priorityPopoverP3": "Délai d'expiration du niveau (2-96 h). Machines à sous normales. Pour les tâches nécessitant un traitement plus rapide.",
+  "priorityPopoverP4": "Délai d'expiration du niveau (2-96 h). Traitement standard pour la plupart des opérations.",
+  "priorityPopoverP5": "Délai d'expiration du niveau (2-96 h). Pour des opérations par lots sans contrainte de temps.",
+  "priorityPopoverTitle": "Système de priorité",
+  "quickTaskBadge": "Tâche rapide",
+  "quickTaskDescription": "Se termine en moins de 30 secondes",
   "searchFunctions": "Fonctions de recherche...",
   "selectFunction": "Sélectionner une fonction",
   "selectFunctionToConfigure": "Sélectionnez une fonction à configurer",

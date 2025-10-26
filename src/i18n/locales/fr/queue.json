@@ -22,6 +22,8 @@
   },
   "onlyStale": "Uniquement les articles périmés",
   "options": "Possibilités",
+  "priorityTooltipP1": "Délai d'expiration : 33 secondes (tâches rapides uniquement)",
+  "priorityTooltipTier": "Délai d'expiration : 2 à 96 heures (dépend du niveau d'abonnement)",
   "queueManager": {
     "alreadyHasPriority1": "Une tâche de la plus haute priorité est déjà en cours d'exécution sur le pont {{bridgeName}}. Veuillez attendre qu'il soit terminé.",
     "buttonLabel": "Priorité la plus élevée",

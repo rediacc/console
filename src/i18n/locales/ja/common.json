@@ -111,6 +111,7 @@
   "nestedObjectEditor": {
     "Active": "アクティブ",
     "Add": "追加",
+    "Add New Entry": "新しいエントリを追加",
     "Array": "配列",
     "Container Images Detected": "コンテナイメージが検出されました",
     "Delete this entry?": "このエントリを削除しますか?",
@@ -138,7 +139,13 @@
     "clearAll": "すべてクリア",
     "empty": "通知はありません",
     "markAllRead": "すべて既読としてマークする",
-    "title": "通知"
+    "title": "通知",
+    "types": {
+      "error": "エラー",
+      "info": "情報",
+      "success": "成功",
+      "warning": "警告"
+    }
   },
   "refresh": "リフレッシュ",
   "status": {

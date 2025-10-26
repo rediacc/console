@@ -22,6 +22,8 @@
   },
   "onlyStale": "古いアイテムのみ",
   "options": "オプション",
+  "priorityTooltipP1": "タイムアウト: 33 秒 (クイックタスクのみ)",
+  "priorityTooltipTier": "タイムアウト: 2 ～ 96 時間 (サブスクリプション層によって異なります)",
   "queueManager": {
     "alreadyHasPriority1": "すでにブリッジ {{bridgeName}} で最も優先度の高いタスクが実行されています。 完了するまでお待ちください。",
     "buttonLabel": "最優先",

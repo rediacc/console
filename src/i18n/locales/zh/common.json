@@ -1,24 +1,35 @@
 {
   "actions": {
     "addToQueue": "添加到队列",
+    "advanced": "先进的",
     "back": "返回",
     "cancel": "取消",
+    "clearSelection": "清除选择",
     "close": "关闭",
     "create": "创建",
+    "createResource": "创建{{资源}}",
     "delete": "删除",
     "edit": "编辑",
+    "editResource": "编辑{{资源}}",
+    "editVault": "编辑保管库",
     "exitFullscreen": "退出全屏",
     "fullscreen": "全屏",
+    "manage": "管理",
     "refresh": "刷新",
+    "remote": "偏僻的",
+    "remove": "消除",
     "reset": "重置",
     "retry": "重试",
+    "runFunction": "运行功能",
     "save": "保存",
     "search": "搜索",
+    "trace": "痕迹",
     "viewTrace": "查看跟踪"
   },
   "close": "关闭",
   "copiedToClipboard": "已复制到剪贴板",
   "copyFailed": "复制到剪贴板失败",
+  "current": "当前的",
   "dashboard": {
     "availablePlans": "可用计划",
     "comparePlansDescription": "比较不同订阅层级的功能和价格",
@@ -50,12 +61,16 @@
     },
     "tooltip": "生成值"
   },
+  "fields": {
+    "vault": "保险库配置"
+  },
   "general": {
     "cancel": "取消",
     "defaultsApplied": "已应用默认值",
     "important": "重要",
     "loading": "加载中...",
     "showingRecords": "显示第 {{start}}-{{end}} 条记录，共 {{total}} 条",
+    "vaultVersion": "保险库版本",
     "versionFormat": "v{{version}}"
   },
   "language": {
@@ -83,9 +98,13 @@
   "navigation": {
     "architecture": "架构",
     "audit": "审计",
+    "closeMobileMenu": "关闭移动菜单",
     "dashboard": "仪表板",
+    "distributedStorage": "分布式存储",
     "logout": "退出",
+    "mainNavigation": "主导航",
     "marketplace": "Marketplace",
+    "openMobileMenu": "打开手机菜单",
     "queue": "队列",
     "resources": "资源",
     "system": "系统"
@@ -93,6 +112,7 @@
   "nestedObjectEditor": {
     "Active": "激活",
     "Add": "添加",
+    "Add New Entry": "添加新条目",
     "Array": "数组",
     "Container Images Detected": "检测到容器镜像",
     "Delete this entry?": "删除此条目？",
@@ -114,11 +134,19 @@
     "Yes": "是"
   },
   "no": "否",
+  "noMatchingResults": "没有匹配结果",
+  "none": "没有任何",
   "notifications": {
     "clearAll": "清除全部",
     "empty": "没有通知",
     "markAllRead": "全部标为已读",
-    "title": "通知"
+    "title": "通知",
+    "types": {
+      "error": "错误",
+      "info": "信息",
+      "success": "成功",
+      "warning": "警告"
+    }
   },
   "refresh": "刷新",
   "status": {
@@ -138,11 +166,13 @@
   },
   "thisMonth": "本月",
   "today": "今天",
+  "total": "全部的",
   "uiMode": {
     "expert": "专家",
     "simple": "简单",
     "switching": "切换到{{mode}}模式..."
   },
+  "utilized": "已利用",
   "vaultEditor": {
     "advanced": "高级",
     "enterJsonArray": "输入JSON数组",
@@ -163,6 +193,56 @@
         "ip": {
           "description": "桥接服务器的IP地址",
           "label": "IP地址"
+        }
+      },
+      "CLONE": {
+        "description": "配置 RBD 克隆设置",
+        "features": {
+          "description": "克隆的 RBD 功能",
+          "label": "特征"
+        },
+        "parent_image": {
+          "description": "父图像的名称",
+          "label": "家长形象"
+        },
+        "parent_pool": {
+          "description": "包含父图像的池",
+          "label": "家长池"
+        },
+        "parent_snapshot": {
+          "description": "父快照的名称",
+          "label": "家长快照"
+        },
+        "size": {
+          "description": "克隆图像的大小",
+          "label": "克隆大小"
+        }
+      },
+      "CLUSTER": {
+        "config": {
+          "description": "其他集群配置选项",
+          "label": "配置"
+        },
+        "description": "配置 Ceph 分布式存储集群设置",
+        "fsid": {
+          "description": "Ceph集群的唯一标识符（UUID格式）",
+          "label": "文件系统ID"
+        },
+        "mds": {
+          "description": "MDS（元数据服务器）节点列表",
+          "label": "MDS 节点"
+        },
+        "mgrs": {
+          "description": "集群中管理节点列表",
+          "label": "管理节点"
+        },
+        "monitors": {
+          "description": "集群中监控节点列表",
+          "label": "监控节点"
+        },
+        "osds": {
+          "description": "OSD（对象存储守护进程）节点列表",
+          "label": "OSD节点"
         }
       },
       "COMPANY": {
@@ -196,6 +276,33 @@
         },
         "description": "组织范围设置的公司配置"
       },
+      "IMAGE": {
+        "data_pool": {
+          "description": "用于存储图像数据的单独池",
+          "label": "数据池"
+        },
+        "description": "配置 RBD 图像设置",
+        "features": {
+          "description": "为图像启用的 RBD 功能",
+          "label": "特征"
+        },
+        "object_size": {
+          "description": "图像内物体的大小",
+          "label": "物体尺寸"
+        },
+        "size": {
+          "description": "RBD图像的大小（例如10G、1T）",
+          "label": "图像尺寸"
+        },
+        "stripe_count": {
+          "description": "图像的条纹数",
+          "label": "条纹数"
+        },
+        "stripe_unit": {
+          "description": "图像的条带单元大小",
+          "label": "条带单元"
+        }
+      },
       "MACHINE": {
         "datastore": {
           "description": "用于存储数据的目录路径。如果位于BTRFS文件系统上，将使用原生功能。否则，将创建BTRFS存储池文件并挂载在此处，以启用快照和压缩功能",
@@ -225,6 +332,33 @@
         "user": {
           "description": "用于连接的SSH用户名",
           "label": "用户名"
+        }
+      },
+      "POOL": {
+        "application": {
+          "description": "池的应用程序类型（例如 rbd、cephfs）",
+          "label": "应用"
+        },
+        "crush_rule": {
+          "description": "数据放置的 CRUSH 规则名称",
+          "label": "粉碎规则"
+        },
+        "description": "配置 Ceph 存储池设置",
+        "min_size": {
+          "description": "I/O 所需的最小副本数",
+          "label": "最小尺寸"
+        },
+        "pg_num": {
+          "description": "池的归置组数量",
+          "label": "归置组"
+        },
+        "pgp_num": {
+          "description": "用于安置目的的安置组数量",
+          "label": "PGP 号码"
+        },
+        "size": {
+          "description": "池中对象的副本数",
+          "label": "复制大小"
         }
       },
       "REGION": {
@@ -274,6 +408,21 @@
         "timezone": {
           "description": "计划执行的时区",
           "label": "时区"
+        }
+      },
+      "SNAPSHOT": {
+        "description": "配置 RBD 快照设置",
+        "protected": {
+          "description": "快照是否受到保护以防止删除",
+          "label": "受保护"
+        },
+        "size": {
+          "description": "快照的大小",
+          "label": "快照大小"
+        },
+        "timestamp": {
+          "description": "快照的创建时间戳",
+          "label": "时间戳"
         }
       },
       "STORAGE": {
@@ -358,6 +507,7 @@
     "saveVaultConfiguration": "保存保险库配置",
     "sshPasswordRequiredWhenNoKey": "初始密钥设置需要SSH密码",
     "systemCompatibility": {
+      "available": "可用的",
       "btrfsAvailable": "BTRFS 可用",
       "compatibilityStatus": "兼容性状态",
       "compatible": "兼容",
@@ -365,8 +515,14 @@
       "kernelVersion": "内核版本",
       "knownIssues": "已知问题",
       "no": "否",
+      "notInstalled": "未安装",
       "operatingSystem": "操作系统",
+      "osSetup": "操作系统设置",
+      "passwordRequired": "需要密码",
       "recommendations": "建议",
+      "setupCompleted": "设置完成",
+      "setupRequired": "需要设置",
+      "sudoAvailable": "须藤可用",
       "systemInfo": "系统信息",
       "title": "系统兼容性",
       "unknown": "未知",
@@ -389,6 +545,10 @@
     "vaultVersion": "保险库版本：",
     "versionAutoIncrement": "保存时版本将自动递增",
     "versionWillIncrement": "版本将递增到 {{version}}"
+  },
+  "warnings": {
+    "sandboxEnvironment": "沙盒环境",
+    "sandboxMessage": "更新期间数据可能会重置。 仅用于测试。"
   },
   "yes": "是",
   "yesterday": "昨天"

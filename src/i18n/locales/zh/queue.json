@@ -22,6 +22,8 @@
   },
   "onlyStale": "仅过期项",
   "options": "选项",
+  "priorityTooltipP1": "超时：33 秒（仅限快速任务）",
+  "priorityTooltipTier": "超时：2-96 小时（取决于订阅级别）",
   "queueManager": {
     "alreadyHasPriority1": "您已在桥接 {{bridgeName}} 上运行最高优先级任务。请等待其完成。",
     "buttonLabel": "最高优先级",
