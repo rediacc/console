@@ -439,13 +439,13 @@ const QueuePage: React.FC = () => {
                 maxTagCount="responsive"
                 data-testid="queue-filter-status"
               >
-                <Select.Option value="PENDING">Pending</Select.Option>
-                <Select.Option value="ACTIVE">Active</Select.Option>
-                <Select.Option value="STALE">Stale</Select.Option>
-                <Select.Option value="CANCELLING">Cancelling</Select.Option>
-                <Select.Option value="COMPLETED">Completed</Select.Option>
-                <Select.Option value="FAILED">Failed</Select.Option>
-                <Select.Option value="CANCELLED">Cancelled</Select.Option>
+                <Select.Option value="PENDING">{t('queue:statusPending')}</Select.Option>
+                <Select.Option value="ACTIVE">{t('queue:statusActive')}</Select.Option>
+                <Select.Option value="STALE">{t('queue:statusStale')}</Select.Option>
+                <Select.Option value="CANCELLING">{t('queue:statusCancelling')}</Select.Option>
+                <Select.Option value="COMPLETED">{t('queue:statusCompleted')}</Select.Option>
+                <Select.Option value="FAILED">{t('queue:statusFailed')}</Select.Option>
+                <Select.Option value="CANCELLED">{t('queue:statusCancelled')}</Select.Option>
               </Select>
 
               <RangePicker
@@ -467,7 +467,7 @@ const QueuePage: React.FC = () => {
                 onChange={(e) => setFilters({ ...filters, onlyStale: e.target.checked })}
                 data-testid="queue-checkbox-only-stale"
               >
-                Stale Only
+                {t('queue:onlyStale')}
               </Checkbox>
 
               {viewTeam && (
@@ -558,12 +558,12 @@ const QueuePage: React.FC = () => {
             <Space size={12} split={<span style={{ color: '#d9d9d9' }}>|</span>}>
               <Space size={4}>
                 <ThunderboltOutlined style={{ fontSize: 12 }} />
-                <Text type="secondary" style={{ fontSize: 12 }}>Total:</Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>{t('queue:statistics.total')}:</Text>
                 <Text strong style={{ fontSize: 12 }}>{(queueData?.statistics as any)?.totalCount || 0}</Text>
               </Space>
               <Space size={4}>
                 <PlayCircleOutlined style={{ fontSize: 12, color: '#1890ff' }} />
-                <Text type="secondary" style={{ fontSize: 12 }}>Active:</Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>{t('queue:statistics.active')}:</Text>
                 <Text strong style={{ fontSize: 12, color: '#1890ff' }}>
                   {((queueData?.statistics as any)?.pendingCount || 0) +
                    ((queueData?.statistics as any)?.assignedCount || 0) +
@@ -572,12 +572,12 @@ const QueuePage: React.FC = () => {
               </Space>
               <Space size={4}>
                 <ExclamationCircleOutlined style={{ fontSize: 12, color: '#ff4d4f' }} />
-                <Text type="secondary" style={{ fontSize: 12 }}>Failed:</Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>{t('queue:statistics.failed')}:</Text>
                 <Text strong style={{ fontSize: 12, color: '#ff4d4f' }}>{(queueData?.statistics as any)?.failedCount || 0}</Text>
               </Space>
               <Space size={4}>
                 <WarningOutlined style={{ fontSize: 12, color: '#faad14' }} />
-                <Text type="secondary" style={{ fontSize: 12 }}>Stale:</Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>{t('queue:statistics.stale')}:</Text>
                 <Text strong style={{ fontSize: 12, color: '#faad14' }}>{(queueData?.statistics as any)?.staleCount || 0}</Text>
               </Space>
             </Space>

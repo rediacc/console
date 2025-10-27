@@ -40,16 +40,25 @@
   "selectStatus": "Todos los estados",
   "selectTeam": "Seleccione un equipo para ver los elementos de la cola",
   "statistics": {
+    "active": "Activo",
+    "failed": "Fallida",
     "processing": "Tratamiento",
+    "stale": "Obsoleto",
     "timeSinceAssigned": "Tiempo desde que fue asignado",
+    "total": "Total",
     "totalDuration": "Duración total"
   },
   "status": "Estado",
+  "statusActive": "Activo",
+  "statusAssigned": "Asignado",
   "statusCancelled": "Cancelada",
+  "statusCancelling": "Cancelando",
   "statusCompleted": "Terminada",
   "statusFailed": "Fallida",
   "statusPending": "Pendiente",
+  "statusProcessing": "Procesando",
   "statusRunning": "Correr",
+  "statusStale": "Obsoleto",
   "tabs": {
     "active": {
       "description": "Esta sección muestra todas las tareas activas, incluidos los elementos pendientes en espera de asignación, las tareas procesadas por las máquinas y las tareas en proceso de cancelación.",
