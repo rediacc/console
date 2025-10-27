@@ -14,6 +14,47 @@
     "token": "Simbólica",
     "twoFactorAuth": "Autenticación de dos factores"
   },
+  "audit": {
+    "columns": {
+      "action": "Acción",
+      "details": "Detalles",
+      "entityName": "Nombre de Entidad",
+      "entityType": "Tipo de Entidad",
+      "timestamp": "Marca de Tiempo",
+      "user": "Usuario"
+    },
+    "empty": {
+      "clearFilters": "Borrar filtros y ampliar el rango de fechas",
+      "noLogsInRange": "No se encontraron registros de auditoría para el rango de fechas seleccionado",
+      "noMatchingFilters": "Ningún registro coincide con sus filtros actuales"
+    },
+    "errors": {
+      "loadDescription": "Hubo un error al cargar los registros de auditoría. Intente actualizar o ajustar el rango de fechas.",
+      "loadTitle": "No se Pueden Cargar los Registros de Auditoría",
+      "tryAgain": "Intentar de Nuevo",
+      "unableToLoad": "No se pueden cargar los registros de auditoría"
+    },
+    "export": {
+      "noData": "No hay datos disponibles para exportar",
+      "successCSV": "Se exportaron {{count}} registros de auditoría a CSV",
+      "successJSON": "Se exportaron {{count}} registros de auditoría a JSON",
+      "tooltip": "Exportar registros de auditoría como CSV o JSON"
+    },
+    "filters": {
+      "actions": "Acciones",
+      "allEntities": "Todas las Entidades",
+      "dateRange": "Rango de Fechas",
+      "entityType": "Tipo de Entidad",
+      "export": "Exportar",
+      "search": "Buscar",
+      "searchPlaceholder": "Buscar en los registros..."
+    },
+    "pagination": {
+      "showing": "Mostrando {{start}}-{{end}} de {{total}} registros"
+    },
+    "subtitle": "Rastree todas las actividades y cambios en su organización",
+    "title": "Registros de Auditoría"
+  },
   "architecture": {
     "bridges": "Puentes",
     "clearAll": "Borrar todo",
