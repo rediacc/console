@@ -1228,11 +1228,6 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
               <Card
                 variant="borderless"
                 size="default"
-                style={{
-                  background: 'var(--color-fill-quaternary)',
-                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
-                  borderRadius: '8px'
-                }}
                 data-testid="vault-editor-panel-configuration"
               >
               {/* Required Fields */}
@@ -1516,11 +1511,6 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 title={t('vaultEditor.providerFields', { provider: providerFields.name })}
                 variant="borderless"
                 size="default"
-                style={{
-                  background: 'var(--color-fill-quaternary)',
-                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
-                  borderRadius: '8px'
-                }}
                 data-testid="vault-editor-panel-provider"
               >
               {/* Provider help text */}
@@ -1603,11 +1593,6 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 }
                 variant="borderless"
                 size="default"
-                style={{
-                  background: 'var(--color-fill-quaternary)',
-                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
-                  borderRadius: '8px'
-                }}
                 data-testid="vault-editor-panel-extra"
               >
               <Alert
@@ -1641,11 +1626,6 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 }
                 variant="borderless"
                 size="default"
-                style={{
-                  background: 'var(--color-fill-quaternary)',
-                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
-                  borderRadius: '8px'
-                }}
                 data-testid="vault-editor-panel-rawjson"
               >
               <Alert
