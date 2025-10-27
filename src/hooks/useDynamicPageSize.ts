@@ -11,7 +11,7 @@ interface UseDynamicPageSizeOptions {
 }
 
 export const useDynamicPageSize = (
-  tableContainerRef: React.RefObject<HTMLDivElement>,
+  tableContainerRef: React.RefObject<HTMLDivElement | null>,
   options: UseDynamicPageSizeOptions = {}
 ) => {
   const {
