@@ -16,6 +16,8 @@ import {
   Typography,
   Button,
   Segmented,
+  Row,
+  Col,
 } from 'antd'
 import {
   InfoCircleOutlined,
@@ -1187,7 +1189,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   const fields = entityDef.fields || {}
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
       {uiMode !== 'simple' && (
         <Alert
           message={t(`vaultEditor.${entityDef.descriptionKey}`)}
@@ -1204,45 +1206,37 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 
       <Form
         form={form}
-        layout="horizontal"
-        labelCol={{ xs: { span: 24 }, sm: { span: 6 } }}
-        wrapperCol={{ xs: { span: 24 }, sm: { span: 18 } }}
-        labelAlign="right"
+        layout={uiMode === 'simple' ? 'vertical' : 'horizontal'}
+        labelCol={uiMode === 'simple' ? undefined : { xs: { span: 24 }, sm: { span: 6 } }}
+        wrapperCol={uiMode === 'simple' ? undefined : { xs: { span: 24 }, sm: { span: 18 } }}
+        labelAlign={uiMode === 'simple' ? 'left' : 'right'}
         colon={true}
         onValuesChange={(changedValues, _allValues) => {
           handleFormChange(changedValues)
         }}
         autoComplete="off"
-        style={{ 
-          flex: 1, 
-          minHeight: 0, 
-          overflowY: 'auto',
-          overflowX: 'hidden'
+        style={{
+          width: '100%'
         }}
         className="vault-editor-form"
         data-testid="vault-editor-form"
       >
-        <Collapse 
-          defaultActiveKey={[
-            requiredFields.length > 0 ? 'required' : '',
-            optionalFields.length > 0 ? 'optional' : '',
-            (entityType === 'STORAGE' && selectedProvider && providerFields) ? 'provider' : '',
-          ].filter(Boolean)}
-          style={{ flex: 1 }}
-          data-testid="vault-editor-collapse"
-        >
-          {requiredFields.length > 0 && (
-            <Collapse.Panel
-              header={
-                <Space>
-                  <strong>{t('vaultEditor.requiredFields')}</strong>
-                  <Tag color="red">{requiredFields.length}</Tag>
-                </Space>
-              }
-              key="required"
-              data-testid="vault-editor-panel-required"
-            >
-              {requiredFields
+        <Row gutter={[16, 16]} style={{ width: '100%' }} data-testid="vault-editor-cards">
+          {/* Main Configuration Card - Merged Required & Optional Fields */}
+          {(requiredFields.length > 0 || optionalFields.length > 0) && (
+            <Col xs={24} sm={24} md={24} lg={24} xl={24}>
+              <Card
+                variant="borderless"
+                size="default"
+                style={{
+                  background: 'var(--color-fill-quaternary)',
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                  borderRadius: '8px'
+                }}
+                data-testid="vault-editor-panel-configuration"
+              >
+              {/* Required Fields */}
+              {requiredFields.length > 0 && requiredFields
                 .map((fieldName) => {
                   const field = fields[fieldName as keyof typeof fields]
                   if (!field) return null
@@ -1478,22 +1472,13 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                   })()}
                 </Form.Item>
               )}
-              
-            </Collapse.Panel>
-          )}
 
-          {optionalFields.length > 0 && (
-            <Collapse.Panel
-              header={
-                <Space>
-                  <strong>{t('vaultEditor.optionalFields')}</strong>
-                  <Tag>{optionalFields.length}</Tag>
-                </Space>
-              }
-              key="optional"
-              data-testid="vault-editor-panel-optional"
-            >
-              {optionalFields.map((fieldName) => {
+              {/* Optional Fields - Added with divider if there are required fields */}
+              {requiredFields.length > 0 && optionalFields.length > 0 && (
+                <Divider style={{ margin: '16px 0' }} />
+              )}
+
+              {optionalFields.length > 0 && optionalFields.map((fieldName) => {
                 const field = fields[fieldName as keyof typeof fields]
                 if (!field) return null
 
@@ -1519,23 +1504,25 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 
                 return <div key={fieldName}>{renderField(fieldName, field as FieldDefinition, false)}</div>
               })}
-            </Collapse.Panel>
+
+              </Card>
+            </Col>
           )}
 
-          {/* Provider-specific fields for STORAGE entity */}
+          {/* Provider-specific fields Card for STORAGE entity */}
           {entityType === 'STORAGE' && selectedProvider && providerFields && (
-            <Collapse.Panel
-              header={
-                <Space>
-                  <strong>{t('vaultEditor.providerFields', { provider: providerFields.name })}</strong>
-                  <Tag color="blue">
-                    {(providerFields.required?.length || 0) + (providerFields.optional?.length || 0)}
-                  </Tag>
-                </Space>
-              }
-              key="provider"
-              data-testid="vault-editor-panel-provider"
-            >
+            <Col xs={24} sm={24} md={24} lg={24} xl={24}>
+              <Card
+                title={t('vaultEditor.providerFields', { provider: providerFields.name })}
+                variant="borderless"
+                size="default"
+                style={{
+                  background: 'var(--color-fill-quaternary)',
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                  borderRadius: '8px'
+                }}
+                data-testid="vault-editor-panel-provider"
+              >
               {/* Provider help text */}
               <Alert
                 message={providerFields.name}
@@ -1598,23 +1585,31 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 icon={<InfoCircleOutlined />}
                 style={{ marginTop: 16 }}
               />
-            </Collapse.Panel>
+              </Card>
+            </Col>
           )}
 
-          {Object.keys(extraFields).length > 0 && (
-            <Collapse.Panel
-              header={
-                <Space>
-                  <strong>{t('vaultEditor.extraFields')}</strong>
-                  <Tag color="warning">{Object.keys(extraFields).length}</Tag>
-                  <Tooltip title={t('vaultEditor.extraFieldsTooltip')}>
-                    <WarningOutlined style={{ color: '#faad14' }} />
-                  </Tooltip>
-                </Space>
-              }
-              key="extra"
-              data-testid="vault-editor-panel-extra"
-            >
+          {/* Extra Fields Card - Only show in expert mode */}
+          {Object.keys(extraFields).length > 0 && uiMode !== 'simple' && (
+            <Col xs={24} sm={24} md={24} lg={24} xl={24}>
+              <Card
+                title={
+                  <Space>
+                    {t('vaultEditor.extraFields')}
+                    <Tooltip title={t('vaultEditor.extraFieldsTooltip')}>
+                      <WarningOutlined style={{ color: '#faad14', fontSize: '14px' }} />
+                    </Tooltip>
+                  </Space>
+                }
+                variant="borderless"
+                size="default"
+                style={{
+                  background: 'var(--color-fill-quaternary)',
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                  borderRadius: '8px'
+                }}
+                data-testid="vault-editor-panel-extra"
+              >
               <Alert
                 message={t('vaultEditor.extraFieldsWarning')}
                 description={t('vaultEditor.extraFieldsWarningDescription')}
@@ -1627,24 +1622,32 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                   {JSON.stringify(extraFields, null, 2)}
                 </pre>
               </Card>
-            </Collapse.Panel>
+              </Card>
+            </Col>
           )}
 
+          {/* Raw JSON Editor Card - Expert mode only */}
           {featureFlags.isEnabled('advancedVaultEditor') && uiMode !== 'simple' && (
-            <Collapse.Panel
-              header={
-                <Space>
-                  <CodeOutlined />
-                  <strong>{t('vaultEditor.rawJsonEditor')}</strong>
-                  <Tag color="red">{t('vaultEditor.advanced')}</Tag>
-                  <Tooltip title={t('vaultEditor.rawJsonTooltip')}>
-                    <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
-                  </Tooltip>
-                </Space>
-              }
-              key="rawjson"
-              data-testid="vault-editor-panel-rawjson"
-            >
+            <Col xs={24} sm={24} md={24} lg={24} xl={24}>
+              <Card
+                title={
+                  <Space>
+                    <CodeOutlined />
+                    {t('vaultEditor.rawJsonEditor')}
+                    <Tooltip title={t('vaultEditor.rawJsonTooltip')}>
+                      <ExclamationCircleOutlined style={{ color: '#ff4d4f', fontSize: '14px' }} />
+                    </Tooltip>
+                  </Space>
+                }
+                variant="borderless"
+                size="default"
+                style={{
+                  background: 'var(--color-fill-quaternary)',
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                  borderRadius: '8px'
+                }}
+                data-testid="vault-editor-panel-rawjson"
+              >
               <Alert
                 message={t('vaultEditor.expertModeOnly')}
                 description={t('vaultEditor.expertModeDescription')}
@@ -1688,9 +1691,10 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                   formatJsonRef.current = formatFn
                 }}
               />
-            </Collapse.Panel>
+              </Card>
+            </Col>
           )}
-        </Collapse>
+        </Row>
       </Form>
     </div>
   )

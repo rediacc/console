@@ -90,7 +90,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
       title={`${title} - ${entityType}`}
       open={open}
       onCancel={onCancel}
-      className={ModalSize.Large}
+      className={ModalSize.Fullscreen}
       footer={null}
       data-testid="vault-modal"
       destroyOnHidden

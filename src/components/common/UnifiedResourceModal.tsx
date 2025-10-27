@@ -991,7 +991,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             {mode === 'create' ? t('general.create') : t('general.save')}
           </Button>
         ]}
-        className={ModalSize.ExtraLarge}
+        className={ModalSize.Fullscreen}
       >
         {/* Auto-setup checkbox for machine creation */}
         {resourceType === 'machine' && mode === 'create' && (
