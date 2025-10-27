@@ -18,13 +18,15 @@ export enum ModalSize {
   /** Small modal - ideal for confirmations, simple forms */
   Small = 'modal-sm',
   /** Medium modal - ideal for standard forms, content viewing */
-  Medium = 'modal-md', 
+  Medium = 'modal-md',
   /** Large modal - ideal for complex forms, detailed content */
   Large = 'modal-lg',
   /** Extra large modal - ideal for full-featured interfaces */
   ExtraLarge = 'modal-xl',
   /** Full width modal - ideal for tables, dashboards */
-  Full = 'modal-full'
+  Full = 'modal-full',
+  /** Fullscreen modal - occupies entire browser viewport */
+  Fullscreen = 'modal-fullscreen'
 }
 
 /**
