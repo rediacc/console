@@ -269,9 +269,9 @@ export const LocalCommandModal: React.FC<LocalCommandModalProps> = ({
               checked={useNetworkHost}
               onChange={(e) => setUseNetworkHost(e.target.checked)}
             >
-              Use host networking (--network=host)
+              {t('resources:localCommandBuilder.useNetworkHost')}
               <Text type="secondary" style={{ marginLeft: 8 }}>
-                Required for localhost API access (e.g., http://localhost:7322)
+                {t('resources:localCommandBuilder.useNetworkHostHelp')}
               </Text>
             </Checkbox>
           </Form.Item>

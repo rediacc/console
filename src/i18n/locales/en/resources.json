@@ -160,6 +160,8 @@
     "useDockerHelp": "Run the command using the rediacc/cli Docker image",
     "useLoginAuth": "Use login authentication instead of token",
     "useLoginAuthHelp": "Login with {{email}} (you'll be prompted for password)",
+    "useNetworkHost": "Use host networking (--network=host)",
+    "useNetworkHostHelp": "Required for localhost API access (e.g., http://localhost:7322)",
     "verify": "Verify",
     "verifyHelp": "Use checksums to verify all transfers",
     "windows": "Windows"
