@@ -24,7 +24,7 @@ const { Text } = Typography;
 const { RangePicker } = DatePicker;
 
 const AuditPage = () => {
-  const { t: _t } = useTranslation('system');
+  const { t } = useTranslation(['system', 'common']);
   const { token } = theme.useToken();
   const styles = useComponentStyles();
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([
@@ -80,7 +80,7 @@ const AuditPage = () => {
 
   const columns: ColumnsType<AuditLog> = [
     {
-      title: 'Timestamp',
+      title: t('system:audit.columns.timestamp'),
       dataIndex: 'timestamp',
       key: 'timestamp',
       width: 180,
@@ -91,7 +91,7 @@ const AuditPage = () => {
     {
       title: (
         <Space>
-          Action
+          {t('system:audit.columns.action')}
           <FilterOutlined style={{ opacity: 0.6, fontSize: '12px' }} />
         </Space>
       ),
@@ -118,7 +118,7 @@ const AuditPage = () => {
     {
       title: (
         <Space>
-          Entity Type
+          {t('system:audit.columns.entityType')}
           <FilterOutlined style={{ opacity: 0.6, fontSize: '12px' }} />
         </Space>
       ),
@@ -136,7 +136,7 @@ const AuditPage = () => {
       )
     },
     {
-      title: 'Entity Name',
+      title: t('system:audit.columns.entityName'),
       dataIndex: 'entityName',
       key: 'entityName',
       width: 200,
@@ -152,7 +152,7 @@ const AuditPage = () => {
     {
       title: (
         <Space>
-          User
+          {t('system:audit.columns.user')}
           <FilterOutlined style={{ opacity: 0.6, fontSize: '12px' }} />
         </Space>
       ),
@@ -169,7 +169,7 @@ const AuditPage = () => {
       )
     },
     {
-      title: 'Details',
+      title: t('system:audit.columns.details'),
       dataIndex: 'details',
       key: 'details',
       ellipsis: {
@@ -192,7 +192,14 @@ const AuditPage = () => {
       return;
     }
 
-    const headers = ['Timestamp', 'Action', 'Entity Type', 'Entity Name', 'User', 'Details'];
+    const headers = [
+      t('system:audit.columns.timestamp'),
+      t('system:audit.columns.action'),
+      t('system:audit.columns.entityType'),
+      t('system:audit.columns.entityName'),
+      t('system:audit.columns.user'),
+      t('system:audit.columns.details')
+    ];
     const rows = filteredLogs.map(log => [
       dayjs(log.timestamp).format('YYYY-MM-DD HH:mm:ss'),
       log.action.replace(/_/g, ' '),
@@ -216,7 +223,7 @@ const AuditPage = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    message.success(`Exported ${filteredLogs.length} audit logs to CSV`);
+    message.success(t('system:audit.export.successCSV', { count: filteredLogs.length }));
   };
 
   const exportToJSON = () => {
@@ -248,19 +255,19 @@ const AuditPage = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    message.success(`Exported ${filteredLogs.length} audit logs to JSON`);
+    message.success(t('system:audit.export.successJSON', { count: filteredLogs.length }));
   };
 
   const exportMenuItems = [
     {
       key: 'csv',
-      label: <span data-testid="audit-export-csv">Export as CSV</span>,
+      label: <span data-testid="audit-export-csv">{t('common:exportCSV')}</span>,
       icon: <FileExcelOutlined />,
       onClick: exportToCSV
     },
     {
       key: 'json',
-      label: <span data-testid="audit-export-json">Export as JSON</span>,
+      label: <span data-testid="audit-export-json">{t('common:exportJSON')}</span>,
       icon: <FileTextOutlined />,
       onClick: exportToJSON
     }
@@ -274,7 +281,7 @@ const AuditPage = () => {
           <Row gutter={[24, 16]}>
             <Col xs={24} sm={24} md={8}>
               <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                <Text strong style={{ fontSize: '14px', color: token.colorText }}>Date Range</Text>
+                <Text strong style={{ fontSize: '14px', color: token.colorText }}>{t('system:audit.filters.dateRange')}</Text>
                 <RangePicker
                   data-testid="audit-filter-date"
                   value={dateRange}
@@ -287,28 +294,28 @@ const AuditPage = () => {
                   }}
                   format="YYYY-MM-DD HH:mm:ss"
                   presets={[
-                    { label: 'Today', value: [dayjs().startOf('day'), dayjs().endOf('day')] },
-                    { label: 'Yesterday', value: [dayjs().subtract(1, 'day').startOf('day'), dayjs().subtract(1, 'day').endOf('day')] },
-                    { label: 'Last 7 Days', value: [dayjs().subtract(7, 'day').startOf('day'), dayjs().endOf('day')] },
-                    { label: 'Last 30 Days', value: [dayjs().subtract(30, 'day').startOf('day'), dayjs().endOf('day')] },
-                    { label: 'This Month', value: [dayjs().startOf('month'), dayjs().endOf('month')] },
-                    { label: 'Last Month', value: [dayjs().subtract(1, 'month').startOf('month'), dayjs().subtract(1, 'month').endOf('month')] },
+                    { label: t('common:today'), value: [dayjs().startOf('day'), dayjs().endOf('day')] },
+                    { label: t('common:yesterday'), value: [dayjs().subtract(1, 'day').startOf('day'), dayjs().subtract(1, 'day').endOf('day')] },
+                    { label: t('common:last7Days'), value: [dayjs().subtract(7, 'day').startOf('day'), dayjs().endOf('day')] },
+                    { label: t('common:last30Days'), value: [dayjs().subtract(30, 'day').startOf('day'), dayjs().endOf('day')] },
+                    { label: t('common:thisMonth'), value: [dayjs().startOf('month'), dayjs().endOf('month')] },
+                    { label: t('common:lastMonth'), value: [dayjs().subtract(1, 'month').startOf('month'), dayjs().subtract(1, 'month').endOf('month')] },
                   ]}
                 />
               </Space>
             </Col>
             <Col xs={24} sm={12} md={6}>
               <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                <Text strong style={{ fontSize: '14px', color: token.colorText }}>Entity Type</Text>
+                <Text strong style={{ fontSize: '14px', color: token.colorText }}>{t('system:audit.filters.entityType')}</Text>
                 <Select
                   data-testid="audit-filter-entity"
-                  placeholder="All entities"
+                  placeholder={t('system:audit.filters.allEntities')}
                   allowClear
                   value={entityFilter}
                   onChange={setEntityFilter}
                   style={{ width: '100%' }}
                   options={[
-                    { label: 'All Entities', value: undefined },
+                    { label: t('system:audit.filters.allEntities'), value: undefined },
                     ...entityTypes.map(entity => ({ label: entity, value: entity }))
                   ]}
                 />
@@ -316,10 +323,10 @@ const AuditPage = () => {
             </Col>
             <Col xs={24} sm={12} md={6}>
               <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                <Text strong style={{ fontSize: '14px', color: token.colorText }}>Search</Text>
+                <Text strong style={{ fontSize: '14px', color: token.colorText }}>{t('system:audit.filters.search')}</Text>
                 <Input
                   data-testid="audit-filter-search"
-                  placeholder="Search in logs..."
+                  placeholder={t('system:audit.filters.searchPlaceholder')}
                   prefix={<SearchOutlined />}
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
@@ -330,7 +337,7 @@ const AuditPage = () => {
             </Col>
             <Col xs={24} sm={12} md={2}>
               <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                <Text strong style={{ fontSize: '14px', color: 'transparent' }}>Actions</Text>
+                <Text strong style={{ fontSize: '14px', color: 'transparent' }}>{t('system:audit.filters.actions')}</Text>
                 <Button
                   data-testid="audit-refresh-button"
                   icon={<ReloadOutlined />}
@@ -338,18 +345,18 @@ const AuditPage = () => {
                   loading={isLoading}
                   style={{ ...styles.touchTarget, width: '100%' }}
                 >
-                  Refresh
+                  {t('common:actions.refresh')}
                 </Button>
               </Space>
             </Col>
             <Col xs={24} sm={12} md={2}>
               <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                <Text strong style={{ fontSize: '14px', color: 'transparent' }}>Export</Text>
+                <Text strong style={{ fontSize: '14px', color: 'transparent' }}>{t('system:audit.filters.export')}</Text>
                 <Tooltip 
                   title={
                     !filteredLogs || filteredLogs.length === 0 
-                      ? "No data available to export" 
-                      : "Export audit logs as CSV or JSON"
+                      ? t('system:audit.export.noData')
+                      : t('system:audit.export.tooltip')
                   }
                 >
                   <Dropdown
@@ -361,7 +368,7 @@ const AuditPage = () => {
                       icon={<DownloadOutlined />} 
                       style={{ ...styles.touchTarget, width: '100%' }}
                     >
-                      Export
+                      {t('common:actions.export')}
                     </Button>
                   </Dropdown>
                 </Tooltip>
@@ -374,20 +381,20 @@ const AuditPage = () => {
       {/* Error Display */}
       {isError && (
         <Alert
-          message="Unable to Load Audit Logs"
-          description={error?.message || "There was an error loading audit logs. Please try refreshing or adjusting your date range."}
+          message={t('system:audit.errors.loadTitle')}
+          description={error?.message || t('system:audit.errors.loadDescription')}
           type="error"
           closable
           showIcon
           style={{ marginBottom: 16 }}
           action={
-            <Button 
-              size="small" 
+            <Button
+              size="small"
               style={styles.touchTargetSmall}
-              onClick={() => refetch()} 
+              onClick={() => refetch()}
               loading={isLoading}
             >
-              Try Again
+              {t('system:audit.errors.tryAgain')}
             </Button>
           }
         />
@@ -407,7 +414,7 @@ const AuditPage = () => {
             total: filteredLogs?.length || 0,
             showSizeChanger: true,
             pageSizeOptions: ['10', '25', '50', '100'],
-            showTotal: (total, range) => `Showing ${range[0]}-${range[1]} of ${total} logs`,
+            showTotal: (total, range) => t('system:audit.pagination.showing', { start: range[0], end: range[1], total }),
             onChange: (page, size) => {
               setCurrentPage(page);
               if (size !== pageSize) {
@@ -426,10 +433,10 @@ const AuditPage = () => {
                   <Space direction="vertical" align="center">
                     <Text type="secondary">
                       {isError
-                        ? "Unable to load audit logs"
+                        ? t('system:audit.errors.unableToLoad')
                         : (filteredLogs?.length === 0 && auditLogs && auditLogs.length > 0)
-                          ? "No logs match your current filters"
-                          : "No audit logs found for the selected date range"
+                          ? t('system:audit.empty.noMatchingFilters')
+                          : t('system:audit.empty.noLogsInRange')
                       }
                     </Text>
                     {!isError && (
@@ -442,7 +449,7 @@ const AuditPage = () => {
                           setDateRange([dayjs().subtract(30, 'days'), dayjs()]);
                         }}
                       >
-                        Clear filters and expand date range
+                        {t('system:audit.empty.clearFilters')}
                       </Button>
                     )}
                   </Space>

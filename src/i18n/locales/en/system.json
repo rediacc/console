@@ -14,6 +14,47 @@
     "token": "Token",
     "twoFactorAuth": "Two-Factor Authentication"
   },
+  "audit": {
+    "columns": {
+      "action": "Action",
+      "details": "Details",
+      "entityName": "Entity Name",
+      "entityType": "Entity Type",
+      "timestamp": "Timestamp",
+      "user": "User"
+    },
+    "empty": {
+      "clearFilters": "Clear filters and expand date range",
+      "noLogsInRange": "No audit logs found for the selected date range",
+      "noMatchingFilters": "No logs match your current filters"
+    },
+    "errors": {
+      "loadDescription": "There was an error loading audit logs. Please try refreshing or adjusting your date range.",
+      "loadTitle": "Unable to Load Audit Logs",
+      "tryAgain": "Try Again",
+      "unableToLoad": "Unable to load audit logs"
+    },
+    "export": {
+      "noData": "No data available to export",
+      "successCSV": "Exported {{count}} audit logs to CSV",
+      "successJSON": "Exported {{count}} audit logs to JSON",
+      "tooltip": "Export audit logs as CSV or JSON"
+    },
+    "filters": {
+      "actions": "Actions",
+      "allEntities": "All Entities",
+      "dateRange": "Date Range",
+      "entityType": "Entity Type",
+      "export": "Export",
+      "search": "Search",
+      "searchPlaceholder": "Search in logs..."
+    },
+    "pagination": {
+      "showing": "Showing {{start}}-{{end}} of {{total}} logs"
+    },
+    "subtitle": "Track all activities and changes in your organization",
+    "title": "Audit Logs"
+  },
   "architecture": {
     "bridges": "Bridges",
     "clearAll": "Clear All",
