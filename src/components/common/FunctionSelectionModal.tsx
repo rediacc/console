@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react'
 import { Modal, Row, Col, Card, Input, Space, Form, Slider, Empty, Typography, Tag, Button, Select, Tooltip, InputNumber, Alert, Checkbox, Popover, message } from 'antd'
-import { ExclamationCircleOutlined, WarningOutlined, QuestionCircleOutlined } from '@/utils/optimizedIcons'
+import { ExclamationCircleOutlined, WarningOutlined, QuestionCircleOutlined, InfoCircleOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
@@ -588,14 +588,24 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                         <Form.Item
                           key={paramName}
                           label={
-                            <Tooltip title={`Background parameter: ${paramName}`}>
-                              <span style={{ cursor: 'help' }}>
-                                {paramInfo.label || paramName}
-                              </span>
-                            </Tooltip>
+                            paramInfo.help ? (
+                              <Space size={4}>
+                                <span>{paramInfo.label || paramName}</span>
+                                <Tooltip title={paramInfo.help}>
+                                  <InfoCircleOutlined
+                                    style={{
+                                      fontSize: 12,
+                                      color: 'rgba(0, 0, 0, 0.45)',
+                                      cursor: 'help'
+                                    }}
+                                  />
+                                </Tooltip>
+                              </Space>
+                            ) : (
+                              <span>{paramInfo.label || paramName}</span>
+                            )
                           }
                           required={paramInfo.required}
-                          help={paramInfo.help || ''}
                           {...(paramInfo.ui === 'template-selector' ? { wrapperCol: { span: 24 }, labelCol: { span: 0 } } : {})}
                         >
                           {isSizeParam ? (

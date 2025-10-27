@@ -147,6 +147,12 @@
         "grand": {
           "type": "string",
           "required": true
+        },
+        "checkpoint": {
+          "type": "string",
+          "default": "false",
+          "options": ["true", "false"],
+          "ui": "dropdown"
         }
       }
     },
@@ -169,6 +175,12 @@
         "grand": {
           "type": "string",
           "required": true
+        },
+        "checkpoint": {
+          "type": "string",
+          "default": "false",
+          "options": ["true", "false"],
+          "ui": "dropdown"
         }
       }
     },
@@ -453,6 +465,12 @@
               "label": "overrideExistingFile"
             }
           ]
+        },
+        "checkpoint": {
+          "type": "string",
+          "default": "false",
+          "options": ["true", "false"],
+          "ui": "dropdown"
         },
         "grand": {
           "type": "string",

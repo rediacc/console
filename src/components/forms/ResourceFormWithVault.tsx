@@ -42,9 +42,11 @@ interface ResourceFormWithVaultProps<T extends Record<string, any> = any> {
   bridgeName?: string // For SSH test connection
   onTestConnectionStateChange?: (success: boolean) => void // Callback for test connection state
   beforeVaultContent?: React.ReactNode // Custom content to render before vault configuration
+  afterVaultContent?: React.ReactNode // Custom content to render after vault configuration
   isModalOpen?: boolean // Modal open state to handle resets
   isEditMode?: boolean // Whether we're in edit mode
   creationContext?: 'credentials-only' | 'normal' // Context for repository creation
+  uiMode?: 'simple' | 'expert' // UI mode for conditional rendering
 }
 
 const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormWithVaultProps<any>>(
@@ -64,9 +66,11 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     bridgeName,
     onTestConnectionStateChange,
     beforeVaultContent,
+    afterVaultContent,
     isModalOpen,
     isEditMode = false,
     creationContext,
+    uiMode = 'expert',
   }, ref) {
     const { t } = useTranslation('common')
     const styles = useFormStyles()
@@ -351,6 +355,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
             onTestConnectionStateChange={onTestConnectionStateChange}
             isModalOpen={isModalOpen}
             isEditMode={isEditMode}
+            uiMode={uiMode}
             onImportExport={(handlers) => {
               importExportHandlers.current = handlers
               // Pass handlers to parent if callback is provided
@@ -360,6 +365,9 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
             }}
           />
         </div>
+
+        {/* Custom content after vault configuration */}
+        {afterVaultContent}
 
         {/* Import/Export Buttons */}
         {!hideImportExport && (

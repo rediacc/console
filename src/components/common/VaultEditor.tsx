@@ -56,6 +56,7 @@ interface VaultEditorProps {
   onOsSetupStatusChange?: (completed: boolean | null) => void // Callback for OS setup status
   isModalOpen?: boolean // Modal open state to handle resets
   isEditMode?: boolean // Whether we're in edit mode
+  uiMode?: 'simple' | 'expert' // UI mode for conditional rendering
 }
 
 interface FieldDefinition {
@@ -121,6 +122,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   onOsSetupStatusChange,
   isModalOpen,
   isEditMode = false,
+  uiMode = 'expert',
 }) => {
   const { t } = useTranslation(['common', 'storageProviders'])
   const [form] = Form.useForm()
@@ -1186,17 +1188,19 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Alert
-        message={t(`vaultEditor.${entityDef.descriptionKey}`)}
-        type="info"
-        showIcon
-        style={{ 
-          marginBottom: spacing('SM'), 
-          flexShrink: 0,
-          borderRadius: borderRadius('LG'),
-          fontSize: fontSize('SM')
-        }}
-      />
+      {uiMode !== 'simple' && (
+        <Alert
+          message={t(`vaultEditor.${entityDef.descriptionKey}`)}
+          type="info"
+          showIcon
+          style={{
+            marginBottom: spacing('SM'),
+            flexShrink: 0,
+            borderRadius: borderRadius('LG'),
+            fontSize: fontSize('SM')
+          }}
+        />
+      )}
 
       <Form
         form={form}
@@ -1626,7 +1630,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
             </Collapse.Panel>
           )}
 
-          {featureFlags.isEnabled('advancedVaultEditor') && (
+          {featureFlags.isEnabled('advancedVaultEditor') && uiMode !== 'simple' && (
             <Collapse.Panel
               header={
                 <Space>
