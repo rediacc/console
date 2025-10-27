@@ -378,6 +378,10 @@
           "help": "Install AMD GPU drivers (auto = detect GPU first, true = always install, false = skip)",
           "label": "Install AMD GPU Driver"
         },
+        "install_criu": {
+          "help": "Install CRIU for checkpoint/restore support (auto = install if kernel >= 3.11, true = force install, false = skip, manual = user installs)",
+          "label": "Install CRIU"
+        },
         "install_nvidia_driver": {
           "help": "Install NVIDIA GPU drivers (auto = detect GPU first, true = always install, false = skip)",
           "label": "Install NVIDIA GPU Driver"

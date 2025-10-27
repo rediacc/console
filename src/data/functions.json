@@ -46,6 +46,12 @@
           "options": ["auto", "true", "false"],
           "ui": "dropdown"
         },
+        "install_criu": {
+          "type": "string",
+          "default": "auto",
+          "options": ["auto", "true", "false", "manual"],
+          "ui": "dropdown"
+        },
         "install_nvidia_driver": {
           "type": "string",
           "default": "auto",
