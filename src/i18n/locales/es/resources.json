@@ -498,6 +498,7 @@
     "machines": "maquinas",
     "placeholders": {
       "enterTeamName": "Introduce el nombre del equipo",
+      "searchTeams": "Buscar equipos por nombre...",
       "selectTeam": "Seleccionar equipo"
     },
     "resourcesInTeam": "Recursos en {{team}}",

@@ -3,6 +3,7 @@ import { Select, Space, Tag, Input } from 'antd'
 import { TeamOutlined, SearchOutlined } from '@/utils/optimizedIcons'
 import type { Team } from '@/api/queries/teams'
 import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants'
+import { useTranslation } from 'react-i18next'
 
 interface TeamSelectorProps {
   teams: Team[]
@@ -21,6 +22,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
   placeholder = 'Select teams...',
   style
 }) => {
+  const { t } = useTranslation('resources')
   const [searchValue, setSearchValue] = useState('')
 
   const filteredOptions = useMemo(() => {
@@ -82,7 +84,7 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
         <>
           <div style={{ padding: spacing('SM') }}>
             <Input
-              placeholder="Search teams by name..."
+              placeholder={t('teams.placeholders.searchTeams')}
               prefix={<SearchOutlined style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.BASE }} />}
               value={searchValue}
               onChange={e => setSearchValue(e.target.value)}
