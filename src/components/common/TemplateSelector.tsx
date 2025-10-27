@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Card, Row, Col, Button, Space, Typography, Spin, Empty, Tag, message } from 'antd'
+import React, { useState, useEffect, useMemo } from 'react'
+import { Card, Row, Col, Button, Space, Typography, Spin, Empty, Tag, message, Input } from 'antd'
 import {
   DatabaseOutlined,
   GlobalOutlined,
@@ -37,6 +37,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   const [templates, setTemplates] = useState<Template[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     fetchTemplates()
@@ -48,7 +49,11 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       setError(null)
 
       const fetchedTemplates = await templateService.fetchTemplates()
-      setTemplates(fetchedTemplates)
+      // Sort templates alphabetically by name
+      const sortedTemplates = fetchedTemplates.sort((a, b) => {
+        return a.name.localeCompare(b.name)
+      })
+      setTemplates(sortedTemplates)
     } catch (err) {
       console.error('Failed to fetch templates:', err)
       setError('Unable to load templates. Please check your connection.')
@@ -85,6 +90,21 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
     return lines[0] || 'Template for quick deployment'
   }
 
+  // Filter templates based on search query
+  const filteredTemplates = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return templates
+    }
+
+    const lowerQuery = searchQuery.toLowerCase()
+    return templates.filter(template => {
+      const templateName = getTemplateTitle(template.name).toLowerCase()
+      const templateDescription = getTemplateDescription(template.readme).toLowerCase()
+
+      return templateName.includes(lowerQuery) || templateDescription.includes(lowerQuery)
+    })
+  }, [templates, searchQuery])
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '40px 0' }}>
@@ -107,9 +127,10 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   return (
     <div>
       <Space direction="vertical" size="middle" style={{ width: '100%', marginBottom: spacing('MD') }}>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        {/* Helper Text and Clear Button */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
           marginBottom: spacing('SM')
         }}>
@@ -133,10 +154,45 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             </Button>
           )}
         </div>
+
+        {/* Search Input */}
+        <Input.Search
+          placeholder={t('resources:templates.searchPlaceholder', { defaultValue: 'Search templates by name or description...' })}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          allowClear
+          data-testid="resource-modal-template-search-input"
+          style={{
+            borderRadius: borderRadius('MD'),
+            fontSize: fontSize('SM')
+          }}
+        />
       </Space>
 
+      {/* Show result count when filtering */}
+      {searchQuery.trim() && (
+        <Text type="secondary" style={{ fontSize: fontSize('XS'), marginBottom: spacing('SM'), display: 'block' }}>
+          {t('resources:templates.showingResults', {
+            defaultValue: `Showing ${filteredTemplates.length} of ${templates.length} templates`,
+            count: filteredTemplates.length,
+            total: templates.length
+          })}
+        </Text>
+      )}
+
+      {/* No results message */}
+      {searchQuery.trim() && filteredTemplates.length === 0 && (
+        <Empty
+          description={t('resources:templates.noResults', {
+            defaultValue: `No templates found matching "${searchQuery}"`,
+            query: searchQuery
+          })}
+          style={{ marginTop: spacing('MD'), marginBottom: spacing('MD') }}
+        />
+      )}
+
       <Row gutter={[spacing('MD'), spacing('MD')]}>
-        {templates.map((template) => {
+        {filteredTemplates.map((template) => {
           const templateId = template.id || template.name
           const isSelected = multiple
             ? Array.isArray(value) && value.includes(templateId)
@@ -237,8 +293,8 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
           )
         })}
 
-        {/* No Template Option */}
-        {!multiple && (
+        {/* No Template Option - only show when not filtering or when search returns results */}
+        {!multiple && !searchQuery.trim() && (
         <Col xs={24} sm={12} md={6}>
           <Card
             hoverable

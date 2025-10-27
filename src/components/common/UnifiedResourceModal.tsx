@@ -96,10 +96,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   
   // State for auto-setup after machine creation
   const [autoSetupEnabled, setAutoSetupEnabled] = useState(true)
-  
-  // State for keeping repository open after creation
-  const [keepRepositoryOpen, setKeepRepositoryOpen] = useState(true)
-  
+
   // State for template selection (for repositories)
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(existingData?.preselectedTemplate || null)
   const [showTemplateDetails, setShowTemplateDetails] = useState(false)
@@ -793,9 +790,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       }
     }
     
-    // Add keep_open flag for repository creation
+    // Always keep repository open after creation
     if (resourceType === 'repository' && mode === 'create') {
-      data.keep_open = keepRepositoryOpen
+      data.keep_open = true
     }
     
     // Add auto-setup flag for machine creation
@@ -886,8 +883,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         onCancel={onCancel}
         destroyOnHidden
         footer={[
-          // Left side buttons (only in create mode)
-          ...(mode === 'create' ? [
+          // Left side buttons (only in create mode and expert mode)
+          ...(mode === 'create' && uiMode === 'expert' ? [
             <div key="left-buttons" style={{ float: 'left' }}>
               <Space>
                 <Upload
@@ -901,8 +898,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                     return false
                   }}
                 >
-                  <Button 
-                    data-testid="resource-modal-import-button" 
+                  <Button
+                    data-testid="resource-modal-import-button"
                     icon={<UploadOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />}
                     style={{
                       minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
@@ -913,9 +910,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                     {t('common:vaultEditor.importJson')}
                   </Button>
                 </Upload>
-                <Button 
+                <Button
                   data-testid="resource-modal-export-button"
-                  icon={<DownloadOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />} 
+                  icon={<DownloadOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />}
                   onClick={() => {
                     if (importExportHandlers.current) {
                       importExportHandlers.current.handleExport()
@@ -1013,25 +1010,6 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             </Checkbox>
           </div>
         )}
-        
-        {/* Keep open checkbox for repository creation - only show when creating physical storage (not credential-only mode) */}
-        {resourceType === 'repository' && mode === 'create' && !((existingData?.repositoryGuid && existingData?.repositoryGuid.trim() !== '') || creationContext === 'credentials-only') && (
-          <div style={{ marginBottom: spacing('MD') }}>
-            <Checkbox 
-              data-testid="resource-modal-keep-open-checkbox"
-              checked={keepRepositoryOpen} 
-              onChange={(e) => setKeepRepositoryOpen(e.target.checked)}
-              style={{
-                fontSize: fontSize('SM'),
-                minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
-                alignItems: 'center'
-              }}
-            >
-              {t('resources:repositories.keepOpenAfterCreation')}
-            </Checkbox>
-          </div>
-        )}
-        
         <ResourceFormWithVault
           ref={formRef}
           form={form}
@@ -1039,8 +1017,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           onSubmit={handleSubmit}
           entityType={getEntityType()}
           vaultFieldName={getVaultFieldName()}
-          showDefaultsAlert={mode === 'create' && uiMode === 'simple'}
+          showDefaultsAlert={false}
           creationContext={creationContext}
+          uiMode={uiMode}
           initialVaultData={(() => {
             if (existingData?.vaultContent) {
               try {
@@ -1109,8 +1088,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           bridgeName={form.getValues('bridgeName') || 'Global Bridges'}
           onTestConnectionStateChange={setTestConnectionSuccess}
           isModalOpen={open}
-          beforeVaultContent={
-            resourceType === 'repository' && mode === 'create' && !((existingData?.repositoryGuid && existingData?.repositoryGuid.trim() !== '') || creationContext === 'credentials-only') ? (
+          beforeVaultContent={undefined}
+          afterVaultContent={
+            resourceType === 'repository' && mode === 'create' ? (
               <Collapse
                 data-testid="resource-modal-template-collapse"
                 style={{ marginBottom: 16, marginTop: 16 }}
@@ -1118,11 +1098,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                   {
                     key: 'template',
                     label: (
-                      <Space>
+                      <Space size="small">
                         <AppstoreOutlined />
                         <Text>{t('resources:templates.selectTemplate')}</Text>
                         {selectedTemplate && (
-                          <Tag color="blue">{selectedTemplate.replace(/^(db_|kick_|route_)/, '')}</Tag>
+                          <Tag color="blue" style={{ marginLeft: 8 }}>{selectedTemplate.replace(/^(db_|kick_|route_)/, '')}</Tag>
                         )}
                       </Space>
                     ),
