@@ -181,13 +181,12 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
 
   const content = useMemo(() => {
     if (loadMore && hasMore) {
-      // v2.0.0 API changed: isRowLoaded/rowCount/loadMoreRows props, onRowsRendered in children
-      // Types are incomplete in v2.0.0 but runtime works correctly
+      // v1.8.11 API: InfiniteLoader pattern
       const InfiniteLoader = (InfiniteLoaderModule as any).InfiniteLoader
       const renderList = ({ onRowsRendered }: any) => (
         <List
-          ref={(list) => {
-            listRef.current = list
+          ref={(list: any) => {
+            (listRef as any).current = list
           }}
           height={height}
           itemCount={itemCount}
