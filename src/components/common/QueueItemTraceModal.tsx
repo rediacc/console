@@ -189,7 +189,7 @@ interface QueueItemTraceModalProps {
 interface ConsoleOutputProps {
   content: string
   theme: string
-  consoleOutputRef: React.RefObject<HTMLDivElement>
+  consoleOutputRef: React.RefObject<HTMLDivElement | null>
   isEmpty?: boolean
 }
 

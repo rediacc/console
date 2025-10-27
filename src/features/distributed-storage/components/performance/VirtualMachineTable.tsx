@@ -187,7 +187,6 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
       const renderList = ({ onRowsRendered }: any) => (
         <List
           ref={(list) => {
-            // @ts-expect-error - listRef.current is readonly but we need to assign for keyboard navigation
             listRef.current = list
           }}
           height={height}
