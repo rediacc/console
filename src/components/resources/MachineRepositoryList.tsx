@@ -1764,6 +1764,14 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           })
         }
 
+        // Validate - always available (auto-mounts if needed)
+        menuItems.push({
+          key: 'validate',
+          label: t('functions:functions.validate.name'),
+          icon: <CheckCircleOutlined style={componentStyles.icon.small} />,
+          onClick: () => handleRunFunction(record, 'validate')
+        })
+
         // Clone - always available
         menuItems.push({
           key: 'clone',
