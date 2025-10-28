@@ -36,6 +36,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants'
 import SandboxWarning from '@/components/common/SandboxWarning'
+import LocalhostModeIndicator from '@/components/common/LocalhostModeIndicator'
 import { useTelemetry } from '@/components/common/TelemetryProvider'
 import { featureFlags } from '@/config/featureFlags'
 
@@ -257,6 +258,7 @@ const MainLayout: React.FC = () => {
   return (
     <>
       <SandboxWarning />
+      <LocalhostModeIndicator />
       <Layout style={{ minHeight: '100vh' }} className={isNoScrollPage ? 'no-scroll-page' : ''}>
         {/* Mobile overlay */}
         {isMobile && mobileMenuVisible && (

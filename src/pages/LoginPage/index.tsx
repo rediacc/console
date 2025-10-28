@@ -33,6 +33,7 @@ import RegistrationModal from '@/components/auth/RegistrationModal'
 import { generateRandomEmail, generateRandomCompanyName, generateRandomPassword } from '@/utils/cryptoGenerators'
 import { configService } from '@/services/configService'
 import SandboxWarning from '@/components/common/SandboxWarning'
+import LocalhostModeIndicator from '@/components/common/LocalhostModeIndicator'
 import {
   LoginCard,
   LoginContainer,
@@ -207,18 +208,26 @@ const LoginPage: React.FC = () => {
       if (e.ctrlKey && e.shiftKey && e.key === 'E') {
         e.preventDefault()
 
-        // Toggle global power mode
+        // Check if running on localhost
+        const onLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+
+        // Toggle global power mode (or localhost mode if on localhost)
         const newState = featureFlags.togglePowerMode()
 
         // Update visibility for both selectors
         setEndpointSelectorVisible(newState)
         setVersionSelectorVisible(newState)
 
-        // Show toast with current state
-        showMessage('info', newState ? 'Advanced options enabled' : 'Advanced options disabled')
+        // Show toast with current state - different message for localhost vs non-localhost
+        const message = onLocalhost
+          ? (newState ? 'Localhost Mode - All features enabled' : 'Localhost Mode - All features disabled')
+          : (newState ? 'Advanced options enabled' : 'Advanced options disabled')
+
+        showMessage('info', message)
 
         // Console log for debugging
-        console.log(`[PowerMode] Global power mode ${newState ? 'enabled' : 'disabled'} via Ctrl+Shift+E`)
+        const mode = onLocalhost ? 'Localhost mode' : 'Power mode'
+        console.log(`[${onLocalhost ? 'LocalhostMode' : 'PowerMode'}] ${mode} ${newState ? 'enabled' : 'disabled'} via Ctrl+Shift+E`)
       }
     }
 
@@ -437,6 +446,7 @@ const LoginPage: React.FC = () => {
   return (
     <>
       <SandboxWarning />
+      <LocalhostModeIndicator />
       <LoginCard>
         <LoginContainer>
           <Space direction="vertical" size={spacing('XL')} style={{ width: '100%' }}>

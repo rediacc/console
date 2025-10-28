@@ -1,18 +1,126 @@
 /**
- * Centralized Feature Flags Configuration
+ * ============================================================================
+ * CENTRALIZED FEATURE FLAGS CONFIGURATION
+ * ============================================================================
  *
  * This file manages all beta and development features in one place.
- * To hide a feature in production builds, set requiresLocalhost: true
+ * Features are controlled by requirement flags that determine visibility.
  *
- * Usage:
- *   import { featureFlags } from '@/config/featureFlags'
- *   if (featureFlags.isEnabled('distributedStorage')) { ... }
+ * ============================================================================
+ * BEHAVIOR MATRIX
+ * ============================================================================
+ *
+ * | Feature Type            | Production | Production + Ctrl+Shift+E | Localhost | Localhost + Ctrl+Shift+E |
+ * |-------------------------|-----------|---------------------------|-----------|-------------------------|
+ * | requiresLocalhost       | Hidden    | Hidden                    | Visible   | Visible                 |
+ * | requiresPowerMode       | Hidden    | Visible                   | Hidden    | Visible                 |
+ * | requiresExpertMode      | Hidden    | Hidden                    | Hidden*   | Visible                 |
+ * | enabled: true (default) | Visible   | Visible                   | Visible   | Visible                 |
+ * | enabled: false          | Hidden    | Hidden                    | Hidden    | Visible                 |
+ *
+ * * requiresExpertMode also requires expert mode toggle in UI (separate from this system)
+ *
+ * NOTE: "Localhost" column refers to being connected to localhost API endpoint.
+ *       "Localhost + Ctrl+Shift+E" means running on localhost domain (window.location.hostname).
+ *       These are different conditions:
+ *         - Localhost API: Checked via apiConnectionService (isDevelopment flag)
+ *         - Localhost Domain: Checked via window.location.hostname
+ *       Edge case: On localhost:5173 connected to production API, requiresLocalhost features
+ *       will be hidden until you press Ctrl+Shift+E (which checks domain, not API).
+ *
+ * ============================================================================
+ * KEYBOARD SHORTCUT: Ctrl+Shift+E
+ * ============================================================================
+ *
+ * On Production domains:
+ *   - Toggles "Power Mode"
+ *   - Shows features with requiresPowerMode: true (e.g., API endpoint selector)
+ *   - Does NOT show features with requiresLocalhost: true
+ *
+ * On Localhost domain:
+ *   - Toggles "Localhost Mode"
+ *   - Shows ALL features (ignores all requirement flags, even enabled: false)
+ *   - Blue banner appears: "Localhost Mode: All features enabled"
+ *
+ * ============================================================================
+ * FEATURE FLAG PROPERTIES
+ * ============================================================================
+ *
+ * enabled?: boolean
+ *   - Optional, defaults to true if not specified
+ *   - Only use enabled: false for truly broken/deprecated features
+ *   - If a feature has requirement flags, DO NOT specify enabled
+ *
+ * requiresLocalhost?: boolean
+ *   - Feature only visible when connected to localhost API
+ *   - Use for beta/development features not ready for production
+ *   - Example: marketplace, distributedStorage, queue
+ *
+ * requiresPowerMode?: boolean
+ *   - Feature revealed by Ctrl+Shift+E on production domains
+ *   - Use for advanced admin tools that should be accessible in production
+ *   - Example: apiEndpointSelector, versionSelector
+ *
+ * requiresExpertMode?: boolean
+ *   - Feature requires expert mode toggle in UI (separate system)
+ *   - Usually combined with requiresLocalhost
+ *   - Checked separately in components, not by this service
+ *
+ * requiresBuildType?: 'DEBUG' | 'RELEASE'
+ *   - Feature only shows in specific build type
+ *   - Rarely used
+ *
+ * ============================================================================
+ * USAGE EXAMPLES
+ * ============================================================================
+ *
+ * // Check if feature is enabled
+ * import { featureFlags } from '@/config/featureFlags'
+ * if (featureFlags.isEnabled('distributedStorage')) {
+ *   // Show feature
+ * }
+ *
+ * // Beta feature (localhost-only)
+ * marketplace: {
+ *   requiresLocalhost: true,
+ *   description: 'Template marketplace'
+ * }
+ *
+ * // Power mode feature (accessible in production with Ctrl+Shift+E)
+ * apiEndpointSelector: {
+ *   requiresPowerMode: true,
+ *   description: 'API endpoint selector'
+ * }
+ *
+ * // Production feature (always visible)
+ * dashboard: {
+ *   description: 'Main dashboard'
+ * }
+ *
+ * // Truly disabled feature
+ * deprecatedFeature: {
+ *   enabled: false,
+ *   description: 'Old feature removed in v2.0'
+ * }
+ *
+ * ============================================================================
+ * BEST PRACTICES
+ * ============================================================================
+ *
+ * 1. New beta features → Use requiresLocalhost: true (no enabled flag needed)
+ * 2. Admin power tools → Use requiresPowerMode: true
+ * 3. Production features → Just add description, no flags needed
+ * 4. To release a feature → Remove requiresLocalhost flag
+ * 5. Broken features → Set enabled: false temporarily
+ * 6. Deprecated features → Set enabled: false permanently (or remove from file)
+ *
+ * ============================================================================
  */
 
 import { apiConnectionService } from '@/services/apiConnectionService'
 
 export interface FeatureFlag {
-  enabled: boolean
+  enabled?: boolean  // If not specified, defaults to true. Only use false for truly disabled/deprecated features
   requiresLocalhost?: boolean  // Only show when connected to localhost
   requiresBuildType?: 'DEBUG' | 'RELEASE'  // Only show in specific build type
   requiresExpertMode?: boolean  // Requires expert UI mode (checked separately in components)
@@ -23,9 +131,20 @@ export interface FeatureFlag {
 class FeatureFlags {
   private isDevelopment = false
   private isPowerModeActive: boolean = false  // Global power mode state (session-only)
+  private isLocalhostModeActive: boolean = false  // Localhost mode state (session-only)
 
   constructor() {
     // Will be initialized after API connection is established
+  }
+
+  /**
+   * Check if running on localhost domain
+   * @returns true if hostname is localhost or 127.0.0.1
+   */
+  private isRunningOnLocalhost(): boolean {
+    if (typeof window === 'undefined') return false
+    const hostname = window.location.hostname
+    return hostname === 'localhost' || hostname === '127.0.0.1'
   }
 
   /**
@@ -35,7 +154,6 @@ class FeatureFlags {
   private flags: Record<string, FeatureFlag> = {
     // Distributed Storage - Beta feature
     distributedStorage: {
-      enabled: false,
       requiresLocalhost: true,  // Hide in production builds
       requiresExpertMode: true,
       description: 'Distributed storage cluster management - allows creating and managing storage clusters'
@@ -43,14 +161,12 @@ class FeatureFlags {
 
     // Marketplace - Beta feature
     marketplace: {
-      enabled: false,
       requiresLocalhost: true,  // Hide in production builds
       description: 'Template marketplace for quick deployments'
     },
 
     // Assign to Cluster - Beta feature (menu item in MachineTable)
     assignToCluster: {
-      enabled: false,
       requiresLocalhost: true,  // Hide in production builds
       requiresExpertMode: true,
       description: 'Assign machines to distributed storage clusters'
@@ -58,7 +174,6 @@ class FeatureFlags {
 
     // Architecture - Beta feature
     architecture: {
-      enabled: false,
       requiresLocalhost: true,  // Hide in production builds
       requiresExpertMode: true,
       description: 'System architecture visualization and dependency management'
@@ -66,35 +181,30 @@ class FeatureFlags {
 
     // Login Advanced Options - Beta feature (encryption password on login page)
     loginAdvancedOptions: {
-      enabled: false,
       requiresLocalhost: true,  // Hide in production builds
       description: 'Advanced login options including master password / encryption password field'
     },
 
     // Plugins - Beta feature (vault-based plugin containers)
     plugins: {
-      enabled: false,
       requiresLocalhost: true,  // Hide in production builds
       description: 'Plugin containers system - vault-based feature for custom service containers'
     },
 
     // API Endpoint Selector - Power mode feature
     apiEndpointSelector: {
-      enabled: false,
       requiresPowerMode: true,
       description: 'API endpoint selector dropdown for switching between API backends'
     },
 
     // Version Selector - Power mode feature
     versionSelector: {
-      enabled: false,
       requiresPowerMode: true,
       description: 'Version selector dropdown for switching between deployed versions'
     },
 
     // Queue Management - Expert mode feature
     queueManagement: {
-      enabled: false,
       requiresLocalhost: true,
       requiresExpertMode: true,
       description: 'Queue page for viewing and managing task queues'
@@ -102,7 +212,6 @@ class FeatureFlags {
 
     // Audit Logs - Expert mode feature
     auditLogs: {
-      enabled: false,
       requiresLocalhost: true,
       requiresExpertMode: true,
       description: 'Audit logs page for viewing system activity and changes'
@@ -110,7 +219,6 @@ class FeatureFlags {
 
     // Vault Version Columns - Expert mode feature
     vaultVersionColumns: {
-      enabled: false,
       requiresLocalhost: true,
       requiresExpertMode: true,
       description: 'Show vault version columns in resource tables for debugging purposes'
@@ -118,7 +226,6 @@ class FeatureFlags {
 
     // Advanced Vault Editor - Expert mode feature
     advancedVaultEditor: {
-      enabled: true,
       requiresLocalhost: true,
       requiresExpertMode: true,
       description: 'Raw JSON editor panel in vault editor - advanced/dangerous feature'
@@ -126,7 +233,6 @@ class FeatureFlags {
 
     // Regions & Infrastructure - Expert mode feature
     regionsInfrastructure: {
-      enabled: false,
       requiresLocalhost: true,
       requiresExpertMode: true,
       description: 'Regions and infrastructure management section in System page'
@@ -134,7 +240,6 @@ class FeatureFlags {
 
     // Danger Zone - Expert mode feature
     dangerZone: {
-      enabled: false,
       requiresLocalhost: true,
       requiresExpertMode: true,
       description: 'Danger Zone section including block users, export/import data, and encryption settings'
@@ -174,8 +279,19 @@ class FeatureFlags {
   isEnabled(featureName: string): boolean {
     const flag = this.flags[featureName]
 
-    // Feature doesn't exist or is explicitly disabled
-    if (!flag || !flag.enabled) {
+    // Feature doesn't exist
+    if (!flag) {
+      return false
+    }
+
+    // Localhost mode: Enable ALL features when active (ignore enabled flag)
+    if (this.isRunningOnLocalhost() && this.isLocalhostModeActive) {
+      return true
+    }
+
+    // Feature is explicitly disabled (enabled: false)
+    // If enabled is not specified, it defaults to true
+    if (flag.enabled === false) {
       return false
     }
 
@@ -254,16 +370,32 @@ class FeatureFlags {
 
   /**
    * Toggle global power mode (session-only, not persisted)
-   * @returns The new power mode state after toggle
+   * On localhost domain, this toggles localhost mode (enables ALL features)
+   * On non-localhost domains, this toggles power mode (enables only power mode features)
+   * @returns The new mode state after toggle
    */
   togglePowerMode(): boolean {
-    this.isPowerModeActive = !this.isPowerModeActive
+    const onLocalhost = this.isRunningOnLocalhost()
 
-    if (import.meta.env.DEV) {
-      console.log(`[PowerMode] Global power mode ${this.isPowerModeActive ? 'enabled' : 'disabled'}`)
+    if (onLocalhost) {
+      // Toggle localhost mode
+      this.isLocalhostModeActive = !this.isLocalhostModeActive
+
+      if (import.meta.env.DEV) {
+        console.log(`[LocalhostMode] Localhost mode ${this.isLocalhostModeActive ? 'enabled' : 'disabled'}`)
+      }
+
+      return this.isLocalhostModeActive
+    } else {
+      // Toggle power mode (original behavior)
+      this.isPowerModeActive = !this.isPowerModeActive
+
+      if (import.meta.env.DEV) {
+        console.log(`[PowerMode] Global power mode ${this.isPowerModeActive ? 'enabled' : 'disabled'}`)
+      }
+
+      return this.isPowerModeActive
     }
-
-    return this.isPowerModeActive
   }
 
   /**
@@ -283,6 +415,14 @@ class FeatureFlags {
    */
   isPowerModeEnabled(): boolean {
     return this.isPowerModeActive
+  }
+
+  /**
+   * Check if localhost mode is enabled
+   * @returns true if localhost mode is active
+   */
+  isLocalhostModeEnabled(): boolean {
+    return this.isLocalhostModeActive
   }
 }
 
