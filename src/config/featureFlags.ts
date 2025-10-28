@@ -10,23 +10,21 @@
  * BEHAVIOR MATRIX
  * ============================================================================
  *
- * | Feature Type            | Production | Production + Ctrl+Shift+E | Localhost | Localhost + Ctrl+Shift+E |
- * |-------------------------|-----------|---------------------------|-----------|-------------------------|
- * | requiresLocalhost       | Hidden    | Hidden                    | Visible   | Visible                 |
- * | requiresPowerMode       | Hidden    | Visible                   | Hidden    | Visible                 |
- * | requiresExpertMode      | Hidden    | Hidden                    | Hidden*   | Visible                 |
- * | enabled: true (default) | Visible   | Visible                   | Visible   | Visible                 |
- * | enabled: false          | Hidden    | Hidden                    | Hidden    | Visible                 |
+ * | Feature Type            | Production | Production + Ctrl+Shift+E | Localhost Domain | Localhost + Ctrl+Shift+E |
+ * |-------------------------|-----------|---------------------------|------------------|-------------------------|
+ * | requiresLocalhost       | Hidden    | Hidden                    | Hidden           | Visible                 |
+ * | requiresPowerMode       | Hidden    | Visible                   | Hidden           | Visible                 |
+ * | requiresExpertMode      | Hidden    | Hidden                    | Hidden           | Visible                 |
+ * | enabled: true (default) | Visible   | Visible                   | Visible          | Visible                 |
+ * | enabled: false          | Hidden    | Hidden                    | Hidden           | Visible                 |
  *
- * * requiresExpertMode also requires expert mode toggle in UI (separate from this system)
+ * IMPORTANT: On localhost domain (window.location.hostname), ALL features with requirement
+ * flags are hidden by default. Press Ctrl+Shift+E to reveal them all. This ensures a clean
+ * "off by default" state during development.
  *
- * NOTE: "Localhost" column refers to being connected to localhost API endpoint.
- *       "Localhost + Ctrl+Shift+E" means running on localhost domain (window.location.hostname).
- *       These are different conditions:
- *         - Localhost API: Checked via apiConnectionService (isDevelopment flag)
- *         - Localhost Domain: Checked via window.location.hostname
- *       Edge case: On localhost:5173 connected to production API, requiresLocalhost features
- *       will be hidden until you press Ctrl+Shift+E (which checks domain, not API).
+ * NOTE: "Localhost Domain" means running on localhost:#### (checked via window.location.hostname).
+ *       Features with requiresLocalhost are hidden even when connected to localhost API,
+ *       until you explicitly enable localhost mode with Ctrl+Shift+E.
  *
  * ============================================================================
  * KEYBOARD SHORTCUT: Ctrl+Shift+E
@@ -284,8 +282,10 @@ class FeatureFlags {
       return false
     }
 
+    const onLocalhost = this.isRunningOnLocalhost()
+
     // Localhost mode: Enable ALL features when active (ignore enabled flag)
-    if (this.isRunningOnLocalhost() && this.isLocalhostModeActive) {
+    if (onLocalhost && this.isLocalhostModeActive) {
       return true
     }
 
@@ -295,6 +295,17 @@ class FeatureFlags {
       return false
     }
 
+    // On localhost domain (but mode not active), hide features with requirement flags
+    // This prevents auto-showing of beta/power features until Ctrl+Shift+E is pressed
+    if (onLocalhost) {
+      if (flag.requiresLocalhost || flag.requiresPowerMode || flag.requiresExpertMode) {
+        return false
+      }
+      // Production features (no requirement flags) still show
+      return true
+    }
+
+    // On non-localhost domains, check requirements normally
     // Check power mode requirement
     if (flag.requiresPowerMode && !this.isPowerModeActive) {
       return false
