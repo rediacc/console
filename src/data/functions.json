@@ -247,6 +247,49 @@
         }
       }
     },
+    "validate": {
+      "name": "validate",
+      "category": "repository",
+      "showInMenu": true,
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true,
+        "bridge": true
+      },
+      "params": {
+        "repo": {
+          "type": "string",
+          "required": true
+        },
+        "grand": {
+          "type": "string",
+          "required": true
+        },
+        "skip_prep": {
+          "type": "string",
+          "default": "false",
+          "options": ["true", "false"],
+          "ui": "dropdown"
+        },
+        "skip_down": {
+          "type": "string",
+          "default": "false",
+          "options": ["true", "false"],
+          "ui": "dropdown"
+        },
+        "cleanup": {
+          "type": "string",
+          "default": "true",
+          "options": ["true", "false"],
+          "ui": "dropdown"
+        },
+        "timeout": {
+          "type": "string",
+          "default": "300"
+        }
+      }
+    },
     "resize": {
       "name": "resize",
       "category": "repository",
