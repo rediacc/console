@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react'
-import { Divider, Alert, Button, Space, Upload, message, Form, Input, Select, InputNumber, Tooltip } from 'antd'
+import { Divider, Alert, Button, Space, Upload, message, Form, Input, Select, InputNumber, Tooltip, Row, Col } from 'antd'
 import { UploadOutlined, DownloadOutlined } from '@/utils/optimizedIcons'
 import { UseFormReturn, Controller } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -78,18 +78,25 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     const [isVaultValid, setIsVaultValid] = useState(true)
     const [vaultValidationErrors, setVaultValidationErrors] = useState<string[]>([])
     const [showVaultValidationErrors, setShowVaultValidationErrors] = useState(false)
+    const [forceVaultErrors, setForceVaultErrors] = useState(false)
     const importExportHandlers = useRef<{ handleImport: (file: any) => boolean; handleExport: () => void } | null>(null)
-    
+
     // Track vault validation state changes
     useEffect(() => {
       // Vault validation state updated
     }, [isVaultValid, vaultValidationErrors, showVaultValidationErrors, entityType])
 
+    useEffect(() => {
+      if (!isModalOpen) {
+        setForceVaultErrors(false)
+      }
+    }, [isModalOpen])
+
 
     const {
       control,
       handleSubmit,
-      formState: { errors },
+      formState: { errors, touchedFields, submitCount, isSubmitted },
       setValue,
     } = form
 
@@ -107,6 +114,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
 
       if (!isVaultValid && !shouldSkipVaultValidation) {
         setShowVaultValidationErrors(true)
+        setForceVaultErrors(true)
         message.error(t('vaultEditor.pleaseFixErrors'))
         return
       }
@@ -118,6 +126,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
           [vaultFieldName]: JSON.stringify(vaultData)
         }
         await onSubmit(dataWithVault)
+        setForceVaultErrors(false)
       } catch (error) {
         // Error handled by parent
       }
@@ -130,6 +139,9 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     const handleVaultValidate = (valid: boolean, errors?: string[]) => {
       setIsVaultValid(valid)
       setVaultValidationErrors(errors || [])
+      if (valid) {
+        setForceVaultErrors(false)
+      }
     }
 
     // Expose submit method to parent
@@ -314,27 +326,42 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
           colon={true}
           style={{ flexShrink: 0 }}
         >
-          {fields.map((field) => {
-            if (field.hidden) return null
+          <Row gutter={[spacing('SM'), spacing('SM')]} wrap>
+            {fields.map((field) => {
+              if (field.hidden) return null
 
-            const fieldName = field.name
-            const error = errors && typeof errors === 'object' && fieldName in errors 
-              ? (errors as Record<string, any>)[fieldName] 
-              : undefined
+              const fieldName = field.name
+              const error = errors && typeof errors === 'object' && fieldName in errors 
+                ? (errors as Record<string, any>)[fieldName] 
+                : undefined
 
-            return (
-              <Form.Item
-                key={field.name}
-                label={field.label}
-                required={field.required}
-                validateStatus={error ? 'error' : undefined}
-                help={error?.message as string || field.helperText}
-                data-testid={`resource-modal-field-${field.name}`}
-              >
-                {renderField(field)}
-              </Form.Item>
-            )
-          })}
+              const isTouched = Boolean(
+                touchedFields &&
+                typeof touchedFields === 'object' &&
+                fieldName in touchedFields &&
+                (touchedFields as Record<string, any>)[fieldName]
+              )
+
+              const showError = Boolean(error && (isTouched || submitCount > 0 || isSubmitted))
+
+              const errorMessage = showError ? (error?.message as string) : undefined
+              const labelNode = field.label
+
+              return (
+                <Col key={field.name} xs={24} lg={12}>
+                  <Form.Item
+                    label={labelNode}
+                    required={field.required}
+                    validateStatus={showError ? 'error' : undefined}
+                    help={errorMessage || field.helperText}
+                    data-testid={`resource-modal-field-${field.name}`}
+                  >
+                    {renderField(field)}
+                  </Form.Item>
+                </Col>
+              )
+            })}
+          </Row>
         </Form>
 
         {/* Custom content before vault configuration */}
@@ -350,6 +377,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
             initialData={initialVaultData}
             onChange={handleVaultChange}
             onValidate={handleVaultValidate}
+            forceShowErrors={forceVaultErrors}
             teamName={teamName}
             bridgeName={bridgeName}
             onTestConnectionStateChange={onTestConnectionStateChange}

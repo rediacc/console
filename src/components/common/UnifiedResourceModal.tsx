@@ -727,6 +727,10 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         }
       }
 
+      if (resourceType === 'machine') {
+        return createText
+      }
+
       if (isTeamPreselected) {
         const team = uiMode === 'expert' && teamFilter ? (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) : 'Private Team'
         return `${createText} in ${team}`
@@ -734,6 +738,58 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       return createText
     }
     return `${t('resources:general.edit')} ${t(`resources:${getResourceTranslationKey()}.${resourceType}Name`)}`
+  }
+
+  const getModalSubtitle = () => {
+    if (!(mode === 'create' && resourceType === 'machine')) return ''
+
+    const formTeam = form.getValues('teamName')
+    if (formTeam) return formTeam
+
+    if (existingData?.teamName) return existingData.teamName
+
+    if (isTeamPreselected) {
+      if (uiMode === 'simple') return 'Private Team'
+      if (teamFilter) {
+        return Array.isArray(teamFilter) ? teamFilter[0] : teamFilter
+      }
+    }
+
+    return uiMode === 'simple' ? 'Private Team' : ''
+  }
+
+  const renderModalTitle = () => {
+    const baseTitle = getModalTitle()
+
+    if (mode === 'create' && resourceType === 'machine') {
+      const subtitle = getModalSubtitle()
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <Text
+            style={{
+              fontSize: fontSize('LG'),
+              fontWeight: DESIGN_TOKENS.FONT_WEIGHT.SEMIBOLD,
+              lineHeight: 1.2
+            }}
+          >
+            {baseTitle}
+          </Text>
+          {subtitle && (
+            <Text
+              type="secondary"
+              style={{
+                fontSize: fontSize('SM'),
+                marginTop: spacing('XS')
+              }}
+            >
+              {t('general.team')}: {subtitle}
+            </Text>
+          )}
+        </div>
+      )
+    }
+
+    return baseTitle
   }
 
   // Handle form submission
@@ -745,6 +801,12 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       if (vaultData.ssh_password && !vaultData.ssh_key_configured) {
         message.error(t('machines:validation.sshPasswordNotAllowed'))
         return
+      }
+
+      if (!testConnectionSuccess) {
+        message.warning(t('machines:validation.sshConnectionNotTested', {
+          defaultValue: 'SSH connection has not been tested yet. We recommend running Test Connection before creating.'
+        }))
       }
     }
     
@@ -878,7 +940,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     <>
       <Modal
         data-testid="resource-modal"
-        title={getModalTitle()}
+        title={renderModalTitle()}
         open={open}
         onCancel={onCancel}
         destroyOnHidden
@@ -928,6 +990,23 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                 </Button>
               </Space>
             </div>
+          ] : []),
+          ...(mode === 'create' && resourceType === 'machine' ? [
+            <Checkbox
+              key="auto-setup"
+              data-testid="resource-modal-auto-setup-checkbox"
+              checked={autoSetupEnabled}
+              onChange={(e) => setAutoSetupEnabled(e.target.checked)}
+              style={{
+                marginRight: 'auto',
+                fontSize: fontSize('SM'),
+                display: 'flex',
+                alignItems: 'center',
+                minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE
+              }}
+            >
+              {t('machines:autoSetupAfterCreation')}
+            </Checkbox>
           ] : []),
           // Right side buttons
           <Button 
@@ -993,23 +1072,6 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         ]}
         className={ModalSize.Fullscreen}
       >
-        {/* Auto-setup checkbox for machine creation */}
-        {resourceType === 'machine' && mode === 'create' && (
-          <div style={{ marginBottom: spacing('MD') }}>
-            <Checkbox 
-              data-testid="resource-modal-auto-setup-checkbox"
-              checked={autoSetupEnabled} 
-              onChange={(e) => setAutoSetupEnabled(e.target.checked)}
-              style={{
-                fontSize: fontSize('SM'),
-                minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
-                alignItems: 'center'
-              }}
-            >
-              {t('machines:autoSetupAfterCreation')}
-            </Checkbox>
-          </div>
-        )}
         <ResourceFormWithVault
           ref={formRef}
           form={form}
@@ -1024,14 +1086,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             if (existingData?.vaultContent) {
               try {
                 let parsed = JSON.parse(existingData.vaultContent);
-                console.log('[UnifiedResourceModal] Resource type:', resourceType);
-                console.log('[UnifiedResourceModal] Existing data:', existingData);
-                console.log('[UnifiedResourceModal] Raw vault content:', existingData.vaultContent);
-                console.log('[UnifiedResourceModal] Parsed vault data for edit:', parsed);
-                console.log('[UnifiedResourceModal] Parsed vault keys:', Object.keys(parsed));
                 // Special handling for repositories - map the vault data correctly
                 if (resourceType === 'repository') {
-                  console.log('[UnifiedResourceModal] Repository vault before mapping:', JSON.stringify(parsed, null, 2));
                   // The vault data might have the credential at root level or nested
                   // We need to ensure it's in the format VaultEditor expects
                   if (!parsed.credential && parsed.repoVault) {
@@ -1063,13 +1119,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                     for (const [key, value] of Object.entries(parsed)) {
                       if (typeof value === 'string' && value.length === 32 &&
                           /^[A-Za-z0-9!@#$%^&*()_+{}|:<>,.?/]+$/.test(value)) {
-                        console.log(`[UnifiedResourceModal] Found potential credential in field '${key}':`, value);
                         parsed = { credential: value };
                         break;
                       }
                     }
                   }
-                  console.log('[UnifiedResourceModal] Repository vault after mapping:', JSON.stringify(parsed, null, 2));
                 }
                 return parsed;
               } catch (e) {

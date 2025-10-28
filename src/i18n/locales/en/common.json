@@ -496,6 +496,9 @@
     "requiredFields": "Required Fields",
     "resetToFormValues": "Reset to Form Values",
     "saveVaultConfiguration": "Save Vault Configuration",
+    "hostEntryHelp": "Optional. SSH known host entry will be detected automatically.",
+    "hostEntryPlaceholder": "Auto-populated during connection test",
+    "sshPasswordPlaceholder": "Optional: for initial SSH key setup",
     "sshPasswordRequiredWhenNoKey": "SSH password is required for initial key setup",
     "systemCompatibility": {
       "available": "Available",
@@ -522,9 +525,12 @@
     },
     "testConnection": {
       "button": "Test Connection",
+      "description": "Test SSH connection and configure SSH key authentication automatically",
       "failed": "SSH connection failed",
       "initiated": "SSH connection test has been initiated. Please check the queue for results.",
+      "label": "Test Connection",
       "missingFields": "Please fill in IP address, username, and password before testing",
+      "required": "Connection test required before creating the machine.",
       "success": "SSH connection successful",
       "testing": "Testing connection..."
     },
