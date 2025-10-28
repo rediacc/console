@@ -15,9 +15,10 @@ import {
   Divider,
   Typography,
   Button,
-  Segmented,
+  Radio,
   Row,
   Col,
+  Descriptions,
 } from 'antd'
 import {
   InfoCircleOutlined,
@@ -27,6 +28,7 @@ import {
   QuestionCircleOutlined,
   BulbOutlined,
   CheckCircleOutlined,
+  SettingOutlined,
   WifiOutlined,
 } from '@/utils/optimizedIcons'
 import { SimpleJsonEditor } from './SimpleJsonEditor'
@@ -59,6 +61,7 @@ interface VaultEditorProps {
   isModalOpen?: boolean // Modal open state to handle resets
   isEditMode?: boolean // Whether we're in edit mode
   uiMode?: 'simple' | 'expert' // UI mode for conditional rendering
+  forceShowErrors?: boolean // Forcefully surface field-level errors (e.g., on submit)
 }
 
 interface FieldDefinition {
@@ -125,6 +128,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   isModalOpen,
   isEditMode = false,
   uiMode = 'expert',
+  forceShowErrors = false,
 }) => {
   const { t } = useTranslation(['common', 'storageProviders'])
   const [form] = Form.useForm()
@@ -181,6 +185,12 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     }
     prevModalOpenRef.current = isModalOpen
   }, [isModalOpen, form])
+
+  useEffect(() => {
+    if (forceShowErrors) {
+      form.validateFields().catch(() => undefined)
+    }
+  }, [forceShowErrors, form])
 
   // Get entity definition from JSON
   const entityDef = useMemo(() => {
@@ -374,9 +384,10 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 
               // Clear SSH password after successful test
               form.setFieldValue('ssh_password', '')
-
+             
               // Mark test connection as successful
               setTestConnectionSuccess(true)
+              
               
               // Notify parent component
               if (onTestConnectionStateChange) {
@@ -543,8 +554,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       // Validate initial data - but skip validation for repositories in edit mode
       // to avoid race condition with credential field requirements
       if (!(isEditMode && entityType === 'REPOSITORY')) {
-        // Use immediate validation for non-repository entities or create mode
-        form.validateFields()
+        // Use immediate validation for non-repository entities or create mode without surfacing errors
+        form.validateFields(undefined, { validateOnly: true })
           .then(() => {
             onValidate?.(true)
           })
@@ -597,20 +608,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 
   const handleFormChange = (changedValues?: any) => {
     const formData = form.getFieldsValue()
-    
-    // Handle ssh_key_configured changes
-    if ((entityType === 'MACHINE' || entityType === 'BRIDGE') && changedValues?.ssh_key_configured !== undefined) {
-      setSshKeyConfigured(changedValues.ssh_key_configured)
-      
-      // If SSH key is configured, clear the password field
-      if (changedValues.ssh_key_configured) {
-        form.setFieldValue('ssh_password', undefined)
-        formData.ssh_password = undefined
-      }
-      
-      // No need for setTimeout - the shouldUpdate prop in renderField handles re-validation automatically
-    }
-    
+
     // Handle provider changes for STORAGE entity
     if (entityType === 'STORAGE' && changedValues?.provider !== undefined) {
       setSelectedProvider(changedValues.provider)
@@ -648,23 +646,40 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     directOnChange(completeData, hasChanges)
 
     // Then validate
-    // If ssh_key_configured just changed, exclude ssh_password from validation
-    // to allow shouldUpdate to re-render the field with updated rules first
-    const fieldsToValidate = changedValues?.ssh_key_configured !== undefined && (entityType === 'MACHINE' || entityType === 'BRIDGE')
-      ? Object.keys(formData).filter(key => key !== 'ssh_password')
-      : undefined // undefined means validate all fields
-    
-    form
-      .validateFields(fieldsToValidate)
-      .then(() => {
-        onValidate?.(true)
-      })
-      .catch((errorInfo) => {
-        const errors = errorInfo.errorFields?.map((field: any) => 
-          `${field.name.join('.')}: ${field.errors.join(', ')}`
-        )
-        onValidate?.(false, errors)
-      })
+    const collectErrors = (errorInfo: any) =>
+      errorInfo?.errorFields?.map((field: any) => `${field.name.join('.')}: ${field.errors.join(', ')}`) || []
+
+    const validationTargets =
+      changedValues?.ssh_key_configured !== undefined && (entityType === 'MACHINE' || entityType === 'BRIDGE')
+        ? Object.keys(formData).filter(key => key !== 'ssh_password')
+        : Object.keys(changedValues || {})
+
+    const performValidation = async () => {
+      const accumulatedErrors: string[] = []
+
+      if (validationTargets.length > 0) {
+        try {
+          await form.validateFields(validationTargets, { validateOnly: true })
+        } catch (errorInfo: any) {
+          accumulatedErrors.push(...collectErrors(errorInfo))
+        }
+      }
+
+      try {
+        await form.validateFields(undefined, { validateOnly: true })
+        if (accumulatedErrors.length > 0) {
+          onValidate?.(false, accumulatedErrors)
+        } else {
+          onValidate?.(true)
+        }
+      } catch (errorInfo: any) {
+        const overallErrors = collectErrors(errorInfo)
+        const combined = overallErrors.length > 0 ? overallErrors : accumulatedErrors
+        onValidate?.(false, combined)
+      }
+    }
+
+    void performValidation()
   }
 
   const handleRawJsonChange = (value: string | undefined) => {
@@ -869,66 +884,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 
     // Render based on type using helper components
     if (field.type === 'boolean') {
-      // Special rendering for ssh_key_configured field with vertical segmented control
-      if (fieldName === 'ssh_key_configured') {
-        return (
-          <Form.Item
-            noStyle
-            shouldUpdate
-          >
-            {({ getFieldValue, setFieldValue }) => {
-              const currentValue = getFieldValue(fieldName)
-              
-              return (
-                <Form.Item
-                  name={fieldName}
-                  label={<FieldLabel label={fieldLabel} description={fieldDescription} />}
-                  initialValue={field.default === true}
-                  normalize={(value) => value === true || value === 'true'}
-                >
-                  <Segmented
-                    block
-                    data-testid={`vault-editor-field-${fieldName}`}
-                    value={currentValue === true}
-                    onChange={(value) => {
-                      // Update the form field value
-                      setFieldValue(fieldName, value === true)
-                      // Trigger form change to update dependent fields
-                      handleFormChange({ [fieldName]: value === true })
-                    }}
-                    options={[
-                      { 
-                        label: (
-                          <Space direction="vertical" align="center" size={spacing('XS')}>
-                            <CheckCircleOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD }} />
-                            <span style={{ fontSize: fontSize('SM') }}>Configured</span>
-                          </Space>
-                        ), 
-                        value: true 
-                      },
-                      { 
-                        label: (
-                          <Space direction="vertical" align="center" size={spacing('XS')}>
-                            <ExclamationCircleOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD }} />
-                            <span style={{ fontSize: fontSize('SM') }}>Not Configured</span>
-                          </Space>
-                        ), 
-                        value: false 
-                      }
-                    ]}
-                    style={{ 
-                      // Height managed by Radio.Group default styles
-                      borderRadius: borderRadius('LG')
-                    }}
-                  />
-                </Form.Item>
-              )
-            }}
-          </Form.Item>
-        )
-      }
-      
-      // Default Switch for other boolean fields
+      // Default Switch for boolean fields
       return (
         <FieldFormItem
           name={fieldName}
@@ -1043,6 +999,42 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       )
     }
 
+    if (fieldName === 'ssh_password') {
+      return (
+        <Form.Item
+          name={fieldName}
+          label={<FieldLabel label={fieldLabel} description={fieldDescription} />}
+          rules={rules}
+          initialValue={field.default}
+        >
+          <Input.Password
+            {...commonProps}
+            autoComplete="new-password"
+            data-testid={`vault-editor-field-${fieldName}`}
+            placeholder={t('vaultEditor.sshPasswordPlaceholder')}
+          />
+        </Form.Item>
+      )
+    }
+
+    if (fieldName === 'host_entry') {
+      return (
+        <Form.Item
+          name={fieldName}
+          label={<FieldLabel label={fieldLabel} description={fieldDescription} />}
+          rules={rules}
+          initialValue={field.default}
+          extra={t('vaultEditor.hostEntryHelp')}
+        >
+          <Input
+            {...commonProps}
+            data-testid={`vault-editor-field-${fieldName}`}
+            placeholder={t('vaultEditor.hostEntryPlaceholder')}
+          />
+        </Form.Item>
+      )
+    }
+
     // Special handling for port type
     if (fieldName === 'port' || field.format === 'port') {
       return (
@@ -1086,59 +1078,6 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         // Call handleFormChange immediately (no delay)
         handleFormChange({ [fieldName]: values[fieldName] })
       }
-    }
-
-    // Special handling for ssh_password field with dynamic validation
-    if ((entityType === 'MACHINE' || entityType === 'BRIDGE') && fieldName === 'ssh_password') {
-      return (
-        <Form.Item
-          noStyle
-          shouldUpdate={(prevValues, currentValues) => prevValues.ssh_key_configured !== currentValues.ssh_key_configured}
-        >
-          {({ getFieldValue }) => {
-            const sshKeyConfigured = getFieldValue('ssh_key_configured')
-            
-            // Hide the field if SSH key is configured
-            if (sshKeyConfigured) {
-              return null
-            }
-            
-            // Dynamic validation rules based on ssh_key_configured
-            const dynamicRules = required && !sshKeyConfigured ? [
-              { 
-                required: true, 
-                message: t('vaultEditor.sshPasswordRequiredWhenNoKey', { defaultValue: 'SSH password is required when SSH key is not configured' }) 
-              },
-              ...rules.slice(1) // Include any other rules except the first required rule
-            ] : rules.filter(rule => !rule.required) // Remove required rule if not needed
-            
-            return (
-              <Form.Item
-                name={fieldName}
-                label={
-                  <Space>
-                    {fieldLabel}
-                    {fieldDescription && (
-                      <Tooltip title={fieldDescription}>
-                        <InfoCircleOutlined />
-                      </Tooltip>
-                    )}
-                  </Space>
-                }
-                rules={dynamicRules}
-                initialValue={field.default}
-              >
-                <Input
-                  {...commonProps}
-                  type="password"
-                  autoComplete="new-password"
-                  data-testid={`vault-editor-field-${fieldName}`}
-                />
-              </Form.Item>
-            )
-          }}
-        </Form.Item>
-      )
     }
 
     // Default to text input
@@ -1187,6 +1126,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   const requiredFields = entityDef.required || []
   const optionalFields = entityDef.optional || []
   const fields = entityDef.fields || {}
+  const machineBasicFieldOrder = ['ip', 'user', 'datastore']
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
@@ -1206,11 +1146,12 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 
       <Form
         form={form}
-        layout={uiMode === 'simple' ? 'vertical' : 'horizontal'}
-        labelCol={uiMode === 'simple' ? undefined : { xs: { span: 24 }, sm: { span: 6 } }}
-        wrapperCol={uiMode === 'simple' ? undefined : { xs: { span: 24 }, sm: { span: 18 } }}
-        labelAlign={uiMode === 'simple' ? 'left' : 'right'}
+        layout="horizontal"
+        labelCol={{ xs: { span: 24 }, sm: { span: 6 } }}
+        wrapperCol={{ xs: { span: 24 }, sm: { span: 18 } }}
+        labelAlign="right"
         colon={true}
+        validateTrigger={['onBlur']}
         onValuesChange={(changedValues, _allValues) => {
           handleFormChange(changedValues)
         }}
@@ -1230,275 +1171,254 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                 size="default"
                 data-testid="vault-editor-panel-configuration"
               >
-              {/* Required Fields */}
-              {requiredFields.length > 0 && requiredFields
-                .map((fieldName) => {
-                  const field = fields[fieldName as keyof typeof fields]
-                  if (!field) return null
-                  // In edit mode for repositories, the credential field should not be required
-                  // since it already exists and user may just want to view it
-                  const isRequired = !(isEditMode && entityType === 'REPOSITORY' && fieldName === 'credential')
-                  return <div key={fieldName}>{renderField(fieldName, field as FieldDefinition, isRequired)}</div>
-                })}
-              
-              {/* Conditionally show ssh_password in required fields when SSH key is not configured */}
-              {entityType === 'MACHINE' && !requiredFields.includes('ssh_password' as never) && (
-                <Form.Item
-                  noStyle
-                  shouldUpdate={(prevValues, currentValues) => prevValues.ssh_key_configured !== currentValues.ssh_key_configured}
-                >
-                  {({ getFieldValue }) => {
-                    const sshKeyConfigured = getFieldValue('ssh_key_configured')
-                    const sshPasswordField = 'ssh_password' in fields ? fields['ssh_password'] : null
-                    if (!sshKeyConfigured && sshPasswordField) {
-                      return renderField('ssh_password', sshPasswordField as FieldDefinition, true, false)
-                    }
-                    return null
-                  }}
-                </Form.Item>
-              )}
-              
-              {/* Test Connection button for MACHINE entity */}
-              {entityType === 'MACHINE' && (
-                <Form.Item 
-                  wrapperCol={{ offset: 6, span: 18 }}
-                  style={{ marginTop: spacing('MD') }}
-                >
-                  <Space size="middle" wrap style={{ width: '100%' }}>
-                    <Tooltip title={t('vaultEditor.testConnection.button')}>
+              {/* All Fields in 2-column Grid */}
+              <Row gutter={[spacing('SM'), spacing('SM')]} wrap>
+                {/* Required Fields */}
+                {(entityType === 'MACHINE' ? machineBasicFieldOrder : requiredFields)
+                  .map((fieldName) => {
+                    const field = fields[fieldName as keyof typeof fields]
+                    if (!field) return null
+                    const isRequired = !(isEditMode && entityType === 'REPOSITORY' && fieldName === 'credential')
+                    return (
+                      <Col key={fieldName} xs={24} lg={12}>
+                        {renderField(fieldName, field as FieldDefinition, isRequired)}
+                      </Col>
+                    )
+                  })}
+
+                {/* Optional Fields (including ssh_password, port, host_entry) */}
+                {entityType === 'MACHINE' && optionalFields
+                  .filter((fieldName) => fieldName !== 'ssh_key_configured')
+                  .map((fieldName) => {
+                    const field = fields[fieldName as keyof typeof fields]
+                    if (!field) return null
+                    return (
+                      <Col key={fieldName} xs={24} lg={12}>
+                        {renderField(fieldName, field as FieldDefinition, false)}
+                      </Col>
+                    )
+                  })}
+
+                {/* Test Connection Button */}
+                {entityType === 'MACHINE' && (
+                  <Col xs={24} lg={12}>
+                    <Form.Item
+                      label={
+                        <FieldLabel
+                          label={t('vaultEditor.testConnection.label')}
+                          description={t('vaultEditor.testConnection.description')}
+                        />
+                      }
+                      extra={!testConnectionSuccess && t('vaultEditor.testConnection.required')}
+                    >
                       <Button
                         type="primary"
                         icon={<WifiOutlined />}
                         loading={isCreatingQueueItem || isTestingConnection}
                         data-testid="vault-editor-test-connection"
-                        aria-label={t('vaultEditor.testConnection.button')}
-                        style={{ 
-                          ...styles.touchTarget,
-                          borderRadius: borderRadius('LG'),
-                          fontSize: fontSize('SM'),
-                          padding: `0 ${spacing('LG')}px`
-                        }}
                         onClick={async () => {
-                      // Get current form values
-                      const values = form.getFieldsValue()
-                      const { ip, user, ssh_password, port, datastore } = values
-                      
-                      // Validate required fields
-                      if (!ip || !user || (!ssh_password && !sshKeyConfigured)) {
-                        message.error(t('vaultEditor.testConnection.missingFields'))
-                        return
-                      }
-                      
-                      try {
-                        // Build machine vault with test credentials
-                        const testMachineVault = JSON.stringify({
-                          ip: ip,
-                          user: user,
-                          ssh_password: ssh_password || '',
-                          port: port || 22,
-                          datastore: datastore || ''
-                        })
-                        
-                        // Get team vault data which contains SSH keys
-                        const teamData = teams?.find(team => team.teamName === teamName)
-                        const teamVaultData = teamData?.vaultContent || '{}'
-                        
-                        // Build queue vault using the proper service
-                        const queueVault = await buildQueueVault({
-                          teamName,
-                          machineName: '', // Empty string for bridge-only queue item
-                          bridgeName,
-                          functionName: 'ssh_test',
-                          params: {},
-                          priority: 1,
-                          description: 'SSH connection test',
-                          addedVia: 'vault-editor',
-                          machineVault: testMachineVault,
-                          teamVault: teamVaultData // Pass actual team vault with SSH keys
-                        })
+                          const values = form.getFieldsValue()
+                          const { ip, user, ssh_password, port, datastore } = values
 
-                        // Create queue item for SSH connection test
-                        createQueueItem({
-                          teamName,
-                          bridgeName,
-                          machineName: '', // Send empty string for bridge-only queue items
-                          queueVault,
-                          priority: 1 // Highest priority for immediate execution
-                        }, {
-                          onSuccess: (response) => {
-                            // Extract taskId from the response
-                            if (response && response.taskId) {
-                              // Set the task ID and enable polling
-                              setTestTaskId(response.taskId)
-                              setIsTestingConnection(true)
-                              message.info(t('vaultEditor.testConnection.testing'))
-                            } else {
-                              message.error(t('vaultEditor.testConnection.failed'))
-                            }
-                          },
-                          onError: (_error) => {
+                          if (!ip || !user) {
+                            message.error(t('vaultEditor.testConnection.missingFields'))
+                            return
+                          }
+
+                          try {
+                            const testMachineVault = JSON.stringify({
+                              ip: ip,
+                              user: user,
+                              ssh_password: ssh_password || '',
+                              port: port || 22,
+                              datastore: datastore || ''
+                            })
+
+                            const teamData = teams?.find(team => team.teamName === teamName)
+                            const teamVaultData = teamData?.vaultContent || '{}'
+
+                            const queueVault = await buildQueueVault({
+                              teamName,
+                              machineName: '',
+                              bridgeName,
+                              functionName: 'ssh_test',
+                              params: {},
+                              priority: 1,
+                              description: 'SSH connection test',
+                              addedVia: 'vault-editor',
+                              machineVault: testMachineVault,
+                              teamVault: teamVaultData
+                            })
+
+                            createQueueItem({
+                              teamName,
+                              bridgeName,
+                              machineName: '',
+                              queueVault,
+                              priority: 1
+                            }, {
+                              onSuccess: (response) => {
+                                if (response && response.taskId) {
+                                  setTestTaskId(response.taskId)
+                                  setIsTestingConnection(true)
+                                  message.info(t('vaultEditor.testConnection.testing'))
+                                } else {
+                                  message.error(t('vaultEditor.testConnection.failed'))
+                                }
+                              },
+                              onError: () => {
+                                message.error(t('vaultEditor.testConnection.failed'))
+                              }
+                            })
+                          } catch (error) {
                             message.error(t('vaultEditor.testConnection.failed'))
                           }
-                        })
-                      } catch (error) {
-                        message.error(t('vaultEditor.testConnection.failed'))
-                      }
-                    }}
-                  />
-                    </Tooltip>
-                    {testConnectionSuccess && (
-                      <CheckCircleOutlined 
-                        style={{ 
-                          color: '#52c41a', 
-                          fontSize: 20,
-                          marginLeft: 8,
-                          display: 'flex',
-                          alignItems: 'center'
-                        }} 
+                        }}
                       />
-                    )}
-                  </Space>
-                </Form.Item>
-              )}
-              
-              {/* Kernel Compatibility Display */}
-              {entityType === 'MACHINE' && form.getFieldValue('kernel_compatibility') && (
-                <Form.Item
-                  label={t('vaultEditor.systemCompatibility.title')}
-                  style={{ marginBottom: 16 }}
-                >
-                  {(() => {
-                    const compatibility = form.getFieldValue('kernel_compatibility')
-                    const status = compatibility.compatibility_status || 'unknown'
-                    const osInfo = compatibility.os_info || {}
-
-                    const statusConfig: Record<string, { type: 'success' | 'warning' | 'error' | 'info'; icon: JSX.Element; color: string }> = {
-                      compatible: { type: 'success' as const, icon: <CheckCircleOutlined />, color: '#52c41a' },
-                      warning: { type: 'warning' as const, icon: <WarningOutlined />, color: '#faad14' },
-                      incompatible: { type: 'error' as const, icon: <ExclamationCircleOutlined />, color: '#ff4d4f' },
-                      unknown: { type: 'info' as const, icon: <QuestionCircleOutlined />, color: '#1890ff' }
-                    }
-
-                    const config = statusConfig[status] || statusConfig.unknown
-                    
-                    return (
-                      <Space direction="vertical" style={{ width: '100%' }}>
-                        {/* OS Information */}
-                        <Card size="small" style={{ marginBottom: 8 }}>
-                          <Space direction="vertical" style={{ width: '100%' }}>
-                            <Space>
-                              <InfoCircleOutlined />
-                              <Text strong>{t('vaultEditor.systemCompatibility.systemInfo')}:</Text>
-                            </Space>
-                            <Text>{t('vaultEditor.systemCompatibility.operatingSystem')}: {osInfo.pretty_name || t('vaultEditor.systemCompatibility.unknown')}</Text>
-                            <Text>{t('vaultEditor.systemCompatibility.kernelVersion')}: {compatibility.kernel_version || t('vaultEditor.systemCompatibility.unknown')}</Text>
-                            <Space>
-                              <Text>{t('vaultEditor.systemCompatibility.btrfsAvailable')}:</Text>
-                              {compatibility.btrfs_available ? (
-                                <Tag color="success">{t('vaultEditor.systemCompatibility.yes')}</Tag>
-                              ) : (
-                                <Tag color="warning">{t('vaultEditor.systemCompatibility.no')}</Tag>
-                              )}
-                            </Space>
-                            <Space>
-                              <Text>{t('vaultEditor.systemCompatibility.sudoAvailable')}:</Text>
-                              {(() => {
-                                const sudoStatus = compatibility.sudo_available || 'unknown'
-                                const sudoConfig: Record<string, { color: string; text: string }> = {
-                                  available: { color: 'success', text: t('vaultEditor.systemCompatibility.available') },
-                                  password_required: { color: 'warning', text: t('vaultEditor.systemCompatibility.passwordRequired') },
-                                  not_installed: { color: 'error', text: t('vaultEditor.systemCompatibility.notInstalled') }
-                                }
-                                const config = sudoConfig[sudoStatus] || { color: 'default', text: t('vaultEditor.systemCompatibility.unknown') }
-                                return <Tag color={config.color}>{config.text}</Tag>
-                              })()}
-                            </Space>
-                            {osSetupCompleted !== null && (
-                              <Space>
-                                <Text>{t('vaultEditor.systemCompatibility.osSetup')}:</Text>
-                                <Tag color={osSetupCompleted ? 'success' : 'warning'}>
-                                  {osSetupCompleted ? t('vaultEditor.systemCompatibility.setupCompleted') : t('vaultEditor.systemCompatibility.setupRequired')}
-                                </Tag>
-                              </Space>
-                            )}
-                          </Space>
-                        </Card>
-                        
-                        {/* Compatibility Status */}
-                        <Alert
-                          type={config.type}
-                          icon={config.icon}
-                          message={
-                            <Space>
-                              <Text strong>{t('vaultEditor.systemCompatibility.compatibilityStatus')}:</Text>
-                              <Text style={{ color: config.color, textTransform: 'capitalize' }}>
-                                {t(`vaultEditor.systemCompatibility.${status}`)}
-                              </Text>
-                            </Space>
-                          }
-                          description={
-                            <>
-                              {compatibility.compatibility_issues && compatibility.compatibility_issues.length > 0 && (
-                                <div style={{ marginTop: 8 }}>
-                                  <Text strong>{t('vaultEditor.systemCompatibility.knownIssues')}:</Text>
-                                  <ul style={{ marginTop: 4, marginBottom: 8 }}>
-                                    {compatibility.compatibility_issues.map((issue: string, index: number) => (
-                                      <li key={index}>{issue}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                              {compatibility.recommendations && compatibility.recommendations.length > 0 && (
-                                <div>
-                                  <Text strong>{t('vaultEditor.systemCompatibility.recommendations')}:</Text>
-                                  <ul style={{ marginTop: 4, marginBottom: 0 }}>
-                                    {compatibility.recommendations.map((rec: string, index: number) => (
-                                      <li key={index}>{rec}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </>
-                          }
-                          showIcon
-                        />
-                      </Space>
-                    )
-                  })()}
-                </Form.Item>
-              )}
-
-              {/* Optional Fields - Added with divider if there are required fields */}
-              {requiredFields.length > 0 && optionalFields.length > 0 && (
-                <Divider style={{ margin: '16px 0' }} />
-              )}
-
-              {optionalFields.length > 0 && optionalFields.map((fieldName) => {
-                const field = fields[fieldName as keyof typeof fields]
-                if (!field) return null
-
-                // Skip ssh_password for MACHINE entity as it's conditionally shown in required fields
-                if (entityType === 'MACHINE' && fieldName === 'ssh_password') {
-                  return (
-                    <Form.Item
-                      key={fieldName}
-                      noStyle
-                      shouldUpdate={(prevValues, currentValues) => prevValues.ssh_key_configured !== currentValues.ssh_key_configured}
-                    >
-                      {({ getFieldValue }) => {
-                        const sshKeyConfigured = getFieldValue('ssh_key_configured')
-                        // Only show in optional fields if SSH key IS configured
-                        if (sshKeyConfigured) {
-                          return renderField(fieldName, field as FieldDefinition, false)
-                        }
-                        return null
-                      }}
                     </Form.Item>
-                  )
-                }
+                  </Col>
+                )}
 
-                return <div key={fieldName}>{renderField(fieldName, field as FieldDefinition, false)}</div>
-              })}
+                {/* Kernel Compatibility Display (from former Advanced section) */}
+                {entityType === 'MACHINE' && form.getFieldValue('kernel_compatibility') && (
+                  <Col xs={24} lg={12}>
+                    <Form.Item
+                      label={<Text strong>{t('vaultEditor.systemCompatibility.title')}</Text>}
+                      colon={false}
+                    >
+                      {(() => {
+                        const compatibility = form.getFieldValue('kernel_compatibility')
+                        const status = compatibility.compatibility_status || 'unknown'
+                        const osInfo = compatibility.os_info || {}
+
+                        const statusConfig: Record<string, { type: 'success' | 'warning' | 'error' | 'info'; icon: JSX.Element; color: string }> = {
+                          compatible: { type: 'success' as const, icon: <CheckCircleOutlined />, color: '#52c41a' },
+                          warning: { type: 'warning' as const, icon: <WarningOutlined />, color: '#faad14' },
+                          incompatible: { type: 'error' as const, icon: <ExclamationCircleOutlined />, color: '#ff4d4f' },
+                          unknown: { type: 'info' as const, icon: <QuestionCircleOutlined />, color: '#1890ff' }
+                        }
+
+                        const config = statusConfig[status] || statusConfig.unknown
+
+                        const sudoStatus = compatibility.sudo_available || 'unknown'
+                        const sudoConfig: Record<string, { color: string; text: string }> = {
+                          available: { color: 'success', text: t('vaultEditor.systemCompatibility.available') },
+                          password_required: { color: 'warning', text: t('vaultEditor.systemCompatibility.passwordRequired') },
+                          not_installed: { color: 'error', text: t('vaultEditor.systemCompatibility.notInstalled') }
+                        }
+                        const sudoConfigValue = sudoConfig[sudoStatus] || { color: 'default', text: t('vaultEditor.systemCompatibility.unknown') }
+
+                        return (
+                          <Space direction="vertical" style={{ width: '100%' }}>
+                            <Descriptions bordered size="small" column={1}>
+                              <Descriptions.Item label={t('vaultEditor.systemCompatibility.operatingSystem')}>
+                                {osInfo.pretty_name || t('vaultEditor.systemCompatibility.unknown')}
+                              </Descriptions.Item>
+                              <Descriptions.Item label={t('vaultEditor.systemCompatibility.kernelVersion')}>
+                                {compatibility.kernel_version || t('vaultEditor.systemCompatibility.unknown')}
+                              </Descriptions.Item>
+                              <Descriptions.Item label={t('vaultEditor.systemCompatibility.btrfsAvailable')}>
+                                {compatibility.btrfs_available ? (
+                                  <Tag color="success">{t('vaultEditor.systemCompatibility.yes')}</Tag>
+                                ) : (
+                                  <Tag color="warning">{t('vaultEditor.systemCompatibility.no')}</Tag>
+                                )}
+                              </Descriptions.Item>
+                              <Descriptions.Item label={t('vaultEditor.systemCompatibility.sudoAvailable')}>
+                                <Tag color={sudoConfigValue.color}>{sudoConfigValue.text}</Tag>
+                              </Descriptions.Item>
+                              {osSetupCompleted !== null && (
+                                <Descriptions.Item label={t('vaultEditor.systemCompatibility.osSetup')}>
+                                  <Tag color={osSetupCompleted ? 'success' : 'warning'}>
+                                    {osSetupCompleted ? t('vaultEditor.systemCompatibility.setupCompleted') : t('vaultEditor.systemCompatibility.setupRequired')}
+                                  </Tag>
+                                </Descriptions.Item>
+                              )}
+                            </Descriptions>
+
+                            <Alert
+                              type={config.type}
+                              icon={config.icon}
+                              message={
+                                <Space>
+                                  <Text strong>{t('vaultEditor.systemCompatibility.compatibilityStatus')}:</Text>
+                                  <Text style={{ color: config.color, textTransform: 'capitalize' }}>
+                                    {t(`vaultEditor.systemCompatibility.${status}`)}
+                                  </Text>
+                                </Space>
+                              }
+                              description={
+                                <>
+                                  {compatibility.compatibility_issues && compatibility.compatibility_issues.length > 0 && (
+                                    <div style={{ marginTop: 8 }}>
+                                      <Text strong>{t('vaultEditor.systemCompatibility.knownIssues')}:</Text>
+                                      <ul style={{ marginTop: 4, marginBottom: 8 }}>
+                                        {compatibility.compatibility_issues.map((issue: string, index: number) => (
+                                          <li key={index}>{issue}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  {compatibility.recommendations && compatibility.recommendations.length > 0 && (
+                                    <div>
+                                      <Text strong>{t('vaultEditor.systemCompatibility.recommendations')}:</Text>
+                                      <ul style={{ marginTop: 4, marginBottom: 0 }}>
+                                        {compatibility.recommendations.map((rec: string, index: number) => (
+                                          <li key={index}>{rec}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </>
+                              }
+                              showIcon
+                            />
+                          </Space>
+                        )
+                      })()}
+                    </Form.Item>
+                  </Col>
+                )}
+              </Row>
+
+              {entityType !== 'MACHINE' && (
+                  <>
+                    {requiredFields.length > 0 && optionalFields.length > 0 && (
+                      <Divider style={{ margin: '16px 0' }} />
+                    )}
+                    <Row gutter={[spacing('SM'), spacing('SM')]} wrap>
+                      {optionalFields.length > 0 && optionalFields.map((fieldName) => {
+                        const field = fields[fieldName as keyof typeof fields]
+                        if (!field) return null
+
+                        if (entityType === 'MACHINE' && fieldName === 'ssh_password') {
+                          return (
+                            <Col key={fieldName} xs={24} lg={12}>
+                              <Form.Item
+                                noStyle
+                                shouldUpdate={(prevValues, currentValues) => prevValues.ssh_key_configured !== currentValues.ssh_key_configured}
+                              >
+                                {({ getFieldValue }) => {
+                                  const sshKeyConfiguredValue = getFieldValue('ssh_key_configured')
+                                  if (sshKeyConfiguredValue) {
+                                    return renderField(fieldName, field as FieldDefinition, false)
+                                  }
+                                  return null
+                                }}
+                              </Form.Item>
+                            </Col>
+                          )
+                        }
+
+                        return (
+                          <Col key={fieldName} xs={24} lg={12}>
+                            {renderField(fieldName, field as FieldDefinition, false)}
+                          </Col>
+                        )
+                      })}
+                    </Row>
+                  </>
+                )}
 
               </Card>
             </Col>
@@ -1564,7 +1484,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                       const tip = t(`storageProviders:storageProviders.${selectedProvider}.tips.${index - 1}`, { defaultValue: '' })
                       return tip ? (
                         <div key={index}>
-                          <Text>• {tip}</Text>
+                          <Text>- {tip}</Text>
                         </div>
                       ) : null
                     }).filter(Boolean)}
@@ -1681,3 +1601,5 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 }
 
 export default VaultEditor
+
+

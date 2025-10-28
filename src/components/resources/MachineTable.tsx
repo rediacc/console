@@ -967,7 +967,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             dataSource={filteredMachines}
             rowKey="machineName"
             loading={isLoading}
-            scroll={{ x: true, y: 'calc(100vh - 400px)' }}
+            scroll={{ x: 'max-content' }}
             rowSelection={rowSelection}
             rowClassName={(record) => {
               const isSelected = externalSelectedMachine?.machineName === record.machineName;
