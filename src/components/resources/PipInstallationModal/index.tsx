@@ -23,8 +23,8 @@ import {
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { pipInstallationService, InstallOptions } from '@/services/pipInstallationService'
-import { useComponentStyles } from '@/hooks/useComponentStyles'
-import { DESIGN_TOKENS, spacing, createModalStyle } from '@/utils/styleConstants'
+import { ModalSize } from '@/types/modal'
+import { CommandContainer, CommandDescription, CommandBox, CommandCode, CopyButton, ContentSpace, NotesList } from './styles'
 
 const { Text, Title } = Typography
 const { Panel } = Collapse
@@ -60,41 +60,26 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({ command, description, s
   const { isCommand, isComment } = formattedCommands[0]
 
   return (
-    <div style={{ marginBottom: spacing('XS') }} data-testid="pip-install-command-display">
-      {description && <Text type="secondary" style={{ display: 'block', marginBottom: spacing('MICRO') }}>{description}</Text>}
-      <div style={{ 
-        background: '#f5f5f5', 
-        border: '1px solid #d9d9d9',
-        borderRadius: DESIGN_TOKENS.BORDER_RADIUS.SM,
-        padding: `${spacing('XS')}px ${spacing('SM')}px`,
-        fontFamily: 'monospace',
-        fontSize: DESIGN_TOKENS.FONT_SIZE.SM,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}
-      data-testid="pip-install-command-text">
-        <Text 
+    <CommandContainer data-testid="pip-install-command-display">
+      {description && <CommandDescription type="secondary">{description}</CommandDescription>}
+      <CommandBox data-testid="pip-install-command-text">
+        <CommandCode 
           code 
-          style={{ 
-            background: 'transparent',
-            border: 'none',
-            color: isComment ? '#8c8c8c' : isCommand ? '#1890ff' : 'inherit'
-          }}
+          $isComment={isComment}
+          $isCommand={isCommand}
         >
           {command}
-        </Text>
-        {showCopy && isCommand && (
-          <Button 
+        </CommandCode>
+        {showCopy && (
+          <CopyButton 
             size="small" 
             icon={copied ? <CheckOutlined /> : <CopyOutlined />}
-            style={{ marginLeft: spacing('XS') }}
             onClick={handleCopy}
             data-testid="pip-install-command-copy"
           />
         )}
-      </div>
-    </div>
+      </CommandBox>
+    </CommandContainer>
   )
 }
 
@@ -104,7 +89,6 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
   errorType = 'not-installed'
 }) => {
   const { t } = useTranslation()
-  const styles = useComponentStyles()
   const [useUserInstall, setUseUserInstall] = useState(false)
   const [activeTab, setActiveTab] = useState('quick')
 
@@ -144,7 +128,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
   }
 
   const renderQuickInstall = () => (
-    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+    <ContentSpace direction="vertical" size="large">
       <Alert
         message={t('resources:pipInstall.quickInstallTitle')}
         description={t('resources:pipInstall.quickInstallDesc')}
@@ -161,7 +145,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           description={t('resources:pipInstall.installCommandDesc')}
         />
 
-        <Space style={{ marginTop: spacing('XS') }}>
+        <Space>
           <Checkbox
             checked={useUserInstall}
             onChange={(e) => setUseUserInstall(e.target.checked)}
@@ -195,11 +179,11 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           </Space>
         }
         description={
-          <ul style={{ marginBottom: 0, paddingLeft: 20 }}>
+          <NotesList>
             {platformInstructions.notes.map((note, index) => (
               <li key={index}>{note}</li>
             ))}
-          </ul>
+          </NotesList>
         }
         type="warning"
         data-testid="pip-install-platform-alert"
@@ -211,11 +195,10 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
         onClick={handleCopyAllCommands}
         block
         data-testid="pip-install-copy-all-button"
-        style={styles.buttonPrimary}
       >
         {t('resources:pipInstall.copyAllCommands')}
       </Button>
-    </Space>
+    </ContentSpace>
   )
 
   const renderAdvancedOptions = () => (
@@ -225,16 +208,16 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
         key="venv"
         extra={<Tag color="green">{t('resources:pipInstall.recommended')}</Tag>}
       >
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <ContentSpace direction="vertical">
           <Text>{virtualEnvInstructions.description}</Text>
           {virtualEnvInstructions.commands.map((cmd, index) => (
             <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
           ))}
-        </Space>
+        </ContentSpace>
       </Panel>
 
       <Panel header={t('resources:pipInstall.specificVersion')} key="version">
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <ContentSpace direction="vertical">
           <Text>{t('resources:pipInstall.versionDesc')}</Text>
           <CommandDisplay command="pip install rediacc==1.0.0" />
           <CommandDisplay command="pip install rediacc>=1.0.0,<2.0.0" />
@@ -242,22 +225,22 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
             command="pip install --upgrade rediacc" 
             description={t('resources:pipInstall.upgradeDesc')}
           />
-        </Space>
+        </ContentSpace>
       </Panel>
 
       <Panel header={t('resources:pipInstall.uninstall')} key="uninstall">
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <ContentSpace direction="vertical">
           <Text>{uninstallInstructions.description}</Text>
           {uninstallInstructions.commands.map((cmd, index) => (
             <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
           ))}
-        </Space>
+        </ContentSpace>
       </Panel>
     </Collapse>
   )
 
   const renderTroubleshooting = () => (
-    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+    <ContentSpace direction="vertical" size="large">
       <Alert
         message={t('resources:pipInstall.commonIssues')}
         type="info"
@@ -274,12 +257,12 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           {(() => {
             const troubleshooting = pipInstallationService.getTroubleshootingCommands('pip-not-found')
             return (
-              <Space direction="vertical" style={{ width: '100%' }}>
+              <ContentSpace direction="vertical">
                 <Text>{troubleshooting.description}</Text>
                 {troubleshooting.commands.map((cmd, index) => (
                   <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
                 ))}
-              </Space>
+              </ContentSpace>
             )
           })()}
         </Panel>
@@ -292,12 +275,12 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           {(() => {
             const troubleshooting = pipInstallationService.getTroubleshootingCommands('permission-denied')
             return (
-              <Space direction="vertical" style={{ width: '100%' }}>
+              <ContentSpace direction="vertical">
                 <Text>{troubleshooting.description}</Text>
                 {troubleshooting.commands.map((cmd, index) => (
                   <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
                 ))}
-              </Space>
+              </ContentSpace>
             )
           })()}
         </Panel>
@@ -309,12 +292,12 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           {(() => {
             const troubleshooting = pipInstallationService.getTroubleshootingCommands('python-version')
             return (
-              <Space direction="vertical" style={{ width: '100%' }}>
+              <ContentSpace direction="vertical">
                 <Text>{troubleshooting.description}</Text>
                 {troubleshooting.commands.map((cmd, index) => (
                   <CommandDisplay key={index} command={cmd} showCopy={!cmd.startsWith('#')} />
                 ))}
-              </Space>
+              </ContentSpace>
             )
           })()}
         </Panel>
@@ -323,7 +306,7 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
       <Alert
         message={t('resources:pipInstall.stillNeedHelp')}
         description={
-          <Space direction="vertical">
+          <ContentSpace direction="vertical">
             <Text>
               {t('resources:pipInstall.checkDocs')}: {' '}
               <a 
@@ -346,12 +329,12 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
                 GitHub Issues
               </a>
             </Text>
-          </Space>
+          </ContentSpace>
         }
         type="info"
         data-testid="pip-install-help-alert"
       />
-    </Space>
+    </ContentSpace>
   )
 
   const getModalTitle = () => {
@@ -380,12 +363,11 @@ export const PipInstallationModal: React.FC<PipInstallationModalProps> = ({
           key="close" 
           onClick={onClose} 
           data-testid="pip-install-close-button"
-          style={styles.buttonSecondary}
         >
           {t('common:close')}
         </Button>
       ]}
-      style={createModalStyle(DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH_LG)}
+      className={ModalSize.Large}
       data-testid="pip-install-modal"
     >
       <Tabs 

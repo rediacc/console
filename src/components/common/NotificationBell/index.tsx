@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Badge, Dropdown, Button, List, Empty, Typography, Space, Tag } from 'antd'
+import { Badge, Dropdown, Button, List, Empty, Space, Tag } from 'antd'
 import { 
   BellOutlined, 
   CloseOutlined,
@@ -22,18 +22,30 @@ import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/es'
-import { useComponentStyles } from '@/hooks/useComponentStyles'
-import { DESIGN_TOKENS, spacing } from '@/utils/styleConstants'
+import {
+  NotificationDropdown,
+  NotificationHeader,
+  NotificationTitle,
+  NotificationListWrapper,
+  NotificationItem,
+  NotificationIconWrapper,
+  NotificationTitleRow,
+  NotificationTitleContent,
+  NotificationText,
+  NotificationTag,
+  NotificationCloseButton,
+  NotificationMessage,
+  NotificationTimestamp,
+  EmptyWrapper,
+  BellButton
+} from './styles'
 
 dayjs.extend(relativeTime)
-
-const { Text } = Typography
 
 const NotificationBell: React.FC = () => {
   const dispatch = useDispatch()
   const { t, i18n } = useTranslation('common')
   const [dropdownOpen, setDropdownOpen] = useState(false)
-  const styles = useComponentStyles()
 
   const { notifications, unreadCount } = useSelector((state: RootState) => state.notifications)
 
@@ -47,16 +59,20 @@ const NotificationBell: React.FC = () => {
   }, [i18n.language])
 
   const getIcon = (type: NotificationType) => {
-    switch (type) {
-      case 'success':
-        return <CheckCircleOutlined style={{ color: 'var(--color-success)' }} />
-      case 'error':
-        return <ExclamationCircleOutlined style={{ color: 'var(--color-error)' }} />
-      case 'warning':
-        return <WarningOutlined style={{ color: 'var(--color-warning)' }} />
-      case 'info':
-        return <InfoCircleOutlined style={{ color: 'var(--color-info)' }} />
-    }
+    const IconComponent = (() => {
+      switch (type) {
+        case 'success': return CheckCircleOutlined
+        case 'error': return ExclamationCircleOutlined
+        case 'warning': return WarningOutlined
+        case 'info': return InfoCircleOutlined
+      }
+    })()
+    
+    return (
+      <NotificationIconWrapper $type={type}>
+        <IconComponent />
+      </NotificationIconWrapper>
+    )
   }
 
   const getTypeColor = (type: NotificationType) => {
@@ -86,21 +102,14 @@ const NotificationBell: React.FC = () => {
   }
 
   const dropdownContent = (
-    <div 
+    <NotificationDropdown 
       className="notification-dropdown" 
       data-testid="notification-dropdown"
-      style={{ 
-        ...styles.modal,
-        maxHeight: 500, 
-      }}
     >
-      <div className="notification-dropdown-header" style={{ 
-        ...styles.flexBetween,
-        padding: `${spacing('SM')}px ${spacing('MD')}px`, 
-      }}>
-        <Text strong style={styles.heading4}>
+      <NotificationHeader>
+        <NotificationTitle strong>
           {t('notifications.title', 'Notifications')}
-        </Text>
+        </NotificationTitle>
         {notifications.length > 0 && (
           <Space>
             <Button 
@@ -123,71 +132,63 @@ const NotificationBell: React.FC = () => {
             </Button>
           </Space>
         )}
-      </div>
+      </NotificationHeader>
       
-      <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+      <NotificationListWrapper>
         {notifications.length === 0 ? (
-          <Empty 
-            description={t('notifications.empty', 'No notifications')}
-            style={{ padding: `${spacing('XXL')}px 0` }}
-          />
+          <EmptyWrapper>
+            <Empty description={t('notifications.empty', 'No notifications')} />
+          </EmptyWrapper>
         ) : (
           <List
             dataSource={notifications}
             renderItem={(notification: Notification, index: number) => (
-              <List.Item
+              <NotificationItem
                 key={notification.id}
-                className={notification.read ? 'ant-list-item-read' : 'ant-list-item-unread'}
-                style={{
-                  padding: `${spacing('SM')}px ${spacing('MD')}px`,
-                  cursor: 'pointer',
-                  transition: DESIGN_TOKENS.TRANSITIONS.DEFAULT
-                }}
+                $isRead={notification.read}
                 onClick={() => handleMarkAsRead(notification.id)}
                 data-testid={`notification-item-${index}`}
               >
                 <List.Item.Meta
-                  avatar={getIcon(notification.type)}
                   title={
-                    <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-                      <Space>
-                        <Text strong={!notification.read}>{notification.title}</Text>
-                        <Tag color={getTypeColor(notification.type)} style={{ marginLeft: spacing('XS') }}>
-                          {t(`notifications.types.${notification.type}`).toUpperCase()}
-                        </Tag>
-                      </Space>
-                      <Button
+                    <NotificationTitleRow>
+                      <NotificationTitleContent>
+                        <NotificationText $isRead={notification.read}>
+                          {notification.title}
+                        </NotificationText>
+                        <NotificationTag>
+                          <Tag color={getTypeColor(notification.type)}>
+                            {t(`notifications.types.${notification.type}`).toUpperCase()}
+                          </Tag>
+                        </NotificationTag>
+                        {getIcon(notification.type)}
+                      </NotificationTitleContent>
+                      <NotificationCloseButton
                         type="text"
                         size="small"
                         icon={<CloseOutlined />}
                         onClick={(e) => handleClear(notification.id, e)}
-                        style={{ marginLeft: 'auto' }}
                         data-testid={`notification-close-${index}`}
                       />
-                    </Space>
+                    </NotificationTitleRow>
                   }
                   description={
                     <div>
-                      <Text className="notification-message" style={{
-                        ...styles.body,
-                        display: 'block',
-                        marginBottom: spacing('XS'),
-                        wordBreak: 'break-word'
-                      }}>
+                      <NotificationMessage className="notification-message">
                         {notification.message}
-                      </Text>
-                      <Text type="secondary" style={styles.caption}>
+                      </NotificationMessage>
+                      <NotificationTimestamp type="secondary">
                         {dayjs(notification.timestamp).fromNow()}
-                      </Text>
+                      </NotificationTimestamp>
                     </div>
                   }
                 />
-              </List.Item>
+              </NotificationItem>
             )}
           />
         )}
-      </div>
-    </div>
+      </NotificationListWrapper>
+    </NotificationDropdown>
   )
 
   return (
@@ -200,10 +201,9 @@ const NotificationBell: React.FC = () => {
       popupRender={() => dropdownContent}
     >
       <Badge count={unreadCount} size="small">
-        <Button
+        <BellButton
           type="text"
-          icon={<BellOutlined style={styles.icon.medium} />}
-          style={styles.touchTarget}
+          icon={<BellOutlined />}
           data-testid="notification-bell"
         />
       </Badge>

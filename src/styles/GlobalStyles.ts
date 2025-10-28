@@ -299,12 +299,24 @@ export const GlobalStyles = createGlobalStyle`
     border-radius: 6px;
   }
 
-  .ant-btn:focus-visible {
-    outline: 3px solid var(--color-primary) !important;
-    outline-offset: 2px;
-    box-shadow: 0 0 0 4px rgba(85, 107, 47, 0.25) !important;
+  /* Override Ant Design's default focus-visible */
+  /* Option 1: Subtle focus (recommended for accessibility) */
+  .ant-btn:not(:disabled):focus-visible {
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: 0 0 0 2px rgba(85, 107, 47, 0.2) !important;
     border-color: var(--color-primary) !important;
+    transition: all 0.2s ease !important;
   }
+
+  /* Option 2: Completely disable (uncomment if needed, but not recommended for accessibility)
+  .ant-btn:not(:disabled):focus-visible {
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+    transition: none !important;
+  }
+  */
 
   a:focus-visible,
   button:focus-visible,
@@ -594,6 +606,124 @@ export const GlobalStyles = createGlobalStyle`
     .ant-select-selector {
       color: ${({ theme }) => theme.colors.textPrimary} !important;
     }
+  }
+
+  /* ============================================
+     MODAL RESPONSIVE SIZING SYSTEM
+     ============================================ */
+
+  /* Modal animations */
+  .ant-modal-content {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  /* Modal scrollbar styling */
+  .ant-modal-body::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .ant-modal-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .ant-modal-body::-webkit-scrollbar-thumb {
+    background-color: ${({ theme }) => theme.colors.borderSecondary};
+    border-radius: 4px;
+  }
+
+  .ant-modal-body::-webkit-scrollbar-thumb:hover {
+    background-color: ${({ theme }) => theme.colors.textSecondary};
+  }
+
+  /* Small Modal - 480px max-width */
+  .modal-sm {
+    max-width: 480px !important;
+    width: 90% !important;
+  }
+
+  .modal-sm .ant-modal-body {
+    max-height: min(85vh, 640px);
+    overflow-y: auto;
+  }
+
+  /* Medium Modal - 720px max-width */
+  .modal-md {
+    max-width: 720px !important;
+    width: 92% !important;
+  }
+
+  .modal-md .ant-modal-body {
+    max-height: min(88vh, 800px);
+    overflow-y: auto;
+  }
+
+  /* Large Modal - 1200px max-width */
+  .modal-lg {
+    max-width: 1200px !important;
+    width: 90% !important;
+  }
+
+  .modal-lg .ant-modal-body {
+    max-height: min(90vh, 960px);
+    overflow-y: auto;
+  }
+
+  /* Extra Large Modal - 1400px max-width */
+  .modal-xl {
+    max-width: 1400px !important;
+    width: 95% !important;
+  }
+
+  .modal-xl .ant-modal-body {
+    max-height: min(92vh, 1120px);
+    overflow-y: auto;
+  }
+
+  /* Full Width Modal - 1600px max-width */
+  .modal-full {
+    max-width: 1600px !important;
+    width: 98% !important;
+  }
+
+  .modal-full .ant-modal-body {
+    max-height: min(95vh, 1280px);
+    overflow-y: auto;
+  }
+
+  /* Responsive adjustments for tablets */
+  @media (max-width: 768px) {
+    .modal-sm { width: 95vw !important; }
+    .modal-sm .ant-modal-body { max-height: 80vh; }
+    
+    .modal-md { width: 96vw !important; }
+    .modal-md .ant-modal-body { max-height: 85vh; }
+    
+    .modal-lg { width: 97vw !important; }
+    .modal-lg .ant-modal-body { max-height: 90vh; }
+    
+    .modal-xl { width: 98vw !important; }
+    .modal-xl .ant-modal-body { max-height: 92vh; }
+    
+    .modal-full { width: 99vw !important; }
+    .modal-full .ant-modal-body { max-height: 95vh; }
+  }
+
+  /* Responsive adjustments for mobile */
+  @media (max-width: 480px) {
+    .modal-sm { width: 98vw !important; }
+    .modal-sm .ant-modal-body { max-height: 85vh; }
+    
+    .modal-md { width: 99vw !important; }
+    .modal-md .ant-modal-body { max-height: 90vh; }
+    
+    .modal-lg { width: 99vw !important; }
+    .modal-lg .ant-modal-body { max-height: 92vh; }
+    
+    .modal-xl { width: 99vw !important; }
+    .modal-xl .ant-modal-body { max-height: 95vh; }
+    
+    .modal-full { width: 100vw !important; }
+    .modal-full .ant-modal-body { max-height: 98vh; }
   }
 
   /* ============================================
