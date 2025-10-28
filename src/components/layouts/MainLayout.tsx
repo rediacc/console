@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { Layout, Avatar, Space, Badge, Typography, Button, Segmented, Tooltip } from 'antd'
+import { Layout, Avatar, Space, Badge, Typography, Button, Segmented, Tooltip, message } from 'antd'
 import {
   ThunderboltOutlined,
   UserOutlined,
@@ -48,6 +48,7 @@ const MainLayout: React.FC = () => {
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false)
+  const [forceUpdate, setForceUpdate] = useState(0)
   const navigate = useNavigate()
   const location = useLocation()
   const dispatch = useDispatch()
@@ -92,6 +93,37 @@ const MainLayout: React.FC = () => {
 
     updateCompanyData()
   }, [companyData, company, dispatch])
+
+  // Keyboard shortcut handler for global power mode (Ctrl+Shift+E)
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+        e.preventDefault()
+
+        // Check if running on localhost
+        const onLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+
+        // Toggle global power mode (or localhost mode if on localhost)
+        const newState = featureFlags.togglePowerMode()
+
+        // Show toast with current state - different message for localhost vs non-localhost
+        const msg = onLocalhost
+          ? (newState ? 'Localhost Mode - All features enabled' : 'Localhost Mode - All features disabled')
+          : (newState ? 'Advanced options enabled' : 'Advanced options disabled')
+
+        message.info(msg)
+
+        // Console log for debugging
+        console.log(`[${onLocalhost ? 'LocalhostMode' : 'PowerMode'}] ${msg}`)
+
+        // Force re-render to update menu items
+        setForceUpdate(prev => prev + 1)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyPress)
+    return () => window.removeEventListener('keydown', handleKeyPress)
+  }, [])
 
   // Define all menu items with visibility flags
   const allMenuItems = [
@@ -218,7 +250,7 @@ const MainLayout: React.FC = () => {
     navigate('/login')
   }
 
-  const menuItems = allMenuItems
+  const menuItems = useMemo(() => allMenuItems
     .filter(item => {
       // Check UI mode visibility
       if (item.type !== 'divider' && !(uiMode === 'expert' || item.showInSimple)) {
@@ -248,7 +280,9 @@ const MainLayout: React.FC = () => {
 
       return true
     })
-    .map(({ showInSimple, requiresPlan, featureFlag, ...item }) => item)
+    .map(({ showInSimple, requiresPlan, featureFlag, ...item }) => item),
+    [uiMode, companyData, forceUpdate]
+  )
 
   // Determine if current page needs no-scroll behavior
   // All pages are now scrollable, so no pages need the no-scroll class

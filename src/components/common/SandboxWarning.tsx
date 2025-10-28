@@ -7,6 +7,7 @@ import { configService } from '@/services/configService'
 const SandboxWarning: React.FC = () => {
   const { t } = useTranslation('common')
   const [isVisible, setIsVisible] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false)
 
   useEffect(() => {
     const loadInstanceName = async () => {
@@ -16,6 +17,17 @@ const SandboxWarning: React.FC = () => {
       setIsVisible(name.toLowerCase() === 'sandbox')
     }
     loadInstanceName()
+  }, [])
+
+  // Handle responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
   }, [])
 
   useEffect(() => {
@@ -47,7 +59,7 @@ const SandboxWarning: React.FC = () => {
       style={{
         position: 'fixed',
         top: 0,
-        left: 0,
+        left: isMobile ? 0 : 200, // Start after sidebar on desktop (200px), full width on mobile
         right: 0,
         zIndex: 1001, // Higher than navigation
         borderRadius: 0,
