@@ -154,6 +154,36 @@
         }
       }
     },
+    "validate": {
+      "description": "Validate repository by running prep, up, health checks, test, and down",
+      "name": "validate",
+      "params": {
+        "repo": {
+          "help": "Repository name to validate",
+          "label": "Repository"
+        },
+        "grand": {
+          "help": "Parent repository name",
+          "label": "Grand Repository"
+        },
+        "skip_prep": {
+          "help": "Skip the prep phase if already run recently",
+          "label": "Skip Prep"
+        },
+        "skip_down": {
+          "help": "Leave services running after validation",
+          "label": "Skip Down"
+        },
+        "cleanup": {
+          "help": "Unmount repository after validation completes",
+          "label": "Cleanup"
+        },
+        "timeout": {
+          "help": "Maximum time per function in seconds (default: 300)",
+          "label": "Timeout (seconds)"
+        }
+      }
+    },
     "expand": {
       "description": "Expand repository storage online with zero downtime",
       "name": "expand",
