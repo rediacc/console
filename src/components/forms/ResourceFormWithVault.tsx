@@ -357,6 +357,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
           labelAlign="right"
           colon={true}
           style={{ flexShrink: 0 }}
+          className="resource-form-with-vault"
         >
           <Row gutter={[spacing('SM'), spacing('SM')]} wrap>
             {fields.map((field) => {
