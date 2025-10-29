@@ -690,6 +690,42 @@ export const GlobalStyles = createGlobalStyle`
     overflow-y: auto;
   }
 
+  /* Fullscreen Modal - occupies entire browser viewport */
+  .modal-fullscreen {
+    max-width: 100vw !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    top: 0 !important;
+    padding: 0 !important;
+  }
+
+  .modal-fullscreen .ant-modal-content {
+    height: 100vh !important;
+    width: 100vw !important;
+    border-radius: 0 !important;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal-fullscreen .ant-modal-header {
+    flex-shrink: 0;
+    border-bottom: 1px solid ${({ theme }) => theme.colors.borderSecondary};
+  }
+
+  .modal-fullscreen .ant-modal-body {
+    flex: 1;
+    min-height: 0;
+    max-height: unset !important;
+    overflow-y: auto;
+    padding: 24px;
+  }
+
+  .modal-fullscreen .ant-modal-footer {
+    flex-shrink: 0;
+    border-top: 1px solid ${({ theme }) => theme.colors.borderSecondary};
+  }
+
   /* Responsive adjustments for tablets */
   @media (max-width: 768px) {
     .modal-sm { width: 95vw !important; }
