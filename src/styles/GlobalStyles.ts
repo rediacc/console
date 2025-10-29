@@ -682,36 +682,12 @@ export const GlobalStyles = createGlobalStyle`
   /* Full Width Modal - 1600px max-width */
   .modal-full {
     max-width: 1600px !important;
-    width: 90% !important;
+    width: 98% !important;
   }
 
   .modal-full .ant-modal-body {
     max-height: min(95vh, 1280px);
     overflow-y: auto;
-  }
-
-  /* Fullscreen Modal - occupies entire browser viewport */
-  .modal-fullscreen {
-    max-width: 90vw !important;
-    width: 90vw !important;
-  }
-
-  .modal-fullscreen .ant-modal-header {
-    flex-shrink: 0;
-    border-bottom: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  }
-
-  .modal-fullscreen .ant-modal-body {
-    flex: 1;
-    min-height: 0;
-    max-height: unset !important;
-    overflow-y: auto;
-    padding: 24px;
-  }
-
-  .modal-fullscreen .ant-modal-footer {
-    flex-shrink: 0;
-    border-top: 1px solid ${({ theme }) => theme.colors.borderSecondary};
   }
 
   /* Responsive adjustments for tablets */
