@@ -12,9 +12,9 @@ const AuthLayout: React.FC = () => {
   const { theme } = useTheme()
   const styles = useComponentStyles()
   
-  const backgroundStyle = theme === 'dark' 
+  const backgroundStyle = theme === 'dark'
     ? { background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)' }
-    : { background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' }
+    : { background: 'linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)' }
   
   return (
     <Layout style={{ minHeight: '100vh', ...backgroundStyle }} data-testid="auth-layout-container">

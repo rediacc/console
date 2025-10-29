@@ -1,6 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
+import { cookieDetector } from './cookieDetector';
 
 // Only load default language initially (English)
 import enAuth from './locales/en/auth.json';
@@ -160,9 +161,13 @@ const loadLanguageResources = async (lng: string) => {
   }
 };
 
+// Configure language detector with custom cookie detector
+const languageDetector = new LanguageDetector();
+languageDetector.addDetector(cookieDetector);
+
 // Initialize i18n with lazy loading
 i18n
-  .use(LanguageDetector)
+  .use(languageDetector)
   .use(initReactI18next)
   .init({
     fallbackLng: 'en',
@@ -175,8 +180,8 @@ i18n
       escapeValue: false,
     },
     detection: {
-      order: ['localStorage', 'navigator'],
-      caches: ['localStorage'],
+      order: ['cookieDetector', 'navigator'],
+      caches: ['cookieDetector'],
     },
     react: {
       useSuspense: false, // Disable suspense to prevent blocking
