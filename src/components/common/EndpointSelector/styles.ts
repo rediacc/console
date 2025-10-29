@@ -66,6 +66,7 @@ export const EndpointName = styled.span<{ $disabled?: boolean }>`
 `;
 
 export const EndpointNameText = styled.p`
+  margin-top: 0;
   font-size: ${({ theme }) => theme.fontSize.XS}px;
   max-width: 120px;
   margin-bottom: 0;
