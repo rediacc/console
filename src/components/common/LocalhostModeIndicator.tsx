@@ -4,7 +4,12 @@ import { ThunderboltOutlined } from '@ant-design/icons'
 import { featureFlags } from '@/config/featureFlags'
 
 const LocalhostModeIndicator: React.FC = () => {
-  const [isVisible, setIsVisible] = useState(false)
+  // Initialize state based on localhost check and feature flag
+  const [isVisible, setIsVisible] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    return isLocalhost && featureFlags.isLocalhostModeEnabled()
+  })
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false)
 
   useEffect(() => {
@@ -12,17 +17,13 @@ const LocalhostModeIndicator: React.FC = () => {
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
 
     if (!isLocalhost) {
-      setIsVisible(false)
       return
     }
 
-    // Check initial state
+    // Check state changes
     const checkLocalhostMode = () => {
       setIsVisible(featureFlags.isLocalhostModeEnabled())
     }
-
-    // Check immediately
-    checkLocalhostMode()
 
     // Poll for changes (since we toggle via keyboard shortcut)
     const interval = setInterval(checkLocalhostMode, 500)
