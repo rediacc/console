@@ -40,16 +40,25 @@
   "selectStatus": "Alle Status",
   "selectTeam": "Wählen Sie ein Team aus, um Warteschlangenelemente anzuzeigen",
   "statistics": {
+    "active": "Aktiv",
+    "failed": "Fehlgeschlagen",
     "processing": "Verarbeitung",
+    "stale": "Abgestanden",
     "timeSinceAssigned": "Zeit seit Zuweisung",
+    "total": "Gesamt",
     "totalDuration": "Gesamtdauer"
   },
   "status": "Status",
+  "statusActive": "Aktiv",
+  "statusAssigned": "Zugewiesen",
   "statusCancelled": "Abgesagt",
+  "statusCancelling": "Stornieren",
   "statusCompleted": "Vollendet",
   "statusFailed": "Fehlgeschlagen",
   "statusPending": "Ausstehend",
+  "statusProcessing": "Verarbeitung",
   "statusRunning": "Läuft",
+  "statusStale": "Abgestanden",
   "tabs": {
     "active": {
       "description": "In diesem Abschnitt werden alle aktiven Aufgaben angezeigt, einschließlich ausstehender Elemente, die auf Zuweisung warten, Aufgaben, die von Maschinen verarbeitet werden, und Aufgaben, die gerade abgebrochen werden.",

@@ -161,7 +161,9 @@
   },
   "theme": {
     "dark": "暗い",
-    "light": "ライト"
+    "light": "ライト",
+    "switchToDark": "ダークモードに切り替える",
+    "switchToLight": "ライトモードに切り替える"
   },
   "thisMonth": "今月",
   "today": "今日",
@@ -471,6 +473,8 @@
     "fieldsMovedFromExtra": "extraFields から復元された {{count}} 個のフィールド: {{fields}}",
     "fieldsMovedToExtra": "{{count}} 個のフィールドが extraFields に移動されました: {{fields}}",
     "formatJson": "JSON形式",
+    "hostEntryHelp": "オプション。 SSH の既知のホスト エントリは自動的に検出されます。",
+    "hostEntryPlaceholder": "接続テスト中に自動入力されます",
     "importJson": "JSONをインポートする",
     "invalidFormat": "無効な形式です。 {{説明}}",
     "invalidJsonFormat": "無効な JSON 形式",
@@ -494,6 +498,7 @@
     "requiredFields": "必須フィールド",
     "resetToFormValues": "フォーム値にリセット",
     "saveVaultConfiguration": "ボールト構成の保存",
+    "sshPasswordPlaceholder": "オプション: SSH キーの初期設定用",
     "sshPasswordRequiredWhenNoKey": "初期キー設定には SSH パスワードが必要です",
     "systemCompatibility": {
       "available": "利用可能",
@@ -520,9 +525,12 @@
     },
     "testConnection": {
       "button": "テスト接続",
+      "description": "SSH 接続をテストし、SSH キー認証を自動的に構成します",
       "failed": "SSH接続に失敗しました",
       "initiated": "SSH接続テストが開始されました。 結果についてはキューを確認してください。",
+      "label": "テスト接続",
       "missingFields": "テストする前に IP アドレス、ユーザー名、パスワードを入力してください",
+      "required": "マシン作成前に接続テストが必要です。",
       "success": "SSH接続に成功しました",
       "testing": "接続をテストしています..."
     },

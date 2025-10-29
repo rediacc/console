@@ -40,16 +40,25 @@
   "selectStatus": "Все статусы",
   "selectTeam": "Выберите команду для просмотра элементов очереди",
   "statistics": {
+    "active": "Активный",
+    "failed": "Неуспешный",
     "processing": "Обработка",
+    "stale": "Несвежий",
     "timeSinceAssigned": "Время с момента назначения",
+    "total": "Общий",
     "totalDuration": "Общая продолжительность"
   },
   "status": "Статус",
+  "statusActive": "Активный",
+  "statusAssigned": "Назначенный",
   "statusCancelled": "Отменено",
+  "statusCancelling": "Отмена",
   "statusCompleted": "Завершенный",
   "statusFailed": "Неуспешный",
   "statusPending": "В ожидании",
+  "statusProcessing": "Обработка",
   "statusRunning": "Бег",
+  "statusStale": "Несвежий",
   "tabs": {
     "active": {
       "description": "В этом разделе отображаются все активные задачи, включая ожидающие назначения элементы, задачи, обрабатываемые компьютерами, и задачи, находящиеся в процессе отмены.",

@@ -40,16 +40,25 @@
   "selectStatus": "جميع الحالات",
   "selectTeam": "حدد فريقًا لعرض عناصر قائمة الانتظار",
   "statistics": {
+    "active": "نشيط",
+    "failed": "فشل",
     "processing": "يعالج",
+    "stale": "قديمة",
     "timeSinceAssigned": "الوقت منذ التعيين",
+    "total": "المجموع",
     "totalDuration": "المدة الإجمالية"
   },
   "status": "حالة",
+  "statusActive": "نشيط",
+  "statusAssigned": "مُكَلَّف",
   "statusCancelled": "تم الإلغاء",
+  "statusCancelling": "الإلغاء",
   "statusCompleted": "مكتمل",
   "statusFailed": "فشل",
   "statusPending": "قيد الانتظار",
+  "statusProcessing": "يعالج",
   "statusRunning": "جري",
+  "statusStale": "قديمة",
   "tabs": {
     "active": {
       "description": "يعرض هذا القسم جميع المهام النشطة بما في ذلك العناصر المعلقة التي تنتظر التعيين، والمهام التي تتم معالجتها بواسطة الأجهزة، والمهام قيد الإلغاء.",

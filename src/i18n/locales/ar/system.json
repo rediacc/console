@@ -2,16 +2,19 @@
   "actions": {
     "addMember": "إضافة عضو",
     "addPermission": "إضافة إذن",
+    "assignUser": "تعيين المستخدم",
     "changePassword": "تغيير كلمة المرور",
     "configureVault": "تكوين قبو",
     "createGroup": "إنشاء مجموعة",
     "createTeam": "إنشاء فريق",
     "createUser": "إنشاء مستخدم",
     "deactivate": "إلغاء التنشيط",
+    "edit": "يحرر",
     "members": "أعضاء",
     "permissions": "الأذونات",
     "resetAuth": "إعادة تعيين المصادقة",
     "token": "رمز مميز",
+    "trace": "يتعقب",
     "twoFactorAuth": "المصادقة الثنائية"
   },
   "architecture": {
@@ -43,6 +46,47 @@
     "viewForce": "قوة",
     "viewHierarchy": "تَسَلسُل",
     "viewRadial": "شعاعي"
+  },
+  "audit": {
+    "columns": {
+      "action": "فعل",
+      "details": "تفاصيل",
+      "entityName": "اسم الكيان",
+      "entityType": "نوع الكيان",
+      "timestamp": "الطابع الزمني",
+      "user": "مستخدم"
+    },
+    "empty": {
+      "clearFilters": "مسح عوامل التصفية وتوسيع النطاق الزمني",
+      "noLogsInRange": "لم يتم العثور على سجلات تدقيق للنطاق الزمني المحدد",
+      "noMatchingFilters": "لا توجد سجلات تتطابق مع عوامل التصفية الحالية"
+    },
+    "errors": {
+      "loadDescription": "حدث خطأ أثناء تحميل سجلات التدقيق. يرجى محاولة تحديث النطاق الزمني الخاص بك أو تعديله.",
+      "loadTitle": "غير قادر على تحميل سجلات التدقيق",
+      "tryAgain": "حاول ثانية",
+      "unableToLoad": "غير قادر على تحميل سجلات التدقيق"
+    },
+    "export": {
+      "noData": "لا توجد بيانات متاحة للتصدير",
+      "successCSV": "تم تصدير {{count}} من سجلات التدقيق إلى ملف CSV",
+      "successJSON": "تم تصدير {{count}} من سجلات التدقيق إلى JSON",
+      "tooltip": "تصدير سجلات التدقيق بتنسيق CSV أو JSON"
+    },
+    "filters": {
+      "actions": "الإجراءات",
+      "allEntities": "كافة الجهات",
+      "dateRange": "النطاق الزمني",
+      "entityType": "نوع الكيان",
+      "export": "يصدّر",
+      "search": "يبحث",
+      "searchPlaceholder": "البحث في السجلات..."
+    },
+    "pagination": {
+      "showing": "عرض {{start}}-{{end}} من {{total}} السجلات"
+    },
+    "subtitle": "تتبع جميع الأنشطة والتغييرات في مؤسستك",
+    "title": "سجلات التدقيق"
   },
   "dangerZone": {
     "blockUserRequests": {
@@ -179,6 +223,30 @@
   },
   "regionsInfrastructure": {
     "title": "المناطق والبنية التحتية"
+  },
+  "tables": {
+    "permissionGroups": {
+      "actions": "الإجراءات",
+      "groupName": "اسم المجموعة",
+      "permissions": "الأذونات",
+      "users": "المستخدمين"
+    },
+    "teams": {
+      "actions": "الإجراءات",
+      "machines": "آلات",
+      "members": "أعضاء",
+      "repositories": "المستودعات",
+      "storage": "تخزين",
+      "teamName": "اسم الفريق",
+      "vaultVersion": "نسخة قبو"
+    },
+    "users": {
+      "actions": "الإجراءات",
+      "email": "بريد إلكتروني",
+      "lastActive": "آخر نشاط",
+      "permissionGroup": "مجموعة الأذونات",
+      "status": "حالة"
+    }
   },
   "userSessions": {
     "active": "نشيط",

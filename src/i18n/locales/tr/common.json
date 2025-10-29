@@ -161,7 +161,9 @@
   },
   "theme": {
     "dark": "Karanlık",
-    "light": "Işık"
+    "light": "Işık",
+    "switchToDark": "Karanlık moda geç",
+    "switchToLight": "Işık moduna geç"
   },
   "thisMonth": "Bu Ay",
   "today": "Bugün",
@@ -471,6 +473,8 @@
     "fieldsMovedFromExtra": "extraFields'tan geri yüklenen {{count}} alan: {{fields}}",
     "fieldsMovedToExtra": "{{count}} alan extraFields'a taşındı: {{fields}}",
     "formatJson": "JSON'u biçimlendir",
+    "hostEntryHelp": "İsteğe bağlı. SSH tarafından bilinen ana makine girişi otomatik olarak algılanacaktır.",
+    "hostEntryPlaceholder": "Bağlantı testi sırasında otomatik olarak doldurulur",
     "importJson": "JSON'u içe aktar",
     "invalidFormat": "Geçersiz biçim. {{Tanım}}",
     "invalidJsonFormat": "Geçersiz JSON biçimi",
@@ -494,6 +498,7 @@
     "requiredFields": "Zorunlu Alanlar",
     "resetToFormValues": "Form Değerlerine Sıfırla",
     "saveVaultConfiguration": "Kasa Yapılandırmasını Kaydet",
+    "sshPasswordPlaceholder": "İsteğe bağlı: İlk SSH anahtarı kurulumu için",
     "sshPasswordRequiredWhenNoKey": "İlk anahtar kurulumu için SSH şifresi gereklidir",
     "systemCompatibility": {
       "available": "Mevcut",
@@ -520,9 +525,12 @@
     },
     "testConnection": {
       "button": "Bağlantıyı Test Et",
+      "description": "SSH bağlantısını test edin ve SSH anahtar kimlik doğrulamasını otomatik olarak yapılandırın",
       "failed": "SSH bağlantısı başarısız oldu",
       "initiated": "SSH bağlantı testi başlatıldı. Lütfen sonuçlar için sırayı kontrol edin.",
+      "label": "Bağlantıyı Test Et",
       "missingFields": "Lütfen test etmeden önce IP adresini, kullanıcı adını ve şifreyi girin",
+      "required": "Makineyi oluşturmadan önce bağlantı testi yapılması gerekiyor.",
       "success": "SSH bağlantısı başarılı",
       "testing": "Bağlantı test ediliyor..."
     },

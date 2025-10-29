@@ -161,7 +161,9 @@
   },
   "theme": {
     "dark": "Темный",
-    "light": "Свет"
+    "light": "Свет",
+    "switchToDark": "Переключиться в темный режим",
+    "switchToLight": "Переключиться в светлый режим"
   },
   "thisMonth": "В этом месяце",
   "today": "Сегодня",
@@ -471,6 +473,8 @@
     "fieldsMovedFromExtra": "{{count}} полей восстановлено из extraFields: {{fields}}",
     "fieldsMovedToExtra": "Поля ({{count}}) перемещены в extraFields: {{fields}}",
     "formatJson": "Формат JSON",
+    "hostEntryHelp": "Необязательный. Запись известного хоста SSH будет обнаружена автоматически.",
+    "hostEntryPlaceholder": "Автоматически заполняется во время проверки соединения",
     "importJson": "Импортировать JSON",
     "invalidFormat": "Неверный формат. {{описание}}",
     "invalidJsonFormat": "Неверный формат JSON",
@@ -494,6 +498,7 @@
     "requiredFields": "Обязательные поля",
     "resetToFormValues": "Сброс до значений формы",
     "saveVaultConfiguration": "Сохранить конфигурацию хранилища",
+    "sshPasswordPlaceholder": "Необязательно: для первоначальной настройки ключа SSH.",
     "sshPasswordRequiredWhenNoKey": "Пароль SSH необходим для первоначальной настройки ключа.",
     "systemCompatibility": {
       "available": "Доступный",
@@ -520,9 +525,12 @@
     },
     "testConnection": {
       "button": "Тестовое соединение",
+      "description": "Проверьте соединение SSH и автоматически настройте аутентификацию по ключу SSH.",
       "failed": "SSH-соединение не удалось",
       "initiated": "Начат тест соединения SSH. Пожалуйста, проверьте очередь на наличие результатов.",
+      "label": "Тестовое соединение",
       "missingFields": "Пожалуйста, заполните IP-адрес, имя пользователя и пароль перед тестированием.",
+      "required": "Перед созданием машины требуется проверка подключения.",
       "success": "SSH-соединение успешно",
       "testing": "Тестирование соединения..."
     },

@@ -161,7 +161,9 @@
   },
   "theme": {
     "dark": "Sombre",
-    "light": "Lumière"
+    "light": "Lumière",
+    "switchToDark": "Passer en mode sombre",
+    "switchToLight": "Passer en mode lumière"
   },
   "thisMonth": "Ce mois-ci",
   "today": "Aujourd'hui",
@@ -471,6 +473,8 @@
     "fieldsMovedFromExtra": "{{count}} champ(s) restauré(s) à partir d'extraFields : {{fields}}",
     "fieldsMovedToExtra": "{{count}} champ(s) déplacé(s) vers extraFields : {{fields}}",
     "formatJson": "Formater JSON",
+    "hostEntryHelp": "Facultatif. L’entrée d’hôte connue SSH sera détectée automatiquement.",
+    "hostEntryPlaceholder": "Rempli automatiquement pendant le test de connexion",
     "importJson": "Importer du JSON",
     "invalidFormat": "Format invalide. {{description}}",
     "invalidJsonFormat": "Format JSON invalide",
@@ -494,6 +498,7 @@
     "requiredFields": "Champs obligatoires",
     "resetToFormValues": "Réinitialiser les valeurs du formulaire",
     "saveVaultConfiguration": "Enregistrer la configuration du coffre-fort",
+    "sshPasswordPlaceholder": "Facultatif : pour la configuration initiale de la clé SSH",
     "sshPasswordRequiredWhenNoKey": "Le mot de passe SSH est requis pour la configuration initiale de la clé",
     "systemCompatibility": {
       "available": "Disponible",
@@ -520,9 +525,12 @@
     },
     "testConnection": {
       "button": "Tester la connexion",
+      "description": "Testez la connexion SSH et configurez automatiquement l'authentification par clé SSH",
       "failed": "La connexion SSH a échoué",
       "initiated": "Le test de connexion SSH a été lancé. Veuillez vérifier la file d'attente pour les résultats.",
+      "label": "Tester la connexion",
       "missingFields": "Veuillez remplir l'adresse IP, le nom d'utilisateur et le mot de passe avant de tester",
+      "required": "Test de connexion obligatoire avant de créer la machine.",
       "success": "Connexion SSH réussie",
       "testing": "Test de connexion..."
     },

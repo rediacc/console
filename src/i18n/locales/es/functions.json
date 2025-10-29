@@ -216,6 +216,10 @@
       "description": "Montar sistemas de archivos de repositorio",
       "name": "montar",
       "params": {
+        "checkpoint": {
+          "help": "Restaurar contenedores desde el punto de control si están disponibles (requiere CRIU)",
+          "label": "Habilitar restauración de puntos de control"
+        },
         "from": {
           "help": "Máquina remota para montar desde",
           "label": "De la máquina"
@@ -312,6 +316,10 @@
       "description": "Enviar el repositorio al almacenamiento remoto",
       "name": "empujar",
       "params": {
+        "checkpoint": {
+          "help": "Habilite el modo de copia de seguridad activa con punto de control (requiere CRIU, cero tiempo de inactividad para repositorios en línea)",
+          "label": "Habilitar punto de control"
+        },
         "dest": {
           "help": "Nombre del archivo de copia de seguridad",
           "label": "Nombre de archivo de destino"
@@ -378,6 +386,10 @@
           "help": "Instale los controladores de GPU AMD (auto = detectar GPU primero, verdadero = instalar siempre, falso = omitir)",
           "label": "Instalar el controlador de GPU AMD"
         },
+        "install_criu": {
+          "help": "Instale CRIU para soporte de punto de control/restauración (automático = instalar si el kernel >= 3.11, verdadero = forzar la instalación, falso = omitir, manual = instalaciones del usuario)",
+          "label": "Instalar CREAR"
+        },
         "install_nvidia_driver": {
           "help": "Instale los controladores de GPU NVIDIA (automático = detectar la GPU primero, verdadero = instalar siempre, falso = omitir)",
           "label": "Instalar el controlador de GPU NVIDIA"
@@ -400,6 +412,10 @@
       "description": "Desmontar sistemas de archivos del repositorio",
       "name": "desmontar",
       "params": {
+        "checkpoint": {
+          "help": "Crear punto de control antes de desmontar (requiere CRIU)",
+          "label": "Crear punto de control"
+        },
         "from": {
           "help": "Máquina remota para desmontar",
           "label": "De la máquina"
@@ -421,6 +437,36 @@
         "repo": {
           "help": "Nombre(s) del repositorio, separados por comas",
           "label": "Repositorio"
+        }
+      }
+    },
+    "validate": {
+      "description": "Valide el repositorio ejecutando preparación, activación, comprobaciones de estado, prueba y desactivación",
+      "name": "validar",
+      "params": {
+        "cleanup": {
+          "help": "Desmontar el repositorio una vez completada la validación",
+          "label": "Limpieza"
+        },
+        "grand": {
+          "help": "Nombre del repositorio principal",
+          "label": "Gran repositorio"
+        },
+        "repo": {
+          "help": "Nombre del repositorio a validar",
+          "label": "Repositorio"
+        },
+        "skip_down": {
+          "help": "Dejar los servicios ejecutándose después de la validación",
+          "label": "Saltar hacia abajo"
+        },
+        "skip_prep": {
+          "help": "Omita la fase de preparación si ya se ejecutó recientemente",
+          "label": "Saltar preparación"
+        },
+        "timeout": {
+          "help": "Tiempo máximo por función en segundos (predeterminado: 300)",
+          "label": "Tiempo de espera (segundos)"
         }
       }
     }

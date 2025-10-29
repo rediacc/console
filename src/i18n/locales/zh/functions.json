@@ -216,6 +216,10 @@
       "description": "挂载仓库文件系统",
       "name": "挂载",
       "params": {
+        "checkpoint": {
+          "help": "如果可用，从检查点恢复容器（需要 CRIU）",
+          "label": "启用检查点恢复"
+        },
         "from": {
           "help": "要挂载的远程机器",
           "label": "从机器"
@@ -312,6 +316,10 @@
       "description": "将仓库推送到远程存储",
       "name": "推送",
       "params": {
+        "checkpoint": {
+          "help": "启用带检查点的热备份模式（需要CRIU，在线回购零停机）",
+          "label": "启用检查点"
+        },
         "dest": {
           "help": "备份文件的名称",
           "label": "目标文件名"
@@ -378,6 +386,10 @@
           "help": "安装AMD GPU驱动（auto = 先检测GPU，true = 始终安装，false = 跳过）",
           "label": "安装AMD GPU驱动"
         },
+        "install_criu": {
+          "help": "安装 CRIU 以支持检查点/恢复（如果内核 >= 3.11，则自动 = 安装，true = 强制安装，false = 跳过，手动 = 用户安装）",
+          "label": "安装创建"
+        },
         "install_nvidia_driver": {
           "help": "安装NVIDIA GPU驱动（auto = 先检测GPU，true = 始终安装，false = 跳过）",
           "label": "安装NVIDIA GPU驱动"
@@ -400,6 +412,10 @@
       "description": "卸载仓库文件系统",
       "name": "卸载",
       "params": {
+        "checkpoint": {
+          "help": "卸载前创建检查点（需要 CRIU）",
+          "label": "创建检查点"
+        },
         "from": {
           "help": "要卸载的远程机器",
           "label": "从机器"
@@ -421,6 +437,36 @@
         "repo": {
           "help": "仓库名称（多个用逗号分隔）",
           "label": "仓库"
+        }
+      }
+    },
+    "validate": {
+      "description": "通过运行准备、启动、运行状况检查、测试和关闭来验证存储库",
+      "name": "证实",
+      "params": {
+        "cleanup": {
+          "help": "验证完成后卸载存储库",
+          "label": "清理"
+        },
+        "grand": {
+          "help": "父存储库名称",
+          "label": "大存储库"
+        },
+        "repo": {
+          "help": "要验证的存储库名称",
+          "label": "存储库"
+        },
+        "skip_down": {
+          "help": "验证后让服务保持运行",
+          "label": "向下跳"
+        },
+        "skip_prep": {
+          "help": "如果最近已经运行过，请跳过准备阶段",
+          "label": "跳过准备"
+        },
+        "timeout": {
+          "help": "每个函数的最长时间（以秒为单位）（默认值：300）",
+          "label": "超时（秒）"
         }
       }
     }

@@ -216,6 +216,10 @@
       "description": "Mounten Sie Repository-Dateisysteme",
       "name": "montieren",
       "params": {
+        "checkpoint": {
+          "help": "Container vom Kontrollpunkt wiederherstellen, falls verfügbar (erfordert CRIU)",
+          "label": "Aktivieren Sie die Checkpoint-Wiederherstellung"
+        },
         "from": {
           "help": "Remote-Computer, von dem aus gemountet werden soll",
           "label": "Von der Maschine"
@@ -312,6 +316,10 @@
       "description": "Repository in den Remote-Speicher verschieben",
       "name": "drücken",
       "params": {
+        "checkpoint": {
+          "help": "Aktivieren Sie den Hot-Backup-Modus mit Prüfpunkt (erfordert CRIU, keine Ausfallzeit für Online-Repos)",
+          "label": "Checkpoint aktivieren"
+        },
         "dest": {
           "help": "Name für die Sicherungsdatei",
           "label": "Zieldateiname"
@@ -378,6 +386,10 @@
           "help": "AMD-GPU-Treiber installieren (auto = GPU zuerst erkennen, true = immer installieren, false = überspringen)",
           "label": "Installieren Sie den AMD GPU-Treiber"
         },
+        "install_criu": {
+          "help": "Installieren Sie CRIU für Checkpoint-/Wiederherstellungsunterstützung (auto = installieren, wenn Kernel >= 3.11, true = Installation erzwingen, false = überspringen, manuell = Benutzerinstallationen)",
+          "label": "Installieren Sie CREATE"
+        },
         "install_nvidia_driver": {
           "help": "NVIDIA-GPU-Treiber installieren (auto = GPU zuerst erkennen, true = immer installieren, false = überspringen)",
           "label": "Installieren Sie den NVIDIA GPU-Treiber"
@@ -400,6 +412,10 @@
       "description": "Repository-Dateisysteme aushängen",
       "name": "aussteigen",
       "params": {
+        "checkpoint": {
+          "help": "Vor dem Aushängen einen Prüfpunkt erstellen (erfordert CRIU)",
+          "label": "Prüfpunkt erstellen"
+        },
         "from": {
           "help": "Remote-Computer, von dem die Bereitstellung aufgehoben werden soll",
           "label": "Von der Maschine"
@@ -421,6 +437,36 @@
         "repo": {
           "help": "Repository-Name(n), durch Kommas getrennt",
           "label": "Repository"
+        }
+      }
+    },
+    "validate": {
+      "description": "Validieren Sie das Repository, indem Sie Prep, Up, Health Checks, Test und Down ausführen",
+      "name": "bestätigen",
+      "params": {
+        "cleanup": {
+          "help": "Hängen Sie das Repository nach Abschluss der Validierung ab",
+          "label": "Aufräumen"
+        },
+        "grand": {
+          "help": "Name des übergeordneten Repositorys",
+          "label": "Großes Repository"
+        },
+        "repo": {
+          "help": "Zu validierender Repository-Name",
+          "label": "Repository"
+        },
+        "skip_down": {
+          "help": "Lassen Sie die Dienste nach der Validierung weiterlaufen",
+          "label": "Nach unten springen"
+        },
+        "skip_prep": {
+          "help": "Überspringen Sie die Vorbereitungsphase, wenn sie bereits kürzlich ausgeführt wurde",
+          "label": "Vorbereitung überspringen"
+        },
+        "timeout": {
+          "help": "Maximale Zeit pro Funktion in Sekunden (Standard: 300)",
+          "label": "Timeout (Sekunden)"
         }
       }
     }
