@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Modal, Button, Space, message, Typography, Tag, Upload, Tooltip } from 'antd'
 import { InfoCircleOutlined, UploadOutlined, DownloadOutlined, CloseOutlined, SaveOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
@@ -38,6 +38,7 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [showValidationErrors, setShowValidationErrors] = useState(false)
   const importExportHandlers = useRef<{ handleImport: (file: any) => boolean; handleExport: () => void } | null>(null)
+  const validationErrorsRef = useRef<HTMLDivElement>(null)
   const styles = useComponentStyles()
   const [prevInitialVault, setPrevInitialVault] = useState(initialVault)
   const [prevInitialVersion, setPrevInitialVersion] = useState(initialVersion)
@@ -85,6 +86,16 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
     }
   }
 
+  // Auto-scroll to validation errors when they appear
+  useEffect(() => {
+    if (showValidationErrors && validationErrorsRef.current) {
+      validationErrorsRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      })
+    }
+  }, [showValidationErrors])
+
   return (
     <Modal
       title={`${title} - ${entityType}`}
@@ -123,6 +134,30 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
             {t('vaultEditor.versionAutoIncrement')}
           </Text>
         </div>
+
+        {/* Validation Errors - displayed at top for visibility */}
+        {showValidationErrors && validationErrors.length > 0 && (
+          <div
+            ref={validationErrorsRef}
+            style={{
+              padding: spacing('MD'),
+              backgroundColor: 'var(--color-error-bg)',
+              border: '1px solid var(--color-error-border)',
+              borderRadius: borderRadius('LG'),
+              color: 'var(--color-error)',
+              fontSize: fontSize('SM')
+            }}
+          >
+            <strong style={{ display: 'block', marginBottom: spacing('XS') }}>
+              {t('vaultEditor.validationErrors')}
+            </strong>
+            <ul style={{ margin: 0, paddingLeft: spacing('LG') }}>
+              {validationErrors.map((error, index) => (
+                <li key={index}>{error}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <VaultEditor
           entityType={entityType}
@@ -239,21 +274,6 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
           </Space>
         </div>
       </div>
-
-      {showValidationErrors && validationErrors.length > 0 && (
-        <div style={{ 
-          marginTop: spacing('MD'), 
-          color: 'var(--color-error)',
-          fontSize: fontSize('SM')
-        }}>
-          <strong>{t('vaultEditor.validationErrors')}</strong>
-          <ul style={{ marginTop: spacing('XS') }}>
-            {validationErrors.map((error, index) => (
-              <li key={index}>{error}</li>
-            ))}
-          </ul>
-        </div>
-      )}
     </Modal>
   )
 }

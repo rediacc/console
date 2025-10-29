@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { store } from './store/store'
 import App from './App'
 import { AppProviders } from './components/common/AppProviders'
-import './index.css' // Minimal global styles - most styling in antdTheme.ts and GlobalStyles.ts
 import i18n from './i18n/config'
 
 const queryClient = new QueryClient({

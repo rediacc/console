@@ -748,14 +748,15 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
 
     if (existingData?.teamName) return existingData.teamName
 
-    if (isTeamPreselected) {
-      if (uiMode === 'simple') return 'Private Team'
-      if (teamFilter) {
-        return Array.isArray(teamFilter) ? teamFilter[0] : teamFilter
-      }
+    // Simple mode always shows "Private Team"
+    if (uiMode === 'simple') return 'Private Team'
+
+    // Expert mode: show team filter if available
+    if (teamFilter) {
+      return Array.isArray(teamFilter) ? teamFilter[0] : teamFilter
     }
 
-    return uiMode === 'simple' ? 'Private Team' : ''
+    return ''
   }
 
   const renderModalTitle = () => {
@@ -1116,7 +1117,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                   // If still no credential field but we have other fields, check if any could be the credential
                   if (!parsed.credential) {
                     // Check for any 32-character string that might be the credential
-                    for (const [key, value] of Object.entries(parsed)) {
+                    for (const [, value] of Object.entries(parsed)) {
                       if (typeof value === 'string' && value.length === 32 &&
                           /^[A-Za-z0-9!@#$%^&*()_+{}|:<>,.?/]+$/.test(value)) {
                         parsed = { credential: value };
