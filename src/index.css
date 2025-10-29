@@ -1,8 +1,0 @@
-/**
- * MINIMAL INDEX.CSS
- * Only Ant Design reset and modals import
- * All other styles moved to GlobalStyles.ts and antdTheme.ts
- */
-
-@import 'antd/dist/reset.css';
-@import './styles/modals.css';

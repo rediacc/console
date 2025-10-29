@@ -4,7 +4,7 @@ import { ReloadOutlined, HistoryOutlined, FileTextOutlined, ClockCircleOutlined,
 import { useQueueItemTrace, useRetryFailedQueueItem, useCancelQueueItem } from '@/api/queries/queue'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
-import { SimpleJsonEditor } from './SimpleJsonEditor'
+import { SimpleJsonEditor } from '../SimpleJsonEditor'
 import { queueMonitoringService } from '@/services/queueMonitoringService'
 import { showMessage } from '@/utils/messages'
 import { useTheme } from '@/context/ThemeContext'
@@ -13,8 +13,9 @@ import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 import { formatTimestampAsIs } from '@/utils/timeUtils'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
-import { DESIGN_TOKENS, spacing, createModalStyle } from '@/utils/styleConstants'
-import './QueueItemTraceModal.css'
+import { DESIGN_TOKENS, spacing } from '@/utils/styleConstants'
+import { ModalSize } from '@/types/modal'
+import { ModalTitleContainer, ModalTitleLeft, ModalTitleRight, LastFetchedText, ConsoleOutputContainer } from './styles'
 
 dayjs.extend(relativeTime)
 
@@ -199,24 +200,13 @@ const ConsoleOutput: React.FC<ConsoleOutputProps> = ({ content, theme, consoleOu
   }
 
   return (
-    <div
+    <ConsoleOutputContainer 
       ref={consoleOutputRef as any}
       data-testid="queue-trace-console-output"
-      style={{ 
-        backgroundColor: theme === 'dark' ? '#1f1f1f' : '#f5f5f5',
-        border: `1px solid ${theme === 'dark' ? '#303030' : '#d9d9d9'}`,
-        borderRadius: '4px',
-        padding: '12px',
-        fontFamily: 'monospace',
-        fontSize: '12px',
-        lineHeight: '1.5',
-        whiteSpace: 'pre-wrap',
-        wordBreak: 'break-word',
-        height: '400px',
-        overflowY: 'scroll'
-      }}>
+      $theme={theme}
+    >
       {content}
-    </div>
+    </ConsoleOutputContainer>
   )
 }
 
@@ -563,14 +553,15 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
 
   return (
     <Modal
+      className={ModalSize.Large}
       data-testid="queue-trace-modal"
       title={
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-          <Space>
+        <ModalTitleContainer>
+          <ModalTitleLeft>
             <HistoryOutlined />
-            {`Queue Item Trace - ${taskId || ''}`}
-          </Space>
-          <Space direction="vertical" size={8} align="end">
+            <span>{`Queue Item Trace - ${taskId || ''}`}</span>
+          </ModalTitleLeft>
+          <ModalTitleRight>
             <Segmented
               data-testid="queue-trace-mode-switch"
               value={simpleMode ? 'simple' : 'detailed'}
@@ -582,16 +573,15 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
               style={{ minHeight: 32 }}
             />
             {lastTraceFetchTime && (
-              <Text type="secondary" style={{ fontSize: '12px' }}>
+              <LastFetchedText>
                 Last fetched: {lastTraceFetchTime.format('HH:mm:ss')}
-              </Text>
+              </LastFetchedText>
             )}
-          </Space>
-        </div>
+          </ModalTitleRight>
+        </ModalTitleContainer>
       }
       open={visible}
       onCancel={handleClose}
-      style={createModalStyle(1200)}
       destroyOnHidden
       footer={[
         // Show Cancel button for PENDING, ASSIGNED, or PROCESSING tasks that can be cancelled
@@ -1237,37 +1227,41 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                 } 
                 key="timeline"
               >
-                <Timeline mode="left" className="queue-trace-timeline" data-testid="queue-trace-timeline">
-                {traceData.traceLogs.map((log: any, index: number) => {
-                  const action = normalizeProperty(log, 'action', 'Action')
-                  const timestamp = normalizeProperty(log, 'timestamp', 'Timestamp')
-                  const details = normalizeProperty(log, 'details', 'Details') || ''
-                  const actionByUser = normalizeProperty(log, 'actionByUser', 'ActionByUser') || ''
+                <Timeline 
+                  mode="left" 
+                  className="queue-trace-timeline" 
+                  data-testid="queue-trace-timeline"
+                  items={traceData.traceLogs.map((log: any) => {
+                    const action = normalizeProperty(log, 'action', 'Action')
+                    const timestamp = normalizeProperty(log, 'timestamp', 'Timestamp')
+                    const details = normalizeProperty(log, 'details', 'Details') || ''
+                    const actionByUser = normalizeProperty(log, 'actionByUser', 'ActionByUser') || ''
 
-                  // Determine timeline item color based on action type
-                  let color = 'gray'
-                  if (action === 'QUEUE_ITEM_CREATED') color = 'green'
-                  else if (action === 'QUEUE_ITEM_ASSIGNED') color = 'blue'
-                  else if (action === 'QUEUE_ITEM_PROCESSING' || action === 'QUEUE_ITEM_RESPONSE_UPDATED') color = 'orange'
-                  else if (action === 'QUEUE_ITEM_COMPLETED') color = 'green'
-                  else if (action === 'QUEUE_ITEM_CANCELLED') color = 'red'
-                  else if (action === 'QUEUE_ITEM_CANCELLING') color = 'warning'
-                  else if (action === 'QUEUE_ITEM_FAILED') color = 'red'
-                  else if (action === 'QUEUE_ITEM_RETRY') color = 'orange'
-                  else if (action.includes('ERROR') || action.includes('FAILED')) color = 'red'
+                    // Determine timeline item color based on action type
+                    let color = 'gray'
+                    if (action === 'QUEUE_ITEM_CREATED') color = 'green'
+                    else if (action === 'QUEUE_ITEM_ASSIGNED') color = 'blue'
+                    else if (action === 'QUEUE_ITEM_PROCESSING' || action === 'QUEUE_ITEM_RESPONSE_UPDATED') color = 'orange'
+                    else if (action === 'QUEUE_ITEM_COMPLETED') color = 'green'
+                    else if (action === 'QUEUE_ITEM_CANCELLED') color = 'red'
+                    else if (action === 'QUEUE_ITEM_CANCELLING') color = 'warning'
+                    else if (action === 'QUEUE_ITEM_FAILED') color = 'red'
+                    else if (action === 'QUEUE_ITEM_RETRY') color = 'orange'
+                    else if (action.includes('ERROR') || action.includes('FAILED')) color = 'red'
 
-                  return (
-                    <Timeline.Item key={index} color={color}>
-                      <Space direction="vertical" size={0}>
-                        <Text strong>{action.replace('QUEUE_ITEM_', '').replace(/_/g, ' ')}</Text>
-                        <Text type="secondary">{formatTimestampAsIs(timestamp, 'datetime')}</Text>
-                        {details && <Text>{details}</Text>}
-                        {actionByUser && <Text type="secondary">By: {actionByUser}</Text>}
-                      </Space>
-                    </Timeline.Item>
-                  )
-                })}
-              </Timeline>
+                    return {
+                      color,
+                      children: (
+                        <Space direction="vertical" size={0}>
+                          <Text strong>{action.replace('QUEUE_ITEM_', '').replace(/_/g, ' ')}</Text>
+                          <Text type="secondary">{formatTimestampAsIs(timestamp, 'datetime')}</Text>
+                          {details && <Text>{details}</Text>}
+                          {actionByUser && <Text type="secondary">By: {actionByUser}</Text>}
+                        </Space>
+                      )
+                    }
+                  })}
+                />
               </Panel>
             )}
 

@@ -80,6 +80,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     const [showVaultValidationErrors, setShowVaultValidationErrors] = useState(false)
     const [forceVaultErrors, setForceVaultErrors] = useState(false)
     const importExportHandlers = useRef<{ handleImport: (file: any) => boolean; handleExport: () => void } | null>(null)
+    const validationErrorsRef = useRef<HTMLDivElement>(null)
 
     // Track vault validation state changes
     useEffect(() => {
@@ -104,6 +105,16 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     useEffect(() => {
       setValue(vaultFieldName as any, JSON.stringify(vaultData))
     }, [vaultData, setValue, vaultFieldName])
+
+    // Auto-scroll to validation errors when they appear
+    useEffect(() => {
+      if (showVaultValidationErrors && validationErrorsRef.current) {
+        validationErrorsRef.current.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        })
+      }
+    }, [showVaultValidationErrors])
 
     const handleFormSubmit = async (formData: any) => {
       // Skip vault validation for repository credentials
@@ -316,6 +327,24 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
 
     return (
       <div style={{ ...styles.flexColumn as React.CSSProperties, gap: spacing('SM'), height: '100%' }}>
+        {/* Validation Errors - displayed at top for visibility */}
+        {showVaultValidationErrors && vaultValidationErrors.length > 0 && (
+          <div ref={validationErrorsRef} style={{ marginBottom: spacing('SM') }}>
+            <Alert
+              message={t('vaultEditor.validationErrors')}
+              description={
+                <ul style={{ margin: 0, paddingLeft: spacing('LG') }}>
+                  {vaultValidationErrors.map((error, index) => (
+                    <li key={index}>{error}</li>
+                  ))}
+                </ul>
+              }
+              type="error"
+              showIcon
+            />
+          </div>
+        )}
+
         {/* Form Section */}
         <Form 
           data-testid="resource-modal-form"
@@ -435,22 +464,6 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
               </Tooltip>
             </Space>
           </div>
-        )}
-
-        {/* Validation Errors */}
-        {showVaultValidationErrors && vaultValidationErrors.length > 0 && (
-          <Alert
-            message={t('vaultEditor.validationErrors')}
-            description={
-              <ul style={{ margin: 0, paddingLeft: spacing('LG') }}>
-                {vaultValidationErrors.map((error, index) => (
-                  <li key={index}>{error}</li>
-                ))}
-              </ul>
-            }
-            type="error"
-            showIcon
-          />
         )}
 
         {/* Defaults Alert (for Simple mode) */}
