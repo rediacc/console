@@ -410,7 +410,6 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
             initialData={initialVaultData}
             onChange={handleVaultChange}
             onValidate={handleVaultValidate}
-            forceShowErrors={forceVaultErrors}
             teamName={teamName}
             bridgeName={bridgeName}
             onTestConnectionStateChange={onTestConnectionStateChange}
