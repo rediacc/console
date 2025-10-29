@@ -8,14 +8,12 @@ import {
   Space,
   Alert,
   Card,
-  Collapse,
   Tag,
   Tooltip,
   message,
   Divider,
   Typography,
   Button,
-  Radio,
   Row,
   Col,
   Descriptions,
@@ -28,7 +26,6 @@ import {
   QuestionCircleOutlined,
   BulbOutlined,
   CheckCircleOutlined,
-  SettingOutlined,
   WifiOutlined,
 } from '@/utils/optimizedIcons'
 import { SimpleJsonEditor } from './SimpleJsonEditor'
@@ -41,8 +38,7 @@ import FieldGenerator from './FieldGenerator'
 import { useCreateQueueItem, useQueueItemTrace } from '@/api/queries/queue'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import { useTeams } from '@/api/queries/teams'
-import { useComponentStyles } from '@/hooks/useComponentStyles'
-import { DESIGN_TOKENS, spacing, borderRadius, fontSize } from '@/utils/styleConstants'
+import { spacing, borderRadius, fontSize } from '@/utils/styleConstants'
 import { featureFlags } from '@/config/featureFlags'
 
 const { Text } = Typography
@@ -138,7 +134,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     return Object.keys(initialData).length > 0 ? JSON.stringify(initialData, null, 2) : '{}'
   })
   const [rawJsonError, setRawJsonError] = useState<string | null>(null)
-  const [sshKeyConfigured, setSshKeyConfigured] = useState(false)
+  const [_sshKeyConfigured, setSshKeyConfigured] = useState(false)
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null)
   const [lastInitializedData, setLastInitializedData] = useState<string>('')
   const [testTaskId, setTestTaskId] = useState<string | null>(null)
@@ -146,8 +142,6 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   const [testConnectionSuccess, setTestConnectionSuccess] = useState(false)
   const [osSetupCompleted, setOsSetupCompleted] = useState<boolean | null>(null)
   const formatJsonRef = useRef<(() => void) | null>(null)
-
-  const styles = useComponentStyles()
   
   // Queue vault builder
   const { buildQueueVault } = useQueueVaultBuilder()
