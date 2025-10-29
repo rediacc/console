@@ -89,7 +89,10 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
 
     useEffect(() => {
       if (!isModalOpen) {
-        setForceVaultErrors(false)
+        // Defer state update to avoid synchronous setState in effect
+        queueMicrotask(() => {
+          setForceVaultErrors(false)
+        })
       }
     }, [isModalOpen])
 

@@ -250,7 +250,9 @@ const MainLayout: React.FC = () => {
     navigate('/login')
   }
 
-  const menuItems = useMemo(() => allMenuItems
+  // Filter and map menu items based on UI mode, plan, and feature flags
+  // React Compiler will automatically optimize this
+  const menuItems = allMenuItems
     .filter(item => {
       // Check UI mode visibility
       if (item.type !== 'divider' && !(uiMode === 'expert' || item.showInSimple)) {
@@ -280,9 +282,7 @@ const MainLayout: React.FC = () => {
 
       return true
     })
-    .map(({ showInSimple, requiresPlan, featureFlag, ...item }) => item),
-    [uiMode, companyData, forceUpdate]
-  )
+    .map(({ showInSimple, requiresPlan, featureFlag, ...item }) => item)
 
   // Determine if current page needs no-scroll behavior
   // All pages are now scrollable, so no pages need the no-scroll class
