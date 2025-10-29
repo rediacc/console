@@ -10,7 +10,7 @@
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx"
   },
   "dependencies": {
-    "@ant-design/charts": "^2.6.5",
+    "@ant-design/charts": "^2.6.6",
     "@ant-design/icons": "^6.1.0",
     "@hcaptcha/react-hcaptcha": "^1.12.1",
     "@hookform/resolvers": "^5.2.2",
