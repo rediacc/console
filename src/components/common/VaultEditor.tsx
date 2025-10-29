@@ -57,7 +57,6 @@ interface VaultEditorProps {
   isModalOpen?: boolean // Modal open state to handle resets
   isEditMode?: boolean // Whether we're in edit mode
   uiMode?: 'simple' | 'expert' // UI mode for conditional rendering
-  forceShowErrors?: boolean // Forcefully surface field-level errors (e.g., on submit)
 }
 
 interface FieldDefinition {
@@ -124,7 +123,6 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   isModalOpen,
   isEditMode = false,
   uiMode = 'expert',
-  forceShowErrors = false,
 }) => {
   const { t } = useTranslation(['common', 'storageProviders'])
   const [form] = Form.useForm()
