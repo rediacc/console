@@ -682,7 +682,7 @@ export const GlobalStyles = createGlobalStyle`
   /* Full Width Modal - 1600px max-width */
   .modal-full {
     max-width: 1600px !important;
-    width: 98% !important;
+    width: 90% !important;
   }
 
   .modal-full .ant-modal-body {
@@ -692,20 +692,8 @@ export const GlobalStyles = createGlobalStyle`
 
   /* Fullscreen Modal - occupies entire browser viewport */
   .modal-fullscreen {
-    max-width: 100vw !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    margin: 0 !important;
-    top: 0 !important;
-    padding: 0 !important;
-  }
-
-  .modal-fullscreen .ant-modal-content {
-    height: 100vh !important;
-    width: 100vw !important;
-    border-radius: 0 !important;
-    display: flex;
-    flex-direction: column;
+    max-width: 90vw !important;
+    width: 90vw !important;
   }
 
   .modal-fullscreen .ant-modal-header {
