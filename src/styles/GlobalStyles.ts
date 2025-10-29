@@ -389,6 +389,32 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   /* ============================================
+     VAULT EDITOR FORM STYLES
+     ============================================ */
+
+  /* Fix label vertical alignment in vault editor and resource forms */
+  .vault-editor-form .ant-form-item-row,
+  .resource-form-with-vault .ant-form-item-row {
+    align-items: flex-start;
+  }
+
+  .vault-editor-form .ant-form-item-label,
+  .resource-form-with-vault .ant-form-item-label {
+    display: flex;
+    align-items: flex-start;
+    padding-top: 5px !important;
+    padding-bottom: 0 !important;
+  }
+
+  .vault-editor-form .ant-form-item-label > label,
+  .resource-form-with-vault .ant-form-item-label > label {
+    display: flex;
+    align-items: center;
+    line-height: 32px;
+    min-height: 32px;
+  }
+
+  /* ============================================
      FORM VALIDATION ERRORS
      ============================================ */
 
@@ -692,18 +718,12 @@ export const GlobalStyles = createGlobalStyle`
 
   /* Fullscreen Modal - occupies entire browser viewport */
   .modal-fullscreen {
-    max-width: 100vw !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    margin: 0 !important;
-    top: 0 !important;
-    padding: 0 !important;
+    max-width: 90vw !important;
+    width: 90vw !important;
   }
 
   .modal-fullscreen .ant-modal-content {
-    height: 100vh !important;
-    width: 100vw !important;
-    border-radius: 0 !important;
+    width: 90vw !important;
     display: flex;
     flex-direction: column;
   }
