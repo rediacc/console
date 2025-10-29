@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Layout, Avatar, Space, Badge, Typography, Button, Segmented, Tooltip, message } from 'antd'
@@ -48,7 +48,6 @@ const MainLayout: React.FC = () => {
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false)
-  const [forceUpdate, setForceUpdate] = useState(0)
   const navigate = useNavigate()
   const location = useLocation()
   const dispatch = useDispatch()
@@ -115,9 +114,6 @@ const MainLayout: React.FC = () => {
 
         // Console log for debugging
         console.log(`[${onLocalhost ? 'LocalhostMode' : 'PowerMode'}] ${msg}`)
-
-        // Force re-render to update menu items
-        setForceUpdate(prev => prev + 1)
       }
     }
 
