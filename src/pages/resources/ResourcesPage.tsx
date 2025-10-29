@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import { Card, Tabs, Button, Space, Modal, Tag, Typography, Table, Empty, Spin, Tooltip } from 'antd'
 import { useLocation } from 'react-router-dom'
 import {
@@ -84,6 +84,7 @@ const ResourcesPage: React.FC = () => {
   const [selectedRepositoryFromMachine, setSelectedRepositoryFromMachine] = useState<Repository | null>(null)
   const [selectedContainerFromMachine, setSelectedContainerFromMachine] = useState<any | null>(null)
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(true) // Panel starts collapsed
+  const [currentResource, setCurrentResource] = useState<any>(null)
 
   // Unified modal state
   const [unifiedModalState, setUnifiedModalState] = useState<{
@@ -122,9 +123,28 @@ const ResourcesPage: React.FC = () => {
     }
   }
 
-  // State for current editing/creating resource
-  const [currentResource, setCurrentResource] = useState<any>(null)
+  const openUnifiedModal = useCallback(
+    (resourceType: ResourceType, mode: 'create' | 'edit' | 'vault', data?: any, creationContext?: 'credentials-only' | 'normal') => {
+      setUnifiedModalState({
+        open: true,
+        resourceType,
+        mode,
+        data,
+        creationContext
+      })
+    },
+    []
+  )
   
+  const closeUnifiedModal = useCallback(() => {
+    setUnifiedModalState({
+      open: false,
+      resourceType: 'machine',
+      mode: 'create'
+    })
+    setCurrentResource(null)
+  }, [])
+
   // State for machine table expanded rows and refresh keys
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
   const [refreshKeys, setRefreshKeys] = useState<Record<string, number>>({})
@@ -273,11 +293,9 @@ const ResourcesPage: React.FC = () => {
 
   // Filter repositories to show only originals (exclude clones) for Repo (Credentials) view
   // A repository is a clone if its grandGuid differs from its repositoryGuid
-  const originalRepositories = React.useMemo(() => {
-    return repositories.filter(repo =>
-      !repo.grandGuid || repo.grandGuid === repo.repositoryGuid
-    )
-  }, [repositories])
+  const originalRepositories = repositories.filter(repo =>
+    !repo.grandGuid || repo.grandGuid === repo.repositoryGuid
+  )
 
   const createRepositoryMutation = useCreateRepository()
   const updateRepositoryNameMutation = useUpdateRepositoryName()
@@ -370,27 +388,7 @@ const ResourcesPage: React.FC = () => {
       // Clear navigation state
       window.history.replaceState({}, document.title)
     }
-  }, [location])
-
-  // Handler to open unified modal
-  const openUnifiedModal = (resourceType: ResourceType, mode: 'create' | 'edit' | 'vault', data?: any, creationContext?: 'credentials-only' | 'normal') => {
-    setUnifiedModalState({
-      open: true,
-      resourceType,
-      mode,
-      data,
-      creationContext
-    })
-  }
-  
-  const closeUnifiedModal = () => {
-    setUnifiedModalState({
-      open: false,
-      resourceType: 'machine',
-      mode: 'create'
-    })
-    setCurrentResource(null)
-  }
+  }, [location, openUnifiedModal])
 
   // Team handlers removed - create team functionality exists in System page
 

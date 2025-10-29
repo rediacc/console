@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react'
+import React, { useState, useMemo, useRef, useEffect, useCallback, startTransition } from 'react'
 import { Modal, Row, Col, Card, Input, Space, Form, Slider, Empty, Typography, Tag, Button, Select, Tooltip, InputNumber, Alert, Checkbox, Popover, message } from 'antd'
 import { ExclamationCircleOutlined, WarningOutlined, QuestionCircleOutlined, InfoCircleOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
@@ -86,7 +86,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   const { data: storageData } = useStorage(teamName)
 
   // Function to initialize parameters for a given function
-  const initializeParams = (func: QueueFunction) => {
+  const initializeParams = useCallback((func: QueueFunction) => {
     const defaultInitialParams: Record<string, any> = {}
 
     Object.entries(func.params).forEach(([paramName, paramInfo]) => {
@@ -136,7 +136,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
     })
 
     return defaultInitialParams
-  }
+  }, [initialParams, hiddenParams, currentMachineName])
 
   // Handler for selecting a function
   const handleSelectFunction = (func: QueueFunction) => {
@@ -154,25 +154,25 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   }
 
   // Handle preselected function - only when modal opens
-  const wasOpenRef = useRef(false)
-  const openRef = useRef(open)
+  const previousOpenRef = useRef(open)
 
-  // When modal opens with a preselected function, initialize synchronously during render
-  if (open && !wasOpenRef.current && !openRef.current) {
-    if (preselectedFunction && localizedFunctions[preselectedFunction]) {
-      const func = localizedFunctions[preselectedFunction] as QueueFunction
-      // Initialize synchronously
-      setSelectedFunction(func)
-      setFunctionParams(initializeParams(func))
+  useEffect(() => {
+    const wasPreviouslyOpen = previousOpenRef.current
+
+    if (open && !wasPreviouslyOpen) {
+      const preselected = preselectedFunction ? localizedFunctions[preselectedFunction] : undefined
+
+      if (preselected) {
+        const func = preselected as QueueFunction
+        startTransition(() => {
+          setSelectedFunction(func)
+          setFunctionParams(initializeParams(func))
+        })
+      }
     }
-    wasOpenRef.current = true
-  }
 
-  if (!open && wasOpenRef.current) {
-    wasOpenRef.current = false
-  }
-
-  openRef.current = open
+    previousOpenRef.current = open
+  }, [open, preselectedFunction, localizedFunctions, initializeParams])
 
   // Filter functions based on allowed categories and search term
   const filteredFunctions = useMemo(() => {
