@@ -2,16 +2,19 @@
   "actions": {
     "addMember": "Добавить участника",
     "addPermission": "Добавить разрешение",
+    "assignUser": "Назначить пользователя",
     "changePassword": "Изменить пароль",
     "configureVault": "Настроить хранилище",
     "createGroup": "Создать группу",
     "createTeam": "Создать команду",
     "createUser": "Создать пользователя",
     "deactivate": "Деактивировать",
+    "edit": "Редактировать",
     "members": "Члены",
     "permissions": "Разрешения",
     "resetAuth": "Сбросить аутентификацию",
     "token": "Токен",
+    "trace": "След",
     "twoFactorAuth": "Двухфакторная аутентификация"
   },
   "architecture": {
@@ -43,6 +46,47 @@
     "viewForce": "Сила",
     "viewHierarchy": "Иерархия",
     "viewRadial": "Радиальный"
+  },
+  "audit": {
+    "columns": {
+      "action": "Действие",
+      "details": "Подробности",
+      "entityName": "Имя объекта",
+      "entityType": "Тип объекта",
+      "timestamp": "Временная метка",
+      "user": "Пользователь"
+    },
+    "empty": {
+      "clearFilters": "Очистить фильтры и расширить диапазон дат",
+      "noLogsInRange": "Журналы аудита для выбранного диапазона дат не найдены.",
+      "noMatchingFilters": "Нет журналов, соответствующих вашим текущим фильтрам."
+    },
+    "errors": {
+      "loadDescription": "Не удалось загрузить журналы аудита. Попробуйте обновить или изменить диапазон дат.",
+      "loadTitle": "Невозможно загрузить журналы аудита",
+      "tryAgain": "Попробуйте еще раз",
+      "unableToLoad": "Невозможно загрузить журналы аудита"
+    },
+    "export": {
+      "noData": "Нет данных для экспорта",
+      "successCSV": "Журналы аудита ({{count}}) экспортированы в CSV.",
+      "successJSON": "Экспортировано {{count}} журналов аудита в JSON.",
+      "tooltip": "Экспорт журналов аудита в формате CSV или JSON."
+    },
+    "filters": {
+      "actions": "Действия",
+      "allEntities": "Все сущности",
+      "dateRange": "Диапазон дат",
+      "entityType": "Тип объекта",
+      "export": "Экспорт",
+      "search": "Поиск",
+      "searchPlaceholder": "Искать в журналах..."
+    },
+    "pagination": {
+      "showing": "Показаны {{start}}-{{end}} журналов из {{total}}."
+    },
+    "subtitle": "Отслеживайте все действия и изменения в вашей организации",
+    "title": "Журналы аудита"
   },
   "dangerZone": {
     "blockUserRequests": {
@@ -179,6 +223,30 @@
   },
   "regionsInfrastructure": {
     "title": "Регионы и инфраструктура"
+  },
+  "tables": {
+    "permissionGroups": {
+      "actions": "Действия",
+      "groupName": "Имя группы",
+      "permissions": "Разрешения",
+      "users": "Пользователи"
+    },
+    "teams": {
+      "actions": "Действия",
+      "machines": "Машины",
+      "members": "Члены",
+      "repositories": "Репозитории",
+      "storage": "Хранилище",
+      "teamName": "Название команды",
+      "vaultVersion": "Версия хранилища"
+    },
+    "users": {
+      "actions": "Действия",
+      "email": "Электронная почта",
+      "lastActive": "Последняя активность",
+      "permissionGroup": "Группа разрешений",
+      "status": "Статус"
+    }
   },
   "userSessions": {
     "active": "Активный",

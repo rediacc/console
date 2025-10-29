@@ -161,7 +161,9 @@
   },
   "theme": {
     "dark": "Dunkel",
-    "light": "Licht"
+    "light": "Licht",
+    "switchToDark": "Wechseln Sie in den Dunkelmodus",
+    "switchToLight": "Wechseln Sie in den Lichtmodus"
   },
   "thisMonth": "Diesen Monat",
   "today": "Heute",
@@ -471,6 +473,8 @@
     "fieldsMovedFromExtra": "{{count}} Feld(er) aus extraFields wiederhergestellt: {{fields}}",
     "fieldsMovedToExtra": "{{count}} Feld(er) wurden nach extraFields verschoben: {{fields}}",
     "formatJson": "JSON formatieren",
+    "hostEntryHelp": "Optional. Der bekannte SSH-Hosteintrag wird automatisch erkannt.",
+    "hostEntryPlaceholder": "Wird während des Verbindungstests automatisch ausgefüllt",
     "importJson": "JSON importieren",
     "invalidFormat": "Ungültiges Format. {{Beschreibung}}",
     "invalidJsonFormat": "Ungültiges JSON-Format",
@@ -494,6 +498,7 @@
     "requiredFields": "Erforderliche Felder",
     "resetToFormValues": "Auf Formularwerte zurücksetzen",
     "saveVaultConfiguration": "Tresorkonfiguration speichern",
+    "sshPasswordPlaceholder": "Optional: für die Ersteinrichtung des SSH-Schlüssels",
     "sshPasswordRequiredWhenNoKey": "Für die Ersteinrichtung des Schlüssels ist ein SSH-Passwort erforderlich",
     "systemCompatibility": {
       "available": "Verfügbar",
@@ -520,9 +525,12 @@
     },
     "testConnection": {
       "button": "Testverbindung",
+      "description": "Testen Sie die SSH-Verbindung und konfigurieren Sie die SSH-Schlüsselauthentifizierung automatisch",
       "failed": "SSH-Verbindung fehlgeschlagen",
       "initiated": "Der SSH-Verbindungstest wurde eingeleitet. Bitte überprüfen Sie die Warteschlange auf Ergebnisse.",
+      "label": "Testverbindung",
       "missingFields": "Bitte geben Sie vor dem Test die IP-Adresse, den Benutzernamen und das Passwort ein",
+      "required": "Verbindungstest vor dem Erstellen der Maschine erforderlich.",
       "success": "SSH-Verbindung erfolgreich",
       "testing": "Verbindung wird getestet..."
     },

@@ -161,7 +161,9 @@
   },
   "theme": {
     "dark": "مظلم",
-    "light": "ضوء"
+    "light": "ضوء",
+    "switchToDark": "التبديل إلى الوضع المظلم",
+    "switchToLight": "التبديل إلى وضع الضوء"
   },
   "thisMonth": "هذا الشهر",
   "today": "اليوم",
@@ -471,6 +473,8 @@
     "fieldsMovedFromExtra": "تمت استعادة {{count}} الحقول من الحقول الإضافية: {{fields}}",
     "fieldsMovedToExtra": "تم نقل {{count}} الحقل (الحقول) إلى الحقول الإضافية: {{fields}}",
     "formatJson": "تنسيق جيسون",
+    "hostEntryHelp": "خياري. سيتم اكتشاف إدخال مضيف SSH المعروف تلقائيًا.",
+    "hostEntryPlaceholder": "يتم ملؤها تلقائيًا أثناء اختبار الاتصال",
     "importJson": "استيراد جسون",
     "invalidFormat": "التنسيق غير صالح. {{وصف}}",
     "invalidJsonFormat": "تنسيق JSON غير صالح",
@@ -494,6 +498,7 @@
     "requiredFields": "الحقول المطلوبة",
     "resetToFormValues": "إعادة التعيين إلى قيم النموذج",
     "saveVaultConfiguration": "حفظ تكوين Vault",
+    "sshPasswordPlaceholder": "اختياري: لإعداد مفتاح SSH الأولي",
     "sshPasswordRequiredWhenNoKey": "كلمة مرور SSH مطلوبة لإعداد المفتاح الأولي",
     "systemCompatibility": {
       "available": "متاح",
@@ -520,9 +525,12 @@
     },
     "testConnection": {
       "button": "اتصال الاختبار",
+      "description": "اختبار اتصال SSH وتكوين مصادقة مفتاح SSH تلقائيًا",
       "failed": "فشل اتصال SSH",
       "initiated": "تم بدء اختبار اتصال SSH. يرجى التحقق من قائمة الانتظار للحصول على النتائج.",
+      "label": "اتصال الاختبار",
       "missingFields": "يرجى ملء عنوان IP واسم المستخدم وكلمة المرور قبل الاختبار",
+      "required": "يلزم إجراء اختبار الاتصال قبل إنشاء الجهاز.",
       "success": "تم اتصال SSH بنجاح",
       "testing": "اختبار الاتصال..."
     },

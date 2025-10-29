@@ -40,16 +40,25 @@
   "selectStatus": "Tous les statuts",
   "selectTeam": "Sélectionnez une équipe pour afficher les éléments de la file d'attente",
   "statistics": {
+    "active": "Active",
+    "failed": "Échoué",
     "processing": "Traitement",
+    "stale": "Viciée",
     "timeSinceAssigned": "Temps écoulé depuis l'attribution",
+    "total": "Totale",
     "totalDuration": "Durée totale"
   },
   "status": "Statut",
+  "statusActive": "Active",
+  "statusAssigned": "Attribué",
   "statusCancelled": "Annulé",
+  "statusCancelling": "Annulation",
   "statusCompleted": "Complété",
   "statusFailed": "Échoué",
   "statusPending": "En attente",
+  "statusProcessing": "Traitement",
   "statusRunning": "En cours d'exécution",
+  "statusStale": "Viciée",
   "tabs": {
     "active": {
       "description": "Cette section affiche toutes les tâches actives, y compris les éléments en attente d'affectation, les tâches en cours de traitement par les machines et les tâches en cours d'annulation.",

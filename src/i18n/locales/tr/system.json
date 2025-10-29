@@ -2,16 +2,19 @@
   "actions": {
     "addMember": "Üye Ekle",
     "addPermission": "İzin Ekle",
+    "assignUser": "Kullanıcı Ata",
     "changePassword": "Şifre değiştir",
     "configureVault": "Apps Kasasını Yapılandır",
     "createGroup": "Grup Oluştur",
     "createTeam": "Ekip Oluştur",
     "createUser": "Kullanıcı Oluştur",
     "deactivate": "Devre dışı bırak",
+    "edit": "Düzenlemek",
     "members": "Üyeler",
     "permissions": "İzinler",
     "resetAuth": "Kimlik Doğrulamasını Sıfırla",
     "token": "Jeton",
+    "trace": "İz",
     "twoFactorAuth": "İki Faktörlü Kimlik Doğrulama"
   },
   "architecture": {
@@ -43,6 +46,47 @@
     "viewForce": "Güç",
     "viewHierarchy": "Hiyerarşi",
     "viewRadial": "Radyal"
+  },
+  "audit": {
+    "columns": {
+      "action": "Aksiyon",
+      "details": "Detaylar",
+      "entityName": "Varlık Adı",
+      "entityType": "Varlık Türü",
+      "timestamp": "Zaman damgası",
+      "user": "Kullanıcı"
+    },
+    "empty": {
+      "clearFilters": "Filtreleri temizleyin ve tarih aralığını genişletin",
+      "noLogsInRange": "Seçilen tarih aralığı için denetim günlüğü bulunamadı",
+      "noMatchingFilters": "Mevcut filtrelerinizle eşleşen günlük yok"
+    },
+    "errors": {
+      "loadDescription": "Denetim günlükleri yüklenirken bir hata oluştu. Lütfen tarih aralığınızı yenilemeyi veya ayarlamayı deneyin.",
+      "loadTitle": "Denetim Günlükleri Yüklenemiyor",
+      "tryAgain": "Tekrar deneyin",
+      "unableToLoad": "Denetim günlükleri yüklenemiyor"
+    },
+    "export": {
+      "noData": "Dışa aktarılacak veri yok",
+      "successCSV": "{{count}} denetim günlüğü CSV'ye aktarıldı",
+      "successJSON": "{{count}} denetim günlüğü JSON'a aktarıldı",
+      "tooltip": "Denetim günlüklerini CSV veya JSON olarak dışa aktarın"
+    },
+    "filters": {
+      "actions": "Eylemler",
+      "allEntities": "Tüm Varlıklar",
+      "dateRange": "Tarih Aralığı",
+      "entityType": "Varlık Türü",
+      "export": "İhracat",
+      "search": "Aramak",
+      "searchPlaceholder": "Günlüklerde ara..."
+    },
+    "pagination": {
+      "showing": "{{total}} günlükten {{start}}-{{end}} tanesi gösteriliyor"
+    },
+    "subtitle": "Kuruluşunuzdaki tüm etkinlikleri ve değişiklikleri takip edin",
+    "title": "Denetim Günlükleri"
   },
   "dangerZone": {
     "blockUserRequests": {
@@ -179,6 +223,30 @@
   },
   "regionsInfrastructure": {
     "title": "Bölgeler ve Altyapı"
+  },
+  "tables": {
+    "permissionGroups": {
+      "actions": "Eylemler",
+      "groupName": "Grup Adı",
+      "permissions": "İzinler",
+      "users": "Kullanıcılar"
+    },
+    "teams": {
+      "actions": "Eylemler",
+      "machines": "Makineler",
+      "members": "Üyeler",
+      "repositories": "Depolar",
+      "storage": "Depolamak",
+      "teamName": "Takım Adı",
+      "vaultVersion": "Kasa Sürümü"
+    },
+    "users": {
+      "actions": "Eylemler",
+      "email": "E-posta",
+      "lastActive": "Son Aktif",
+      "permissionGroup": "İzin Grubu",
+      "status": "Durum"
+    }
   },
   "userSessions": {
     "active": "Aktif",

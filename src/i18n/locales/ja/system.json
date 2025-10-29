@@ -2,16 +2,19 @@
   "actions": {
     "addMember": "メンバーを追加",
     "addPermission": "権限の追加",
+    "assignUser": "ユーザーの割り当て",
     "changePassword": "パスワードを変更する",
     "configureVault": "ボールトの構成",
     "createGroup": "グループの作成",
     "createTeam": "チームの作成",
     "createUser": "ユーザーの作成",
     "deactivate": "非アクティブ化",
+    "edit": "編集",
     "members": "メンバー",
     "permissions": "権限",
     "resetAuth": "認証のリセット",
     "token": "トークン",
+    "trace": "トレース",
     "twoFactorAuth": "二要素認証"
   },
   "architecture": {
@@ -43,6 +46,47 @@
     "viewForce": "力",
     "viewHierarchy": "階層",
     "viewRadial": "ラジアル"
+  },
+  "audit": {
+    "columns": {
+      "action": "アクション",
+      "details": "詳細",
+      "entityName": "エンティティ名",
+      "entityType": "エンティティの種類",
+      "timestamp": "タイムスタンプ",
+      "user": "ユーザー"
+    },
+    "empty": {
+      "clearFilters": "フィルターをクリアして日付範囲を拡張します",
+      "noLogsInRange": "選択した日付範囲の監査ログが見つかりませんでした",
+      "noMatchingFilters": "現在のフィルターに一致するログはありません"
+    },
+    "errors": {
+      "loadDescription": "監査ログのロード中にエラーが発生しました。 日付範囲を更新または調整してください。",
+      "loadTitle": "監査ログをロードできません",
+      "tryAgain": "もう一度やり直してください",
+      "unableToLoad": "監査ログをロードできません"
+    },
+    "export": {
+      "noData": "エクスポートできるデータがありません",
+      "successCSV": "{{count}} 個の監査ログを CSV にエクスポートしました",
+      "successJSON": "{{count}} 個の監査ログを JSON にエクスポートしました",
+      "tooltip": "監査ログを CSV または JSON としてエクスポート"
+    },
+    "filters": {
+      "actions": "アクション",
+      "allEntities": "すべてのエンティティ",
+      "dateRange": "日付範囲",
+      "entityType": "エンティティの種類",
+      "export": "輸出",
+      "search": "検索",
+      "searchPlaceholder": "ログを検索..."
+    },
+    "pagination": {
+      "showing": "{{total}} 件中 {{start}}～{{end}} 件のログを表示しています"
+    },
+    "subtitle": "組織内のすべてのアクティビティと変更を追跡する",
+    "title": "監査ログ"
   },
   "dangerZone": {
     "blockUserRequests": {
@@ -179,6 +223,30 @@
   },
   "regionsInfrastructure": {
     "title": "地域とインフラ"
+  },
+  "tables": {
+    "permissionGroups": {
+      "actions": "アクション",
+      "groupName": "グループ名",
+      "permissions": "権限",
+      "users": "ユーザー"
+    },
+    "teams": {
+      "actions": "アクション",
+      "machines": "機械",
+      "members": "メンバー",
+      "repositories": "リポジトリ",
+      "storage": "ストレージ",
+      "teamName": "チーム名",
+      "vaultVersion": "ボールトのバージョン"
+    },
+    "users": {
+      "actions": "アクション",
+      "email": "電子メール",
+      "lastActive": "最終アクティブ",
+      "permissionGroup": "権限グループ",
+      "status": "状態"
+    }
   },
   "userSessions": {
     "active": "アクティブ",

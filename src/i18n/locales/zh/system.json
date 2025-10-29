@@ -2,16 +2,19 @@
   "actions": {
     "addMember": "添加会员",
     "addPermission": "添加权限",
+    "assignUser": "分配用户",
     "changePassword": "更改密码",
     "configureVault": "配置保管库",
     "createGroup": "创建群组",
     "createTeam": "创建团队",
     "createUser": "创建用户",
     "deactivate": "停用",
+    "edit": "编辑",
     "members": "会员",
     "permissions": "权限",
     "resetAuth": "重置验证",
     "token": "代币",
+    "trace": "痕迹",
     "twoFactorAuth": "双因素身份验证"
   },
   "architecture": {
@@ -43,6 +46,47 @@
     "viewForce": "力量",
     "viewHierarchy": "等级制度",
     "viewRadial": "径向"
+  },
+  "audit": {
+    "columns": {
+      "action": "行动",
+      "details": "细节",
+      "entityName": "实体名称",
+      "entityType": "实体类型",
+      "timestamp": "时间戳",
+      "user": "用户"
+    },
+    "empty": {
+      "clearFilters": "清除过滤器并扩大日期范围",
+      "noLogsInRange": "未找到所选日期范围内的审核日志",
+      "noMatchingFilters": "没有日志与您当前的过滤器匹配"
+    },
+    "errors": {
+      "loadDescription": "加载审核日志时出错。 请尝试刷新或调整您的日期范围。",
+      "loadTitle": "无法加载审核日志",
+      "tryAgain": "再试一次",
+      "unableToLoad": "无法加载审核日志"
+    },
+    "export": {
+      "noData": "没有可导出的数据",
+      "successCSV": "已将 {{count}} 个审核日志导出到 CSV",
+      "successJSON": "已将 {{count}} 审核日志导出到 JSON",
+      "tooltip": "将审核日志导出为 CSV 或 JSON"
+    },
+    "filters": {
+      "actions": "行动",
+      "allEntities": "所有实体",
+      "dateRange": "日期范围",
+      "entityType": "实体类型",
+      "export": "出口",
+      "search": "搜索",
+      "searchPlaceholder": "在日志中搜索..."
+    },
+    "pagination": {
+      "showing": "显示 {{start}}-{{end}}，共 {{total}} 条日志"
+    },
+    "subtitle": "跟踪组织中的所有活动和变化",
+    "title": "审核日志"
   },
   "dangerZone": {
     "blockUserRequests": {
@@ -179,6 +223,30 @@
   },
   "regionsInfrastructure": {
     "title": "地区及基础设施"
+  },
+  "tables": {
+    "permissionGroups": {
+      "actions": "行动",
+      "groupName": "群组名称",
+      "permissions": "权限",
+      "users": "用户"
+    },
+    "teams": {
+      "actions": "行动",
+      "machines": "机器",
+      "members": "会员",
+      "repositories": "存储库",
+      "storage": "贮存",
+      "teamName": "团队名称",
+      "vaultVersion": "保险库版本"
+    },
+    "users": {
+      "actions": "行动",
+      "email": "电子邮件",
+      "lastActive": "最后活跃",
+      "permissionGroup": "权限组",
+      "status": "地位"
+    }
   },
   "userSessions": {
     "active": "积极的",

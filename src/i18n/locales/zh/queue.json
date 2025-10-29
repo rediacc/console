@@ -40,16 +40,25 @@
   "selectStatus": "所有状态",
   "selectTeam": "选择团队以查看队列项",
   "statistics": {
+    "active": "积极的",
+    "failed": "失败的",
     "processing": "处理中",
+    "stale": "陈旧",
     "timeSinceAssigned": "分配后时间",
+    "total": "全部的",
     "totalDuration": "总持续时间"
   },
   "status": "状态",
+  "statusActive": "积极的",
+  "statusAssigned": "已分配",
   "statusCancelled": "已取消",
+  "statusCancelling": "取消",
   "statusCompleted": "已完成",
   "statusFailed": "失败",
   "statusPending": "待处理",
+  "statusProcessing": "加工",
   "statusRunning": "运行中",
+  "statusStale": "陈旧",
   "tabs": {
     "active": {
       "description": "此部分显示所有活动任务，包括等待分配的待处理项、机器正在处理的任务以及正在取消的任务。",

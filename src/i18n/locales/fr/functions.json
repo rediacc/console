@@ -216,6 +216,10 @@
       "description": "Monter les systèmes de fichiers du référentiel",
       "name": "monter",
       "params": {
+        "checkpoint": {
+          "help": "Restaurer les conteneurs depuis le point de contrôle si disponible (nécessite CRIU)",
+          "label": "Activer la restauration du point de contrôle"
+        },
         "from": {
           "help": "Machine distante à partir de laquelle monter",
           "label": "De la machine"
@@ -312,6 +316,10 @@
       "description": "Transférer le référentiel vers le stockage distant",
       "name": "pousser",
       "params": {
+        "checkpoint": {
+          "help": "Activer le mode de sauvegarde à chaud avec point de contrôle (nécessite CRIU, aucun temps d'arrêt pour les dépôts en ligne)",
+          "label": "Activer le point de contrôle"
+        },
         "dest": {
           "help": "Nom du fichier de sauvegarde",
           "label": "Nom du fichier de destination"
@@ -378,6 +386,10 @@
           "help": "Installez les pilotes GPU AMD (auto = détecter d'abord le GPU, true = toujours installer, false = ignorer)",
           "label": "Installer le pilote GPU AMD"
         },
+        "install_criu": {
+          "help": "Installez CRIU pour la prise en charge des points de contrôle/restauration (auto = installer si le noyau >= 3.11, true = forcer l'installation, false = ignorer, manuel = installations utilisateur)",
+          "label": "Installer CRÉER"
+        },
         "install_nvidia_driver": {
           "help": "Installez les pilotes GPU NVIDIA (auto = détecter d'abord le GPU, true = toujours installer, false = ignorer)",
           "label": "Installer le pilote GPU NVIDIA"
@@ -400,6 +412,10 @@
       "description": "Démonter les systèmes de fichiers du référentiel",
       "name": "démonter",
       "params": {
+        "checkpoint": {
+          "help": "Créer un point de contrôle avant le démontage (nécessite CRIU)",
+          "label": "Créer un point de contrôle"
+        },
         "from": {
           "help": "Machine distante à démonter",
           "label": "De la machine"
@@ -421,6 +437,36 @@
         "repo": {
           "help": "Nom(s) du référentiel, séparés par des virgules",
           "label": "Dépôt"
+        }
+      }
+    },
+    "validate": {
+      "description": "Validez le référentiel en exécutant prep, up, vérifications de l'état, test et down",
+      "name": "valider",
+      "params": {
+        "cleanup": {
+          "help": "Démonter le référentiel une fois la validation terminée",
+          "label": "Nettoyage"
+        },
+        "grand": {
+          "help": "Nom du référentiel parent",
+          "label": "Grand dépôt"
+        },
+        "repo": {
+          "help": "Nom du référentiel à valider",
+          "label": "Dépôt"
+        },
+        "skip_down": {
+          "help": "Laisser les services fonctionner après validation",
+          "label": "Sauter vers le bas"
+        },
+        "skip_prep": {
+          "help": "Ignorer la phase de préparation si elle a déjà été exécutée récemment",
+          "label": "Sauter la préparation"
+        },
+        "timeout": {
+          "help": "Temps maximum par fonction en secondes (par défaut : 300)",
+          "label": "Délai d'expiration (secondes)"
         }
       }
     }

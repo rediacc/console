@@ -40,16 +40,25 @@
   "selectStatus": "Tüm durumlar",
   "selectTeam": "Kuyruk öğelerini görüntülemek için bir ekip seçin",
   "statistics": {
+    "active": "Aktif",
+    "failed": "Arızalı",
     "processing": "İşleme",
+    "stale": "Bayat",
     "timeSinceAssigned": "Atanmasından Bu Yana Geçen Süre",
+    "total": "Toplam",
     "totalDuration": "Toplam Süre"
   },
   "status": "Durum",
+  "statusActive": "Aktif",
+  "statusAssigned": "Atandı",
   "statusCancelled": "İptal edildi",
+  "statusCancelling": "İptal",
   "statusCompleted": "Tamamlanmış",
   "statusFailed": "Arızalı",
   "statusPending": "Askıda olması",
+  "statusProcessing": "İşleme",
   "statusRunning": "Koşma",
+  "statusStale": "Bayat",
   "tabs": {
     "active": {
       "description": "Bu bölüm, atanmayı bekleyen bekleyen öğeler, makineler tarafından işlenen görevler ve iptal edilme sürecindeki görevler de dahil olmak üzere tüm etkin görevleri görüntüler.",

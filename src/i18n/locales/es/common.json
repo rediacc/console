@@ -473,6 +473,8 @@
     "fieldsMovedFromExtra": "{{count}} campo(s) restaurados desde extraFields: {{fields}}",
     "fieldsMovedToExtra": "{{count}} campo(s) movido(s) a extraFields: {{fields}}",
     "formatJson": "Formato JSON",
+    "hostEntryHelp": "Opcional. La entrada de host conocida por SSH se detectará automáticamente.",
+    "hostEntryPlaceholder": "Autocompletado durante la prueba de conexión",
     "importJson": "Importar JSON",
     "invalidFormat": "Formato no válido. {{descripción}}",
     "invalidJsonFormat": "Formato JSON no válido",
@@ -496,6 +498,7 @@
     "requiredFields": "Campos obligatorios",
     "resetToFormValues": "Restablecer los valores del formulario",
     "saveVaultConfiguration": "Guardar configuración de bóveda",
+    "sshPasswordPlaceholder": "Opcional: para la configuración inicial de la clave SSH",
     "sshPasswordRequiredWhenNoKey": "Se requiere contraseña SSH para la configuración inicial de la clave",
     "systemCompatibility": {
       "available": "Disponible",
@@ -522,9 +525,12 @@
     },
     "testConnection": {
       "button": "Conexión de prueba",
+      "description": "Pruebe la conexión SSH y configure la autenticación de clave SSH automáticamente",
       "failed": "La conexión SSH falló",
       "initiated": "Se ha iniciado la prueba de conexión SSH. Por favor consulte la cola para ver los resultados.",
+      "label": "Conexión de prueba",
       "missingFields": "Complete la dirección IP, el nombre de usuario y la contraseña antes de realizar la prueba.",
+      "required": "Se requiere prueba de conexión antes de crear la máquina.",
       "success": "Conexión SSH exitosa",
       "testing": "Probando conexión..."
     },

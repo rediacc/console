@@ -162,7 +162,9 @@
   },
   "theme": {
     "dark": "深色",
-    "light": "浅色"
+    "light": "浅色",
+    "switchToDark": "切换到深色模式",
+    "switchToLight": "切换到灯光模式"
   },
   "thisMonth": "本月",
   "today": "今天",
@@ -482,6 +484,8 @@
     "fieldsMovedFromExtra": "{{count}} 个字段已从 extraFields 恢复：{{fields}}",
     "fieldsMovedToExtra": "{{count}} 个字段已移至 extraFields：{{fields}}",
     "formatJson": "格式化JSON",
+    "hostEntryHelp": "选修的。 将自动检测 SSH 已知主机条目。",
+    "hostEntryPlaceholder": "连接测试期间自动填充",
     "importJson": "导入JSON",
     "invalidFormat": "格式无效。{{description}}",
     "invalidJsonFormat": "无效的JSON格式",
@@ -505,6 +509,7 @@
     "requiredFields": "必填字段",
     "resetToFormValues": "重置为表单值",
     "saveVaultConfiguration": "保存保险库配置",
+    "sshPasswordPlaceholder": "可选：用于初始 SSH 密钥设置",
     "sshPasswordRequiredWhenNoKey": "初始密钥设置需要SSH密码",
     "systemCompatibility": {
       "available": "可用的",
@@ -531,9 +536,12 @@
     },
     "testConnection": {
       "button": "测试连接",
+      "description": "测试 SSH 连接并自动配置 SSH 密钥身份验证",
       "failed": "SSH连接失败",
       "initiated": "SSH连接测试已启动。请检查队列以查看结果。",
+      "label": "测试连接",
       "missingFields": "请在测试前填写IP地址、用户名和密码",
+      "required": "创建机器之前需要进行连接测试。",
       "success": "SSH连接成功",
       "testing": "测试连接中..."
     },

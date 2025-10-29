@@ -2,16 +2,19 @@
   "actions": {
     "addMember": "Mitglied hinzufügen",
     "addPermission": "Berechtigung hinzufügen",
+    "assignUser": "Benutzer zuweisen",
     "changePassword": "Kennwort ändern",
     "configureVault": "Vault konfigurieren",
     "createGroup": "Gruppe erstellen",
     "createTeam": "Team erstellen",
     "createUser": "Benutzer erstellen",
     "deactivate": "Deaktivieren",
+    "edit": "Bearbeiten",
     "members": "Mitglieder",
     "permissions": "Berechtigungen",
     "resetAuth": "Authentifizierung zurücksetzen",
     "token": "Token",
+    "trace": "Verfolgen",
     "twoFactorAuth": "Zwei-Faktor-Authentifizierung"
   },
   "architecture": {
@@ -43,6 +46,47 @@
     "viewForce": "Gewalt",
     "viewHierarchy": "Hierarchie",
     "viewRadial": "Radial"
+  },
+  "audit": {
+    "columns": {
+      "action": "Aktion",
+      "details": "Details",
+      "entityName": "Entitätsname",
+      "entityType": "Entitätstyp",
+      "timestamp": "Zeitstempel",
+      "user": "Benutzer"
+    },
+    "empty": {
+      "clearFilters": "Filter löschen und Datumsbereich erweitern",
+      "noLogsInRange": "Für den ausgewählten Datumsbereich wurden keine Überwachungsprotokolle gefunden",
+      "noMatchingFilters": "Keine Protokolle entsprechen Ihren aktuellen Filtern"
+    },
+    "errors": {
+      "loadDescription": "Beim Laden der Prüfprotokolle ist ein Fehler aufgetreten. Bitte versuchen Sie, Ihren Datumsbereich zu aktualisieren oder anzupassen.",
+      "loadTitle": "Audit-Protokolle können nicht geladen werden",
+      "tryAgain": "Versuchen Sie es erneut",
+      "unableToLoad": "Überwachungsprotokolle können nicht geladen werden"
+    },
+    "export": {
+      "noData": "Es sind keine Daten zum Exportieren verfügbar",
+      "successCSV": "{{count}} Audit-Logs in CSV exportiert",
+      "successJSON": "{{count}} Audit-Logs nach JSON exportiert",
+      "tooltip": "Exportieren Sie Audit-Protokolle als CSV oder JSON"
+    },
+    "filters": {
+      "actions": "Aktionen",
+      "allEntities": "Alle Entitäten",
+      "dateRange": "Datumsbereich",
+      "entityType": "Entitätstyp",
+      "export": "Export",
+      "search": "Suchen",
+      "searchPlaceholder": "In Protokollen suchen..."
+    },
+    "pagination": {
+      "showing": "Es werden {{start}}–{{end}} von {{total}} Protokollen angezeigt"
+    },
+    "subtitle": "Verfolgen Sie alle Aktivitäten und Änderungen in Ihrer Organisation",
+    "title": "Audit-Protokolle"
   },
   "dangerZone": {
     "blockUserRequests": {
@@ -179,6 +223,30 @@
   },
   "regionsInfrastructure": {
     "title": "Regionen & Infrastruktur"
+  },
+  "tables": {
+    "permissionGroups": {
+      "actions": "Aktionen",
+      "groupName": "Gruppenname",
+      "permissions": "Berechtigungen",
+      "users": "Benutzer"
+    },
+    "teams": {
+      "actions": "Aktionen",
+      "machines": "Maschinen",
+      "members": "Mitglieder",
+      "repositories": "Repositories",
+      "storage": "Lagerung",
+      "teamName": "Teamname",
+      "vaultVersion": "Vault-Version"
+    },
+    "users": {
+      "actions": "Aktionen",
+      "email": "E-Mail",
+      "lastActive": "Zuletzt aktiv",
+      "permissionGroup": "Berechtigungsgruppe",
+      "status": "Status"
+    }
   },
   "userSessions": {
     "active": "Aktiv",

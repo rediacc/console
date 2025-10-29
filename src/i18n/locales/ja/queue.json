@@ -40,16 +40,25 @@
   "selectStatus": "すべてのステータス",
   "selectTeam": "キューアイテムを表示するチームを選択してください",
   "statistics": {
+    "active": "アクティブ",
+    "failed": "失敗した",
     "processing": "処理",
+    "stale": "古い",
     "timeSinceAssigned": "割り当てられてからの経過時間",
+    "total": "合計",
     "totalDuration": "合計所要時間"
   },
   "status": "状態",
+  "statusActive": "アクティブ",
+  "statusAssigned": "割り当て済み",
   "statusCancelled": "キャンセル",
+  "statusCancelling": "キャンセルする",
   "statusCompleted": "完了",
   "statusFailed": "失敗した",
   "statusPending": "保留中",
+  "statusProcessing": "処理",
   "statusRunning": "ランニング",
+  "statusStale": "古い",
   "tabs": {
     "active": {
       "description": "このセクションには、割り当てを待っている保留中のアイテム、マシンによって処理中のタスク、キャンセル中のタスクを含むすべてのアクティブなタスクが表示されます。",

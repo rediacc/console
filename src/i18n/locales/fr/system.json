@@ -2,16 +2,19 @@
   "actions": {
     "addMember": "Ajouter un membre",
     "addPermission": "Ajouter une autorisation",
+    "assignUser": "Attribuer un utilisateur",
     "changePassword": "Changer le mot de passe",
     "configureVault": "Configurer le coffre-fort",
     "createGroup": "Créer un groupe",
     "createTeam": "Créer une équipe",
     "createUser": "Créer un utilisateur",
     "deactivate": "Désactiver",
+    "edit": "Modifier",
     "members": "Membres",
     "permissions": "Autorisations",
     "resetAuth": "Réinitialiser l'authentification",
     "token": "Jeton",
+    "trace": "Tracer",
     "twoFactorAuth": "Authentification à deux facteurs"
   },
   "architecture": {
@@ -43,6 +46,47 @@
     "viewForce": "Forcer",
     "viewHierarchy": "Hiérarchie",
     "viewRadial": "Radiale"
+  },
+  "audit": {
+    "columns": {
+      "action": "Action",
+      "details": "Détails",
+      "entityName": "Nom de l'entité",
+      "entityType": "Type d'entité",
+      "timestamp": "Horodatage",
+      "user": "Utilisatrice"
+    },
+    "empty": {
+      "clearFilters": "Supprimer les filtres et élargir la plage de dates",
+      "noLogsInRange": "Aucun journal d'audit trouvé pour la plage de dates sélectionnée",
+      "noMatchingFilters": "Aucun journal ne correspond à vos filtres actuels"
+    },
+    "errors": {
+      "loadDescription": "Une erreur s'est produite lors du chargement des journaux d'audit. Veuillez essayer d'actualiser ou d'ajuster votre plage de dates.",
+      "loadTitle": "Impossible de charger les journaux d'audit",
+      "tryAgain": "Essayer à nouveau",
+      "unableToLoad": "Impossible de charger les journaux d'audit"
+    },
+    "export": {
+      "noData": "Aucune donnée disponible pour l'exportation",
+      "successCSV": "{{count}} journaux d'audit exportés au format CSV",
+      "successJSON": "{{count}} journaux d'audit exportés vers JSON",
+      "tooltip": "Exporter les journaux d'audit au format CSV ou JSON"
+    },
+    "filters": {
+      "actions": "Actes",
+      "allEntities": "Toutes les entités",
+      "dateRange": "Plage de dates",
+      "entityType": "Type d'entité",
+      "export": "Exporter",
+      "search": "Recherche",
+      "searchPlaceholder": "Rechercher dans les journaux..."
+    },
+    "pagination": {
+      "showing": "Affichage de {{start}} à {{end}} sur {{total}} journaux"
+    },
+    "subtitle": "Suivez toutes les activités et les changements dans votre organisation",
+    "title": "Journaux d'audit"
   },
   "dangerZone": {
     "blockUserRequests": {
@@ -179,6 +223,30 @@
   },
   "regionsInfrastructure": {
     "title": "Régions et infrastructures"
+  },
+  "tables": {
+    "permissionGroups": {
+      "actions": "Actes",
+      "groupName": "Nom du groupe",
+      "permissions": "Autorisations",
+      "users": "Utilisatrices"
+    },
+    "teams": {
+      "actions": "Actes",
+      "machines": "Machines",
+      "members": "Membres",
+      "repositories": "Dépôts",
+      "storage": "Stockage",
+      "teamName": "Nom de l'équipe",
+      "vaultVersion": "Version du coffre-fort"
+    },
+    "users": {
+      "actions": "Actes",
+      "email": "E-mail",
+      "lastActive": "Dernier actif",
+      "permissionGroup": "Groupe d'autorisations",
+      "status": "Statut"
+    }
   },
   "userSessions": {
     "active": "Active",
