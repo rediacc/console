@@ -603,7 +603,7 @@ const DashboardPage = () => {
                     </div>
                   )}
 
-                  {/* Priority Breakdown (Premium/Elite only) */}
+                  {/* Priority Breakdown (Business/Enterprise only) */}
                   {dashboard.featureAccess.HasAdvancedAnalytics === 1 &&
                    dashboard.queueStats.HighestPriorityPending !== null && (
                     <div style={{
@@ -641,7 +641,7 @@ const DashboardPage = () => {
           </Card>
         )}
 
-        {/* 6. Distributed Storage - Storage statistics (Premium/Elite only) */}
+        {/* 6. Distributed Storage - Storage statistics (Business/Enterprise only) */}
         {dashboard.featureAccess?.HasAdvancedAnalytics === 1 && dashboard.distributedStorageStats && (
           <DistributedStorageDashboardWidget stats={dashboard.distributedStorageStats} />
         )}

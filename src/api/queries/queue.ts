@@ -14,7 +14,7 @@ export interface QueueItem {
   vaultContentResponse?: string
   vaultVersionResponse?: number
   status: 'PENDING' | 'ASSIGNED' | 'PROCESSING' | 'CANCELLING' | 'COMPLETED' | 'CANCELLED' | 'FAILED'
-  priority?: number // Only for Premium/Elite plans, 1-5 where 1 is highest
+  priority?: number // Only for Business/Enterprise plans, 1-5 where 1 is highest
   priorityLabel?: string // 'Highest', 'High', 'Normal', 'Low', 'Lowest'
   createdTime: string
   ageInMinutes: number

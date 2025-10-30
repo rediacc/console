@@ -34,7 +34,7 @@
     "availablePlans": "Available Plans",
     "comparePlansDescription": "Compare features and pricing across different subscription tiers",
     "currentPlan": "Current Plan",
-    "elitePlanDescription": "You're on our highest tier plan with all features unlocked",
+    "enterprisePlanDescription": "You're on our highest tier plan with all features unlocked",
     "upgradeOptions": "Upgrade Options"
   },
   "export": "Export",

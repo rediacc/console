@@ -34,7 +34,7 @@
     "availablePlans": "Mevcut Planlar",
     "comparePlansDescription": "Farklı abonelik katmanlarındaki özellikleri ve fiyatları karşılaştırın",
     "currentPlan": "Mevcut Plan",
-    "elitePlanDescription": "Tüm özelliklerin kilidi açılmış en yüksek seviye planımızdasınız",
+    "enterprisePlanDescription": "Tüm özelliklerin kilidi açılmış en yüksek seviye planımızdasınız",
     "upgradeOptions": "Yükseltme Seçenekleri"
   },
   "export": "İhracat",

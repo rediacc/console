@@ -34,7 +34,7 @@
     "availablePlans": "Verfügbare Pläne",
     "comparePlansDescription": "Vergleichen Sie Funktionen und Preise verschiedener Abonnementstufen",
     "currentPlan": "Aktueller Plan",
-    "elitePlanDescription": "Sie nutzen unseren höchsten Tarif, bei dem alle Funktionen freigeschaltet sind",
+    "enterprisePlanDescription": "Sie nutzen unseren höchsten Tarif, bei dem alle Funktionen freigeschaltet sind",
     "upgradeOptions": "Upgrade-Optionen"
   },
   "export": "Export",

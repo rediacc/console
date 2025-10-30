@@ -34,7 +34,7 @@
     "availablePlans": "利用可能なプラン",
     "comparePlansDescription": "さまざまなサブスクリプション層の機能と価格を比較する",
     "currentPlan": "現在の計画",
-    "elitePlanDescription": "あなたはすべての機能がロック解除された最高レベルのプランを利用しています",
+    "enterprisePlanDescription": "あなたはすべての機能がロック解除された最高レベルのプランを利用しています",
     "upgradeOptions": "アップグレードオプション"
   },
   "export": "輸出",

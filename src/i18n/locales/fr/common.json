@@ -34,7 +34,7 @@
     "availablePlans": "Forfaits disponibles",
     "comparePlansDescription": "Comparez les fonctionnalités et les tarifs des différents niveaux d'abonnement",
     "currentPlan": "Forfait actuel",
-    "elitePlanDescription": "Vous bénéficiez de notre forfait le plus élevé avec toutes les fonctionnalités débloquées",
+    "enterprisePlanDescription": "Vous bénéficiez de notre forfait le plus élevé avec toutes les fonctionnalités débloquées",
     "upgradeOptions": "Options de mise à niveau"
   },
   "export": "Exporter",
