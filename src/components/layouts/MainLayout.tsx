@@ -136,7 +136,7 @@ const MainLayout: React.FC = () => {
       icon: <HddOutlined />,
       label: t('navigation.distributedStorage'),
       showInSimple: false, // Show in expert mode only
-      requiresPlan: ['ELITE', 'PREMIUM', 'Elite', 'Premium'], // Support both uppercase and proper case
+      requiresPlan: ['ENTERPRISE', 'BUSINESS', 'Enterprise', 'Business'], // Support both uppercase and proper case
       featureFlag: 'distributedStorage', // Beta feature - managed by feature flags
       'data-testid': 'main-nav-distributed-storage',
     },

@@ -90,9 +90,9 @@ export const getPlanPrice = (pricing: PricingConfig, planCode: string): number |
   // Map plan codes to pricing keys
   const planMap: Record<string, string> = {
     'COMMUNITY': 'community',
-    'ADVANCED': 'advanced',
-    'PREMIUM': 'premium',
-    'ELITE': 'elite'
+    'PRO': 'pro',
+    'BUSINESS': 'business',
+    'ENTERPRISE': 'enterprise'
   };
   
   const pricingKey = planMap[planCode] || planCode.toLowerCase();

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Tooltip, Modal, Input } from 'antd'
+import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Tooltip, Modal, Input, type MenuProps } from 'antd'
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
 import { CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, ApiOutlined, DisconnectOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined, CopyOutlined, RiseOutlined, StarOutlined, EditOutlined, ShrinkOutlined, ControlOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
@@ -1798,19 +1798,19 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           onClick: () => handleRunFunction(record, 'apply_template')
         })
 
-        // ADVANCED SUBMENU FOR STORAGE OPERATIONS
-        const advancedSubmenuItems = []
+        // PRO SUBMENU FOR STORAGE OPERATIONS
+        const proSubmenuItems: MenuProps['items'] = []
 
         // Mount/Unmount
         if (!record.mounted) {
-          advancedSubmenuItems.push({
+          proSubmenuItems.push({
             key: 'mount',
             label: t('resources:repositories.mount'),
             icon: <DatabaseOutlined style={componentStyles.icon.small} />,
             onClick: () => handleQuickAction(record, 'mount', 4)
           })
         } else {
-          advancedSubmenuItems.push({
+          proSubmenuItems.push({
             key: 'unmount',
             label: t('resources:repositories.unmount'),
             icon: <DisconnectOutlined style={componentStyles.icon.small} />,
@@ -1820,7 +1820,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
         // Resize - only when NOT mounted (offline operation)
         if (!record.mounted) {
-          advancedSubmenuItems.push({
+          proSubmenuItems.push({
             key: 'resize',
             label: t('functions:functions.resize.name'),
             icon: <ShrinkOutlined style={componentStyles.icon.small} />,
@@ -1830,7 +1830,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
         // Expand - only when mounted (online expansion)
         if (record.mounted) {
-          advancedSubmenuItems.push({
+          proSubmenuItems.push({
             key: 'expand',
             label: t('functions:functions.expand.name'),
             icon: <ExpandOutlined style={componentStyles.icon.small} />,
@@ -1839,13 +1839,13 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         }
 
         // Add divider and experimental to advanced submenu
-        if (advancedSubmenuItems.length > 0) {
-          advancedSubmenuItems.push({
+        if (proSubmenuItems.length > 0) {
+          proSubmenuItems.push({
             type: 'divider' as const
           })
         }
 
-        advancedSubmenuItems.push({
+        proSubmenuItems.push({
           key: 'experimental',
           label: t('machines:experimental'),
           icon: <FunctionOutlined style={componentStyles.icon.small} />,
@@ -1853,12 +1853,12 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         })
 
         // Add Advanced submenu if there are items
-        if (advancedSubmenuItems.length > 0) {
+        if (proSubmenuItems.length > 0) {
           menuItems.push({
             key: 'advanced',
             label: t('resources:repositories.advanced'),
             icon: <ControlOutlined style={componentStyles.icon.small} />,
-            children: advancedSubmenuItems
+            children: proSubmenuItems
           })
         }
 

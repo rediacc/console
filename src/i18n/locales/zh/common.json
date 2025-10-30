@@ -34,7 +34,7 @@
     "availablePlans": "可用计划",
     "comparePlansDescription": "比较不同订阅层级的功能和价格",
     "currentPlan": "当前计划",
-    "elitePlanDescription": "您正在使用我们的最高级别计划，所有功能均已解锁",
+    "enterprisePlanDescription": "您正在使用我们的最高级别计划，所有功能均已解锁",
     "upgradeOptions": "升级选项"
   },
   "export": "导出",

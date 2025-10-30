@@ -66,7 +66,7 @@ const DistributedStoragePage: React.FC = () => {
   })
 
   const planCode = companyData?.activeSubscription?.PlanCode
-  const hasDistributedStorageAccess = planCode === 'ELITE' || planCode === 'PREMIUM'
+  const hasDistributedStorageAccess = planCode === 'ENTERPRISE' || planCode === 'BUSINESS'
 
   console.log('hasDistributedStorageAccess:', hasDistributedStorageAccess, 'planCode:', planCode)
 
