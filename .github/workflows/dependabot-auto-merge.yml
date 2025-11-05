@@ -61,7 +61,7 @@ jobs:
 
       - name: Approve Dependabot PR
         if: steps.pr.outputs.number
-        run: gh pr review ${{ steps.pr.outputs.number }} --approve --body "Auto-approved by Dependabot Auto Merge workflow"
+        run: gh pr review ${{ steps.pr.outputs.number }} --repo ${{ github.repository }} --approve --body "Auto-approved by Dependabot Auto Merge workflow"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
