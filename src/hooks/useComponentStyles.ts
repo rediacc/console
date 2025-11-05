@@ -239,7 +239,7 @@ export const useTableStyles = () => {
     ...baseStyles,
     
     tableContainer: {
-      overflow: 'auto',
+      overflow: 'hidden',
       borderRadius: borderRadius('LG'),
       border: '1px solid var(--color-border-secondary)',
     },

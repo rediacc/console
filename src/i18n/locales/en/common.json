@@ -328,7 +328,7 @@
         },
         "ssh_password": {
           "description": "Temporary password for initial SSH key setup only. Leave empty if SSH key is already configured. This password is used once to copy the public key and should be removed afterwards for security.",
-          "label": "SSH Password (Temporary)"
+          "label": "SSH Password"
         },
         "user": {
           "description": "SSH username for connection",

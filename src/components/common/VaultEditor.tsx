@@ -57,7 +57,6 @@ interface VaultEditorProps {
   isModalOpen?: boolean // Modal open state to handle resets
   isEditMode?: boolean // Whether we're in edit mode
   uiMode?: 'simple' | 'expert' // UI mode for conditional rendering
-  forceShowErrors?: boolean // Forcefully surface field-level errors (e.g., on submit)
 }
 
 interface FieldDefinition {
@@ -114,7 +113,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   entityType,
   initialData = {},
   onChange,
-  onValidate,
+  onValidate: _onValidate,
   onImportExport,
   onFieldMovement,
   teamName = 'Default Team',
@@ -124,7 +123,6 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   isModalOpen,
   isEditMode = false,
   uiMode = 'expert',
-  forceShowErrors = false,
 }) => {
   const { t } = useTranslation(['common', 'storageProviders'])
   const [form] = Form.useForm()
@@ -160,6 +158,17 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     onChange?.(data, hasChanges)
   }, [onChange])
 
+  // Update raw JSON when form data changes
+  const updateRawJson = useCallback((data: Record<string, any>) => {
+    try {
+      const jsonString = JSON.stringify(data, null, 2)
+      setRawJsonValue(jsonString)
+      setRawJsonError(null)
+    } catch (error) {
+      setRawJsonError(t('vaultEditor.failedToSerialize'))
+    }
+  }, [t])
+
   // Track previous modal open state
   const prevModalOpenRef = useRef(isModalOpen)
   
@@ -169,6 +178,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       // Modal just opened - reset everything
       setLastInitializedData('')
       form.resetFields()
+      form.setFields([]) // Clear all field errors
       setExtraFields({})
       setImportedData({})
       setRawJsonValue('{}')
@@ -180,11 +190,6 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     prevModalOpenRef.current = isModalOpen
   }, [isModalOpen, form])
 
-  useEffect(() => {
-    if (forceShowErrors) {
-      form.validateFields().catch(() => undefined)
-    }
-  }, [forceShowErrors, form])
 
   // Get entity definition from JSON
   const entityDef = useMemo(() => {
@@ -544,28 +549,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       
       // Remember what data we initialized with
       setLastInitializedData(currentDataString)
-      
-      // Validate initial data - but skip validation for repositories in edit mode
-      // to avoid race condition with credential field requirements
-      if (!(isEditMode && entityType === 'REPOSITORY')) {
-        // Use immediate validation for non-repository entities or create mode without surfacing errors
-        form.validateFields(undefined, { validateOnly: true })
-          .then(() => {
-            onValidate?.(true)
-          })
-          .catch((errorInfo) => {
-            const errors = errorInfo.errorFields?.map((field: any) => 
-              `${field.name.join('.')}: ${field.errors.join(', ')}`
-            )
-            onValidate?.(false, errors)
-          })
-      } else {
-        // For repositories in edit mode, mark as valid immediately
-        // since credential field is optional in edit mode
-        onValidate?.(true)
-      }
     }
-  }, [form, entityDef, entityType, initialData])
+  }, [form, entityDef, entityType, initialData, updateRawJson])
 
   // Pass import/export handlers to parent
   useEffect(() => {
@@ -587,17 +572,6 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         showIcon
       />
     )
-  }
-
-  // Update raw JSON when form data changes
-  const updateRawJson = (data: Record<string, any>) => {
-    try {
-      const jsonString = JSON.stringify(data, null, 2)
-      setRawJsonValue(jsonString)
-      setRawJsonError(null)
-    } catch (error) {
-      setRawJsonError(t('vaultEditor.failedToSerialize'))
-    }
   }
 
   const handleFormChange = (changedValues?: any) => {
@@ -638,42 +612,6 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     
     // Use direct onChange for immediate updates (no debouncing)
     directOnChange(completeData, hasChanges)
-
-    // Then validate
-    const collectErrors = (errorInfo: any) =>
-      errorInfo?.errorFields?.map((field: any) => `${field.name.join('.')}: ${field.errors.join(', ')}`) || []
-
-    const validationTargets =
-      changedValues?.ssh_key_configured !== undefined && (entityType === 'MACHINE' || entityType === 'BRIDGE')
-        ? Object.keys(formData).filter(key => key !== 'ssh_password')
-        : Object.keys(changedValues || {})
-
-    const performValidation = async () => {
-      const accumulatedErrors: string[] = []
-
-      if (validationTargets.length > 0) {
-        try {
-          await form.validateFields(validationTargets, { validateOnly: true })
-        } catch (errorInfo: any) {
-          accumulatedErrors.push(...collectErrors(errorInfo))
-        }
-      }
-
-      try {
-        await form.validateFields(undefined, { validateOnly: true })
-        if (accumulatedErrors.length > 0) {
-          onValidate?.(false, accumulatedErrors)
-        } else {
-          onValidate?.(true)
-        }
-      } catch (errorInfo: any) {
-        const overallErrors = collectErrors(errorInfo)
-        const combined = overallErrors.length > 0 ? overallErrors : accumulatedErrors
-        onValidate?.(false, combined)
-      }
-    }
-
-    void performValidation()
   }
 
   const handleRawJsonChange = (value: string | undefined) => {
@@ -752,16 +690,6 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       // Trigger change event
       const hasChanges = JSON.stringify(completeData) !== JSON.stringify(initialData)
       directOnChange(completeData, hasChanges)
-      
-      // Validate
-      form.validateFields()
-        .then(() => onValidate?.(true))
-        .catch((errorInfo) => {
-          const errors = errorInfo.errorFields?.map((field: any) => 
-            `${field.name.join('.')}: ${field.errors.join(', ')}`
-          )
-          onValidate?.(false, errors)
-        })
     } catch (error) {
       setRawJsonError(t('vaultEditor.invalidJsonFormat'))
     }
@@ -914,10 +842,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 
     if (field.type === 'number') {
       return (
-        <FieldFormItem
+        <Form.Item
           name={fieldName}
-          label={fieldLabel}
-          description={fieldDescription}
+          label={<FieldLabel label={fieldLabel} description={fieldDescription} />}
           rules={rules}
           initialValue={field.default}
         >
@@ -927,7 +854,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
             max={field.maximum}
             data-testid={`vault-editor-field-${fieldName}`}
           />
-        </FieldFormItem>
+        </Form.Item>
       )
     }
 
@@ -1141,11 +1068,12 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       <Form
         form={form}
         layout="horizontal"
-        labelCol={{ xs: { span: 24 }, sm: { span: 6 } }}
-        wrapperCol={{ xs: { span: 24 }, sm: { span: 18 } }}
+        labelCol={{ xs: { span: 24 }, sm: { span: 8 } }}
+        wrapperCol={{ xs: { span: 24 }, sm: { span: 16 } }}
         labelAlign="right"
         colon={true}
-        validateTrigger={['onBlur']}
+        validateTrigger={false}
+        preserve={false}
         onValuesChange={(changedValues, _allValues) => {
           handleFormChange(changedValues)
         }}
@@ -1156,19 +1084,12 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         className="vault-editor-form"
         data-testid="vault-editor-form"
       >
-        <Row gutter={[16, 16]} style={{ width: '100%' }} data-testid="vault-editor-cards">
-          {/* Main Configuration Card - Merged Required & Optional Fields */}
+        <Row gutter={[spacing('SM'), spacing('SM')]} wrap style={{ width: '100%' }} data-testid="vault-editor-cards">
+          {/* Main Configuration - Merged Required & Optional Fields */}
           {(requiredFields.length > 0 || optionalFields.length > 0) && (
-            <Col xs={24} sm={24} md={24} lg={24} xl={24}>
-              <Card
-                variant="borderless"
-                size="default"
-                data-testid="vault-editor-panel-configuration"
-              >
-              {/* All Fields in 2-column Grid */}
-              <Row gutter={[spacing('SM'), spacing('SM')]} wrap>
-                {/* Required Fields */}
-                {(entityType === 'MACHINE' ? machineBasicFieldOrder : requiredFields)
+            <>
+              {/* Required Fields */}
+              {(entityType === 'MACHINE' ? machineBasicFieldOrder : requiredFields)
                   .map((fieldName) => {
                     const field = fields[fieldName as keyof typeof fields]
                     if (!field) return null
@@ -1176,7 +1097,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                     // credential field should be full width for REPOSITORY
                     const colSpan = (entityType === 'REPOSITORY' && fieldName === 'credential') ? 24 : 12
                     return (
-                      <Col key={fieldName} xs={24} lg={colSpan}>
+                      <Col key={fieldName} xs={24} md={colSpan}>
                         {renderField(fieldName, field as FieldDefinition, isRequired)}
                       </Col>
                     )
@@ -1189,7 +1110,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                     const field = fields[fieldName as keyof typeof fields]
                     if (!field) return null
                     return (
-                      <Col key={fieldName} xs={24} lg={12}>
+                      <Col key={fieldName} xs={24} md={12}>
                         {renderField(fieldName, field as FieldDefinition, false)}
                       </Col>
                     )
@@ -1197,7 +1118,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 
                 {/* Test Connection Button */}
                 {entityType === 'MACHINE' && (
-                  <Col xs={24} lg={12}>
+                  <Col xs={24}>
                     <Form.Item
                       label={
                         <FieldLabel
@@ -1205,14 +1126,23 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                           description={t('vaultEditor.testConnection.description')}
                         />
                       }
-                      extra={!testConnectionSuccess && t('vaultEditor.testConnection.required')}
                     >
-                      <Button
-                        type="primary"
-                        icon={<WifiOutlined />}
-                        loading={isCreatingQueueItem || isTestingConnection}
-                        data-testid="vault-editor-test-connection"
-                        onClick={async () => {
+                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                        {!testConnectionSuccess && (
+                          <Alert
+                            message={t('vaultEditor.testConnection.required')}
+                            type="info"
+                            showIcon
+                            icon={<InfoCircleOutlined />}
+                            style={{ marginBottom: spacing('XS') }}
+                          />
+                        )}
+                        <Button
+                          type="primary"
+                          icon={<WifiOutlined />}
+                          loading={isCreatingQueueItem || isTestingConnection}
+                          data-testid="vault-editor-test-connection"
+                          onClick={async () => {
                           const values = form.getFieldsValue()
                           const { ip, user, ssh_password, port, datastore } = values
 
@@ -1270,12 +1200,18 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                             message.error(t('vaultEditor.testConnection.failed'))
                           }
                         }}
-                      />
+                          style={{
+                            width: '100%',
+                            minHeight: '40px'
+                          }}
+                        >
+                          {t('vaultEditor.testConnection.button')}
+                        </Button>
+                      </Space>
                     </Form.Item>
                   </Col>
                 )}
 
-                {/* Kernel Compatibility Display (from former Advanced section) */}
                 {entityType === 'MACHINE' && form.getFieldValue('kernel_compatibility') && (
                   <Col xs={24} lg={12}>
                     <Form.Item
@@ -1375,14 +1311,12 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                     </Form.Item>
                   </Col>
                 )}
-              </Row>
 
               {entityType !== 'MACHINE' && (
                   <>
                     {requiredFields.length > 0 && optionalFields.length > 0 && (
                       <Divider style={{ margin: '16px 0' }} />
                     )}
-                    <Row gutter={[spacing('SM'), spacing('SM')]} wrap>
                       {optionalFields.length > 0 && optionalFields.map((fieldName) => {
                         const field = fields[fieldName as keyof typeof fields]
                         if (!field) return null
@@ -1412,12 +1346,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                           </Col>
                         )
                       })}
-                    </Row>
                   </>
                 )}
-
-              </Card>
-            </Col>
+            </>
           )}
 
           {/* Provider-specific fields Card for STORAGE entity */}

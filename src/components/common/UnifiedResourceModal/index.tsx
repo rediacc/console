@@ -316,6 +316,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         }
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mode, teamFilter, resourceType, form, dropdownData, existingData])
 
   // Reset form values when modal opens in edit mode
