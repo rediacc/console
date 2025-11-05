@@ -39,6 +39,7 @@ interface EndpointSelectorProps {
 const EndpointSelector: React.FC<EndpointSelectorProps> = ({
   onHealthCheckComplete
 }) => {
+  const [modal, contextHolder] = Modal.useModal();
   const [endpoints, setEndpoints] = useState<Endpoint[]>([]);
   const [selectedEndpoint, setSelectedEndpoint] = useState<Endpoint | null>(null);
   const [loading, setLoading] = useState(true);
@@ -252,7 +253,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
   const handleRemoveCustomEndpoint = (endpointId: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent dropdown from closing
 
-    Modal.confirm({
+    modal.confirm({
       title: 'Remove Custom Endpoint',
       content: 'Are you sure you want to remove this custom endpoint?',
       onOk: async () => {
@@ -463,6 +464,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
           </Form.Item>
         </Form>
       </Modal>
+      {contextHolder}
     </>
   );
 };

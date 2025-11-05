@@ -78,23 +78,8 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     const [isVaultValid, setIsVaultValid] = useState(true)
     const [vaultValidationErrors, setVaultValidationErrors] = useState<string[]>([])
     const [showVaultValidationErrors, setShowVaultValidationErrors] = useState(false)
-    const [forceVaultErrors, setForceVaultErrors] = useState(false)
     const importExportHandlers = useRef<{ handleImport: (file: any) => boolean; handleExport: () => void } | null>(null)
     const validationErrorsRef = useRef<HTMLDivElement>(null)
-
-    // Track vault validation state changes
-    useEffect(() => {
-      // Vault validation state updated
-    }, [isVaultValid, vaultValidationErrors, showVaultValidationErrors, entityType])
-
-    useEffect(() => {
-      if (!isModalOpen) {
-        // Defer state update to avoid synchronous setState in effect
-        queueMicrotask(() => {
-          setForceVaultErrors(false)
-        })
-      }
-    }, [isModalOpen])
 
 
     const {
@@ -128,7 +113,6 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
 
       if (!isVaultValid && !shouldSkipVaultValidation) {
         setShowVaultValidationErrors(true)
-        setForceVaultErrors(true)
         message.error(t('vaultEditor.pleaseFixErrors'))
         return
       }
@@ -140,7 +124,6 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
           [vaultFieldName]: JSON.stringify(vaultData)
         }
         await onSubmit(dataWithVault)
-        setForceVaultErrors(false)
       } catch (error) {
         // Error handled by parent
       }
@@ -153,9 +136,6 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     const handleVaultValidate = (valid: boolean, errors?: string[]) => {
       setIsVaultValid(valid)
       setVaultValidationErrors(errors || [])
-      if (valid) {
-        setForceVaultErrors(false)
-      }
     }
 
     // Expose submit method to parent
@@ -357,6 +337,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
           labelAlign="right"
           colon={true}
           style={{ flexShrink: 0 }}
+          className="resource-form-with-vault"
         >
           <Row gutter={[spacing('SM'), spacing('SM')]} wrap>
             {fields.map((field) => {
@@ -409,7 +390,6 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
             initialData={initialVaultData}
             onChange={handleVaultChange}
             onValidate={handleVaultValidate}
-            forceShowErrors={forceVaultErrors}
             teamName={teamName}
             bridgeName={bridgeName}
             onTestConnectionStateChange={onTestConnectionStateChange}

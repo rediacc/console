@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { Table, Spin, Alert, Tag, Space, Typography, Button, Dropdown, Tooltip, Modal, Input, type MenuProps } from 'antd'
+import { Spin, Alert, Tag, Space, Typography, Button, Dropdown, Tooltip, Modal, Input } from 'antd'
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
 import { CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, ApiOutlined, DisconnectOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined, CopyOutlined, RiseOutlined, StarOutlined, EditOutlined, ShrinkOutlined, ControlOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
+import * as S from './styles'
 import { type QueueFunction } from '@/api/queries/queue'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
@@ -13,7 +14,7 @@ import { useMachines } from '@/api/queries/machines'
 import { useStorage } from '@/api/queries/storage'
 import type { ColumnsType } from 'antd/es/table'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
-import { LocalActionsMenu } from './LocalActionsMenu'
+import { LocalActionsMenu } from '../LocalActionsMenu'
 import { showMessage } from '@/utils/messages'
 import { useAppSelector } from '@/store/store'
 import { featureFlags } from '@/config/featureFlags'
@@ -45,6 +46,25 @@ interface Repository {
     available: string
     use_percent: string
   }
+}
+
+interface PortMapping {
+  host: string
+  host_port: string
+  container_port: string
+  protocol: string
+}
+
+interface Container {
+  id: string
+  name: string
+  state: string
+  status?: string
+  image?: string
+  ports?: string
+  created?: string
+  port_mappings?: PortMapping[]
+  [key: string]: any // eslint-disable-line @typescript-eslint/no-explicit-any -- Allow additional properties from API
 }
 
 interface SystemInfo {
@@ -84,8 +104,8 @@ interface MachineRepositoryListProps {
   onCreateRepository?: (machine: Machine, repositoryGuid: string) => void
   onRepositoryClick?: (repository: Repository) => void
   highlightedRepository?: Repository | null
-  onContainerClick?: (container: any) => void
-  highlightedContainer?: any | null
+  onContainerClick?: (container: Container) => void
+  highlightedContainer?: Container | null
   isLoading?: boolean
   onRefreshMachines?: () => Promise<any>
   refreshKey?: number // Used to trigger re-rendering when parent wants to force refresh
@@ -219,7 +239,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                   
                   // Count containers that are plugins (name starts with "plugin-")
                   if (result.containers && Array.isArray(result.containers)) {
-                    result.containers.forEach((container: any) => {
+                    result.containers.forEach((container: Container) => {
                       // Check if this container belongs to this repository
                       const belongsToRepo = container.repository === repo.name ||
                         container.labels?.['com.redisolar.repository-guid'] === repo.name ||
@@ -750,8 +770,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             repositoryName: repository.name
           })
           showMessage('success', t('resources:repositories.promoteSuccess', { name: repository.name }))
-        } catch (error: any) {
-          const errorMessage = error?.response?.data?.message || t('resources:repositories.promoteFailed')
+        } catch (error: unknown) {
+          const errorMessage = (error as any)?.response?.data?.message || t('resources:repositories.promoteFailed')
           showMessage('error', errorMessage)
         }
       }
@@ -816,8 +836,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           if (onActionComplete) {
             onActionComplete()
           }
-        } catch (error: any) {
-          const errorMessage = error?.response?.data?.message || t('resources:repositories.renameFailed')
+        } catch (error: unknown) {
+          const errorMessage = (error as any)?.response?.data?.message || t('resources:repositories.renameFailed')
           showMessage('error', errorMessage)
           return Promise.reject()
         }
@@ -985,7 +1005,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   }
 
 
-  const handleContainerAction = async (repository: Repository, container: any, action: string) => {
+  const handleContainerAction = async (repository: Repository, container: Container, action: string) => {
     try {
       // Find team vault data
       const team = teams?.find(t => t.teamName === machine.teamName)
@@ -1248,14 +1268,14 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
     
     // Container columns (without actions column which will be added in renderExpandedRow)
-    const containerColumns: ColumnsType<any> = [
+    const containerColumns: ColumnsType<Container> = [
       {
         title: t('resources:containers.status'),
         dataIndex: 'state',
         key: 'status',
         width: 80,
         align: 'center',
-        render: (_: any, record: any) => {
+        render: (_: string, record: Container) => {
           let icon: React.ReactNode
           let color: string
           let tooltipText: string
@@ -1281,9 +1301,9 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
           return (
             <Tooltip title={tooltipText}>
-              <span style={{ fontSize: 18, color }}>
+              <S.StatusIcon $color={color}>
                 {icon}
-              </span>
+              </S.StatusIcon>
             </Tooltip>
           )
         },
@@ -1293,7 +1313,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         dataIndex: 'name',
         key: 'name',
         ellipsis: true,
-        render: (name: string, _record: any) => {
+        render: (name: string, _record: Container) => {
           const isPlugin = name?.startsWith('plugin-')
           return (
             <Space>
@@ -1308,13 +1328,13 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         dataIndex: 'port_mappings',
         key: 'port_mappings',
         ellipsis: true,
-        render: (portMappings: any[], record: any) => {
+        render: (portMappings: PortMapping[], record: Container) => {
           // If we have structured port mappings, use them
           if (portMappings && Array.isArray(portMappings) && portMappings.length > 0) {
             return (
               <Space direction="vertical" size={0}>
                 {portMappings.map((mapping, index) => (
-                  <Text key={index} style={{ fontSize: 12 }}>
+                  <S.PortText key={index} as={Text}>
                     {mapping.host_port ? (
                       <span>
                         {mapping.host}:{mapping.host_port} → {mapping.container_port}/{mapping.protocol}
@@ -1322,14 +1342,14 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                     ) : (
                       <span>{mapping.container_port}/{mapping.protocol}</span>
                     )}
-                  </Text>
+                  </S.PortText>
                 ))}
               </Space>
             )
           }
           // Fallback to raw ports string
           else if (record.ports) {
-            return <Text style={{ fontSize: 12 }}>{record.ports}</Text>
+            return <S.PortText as={Text}>{record.ports}</S.PortText>
           }
           return '-'
         },
@@ -1340,17 +1360,17 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     const containers = containersData[record.name]
     
     // Separate plugin containers from regular containers
-    const pluginContainers = containers?.containers?.filter((c: any) => c.name && c.name.startsWith('plugin-')) || []
-    const regularContainers = containers?.containers?.filter((c: any) => !c.name || !c.name.startsWith('plugin-')) || []
+    const pluginContainers = containers?.containers?.filter((c: Container) => c.name && c.name.startsWith('plugin-')) || []
+    const regularContainers = containers?.containers?.filter((c: Container) => !c.name || !c.name.startsWith('plugin-')) || []
     
     // Container columns with repository context
-    const containerColumnsWithRepo: ColumnsType<any> = [
+    const containerColumnsWithRepo: ColumnsType<Container> = [
       ...containerColumns.slice(0, -1), // All columns except actions
       {
         title: t('common:table.actions'),
         key: 'actions',
         fixed: 'right',
-        render: (_: any, container: any) => {
+        render: (_: any, container: Container) => {
           const menuItems = []
           
           if (container.state === 'running') {
@@ -1409,7 +1429,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                     size="small"
                     icon={<FunctionOutlined />}
                     loading={managedQueueMutation.isPending}
-                    style={componentStyles.touchTarget}
                     data-testid={`machine-repo-list-container-actions-${container.id}`}
                     aria-label={t('machines:remote')}
                   />
@@ -1432,45 +1451,34 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     ]
     
     return (
-      <div style={{ padding: '16px', position: 'relative' }}>
+      <S.ExpandedRowContainer>
         {/* Loading Overlay for Repository Expansion */}
         {showRepoLoadingIndicator && expandingRepoKey === record.name && (
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(255, 255, 255, 0.7)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10,
-            borderRadius: '4px'
-          }}>
+          <S.ExpandedRowLoadingOverlay>
             <Space direction="vertical" align="center">
               <Spin size="large" />
               <Text type="secondary">{t('common:general.refreshing')}</Text>
             </Space>
-          </div>
+          </S.ExpandedRowLoadingOverlay>
         )}
         
         {/* Regular Containers Table */}
-        <div style={{ marginBottom: 16 }} data-testid="machine-repo-list-containers-section">
+        <S.ContainersSection data-testid="machine-repo-list-containers-section">
           {containers?.error ? (
             <Alert message={t('resources:repositories.errorLoadingContainers')} description={containers.error} type="error" />
           ) : regularContainers.length > 0 ? (
-            <Table
+            <S.StyledTable
               columns={containerColumnsWithRepo}
               dataSource={regularContainers}
               rowKey="id"
               size="small"
+              $removeMargins={true}
               pagination={false}
               scroll={{ x: 'max-content' }}
               style={tableStyles.tableContainer}
               data-testid="machine-repo-list-containers-table"
-              onRow={(container) => ({
-                onClick: (e) => {
+              onRow={(container: Container) => ({
+                onClick: (e: React.MouseEvent<HTMLElement>) => {
                   const target = e.target as HTMLElement
                   if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
                     return
@@ -1482,33 +1490,34 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                   backgroundColor: highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : undefined,
                   transition: 'background-color 0.3s ease'
                 },
-                onMouseEnter: (e) => {
+                onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
                   if (onContainerClick) {
                     e.currentTarget.style.backgroundColor = highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'
                   }
                 },
-                onMouseLeave: (e) => {
+                onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
                   e.currentTarget.style.backgroundColor = highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : ''
                 }
               })}
             />
           ) : null}
-        </div>
+        </S.ContainersSection>
 
         {/* Plugin Containers Table */}
         {featureFlags.isEnabled('plugins') && pluginContainers.length > 0 && (
-          <div style={{ marginTop: 16 }} data-testid="machine-repo-list-plugins-section">
-            <Table
+          <S.PluginsSection data-testid="machine-repo-list-plugins-section">
+            <S.StyledTable
               columns={containerColumnsWithRepo}
               dataSource={pluginContainers}
               rowKey="id"
               size="small"
+              $removeMargins
               pagination={false}
               scroll={{ x: 'max-content' }}
               style={tableStyles.tableContainer}
               data-testid="machine-repo-list-plugins-table"
-              onRow={(container) => ({
-                onClick: (e) => {
+              onRow={(container: Container) => ({
+                onClick: (e: React.MouseEvent<HTMLElement>) => {
                   const target = e.target as HTMLElement
                   if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
                     return
@@ -1520,31 +1529,31 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                   backgroundColor: highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : undefined,
                   transition: 'background-color 0.3s ease'
                 },
-                onMouseEnter: (e) => {
+                onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
                   if (onContainerClick) {
                     e.currentTarget.style.backgroundColor = highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'
                   }
                 },
-                onMouseLeave: (e) => {
+                onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
                   e.currentTarget.style.backgroundColor = highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : ''
                 }
               })}
             />
-          </div>
+          </S.PluginsSection>
         )}
-      </div>
+      </S.ExpandedRowContainer>
     )
   }
 
   // System container columns
-  const systemContainerColumns: ColumnsType<any> = [
+  const systemContainerColumns: ColumnsType<Container> = [
     {
       title: t('resources:containers.status'),
       dataIndex: 'state',
       key: 'status',
       width: 80,
       align: 'center',
-      render: (_: any, record: any) => {
+      render: (_: unknown, record: Container) => {
         let icon: React.ReactNode
         let color: string
         let tooltipText: string
@@ -1600,7 +1609,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       title: t('resources:repositories.containerStatus'),
       dataIndex: 'state',
       key: 'state',
-      render: (state: string, record: any) => (
+      render: (state: string, record: Container) => (
         <Space>
           <Tag color={state === 'running' ? 'success' : 'default'}>
             {state}
@@ -1626,7 +1635,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       dataIndex: 'port_mappings',
       key: 'port_mappings',
       ellipsis: true,
-      render: (portMappings: any[], record: any) => {
+      render: (portMappings: PortMapping[], record: Container) => {
         // If we have structured port mappings, use them
         if (portMappings && Array.isArray(portMappings) && portMappings.length > 0) {
           return (
@@ -1798,19 +1807,19 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           onClick: () => handleRunFunction(record, 'apply_template')
         })
 
-        // PRO SUBMENU FOR STORAGE OPERATIONS
-        const proSubmenuItems: MenuProps['items'] = []
+        // ADVANCED SUBMENU FOR STORAGE OPERATIONS
+        const advancedSubmenuItems = []
 
         // Mount/Unmount
         if (!record.mounted) {
-          proSubmenuItems.push({
+          advancedSubmenuItems.push({
             key: 'mount',
             label: t('resources:repositories.mount'),
             icon: <DatabaseOutlined style={componentStyles.icon.small} />,
             onClick: () => handleQuickAction(record, 'mount', 4)
           })
         } else {
-          proSubmenuItems.push({
+          advancedSubmenuItems.push({
             key: 'unmount',
             label: t('resources:repositories.unmount'),
             icon: <DisconnectOutlined style={componentStyles.icon.small} />,
@@ -1820,7 +1829,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
         // Resize - only when NOT mounted (offline operation)
         if (!record.mounted) {
-          proSubmenuItems.push({
+          advancedSubmenuItems.push({
             key: 'resize',
             label: t('functions:functions.resize.name'),
             icon: <ShrinkOutlined style={componentStyles.icon.small} />,
@@ -1830,7 +1839,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
         // Expand - only when mounted (online expansion)
         if (record.mounted) {
-          proSubmenuItems.push({
+          advancedSubmenuItems.push({
             key: 'expand',
             label: t('functions:functions.expand.name'),
             icon: <ExpandOutlined style={componentStyles.icon.small} />,
@@ -1839,13 +1848,13 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         }
 
         // Add divider and experimental to advanced submenu
-        if (proSubmenuItems.length > 0) {
-          proSubmenuItems.push({
+        if (advancedSubmenuItems.length > 0) {
+          advancedSubmenuItems.push({
             type: 'divider' as const
           })
         }
 
-        proSubmenuItems.push({
+        advancedSubmenuItems.push({
           key: 'experimental',
           label: t('machines:experimental'),
           icon: <FunctionOutlined style={componentStyles.icon.small} />,
@@ -1853,12 +1862,12 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         })
 
         // Add Advanced submenu if there are items
-        if (proSubmenuItems.length > 0) {
+        if (advancedSubmenuItems.length > 0) {
           menuItems.push({
             key: 'advanced',
             label: t('resources:repositories.advanced'),
             icon: <ControlOutlined style={componentStyles.icon.small} />,
-            children: proSubmenuItems
+            children: advancedSubmenuItems
           })
         }
 
@@ -1917,7 +1926,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                   size="small"
                   icon={<FunctionOutlined />}
                   loading={managedQueueMutation.isPending}
-                  style={componentStyles.touchTarget}
                   data-testid={`machine-repo-list-repo-actions-${record.name}`}
                   aria-label={t('machines:remote')}
                 />
@@ -1986,38 +1994,26 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   }
 
   return (
-    <div style={{ padding: '0 20px 20px 20px', overflowX: 'auto', position: 'relative' }} data-testid="machine-repo-list">
+    <S.Container data-testid="machine-repo-list">
       {/* Loading Overlay */}
       {isLoading && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(255, 255, 255, 0.7)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 10,
-          borderRadius: '4px'
-        }}>
+        <S.LoadingOverlay>
           <Space direction="vertical" align="center">
             <Spin size="large" />
             <Text type="secondary">{t('common:general.refreshing')}</Text>
           </Space>
-        </div>
+        </S.LoadingOverlay>
       )}
       
       {/* Machine Name Title when in grouped view */}
       {hideSystemInfo && (
-        <div style={{ marginBottom: 16, paddingTop: 16, borderBottom: '1px solid #f0f0f0', paddingBottom: 12 }} data-testid="machine-repo-list-machine-header">
+        <S.MachineHeader data-testid="machine-repo-list-machine-header">
           <Space direction="vertical" size={4}>
             <Space>
-              <DesktopOutlined style={{ fontSize: 20, color: '#556b2f' }} />
-              <Typography.Title level={4} style={{ margin: 0, color: '#556b2f' }} data-testid="machine-repo-list-machine-name">
+              <S.MachineIcon as={DesktopOutlined} />
+              <S.MachineTitle as={Typography.Title} level={4} data-testid="machine-repo-list-machine-name">
                 {machine.machineName}
-              </Typography.Title>
+              </S.MachineTitle>
             </Space>
             <Space wrap size={8}>
               <Tag color="#8FBC8F" data-testid="machine-repo-list-team-tag">{machine.teamName}</Tag>
@@ -2026,11 +2022,11 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               <Tag color="blue" data-testid="machine-repo-list-queue-tag">{machine.queueCount} {t('machines:queueItems')}</Tag>
             </Space>
           </Space>
-        </div>
+        </S.MachineHeader>
       )}
       
       {/* Repository Table */}
-      <Table
+      <S.StyledTable
         columns={columns}
         dataSource={repositories}
         rowKey="name"
@@ -2039,7 +2035,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         scroll={{ x: 'max-content' }}
         style={tableStyles.tableContainer}
         data-testid="machine-repo-list-table"
-        rowClassName={(record) => {
+        rowClassName={(record: Repository) => {
           // Apply subtle background to clone rows
           const repositoryData = teamRepositories.find(r => r.repositoryName === record.name)
           const isClone = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid
@@ -2048,18 +2044,18 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         expandable={{
           expandedRowRender: renderExpandedRow,
           expandedRowKeys: expandedRows,
-          onExpandedRowsChange: (keys) => setExpandedRows(keys as string[]),
-          rowExpandable: (record) => record.mounted && (record.has_services || record.container_count > 0 || (featureFlags.isEnabled('plugins') && record.plugin_count > 0)),
+          onExpandedRowsChange: (keys: readonly React.Key[]) => setExpandedRows(keys as string[]),
+          rowExpandable: (record: Repository) => record.mounted && (record.has_services || record.container_count > 0 || (featureFlags.isEnabled('plugins') && record.plugin_count > 0)),
           expandIcon: () => null, // Hide default expand icon
           expandRowByClick: false, // We'll handle this manually
         }}
         locale={{
           emptyText: t('resources:repositories.noRepositories')
         }}
-        onRow={(record) => {
+        onRow={(record: Repository) => {
           const hasExpandableContent = record.mounted && (record.has_services || record.container_count > 0 || (featureFlags.isEnabled('plugins') && record.plugin_count > 0))
           return {
-            onClick: (e) => {
+            onClick: (e: React.MouseEvent<HTMLElement>) => {
               const target = e.target as HTMLElement
               // Don't trigger if clicking on buttons or dropdowns
               if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
@@ -2107,12 +2103,12 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               backgroundColor: highlightedRepository?.name === record.name ? 'rgba(24, 144, 255, 0.05)' : undefined,
               transition: 'background-color 0.3s ease'
             },
-            onMouseEnter: (e) => {
+            onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
               if (hasExpandableContent || onRepositoryClick) {
                 e.currentTarget.style.backgroundColor = highlightedRepository?.name === record.name ? 'rgba(24, 144, 255, 0.08)' : 'rgba(0, 0, 0, 0.02)'
               }
             },
-            onMouseLeave: (e) => {
+            onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
               e.currentTarget.style.backgroundColor = highlightedRepository?.name === record.name ? 'rgba(24, 144, 255, 0.05)' : ''
             }
           }
@@ -2121,23 +2117,21 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       
       {/* System Containers Section */}
       {systemContainers.length > 0 && !hideSystemInfo && (
-        <div data-testid="machine-repo-list-system-containers">
-          <Typography.Title level={5} style={{ marginBottom: 16, marginTop: 32 }} data-testid="machine-repo-list-system-containers-title">
+        <S.SystemContainersWrapper data-testid="machine-repo-list-system-containers">
+          <S.SystemContainersTitle as={Typography.Title} level={5} data-testid="machine-repo-list-system-containers-title">
             {t('resources:repositories.systemContainers')}
-          </Typography.Title>
-          <div style={{ marginBottom: 32 }}>
-            <Table
-              columns={systemContainerColumns}
-              dataSource={systemContainers}
-              rowKey="id"
-              size="small"
-              pagination={false}
-              scroll={{ x: 'max-content' }}
-              style={tableStyles.tableContainer}
-              data-testid="machine-repo-list-system-containers-table"
-            />
-          </div>
-        </div>
+          </S.SystemContainersTitle>
+          <S.StyledTable
+            columns={systemContainerColumns}
+            dataSource={systemContainers}
+            rowKey="id"
+            size="small"
+            pagination={false}
+            scroll={{ x: 'max-content' }}
+            style={tableStyles.tableContainer}
+            data-testid="machine-repo-list-system-containers-table"
+          />
+        </S.SystemContainersWrapper>
       )}
       
       
@@ -2234,6 +2228,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         }
       />
 
-    </div>
+    </S.Container>
   )
 }
