@@ -1131,6 +1131,22 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         />
       )}
 
+      {/* Warning for TEAM vault without SSH keys */}
+      {entityType === 'TEAM' && (!initialData.SSH_PRIVATE_KEY || !initialData.SSH_PUBLIC_KEY) && (
+        <Alert
+          message={t('vaultEditor.missingSshKeysWarning')}
+          description={t('vaultEditor.missingSshKeysDescription')}
+          type="warning"
+          showIcon
+          style={{
+            marginBottom: spacing('SM'),
+            flexShrink: 0,
+            borderRadius: borderRadius('LG'),
+            fontSize: fontSize('SM')
+          }}
+        />
+      )}
+
       <Form
         form={form}
         layout="horizontal"
