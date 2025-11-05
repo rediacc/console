@@ -59,6 +59,12 @@ jobs:
           pull-request-number: ${{ steps.pr.outputs.number }}
           merge-method: squash
 
+      - name: Approve Dependabot PR
+        if: steps.pr.outputs.number
+        run: gh pr review ${{ steps.pr.outputs.number }} --approve --body "Auto-approved by Dependabot Auto Merge workflow"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Log auto-merge status
         if: steps.pr.outputs.number
-        run: echo "Enabled auto-merge for Dependabot PR #${{ steps.pr.outputs.number }}"
+        run: echo "Enabled auto-merge and approved Dependabot PR #${{ steps.pr.outputs.number }}"
