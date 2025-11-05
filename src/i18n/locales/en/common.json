@@ -523,6 +523,8 @@
       "warning": "Warning",
       "yes": "Yes"
     },
+    "missingSshKeysWarning": "Missing SSH Keys",
+    "missingSshKeysDescription": "The team vault is missing SSH_PRIVATE_KEY and/or SSH_PUBLIC_KEY. Bridge SSH authentication will fail. Please generate or add SSH keys to this vault.",
     "testConnection": {
       "button": "Test Connection",
       "description": "Test SSH connection and configure SSH key authentication automatically",
