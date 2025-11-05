@@ -113,7 +113,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   entityType,
   initialData = {},
   onChange,
-  onValidate: _onValidate,
+  onValidate,
   onImportExport,
   onFieldMovement,
   teamName = 'Default Team',
@@ -546,11 +546,31 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       
       // Initialize raw JSON with proper structure
       updateRawJson(completeData)
-      
+
       // Remember what data we initialized with
       setLastInitializedData(currentDataString)
+
+      // Validate initial data - but skip validation for repositories in edit mode
+      // to avoid race condition with credential field requirements
+      if (!(isEditMode && entityType === 'REPOSITORY')) {
+        // Use immediate validation for non-repository entities or create mode without surfacing errors
+        form.validateFields(undefined, { validateOnly: true })
+          .then(() => {
+            onValidate?.(true)
+          })
+          .catch((errorInfo) => {
+            const errors = errorInfo.errorFields?.map((field: any) =>
+              `${field.name.join('.')}: ${field.errors.join(', ')}`
+            )
+            onValidate?.(false, errors)
+          })
+      } else {
+        // For repositories in edit mode, mark as valid immediately
+        // since credential field is optional in edit mode
+        onValidate?.(true)
+      }
     }
-  }, [form, entityDef, entityType, initialData, updateRawJson])
+  }, [form, entityDef, entityType, initialData, updateRawJson, isEditMode, onValidate])
 
   // Pass import/export handlers to parent
   useEffect(() => {
@@ -609,9 +629,45 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     
     // Check if there are any changes
     const hasChanges = JSON.stringify(completeData) !== JSON.stringify(initialData)
-    
+
     // Use direct onChange for immediate updates (no debouncing)
     directOnChange(completeData, hasChanges)
+
+    // Then validate
+    const collectErrors = (errorInfo: any) =>
+      errorInfo?.errorFields?.map((field: any) => `${field.name.join('.')}: ${field.errors.join(', ')}`) || []
+
+    const validationTargets =
+      changedValues?.ssh_key_configured !== undefined && (entityType === 'MACHINE' || entityType === 'BRIDGE')
+        ? Object.keys(formData).filter(key => key !== 'ssh_password')
+        : Object.keys(changedValues || {})
+
+    const performValidation = async () => {
+      const accumulatedErrors: string[] = []
+
+      if (validationTargets.length > 0) {
+        try {
+          await form.validateFields(validationTargets, { validateOnly: true })
+        } catch (errorInfo: any) {
+          accumulatedErrors.push(...collectErrors(errorInfo))
+        }
+      }
+
+      try {
+        await form.validateFields(undefined, { validateOnly: true })
+        if (accumulatedErrors.length > 0) {
+          onValidate?.(false, accumulatedErrors)
+        } else {
+          onValidate?.(true)
+        }
+      } catch (errorInfo: any) {
+        const overallErrors = collectErrors(errorInfo)
+        const combined = overallErrors.length > 0 ? overallErrors : accumulatedErrors
+        onValidate?.(false, combined)
+      }
+    }
+
+    void performValidation()
   }
 
   const handleRawJsonChange = (value: string | undefined) => {
@@ -686,10 +742,20 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       }
       
       setImportedData(completeData)
-      
+
       // Trigger change event
       const hasChanges = JSON.stringify(completeData) !== JSON.stringify(initialData)
       directOnChange(completeData, hasChanges)
+
+      // Validate
+      form.validateFields()
+        .then(() => onValidate?.(true))
+        .catch((errorInfo) => {
+          const errors = errorInfo.errorFields?.map((field: any) =>
+            `${field.name.join('.')}: ${field.errors.join(', ')}`
+          )
+          onValidate?.(false, errors)
+        })
     } catch (error) {
       setRawJsonError(t('vaultEditor.invalidJsonFormat'))
     }
