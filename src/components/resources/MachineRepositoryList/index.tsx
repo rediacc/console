@@ -2024,7 +2024,31 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           </Space>
         </S.MachineHeader>
       )}
-      
+
+      {/* Warning for missing SSH keys in team vault */}
+      {(() => {
+        const team = teams?.find(t => t.teamName === machine.teamName)
+        if (!team?.vaultContent) return null
+
+        try {
+          const teamVault = JSON.parse(team.vaultContent)
+          const missingSSHKeys = !teamVault.SSH_PRIVATE_KEY || !teamVault.SSH_PUBLIC_KEY
+
+          return missingSSHKeys ? (
+            <Alert
+              type="warning"
+              showIcon
+              closable
+              message={t('common:vaultEditor.missingSshKeysWarning')}
+              description={t('common:vaultEditor.missingSshKeysDescription')}
+              style={{ marginBottom: 16 }}
+            />
+          ) : null
+        } catch {
+          return null
+        }
+      })()}
+
       {/* Repository Table */}
       <S.StyledTable
         columns={columns}
