@@ -495,6 +495,8 @@
     "maxValue": "最大值为 {{value}}",
     "minLength": "最小长度为 {{length}}",
     "minValue": "最小值为 {{value}}",
+    "missingSshKeysDescription": "团队保管库缺少 SSH_PRIVATE_KEY 和/或 SSH_PUBLIC_KEY。 桥接 SSH 身份验证将失败。 请生成 SSH 密钥或将其添加到此保管库。",
+    "missingSshKeysWarning": "缺少 SSH 密钥",
     "mustBeArray": "必须为数组",
     "mustBeValidJson": "必须为有效的JSON",
     "mustBeValidJsonArray": "必须为有效的JSON数组",

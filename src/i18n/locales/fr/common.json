@@ -484,6 +484,8 @@
     "maxValue": "La valeur maximale est {{value}}",
     "minLength": "La longueur minimale est de {{length}}",
     "minValue": "La valeur minimale est {{value}}",
+    "missingSshKeysDescription": "Il manque SSH_PRIVATE_KEY et/ou SSH_PUBLIC_KEY dans le coffre-fort de l'équipe. L'authentification Bridge SSH échouera. Veuillez générer ou ajouter des clés SSH à ce coffre-fort.",
+    "missingSshKeysWarning": "Clés SSH manquantes",
     "mustBeArray": "Doit être un tableau",
     "mustBeValidJson": "Doit être un JSON valide",
     "mustBeValidJsonArray": "Doit être un tableau JSON valide",

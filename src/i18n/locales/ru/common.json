@@ -484,6 +484,8 @@
     "maxValue": "Максимальное значение — {{value}}.",
     "minLength": "Минимальная длина – {{length}}.",
     "minValue": "Минимальное значение — {{value}}.",
+    "missingSshKeysDescription": "В групповом хранилище отсутствует SSH_PRIVATE_KEY и/или SSH_PUBLIC_KEY. Аутентификация моста SSH не удастся. Пожалуйста, сгенерируйте или добавьте ключи SSH в это хранилище.",
+    "missingSshKeysWarning": "Отсутствуют ключи SSH",
     "mustBeArray": "Должен быть массив",
     "mustBeValidJson": "Должен быть действительный JSON",
     "mustBeValidJsonArray": "Должен быть действительный массив JSON.",

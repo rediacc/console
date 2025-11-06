@@ -484,6 +484,8 @@
     "maxValue": "الحد الأقصى للقيمة هو {{value}}",
     "minLength": "الحد الأدنى للطول هو {{طول}}",
     "minValue": "الحد الأدنى للقيمة هو {{قيمة}}",
+    "missingSshKeysDescription": "يفتقد قبو الفريق SSH_PRIVATE_KEY و/أو SSH_PUBLIC_KEY. ستفشل مصادقة Bridge SSH. الرجاء إنشاء أو إضافة مفاتيح SSH إلى هذا المخزن.",
+    "missingSshKeysWarning": "مفاتيح SSH مفقودة",
     "mustBeArray": "يجب أن تكون مصفوفة",
     "mustBeValidJson": "يجب أن يكون JSON صالحًا",
     "mustBeValidJsonArray": "يجب أن تكون صفيف JSON صالحًا",

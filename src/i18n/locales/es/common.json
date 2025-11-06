@@ -484,6 +484,8 @@
     "maxValue": "El valor máximo es {{valor}}",
     "minLength": "La longitud mínima es {{longitud}}",
     "minValue": "El valor mínimo es {{value}}",
+    "missingSshKeysDescription": "A la bóveda del equipo le falta SSH_PRIVATE_KEY y/o SSH_PUBLIC_KEY. La autenticación Bridge SSH fallará. Genere o agregue claves SSH a esta bóveda.",
+    "missingSshKeysWarning": "Faltan claves SSH",
     "mustBeArray": "Debe ser una matriz",
     "mustBeValidJson": "Debe ser válida JSON",
     "mustBeValidJsonArray": "Debe ser una matriz JSON válida",

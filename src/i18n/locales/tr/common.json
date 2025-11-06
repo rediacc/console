@@ -484,6 +484,8 @@
     "maxValue": "Maksimum değer: {{value}}",
     "minLength": "Minimum uzunluk {{uzunluk}}",
     "minValue": "Minimum değer: {{value}}",
+    "missingSshKeysDescription": "Ekip kasasında SSH_PRIVATE_KEY ve/veya SSH_PUBLIC_KEY eksik. Köprü SSH kimlik doğrulaması başarısız olacaktır. Lütfen bu kasaya SSH anahtarları oluşturun veya ekleyin.",
+    "missingSshKeysWarning": "Eksik SSH Anahtarları",
     "mustBeArray": "Bir dizi olmalı",
     "mustBeValidJson": "Geçerli bir JSON olmalıdır",
     "mustBeValidJsonArray": "Geçerli bir JSON dizisi olmalıdır",
