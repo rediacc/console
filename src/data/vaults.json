@@ -184,6 +184,7 @@
         },
         "SSH_PUBLIC_KEY": {
           "type": "string",
+          "format": "base64",
           "pattern": "^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/=]+ .+$",
           "example": "Public SSH key. Example: ssh-rsa AAAAB3NzaC1yc2E... mykey"
         }
