@@ -43,6 +43,27 @@ import { featureFlags } from '@/config/featureFlags'
 
 const { Text } = Typography
 
+// Base64 utility functions for fields with format: "base64"
+const decodeBase64 = (value: string): string => {
+  try {
+    return atob(value)
+  } catch (e) {
+    // If decode fails, return original value
+    console.warn('Failed to decode base64 value:', e)
+    return value
+  }
+}
+
+const encodeBase64 = (value: string): string => {
+  try {
+    return btoa(value)
+  } catch (e) {
+    // If encode fails, return original value
+    console.warn('Failed to encode base64 value:', e)
+    return value
+  }
+}
+
 interface VaultEditorProps {
   entityType: string
   initialData?: Record<string, any>
@@ -474,7 +495,12 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       Object.entries(entityDef.fields || {}).forEach(([key, field]) => {
         const typedField = field as FieldDefinition
         if (initialData[key] !== undefined) {
-          formData[key] = initialData[key]
+          // Decode base64 fields for display in the form
+          if (typedField.format === 'base64' && typeof initialData[key] === 'string') {
+            formData[key] = decodeBase64(initialData[key])
+          } else {
+            formData[key] = initialData[key]
+          }
         } else if (typedField.default !== undefined) {
           formData[key] = typedField.default
         }
@@ -485,10 +511,16 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         const provider = storageProviders.providers[initialData.provider as keyof typeof storageProviders.providers]
         if (provider && provider.fields) {
           Object.entries(provider.fields).forEach(([key, field]) => {
+            const typedField = field as FieldDefinition
             if (initialData[key] !== undefined) {
-              formData[key] = initialData[key]
-            } else if ((field as any).default !== undefined) {
-              formData[key] = (field as any).default
+              // Decode base64 fields for display in the form
+              if (typedField.format === 'base64' && typeof initialData[key] === 'string') {
+                formData[key] = decodeBase64(initialData[key])
+              } else {
+                formData[key] = initialData[key]
+              }
+            } else if (typedField.default !== undefined) {
+              formData[key] = typedField.default
             }
           })
         }
@@ -600,26 +632,45 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     // Handle provider changes for STORAGE entity
     if (entityType === 'STORAGE' && changedValues?.provider !== undefined) {
       setSelectedProvider(changedValues.provider)
-      
+
       // Clear provider-specific fields when provider changes
       if (providerFields) {
         const fieldsToKeep = ['name', 'provider', 'description', 'noVersioning', 'parameters']
         const currentValues = form.getFieldsValue()
         const newValues: Record<string, any> = {}
-        
+
         // Keep only base fields
         fieldsToKeep.forEach(field => {
           if (currentValues[field] !== undefined) {
             newValues[field] = currentValues[field]
           }
         })
-        
+
         form.setFieldsValue(newValues)
       }
     }
-    
+
+    // Encode base64 fields before saving
+    const encodedData = { ...formData }
+    Object.entries(entityDef?.fields || {}).forEach(([key, field]) => {
+      const typedField = field as FieldDefinition
+      if (typedField.format === 'base64' && encodedData[key] !== undefined && typeof encodedData[key] === 'string') {
+        encodedData[key] = encodeBase64(encodedData[key])
+      }
+    })
+
+    // Also encode base64 fields for STORAGE provider-specific fields
+    if (entityType === 'STORAGE' && selectedProvider && providerFields?.fields) {
+      Object.entries(providerFields.fields).forEach(([key, field]) => {
+        const typedField = field as FieldDefinition
+        if (typedField.format === 'base64' && encodedData[key] !== undefined && typeof encodedData[key] === 'string') {
+          encodedData[key] = encodeBase64(encodedData[key])
+        }
+      })
+    }
+
     // Build complete data with extraFields structure
-    const completeData = { ...formData }
+    const completeData = { ...encodedData }
     if (Object.keys(extraFields).length > 0) {
       completeData.extraFields = extraFields
     }
@@ -696,7 +747,13 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         if (key === 'extraFields') {
           // Skip, already processed
         } else if (entityDef.fields && key in entityDef.fields) {
-          formData[key] = val
+          const field = entityDef.fields[key] as FieldDefinition
+          // Decode base64 fields when loading from raw JSON
+          if (field.format === 'base64' && typeof val === 'string') {
+            formData[key] = decodeBase64(val)
+          } else {
+            formData[key] = val
+          }
           // Check if this field was previously in extraFields
           if (extraFields[key] !== undefined) {
             movedFromExtra.push(key)
@@ -735,12 +792,21 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         }))
       }
       
+      // Encode base64 fields before saving
+      const encodedData = { ...formData }
+      Object.entries(entityDef?.fields || {}).forEach(([key, field]) => {
+        const typedField = field as FieldDefinition
+        if (typedField.format === 'base64' && encodedData[key] !== undefined && typeof encodedData[key] === 'string') {
+          encodedData[key] = encodeBase64(encodedData[key])
+        }
+      })
+
       // Build complete data structure for onChange
-      const completeData = { ...formData }
+      const completeData = { ...encodedData }
       if (Object.keys(extras).length > 0) {
         completeData.extraFields = extras
       }
-      
+
       setImportedData(completeData)
 
       // Trigger change event
@@ -788,9 +854,15 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         
         // Set form values for known fields
         const formData: Record<string, any> = {}
-        Object.entries(entityDef.fields || {}).forEach(([key]) => {
+        Object.entries(entityDef.fields || {}).forEach(([key, field]) => {
+          const typedField = field as FieldDefinition
           if (data[key] !== undefined) {
-            formData[key] = data[key]
+            // Decode base64 fields when importing
+            if (typedField.format === 'base64' && typeof data[key] === 'string') {
+              formData[key] = decodeBase64(data[key])
+            } else {
+              formData[key] = data[key]
+            }
           }
         })
         form.setFieldsValue(formData)
@@ -807,13 +879,22 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 
   const handleExport = () => {
     const formData = form.getFieldsValue()
-    
+
+    // Encode base64 fields before exporting
+    const encodedData = { ...formData }
+    Object.entries(entityDef?.fields || {}).forEach(([key, field]) => {
+      const typedField = field as FieldDefinition
+      if (typedField.format === 'base64' && encodedData[key] !== undefined && typeof encodedData[key] === 'string') {
+        encodedData[key] = encodeBase64(encodedData[key])
+      }
+    })
+
     // Build export data with extraFields structure
-    const exportData = { ...formData }
+    const exportData = { ...encodedData }
     if (Object.keys(extraFields).length > 0) {
       exportData.extraFields = extraFields
     }
-    
+
     // Remove undefined values
     Object.keys(exportData).forEach(key => {
       if (exportData[key] === undefined) {
