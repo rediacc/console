@@ -46,7 +46,7 @@ const { Text } = Typography
 // Base64 utility functions for fields with format: "base64"
 const decodeBase64 = (value: string): string => {
   try {
-    return atob(value)
+    return atob(value).trim()
   } catch (e) {
     // If decode fails, return original value
     console.warn('Failed to decode base64 value:', e)
@@ -56,7 +56,7 @@ const decodeBase64 = (value: string): string => {
 
 const encodeBase64 = (value: string): string => {
   try {
-    return btoa(value)
+    return btoa(value.trim())
   } catch (e) {
     // If encode fails, return original value
     console.warn('Failed to encode base64 value:', e)
