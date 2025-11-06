@@ -747,7 +747,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         if (key === 'extraFields') {
           // Skip, already processed
         } else if (entityDef.fields && key in entityDef.fields) {
-          const field = entityDef.fields[key] as FieldDefinition
+          const field = (entityDef.fields as Record<string, FieldDefinition>)[key]
           // Decode base64 fields when loading from raw JSON
           if (field.format === 'base64' && typeof val === 'string') {
             formData[key] = decodeBase64(val)
