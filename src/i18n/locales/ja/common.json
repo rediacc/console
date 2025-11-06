@@ -484,6 +484,8 @@
     "maxValue": "最大値は {{value}} です",
     "minLength": "最小の長さは {{length}} です",
     "minValue": "最小値は {{value}} です",
+    "missingSshKeysDescription": "チーム ボルトに SSH_PRIVATE_KEY や SSH_PUBLIC_KEY がありません。 ブリッジ SSH 認証は失敗します。 SSH キーを生成するか、このコンテナーに追加してください。",
+    "missingSshKeysWarning": "SSH キーがありません",
     "mustBeArray": "配列である必要があります",
     "mustBeValidJson": "有効な JSON である必要があります",
     "mustBeValidJsonArray": "有効な JSON 配列である必要があります",

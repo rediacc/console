@@ -484,6 +484,8 @@
     "maxValue": "Maximalwert ist {{value}}",
     "minLength": "Die Mindestlänge beträgt {{length}}",
     "minValue": "Der Mindestwert ist {{value}}",
+    "missingSshKeysDescription": "Im Team-Tresor fehlt SSH_PRIVATE_KEY und/oder SSH_PUBLIC_KEY. Die Bridge-SSH-Authentifizierung schlägt fehl. Bitte generieren oder fügen Sie SSH-Schlüssel zu diesem Tresor hinzu.",
+    "missingSshKeysWarning": "Fehlende SSH-Schlüssel",
     "mustBeArray": "Muss ein Array sein",
     "mustBeValidJson": "Muss gültiges JSON sein",
     "mustBeValidJsonArray": "Muss ein gültiges JSON-Array sein",
