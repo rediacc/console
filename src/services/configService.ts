@@ -8,7 +8,7 @@ interface AppConfig {
   httpPort: number
   environment: 'development' | 'production'
   buildType: 'DEBUG' | 'RELEASE'
-  // Extended configuration from nginx
+  // Extended configuration from web server
   instanceName?: string
   enableDebug?: boolean
   enableAnalytics?: boolean
@@ -69,7 +69,7 @@ class ConfigService {
       return this.config
     }
 
-    // First, try to get config from window.REDIACC_CONFIG (nginx runtime config)
+    // First, try to get config from window.REDIACC_CONFIG (web server runtime config)
     const runtimeConfig = this.parseRediaccConfig()
     
     // Get the selected API endpoint from the connection service
@@ -94,7 +94,7 @@ class ConfigService {
     // Log configuration source in debug mode
     if (this.config.enableDebug || this.config.buildType === 'DEBUG') {
       console.log('Configuration loaded:', {
-        source: runtimeConfig ? 'Runtime (nginx)' : 'Build-time (Vite)',
+        source: runtimeConfig ? 'Runtime (web server)' : 'Build-time (Vite)',
         endpoint: selectedEndpoint,
         config: this.config
       })
