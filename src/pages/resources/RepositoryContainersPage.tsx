@@ -327,7 +327,7 @@ const RepositoryContainersPage: React.FC = () => {
                 key={`${actualMachine.machineName}-${actualRepositoryName}-${refreshKey}`}
                 refreshKey={refreshKey}
                 onContainerClick={handleContainerClick}
-                highlightedContainer={selectedContainer}
+                highlightedContainer={selectedContainer as any} // eslint-disable-line @typescript-eslint/no-explicit-any
                 onQueueItemCreated={(taskId, machineName) => {
                   setQueueTraceModal({ visible: true, taskId, machineName })
                 }}
