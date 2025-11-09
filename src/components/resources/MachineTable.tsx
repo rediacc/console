@@ -29,6 +29,9 @@ import {
   CloudDownloadOutlined,
   RightOutlined,
   InfoCircleOutlined,
+  CheckCircleOutlined,
+  DisconnectOutlined,
+  EyeOutlined,
 } from '@/utils/optimizedIcons';
 import { useMachines } from '@/api/queries/machines';
 import type { Machine } from '@/types';
@@ -232,8 +235,52 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const columns: ColumnsType<Machine> = React.useMemo(() => {
     const baseColumns: ColumnsType<Machine> = [];
 
-    // Add the other columns first
+    // Add Status column first
     baseColumns.push(
+      {
+        title: t('machines:status'),
+        dataIndex: 'vaultStatusTime',
+        key: 'status',
+        width: 100,
+        align: 'center',
+        sorter: (a: Machine, b: Machine) => {
+          const getStatusValue = (machine: Machine) => {
+            if (!machine.vaultStatusTime) return 0
+            const statusTime = new Date(machine.vaultStatusTime + 'Z')
+            const now = new Date()
+            const diffMinutes = (now.getTime() - statusTime.getTime()) / 1000 / 60
+            return diffMinutes <= 3 ? 1 : 0
+          }
+          return getStatusValue(b) - getStatusValue(a)
+        },
+        render: (_: any, record: Machine) => {
+          if (!record.vaultStatusTime) {
+            return (
+              <Tooltip title={t('machines:statusUnknown')}>
+                <span style={{ fontSize: 18, color: '#d9d9d9' }}>
+                  <DisconnectOutlined />
+                </span>
+              </Tooltip>
+            )
+          }
+
+          // Parse vaultStatusTime (UTC) - add 'Z' to ensure UTC parsing
+          const statusTime = new Date(record.vaultStatusTime + 'Z')
+          const now = new Date()
+          const diffSeconds = (now.getTime() - statusTime.getTime()) / 1000
+          const diffMinutes = diffSeconds / 60
+
+          const isOnline = diffMinutes <= 3
+
+          return (
+            <Tooltip title={isOnline ? t('machines:connected') : t('machines:connectionFailed')}>
+              <span style={{ fontSize: 18, color: isOnline ? '#52c41a' : '#d9d9d9' }}>
+                {isOnline ? <CheckCircleOutlined /> : <DisconnectOutlined />}
+              </span>
+            </Tooltip>
+          )
+        },
+      },
       {
         title: t('machines:machineName'),
         dataIndex: 'machineName',
@@ -243,19 +290,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         render: (name: string, record: Machine) => {
           return (
             <Space>
-              <Tooltip title={t('machines:viewRepositories')}>
-                <Button
-                  type="link"
-                  size="small"
-                  icon={<RightOutlined />}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/machines/${record.machineName}/repositories`, { state: { machine: record } });
-                  }}
-                  style={{ padding: 0, minWidth: 'auto', height: 'auto' }}
-                  data-testid={`machine-goto-repos-${record.machineName}`}
-                />
-              </Tooltip>
               <DesktopOutlined style={{ color: '#556b2f' }} />
               <strong>{name}</strong>
             </Space>
@@ -349,6 +383,21 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         width: DESIGN_TOKENS.DIMENSIONS.CARD_WIDTH,
         render: (_: unknown, record: Machine) => (
           <Space>
+            {/* Eye button - opens detail panel */}
+            <Tooltip title={t('common:viewDetails')}>
+              <Button
+                type="default"
+                size="small"
+                icon={<EyeOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleRowClick(record)
+                }}
+                data-testid={`machine-view-details-${record.machineName}`}
+                aria-label={t('common:viewDetails')}
+              />
+            </Tooltip>
+
             <Tooltip title={t('common:actions.edit')}>
               <Button
                 type="primary"
@@ -357,16 +406,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                 onClick={() => onEditMachine && onEditMachine(record)}
                 data-testid={`machine-edit-${record.machineName}`}
                 aria-label={t('common:actions.edit')}
-              />
-            </Tooltip>
-            <Tooltip title={t('machines:viewRepositories')}>
-              <Button
-                type="primary"
-                size="small"
-                icon={<InboxOutlined />}
-                onClick={() => navigate(`/machines/${record.machineName}/repositories`, { state: { machine: record } })}
-                data-testid={`machine-view-repositories-${record.machineName}`}
-                aria-label={t('machines:viewRepositories')}
               />
             </Tooltip>
             <Dropdown
@@ -971,19 +1010,17 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                   return;
                 }
 
-                // Call the row click handler if provided
-                if (onRowClick) {
-                  handleRowClick(record);
-                }
+                // Navigate to repositories page
+                navigate(`/machines/${record.machineName}/repositories`, {
+                  state: { machine: record }
+                })
               },
               style: {
-                cursor: onRowClick ? 'pointer' : 'default',
+                cursor: 'pointer',
                 transition: 'background-color 0.3s ease'
               },
               onMouseEnter: (e) => {
-                if (onRowClick) {
-                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.02)';
-                }
+                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.02)';
               },
               onMouseLeave: (e) => {
                 e.currentTarget.style.backgroundColor = '';
