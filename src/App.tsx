@@ -25,6 +25,7 @@ import { GlobalStyles } from '@/styles/GlobalStyles'
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
 const ResourcesPage = lazy(() => import('@/pages/resources/ResourcesPage'))
 const MachineRepositoriesPage = lazy(() => import('@/pages/resources/MachineRepositoriesPage'))
+const RepositoryContainersPage = lazy(() => import('@/pages/resources/RepositoryContainersPage'))
 const DistributedStoragePage = lazy(() => import('@/pages/distributedStorage/DistributedStoragePage'))
 const QueuePage = lazy(() => import('@/pages/queue/QueuePage'))
 const SystemPage = lazy(() => import('@/pages/system/SystemPage'))
@@ -62,7 +63,6 @@ const RedirectHandler: React.FC = () => {
       sessionStorage.removeItem('redirect_path')
 
       // Navigate to the intended path
-      console.log('[RedirectHandler] Redirecting to stored path:', redirectPath)
       navigate(redirectPath, { replace: true })
     }
   }, [navigate])
@@ -142,6 +142,13 @@ const AppContent: React.FC = () => {
                 <Route path="/machines/:machineName/repositories" element={
                   <Suspense fallback={<PageLoader />}>
                     <MachineRepositoriesPage />
+                  </Suspense>
+                } />
+
+                {/* Repository Containers */}
+                <Route path="/machines/:machineName/repositories/:repositoryName/containers" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <RepositoryContainersPage />
                   </Suspense>
                 } />
 
