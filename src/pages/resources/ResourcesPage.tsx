@@ -1089,7 +1089,6 @@ const ResourcesPage: React.FC = () => {
             }))
           }}
           onDeleteMachine={handleDeleteMachine}
-          onRefreshMachines={refetchMachines}
           onCreateRepository={(machine, repositoryGuid) => {
             // Set the team filter to the machine's team
             if (machine.teamName !== selectedTeams[0]) {
