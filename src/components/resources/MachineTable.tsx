@@ -232,6 +232,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   );
 
   // Machine columns
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- React compiler cannot preserve memoization with dynamic dependencies
   const columns: ColumnsType<Machine> = React.useMemo(() => {
     const baseColumns: ColumnsType<Machine> = [];
 
@@ -553,8 +554,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     }
 
     return baseColumns;
-    // eslint-disable-next-line react-hooks/preserve-manual-memoization
-  }, [isExpertMode, uiMode, showActions, t, handleDelete, onEditMachine, onFunctionsMachine, onCreateRepository, executePingForMachineAndWait, machineFunctions, setAssignClusterModal, setAuditTraceModal, setRemoteFileBrowserModal, onRowClick, navigate]);
+  }, [isExpertMode, uiMode, showActions, t, handleDelete, onEditMachine, onFunctionsMachine, onCreateRepository, executePingForMachineAndWait, machineFunctions, setAssignClusterModal, setAuditTraceModal, setRemoteFileBrowserModal, handleRowClick]);
 
   // Row selection configuration - only show checkboxes if assignToCluster feature is enabled
   const rowSelection = (isExpertMode && featureFlags.isEnabled('assignToCluster')) ? {
