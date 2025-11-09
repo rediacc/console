@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Spin, Alert, Tag, Space, Typography, Button, Dropdown, Tooltip, Modal, Input } from 'antd'
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
-import { CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, SaveOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, ApiOutlined, DisconnectOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined, CopyOutlined, RiseOutlined, StarOutlined, EditOutlined, ShrinkOutlined, ControlOutlined, CaretDownOutlined, CaretRightOutlined, FolderOutlined, DownOutlined } from '@/utils/optimizedIcons'
+import { CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, SaveOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, DisconnectOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined, CopyOutlined, RiseOutlined, StarOutlined, EditOutlined, ShrinkOutlined, ControlOutlined, CaretDownOutlined, CaretRightOutlined, FolderOutlined, EyeOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import * as S from './styles'
 import { type QueueFunction } from '@/api/queries/queue'
@@ -17,7 +18,6 @@ import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 import { LocalActionsMenu } from '../LocalActionsMenu'
 import { showMessage } from '@/utils/messages'
 import { useAppSelector } from '@/store/store'
-import { featureFlags } from '@/config/featureFlags'
 
 const { Text } = Typography
 
@@ -174,8 +174,9 @@ interface MachineRepositoryListProps {
 }
 
 
-export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete, hideSystemInfo = false, onCreateRepository, onRepositoryClick, highlightedRepository, onContainerClick, highlightedContainer, isLoading, onRefreshMachines, refreshKey, onQueueItemCreated }) => {
+export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete, hideSystemInfo = false, onCreateRepository, onRepositoryClick, highlightedRepository, onContainerClick: _onContainerClick, highlightedContainer: _highlightedContainer, isLoading, onRefreshMachines: _onRefreshMachines, refreshKey, onQueueItemCreated }) => {
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
+  const navigate = useNavigate()
   const [modal, contextHolder] = Modal.useModal()
   const userEmail = useAppSelector((state) => state.auth.user?.email || '')
   const tableStyles = useTableStyles()
@@ -188,15 +189,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const [selectedRepository, setSelectedRepository] = useState<Repository | null>(null)
   const [functionModalOpen, setFunctionModalOpen] = useState(false)
   const [selectedFunction, setSelectedFunction] = useState<string | null>(null)
-  const [expandedRows, setExpandedRows] = useState<string[]>([])
   const [_servicesData, setServicesData] = useState<Record<string, any>>({})
   const [containersData, setContainersData] = useState<Record<string, any>>({})
   const [createdRepositoryName, setCreatedRepositoryName] = useState<string | null>(null)
   const [createdRepositoryTag, setCreatedRepositoryTag] = useState<string | null>(null)
-  const [_isRefreshingRepo, setIsRefreshingRepo] = useState(false)
-  const [showRepoLoadingIndicator, setShowRepoLoadingIndicator] = useState(false)
-  const [repoLoadingTimer, setRepoLoadingTimer] = useState<NodeJS.Timeout | null>(null)
-  const [expandingRepoKey, setExpandingRepoKey] = useState<string | null>(null)
   const [groupedRepositories, setGroupedRepositories] = useState<GroupedRepository[]>([])
 
   // Keep managed queue for function execution
@@ -306,9 +302,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                   if (result.containers && Array.isArray(result.containers)) {
                     result.containers.forEach((container: Container) => {
                       // Check if this container belongs to this repository
-                      const belongsToRepo = container.repository === repo.name ||
-                        container.labels?.['com.redisolar.repository-guid'] === repo.name ||
-                        container.labels?.['com.rediacc.repository-guid'] === repo.name
+                      const belongsToRepo = container.repository === repo.name
                       
                       // Check if it's a plugin container
                       if (belongsToRepo && container.name && container.name.startsWith('plugin-')) {
@@ -366,7 +360,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                   })
                   
                   result.containers.forEach((container: any) => {
-                    // Check if container has a repository field (newer format)
+                    // Check if container has a repository field
                     if (container.repository) {
                       const repoGuid = container.repository
                       // Find the mapped repository that corresponds to this GUID
@@ -375,29 +369,11 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                         const originalRepo = result.repositories.find((r: any) => r.name === repoGuid)
                         if (!originalRepo) return false
                         // Match by mount path or other unique properties
-                        return repo.mount_path === originalRepo.mount_path || 
+                        return repo.mount_path === originalRepo.mount_path ||
                                repo.image_path === originalRepo.image_path
                       })
                       if (mappedRepo) {
                         containersMap[mappedRepo.name].containers.push(container)
-                      }
-                    }
-                    // Fallback to checking labels
-                    else {
-                      // Extract repository GUID from labels
-                      const repoGuid = container.labels?.['com.redisolar.repository-guid'] || 
-                                      container.labels?.['com.rediacc.repository-guid']
-                      if (repoGuid) {
-                        // Find the mapped repository
-                        const mappedRepo = mappedRepositories.find((repo: Repository) => {
-                          const originalRepo = result.repositories.find((r: any) => r.name === repoGuid)
-                          if (!originalRepo) return false
-                          return repo.mount_path === originalRepo.mount_path || 
-                                 repo.image_path === originalRepo.image_path
-                        })
-                        if (mappedRepo) {
-                          containersMap[mappedRepo.name].containers.push(container)
-                        }
                       }
                     }
                   })
@@ -475,15 +451,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     }
   }, [machine, repositoriesLoading, teamRepositories, refreshKey, setRepositories, setServicesData, setContainersData, setLoading, setError])
 
-  // Clean up timer on unmount
-  useEffect(() => {
-    return () => {
-      if (repoLoadingTimer) {
-        clearTimeout(repoLoadingTimer)
-      }
-    }
-  }, [repoLoadingTimer])
-
   const handleRefresh = () => {
     // Trigger parent component to refresh machine data
     if (onActionComplete) {
@@ -499,20 +466,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           ? { ...group, isExpanded: !group.isExpanded }
           : group
       )
-    )
-  }
-
-  // Expand all repository groups
-  const expandAllGroups = () => {
-    setGroupedRepositories(prev =>
-      prev.map(group => ({ ...group, isExpanded: true }))
-    )
-  }
-
-  // Collapse all repository groups
-  const collapseAllGroups = () => {
-    setGroupedRepositories(prev =>
-      prev.map(group => ({ ...group, isExpanded: false }))
     )
   }
 
@@ -1111,80 +1064,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   }
 
 
-  const handleContainerAction = async (repository: Repository, container: Container, action: string) => {
-    try {
-      // Find team vault data
-      const team = teams?.find(t => t.teamName === machine.teamName)
-      
-      // Find the repository vault data
-      const repositoryData = teamRepositories.find(r => r.repositoryName === repository.name)
-      
-      if (!repositoryData || !repositoryData.vaultContent) {
-        showMessage('error', t('resources:repositories.noCredentialsFound', { name: repository.name }))
-        return
-      }
-      
-      // Find the grand repository vault if grandGuid exists
-      let grandRepositoryVault = repositoryData.vaultContent
-      if (repositoryData.grandGuid) {
-        const grandRepository = teamRepositories.find(r => r.repositoryGuid === repositoryData.grandGuid)
-        if (grandRepository && grandRepository.vaultContent) {
-          grandRepositoryVault = grandRepository.vaultContent
-        }
-      }
-      
-      // Build params based on action
-      const params: Record<string, any> = {
-        repo: repositoryData.repositoryGuid,
-        container: container.id || container.name
-      }
-
-      // Add action-specific params
-      if (action === 'container_remove') {
-        params.force = 'false' // Default to safe remove
-      }
-      
-      // Build queue vault
-      const queueVault = await buildQueueVault({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
-        functionName: action,
-        params,
-        priority: 4,
-        description: `${action} ${container.name}`,
-        addedVia: 'machine-repository-list-container-action',
-        teamVault: team?.vaultContent || '{}',
-        machineVault: machine.vaultContent || '{}',
-        repositoryGuid: repositoryData.repositoryGuid,
-        repositoryVault: grandRepositoryVault,
-        repositoryLoopbackIp: repositoryData.repoLoopbackIp,
-        repositoryNetworkMode: repositoryData.repoNetworkMode,
-        repositoryTag: repositoryData.repoTag
-      })
-      
-      const response = await managedQueueMutation.mutateAsync({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
-        queueVault,
-        priority: 4
-      })
-      
-      if (response?.taskId) {
-        showMessage('success', t('resources:repositories.queueItemCreated'))
-        if (onQueueItemCreated) {
-          onQueueItemCreated(response.taskId, machine.machineName)
-        }
-      } else if (response?.isQueued) {
-        showMessage('info', t('resources:repositories.highestPriorityQueued'))
-      }
-    } catch (error) {
-      showMessage('error', t('resources:repositories.failedToCreateQueueItem'))
-    }
-  }
-
-
   const handleFunctionSubmit = async (functionData: {
     function: QueueFunction
     params: Record<string, any>
@@ -1514,284 +1393,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   }
 
     
-    // Container columns (without actions column which will be added in renderExpandedRow)
-    const containerColumns: ColumnsType<Container> = [
-      {
-        title: t('resources:containers.status'),
-        dataIndex: 'state',
-        key: 'status',
-        width: 80,
-        align: 'center',
-        render: (_: string, record: Container) => {
-          let icon: React.ReactNode
-          let color: string
-          let tooltipText: string
-
-          if (record.state === 'running') {
-            icon = <PlayCircleOutlined />
-            color = '#52c41a' // green
-            tooltipText = t('resources:containers.containerStatusRunning')
-          } else if (record.state === 'paused') {
-            icon = <PauseCircleOutlined />
-            color = '#faad14' // orange/yellow
-            tooltipText = t('resources:containers.containerStatusPaused')
-          } else if (record.state === 'restarting') {
-            icon = <ReloadOutlined />
-            color = '#1890ff' // blue
-            tooltipText = t('resources:containers.containerStatusRestarting')
-          } else {
-            // Stopped/exited or other states
-            icon = <StopOutlined />
-            color = '#d9d9d9' // gray
-            tooltipText = t('resources:containers.containerStatusStopped')
-          }
-
-          return (
-            <Tooltip title={tooltipText}>
-              <S.StatusIcon $color={color}>
-                {icon}
-              </S.StatusIcon>
-            </Tooltip>
-          )
-        },
-      },
-      {
-        title: t('resources:repositories.containerName'),
-        dataIndex: 'name',
-        key: 'name',
-        ellipsis: true,
-        render: (name: string, _record: Container) => {
-          const isPlugin = name?.startsWith('plugin-')
-          return (
-            <Space>
-              {isPlugin ? <ApiOutlined style={{ color: '#1890ff' }} /> : <AppstoreOutlined style={{ color: '#52c41a' }} />}
-              <strong>{name}</strong>
-            </Space>
-          )
-        },
-      },
-      {
-        title: t('resources:repositories.containerPorts'),
-        dataIndex: 'port_mappings',
-        key: 'port_mappings',
-        ellipsis: true,
-        render: (portMappings: PortMapping[], record: Container) => {
-          // If we have structured port mappings, use them
-          if (portMappings && Array.isArray(portMappings) && portMappings.length > 0) {
-            return (
-              <Space direction="vertical" size={0}>
-                {portMappings.map((mapping, index) => (
-                  <S.PortText key={index} as={Text}>
-                    {mapping.host_port ? (
-                      <span>
-                        {mapping.host}:{mapping.host_port} → {mapping.container_port}/{mapping.protocol}
-                      </span>
-                    ) : (
-                      <span>{mapping.container_port}/{mapping.protocol}</span>
-                    )}
-                  </S.PortText>
-                ))}
-              </Space>
-            )
-          }
-          // Fallback to raw ports string
-          else if (record.ports) {
-            return <S.PortText as={Text}>{record.ports}</S.PortText>
-          }
-          return '-'
-        },
-      },
-    ]
-    
-  const renderExpandedRow = (record: RepositoryTableRow) => {
-    const containers = containersData[record.name]
-    const rowKey = record.key || `${record.name}-${record.repoTag || 'latest'}`
-
-    // Separate plugin containers from regular containers
-    const pluginContainers = containers?.containers?.filter((c: Container) => c.name && c.name.startsWith('plugin-')) || []
-    const regularContainers = containers?.containers?.filter((c: Container) => !c.name || !c.name.startsWith('plugin-')) || []
-
-    // Container columns with repository context
-    const containerColumnsWithRepo: ColumnsType<Container> = [
-      ...containerColumns.slice(0, -1), // All columns except actions
-      {
-        title: t('common:table.actions'),
-        key: 'actions',
-        fixed: 'right',
-        render: (_: any, container: Container) => {
-          const menuItems = []
-          
-          if (container.state === 'running') {
-            // Running container actions
-            menuItems.push({
-              key: 'stop',
-              label: t('functions:functions.container_stop.name'),
-              icon: <StopOutlined style={componentStyles.icon.small} />,
-              onClick: () => handleContainerAction(record, container, 'container_stop')
-            })
-            menuItems.push({
-              key: 'restart',
-              label: t('functions:functions.container_restart.name'),
-              icon: <ReloadOutlined style={componentStyles.icon.small} />,
-              onClick: () => handleContainerAction(record, container, 'container_restart')
-            })
-            menuItems.push({
-              key: 'pause',
-              label: t('functions:functions.container_pause.name'),
-              icon: <PauseCircleOutlined style={componentStyles.icon.small} />,
-              onClick: () => handleContainerAction(record, container, 'container_pause')
-            })
-          } else if (container.state === 'paused') {
-            // Paused container actions
-            menuItems.push({
-              key: 'unpause',
-              label: t('functions:functions.container_unpause.name'),
-              icon: <PlayCircleOutlined style={componentStyles.icon.small} />,
-              onClick: () => handleContainerAction(record, container, 'container_unpause')
-            })
-          } else {
-            // Stopped container actions
-            menuItems.push({
-              key: 'start',
-              label: t('functions:functions.container_start.name'),
-              icon: <PlayCircleOutlined style={componentStyles.icon.small} />,
-              onClick: () => handleContainerAction(record, container, 'container_start')
-            })
-            menuItems.push({
-              key: 'remove',
-              label: t('functions:functions.container_remove.name'),
-              icon: <DeleteOutlined style={componentStyles.icon.small} />,
-              onClick: () => handleContainerAction(record, container, 'container_remove')
-            })
-          }
-
-          return (
-            <Space size="small">
-              <Dropdown
-                menu={{ items: menuItems }}
-                trigger={['click']}
-              >
-                <Tooltip title={t('machines:remote')}>
-                  <Button
-                    type="primary"
-                    size="small"
-                    icon={<FunctionOutlined />}
-                    loading={managedQueueMutation.isPending}
-                    data-testid={`machine-repo-list-container-actions-${container.id}`}
-                    aria-label={t('machines:remote')}
-                  />
-                </Tooltip>
-              </Dropdown>
-              <LocalActionsMenu
-                machine={machine.machineName}
-                repository={record.name}
-                teamName={machine.teamName}
-                userEmail={userEmail}
-                containerId={container.id}
-                containerName={container.name}
-                containerState={container.state}
-                isContainerMenu={true}
-              />
-            </Space>
-          )
-        },
-      },
-    ]
-    
-    return (
-      <S.ExpandedRowContainer>
-        {/* Loading Overlay for Repository Expansion */}
-        {showRepoLoadingIndicator && expandingRepoKey === rowKey && (
-          <S.ExpandedRowLoadingOverlay>
-            <Space direction="vertical" align="center">
-              <Spin size="large" />
-              <Text type="secondary">{t('common:general.refreshing')}</Text>
-            </Space>
-          </S.ExpandedRowLoadingOverlay>
-        )}
-        
-        {/* Regular Containers Table */}
-        <S.ContainersSection data-testid="machine-repo-list-containers-section">
-          {containers?.error ? (
-            <Alert message={t('resources:repositories.errorLoadingContainers')} description={containers.error} type="error" />
-          ) : regularContainers.length > 0 ? (
-            <S.StyledTable
-              columns={containerColumnsWithRepo}
-              dataSource={regularContainers}
-              rowKey="id"
-              size="small"
-              $removeMargins={true}
-              pagination={false}
-              scroll={{ x: 'max-content' }}
-              style={tableStyles.tableContainer}
-              data-testid="machine-repo-list-containers-table"
-              onRow={(container: Container) => ({
-                onClick: (e: React.MouseEvent<HTMLElement>) => {
-                  const target = e.target as HTMLElement
-                  if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
-                    return
-                  }
-                  onContainerClick?.(container)
-                },
-                style: {
-                  cursor: onContainerClick ? 'pointer' : 'default',
-                  backgroundColor: highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : undefined,
-                  transition: 'background-color 0.3s ease'
-                },
-                onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
-                  if (onContainerClick) {
-                    e.currentTarget.style.backgroundColor = highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'
-                  }
-                },
-                onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
-                  e.currentTarget.style.backgroundColor = highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : ''
-                }
-              })}
-            />
-          ) : null}
-        </S.ContainersSection>
-
-        {/* Plugin Containers Table */}
-        {featureFlags.isEnabled('plugins') && pluginContainers.length > 0 && (
-          <S.PluginsSection data-testid="machine-repo-list-plugins-section">
-            <S.StyledTable
-              columns={containerColumnsWithRepo}
-              dataSource={pluginContainers}
-              rowKey="id"
-              size="small"
-              $removeMargins
-              pagination={false}
-              scroll={{ x: 'max-content' }}
-              style={tableStyles.tableContainer}
-              data-testid="machine-repo-list-plugins-table"
-              onRow={(container: Container) => ({
-                onClick: (e: React.MouseEvent<HTMLElement>) => {
-                  const target = e.target as HTMLElement
-                  if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
-                    return
-                  }
-                  onContainerClick?.(container)
-                },
-                style: {
-                  cursor: onContainerClick ? 'pointer' : 'default',
-                  backgroundColor: highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : undefined,
-                  transition: 'background-color 0.3s ease'
-                },
-                onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
-                  if (onContainerClick) {
-                    e.currentTarget.style.backgroundColor = highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'
-                  }
-                },
-                onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
-                  e.currentTarget.style.backgroundColor = highlightedContainer?.id === container.id ? 'rgba(24, 144, 255, 0.05)' : ''
-                }
-              })}
-            />
-          </S.PluginsSection>
-        )}
-      </S.ExpandedRowContainer>
-    )
-  }
 
   // System container columns
   const systemContainerColumns: ColumnsType<Container> = [
@@ -2060,10 +1661,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           )
         } else {
           // Regular single repository row (no grouping)
-          const rowKey = record.key || `${record.name}-${record.repoTag || 'latest'}`
-          const isExpanded = expandedRows.includes(rowKey)
-          const hasExpandableContent = record.mounted && (record.has_services || record.container_count > 0 || (featureFlags.isEnabled('plugins') && record.plugin_count > 0))
-
           // Look up repository data to determine if it's a clone or original
           const repositoryData = teamRepositories.find(r =>
             r.repositoryName === record.name &&
@@ -2073,15 +1670,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
           return (
             <Space>
-              <span style={{
-                display: 'inline-block',
-                width: 12,
-                transition: 'transform 0.3s ease',
-                transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                visibility: hasExpandableContent ? 'visible' : 'hidden'
-              }}>
-                <RightOutlined style={{ fontSize: 12, color: '#999' }} />
-              </span>
               {isOriginal ? <StarOutlined /> : <CopyOutlined />}
               <strong>{getRepositoryDisplayName(record)}</strong>
             </Space>
@@ -2103,29 +1691,85 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           const target = groupData.grandTag
           if (!target) return null
 
-          // Actions for group header (limited set, applied to grand repo)
+          // Actions for group header (enhanced with navigation and quick actions)
           const menuItems = []
 
+          // View Containers - navigate to grand tag containers
           menuItems.push({
-            key: 'expand-all-tags',
+            key: 'view-containers',
+            label: t('machines:viewContainers'),
+            icon: <RightOutlined style={componentStyles.icon.small} />,
+            onClick: () => navigate(`/machines/${machine.machineName}/repositories/${groupData.name}/containers`, {
+              state: { machine, repository: target }
+            })
+          })
+
+          // Expand/Collapse Tags
+          menuItems.push({
+            key: 'expand-collapse',
             label: groupData.isExpanded ? 'Collapse Tags' : 'Expand Tags',
             icon: groupData.isExpanded ? <CaretRightOutlined style={componentStyles.icon.small} /> : <CaretDownOutlined style={componentStyles.icon.small} />,
             onClick: () => toggleRepositoryGroup(groupData.name)
           })
 
+          // Divider before quick actions
+          menuItems.push({
+            type: 'divider' as const
+          })
+
+          // Quick actions for grand tag
+          menuItems.push({
+            key: 'fork-grand',
+            label: t('functions:functions.fork.name'),
+            icon: <CopyOutlined style={componentStyles.icon.small} />,
+            onClick: () => handleForkRepository(target)
+          })
+
+          menuItems.push({
+            key: 'deploy-grand',
+            label: t('functions:functions.deploy.name'),
+            icon: <CloudUploadOutlined style={componentStyles.icon.small} />,
+            onClick: () => handleRunFunction(target, 'deploy')
+          })
+
+          menuItems.push({
+            key: 'backup-grand',
+            label: t('functions:functions.backup.name'),
+            icon: <SaveOutlined style={componentStyles.icon.small} />,
+            onClick: () => handleRunFunction(target, 'backup')
+          })
+
           return (
             <Space size="small">
+              {/* Eye button - opens detail panel for grand tag */}
+              <Tooltip title={t('common:viewDetails')}>
+                <Button
+                  type="default"
+                  size="small"
+                  icon={<EyeOutlined />}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (target) {
+                      onRepositoryClick?.(target)
+                    }
+                  }}
+                  data-testid={`machine-repo-view-details-group-${groupData.name}`}
+                  aria-label={t('common:viewDetails')}
+                />
+              </Tooltip>
+
               <Dropdown
                 menu={{ items: menuItems }}
                 trigger={['click']}
               >
-                <Tooltip title="Group Actions">
+                <Tooltip title={t('machines:remote')}>
                   <Button
-                    type="default"
+                    type="primary"
                     size="small"
-                    icon={<ControlOutlined />}
+                    icon={<FunctionOutlined />}
+                    loading={managedQueueMutation.isPending}
                     data-testid={`machine-repo-list-group-actions-${groupData.name}`}
-                    aria-label="Group Actions"
+                    aria-label={t('machines:remote')}
                   />
                 </Tooltip>
               </Dropdown>
@@ -2314,6 +1958,21 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
         return (
           <Space size="small">
+            {/* Eye button - opens detail panel */}
+            <Tooltip title={t('common:viewDetails')}>
+              <Button
+                type="default"
+                size="small"
+                icon={<EyeOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onRepositoryClick?.(record)
+                }}
+                data-testid={`machine-repo-view-details-${record.name}-${record.repoTag || 'latest'}`}
+                aria-label={t('common:viewDetails')}
+              />
+            </Tooltip>
+
             <Dropdown
               menu={{ items: menuItems }}
               trigger={['click']}
@@ -2447,18 +2106,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         }
       })()}
 
-      {/* Expand/Collapse All Buttons */}
-      {groupedRepositories.some(g => g.tags.length > 1) && (
-        <Space style={{ marginBottom: 16 }}>
-          <Button size="small" onClick={expandAllGroups} icon={<DownOutlined />}>
-            Expand All
-          </Button>
-          <Button size="small" onClick={collapseAllGroups} icon={<RightOutlined />}>
-            Collapse All
-          </Button>
-        </Space>
-      )}
-
       {/* Repository Table */}
       <S.StyledTable
         columns={columns}
@@ -2493,14 +2140,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           const isClone = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid
           return isClone ? 'repository-clone-row' : ''
         }}
-        expandable={{
-          expandedRowRender: renderExpandedRow,
-          expandedRowKeys: expandedRows,
-          onExpandedRowsChange: (keys: readonly React.Key[]) => setExpandedRows(keys as string[]),
-          rowExpandable: (record: RepositoryTableRow) => !record._isGroupHeader && record.mounted && (record.has_services || record.container_count > 0 || (featureFlags.isEnabled('plugins') && record.plugin_count > 0)),
-          expandIcon: () => null, // Hide default expand icon
-          expandRowByClick: false, // We'll handle this manually
-        }}
         locale={{
           emptyText: t('resources:repositories.noRepositories')
         }}
@@ -2524,9 +2163,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             }
           }
 
-          const hasExpandableContent = record.mounted && (record.has_services || record.container_count > 0 || (featureFlags.isEnabled('plugins') && record.plugin_count > 0))
-          const rowKey = record.key || `${record.name}-${record.repoTag || 'latest'}`
-
           return {
             onClick: (e: React.MouseEvent<HTMLElement>) => {
               const target = e.target as HTMLElement
@@ -2535,51 +2171,18 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 return
               }
 
-              // Toggle expansion if the row has expandable content
-              if (hasExpandableContent) {
-                const isExpanded = expandedRows.includes(rowKey)
-                if (isExpanded) {
-                  setExpandedRows(expandedRows.filter(key => key !== rowKey))
-                } else {
-                  setExpandedRows([...expandedRows, rowKey])
-
-                  // Trigger refresh when expanding
-                  if (onRefreshMachines) {
-                    setExpandingRepoKey(rowKey)
-                    setIsRefreshingRepo(true)
-
-                    // Start 1-second timer for loading indicator
-                    const timer = setTimeout(() => {
-                      setShowRepoLoadingIndicator(true)
-                    }, 1000)
-                    setRepoLoadingTimer(timer)
-
-                    // Trigger refresh
-                    onRefreshMachines().finally(() => {
-                      if (repoLoadingTimer) {
-                        clearTimeout(repoLoadingTimer)
-                      }
-                      setIsRefreshingRepo(false)
-                      setShowRepoLoadingIndicator(false)
-                      setExpandingRepoKey(null)
-                      setRepoLoadingTimer(null)
-                    })
-                  }
-                }
-              }
-
-              // Still call onRepositoryClick if provided
-              onRepositoryClick?.(record)
+              // Navigate to containers page
+              navigate(`/machines/${machine.machineName}/repositories/${record.name}/containers`, {
+                state: { machine, repository: record }
+              })
             },
             style: {
-              cursor: hasExpandableContent || onRepositoryClick ? 'pointer' : 'default',
+              cursor: 'pointer',
               backgroundColor: highlightedRepository?.name === record.name ? 'rgba(24, 144, 255, 0.05)' : undefined,
               transition: 'background-color 0.3s ease'
             },
             onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
-              if (hasExpandableContent || onRepositoryClick) {
-                e.currentTarget.style.backgroundColor = highlightedRepository?.name === record.name ? 'rgba(24, 144, 255, 0.08)' : 'rgba(0, 0, 0, 0.02)'
-              }
+              e.currentTarget.style.backgroundColor = highlightedRepository?.name === record.name ? 'rgba(24, 144, 255, 0.08)' : 'rgba(0, 0, 0, 0.02)'
             },
             onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
               e.currentTarget.style.backgroundColor = highlightedRepository?.name === record.name ? 'rgba(24, 144, 255, 0.05)' : ''

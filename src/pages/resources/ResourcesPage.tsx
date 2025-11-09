@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react'
-import { Card, Tabs, Button, Space, Modal, Tag, Typography, Table, Empty, Spin, Tooltip } from 'antd'
+import { Card, Tabs, Button, Space, Modal, Tag, Typography, Table, Empty, Spin, Tooltip, Breadcrumb } from 'antd'
 import { useLocation } from 'react-router-dom'
 import {
   PlusOutlined,
@@ -1250,16 +1250,25 @@ const ResourcesPage: React.FC = () => {
         <div style={{ padding: 24 }}>
           <Card>
               <div style={{ marginBottom: 16 }}>
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
+                {/* Breadcrumb Navigation */}
+                <Breadcrumb
+                  style={{ marginBottom: 16 }}
+                  items={[
+                    { title: t('machines:machines') }
+                  ]}
+                  data-testid="resources-breadcrumb"
+                />
+
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
                   justifyContent: 'space-between',
                   flexWrap: 'wrap',
                   gap: 16
                 }}>
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: 16,
                     flex: '1 1 auto',
                     minWidth: 0

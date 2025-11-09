@@ -169,7 +169,12 @@
   "viewBy": "View By",
   "viewMode": "View Mode",
   "viewRepositories": "View Repositories",
+  "viewContainers": "View Containers",
   "backToMachines": "Back to Machines",
+  "backToRepositories": "Back to Repositories",
+  "repositoryContainers": "Repository Containers",
   "machineNotFound": "Machine Not Found",
-  "machineNotFoundDescription": "The machine \"{{machineName}}\" could not be found. It may have been deleted or you may not have access to it."
+  "machineNotFoundDescription": "The machine \"{{machineName}}\" could not be found. It may have been deleted or you may not have access to it.",
+  "repositoryNotFound": "Repository Not Found",
+  "repositoryNotFoundDescription": "The repository \"{{repositoryName}}\" could not be found on machine \"{{machineName}}\". It may have been deleted or you may not have access to it."
 }

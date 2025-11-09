@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { Card, Button, Space, Tag, Typography, Spin, Alert, Tooltip } from 'antd'
+import { Card, Button, Space, Tag, Typography, Spin, Alert, Tooltip, Breadcrumb } from 'antd'
 import { DoubleLeftOutlined, ReloadOutlined, DesktopOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
@@ -225,6 +225,24 @@ const MachineRepositoriesPage: React.FC = () => {
       <Card style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
         <div style={{ marginBottom: 24, flexShrink: 0 }}>
+          {/* Breadcrumb Navigation */}
+          <Breadcrumb
+            style={{ marginBottom: 16 }}
+            items={[
+              {
+                title: <span style={{ cursor: 'pointer' }}>{t('machines:machines')}</span>,
+                onClick: () => navigate('/resources')
+              },
+              {
+                title: machine?.machineName || machineName
+              },
+              {
+                title: t('resources:repositories.repositories')
+              }
+            ]}
+            data-testid="machine-repositories-breadcrumb"
+          />
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div style={{ flex: 1 }}>
               {/* Back button and title */}

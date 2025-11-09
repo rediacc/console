@@ -26,6 +26,7 @@
     "trace": "Trace",
     "viewTrace": "View Trace"
   },
+  "viewDetails": "View Details",
   "close": "Close",
   "copiedToClipboard": "Copied to clipboard",
   "copyFailed": "Failed to copy to clipboard",
