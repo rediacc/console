@@ -92,6 +92,7 @@ export { default as FieldTimeOutlined } from '@ant-design/icons/FieldTimeOutline
 export { default as ClockCircleOutlined } from '@ant-design/icons/ClockCircleOutlined'
 export { default as CalendarOutlined } from '@ant-design/icons/CalendarOutlined'
 export { default as CaretRightOutlined } from '@ant-design/icons/CaretRightOutlined'
+export { default as CaretDownOutlined } from '@ant-design/icons/CaretDownOutlined'
 export { default as MailOutlined } from '@ant-design/icons/MailOutlined'
 export { default as LinkOutlined } from '@ant-design/icons/LinkOutlined'
 export { default as ClusterOutlined } from '@ant-design/icons/ClusterOutlined'

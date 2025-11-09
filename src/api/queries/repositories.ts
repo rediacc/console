@@ -10,6 +10,9 @@ export interface Repository {
   vaultContent?: string
   grandGuid?: string         // Top-most parent repository GUID
   parentGuid?: string        // Immediate parent repository GUID
+  repoLoopbackIp?: string    // Repository loopback IP address (127.11.0.0 to 127.255.255.255)
+  repoNetworkMode?: string   // Docker network mode: bridge, host, none, overlay, ipvlan, macvlan
+  repoTag?: string           // Docker image tag (e.g., latest, v1.0, dev)
 }
 
 // Get repositories for a team or multiple teams
@@ -25,7 +28,10 @@ export const useRepositories = createResourceQuery<Repository>({
     vaultVersion: 'vaultVersion',
     vaultContent: 'vaultContent',
     grandGuid: 'grandGuid',
-    parentGuid: 'parentGuid'
+    parentGuid: 'parentGuid',
+    repoLoopbackIp: 'repoLoopbackIP',
+    repoNetworkMode: 'repoNetworkMode',
+    repoTag: 'repoTag'
   }),
   enabledCheck: (teamFilter) => !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0)
 })
@@ -34,6 +40,7 @@ export const useRepositories = createResourceQuery<Repository>({
 export const useCreateRepository = createMutation<{
   teamName: string
   repositoryName: string
+  repositoryTag?: string  // Optional repository tag (defaults to 'latest')
   repositoryVault?: string
   parentRepoName?: string  // Optional parent repository name
   repositoryGuid?: string  // Optional repository GUID
@@ -41,15 +48,16 @@ export const useCreateRepository = createMutation<{
   endpoint: '/CreateRepository',
   method: 'post',
   invalidateKeys: ['repositories', 'teams', 'machines'],
-  successMessage: (vars) => `Repository "${vars.repositoryName}" created successfully`,
+  successMessage: (vars) => `Repository "${vars.repositoryName}:${vars.repositoryTag || 'latest'}" created successfully`,
   errorMessage: 'Failed to create repository',
   transformData: (data) => {
     const apiData: any = {
       teamName: data.teamName,
       repoName: data.repositoryName, // Map repositoryName to repoName for API
       repoVault: data.repositoryVault || '{}', // Map repositoryVault to repoVault for API
+      repoTag: data.repositoryTag || 'latest'  // Add repoTag parameter (default to latest)
     }
-    
+
     // Only include optional parameters if they have values
     if (data.parentRepoName) {
       apiData.parentRepoName = data.parentRepoName
@@ -57,7 +65,7 @@ export const useCreateRepository = createMutation<{
     if (data.repositoryGuid && data.repositoryGuid.trim() !== '') {
       apiData.repoGuid = data.repositoryGuid
     }
-    
+
     return apiData
   }
 })
@@ -104,15 +112,17 @@ export const useUpdateRepositoryVault = createMutation<{
 export const useDeleteRepository = createMutation<{
   teamName: string
   repositoryName: string
+  repositoryTag?: string  // Optional repository tag (defaults to 'latest')
 }>({
   endpoint: '/DeleteRepository',
   method: 'delete',
   invalidateKeys: ['repositories', 'teams', 'machines'],
-  successMessage: (vars) => `Repository "${vars.repositoryName}" deleted successfully`,
+  successMessage: (vars) => `Repository "${vars.repositoryName}:${vars.repositoryTag || 'latest'}" deleted successfully`,
   errorMessage: 'Failed to delete repository',
   transformData: (data) => ({
     teamName: data.teamName,
     repoName: data.repositoryName, // Map repositoryName to repoName for API
+    repoTag: data.repositoryTag || 'latest'  // Add repoTag parameter (default to latest)
   })
 })
 

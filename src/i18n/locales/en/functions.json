@@ -34,9 +34,9 @@
   "description": "Description (optional)",
   "descriptionPlaceholder": "Add a custom description for this queue item",
   "functions": {
-    "clone": {
-      "description": "Clone repository on the same machine",
-      "name": "clone"
+    "fork": {
+      "description": "Fork repository with timestamp-based tag",
+      "name": "fork"
     },
     "container_inspect": {
       "description": "Inspect Docker container details",

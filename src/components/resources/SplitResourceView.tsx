@@ -50,9 +50,6 @@ interface SplitResourceViewProps {
   onQueueItemCreated?: (taskId: string, machineName: string) => void
   selectedResource: Machine | Repository | ContainerData | null
   onResourceSelect: (resource: Machine | Repository | ContainerData | null) => void
-  onMachineRepositoryClick?: (machine: Machine, repository: any) => void
-  onMachineContainerClick?: (machine: Machine, container: ContainerData) => void
-  onRefreshMachines?: () => Promise<any>
   isPanelCollapsed?: boolean
   onTogglePanelCollapse?: () => void
 }
@@ -62,8 +59,6 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
     type,
     selectedResource,
     onResourceSelect,
-    onMachineRepositoryClick,
-    onMachineContainerClick,
     isPanelCollapsed = true,
     onTogglePanelCollapse
   } = props
@@ -128,8 +123,6 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
             {...props}
             onRowClick={handleMachineSelect}
             selectedMachine={selectedResource as Machine}
-            onMachineRepositoryClick={onMachineRepositoryClick}
-            onMachineContainerClick={onMachineContainerClick}
           />
         </div>
 

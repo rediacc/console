@@ -8,6 +8,9 @@ export interface QueueRequestContext {
   machineName?: string | null  // Made optional for bridge-only queue items
   bridgeName?: string
   repositoryGuid?: string
+  repositoryLoopbackIp?: string  // Repository loopback IP address
+  repositoryNetworkMode?: string  // Docker network mode
+  repositoryTag?: string  // Docker image tag
   storageName?: string
   functionName: string
   params: Record<string, any>
@@ -303,11 +306,11 @@ class QueueDataService {
     // Add REPO_CREDENTIALS after MACHINES if repository is required
     if (requirements.repository && context.repositoryGuid && context.repositoryVault) {
       try {
-        const repoVault = typeof context.repositoryVault === 'string' 
-          ? JSON.parse(context.repositoryVault) 
+        const repoVault = typeof context.repositoryVault === 'string'
+          ? JSON.parse(context.repositoryVault)
           : context.repositoryVault
-        
-        
+
+
         if (repoVault.credential) {
           queueVaultData.contextData.REPO_CREDENTIALS = {
             [context.repositoryGuid]: repoVault.credential
@@ -316,6 +319,21 @@ class QueueDataService {
       } catch (e) {
         // Ignore vault parsing errors - repository vault is optional
       }
+    }
+
+    // Add REPO_LOOPBACK_IP if repository loopback IP is provided
+    if (requirements.repository && context.repositoryLoopbackIp) {
+      queueVaultData.contextData.REPO_LOOPBACK_IP = context.repositoryLoopbackIp
+    }
+
+    // Add REPO_NETWORK_MODE if repository network mode is provided
+    if (requirements.repository && context.repositoryNetworkMode) {
+      queueVaultData.contextData.REPO_NETWORK_MODE = context.repositoryNetworkMode
+    }
+
+    // Add REPO_TAG if repository tag is provided
+    if (requirements.repository && context.repositoryTag !== undefined) {
+      queueVaultData.contextData.REPO_TAG = context.repositoryTag
     }
 
     // For functions like 'list' that need all REPO_CREDENTIALS
