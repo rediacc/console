@@ -553,6 +553,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     }
 
     return baseColumns;
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization
   }, [isExpertMode, uiMode, showActions, t, handleDelete, onEditMachine, onFunctionsMachine, onCreateRepository, executePingForMachineAndWait, machineFunctions, setAssignClusterModal, setAuditTraceModal, setRemoteFileBrowserModal, onRowClick, navigate]);
 
   // Row selection configuration - only show checkboxes if assignToCluster feature is enabled
