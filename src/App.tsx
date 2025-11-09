@@ -24,6 +24,7 @@ import { GlobalStyles } from '@/styles/GlobalStyles'
 // Lazy load heavy pages
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
 const ResourcesPage = lazy(() => import('@/pages/resources/ResourcesPage'))
+const MachineRepositoriesPage = lazy(() => import('@/pages/resources/MachineRepositoriesPage'))
 const DistributedStoragePage = lazy(() => import('@/pages/distributedStorage/DistributedStoragePage'))
 const QueuePage = lazy(() => import('@/pages/queue/QueuePage'))
 const SystemPage = lazy(() => import('@/pages/system/SystemPage'))
@@ -134,6 +135,13 @@ const AppContent: React.FC = () => {
                 <Route path="/resources" element={
                   <Suspense fallback={<PageLoader />}>
                     <ResourcesPage />
+                  </Suspense>
+                } />
+
+                {/* Machine Repositories */}
+                <Route path="/machines/:machineName/repositories" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <MachineRepositoriesPage />
                   </Suspense>
                 } />
 

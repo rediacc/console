@@ -75,6 +75,7 @@ const { Title } = Typography
 
 const ResourcesPage: React.FC = () => {
   const { t } = useTranslation(['resources', 'machines', 'common'])
+  const [modal, contextHolder] = Modal.useModal()
   const location = useLocation()
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const styles = useComponentStyles()
@@ -145,8 +146,7 @@ const ResourcesPage: React.FC = () => {
     setCurrentResource(null)
   }, [])
 
-  // State for machine table expanded rows and refresh keys
-  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
+  // State for machine table refresh keys
   const [refreshKeys, setRefreshKeys] = useState<Record<string, number>>({})
   
   // Handler for machine selection
@@ -228,8 +228,8 @@ const ResourcesPage: React.FC = () => {
       const resourceKey = resourceType === 'repository' ? 'repositories' : `${resourceType}s`
       return `resources:${resourceKey}.${key}`
     }
-    
-    Modal.confirm({
+
+    modal.confirm({
       title: t(getTranslationKey(resourceType === 'machine' ? 'confirmDelete' : `delete${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)}`)) as string,
       content: t(getTranslationKey(resourceType === 'machine' ? 'deleteWarning' : 'confirmDelete'), {
         name: resourceName,
@@ -490,7 +490,10 @@ const ResourcesPage: React.FC = () => {
               teamVault: team?.vaultContent || '{}',
               machineVault: fullMachine?.vaultContent || '{}',
               repositoryVault: repositoryVault,
-              repositoryGuid: repositoryGuid
+              repositoryGuid: repositoryGuid,
+              repositoryLoopbackIp: createdRepo?.repoLoopbackIP,
+              repositoryNetworkMode: createdRepo?.repoNetworkMode,
+              repositoryTag: createdRepo?.repoTag
             })
             
             const response = await createQueueItemMutation.mutateAsync({
@@ -781,6 +784,9 @@ const ResourcesPage: React.FC = () => {
       } else if (resourceType === 'repository') {
         queueVaultParams.repositoryGuid = currentResource.repositoryGuid;
         queueVaultParams.repositoryVault = currentResource.vaultContent || '{}';
+        queueVaultParams.repositoryLoopbackIp = currentResource.repoLoopbackIp;
+        queueVaultParams.repositoryNetworkMode = currentResource.repoNetworkMode;
+        queueVaultParams.repositoryTag = currentResource.repoTag;
         // Also need machine vault for the selected machine
         const fullMachine = machines.find(m => m.machineName === machineName && m.teamName === currentResource.teamName);
         queueVaultParams.machineVault = fullMachine?.vaultContent || '{}';
@@ -1051,7 +1057,7 @@ const ResourcesPage: React.FC = () => {
               style={styles.touchTargetSmall}
               data-testid={`resources-storage-delete-${record.storageName}`}
               onClick={() => {
-                Modal.confirm({
+                modal.confirm({
                   title: t('storage.deleteStorage'),
                   content: t('storage.confirmDelete', { storageName: record.storageName }),
                   okText: t('general.yes'),
@@ -1147,8 +1153,6 @@ const ResourcesPage: React.FC = () => {
           }}
           enabled={teamResourcesTab === 'machines'}
           className="full-height-machine-table"
-          expandedRowKeys={expandedRowKeys}
-          onExpandedRowsChange={setExpandedRowKeys}
           refreshKeys={refreshKeys}
           onQueueItemCreated={(taskId, machineName) => {
             setQueueTraceModal({ visible: true, taskId, machineName });
@@ -1172,8 +1176,6 @@ const ResourcesPage: React.FC = () => {
               setSelectedContainerFromMachine(null)
             }
           }}
-          onMachineRepositoryClick={handleMachineRepositoryClick}
-          onMachineContainerClick={handleMachineContainerClick}
           isPanelCollapsed={isPanelCollapsed}
           onTogglePanelCollapse={handleTogglePanelCollapse}
         />
@@ -1610,17 +1612,8 @@ const ResourcesPage: React.FC = () => {
               ...prev,
               [machineName]: Date.now()
             }))
-          } else {
-            // Otherwise refresh all expanded machines
-            setRefreshKeys(prev => {
-              const newKeys = { ...prev }
-              expandedRowKeys.forEach(key => {
-                newKeys[key] = Date.now()
-              })
-              return newKeys
-            })
           }
-          // Refresh machines data to update repository lists
+          // Refresh machines data
           refetchMachines()
         }}
       />
@@ -1655,6 +1648,9 @@ const ResourcesPage: React.FC = () => {
           showMessage('success', t('resources:storage.import.successMessage'))
         }}
       />
+
+      {/* Modal contextHolder - required for Modal.useModal() to work */}
+      {contextHolder}
     </>
   )
 }

@@ -167,5 +167,9 @@
   "vaultUpdateSuccess": "Machine vault configuration updated successfully",
   "vaultVersion": "Vault Version",
   "viewBy": "View By",
-  "viewMode": "View Mode"
+  "viewMode": "View Mode",
+  "viewRepositories": "View Repositories",
+  "backToMachines": "Back to Machines",
+  "machineNotFound": "Machine Not Found",
+  "machineNotFoundDescription": "The machine \"{{machineName}}\" could not be found. It may have been deleted or you may not have access to it."
 }

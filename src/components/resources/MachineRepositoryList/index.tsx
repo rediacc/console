@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Spin, Alert, Tag, Space, Typography, Button, Dropdown, Tooltip, Modal, Input } from 'antd'
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
-import { CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, ApiOutlined, DisconnectOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined, CopyOutlined, RiseOutlined, StarOutlined, EditOutlined, ShrinkOutlined, ControlOutlined } from '@/utils/optimizedIcons'
+import { CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, ApiOutlined, DisconnectOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined, CopyOutlined, RiseOutlined, StarOutlined, EditOutlined, ShrinkOutlined, ControlOutlined, CaretDownOutlined, CaretRightOutlined, FolderOutlined, DownOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import * as S from './styles'
 import { type QueueFunction } from '@/api/queries/queue'
@@ -23,6 +23,7 @@ const { Text } = Typography
 
 interface Repository {
   name: string
+  repoTag?: string  // Repository tag (e.g., 'latest', 'fork-2025-01-09-14-30-00')
   size: number
   size_human: string
   modified: number
@@ -46,6 +47,65 @@ interface Repository {
     available: string
     use_percent: string
   }
+}
+
+// Helper function to format repository display name as name:tag
+const getRepositoryDisplayName = (repo: Repository): string => {
+  return `${repo.name}:${repo.repoTag || 'latest'}`
+}
+
+// Data structure for grouped repositories
+interface GroupedRepository {
+  name: string                    // Repository name (e.g., "webapp")
+  tags: Repository[]              // All tags for this name
+  grandTag: Repository | null     // The grand repository (tag='latest', no parent)
+  forkTags: Repository[]          // Fork repositories (tag!='latest' or has parent)
+  isExpanded: boolean             // UI state for expand/collapse
+}
+
+// Extended Repository interface for table rendering
+interface RepositoryTableRow extends Repository {
+  _isGroupHeader?: boolean
+  _groupData?: GroupedRepository
+  _isTagRow?: boolean
+  _indentLevel?: number
+  _isLastInGroup?: boolean
+}
+
+// Helper to group repositories by name
+const groupRepositoriesByName = (repos: Repository[], teamRepos: any[]): GroupedRepository[] => {
+  // Group by name
+  const grouped = repos.reduce((acc, repo) => {
+    if (!acc[repo.name]) {
+      acc[repo.name] = []
+    }
+    acc[repo.name].push(repo)
+    return acc
+  }, {} as Record<string, Repository[]>)
+
+  // Transform to GroupedRepository structure
+  return Object.entries(grouped).map(([name, tags]) => {
+    // Find grand repository - one with no parent or parent equals self
+    const grandTag = tags.find(r => {
+      const tagData = teamRepos.find(tr =>
+        tr.repositoryName === r.name &&
+        (tr.repoTag || 'latest') === (r.repoTag || 'latest')
+      )
+      // Grand repo has no parentGuid or parentGuid equals repositoryGuid
+      return tagData && (!tagData.parentGuid || tagData.parentGuid === tagData.repositoryGuid)
+    }) || null
+
+    // All other tags are forks
+    const forkTags = tags.filter(r => r !== grandTag)
+
+    return {
+      name,
+      tags,
+      grandTag,
+      forkTags,
+      isExpanded: false  // Start collapsed
+    }
+  }).sort((a, b) => a.name.localeCompare(b.name))  // Sort by name
 }
 
 interface PortMapping {
@@ -115,6 +175,7 @@ interface MachineRepositoryListProps {
 
 export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete, hideSystemInfo = false, onCreateRepository, onRepositoryClick, highlightedRepository, onContainerClick, highlightedContainer, isLoading, onRefreshMachines, refreshKey, onQueueItemCreated }) => {
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
+  const [modal, contextHolder] = Modal.useModal()
   const userEmail = useAppSelector((state) => state.auth.user?.email || '')
   const tableStyles = useTableStyles()
   const componentStyles = useComponentStyles()
@@ -130,11 +191,13 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const [_servicesData, setServicesData] = useState<Record<string, any>>({})
   const [containersData, setContainersData] = useState<Record<string, any>>({})
   const [createdRepositoryName, setCreatedRepositoryName] = useState<string | null>(null)
+  const [createdRepositoryTag, setCreatedRepositoryTag] = useState<string | null>(null)
   const [_isRefreshingRepo, setIsRefreshingRepo] = useState(false)
   const [showRepoLoadingIndicator, setShowRepoLoadingIndicator] = useState(false)
   const [repoLoadingTimer, setRepoLoadingTimer] = useState<NodeJS.Timeout | null>(null)
   const [expandingRepoKey, setExpandingRepoKey] = useState<string | null>(null)
-  
+  const [groupedRepositories, setGroupedRepositories] = useState<GroupedRepository[]>([])
+
   // Keep managed queue for function execution
   const managedQueueMutation = useManagedQueueItem()
   const { buildQueueVault } = useQueueVaultBuilder()
@@ -214,6 +277,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                       return {
                         ...repo,
                         name: matchingRepo.repositoryName,
+                        repoTag: matchingRepo.repoTag,  // Include the tag to distinguish grand from forks
                         isUnmapped: false
                       };
                     } else {
@@ -225,7 +289,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                       };
                     }
                   }
-                  
+
                   return {
                     ...repo,
                     isUnmapped: false
@@ -285,7 +349,11 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 })
 
                 setRepositories(sortedRepositories)
-                
+
+                // Group repositories by name for hierarchical display
+                const grouped = groupRepositoriesByName(sortedRepositories, teamRepositories)
+                setGroupedRepositories(grouped)
+
                 // Process containers and services if included
                 if (result.containers && Array.isArray(result.containers)) {
                   // Group containers by repository
@@ -422,6 +490,31 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     }
   }
 
+  // Toggle expand/collapse for a repository group
+  const toggleRepositoryGroup = (repoName: string) => {
+    setGroupedRepositories(prev =>
+      prev.map(group =>
+        group.name === repoName
+          ? { ...group, isExpanded: !group.isExpanded }
+          : group
+      )
+    )
+  }
+
+  // Expand all repository groups
+  const expandAllGroups = () => {
+    setGroupedRepositories(prev =>
+      prev.map(group => ({ ...group, isExpanded: true }))
+    )
+  }
+
+  // Collapse all repository groups
+  const collapseAllGroups = () => {
+    setGroupedRepositories(prev =>
+      prev.map(group => ({ ...group, isExpanded: false }))
+    )
+  }
+
   const handleRunFunction = (repository: Repository, functionName?: string) => {
     setSelectedRepository(repository)
     setSelectedFunction(functionName || null)
@@ -474,7 +567,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         teamVault: team?.vaultContent || '{}',
         machineVault: machine.vaultContent || '{}',
         repositoryGuid: repositoryData.repositoryGuid,
-        repositoryVault: grandRepositoryVault
+        repositoryVault: grandRepositoryVault,
+        repositoryLoopbackIp: repositoryData.repoLoopbackIp,
+        repositoryNetworkMode: repositoryData.repoNetworkMode,
+        repositoryTag: repositoryData.repoTag
       })
       
       const response = await managedQueueMutation.mutateAsync({
@@ -498,7 +594,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     }
   }
 
-  const handleCloneRepository = async (repository: Repository) => {
+  const handleForkRepository = async (repository: Repository) => {
     try {
       // Find team vault data
       const team = teams?.find(t => t.teamName === machine.teamName)
@@ -520,33 +616,35 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         }
       }
 
-      // Generate destination filename
+      // Generate fork tag with timestamp
       const timestamp = new Date().toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '-')
-      const state = repository.mounted ? 'online' : 'offline'
-      const destFilename = `${repository.name}-clone-${timestamp}`
+      const forkTag = `fork-${timestamp}`  // e.g., fork-2025-01-09-14-30-00
 
-      // Create a new repository credential for the clone
+      // Create a new repository credential for the fork (same name, different tag)
       try {
         await createRepositoryMutation.mutateAsync({
           teamName: machine.teamName,
-          repositoryName: destFilename,
+          repositoryName: repository.name,  // SAME NAME
+          repositoryTag: forkTag,  // NEW TAG
           parentRepoName: repository.name
         })
 
-        // Store the created repository name for potential cleanup
-        setCreatedRepositoryName(destFilename)
+        // Store the created repository name and tag for potential cleanup
+        setCreatedRepositoryName(repository.name)  // Track the name (not destFilename)
+        setCreatedRepositoryTag(forkTag)  // NEW: Track the tag for cleanup
 
         // Immediately refresh the repositories list to get the new repository
         const { data: updatedRepos } = await refetchRepositories()
 
-        // Find the newly created repository to get its GUID
-        const newRepo = updatedRepos?.find(r => r.repositoryName === destFilename)
+        // Find the newly created fork repository to get its GUID (same name, new tag)
+        const newRepo = updatedRepos?.find(r => r.repositoryName === repository.name && r.repoTag === forkTag)
 
         if (!newRepo || !newRepo.repositoryGuid) {
-          throw new Error('Could not find newly created repository')
+          throw new Error('Could not find newly created fork repository')
         }
 
         // Build params for push function
+        const state = repository.mounted ? 'online' : 'offline'
         const params: Record<string, any> = {
           repo: repositoryData.repositoryGuid,
           dest: newRepo.repositoryGuid,
@@ -564,12 +662,15 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           functionName: 'push',
           params,
           priority: 4,
-          description: `Clone ${repository.name} to ${destFilename}`,
-          addedVia: 'machine-repository-list-clone',
+          description: `Fork ${repository.name}:${repository.repoTag || 'latest'} to ${repository.name}:${forkTag}`,
+          addedVia: 'machine-repository-list-fork',
           teamVault: team?.vaultContent || '{}',
           machineVault: machine.vaultContent || '{}',
           repositoryGuid: repositoryData.repositoryGuid,
           repositoryVault: grandRepositoryVault,
+          repositoryLoopbackIp: repositoryData.repoLoopbackIp,
+          repositoryNetworkMode: repositoryData.repoNetworkMode,
+          repositoryTag: repositoryData.repoTag,
           destinationMachineVault: machine.vaultContent
         })
 
@@ -582,7 +683,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         })
 
         if (response?.taskId) {
-          showMessage('success', t('resources:repositories.cloneStarted', { dest: destFilename }))
+          showMessage('success', t('resources:repositories.forkStarted', { dest: `${repository.name}:${forkTag}` }))
           if (onQueueItemCreated) {
             onQueueItemCreated(response.taskId, machine.machineName)
           }
@@ -591,27 +692,28 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         }
 
       } catch (createError) {
-        // If we already created the repository but failed to start the clone, clean it up
-        if (createdRepositoryName) {
+        // If we already created the repository but failed to start the fork, clean it up
+        if (createdRepositoryName && createdRepositoryTag) {
           try {
             await deleteRepositoryMutation.mutateAsync({
               teamName: machine.teamName,
-              repositoryName: createdRepositoryName
+              repositoryName: createdRepositoryName,
+              repositoryTag: createdRepositoryTag
             })
           } catch (deleteError) {
             // Failed to cleanup repository after error
           }
         }
-        showMessage('error', t('resources:repositories.failedToCloneRepository'))
+        showMessage('error', t('resources:repositories.failedToForkRepository'))
         return
       }
 
     } catch (error) {
-      showMessage('error', t('resources:repositories.failedToCloneRepository'))
+      showMessage('error', t('resources:repositories.failedToForkRepository'))
     }
   }
 
-  const handleDeleteClone = async (repository: Repository) => {
+  const handleDeleteFork = async (repository: Repository) => {
     // Find the repository data
     const repositoryData = teamRepositories.find(r => r.repositoryName === repository.name)
 
@@ -627,7 +729,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     }
 
     // Show confirmation modal
-    Modal.confirm({
+    modal.confirm({
       title: t('resources:repositories.deleteCloneConfirmTitle'),
       content: t('resources:repositories.deleteCloneConfirmMessage', { name: repository.name }),
       okText: t('common:delete'),
@@ -665,7 +767,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             teamVault: team?.vaultContent || '{}',
             machineVault: machine.vaultContent || '{}',
             repositoryGuid: repositoryData.repositoryGuid,
-            repositoryVault: grandRepositoryVault
+            repositoryVault: grandRepositoryVault,
+            repositoryLoopbackIp: repositoryData.repoLoopbackIp
           })
 
           const queueResponse = await managedQueueMutation.mutateAsync({
@@ -686,9 +789,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             try {
               await deleteRepositoryMutation.mutateAsync({
                 teamName: machine.teamName,
-                repositoryName: repository.name
+                repositoryName: repository.name,
+                repositoryTag: repository.repoTag || 'latest'
               })
-              showMessage('success', t('resources:repositories.deleteCloneSuccess'))
+              showMessage('success', t('resources:repositories.deleteForkSuccess'))
             } catch (credError) {
               showMessage('warning', t('resources:repositories.deleteCloneCredentialFailed'))
             }
@@ -730,7 +834,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     )
 
     // Show confirmation modal
-    Modal.confirm({
+    modal.confirm({
       title: t('resources:repositories.promoteToGrandTitle'),
       content: (
         <div>
@@ -781,7 +885,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const handleRenameRepository = async (repository: Repository) => {
     let newName = repository.name
 
-    Modal.confirm({
+    modal.confirm({
       title: t('resources:repositories.renameTitle'),
       content: (
         <div>
@@ -794,8 +898,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             onChange={(e) => { newName = e.target.value }}
             onPressEnter={(e) => {
               e.preventDefault()
-              const modal = Modal.confirm({ visible: false })
-              modal.destroy()
+              // Note: Modal closing on Enter needs to be handled differently with App.useApp()
             }}
             autoFocus
           />
@@ -868,7 +971,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
     if (childClones.length > 0) {
       // Show error modal with clone list
-      Modal.error({
+      modal.error({
         title: t('resources:repositories.cannotDeleteHasClones'),
         content: (
           <div>
@@ -900,7 +1003,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     let confirmationInput = ''
 
     // Show advanced confirmation modal
-    Modal.confirm({
+    modal.confirm({
       title: t('resources:repositories.deleteGrandConfirmTitle'),
       content: (
         <div>
@@ -965,7 +1068,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             teamVault: team?.vaultContent || '{}',
             machineVault: machine.vaultContent || '{}',
             repositoryGuid: repositoryData.repositoryGuid,
-            repositoryVault: grandRepositoryVault
+            repositoryVault: grandRepositoryVault,
+            repositoryLoopbackIp: repositoryData.repoLoopbackIp
           })
 
           const queueResponse = await managedQueueMutation.mutateAsync({
@@ -986,7 +1090,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             try {
               await deleteRepositoryMutation.mutateAsync({
                 teamName: machine.teamName,
-                repositoryName: repository.name
+                repositoryName: repository.name,
+                repositoryTag: repository.repoTag || 'latest'
               })
               showMessage('success', t('resources:repositories.deleteGrandSuccess'))
             } catch (credError) {
@@ -1051,7 +1156,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         teamVault: team?.vaultContent || '{}',
         machineVault: machine.vaultContent || '{}',
         repositoryGuid: repositoryData.repositoryGuid,
-        repositoryVault: grandRepositoryVault
+        repositoryVault: grandRepositoryVault,
+        repositoryLoopbackIp: repositoryData.repoLoopbackIp,
+        repositoryNetworkMode: repositoryData.repoNetworkMode,
+        repositoryTag: repositoryData.repoTag
       })
       
       const response = await managedQueueMutation.mutateAsync({
@@ -1232,6 +1340,9 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         machineVault: machine.vaultContent || '{}',
         repositoryGuid,
         repositoryVault,
+        repositoryLoopbackIp: repositoryData.repoLoopbackIp,
+        repositoryNetworkMode: repositoryData.repoNetworkMode,
+        repositoryTag: repositoryData.repoTag,
         destinationMachineVault,
         destinationStorageVault,
         sourceMachineVault,
@@ -1356,13 +1467,14 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       },
     ]
     
-  const renderExpandedRow = (record: Repository) => {
+  const renderExpandedRow = (record: RepositoryTableRow) => {
     const containers = containersData[record.name]
-    
+    const rowKey = record.key || `${record.name}-${record.repoTag || 'latest'}`
+
     // Separate plugin containers from regular containers
     const pluginContainers = containers?.containers?.filter((c: Container) => c.name && c.name.startsWith('plugin-')) || []
     const regularContainers = containers?.containers?.filter((c: Container) => !c.name || !c.name.startsWith('plugin-')) || []
-    
+
     // Container columns with repository context
     const containerColumnsWithRepo: ColumnsType<Container> = [
       ...containerColumns.slice(0, -1), // All columns except actions
@@ -1453,7 +1565,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     return (
       <S.ExpandedRowContainer>
         {/* Loading Overlay for Repository Expansion */}
-        {showRepoLoadingIndicator && expandingRepoKey === record.name && (
+        {showRepoLoadingIndicator && expandingRepoKey === rowKey && (
           <S.ExpandedRowLoadingOverlay>
             <Space direction="vertical" align="center">
               <Spin size="large" />
@@ -1663,14 +1775,74 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     },
   ]
 
-  const columns: ColumnsType<Repository> = [
+  // Transform GroupedRepository[] into flat table data with hierarchy markers
+  const getTableDataSource = (): RepositoryTableRow[] => {
+    const tableData: RepositoryTableRow[] = []
+
+    groupedRepositories.forEach((group) => {
+      // Only show group header if there are multiple tags (grand + forks)
+      const hasMultipleTags = group.tags.length > 1
+
+      if (hasMultipleTags) {
+        // Add group header row
+        tableData.push({
+          ...(group.grandTag || group.tags[0]),  // Use grand or first tag as base
+          _isGroupHeader: true,
+          _groupData: group,
+          _indentLevel: 0,
+          key: `group-${group.name}`
+        } as RepositoryTableRow)
+
+        // Add tag rows if expanded
+        if (group.isExpanded) {
+          // Grand tag first
+          if (group.grandTag) {
+            tableData.push({
+              ...group.grandTag,
+              _isTagRow: true,
+              _indentLevel: 1,
+              _isLastInGroup: group.forkTags.length === 0,
+              key: `tag-${group.name}-${group.grandTag.repoTag || 'latest'}`
+            } as RepositoryTableRow)
+          }
+
+          // Then fork tags
+          group.forkTags.forEach((fork, forkIndex) => {
+            tableData.push({
+              ...fork,
+              _isTagRow: true,
+              _indentLevel: 1,
+              _isLastInGroup: forkIndex === group.forkTags.length - 1,
+              key: `tag-${fork.name}-${fork.repoTag || 'latest'}`
+            } as RepositoryTableRow)
+          })
+        }
+      } else {
+        // Single tag - show directly without grouping
+        const singleTag = group.tags[0]
+        tableData.push({
+          ...singleTag,
+          key: `single-${singleTag.name}-${singleTag.repoTag || 'latest'}`
+        } as RepositoryTableRow)
+      }
+    })
+
+    return tableData
+  }
+
+  const columns: ColumnsType<RepositoryTableRow> = [
     {
       title: t('resources:repositories.status'),
       dataIndex: 'status',
       key: 'status',
       width: 80,
       align: 'center',
-      render: (_: any, record: Repository) => {
+      render: (_: any, record: RepositoryTableRow) => {
+        // Don't show status for group headers
+        if (record._isGroupHeader) {
+          return null
+        }
+
         // Determine status based on mounted and docker_running
         let icon: React.ReactNode
         let color: string
@@ -1707,23 +1879,64 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
-      render: (name: string, record: Repository) => {
-        const isExpanded = expandedRows.includes(record.name)
-        const hasExpandableContent = record.mounted && (record.has_services || record.container_count > 0 || (featureFlags.isEnabled('plugins') && record.plugin_count > 0))
+      render: (name: string, record: RepositoryTableRow) => {
+        const isGroupHeader = record._isGroupHeader
+        const groupData = record._groupData
+        const isTagRow = record._isTagRow
+        const indentLevel = record._indentLevel || 0
 
-        // Look up repository data to determine if it's a clone or original
-        const repositoryData = teamRepositories.find(r => r.repositoryName === record.name)
-        const isClone = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid
-        const isOriginal = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid === repositoryData.repositoryGuid
+        if (isGroupHeader && groupData) {
+          // Render group header (repository name with expand/collapse)
+          return (
+            <Space style={{ paddingLeft: `${indentLevel * 20}px` }}>
+              <span
+                onClick={(e) => {
+                  e.stopPropagation()
+                  toggleRepositoryGroup(groupData.name)
+                }}
+                style={{ cursor: 'pointer', userSelect: 'none', display: 'flex', alignItems: 'center' }}
+              >
+                {groupData.isExpanded ? <CaretDownOutlined /> : <CaretRightOutlined />}
+              </span>
+              <FolderOutlined />
+              <strong>{groupData.name}</strong>
+              <Text type="secondary">({groupData.tags.length} tag{groupData.tags.length > 1 ? 's' : ''})</Text>
+            </Space>
+          )
+        } else if (isTagRow) {
+          // Render tag row (indented, with tree connector)
+          const tagData = teamRepositories.find(r =>
+            r.repositoryName === record.name &&
+            (r.repoTag || 'latest') === (record.repoTag || 'latest')
+          )
+          const isGrand = tagData && (!tagData.parentGuid || tagData.parentGuid === tagData.repositoryGuid)
+          const treeConnector = record._isLastInGroup ? '└─' : '├─'
 
-        // Find immediate parent repository name for clones
-        const parentRepository = isClone && repositoryData.parentGuid
-          ? teamRepositories.find(r => r.repositoryGuid === repositoryData.parentGuid)
-          : null
-        const tooltipTitle = isClone && parentRepository ? `Clone of ${parentRepository.repositoryName}` : (isOriginal ? 'Original repository' : undefined)
+          return (
+            <Space style={{ paddingLeft: `${indentLevel * 20}px` }}>
+              <span style={{ color: '#999', marginRight: 4 }}>
+                {treeConnector}
+              </span>
+              {isGrand ? <StarOutlined style={{ color: '#faad14' }} /> : <CopyOutlined />}
+              <Text>{record.repoTag || 'latest'}</Text>
+              {isGrand && <Tag color="blue">Grand</Tag>}
+            </Space>
+          )
+        } else {
+          // Regular single repository row (no grouping)
+          const rowKey = record.key || `${record.name}-${record.repoTag || 'latest'}`
+          const isExpanded = expandedRows.includes(rowKey)
+          const hasExpandableContent = record.mounted && (record.has_services || record.container_count > 0 || (featureFlags.isEnabled('plugins') && record.plugin_count > 0))
 
-        return (
-          <Tooltip title={tooltipTitle}>
+          // Look up repository data to determine if it's a clone or original
+          const repositoryData = teamRepositories.find(r =>
+            r.repositoryName === record.name &&
+            (r.repoTag || 'latest') === (record.repoTag || 'latest')
+          )
+          const isClone = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid
+          const isOriginal = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid === repositoryData.repositoryGuid
+
+          return (
             <Space>
               <span style={{
                 display: 'inline-block',
@@ -1735,10 +1948,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 <RightOutlined style={{ fontSize: 12, color: '#999' }} />
               </span>
               {isOriginal ? <StarOutlined /> : <CopyOutlined />}
-              <strong>{name}</strong>
+              <strong>{getRepositoryDisplayName(record)}</strong>
             </Space>
-          </Tooltip>
-        )
+          )
+        }
       },
     },
     {
@@ -1746,9 +1959,51 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       key: 'actions',
       width: 160,
       fixed: 'right',
-      render: (_: any, record: Repository) => {
+      render: (_: any, record: RepositoryTableRow) => {
+        const isGroupHeader = record._isGroupHeader
+        const groupData = record._groupData
+
+        // Group header actions (apply to grand repository if exists)
+        if (isGroupHeader && groupData) {
+          const target = groupData.grandTag
+          if (!target) return null
+
+          // Actions for group header (limited set, applied to grand repo)
+          const menuItems = []
+
+          menuItems.push({
+            key: 'expand-all-tags',
+            label: groupData.isExpanded ? 'Collapse Tags' : 'Expand Tags',
+            icon: groupData.isExpanded ? <CaretRightOutlined style={componentStyles.icon.small} /> : <CaretDownOutlined style={componentStyles.icon.small} />,
+            onClick: () => toggleRepositoryGroup(groupData.name)
+          })
+
+          return (
+            <Space size="small">
+              <Dropdown
+                menu={{ items: menuItems }}
+                trigger={['click']}
+              >
+                <Tooltip title="Group Actions">
+                  <Button
+                    type="default"
+                    size="small"
+                    icon={<ControlOutlined />}
+                    data-testid={`machine-repo-list-group-actions-${groupData.name}`}
+                    aria-label="Group Actions"
+                  />
+                </Tooltip>
+              </Dropdown>
+            </Space>
+          )
+        }
+
+        // Tag row or single repository - show full actions
         // Look up repository data from database to get grandGuid
-        const repositoryData = teamRepositories.find(r => r.repositoryName === record.name)
+        const repositoryData = teamRepositories.find(r =>
+          r.repositoryName === record.name &&
+          (r.repoTag || 'latest') === (record.repoTag || 'latest')
+        )
 
         // Build smart menu items based on repository state
         const menuItems = []
@@ -1783,12 +2038,12 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           })
         }
 
-        // Clone - always available
+        // Fork - always available (use 'Fork' instead of 'Clone' for consistency)
         menuItems.push({
-          key: 'clone',
-          label: t('functions:functions.clone.name'),
+          key: 'fork',
+          label: t('functions:functions.fork.name'),
           icon: <CopyOutlined style={componentStyles.icon.small} />,
-          onClick: () => handleCloneRepository(record)
+          onClick: () => handleForkRepository(record)
         })
 
         // Push - always available
@@ -1871,7 +2126,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           })
         }
 
-        // Promote to Original and Delete - only for clones (repositories with a parent)
+        // Promote to Original and Delete - only for forks (repositories with a parent)
         if (repositoryData && repositoryData.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid) {
           menuItems.push({
             key: 'promote-to-grand',
@@ -1880,10 +2135,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             onClick: () => handlePromoteToGrand(record)
           })
           menuItems.push({
-            key: 'delete-clone',
-            label: t('resources:repositories.deleteClone'),
+            key: 'delete-fork',
+            label: t('resources:repositories.deleteFork'),
             icon: <DeleteOutlined style={componentStyles.icon.small} />,
-            onClick: () => handleDeleteClone(record),
+            onClick: () => handleDeleteFork(record),
             danger: true
           })
         }
@@ -1903,7 +2158,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           onClick: () => handleRenameRepository(record)
         })
 
-        // Delete Grand Repository - only for original repositories (no parent)
+        // Delete Grand Repository - only for grand repositories (no parent)
         if (repositoryData && repositoryData.grandGuid && repositoryData.grandGuid === repositoryData.repositoryGuid) {
           menuItems.push({
             key: 'delete-grand',
@@ -2049,19 +2304,49 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         }
       })()}
 
+      {/* Expand/Collapse All Buttons */}
+      {groupedRepositories.some(g => g.tags.length > 1) && (
+        <Space style={{ marginBottom: 16 }}>
+          <Button size="small" onClick={expandAllGroups} icon={<DownOutlined />}>
+            Expand All
+          </Button>
+          <Button size="small" onClick={collapseAllGroups} icon={<RightOutlined />}>
+            Collapse All
+          </Button>
+        </Space>
+      )}
+
       {/* Repository Table */}
       <S.StyledTable
         columns={columns}
-        dataSource={repositories}
-        rowKey="name"
+        dataSource={getTableDataSource()}
+        rowKey={(record: RepositoryTableRow) => record.key || `${record.name}-${record.repoTag || 'latest'}`}
         size="small"
         pagination={false}
         scroll={{ x: 'max-content' }}
         style={tableStyles.tableContainer}
         data-testid="machine-repo-list-table"
-        rowClassName={(record: Repository) => {
-          // Apply subtle background to clone rows
-          const repositoryData = teamRepositories.find(r => r.repositoryName === record.name)
+        rowClassName={(record: RepositoryTableRow) => {
+          // Group headers have special styling
+          if (record._isGroupHeader) {
+            return 'repository-group-header'
+          }
+
+          // Apply subtle background to fork/clone rows
+          if (record._isTagRow) {
+            const repositoryData = teamRepositories.find(r =>
+              r.repositoryName === record.name &&
+              (r.repoTag || 'latest') === (record.repoTag || 'latest')
+            )
+            const isFork = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid
+            return isFork ? 'repository-fork-row' : 'repository-grand-row'
+          }
+
+          // Regular single repository rows
+          const repositoryData = teamRepositories.find(r =>
+            r.repositoryName === record.name &&
+            (r.repoTag || 'latest') === (record.repoTag || 'latest')
+          )
           const isClone = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid
           return isClone ? 'repository-clone-row' : ''
         }}
@@ -2069,15 +2354,36 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           expandedRowRender: renderExpandedRow,
           expandedRowKeys: expandedRows,
           onExpandedRowsChange: (keys: readonly React.Key[]) => setExpandedRows(keys as string[]),
-          rowExpandable: (record: Repository) => record.mounted && (record.has_services || record.container_count > 0 || (featureFlags.isEnabled('plugins') && record.plugin_count > 0)),
+          rowExpandable: (record: RepositoryTableRow) => !record._isGroupHeader && record.mounted && (record.has_services || record.container_count > 0 || (featureFlags.isEnabled('plugins') && record.plugin_count > 0)),
           expandIcon: () => null, // Hide default expand icon
           expandRowByClick: false, // We'll handle this manually
         }}
         locale={{
           emptyText: t('resources:repositories.noRepositories')
         }}
-        onRow={(record: Repository) => {
+        onRow={(record: RepositoryTableRow) => {
+          // Group headers don't have expandable content
+          if (record._isGroupHeader) {
+            return {
+              onClick: (e: React.MouseEvent<HTMLElement>) => {
+                const target = e.target as HTMLElement
+                // Don't trigger if clicking on buttons or dropdowns
+                if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
+                  return
+                }
+                // Group expansion is handled by the expand icon in the name column
+              },
+              style: {
+                cursor: 'default',
+                backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                fontWeight: 500
+              }
+            }
+          }
+
           const hasExpandableContent = record.mounted && (record.has_services || record.container_count > 0 || (featureFlags.isEnabled('plugins') && record.plugin_count > 0))
+          const rowKey = record.key || `${record.name}-${record.repoTag || 'latest'}`
+
           return {
             onClick: (e: React.MouseEvent<HTMLElement>) => {
               const target = e.target as HTMLElement
@@ -2085,26 +2391,26 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
                 return
               }
-              
+
               // Toggle expansion if the row has expandable content
               if (hasExpandableContent) {
-                const isExpanded = expandedRows.includes(record.name)
+                const isExpanded = expandedRows.includes(rowKey)
                 if (isExpanded) {
-                  setExpandedRows(expandedRows.filter(key => key !== record.name))
+                  setExpandedRows(expandedRows.filter(key => key !== rowKey))
                 } else {
-                  setExpandedRows([...expandedRows, record.name])
-                  
+                  setExpandedRows([...expandedRows, rowKey])
+
                   // Trigger refresh when expanding
                   if (onRefreshMachines) {
-                    setExpandingRepoKey(record.name)
+                    setExpandingRepoKey(rowKey)
                     setIsRefreshingRepo(true)
-                    
+
                     // Start 1-second timer for loading indicator
                     const timer = setTimeout(() => {
                       setShowRepoLoadingIndicator(true)
                     }, 1000)
                     setRepoLoadingTimer(timer)
-                    
+
                     // Trigger refresh
                     onRefreshMachines().finally(() => {
                       if (repoLoadingTimer) {
@@ -2118,7 +2424,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                   }
                 }
               }
-              
+
               // Still call onRepositoryClick if provided
               onRepositoryClick?.(record)
             },
@@ -2252,6 +2558,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         }
       />
 
+      {/* Modal contextHolder - required for Modal.useModal() to work */}
+      {contextHolder}
     </S.Container>
   )
 }
