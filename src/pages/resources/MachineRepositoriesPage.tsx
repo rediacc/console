@@ -347,7 +347,6 @@ const MachineRepositoriesPage: React.FC = () => {
           // Refresh the page after task completion
           handleRefresh()
         }}
-        machineName={queueTraceModal.machineName}
       />
     </div>
   )

@@ -1,17 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { 
-  Typography, 
-  Card, 
-  Row, 
-  Col, 
-  Progress, 
-  Tag, 
-  Space, 
-  Button, 
+import {
+  Typography,
+  Card,
+  Row,
+  Col,
+  Progress,
+  Tag,
+  Space,
+  Button,
   Empty,
   Divider,
   List,
-  Statistic,
   Badge
 } from 'antd'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
@@ -27,7 +26,6 @@ import {
   CloudServerOutlined,
   InfoCircleOutlined,
   AppstoreOutlined,
-  FieldTimeOutlined,
   CodeOutlined,
   CompassOutlined
 } from '@/utils/optimizedIcons'
