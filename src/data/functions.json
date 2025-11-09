@@ -462,9 +462,117 @@
         }
       }
     },
+    "deploy": {
+      "name": "deploy",
+      "category": "backup",
+      "showInMenu": true,
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
+      "params": {
+        "repo": {
+          "type": "string",
+          "required": true
+        },
+        "dest": {
+          "type": "string",
+          "required": true,
+          "placeholder": "deployment-filename"
+        },
+        "machines": {
+          "type": "array",
+          "required": true,
+          "ui": "machine-multiselect",
+          "label": "Target Machines"
+        },
+        "state": {
+          "type": "string",
+          "options": ["online", "offline"],
+          "ui": "dropdown"
+        },
+        "option": {
+          "type": "string",
+          "label": "Options",
+          "ui": "checkbox",
+          "checkboxOptions": [
+            {
+              "value": "override",
+              "label": "overrideExistingFile"
+            }
+          ]
+        },
+        "checkpoint": {
+          "type": "string",
+          "default": "false",
+          "options": ["true", "false"],
+          "ui": "dropdown"
+        },
+        "grand": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    "backup": {
+      "name": "backup",
+      "category": "backup",
+      "showInMenu": true,
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true,
+        "storage": true
+      },
+      "params": {
+        "repo": {
+          "type": "string",
+          "required": true
+        },
+        "dest": {
+          "type": "string",
+          "required": true,
+          "placeholder": "backup-filename"
+        },
+        "storages": {
+          "type": "array",
+          "required": true,
+          "ui": "storage-multiselect",
+          "label": "Target Storage Systems"
+        },
+        "state": {
+          "type": "string",
+          "options": ["online", "offline"],
+          "ui": "dropdown"
+        },
+        "option": {
+          "type": "string",
+          "label": "Options",
+          "ui": "checkbox",
+          "checkboxOptions": [
+            {
+              "value": "override",
+              "label": "overrideExistingFile"
+            }
+          ]
+        },
+        "checkpoint": {
+          "type": "string",
+          "default": "false",
+          "options": ["true", "false"],
+          "ui": "dropdown"
+        },
+        "grand": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
     "push": {
       "name": "push",
       "category": "backup",
+      "showInMenu": false,
       "requirements": {
         "machine": true,
         "team": true,

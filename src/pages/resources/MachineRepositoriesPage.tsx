@@ -9,6 +9,7 @@ import { useRepositories } from '@/api/queries/repositories'
 import { MachineRepositoryList } from '@/components/resources/MachineRepositoryList'
 import { Machine, Repository } from '@/types'
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel'
+import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 
 const { Title } = Typography
 
@@ -61,8 +62,19 @@ const MachineRepositoriesPage: React.FC = () => {
   // Refresh key for forcing MachineRepositoryList updates
   const [refreshKey, setRefreshKey] = useState(0)
 
+  // Queue trace modal state
+  const [queueTraceModal, setQueueTraceModal] = useState<{
+    visible: boolean
+    taskId: string | null
+    machineName: string | null
+  }>({
+    visible: false,
+    taskId: null,
+    machineName: null
+  })
+
   // Fetch all machines to find our specific machine if not passed via state
-  const { data: machines = [], isLoading: machinesLoading, error: machinesError } = useMachines(
+  const { data: machines = [], isLoading: machinesLoading, error: machinesError, refetch: refetchMachines } = useMachines(
     machine?.teamName ? [machine.teamName] : undefined,
     true
   )
@@ -72,24 +84,28 @@ const MachineRepositoriesPage: React.FC = () => {
     machine?.teamName ? [machine.teamName] : undefined
   )
 
-  // Find the machine from API if not already set
+  // Find the machine from API if not already set OR update it when machines data changes
   useEffect(() => {
-    if (!machine && machines.length > 0 && machineName) {
+    if (machines.length > 0 && machineName) {
       const foundMachine = machines.find(m => m.machineName === machineName)
       if (foundMachine) {
-        // Use a microtask to avoid synchronous setState during render
-        Promise.resolve().then(() => setMachine(foundMachine))
+        // Update machine state with fresh data (including updated vaultStatus)
+        setMachine(foundMachine)
       }
     }
-  }, [machines, machineName, machine])
+  }, [machines, machineName])
 
   const handleBackToMachines = () => {
     navigate('/resources', { state: { activeTab: 'machines' } })
   }
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshKey(prev => prev + 1)
-    refetchRepositories()
+    // Refetch both repositories AND machines to get updated vaultStatus
+    await Promise.all([
+      refetchRepositories(),
+      refetchMachines()
+    ])
   }
 
   const handleRepositoryClick = (repository: any) => {
@@ -264,6 +280,9 @@ const MachineRepositoriesPage: React.FC = () => {
                 onActionComplete={handleRefresh}
                 onRepositoryClick={handleRepositoryClick}
                 onContainerClick={handleContainerClick}
+                onQueueItemCreated={(taskId, machineName) => {
+                  setQueueTraceModal({ visible: true, taskId, machineName })
+                }}
               />
             )}
           </div>
@@ -284,6 +303,18 @@ const MachineRepositoriesPage: React.FC = () => {
           )}
         </div>
       </Card>
+
+      {/* Queue Item Trace Modal */}
+      <QueueItemTraceModal
+        taskId={queueTraceModal.taskId}
+        visible={queueTraceModal.visible}
+        onClose={() => {
+          setQueueTraceModal({ visible: false, taskId: null, machineName: null })
+          // Refresh the page after task completion
+          handleRefresh()
+        }}
+        machineName={queueTraceModal.machineName}
+      />
     </div>
   )
 }
