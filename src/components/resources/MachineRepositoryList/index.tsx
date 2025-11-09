@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Spin, Alert, Tag, Space, Typography, Button, Dropdown, Tooltip, Modal, Input } from 'antd'
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
-import { CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, SaveOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, ApiOutlined, DisconnectOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined, CopyOutlined, RiseOutlined, StarOutlined, EditOutlined, ShrinkOutlined, ControlOutlined, CaretDownOutlined, CaretRightOutlined, FolderOutlined, EyeOutlined } from '@/utils/optimizedIcons'
+import { CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, SaveOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, DisconnectOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined, CopyOutlined, RiseOutlined, StarOutlined, EditOutlined, ShrinkOutlined, ControlOutlined, CaretDownOutlined, CaretRightOutlined, FolderOutlined, EyeOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import * as S from './styles'
 import { type QueueFunction } from '@/api/queries/queue'
@@ -174,7 +174,7 @@ interface MachineRepositoryListProps {
 }
 
 
-export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete, hideSystemInfo = false, onCreateRepository, onRepositoryClick, highlightedRepository, onContainerClick, highlightedContainer, isLoading, onRefreshMachines, refreshKey, onQueueItemCreated }) => {
+export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete, hideSystemInfo = false, onCreateRepository, onRepositoryClick, highlightedRepository, onContainerClick: _onContainerClick, highlightedContainer: _highlightedContainer, isLoading, onRefreshMachines: _onRefreshMachines, refreshKey, onQueueItemCreated }) => {
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
   const navigate = useNavigate()
   const [modal, contextHolder] = Modal.useModal()
@@ -1061,80 +1061,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         }
       }
     })
-  }
-
-
-  const handleContainerAction = async (repository: Repository, container: Container, action: string) => {
-    try {
-      // Find team vault data
-      const team = teams?.find(t => t.teamName === machine.teamName)
-      
-      // Find the repository vault data
-      const repositoryData = teamRepositories.find(r => r.repositoryName === repository.name)
-      
-      if (!repositoryData || !repositoryData.vaultContent) {
-        showMessage('error', t('resources:repositories.noCredentialsFound', { name: repository.name }))
-        return
-      }
-      
-      // Find the grand repository vault if grandGuid exists
-      let grandRepositoryVault = repositoryData.vaultContent
-      if (repositoryData.grandGuid) {
-        const grandRepository = teamRepositories.find(r => r.repositoryGuid === repositoryData.grandGuid)
-        if (grandRepository && grandRepository.vaultContent) {
-          grandRepositoryVault = grandRepository.vaultContent
-        }
-      }
-      
-      // Build params based on action
-      const params: Record<string, any> = {
-        repo: repositoryData.repositoryGuid,
-        container: container.id || container.name
-      }
-
-      // Add action-specific params
-      if (action === 'container_remove') {
-        params.force = 'false' // Default to safe remove
-      }
-      
-      // Build queue vault
-      const queueVault = await buildQueueVault({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
-        functionName: action,
-        params,
-        priority: 4,
-        description: `${action} ${container.name}`,
-        addedVia: 'machine-repository-list-container-action',
-        teamVault: team?.vaultContent || '{}',
-        machineVault: machine.vaultContent || '{}',
-        repositoryGuid: repositoryData.repositoryGuid,
-        repositoryVault: grandRepositoryVault,
-        repositoryLoopbackIp: repositoryData.repoLoopbackIp,
-        repositoryNetworkMode: repositoryData.repoNetworkMode,
-        repositoryTag: repositoryData.repoTag
-      })
-      
-      const response = await managedQueueMutation.mutateAsync({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
-        queueVault,
-        priority: 4
-      })
-      
-      if (response?.taskId) {
-        showMessage('success', t('resources:repositories.queueItemCreated'))
-        if (onQueueItemCreated) {
-          onQueueItemCreated(response.taskId, machine.machineName)
-        }
-      } else if (response?.isQueued) {
-        showMessage('info', t('resources:repositories.highestPriorityQueued'))
-      }
-    } catch (error) {
-      showMessage('error', t('resources:repositories.failedToCreateQueueItem'))
-    }
   }
 
 

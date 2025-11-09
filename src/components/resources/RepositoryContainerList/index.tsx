@@ -4,7 +4,6 @@ import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
 import { FunctionOutlined, PlayCircleOutlined, StopOutlined, ReloadOutlined, DeleteOutlined, PauseCircleOutlined, CheckCircleOutlined, DisconnectOutlined, EyeOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import * as S from './styles'
-import { type QueueFunction } from '@/api/queries/queue'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import { Machine } from '@/types'
@@ -94,7 +93,7 @@ export const RepositoryContainerList: React.FC<RepositoryContainerListProps> = (
 
   const { data: teamsData } = useTeams()
   const { buildQueueVault } = useQueueVaultBuilder()
-  const managedQueueMutation = useManagedQueueItem(onQueueItemCreated || (() => {}))
+  const managedQueueMutation = useManagedQueueItem()
 
   // Parse containers from machine vaultStatus
   useEffect(() => {

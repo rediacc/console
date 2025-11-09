@@ -36,32 +36,33 @@ interface Repository {
   originalGuid?: string
 }
 
-interface ContainerData {
+interface Container {
   id: string
   name: string
-  image: string
-  command: string
-  created: string
-  status: string
   state: string
-  ports: string
+  image?: string
+  command?: string
+  created?: string
+  status?: string
+  ports?: string
   port_mappings?: Array<{
     host?: string
     host_port?: string
     container_port: string
     protocol: string
   }>
-  labels: string
-  mounts: string
-  networks: string
-  size: string
-  repository: string
-  cpu_percent: string
-  memory_usage: string
-  memory_percent: string
-  net_io: string
-  block_io: string
-  pids: string
+  labels?: string
+  mounts?: string
+  networks?: string
+  size?: string
+  repository?: string
+  cpu_percent?: string
+  memory_usage?: string
+  memory_percent?: string
+  net_io?: string
+  block_io?: string
+  pids?: string
+  [key: string]: any // eslint-disable-line @typescript-eslint/no-explicit-any -- Allow additional properties from API
 }
 
 const RepositoryContainersPage: React.FC = () => {
@@ -75,7 +76,7 @@ const RepositoryContainersPage: React.FC = () => {
   const machine = (location.state as any)?.machine as Machine | undefined
   const repository = (location.state as any)?.repository as Repository | undefined
 
-  const [selectedContainer, setSelectedContainer] = useState<ContainerData | null>(null)
+  const [selectedContainer, setSelectedContainer] = useState<Container | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [queueTraceModal, setQueueTraceModal] = useState<{
     visible: boolean
@@ -144,7 +145,7 @@ const RepositoryContainersPage: React.FC = () => {
     navigate('/resources')
   }
 
-  const handleContainerClick = (container: ContainerData) => {
+  const handleContainerClick = (container: Container) => {
     setSelectedContainer(container)
     setIsPanelCollapsed(false)
   }

@@ -63,7 +63,6 @@ const RedirectHandler: React.FC = () => {
       sessionStorage.removeItem('redirect_path')
 
       // Navigate to the intended path
-      console.log('[RedirectHandler] Redirecting to stored path:', redirectPath)
       navigate(redirectPath, { replace: true })
     }
   }, [navigate])
