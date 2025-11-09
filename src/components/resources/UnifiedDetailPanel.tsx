@@ -145,14 +145,18 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
   return (
     <div
       style={{
-        position: 'relative',
+        position: 'fixed',
+        top: 0,
+        right: 0,
+        bottom: 0,
         width: actualWidth,
-        height: '100%',
         borderLeft: `1px solid ${theme === 'dark' ? '#303030' : '#f0f0f0'}`,
+        backgroundColor: theme === 'dark' ? '#141414' : '#ffffff',
         display: 'flex',
         flexShrink: 0,
         opacity,
         transition: 'width 0.3s ease-in-out, opacity 0.3s ease',
+        zIndex: 1001,
       }}
       data-testid="unified-detail-panel"
     >
@@ -230,21 +234,21 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
             <MachineVaultStatusPanel
               machine={currentData as Machine}
               visible={visible}
-              onClose={onToggleCollapse || onClose}
+              onClose={onClose}
               splitView={true}
             />
           ) : actualType === 'repository' ? (
             <RepositoryDetailPanel
               repository={currentData as Repository}
               visible={visible}
-              onClose={onToggleCollapse || onClose}
+              onClose={onClose}
               splitView={true}
             />
           ) : (
             <ContainerDetailPanel
               container={currentData as ContainerData}
               visible={visible}
-              onClose={onToggleCollapse || onClose}
+              onClose={onClose}
               splitView={true}
             />
           )}

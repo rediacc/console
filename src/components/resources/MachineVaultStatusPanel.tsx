@@ -1,17 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { 
-  Typography, 
-  Card, 
-  Row, 
-  Col, 
-  Progress, 
-  Tag, 
-  Space, 
-  Button, 
+import {
+  Typography,
+  Card,
+  Row,
+  Col,
+  Progress,
+  Tag,
+  Space,
+  Button,
   Empty,
   Divider,
   List,
-  Statistic,
   Badge
 } from 'antd'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
@@ -27,7 +26,6 @@ import {
   CloudServerOutlined,
   InfoCircleOutlined,
   AppstoreOutlined,
-  FieldTimeOutlined,
   CodeOutlined,
   CompassOutlined
 } from '@/utils/optimizedIcons'
@@ -36,8 +34,12 @@ import { Machine } from '@/types'
 import { useTheme } from '@/context/ThemeContext'
 import { getLocalizedRelativeTime, formatTimestampAsIs } from '@/utils/timeUtils'
 import { calculateResourcePercent } from '@/utils/sizeUtils'
+import { getPanelWrapperStyles, getStickyHeaderStyles, getContentWrapperStyles } from '@/utils/detailPanelStyles'
+import { abbreviatePath } from '@/utils/pathUtils'
+import { DETAIL_PANEL_TEXT, DETAIL_PANEL_LAYOUT } from '@/styles/detailPanelStyles'
 import { DistributedStorageSection } from './DistributedStorageSection'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
+import { featureFlags } from '@/config/featureFlags'
 
 const { Text, Title } = Typography
 
@@ -212,36 +214,11 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
       {/* Panel */}
       <div
         className="machine-vault-status-panel"
-        style={splitView ? {
-          height: '100%',
-          backgroundColor: theme === 'dark' ? '#141414' : '#fff',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-        } : {
-          position: 'fixed',
-          top: 0,
-          right: visible ? 0 : '-520px',
-          bottom: 0,
-          width: '520px',
-          maxWidth: '100vw',
-          backgroundColor: theme === 'dark' ? '#141414' : '#fff',
-          boxShadow: '-2px 0 8px rgba(0, 0, 0, 0.15)',
-          zIndex: 1000,
-          transition: 'right 0.3s ease-in-out',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-        }}
+        style={getPanelWrapperStyles({ splitView, visible, theme })}
       >
         {/* Header */}
-        <div 
-          style={{ 
-            padding: '16px 24px',
-            borderBottom: `1px solid ${theme === 'dark' ? '#303030' : '#f0f0f0'}`,
-            position: 'sticky',
-            top: 0,
-            backgroundColor: theme === 'dark' ? '#141414' : '#fff',
-            zIndex: splitView ? 0 : 1,
-          }}
+        <div
+          style={getStickyHeaderStyles(theme)}
           data-testid="vault-status-header"
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -277,7 +254,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
         </div>
 
         {/* Content */}
-        <div style={{ padding: '24px' }} data-testid="vault-status-content">
+        <div style={getContentWrapperStyles()} data-testid="vault-status-content">
           {!vaultData ? (
             <Empty 
               description={t('machines:noVaultData')}
@@ -295,44 +272,32 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                   </div>
                   
                   <Row gutter={[16, 16]} style={componentStyles.marginBottom.md}>
-                    <Col span={12}>
-                      <Card size="small" style={{ height: '100%' }} data-testid="vault-status-hostname-card">
-                        <Statistic
-                          title={t('resources:repositories.hostname')}
-                          value={vaultData.system.hostname}
-                          prefix={<CloudServerOutlined />}
-                          valueStyle={{ fontSize: 16 }}
-                        />
-                      </Card>
-                    </Col>
-                    <Col span={12}>
-                      <Card size="small" style={{ height: '100%' }} data-testid="vault-status-uptime-card">
-                        <Statistic
-                          title={t('resources:repositories.uptime')}
-                          value={vaultData.system.uptime}
-                          prefix={<FieldTimeOutlined />}
-                          valueStyle={{ fontSize: 16 }}
-                        />
-                      </Card>
-                    </Col>
                     <Col span={24}>
-                      <Card size="small" data-testid="vault-status-os-info-card">
+                      <Card size="small" data-testid="vault-status-system-info-card">
                         <Space direction="vertical" style={{ width: '100%' }} size="small">
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Text type="secondary">{t('resources:repositories.osName')}:</Text>
-                            <Text strong data-testid="vault-status-os-name">{vaultData.system.os_name}</Text>
+                          <div style={DETAIL_PANEL_LAYOUT.inlineField}>
+                            <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>{t('resources:repositories.hostname')}:</Text>
+                            <Text style={DETAIL_PANEL_TEXT.value} data-testid="vault-status-hostname">{vaultData.system.hostname}</Text>
                           </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Text type="secondary">{t('resources:repositories.kernel')}:</Text>
-                            <Text data-testid="vault-status-kernel">{vaultData.system.kernel}</Text>
+                          <div style={DETAIL_PANEL_LAYOUT.inlineField}>
+                            <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>{t('resources:repositories.uptime')}:</Text>
+                            <Text style={DETAIL_PANEL_TEXT.value} data-testid="vault-status-uptime">{vaultData.system.uptime}</Text>
                           </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Text type="secondary">{t('resources:repositories.cpu')}:</Text>
-                            <Text data-testid="vault-status-cpu">{vaultData.system.cpu_count} × {vaultData.system.cpu_model}</Text>
+                          <div style={DETAIL_PANEL_LAYOUT.inlineField}>
+                            <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>{t('resources:repositories.osName')}:</Text>
+                            <Text style={DETAIL_PANEL_TEXT.value} data-testid="vault-status-os-name">{vaultData.system.os_name}</Text>
                           </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Text type="secondary">{t('resources:repositories.systemTime')}:</Text>
-                            <Text data-testid="vault-status-system-time">{vaultData.system.system_time_human} ({vaultData.system.timezone})</Text>
+                          <div style={DETAIL_PANEL_LAYOUT.inlineField}>
+                            <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>{t('resources:repositories.kernel')}:</Text>
+                            <Text style={DETAIL_PANEL_TEXT.value} data-testid="vault-status-kernel">{vaultData.system.kernel}</Text>
+                          </div>
+                          <div style={DETAIL_PANEL_LAYOUT.inlineField}>
+                            <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>{t('resources:repositories.cpu')}:</Text>
+                            <Text style={DETAIL_PANEL_TEXT.value} data-testid="vault-status-cpu">{vaultData.system.cpu_count} × {vaultData.system.cpu_model}</Text>
+                          </div>
+                          <div style={DETAIL_PANEL_LAYOUT.inlineField}>
+                            <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>{t('resources:repositories.systemTime')}:</Text>
+                            <Text style={DETAIL_PANEL_TEXT.value} data-testid="vault-status-system-time">{vaultData.system.system_time_human} ({vaultData.system.timezone})</Text>
                           </div>
                         </Space>
                       </Card>
@@ -341,7 +306,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
 
                   <Divider style={{ margin: '24px 0' }}>
                     <Space>
-                      <InfoCircleOutlined />
+                      <InfoCircleOutlined style={{ fontSize: 16 }} />
                       {t('resources:repositories.resourceUsage')}
                     </Space>
                   </Divider>
@@ -419,9 +384,15 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                               <Text strong>{t('resources:repositories.datastore')}</Text>
                             </Space>
                           </div>
-                          <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 8, wordBreak: 'break-all' }}>
-                            {vaultData.system.datastore.path}
-                          </Text>
+                          <div style={{ ...DETAIL_PANEL_LAYOUT.inlineField, marginBottom: 8 }}>
+                            <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>Path:</Text>
+                            <Text
+                              copyable={{ text: vaultData.system.datastore.path }}
+                              style={DETAIL_PANEL_TEXT.monospace}
+                            >
+                              {abbreviatePath(vaultData.system.datastore.path, 40)}
+                            </Text>
+                          </div>
                           <div style={{ marginBottom: 8 }}>
                             <Text>{vaultData.system.datastore.used} / {vaultData.system.datastore.total}</Text>
                           </div>
@@ -456,7 +427,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                 <>
                   <Divider style={{ margin: '24px 0' }}>
                     <Space>
-                      <WifiOutlined />
+                      <WifiOutlined style={{ fontSize: 16 }} />
                       {t('resources:repositories.networkInfo')}
                     </Space>
                   </Divider>
@@ -465,14 +436,14 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                   {vaultData.network.default_gateway && (
                     <Card size="small" style={{ marginBottom: 16 }} data-testid="vault-status-gateway-card">
                       <Space direction="vertical" style={{ width: '100%' }} size="small">
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Text type="secondary">{t('resources:repositories.defaultGateway')}:</Text>
-                          <Text strong data-testid="vault-status-gateway">{vaultData.network.default_gateway}</Text>
+                        <div style={DETAIL_PANEL_LAYOUT.inlineField}>
+                          <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>{t('resources:repositories.defaultGateway')}:</Text>
+                          <Text style={DETAIL_PANEL_TEXT.value} data-testid="vault-status-gateway">{vaultData.network.default_gateway}</Text>
                         </div>
                         {vaultData.network.default_interface && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Text type="secondary">{t('resources:repositories.defaultInterface')}:</Text>
-                            <Text data-testid="vault-status-interface">{vaultData.network.default_interface}</Text>
+                          <div style={DETAIL_PANEL_LAYOUT.inlineField}>
+                            <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>{t('resources:repositories.defaultInterface')}:</Text>
+                            <Text style={DETAIL_PANEL_TEXT.value} data-testid="vault-status-interface">{vaultData.network.default_interface}</Text>
                           </div>
                         )}
                       </Space>
@@ -530,7 +501,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                 <>
                   <Divider style={{ margin: '24px 0' }}>
                     <Space>
-                      <HddOutlined />
+                      <HddOutlined style={{ fontSize: 16 }} />
                       {t('resources:repositories.blockDevices')}
                     </Space>
                   </Divider>
@@ -589,7 +560,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                 <>
                   <Divider style={{ margin: '24px 0' }}>
                     <Space>
-                      <ContainerOutlined />
+                      <ContainerOutlined style={{ fontSize: 16 }} />
                       {t('resources:repositories.systemContainers')}
                     </Space>
                   </Divider>
@@ -633,9 +604,9 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
               )}
               
               {/* Distributed Storage Section */}
-              {machine && (
+              {featureFlags.isEnabled('distributedStorage') && machine && (
                 <div data-testid="vault-status-distributed-storage">
-                  <DistributedStorageSection 
+                  <DistributedStorageSection
                     machine={machine}
                     onViewDetails={() => {
                       setAuditTraceModal({
