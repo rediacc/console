@@ -1220,8 +1220,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       const finalParams = { ...functionData.params }
       const repositoryGuid = repositoryData.repositoryGuid
       const repositoryVault = grandRepositoryVault
-      let destinationMachineVault = undefined
-      let destinationStorageVault = undefined
+      const destinationMachineVault = undefined
+      const destinationStorageVault = undefined
       let sourceMachineVault = undefined
       let sourceStorageVault = undefined
       
