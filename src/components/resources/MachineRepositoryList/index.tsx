@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Spin, Alert, Tag, Space, Typography, Button, Dropdown, Tooltip, Modal, Input } from 'antd'
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
-import { CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, ApiOutlined, DisconnectOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined, CopyOutlined, RiseOutlined, StarOutlined, EditOutlined, ShrinkOutlined, ControlOutlined, CaretDownOutlined, CaretRightOutlined, FolderOutlined, DownOutlined } from '@/utils/optimizedIcons'
+import { CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, SaveOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, ApiOutlined, DisconnectOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined, CopyOutlined, RiseOutlined, StarOutlined, EditOutlined, ShrinkOutlined, ControlOutlined, CaretDownOutlined, CaretRightOutlined, FolderOutlined, DownOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import * as S from './styles'
 import { type QueueFunction } from '@/api/queries/queue'
@@ -669,9 +669,9 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           machineVault: machine.vaultContent || '{}',
           repositoryGuid: repositoryData.repositoryGuid,
           repositoryVault: grandRepositoryVault,
-          repositoryLoopbackIp: repositoryData.repoLoopbackIp,
-          repositoryNetworkMode: repositoryData.repoNetworkMode,
-          repositoryTag: repositoryData.repoTag,
+          repositoryLoopbackIp: newRepo.repoLoopbackIp,
+          repositoryNetworkMode: newRepo.repoNetworkMode,
+          repositoryTag: newRepo.repoTag,
           destinationMachineVault: machine.vaultContent
         })
 
@@ -1244,84 +1244,219 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           sourceStorageVault = sourceStorage.vaultContent
         }
       }
-      
-      // For push to machine, get destination machine vault data
-      if (functionData.function.name === 'push' && 
-          functionData.params.destinationType === 'machine' && 
-          functionData.params.to) {
-        const destinationMachine = machinesData?.find(m => m.machineName === functionData.params.to)
-        if (destinationMachine && destinationMachine.vaultContent) {
-          destinationMachineVault = destinationMachine.vaultContent
+
+      // Handle deploy function (multiple machines)
+      if (functionData.function.name === 'deploy' && functionData.params.machines) {
+        const machinesArray = Array.isArray(functionData.params.machines)
+          ? functionData.params.machines
+          : [functionData.params.machines]
+
+        // Validate destination filename before processing
+        const destFilename = functionData.params.dest?.trim()
+
+        if (!destFilename) {
+          showMessage('error', 'Destination filename is required')
+          setFunctionModalOpen(false)
+          setSelectedRepository(null)
+          return
         }
-      }
-      
-      // For push to storage, get destination storage vault data
-      if (functionData.function.name === 'push' && 
-          functionData.params.destinationType === 'storage' && 
-          functionData.params.to) {
-        const destinationStorage = storageData?.find(s => s.storageName === functionData.params.to)
-        if (destinationStorage && destinationStorage.vaultContent) {
-          destinationStorageVault = destinationStorage.vaultContent
-        }
-      }
-      
-      // Special handling for push function - only create repository for machine-to-machine push
-      if (functionData.function.name === 'push' && 
-          functionData.params.dest && 
-          functionData.params.destinationType === 'machine') {
+
+        const createdTaskIds: string[] = []
+
+        // Generate deploy tag with timestamp (similar to fork)
+        const timestamp = new Date().toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '-')
+        const deployTag = `deploy-${timestamp}`  // e.g., deploy-2025-01-09-14-30-00
+
+        // Create repository credential ONCE (not per machine - it's team-wide)
+        let newRepo
         try {
-          // Create a new repository with the destination filename
           await createRepositoryMutation.mutateAsync({
             teamName: machine.teamName,
-            repositoryName: functionData.params.dest,
+            repositoryName: destFilename,
+            repositoryTag: deployTag,
             parentRepoName: selectedRepository.name
           })
-          
-          // Store the created repository name for potential cleanup
-          setCreatedRepositoryName(functionData.params.dest)
-          
-          // Immediately refresh the repositories list to get the new repository
+
+          // Refresh repositories list
           const { data: updatedRepos } = await refetchRepositories()
-          
-          // Find the newly created repository to get its GUID
-          const newRepo = updatedRepos?.find(r => r.repositoryName === functionData.params.dest)
-          
-          if (newRepo && newRepo.repositoryGuid) {
-            // Use the new repository's GUID as the dest parameter
-            finalParams.dest = newRepo.repositoryGuid
-            // Keep the original repository GUID for the source
-            finalParams.repo = repositoryData.repositoryGuid
-            // Set the grand GUID from the parent repository
-            finalParams.grand = repositoryData.grandGuid || repositoryData.repositoryGuid || ''
-          } else {
-            // If we can't find the new repository, clean up and error
+          newRepo = updatedRepos?.find(r => r.repositoryName === destFilename && r.repoTag === deployTag)
+
+          if (!newRepo || !newRepo.repositoryGuid) {
             throw new Error('Could not find newly created repository')
           }
-          
         } catch (createError) {
-          // If we already created the repository but failed to get its GUID, clean it up
-          if (createdRepositoryName) {
-            try {
-              await deleteRepositoryMutation.mutateAsync({
-                teamName: machine.teamName,
-                repositoryName: createdRepositoryName
-              })
-            } catch (deleteError) {
-              // Failed to cleanup repository after error
-            }
-          }
           showMessage('error', t('resources:repositories.failedToCreateRepository'))
           setFunctionModalOpen(false)
           setSelectedRepository(null)
           return
         }
-      } else if (functionData.function.name === 'push' && 
-                 functionData.params.destinationType === 'storage') {
-        // For storage push, we just pass the parameters as-is
-        // No need to create a new repository
-        finalParams.repo = repositoryData.repositoryGuid
-        finalParams.grand = repositoryData.grandGuid || repositoryData.repositoryGuid || ''
-      } else if (functionData.function.name === 'pull') {
+
+        // Now deploy to each target machine using the same repository credential
+        for (const targetMachine of machinesArray) {
+          try {
+            // Get destination machine vault
+            const destinationMachine = machinesData?.find(m => m.machineName === targetMachine)
+            let targetMachineVault = undefined
+            if (destinationMachine && destinationMachine.vaultContent) {
+              targetMachineVault = destinationMachine.vaultContent
+            }
+
+            // Build queue vault for this specific destination
+            const deployParams = {
+              ...functionData.params,
+              to: targetMachine,
+              dest: newRepo.repositoryGuid,
+              repo: repositoryData.repositoryGuid,
+              grand: repositoryData.grandGuid || repositoryData.repositoryGuid || ''
+            }
+
+            const queueVault = await buildQueueVault({
+              teamName: machine.teamName,
+              machineName: machine.machineName,
+              bridgeName: machine.bridgeName,
+              functionName: 'deploy',
+              params: deployParams,
+              priority: functionData.priority,
+              description: `${functionData.description} → ${targetMachine}`,
+              addedVia: 'machine-repository-list',
+              teamVault: team?.vaultContent || '{}',
+              machineVault: machine.vaultContent || '{}',
+              repositoryGuid,
+              repositoryVault,
+              repositoryLoopbackIp: newRepo.repoLoopbackIp,
+              repositoryNetworkMode: newRepo.repoNetworkMode,
+              repositoryTag: newRepo.repoTag,
+              destinationMachineVault: targetMachineVault
+            })
+
+            const response = await managedQueueMutation.mutateAsync({
+              teamName: machine.teamName,
+              machineName: machine.machineName,
+              bridgeName: machine.bridgeName,
+              queueVault,
+              priority: functionData.priority
+            })
+
+            if (response?.taskId) {
+              createdTaskIds.push(response.taskId)
+            }
+          } catch (error) {
+            showMessage('error', t('resources:repositories.failedToDeployTo', { machine: targetMachine }))
+          }
+        }
+
+        setFunctionModalOpen(false)
+        setSelectedRepository(null)
+
+        if (createdTaskIds.length > 0) {
+          // Show summary message
+          if (createdTaskIds.length === machinesArray.length) {
+            // All succeeded
+            showMessage('success', t('resources:repositories.deploymentQueued', { count: createdTaskIds.length }))
+          } else {
+            // Some succeeded, some failed
+            showMessage('warning', t('resources:repositories.deploymentPartialSuccess', {
+              success: createdTaskIds.length,
+              total: machinesArray.length
+            }))
+          }
+          if (onQueueItemCreated && createdTaskIds[0]) {
+            onQueueItemCreated(createdTaskIds[0], machine.machineName)
+          }
+        } else {
+          // All failed
+          showMessage('error', t('resources:repositories.allDeploymentsFailed'))
+        }
+        return
+      }
+
+      // Handle backup function (multiple storages)
+      if (functionData.function.name === 'backup' && functionData.params.storages) {
+        const storagesArray = Array.isArray(functionData.params.storages)
+          ? functionData.params.storages
+          : [functionData.params.storages]
+
+        const createdTaskIds: string[] = []
+
+        for (const targetStorage of storagesArray) {
+          try {
+            // Get destination storage vault
+            const destinationStorage = storageData?.find(s => s.storageName === targetStorage)
+            let targetStorageVault = undefined
+            if (destinationStorage && destinationStorage.vaultContent) {
+              targetStorageVault = destinationStorage.vaultContent
+            }
+
+            // Build queue vault for this specific storage
+            const backupParams = {
+              ...functionData.params,
+              to: targetStorage,
+              repo: repositoryData.repositoryGuid,
+              grand: repositoryData.grandGuid || repositoryData.repositoryGuid || ''
+            }
+
+            const queueVault = await buildQueueVault({
+              teamName: machine.teamName,
+              machineName: machine.machineName,
+              bridgeName: machine.bridgeName,
+              functionName: 'backup',
+              params: backupParams,
+              priority: functionData.priority,
+              description: `${functionData.description} → ${targetStorage}`,
+              addedVia: 'machine-repository-list',
+              teamVault: team?.vaultContent || '{}',
+              machineVault: machine.vaultContent || '{}',
+              repositoryGuid,
+              repositoryVault,
+              repositoryLoopbackIp: repositoryData.repoLoopbackIp,
+              repositoryNetworkMode: repositoryData.repoNetworkMode,
+              repositoryTag: repositoryData.repoTag,
+              destinationStorageVault: targetStorageVault
+            })
+
+            const response = await managedQueueMutation.mutateAsync({
+              teamName: machine.teamName,
+              machineName: machine.machineName,
+              bridgeName: machine.bridgeName,
+              queueVault,
+              priority: functionData.priority
+            })
+
+            if (response?.taskId) {
+              createdTaskIds.push(response.taskId)
+            }
+          } catch (error) {
+            showMessage('error', t('resources:repositories.failedToBackupTo', { storage: targetStorage }))
+          }
+        }
+
+        setFunctionModalOpen(false)
+        setSelectedRepository(null)
+
+        if (createdTaskIds.length > 0) {
+          // Show summary message
+          if (createdTaskIds.length === storagesArray.length) {
+            // All succeeded
+            showMessage('success', t('resources:repositories.backupQueued', { count: createdTaskIds.length }))
+          } else {
+            // Some succeeded, some failed
+            showMessage('warning', t('resources:repositories.backupPartialSuccess', {
+              success: createdTaskIds.length,
+              total: storagesArray.length
+            }))
+          }
+          if (onQueueItemCreated && createdTaskIds[0]) {
+            onQueueItemCreated(createdTaskIds[0], machine.machineName)
+          }
+        } else {
+          // All failed
+          showMessage('error', t('resources:repositories.allBackupsFailed'))
+        }
+        return
+      }
+
+      // Handle pull function
+      if (functionData.function.name === 'pull') {
         // For pull function, set the repo and grand parameters
         finalParams.repo = repositoryData.repositoryGuid
         finalParams.grand = repositoryData.grandGuid || repositoryData.repositoryGuid || ''
@@ -2046,12 +2181,20 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           onClick: () => handleForkRepository(record)
         })
 
-        // Push - always available
+        // Deploy - always available
         menuItems.push({
-          key: 'push',
-          label: t('functions:functions.push.name'),
+          key: 'deploy',
+          label: t('functions:functions.deploy.name'),
           icon: <CloudUploadOutlined style={componentStyles.icon.small} />,
-          onClick: () => handleRunFunction(record, 'push')
+          onClick: () => handleRunFunction(record, 'deploy')
+        })
+
+        // Backup - always available
+        menuItems.push({
+          key: 'backup',
+          label: t('functions:functions.backup.name'),
+          icon: <SaveOutlined style={componentStyles.icon.small} />,
+          onClick: () => handleRunFunction(record, 'backup')
         })
 
         // Apply Template - always available

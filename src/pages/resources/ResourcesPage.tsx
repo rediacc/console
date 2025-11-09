@@ -776,26 +776,7 @@ const ResourcesPage: React.FC = () => {
           }
         }
       }
-      
-      // Handle push function destination vault data
-      if (functionData.function.name === 'push') {
-        // For push to machine, get destination machine vault data
-        if (functionData.params.destinationType === 'machine' && functionData.params.to) {
-          const destinationMachine = machines.find(m => m.machineName === functionData.params.to);
-          if (destinationMachine && destinationMachine.vaultContent) {
-            queueVaultParams.destinationMachineVault = destinationMachine.vaultContent;
-          }
-        }
-        
-        // For push to storage, get destination storage vault data
-        if (functionData.params.destinationType === 'storage' && functionData.params.to) {
-          const destinationStorage = storages.find(s => s.storageName === functionData.params.to);
-          if (destinationStorage && destinationStorage.vaultContent) {
-            queueVaultParams.destinationStorageVault = destinationStorage.vaultContent;
-          }
-        }
-      }
-      
+
       const queueVault = await buildQueueVault(queueVaultParams);
       
       const response = await createQueueItemMutation.mutateAsync({

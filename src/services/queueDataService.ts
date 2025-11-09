@@ -74,71 +74,66 @@ class QueueDataService {
         queueVaultData.contextData.MACHINES = {}
       }
       queueVaultData.contextData.MACHINES[context.machineName] = this.extractMachineForGeneralSettings(context.machineVault)
-      
-      // For push function, also add destination machine if pushing to another machine
-      if (context.functionName === 'push' && 
-          context.params.destinationType === 'machine' && 
-          context.params.to && 
+
+      // For deploy function, add destination machine
+      if (context.functionName === 'deploy' &&
+          context.params.to &&
           context.params.to !== context.machineName) {
-        // We need to get the destination machine's vault data
-        // This should be passed in the context as destinationMachineVault
         if (context.destinationMachineVault) {
-          queueVaultData.contextData.MACHINES[context.params.to] = 
+          queueVaultData.contextData.MACHINES[context.params.to] =
             this.extractMachineForGeneralSettings(context.destinationMachineVault)
         }
       }
     }
-    
-    // For push function to storage systems
-    if (context.functionName === 'push' && 
-        context.params.destinationType === 'storage' && 
-        context.params.to) {
+
+    // For backup function to storage systems
+    if (context.functionName === 'backup' && context.params.to) {
       // Initialize STORAGE_SYSTEMS if it doesn't exist
       if (!queueVaultData.contextData.STORAGE_SYSTEMS) {
         queueVaultData.contextData.STORAGE_SYSTEMS = {}
       }
-      
+
       // Add the storage configuration
       if (context.destinationStorageVault) {
         // Parse the vault if it's a string
-        const parsedVault = typeof context.destinationStorageVault === 'string' 
-          ? JSON.parse(context.destinationStorageVault) 
+        const parsedVault = typeof context.destinationStorageVault === 'string'
+          ? JSON.parse(context.destinationStorageVault)
           : context.destinationStorageVault
-        
+
         // Get the provider type
         const provider = parsedVault.provider
         if (!provider) {
           throw new Error('Storage provider type is required')
         }
-        
+
         // Transform storage config to environment variables expected by the script
         const storageConfig: any = {
           RCLONE_REDIACC_BACKEND: provider  // The provider type (e.g., 'onedrive', 's3', 'drive')
         }
-        
+
         // Only add folder if it exists in the vault
         if (parsedVault.folder !== undefined && parsedVault.folder !== null) {
           storageConfig.RCLONE_REDIACC_FOLDER = parsedVault.folder
         }
-        
+
         // Only add parameters if they exist in the vault
         if (parsedVault.parameters) {
           storageConfig.RCLONE_PARAMETERS = parsedVault.parameters
         }
-        
+
         // Use provider-specific prefix (e.g., RCLONE_ONEDRIVE_, RCLONE_S3_)
         const providerPrefix = `RCLONE_${provider.toUpperCase()}`
-        
+
         // Dynamically add all other fields from the vault as rclone config
         Object.entries(parsedVault).forEach(([key, value]) => {
           // Skip special fields that we've already handled
           if (key === 'provider' || key === 'folder' || key === 'parameters') {
             return
           }
-          
+
           // Convert the key to uppercase for rclone environment variable format
           const envKey = `${providerPrefix}_${key.toUpperCase()}`
-          
+
           // Handle different value types
           if (value === null || value === undefined) {
             return // Skip null/undefined values
@@ -150,11 +145,11 @@ class QueueDataService {
             storageConfig[envKey] = String(value)
           }
         })
-        
+
         queueVaultData.contextData.STORAGE_SYSTEMS[context.params.to] = storageConfig
       }
     }
-    
+
     // Handle list function with storage systems
     if (context.functionName === 'list' && context.params.from) {
       // Check if listing from a storage system (passed via additionalStorageData)

@@ -154,6 +154,66 @@
         }
       }
     },
+    "deploy": {
+      "description": "Deploy repository to multiple machines",
+      "name": "deploy",
+      "params": {
+        "dest": {
+          "help": "Name for the deployment file",
+          "label": "Destination Filename"
+        },
+        "machines": {
+          "help": "Select one or more target machines for deployment",
+          "label": "Target Machines"
+        },
+        "option": {
+          "help": "Options (e.g., override)",
+          "label": "Options"
+        },
+        "repo": {
+          "help": "Repository name(s), comma-separated",
+          "label": "Repository"
+        },
+        "state": {
+          "help": "Validate repository is online or offline before deploying",
+          "label": "Required State"
+        },
+        "checkpoint": {
+          "help": "Enable hot deploy mode with checkpoint (requires CRIU, zero downtime for online repos)",
+          "label": "Enable Checkpoint"
+        }
+      }
+    },
+    "backup": {
+      "description": "Backup repository to multiple storage systems",
+      "name": "backup",
+      "params": {
+        "dest": {
+          "help": "Name for the backup file",
+          "label": "Destination Filename"
+        },
+        "storages": {
+          "help": "Select one or more target storage systems for backup",
+          "label": "Target Storage Systems"
+        },
+        "option": {
+          "help": "Options (e.g., override)",
+          "label": "Options"
+        },
+        "repo": {
+          "help": "Repository name(s), comma-separated",
+          "label": "Repository"
+        },
+        "state": {
+          "help": "Validate repository is online or offline before backing up",
+          "label": "Required State"
+        },
+        "checkpoint": {
+          "help": "Enable hot backup mode with checkpoint (requires CRIU, zero downtime for online repos)",
+          "label": "Enable Checkpoint"
+        }
+      }
+    },
     "validate": {
       "description": "Validate repository by running prep, up, health checks, test, and down",
       "name": "validate",

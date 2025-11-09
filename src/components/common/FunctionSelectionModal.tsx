@@ -795,6 +795,56 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                               disabled={!functionParams['sourceType']}
                               data-testid={`function-modal-param-${paramName}`}
                             />
+                          ) : paramInfo.ui === 'machine-multiselect' ? (
+                            <Select
+                              mode="multiple"
+                              value={functionParams[paramName] || []}
+                              onChange={(value) => {
+                                setFunctionParams({
+                                  ...functionParams,
+                                  [paramName]: value
+                                })
+                              }}
+                              placeholder={t('machines:selectMachines')}
+                              options={
+                                machinesData?.map(machine => ({
+                                  value: machine.machineName,
+                                  label: machine.machineName === currentMachineName
+                                    ? `${machine.machineName} (${t('machines:currentMachine')})`
+                                    : machine.machineName
+                                })) || []
+                              }
+                              notFoundContent={t('machines:noMachinesFound')}
+                              showSearch
+                              filterOption={(input, option) =>
+                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                              }
+                              data-testid={`function-modal-param-${paramName}`}
+                            />
+                          ) : paramInfo.ui === 'storage-multiselect' ? (
+                            <Select
+                              mode="multiple"
+                              value={functionParams[paramName] || []}
+                              onChange={(value) => {
+                                setFunctionParams({
+                                  ...functionParams,
+                                  [paramName]: value
+                                })
+                              }}
+                              placeholder={t('resources:storage.selectStorageSystems')}
+                              options={
+                                storageData?.map(storage => ({
+                                  value: storage.storageName,
+                                  label: storage.storageName
+                                })) || []
+                              }
+                              notFoundContent={t('resources:storage.noStorageFound')}
+                              showSearch
+                              filterOption={(input, option) =>
+                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                              }
+                              data-testid={`function-modal-param-${paramName}`}
+                            />
                           ) : paramInfo.ui === 'template-selector' ? (
                             <TemplateSelector
                               value={selectedTemplates}
