@@ -163,47 +163,7 @@ const ResourcesPage: React.FC = () => {
   const handleTogglePanelCollapse = () => {
     setIsPanelCollapsed(!isPanelCollapsed)
   }
-  
-  // Handler for repository click from machine list
-  const handleMachineRepositoryClick = (machine: Machine, repository: any) => {
-    // Map repository data from MachineRepositoryList format to Repository type
-    const mappedRepository: Repository = {
-      repositoryName: repository.name,
-      repositoryGuid: repository.originalGuid || repository.name, // Use GUID if available
-      teamName: machine.teamName,
-      vaultVersion: 0, // This will be updated from API data
-      vaultContent: undefined,
-      grandGuid: undefined
-    }
-    
-    // Find the actual repository from the API data
-    const actualRepository = repositories.find(r => 
-      r.repositoryName === repository.name || 
-      r.repositoryGuid === repository.originalGuid || 
-      r.repositoryGuid === repository.name
-    )
-    
-    if (actualRepository) {
-      setSelectedRepositoryFromMachine(actualRepository)
-      setSelectedMachine(null) // Clear machine panel when repository is selected
-      setSelectedContainerFromMachine(null) // Clear container panel
-    } else {
-      // If we can't find the repository, still show what we have
-      setSelectedRepositoryFromMachine(mappedRepository)
-      setSelectedMachine(null) // Clear machine panel when repository is selected
-      setSelectedContainerFromMachine(null)
-    }
-    // Panel state (collapsed/expanded) remains unchanged
-  }
-  
-  // Handler for container click from machine list
-  const handleMachineContainerClick = (_machine: Machine, container: any) => {
-    setSelectedMachine(null) // Clear machine panel
-    setSelectedRepositoryFromMachine(null) // Clear repository panel
-    setSelectedContainerFromMachine(container)
-    // Panel state (collapsed/expanded) remains unchanged
-  }
-  
+
   // Machine mutations
   const createMachineMutation = useCreateMachine()
   const updateMachineNameMutation = useUpdateMachineName()

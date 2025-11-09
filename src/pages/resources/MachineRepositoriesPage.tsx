@@ -48,8 +48,9 @@ const MachineRepositoriesPage: React.FC = () => {
   const styles = useComponentStyles()
 
   // State for machine data - can come from route state or API
+  const routeState = location.state as { machine?: Machine } | null
   const [machine, setMachine] = useState<Machine | null>(
-    (location.state as any)?.machine || null
+    routeState?.machine || null
   )
 
   // State for selected resource (repository or container) and panel
@@ -76,7 +77,8 @@ const MachineRepositoriesPage: React.FC = () => {
     if (!machine && machines.length > 0 && machineName) {
       const foundMachine = machines.find(m => m.machineName === machineName)
       if (foundMachine) {
-        setMachine(foundMachine)
+        // Use a microtask to avoid synchronous setState during render
+        Promise.resolve().then(() => setMachine(foundMachine))
       }
     }
   }, [machines, machineName, machine])

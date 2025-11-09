@@ -65,6 +65,7 @@ interface GroupedRepository {
 
 // Extended Repository interface for table rendering
 interface RepositoryTableRow extends Repository {
+  key?: string
   _isGroupHeader?: boolean
   _groupData?: GroupedRepository
   _isTagRow?: boolean
@@ -179,7 +180,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const userEmail = useAppSelector((state) => state.auth.user?.email || '')
   const tableStyles = useTableStyles()
   const componentStyles = useComponentStyles()
-  const [repositories, setRepositories] = useState<Repository[]>([])
+  const [_repositories, setRepositories] = useState<Repository[]>([])
   const [systemContainers] = useState<any[]>([])
   const [_systemInfo, setSystemInfo] = useState<SystemInfo | null>(null)
   const [loading, setLoading] = useState(false)
@@ -1879,7 +1880,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
-      render: (name: string, record: RepositoryTableRow) => {
+      render: (_name: string, record: RepositoryTableRow) => {
         const isGroupHeader = record._isGroupHeader
         const groupData = record._groupData
         const isTagRow = record._isTagRow
@@ -1933,7 +1934,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             r.repositoryName === record.name &&
             (r.repoTag || 'latest') === (record.repoTag || 'latest')
           )
-          const isClone = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid
+          const _isClone = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid
           const isOriginal = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid === repositoryData.repositoryGuid
 
           return (
