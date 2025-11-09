@@ -23,10 +23,13 @@ import {
   WifiOutlined,
   FolderOutlined,
   PlayCircleOutlined,
-  PauseCircleOutlined
+  PauseCircleOutlined,
+  ContainerOutlined
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/context/ThemeContext'
+import { getPanelWrapperStyles, getStickyHeaderStyles, getContentWrapperStyles } from '@/utils/detailPanelStyles'
+import { DETAIL_PANEL_TEXT, DETAIL_PANEL_LAYOUT } from '@/styles/detailPanelStyles'
 
 const { Text, Title } = Typography
 
@@ -139,36 +142,11 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
       <div
         className="container-detail-panel"
         data-testid="container-detail-panel"
-        style={splitView ? {
-          height: '100%',
-          backgroundColor: theme === 'dark' ? '#141414' : '#fff',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-        } : {
-          position: 'fixed',
-          top: 0,
-          right: visible ? 0 : '-520px',
-          bottom: 0,
-          width: '520px',
-          maxWidth: '100vw',
-          backgroundColor: theme === 'dark' ? '#141414' : '#fff',
-          boxShadow: '-2px 0 8px rgba(0, 0, 0, 0.15)',
-          zIndex: 1000,
-          transition: 'right 0.3s ease-in-out',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-        }}
+        style={getPanelWrapperStyles({ splitView, visible, theme })}
       >
         {/* Header */}
         <div
-          style={{
-            padding: '16px 24px',
-            borderBottom: `1px solid ${theme === 'dark' ? '#303030' : '#f0f0f0'}`,
-            position: 'sticky',
-            top: 0,
-            backgroundColor: theme === 'dark' ? '#141414' : '#fff',
-            zIndex: splitView ? 0 : 1,
-          }}
+          style={getStickyHeaderStyles(theme)}
           data-testid="container-detail-header"
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -206,36 +184,42 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
         </div>
 
         {/* Content */}
-        <div style={{ padding: '24px' }} data-testid="container-detail-content">
+        <div style={getContentWrapperStyles()} data-testid="container-detail-content">
 
         {container && (
           <>
+            {/* Container Information Section */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }} data-testid="container-detail-info-section">
+              {isPlugin ? (
+                <ApiOutlined style={{ fontSize: 20, color: '#1890ff' }} />
+              ) : (
+                <ContainerOutlined style={{ fontSize: 20, color: '#1890ff' }} />
+              )}
+              <Title level={5} style={{ margin: 0 }}>{t('resources:containers.containerInfo')}</Title>
+            </div>
+
             {/* Basic Information */}
             <Card size="small" style={{ ...componentStyles.card, marginBottom: 16 }} data-testid="container-detail-basic-info">
               <Row gutter={[16, 16]} style={componentStyles.marginBottom.lg}>
                 <Col span={24}>
                   <Space direction="vertical" style={{ width: '100%' }} size="small">
-                    <div>
-                      <Text type="secondary">{t('resources:containers.containerID')}:</Text>
-                      <br />
-                      <Text copyable style={{ fontFamily: 'monospace', fontSize: 12 }} data-testid="container-detail-id">
+                    <div style={DETAIL_PANEL_LAYOUT.inlineField}>
+                      <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>{t('resources:containers.containerID')}:</Text>
+                      <Text copyable style={DETAIL_PANEL_TEXT.monospace} data-testid="container-detail-id">
                         {container.id}
                       </Text>
                     </div>
-                    <div>
-                      <Text type="secondary">{t('resources:containers.image')}:</Text>
-                      <br />
-                      <Text style={{ fontSize: 12, wordBreak: 'break-all' }} data-testid="container-detail-image">{container.image}</Text>
+                    <div style={DETAIL_PANEL_LAYOUT.inlineField}>
+                      <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>{t('resources:containers.image')}:</Text>
+                      <Text style={DETAIL_PANEL_TEXT.value} data-testid="container-detail-image">{container.image}</Text>
                     </div>
-                    <div>
-                      <Text type="secondary">{t('resources:containers.status')}:</Text>
-                      <br />
-                      <Text style={{ fontSize: 12 }} data-testid="container-detail-status">{container.status}</Text>
+                    <div style={DETAIL_PANEL_LAYOUT.inlineField}>
+                      <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>{t('resources:containers.status')}:</Text>
+                      <Text style={DETAIL_PANEL_TEXT.value} data-testid="container-detail-status">{container.status}</Text>
                     </div>
-                    <div>
-                      <Text type="secondary">{t('resources:containers.created')}:</Text>
-                      <br />
-                      <Text style={{ fontSize: 12 }} data-testid="container-detail-created">{container.created}</Text>
+                    <div style={DETAIL_PANEL_LAYOUT.inlineField}>
+                      <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>{t('resources:containers.created')}:</Text>
+                      <Text style={DETAIL_PANEL_TEXT.value} data-testid="container-detail-created">{container.created}</Text>
                     </div>
                   </Space>
                 </Col>
@@ -245,7 +229,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             {/* Resource Usage */}
             <Divider style={{ margin: '24px 0' }}>
               <Space>
-                <CloudServerOutlined />
+                <CloudServerOutlined style={{ fontSize: 16 }} />
                 {t('resources:containers.resourceUsage')}
               </Space>
             </Divider>
@@ -316,7 +300,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             {/* Configuration */}
             <Divider style={{ margin: '24px 0' }}>
               <Space>
-                <CodeOutlined />
+                <CodeOutlined style={{ fontSize: 16 }} />
                 {t('resources:containers.configuration')}
               </Space>
             </Divider>
@@ -356,23 +340,20 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
                 )}
 
                 {/* Networks */}
-                <div>
-                  <Text type="secondary">{t('resources:containers.networks')}:</Text>
-                  <br />
+                <div style={DETAIL_PANEL_LAYOUT.inlineField}>
+                  <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>{t('resources:containers.networks')}:</Text>
                   <Tag color="purple" data-testid="container-detail-network-tag">{container.networks}</Tag>
                 </div>
 
                 {/* Size */}
-                <div>
-                  <Text type="secondary">{t('resources:containers.size')}:</Text>
-                  <br />
-                  <Text style={{ fontSize: 12 }} data-testid="container-detail-size">{container.size}</Text>
+                <div style={DETAIL_PANEL_LAYOUT.inlineField}>
+                  <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>{t('resources:containers.size')}:</Text>
+                  <Text style={DETAIL_PANEL_TEXT.value} data-testid="container-detail-size">{container.size}</Text>
                 </div>
 
                 {/* PIDs */}
-                <div>
-                  <Text type="secondary">{t('resources:containers.processes')}:</Text>
-                  <br />
+                <div style={DETAIL_PANEL_LAYOUT.inlineField}>
+                  <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>{t('resources:containers.processes')}:</Text>
                   <Tag data-testid="container-detail-pids">{resourceUsage?.pids || 0} {t('resources:containers.pids')}</Tag>
                 </div>
               </Space>
@@ -381,7 +362,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
             {/* Environment */}
             <Divider style={{ margin: '24px 0' }}>
               <Space>
-                <FolderOutlined />
+                <FolderOutlined style={{ fontSize: 16 }} />
                 {t('resources:containers.environment')}
               </Space>
             </Divider>
