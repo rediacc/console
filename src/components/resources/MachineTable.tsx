@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Table,
@@ -38,7 +39,6 @@ import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { usePingFunction } from '@/services/pingService';
 import { showMessage } from '@/utils/messages';
 import { LocalActionsMenu } from './LocalActionsMenu';
-import { MachineRepositoryList } from './MachineRepositoryList';
 import { useLocalizedFunctions } from '@/services/functionsService';
 import { useRepositories } from '@/api/queries/repositories';
 import { RemoteFileBrowserModal } from './RemoteFileBrowserModal';
@@ -64,14 +64,8 @@ interface MachineTableProps {
   onCreateRepository?: (machine: Machine, repositoryGuid?: string) => void;
   enabled?: boolean;
   onQueueItemCreated?: (taskId: string, machineName: string) => void;
-  expandedRowKeys?: string[];
-  onExpandedRowsChange?: (keys: string[]) => void;
-  refreshKeys?: Record<string, number>;
   onRowClick?: (machine: Machine) => void;
   selectedMachine?: Machine | null;
-  onMachineRepositoryClick?: (machine: Machine, repository: any) => void;
-  onMachineContainerClick?: (machine: Machine, container: any) => void;
-  onRefreshMachines?: () => Promise<any>;
 }
 
 export const MachineTable: React.FC<MachineTableProps> = ({
@@ -84,16 +78,11 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   onCreateRepository,
   enabled = true,
   onQueueItemCreated,
-  expandedRowKeys: externalExpandedRowKeys,
-  onExpandedRowsChange: externalOnExpandedRowsChange,
-  refreshKeys: externalRefreshKeys,
   onRowClick,
   selectedMachine: externalSelectedMachine,
-  onMachineRepositoryClick,
-  onMachineContainerClick,
-  onRefreshMachines,
 }) => {
   const { t } = useTranslation(['machines', 'common', 'functions', 'resources']);
+  const navigate = useNavigate();
   const uiMode = useSelector((state: RootState) => state.ui.uiMode);
   const isExpertMode = uiMode === 'expert';
   const { executePingForMachineAndWait } = usePingFunction();
@@ -104,21 +93,9 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
   // State management
   const [groupBy, setGroupBy] = useState<'machine' | 'bridge' | 'team' | 'region' | 'repository' | 'status' | 'grand'>('machine');
-  const [internalExpandedRowKeys, setInternalExpandedRowKeys] = useState<string[]>([]);
-  const [expansionTimestamps, setExpansionTimestamps] = useState<Record<string, number>>({});
-  const [internalRefreshKeys, setInternalRefreshKeys] = useState<Record<string, number>>({});
-  const [showLoadingIndicator, setShowLoadingIndicator] = useState(false);
-  const [loadingTimer, setLoadingTimer] = useState<NodeJS.Timeout | null>(null);
-  const [expandingRowKey, setExpandingRowKey] = useState<string | null>(null);
-  const [_isRefreshing, setIsRefreshing] = useState(false);
 
   // Bulk selection state
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
-
-  // Use external or internal state
-  const expandedRowKeys = externalExpandedRowKeys !== undefined ? externalExpandedRowKeys : internalExpandedRowKeys;
-  const setExpandedRowKeys = externalOnExpandedRowsChange || setInternalExpandedRowKeys;
-  const refreshKeys = externalRefreshKeys !== undefined ? externalRefreshKeys : internalRefreshKeys;
   const [auditTraceModal, setAuditTraceModal] = useState<{
     open: boolean
     entityType: string | null
@@ -142,15 +119,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   const [vaultPanelVisible, setVaultPanelVisible] = useState(false);
-
-  // Clean up timer on unmount
-  React.useEffect(() => {
-    return () => {
-      if (loadingTimer) {
-        clearTimeout(loadingTimer);
-      }
-    };
-  }, [loadingTimer]);
 
   // Reset to 'machine' view when entering Simple mode
   React.useEffect(() => {
@@ -273,20 +241,21 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         ellipsis: true,
         sorter: (a: Machine, b: Machine) => a.machineName.localeCompare(b.machineName),
         render: (name: string, record: Machine) => {
-          const isExpanded = expandedRowKeys.includes(record.machineName);
           return (
             <Space>
-              <span 
-                style={{ 
-                  display: 'inline-block',
-                  width: 12,
-                  transition: 'transform 0.3s ease',
-                  transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'
-                }}
-                data-testid={`machine-expand-${record.machineName}`}
-              >
-                <RightOutlined style={{ fontSize: 12, color: '#999' }} />
-              </span>
+              <Tooltip title={t('machines:viewRepositories')}>
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<RightOutlined />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/machines/${record.machineName}/repositories`, { state: { machine: record } });
+                  }}
+                  style={{ padding: 0, minWidth: 'auto', height: 'auto' }}
+                  data-testid={`machine-goto-repos-${record.machineName}`}
+                />
+              </Tooltip>
               <DesktopOutlined style={{ color: '#556b2f' }} />
               <strong>{name}</strong>
             </Space>
@@ -390,6 +359,16 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                 aria-label={t('common:actions.edit')}
               />
             </Tooltip>
+            <Tooltip title={t('machines:viewRepositories')}>
+              <Button
+                type="primary"
+                size="small"
+                icon={<InboxOutlined />}
+                onClick={() => navigate(`/machines/${record.machineName}/repositories`, { state: { machine: record } })}
+                data-testid={`machine-view-repositories-${record.machineName}`}
+                aria-label={t('machines:viewRepositories')}
+              />
+            </Tooltip>
             <Dropdown
               data-testid={`machine-dropdown-${record.machineName}`}
               menu={{
@@ -429,13 +408,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                         onClick: () => {
                           if (onFunctionsMachine && func?.name) {
                             onFunctionsMachine(record, func.name);
-                            // Mark this machine for refresh when action completes
-                            if (externalRefreshKeys === undefined) {
-                              setInternalRefreshKeys(prev => ({
-                                ...prev,
-                                [record.machineName]: Date.now()
-                              }))
-                            }
                           }
                         },
                         'data-testid': `machine-function-${func?.name || 'unknown'}-${record.machineName}`
@@ -450,13 +422,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                         onClick: () => {
                           if (onFunctionsMachine) {
                             onFunctionsMachine(record);
-                            // Mark this machine for refresh when action completes
-                            if (externalRefreshKeys === undefined) {
-                              setInternalRefreshKeys(prev => ({
-                                ...prev,
-                                [record.machineName]: Date.now()
-                              }))
-                            }
                           }
                         },
                         'data-testid': `machine-advanced-${record.machineName}`
@@ -549,7 +514,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
     }
 
     return baseColumns;
-  }, [isExpertMode, uiMode, showActions, t, handleDelete, onEditMachine, onFunctionsMachine, onCreateRepository, executePingForMachineAndWait, machineFunctions, expandedRowKeys, externalRefreshKeys, setInternalRefreshKeys, setAssignClusterModal, setAuditTraceModal, setRemoteFileBrowserModal, onRowClick]);
+  }, [isExpertMode, uiMode, showActions, t, handleDelete, onEditMachine, onFunctionsMachine, onCreateRepository, executePingForMachineAndWait, machineFunctions, setAssignClusterModal, setAuditTraceModal, setRemoteFileBrowserModal, onRowClick, navigate]);
 
   // Row selection configuration - only show checkboxes if assignToCluster feature is enabled
   const rowSelection = (isExpertMode && featureFlags.isEnabled('assignToCluster')) ? {
@@ -917,34 +882,52 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             }}
           >
             {machines.map((machine, index) => (
-              <div 
-                key={machine.machineName} 
-                style={{ 
+              <div
+                key={machine.machineName}
+                style={{
                   borderBottom: index < machines.length - 1 ? `1px solid ${getGroupBorderColor(groupIndex)}` : 'none',
-                  backgroundColor: index % 2 === 0 ? 'transparent' : 'rgba(0, 0, 0, 0.01)'
+                  backgroundColor: index % 2 === 0 ? 'transparent' : 'rgba(0, 0, 0, 0.01)',
+                  padding: '16px 24px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  transition: 'background-color 0.2s',
+                  cursor: 'pointer'
+                }}
+                onClick={() => navigate(`/machines/${machine.machineName}/repositories`, { state: { machine } })}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(85, 107, 47, 0.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'transparent' : 'rgba(0, 0, 0, 0.01)';
                 }}
               >
-                <MachineRepositoryList
-                  machine={machine}
-                  key={`${machine.machineName}-${expansionTimestamps[machine.machineName] || 0}-${refreshKeys[machine.machineName] || 0}`}
-                  refreshKey={refreshKeys[machine.machineName]}
-                  onActionComplete={() => {
-                    // Refresh this specific machine's repository list
-                    if (externalRefreshKeys === undefined) {
-                      setInternalRefreshKeys(prev => ({
-                        ...prev,
-                        [machine.machineName]: Date.now()
-                      }))
-                    }
-                  }}
-                  onRepositoryClick={(repository) => onMachineRepositoryClick?.(machine, repository)}
-                  onContainerClick={(container) => onMachineContainerClick?.(machine, container)}
-                  onCreateRepository={onCreateRepository}
-                  hideSystemInfo={true}
-                  isLoading={showLoadingIndicator && expandingRowKey === machine.machineName}
-                  onRefreshMachines={onRefreshMachines}
-                  onQueueItemCreated={onQueueItemCreated}
-                />
+                <Space size="large">
+                  <DesktopOutlined style={{ fontSize: 20, color: '#556b2f' }} />
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>
+                      {machine.machineName}
+                    </div>
+                    <Space size="small">
+                      <Tag color="#8FBC8F">{machine.teamName}</Tag>
+                      <Tag color="green">{machine.bridgeName}</Tag>
+                      {machine.regionName && <Tag color="purple">{machine.regionName}</Tag>}
+                    </Space>
+                  </div>
+                </Space>
+                <Tooltip title={t('machines:viewRepositories')}>
+                  <Button
+                    type="primary"
+                    icon={<RightOutlined />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/machines/${machine.machineName}/repositories`, { state: { machine } });
+                    }}
+                    style={{ ...styles.touchTargetSmall }}
+                  >
+                    {t('machines:viewRepositories')}
+                  </Button>
+                </Tooltip>
               </div>
             ))}
           </Card>
@@ -983,105 +966,29 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               'data-testid': `machine-row-${record.machineName}`,
               onClick: (e) => {
                 const target = e.target as HTMLElement;
-                // Don't expand if clicking on buttons or dropdowns
+                // Don't trigger row click if clicking on buttons or dropdowns
                 if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
                   return;
                 }
-                
-                // Toggle expansion
-                const isExpanded = expandedRowKeys.includes(record.machineName);
-                if (isExpanded) {
-                  setExpandedRowKeys(expandedRowKeys.filter(key => key !== record.machineName));
-                } else {
-                  setExpandedRowKeys([...expandedRowKeys, record.machineName]);
-                  // Track expansion timestamp
-                  setExpansionTimestamps(prev => ({
-                    ...prev,
-                    [record.machineName]: Date.now()
-                  }));
-                  
-                  // Trigger refresh when expanding
-                  if (onRefreshMachines) {
-                    setExpandingRowKey(record.machineName);
-                    setIsRefreshing(true);
-                    
-                    // Start 1-second timer for loading indicator
-                    const timer = setTimeout(() => {
-                      setShowLoadingIndicator(true);
-                    }, 1000);
-                    setLoadingTimer(timer);
-                    
-                    // Trigger refresh
-                    onRefreshMachines().finally(() => {
-                      if (loadingTimer) {
-                        clearTimeout(loadingTimer);
-                      }
-                      setIsRefreshing(false);
-                      setShowLoadingIndicator(false);
-                      setExpandingRowKey(null);
-                      setLoadingTimer(null);
-                    });
-                  }
-                }
-                
-                // Also call the row click handler if provided
+
+                // Call the row click handler if provided
                 if (onRowClick) {
                   handleRowClick(record);
                 }
               },
-              style: { 
-                cursor: 'pointer',
+              style: {
+                cursor: onRowClick ? 'pointer' : 'default',
                 transition: 'background-color 0.3s ease'
               },
               onMouseEnter: (e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.02)';
+                if (onRowClick) {
+                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.02)';
+                }
               },
               onMouseLeave: (e) => {
                 e.currentTarget.style.backgroundColor = '';
               }
             })}
-            expandable={{
-              expandedRowRender: (record) => (
-                <MachineRepositoryList
-                  machine={record}
-                  key={`${record.machineName}-${expansionTimestamps[record.machineName] || 0}-${refreshKeys[record.machineName] || 0}`}
-                  refreshKey={refreshKeys[record.machineName]}
-                  onActionComplete={() => {
-                    // Refresh this specific machine's repository list
-                    if (externalRefreshKeys === undefined) {
-                      setInternalRefreshKeys(prev => ({
-                        ...prev,
-                        [record.machineName]: Date.now()
-                      }))
-                    }
-                  }}
-                  onRepositoryClick={(repository) => onMachineRepositoryClick?.(record, repository)}
-                  onContainerClick={(container) => onMachineContainerClick?.(record, container)}
-                  onCreateRepository={onCreateRepository}
-                  isLoading={showLoadingIndicator && expandingRowKey === record.machineName}
-                  onRefreshMachines={onRefreshMachines}
-                  onQueueItemCreated={onQueueItemCreated}
-                />
-              ),
-              rowExpandable: () => true,
-              expandedRowKeys,
-              onExpandedRowsChange: (keys) => {
-                const newKeys = keys as string[];
-                setExpandedRowKeys(newKeys);
-                
-                // Track expansion timestamp for newly expanded rows
-                const newTimestamps = { ...expansionTimestamps };
-                newKeys.forEach(key => {
-                  if (!expandedRowKeys.includes(key)) {
-                    // This is a newly expanded row
-                    newTimestamps[key] = Date.now();
-                  }
-                });
-                setExpansionTimestamps(newTimestamps);
-              },
-              expandIcon: () => null, // Hide default expand icon
-              expandRowByClick: false // We handle this manually
-            }}
             sticky
           />
         </div>
