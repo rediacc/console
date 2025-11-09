@@ -1934,7 +1934,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             r.repositoryName === record.name &&
             (r.repoTag || 'latest') === (record.repoTag || 'latest')
           )
-          const _isClone = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid
           const isOriginal = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid === repositoryData.repositoryGuid
 
           return (
