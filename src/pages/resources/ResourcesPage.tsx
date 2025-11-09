@@ -155,8 +155,8 @@ const ResourcesPage: React.FC = () => {
     if (machine) {
       setSelectedRepositoryFromMachine(null) // Clear repository panel
       setSelectedContainerFromMachine(null) // Clear container panel
+      setIsPanelCollapsed(false) // Auto-expand panel when machine is selected
     }
-    // Panel state (collapsed/expanded) remains unchanged
   }
 
   // Handler to toggle panel collapse state
@@ -1105,11 +1105,13 @@ const ResourcesPage: React.FC = () => {
               handleMachineSelect(null)
               setSelectedRepositoryFromMachine(resource as Repository)
               setSelectedContainerFromMachine(null)
+              setIsPanelCollapsed(false) // Auto-expand panel when repository is selected
             } else if (resource && 'id' in resource && 'state' in resource) {
               // Container
               handleMachineSelect(null)
               setSelectedRepositoryFromMachine(null)
               setSelectedContainerFromMachine(resource)
+              setIsPanelCollapsed(false) // Auto-expand panel when container is selected
             } else {
               handleMachineSelect(null)
               setSelectedRepositoryFromMachine(null)

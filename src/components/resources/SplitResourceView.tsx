@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Machine, Repository } from '@/types'
 import { MachineTable } from './MachineTable'
 import { UnifiedDetailPanel } from './UnifiedDetailPanel'
+import { usePanelWidth } from '@/hooks/usePanelWidth'
 
 interface ContainerData {
   id: string
@@ -62,26 +63,36 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
     isPanelCollapsed = true,
     onTogglePanelCollapse
   } = props
-  
-  // Calculate 25% of window width for the panel
-  const calculatePanelWidth = () => {
-    const windowWidth = window.innerWidth
-    const panelWidth = Math.floor(windowWidth * 0.25)
-    // Ensure minimum width of 300px and maximum of 600px
-    return Math.max(300, Math.min(600, panelWidth))
-  }
-  
-  const [splitWidth, setSplitWidth] = useState(calculatePanelWidth)
 
-  // Update panel width on window resize
+  // Use shared panel width hook (33% of window, min 300px, max 700px)
+  const panelWidth = usePanelWidth()
+  const [splitWidth, setSplitWidth] = useState(panelWidth)
+  const [backdropVisible, setBackdropVisible] = useState(false)
+  const [shouldRenderBackdrop, setShouldRenderBackdrop] = useState(false)
+
+  // Update splitWidth when window resizes (to keep within bounds)
   useEffect(() => {
-    const handleResize = () => {
-      setSplitWidth(calculatePanelWidth())
-    }
+    setSplitWidth(panelWidth)
+  }, [panelWidth])
 
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+  // Manage backdrop fade in/out
+  useEffect(() => {
+    if (selectedResource) {
+      // Mount backdrop and trigger fade-in
+      setShouldRenderBackdrop(true)
+      requestAnimationFrame(() => {
+        setBackdropVisible(true)
+      })
+    } else {
+      // Trigger fade-out
+      setBackdropVisible(false)
+      // Unmount backdrop after fade-out animation completes
+      const timer = setTimeout(() => {
+        setShouldRenderBackdrop(false)
+      }, 250) // Match transition duration
+      return () => clearTimeout(timer)
+    }
+  }, [selectedResource])
 
   const handleMachineSelect = (machine: Machine) => {
     onResourceSelect(machine)
@@ -98,7 +109,7 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
   // For machine type, render machine table and detail panel
   if (type === 'machine') {
     return (
-      <div 
+      <div
         style={{
           display: 'flex',
           height: '100%',
@@ -125,6 +136,26 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
             selectedMachine={selectedResource as Machine}
           />
         </div>
+
+        {/* Backdrop - appears when panel is open, covers full viewport */}
+        {shouldRenderBackdrop && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: actualPanelWidth,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.4)',
+              opacity: backdropVisible ? 1 : 0,
+              transition: 'opacity 250ms ease-in-out, right 0.3s ease-in-out',
+              zIndex: 1000,
+              pointerEvents: backdropVisible ? 'auto' : 'none',
+            }}
+            onClick={handlePanelClose}
+            data-testid="split-resource-view-backdrop"
+          />
+        )}
 
         {/* Right Panel - Detail Panel */}
         {selectedResource && (

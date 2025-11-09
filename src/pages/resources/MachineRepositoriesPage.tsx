@@ -4,6 +4,7 @@ import { Card, Button, Space, Tag, Typography, Spin, Alert, Tooltip } from 'antd
 import { DoubleLeftOutlined, ReloadOutlined, DesktopOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
+import { usePanelWidth } from '@/hooks/usePanelWidth'
 import { useMachines } from '@/api/queries/machines'
 import { useRepositories } from '@/api/queries/repositories'
 import { MachineRepositoryList } from '@/components/resources/MachineRepositoryList'
@@ -54,10 +55,15 @@ const MachineRepositoriesPage: React.FC = () => {
     routeState?.machine || null
   )
 
+  // Use shared panel width hook (33% of window, min 300px, max 700px)
+  const panelWidth = usePanelWidth()
+
   // State for selected resource (repository or container) and panel
   const [selectedResource, setSelectedResource] = useState<Repository | ContainerData | null>(null)
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(true)
-  const [splitWidth, setSplitWidth] = useState(400)
+  const [splitWidth, setSplitWidth] = useState(panelWidth)
+  const [backdropVisible, setBackdropVisible] = useState(false)
+  const [shouldRenderBackdrop, setShouldRenderBackdrop] = useState(false)
 
   // Refresh key for forcing MachineRepositoryList updates
   const [refreshKey, setRefreshKey] = useState(0)
@@ -137,28 +143,36 @@ const MachineRepositoriesPage: React.FC = () => {
 
   const handlePanelClose = () => {
     setSelectedResource(null)
-    setIsPanelCollapsed(true)
+    // Panel closes completely, no need to set collapsed state
   }
 
   const handleTogglePanelCollapse = () => {
     setIsPanelCollapsed(!isPanelCollapsed)
   }
 
-  // Calculate panel width (25% of window width, min 300px, max 600px)
-  const calculatePanelWidth = () => {
-    const windowWidth = window.innerWidth
-    const panelWidth = Math.floor(windowWidth * 0.25)
-    return Math.max(300, Math.min(600, panelWidth))
-  }
-
+  // Update splitWidth when window resizes (to keep within bounds)
   useEffect(() => {
-    const handleResize = () => {
-      setSplitWidth(calculatePanelWidth())
-    }
+    setSplitWidth(panelWidth)
+  }, [panelWidth])
 
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+  // Manage backdrop fade in/out
+  useEffect(() => {
+    if (selectedResource) {
+      // Mount backdrop and trigger fade-in
+      setShouldRenderBackdrop(true)
+      requestAnimationFrame(() => {
+        setBackdropVisible(true)
+      })
+    } else {
+      // Trigger fade-out
+      setBackdropVisible(false)
+      // Unmount backdrop after fade-out animation completes
+      const timer = setTimeout(() => {
+        setShouldRenderBackdrop(false)
+      }, 250) // Match transition duration
+      return () => clearTimeout(timer)
+    }
+  }, [selectedResource])
 
   const COLLAPSED_PANEL_WIDTH = 50
   const actualPanelWidth = isPanelCollapsed ? COLLAPSED_PANEL_WIDTH : splitWidth
@@ -287,6 +301,26 @@ const MachineRepositoriesPage: React.FC = () => {
             )}
           </div>
 
+          {/* Backdrop - appears when panel is open, covers full viewport */}
+          {shouldRenderBackdrop && (
+            <div
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: actualPanelWidth,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                opacity: backdropVisible ? 1 : 0,
+                transition: 'opacity 250ms ease-in-out, right 0.3s ease-in-out',
+                zIndex: 1000,
+                pointerEvents: backdropVisible ? 'auto' : 'none',
+              }}
+              onClick={handlePanelClose}
+              data-testid="machine-repositories-backdrop"
+            />
+          )}
+
           {/* Right Panel - Detail Panel */}
           {selectedResource && (
             <UnifiedDetailPanel
@@ -313,7 +347,6 @@ const MachineRepositoriesPage: React.FC = () => {
           // Refresh the page after task completion
           handleRefresh()
         }}
-        machineName={queueTraceModal.machineName}
       />
     </div>
   )

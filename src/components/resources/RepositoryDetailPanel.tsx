@@ -10,15 +10,12 @@ import {
   Button,
   Empty,
   Divider,
-  Statistic,
   Alert
 } from 'antd'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import {
   DoubleRightOutlined,
   DatabaseOutlined,
-  ClockCircleOutlined,
-  HddOutlined,
   InfoCircleOutlined,
   AppstoreOutlined,
   FieldTimeOutlined,
@@ -33,6 +30,9 @@ import { useTranslation } from 'react-i18next'
 import { Repository } from '@/api/queries/repositories'
 import { useTheme } from '@/context/ThemeContext'
 import { useMachines } from '@/api/queries/machines'
+import { getPanelWrapperStyles, getStickyHeaderStyles, getContentWrapperStyles } from '@/utils/detailPanelStyles'
+import { abbreviatePath } from '@/utils/pathUtils'
+import { DETAIL_PANEL_TEXT, DETAIL_PANEL_LAYOUT } from '@/styles/detailPanelStyles'
 
 const { Text, Title } = Typography
 
@@ -80,11 +80,11 @@ interface ServiceData {
   restarts?: number
 }
 
-export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({ 
-  repository, 
-  visible, 
+export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
+  repository,
+  visible,
   onClose,
-  splitView = false 
+  splitView = false
 }) => {
   const { t } = useTranslation(['resources', 'common', 'machines'])
   const { theme } = useTheme()
@@ -200,36 +200,11 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
       <div
         className="repository-detail-panel"
         data-testid="repo-detail-panel"
-        style={splitView ? {
-          height: '100%',
-          backgroundColor: theme === 'dark' ? '#141414' : '#fff',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-        } : {
-          position: 'fixed',
-          top: 0,
-          right: visible ? 0 : '-520px',
-          bottom: 0,
-          width: '520px',
-          maxWidth: '100vw',
-          backgroundColor: theme === 'dark' ? '#141414' : '#fff',
-          boxShadow: '-2px 0 8px rgba(0, 0, 0, 0.15)',
-          zIndex: 1000,
-          transition: 'right 0.3s ease-in-out',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-        }}
+        style={getPanelWrapperStyles({ splitView, visible, theme })}
       >
         {/* Header */}
-        <div 
-          style={{ 
-            padding: '16px 24px',
-            borderBottom: `1px solid ${theme === 'dark' ? '#303030' : '#f0f0f0'}`,
-            position: 'sticky',
-            top: 0,
-            backgroundColor: theme === 'dark' ? '#141414' : '#fff',
-            zIndex: splitView ? 0 : 1,
-          }}
+        <div
+          style={getStickyHeaderStyles(theme)}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Space>
@@ -255,7 +230,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
         </div>
 
         {/* Content */}
-        <div style={{ padding: '24px' }} data-testid="repo-detail-content">
+        <div style={getContentWrapperStyles()} data-testid="repo-detail-content">
           {!repositoryData ? (
             <Empty 
               description={t('resources:repositories.noRepositoryData')}
@@ -348,31 +323,25 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
 
               <Divider style={{ margin: '24px 0' }} data-testid="repo-detail-storage-divider">
                 <Space>
-                  <InfoCircleOutlined />
+                  <InfoCircleOutlined style={{ fontSize: 16 }} />
                   {t('resources:repositories.storageInfo')}
                 </Space>
               </Divider>
 
               {/* Storage Information */}
               <Row gutter={[16, 16]} style={componentStyles.marginBottom.lg}>
-                <Col span={12}>
-                  <Card size="small" style={{ height: '100%' }} data-testid={`repo-detail-image-size-card-${repository.repositoryName}`}>
-                    <Statistic
-                      title={t('resources:repositories.imageSize')}
-                      value={repositoryData.repositoryData.size_human}
-                      prefix={<HddOutlined />}
-                      valueStyle={{ fontSize: 16 }}
-                    />
-                  </Card>
-                </Col>
-                <Col span={12}>
-                  <Card size="small" style={{ height: '100%' }} data-testid={`repo-detail-last-modified-card-${repository.repositoryName}`}>
-                    <Statistic
-                      title={t('resources:repositories.lastModified')}
-                      value={repositoryData.repositoryData.modified_human}
-                      prefix={<ClockCircleOutlined />}
-                      valueStyle={{ fontSize: 16 }}
-                    />
+                <Col span={24}>
+                  <Card size="small" data-testid={`repo-detail-storage-info-card-${repository.repositoryName}`}>
+                    <Space direction="vertical" style={{ width: '100%' }} size="small">
+                      <div style={DETAIL_PANEL_LAYOUT.inlineField}>
+                        <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>{t('resources:repositories.imageSize')}:</Text>
+                        <Text style={DETAIL_PANEL_TEXT.value}>{repositoryData.repositoryData.size_human}</Text>
+                      </div>
+                      <div style={DETAIL_PANEL_LAYOUT.inlineField}>
+                        <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>{t('resources:repositories.lastModified')}:</Text>
+                        <Text style={DETAIL_PANEL_TEXT.value}>{repositoryData.repositoryData.modified_human}</Text>
+                      </div>
+                    </Space>
                   </Card>
                 </Col>
                 
@@ -407,24 +376,32 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
               {/* File Paths Section */}
               <Divider style={{ margin: '24px 0' }} data-testid="repo-detail-file-paths-divider">
                 <Space>
-                  <FolderOutlined />
+                  <FolderOutlined style={{ fontSize: 16 }} />
                   {t('resources:repositories.filePaths')}
                 </Space>
               </Divider>
 
               <Card size="small" style={componentStyles.card} data-testid={`repo-detail-file-paths-card-${repository.repositoryName}`}>
                 <Space direction="vertical" style={{ width: '100%' }} size="small">
-                  <div>
-                    <Text type="secondary">{t('resources:repositories.imagePath')}:</Text>
-                    <Text copyable style={{ display: 'block', fontSize: 12, wordBreak: 'break-all', marginTop: 4 }} data-testid={`repo-detail-image-path-${repository.repositoryName}`}>
-                      {repositoryData.repositoryData.image_path}
+                  <div style={DETAIL_PANEL_LAYOUT.inlineField}>
+                    <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>{t('resources:repositories.imagePath')}:</Text>
+                    <Text
+                      copyable={{ text: repositoryData.repositoryData.image_path }}
+                      style={DETAIL_PANEL_TEXT.monospace}
+                      data-testid={`repo-detail-image-path-${repository.repositoryName}`}
+                    >
+                      {abbreviatePath(repositoryData.repositoryData.image_path, 45)}
                     </Text>
                   </div>
                   {repositoryData.repositoryData.mount_path && (
-                    <div>
-                      <Text type="secondary">{t('resources:repositories.mountPath')}:</Text>
-                      <Text copyable style={{ display: 'block', fontSize: 12, wordBreak: 'break-all', marginTop: 4 }} data-testid={`repo-detail-mount-path-${repository.repositoryName}`}>
-                        {repositoryData.repositoryData.mount_path}
+                    <div style={DETAIL_PANEL_LAYOUT.inlineField}>
+                      <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>{t('resources:repositories.mountPath')}:</Text>
+                      <Text
+                        copyable={{ text: repositoryData.repositoryData.mount_path }}
+                        style={DETAIL_PANEL_TEXT.monospace}
+                        data-testid={`repo-detail-mount-path-${repository.repositoryName}`}
+                      >
+                        {abbreviatePath(repositoryData.repositoryData.mount_path, 45)}
                       </Text>
                     </div>
                   )}
@@ -436,34 +413,30 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
                 <>
                   <Divider style={{ margin: '24px 0' }} data-testid="repo-detail-activity-divider">
                     <Space>
-                      <FieldTimeOutlined />
+                      <FieldTimeOutlined style={{ fontSize: 16 }} />
                       {t('resources:repositories.activity')}
                     </Space>
                   </Divider>
 
                   <Row gutter={[16, 16]} style={componentStyles.marginBottom.lg}>
-                    {repositoryData.repositoryData.docker_running && (
-                      <Col span={12}>
-                        <Card size="small" style={{ height: '100%' }} data-testid={`repo-detail-containers-card-${repository.repositoryName}`}>
-                          <Statistic
-                            title={t('resources:repositories.containers')}
-                            value={repositoryData.repositoryData.container_count}
-                            valueStyle={{ color: '#1890ff' }}
-                          />
-                        </Card>
-                      </Col>
-                    )}
-                    {repositoryData.repositoryData.has_services && (
-                      <Col span={12}>
-                        <Card size="small" style={{ height: '100%' }} data-testid={`repo-detail-services-card-${repository.repositoryName}`}>
-                          <Statistic
-                            title={t('resources:repositories.services')}
-                            value={repositoryData.repositoryData.service_count}
-                            valueStyle={{ color: '#fa8c16' }}
-                          />
-                        </Card>
-                      </Col>
-                    )}
+                    <Col span={24}>
+                      <Card size="small" data-testid={`repo-detail-activity-card-${repository.repositoryName}`}>
+                        <Space direction="vertical" style={{ width: '100%' }} size="small">
+                          {repositoryData.repositoryData.docker_running && (
+                            <div style={DETAIL_PANEL_LAYOUT.inlineField}>
+                              <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>{t('resources:repositories.containers')}:</Text>
+                              <Text style={DETAIL_PANEL_TEXT.value}>{repositoryData.repositoryData.container_count}</Text>
+                            </div>
+                          )}
+                          {repositoryData.repositoryData.has_services && (
+                            <div style={DETAIL_PANEL_LAYOUT.inlineField}>
+                              <Text type="secondary" style={DETAIL_PANEL_TEXT.label}>{t('resources:repositories.services')}:</Text>
+                              <Text style={DETAIL_PANEL_TEXT.value}>{repositoryData.repositoryData.service_count}</Text>
+                            </div>
+                          )}
+                        </Space>
+                      </Card>
+                    </Col>
                   </Row>
                 </>
               )}
@@ -473,7 +446,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
                 <>
                   <Divider style={{ margin: '24px 0' }} data-testid="repo-detail-services-divider">
                     <Space>
-                      <CodeOutlined />
+                      <CodeOutlined style={{ fontSize: 16 }} />
                       {t('resources:repositories.servicesSection')}
                     </Space>
                   </Divider>
