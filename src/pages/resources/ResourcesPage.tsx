@@ -68,6 +68,8 @@ import { type QueueFunction } from '@/api/queries/queue'
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import TeamSelector from '@/components/common/TeamSelector'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
+import { useRepositoryCreation } from '@/hooks/useRepositoryCreation'
+import { useQueueAction } from '@/hooks/useQueueAction'
 import { type Machine } from '@/types'
 import apiClient from '@/api/client'
 
@@ -244,7 +246,8 @@ const ResourcesPage: React.FC = () => {
     teamResourcesTab === 'machines' || teamResourcesTab === 'repositories'
   )
 
-
+  // Repository creation hook (handles credentials + queue item)
+  const { createRepository: createRepositoryWithQueue } = useRepositoryCreation(machines)
 
   // Repository hooks - fetch repositories when we have selected teams (needed for machine functions too)
   const { data: repositories = [], isLoading: repositoriesLoading, refetch: refetchRepositories } = useRepositories(
@@ -274,6 +277,7 @@ const ResourcesPage: React.FC = () => {
   // Queue mutation - using managed version for high-priority handling
   const createQueueItemMutation = useManagedQueueItem()
   const { buildQueueVault } = useQueueVaultBuilder()
+  const { executeAction } = useQueueAction()
   
   // Queue trace modal state
   const [queueTraceModal, setQueueTraceModal] = useState<{
@@ -366,123 +370,24 @@ const ResourcesPage: React.FC = () => {
       }
       
       if (mode === 'create') {
-        // For repository creation, we need to handle the two-step process
+        // For repository creation, use the shared hook
         if (resourceType === 'repository') {
-          // Check if this is credential-only mode (repositoryGuid is provided)
-          const isCredentialOnlyMode = data.repositoryGuid && data.repositoryGuid.trim() !== ''
-          
-          // Check if we have machine and size for full repository creation
-          if (data.machineName && data.size && !isCredentialOnlyMode) {
-            // Step 1: Create the repository credentials
-            const { machineName, size, ...repoData } = data
-            await mutations.repository.create.mutateAsync(repoData)
-            
-            // Step 2: Queue the "new" function to create the repository on the machine
-            try {
-            // Find the machine details
-            const teamData = dropdownData?.machinesByTeam?.find(
-              t => t.teamName === data.teamName
-            )
-            const machine = teamData?.machines?.find(
-              m => m.value === machineName
-            )
-            
-            if (!machine) {
-              showMessage('error', t('resources:errors.machineNotFound'))
-              closeUnifiedModal()
-              return
-            }
-            
-            // Find team vault data
-            const team = teamsList.find(t => t.teamName === data.teamName)
-            
-            // Find the full machine data to get vault content
-            const fullMachine = machines.find(m => m.machineName === machineName && m.teamName === data.teamName)
-            
-            // Wait a bit for the repository to be fully created and indexed
-            await new Promise(resolve => setTimeout(resolve, 500))
-            
-            // Fetch the created repository to get its vault with credentials
-            const repoResponse = await apiClient.get('/GetTeamRepositories', {
-              teamName: data.teamName
-            })
-            
-            // The repository data is in the second table (index 1)
-            const createdRepo = repoResponse.resultSets[1]?.data?.find(
-              (r: any) => r.repoName === data.repositoryName
-            )
-            
-            const repositoryVault = createdRepo?.vaultContent || data.repositoryVault || '{}'
-            const repositoryGuid = createdRepo?.repoGuid || ''
-            
-            
-            if (!repositoryGuid) {
-              showMessage('error', t('resources:errors.failedToGetRepositoryGuid'))
-              closeUnifiedModal()
-              return
-            }
-            
-            // Build queue vault for the "new" function
-            const params: any = {
-              repo: repositoryGuid,  // Use repository GUID as value
-              size: size
-            }
-            
-            // Add template parameter if provided
-            if (data.tmpl) {
-              params.tmpl = data.tmpl
-            }
-            
-            // Add keep_open parameter if provided
-            if (data.keep_open) {
-              params.keep_open = 'true'
-            }
-            
-            const queueVault = await buildQueueVault({
-              teamName: data.teamName,
-              machineName: machine.value,
-              bridgeName: machine.bridgeName,
-              functionName: 'new',
-              params: params,
-              priority: 3,
-              description: `Create repository ${data.repositoryName} with size ${size}`,
-              addedVia: 'repository-creation',
-              teamVault: team?.vaultContent || '{}',
-              machineVault: fullMachine?.vaultContent || '{}',
-              repositoryVault: repositoryVault,
-              repositoryGuid: repositoryGuid,
-              repositoryLoopbackIp: createdRepo?.repoLoopbackIP,
-              repositoryNetworkMode: createdRepo?.repoNetworkMode,
-              repositoryTag: createdRepo?.repoTag
-            })
-            
-            const response = await createQueueItemMutation.mutateAsync({
-              teamName: data.teamName,
-              machineName: machine.value,
-              bridgeName: machine.bridgeName,
-              queueVault,
-              priority: 3
-            })
-            
-            showMessage('success', t('repositories.createSuccess'))
-            
-            // Check if response has taskId (immediate submission) or queueId (queued)
-            if (response?.taskId) {
-              setQueueTraceModal({ visible: true, taskId: response.taskId, machineName: machine.value })
-            } else if (response?.isQueued) {
-              // Item was queued, don't open trace modal yet
-              showMessage('info', t('resources:messages.repositoryCreationQueued'))
-            }
-            } catch (error) {
-              showMessage('warning', t('repositories.repoCreatedButQueueFailed'))
-            }
-          } else {
-            // Create repository credentials only (no machine provisioning)
-            await mutations.repository.create.mutateAsync(data)
-            showMessage('success', t('repositories.createSuccess'))
+          const result = await createRepositoryWithQueue(data)
+
+          if (result.success) {
             closeUnifiedModal()
-            // Refresh machines to show the new repository
-            refetchMachines()
+
+            // If we have a taskId, open the queue trace modal
+            if (result.taskId) {
+              setQueueTraceModal({
+                visible: true,
+                taskId: result.taskId,
+                machineName: result.machineName
+              })
+            } else {
+              // No queue item (credentials-only mode), just refresh
+              refetchMachines()
+            }
           }
         } else {
           // Handle machine creation with optional auto-setup
@@ -501,9 +406,9 @@ const ResourcesPage: React.FC = () => {
                 
                 // Wait a bit for the machine to be fully created and indexed
                 await new Promise(resolve => setTimeout(resolve, 500))
-                
-                // Build queue vault for the "setup" function
-                const queueVault = await buildQueueVault({
+
+                // Queue the "setup" function
+                const result = await executeAction({
                   teamName: data.teamName,
                   machineName: data.machineName,
                   bridgeName: data.bridgeName,
@@ -519,24 +424,17 @@ const ResourcesPage: React.FC = () => {
                   priority: 3,
                   description: `Auto-setup for machine ${data.machineName}`,
                   addedVia: 'machine-creation-auto-setup',
-                  teamVault: team?.vaultContent || '{}',
                   machineVault: data.machineVault || '{}'
                 })
-                
-                const response = await createQueueItemMutation.mutateAsync({
-                  teamName: data.teamName,
-                  machineName: data.machineName,
-                  bridgeName: data.bridgeName,
-                  queueVault,
-                  priority: 3
-                })
-                
+
                 // Check if response has taskId (immediate submission) or queueId (queued)
-                if (response?.taskId) {
-                  showMessage('info', t('machines:setupQueued'))
-                  setQueueTraceModal({ visible: true, taskId: response.taskId, machineName: data.machineName })
-                } else if (response?.isQueued) {
-                  showMessage('info', t('machines:setupQueuedForSubmission'))
+                if (result.success) {
+                  if (result.taskId) {
+                    showMessage('info', t('machines:setupQueued'))
+                    setQueueTraceModal({ visible: true, taskId: result.taskId, machineName: data.machineName })
+                  } else if (result.isQueued) {
+                    showMessage('info', t('machines:setupQueuedForSubmission'))
+                  }
                 }
               } catch (error) {
                 showMessage('warning', t('machines:machineCreatedButSetupFailed'))

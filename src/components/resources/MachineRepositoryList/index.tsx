@@ -6,8 +6,7 @@ import { CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined
 import { useTranslation } from 'react-i18next'
 import * as S from './styles'
 import { type QueueFunction } from '@/api/queries/queue'
-import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
-import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
+import { useQueueAction } from '@/hooks/useQueueAction'
 import { Machine } from '@/types'
 import { useTeams } from '@/api/queries/teams'
 import { useRepositories, useCreateRepository, useDeleteRepository, usePromoteRepositoryToGrand, useUpdateRepositoryName } from '@/api/queries/repositories'
@@ -195,9 +194,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const [createdRepositoryTag, setCreatedRepositoryTag] = useState<string | null>(null)
   const [groupedRepositories, setGroupedRepositories] = useState<GroupedRepository[]>([])
 
-  // Keep managed queue for function execution
-  const managedQueueMutation = useManagedQueueItem()
-  const { buildQueueVault } = useQueueVaultBuilder()
+  // Queue action hook for function execution
+  const { executeAction, isExecuting } = useQueueAction()
   const { data: teams } = useTeams()
   const { data: teamRepositories = [], isLoading: repositoriesLoading, refetch: refetchRepositories } = useRepositories(machine.teamName)
   const { data: machinesData = [] } = useMachines(machine.teamName)
@@ -476,83 +474,67 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   }
 
   const handleQuickAction = async (repository: Repository, functionName: string, priority: number = 4, option?: string) => {
-    try {
-      // Find team vault data
-      const team = teams?.find(t => t.teamName === machine.teamName)
-      
-      // Find the repository vault data
-      const repositoryData = teamRepositories.find(r => r.repositoryName === repository.name)
-      
-      if (!repositoryData || !repositoryData.vaultContent) {
-        showMessage('error', t('resources:repositories.noCredentialsFound', { name: repository.name }))
-        return
+    // Find the repository vault data
+    const repositoryData = teamRepositories.find(r => r.repositoryName === repository.name)
+
+    if (!repositoryData || !repositoryData.vaultContent) {
+      showMessage('error', t('resources:repositories.noCredentialsFound', { name: repository.name }))
+      return
+    }
+
+    // Find the grand repository vault if grandGuid exists
+    let grandRepositoryVault = repositoryData.vaultContent
+    if (repositoryData.grandGuid) {
+      const grandRepository = teamRepositories.find(r => r.repositoryGuid === repositoryData.grandGuid)
+      if (grandRepository && grandRepository.vaultContent) {
+        grandRepositoryVault = grandRepository.vaultContent
       }
-      
-      // Find the grand repository vault if grandGuid exists
-      let grandRepositoryVault = repositoryData.vaultContent
-      if (repositoryData.grandGuid) {
-        const grandRepository = teamRepositories.find(r => r.repositoryGuid === repositoryData.grandGuid)
-        if (grandRepository && grandRepository.vaultContent) {
-          grandRepositoryVault = grandRepository.vaultContent
-        }
-      }
-      
-      // Build params with option if provided
-      const params: Record<string, any> = {
-        repo: repositoryData.repositoryGuid,
-        grand: repositoryData.grandGuid || ''
-      }
-      
-      // Add option parameter if provided
-      if (option) {
-        params.option = option
-      }
-      
-      // Build queue vault
-      const queueVault = await buildQueueVault({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
-        functionName: functionName,
-        params: params,
-        priority: priority,
-        description: `${functionName} ${repository.name}`,
-        addedVia: 'machine-repository-list-quick',
-        teamVault: team?.vaultContent || '{}',
-        machineVault: machine.vaultContent || '{}',
-        repositoryGuid: repositoryData.repositoryGuid,
-        repositoryVault: grandRepositoryVault,
-        repositoryLoopbackIp: repositoryData.repoLoopbackIp,
-        repositoryNetworkMode: repositoryData.repoNetworkMode,
-        repositoryTag: repositoryData.repoTag
-      })
-      
-      const response = await managedQueueMutation.mutateAsync({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
-        queueVault,
-        priority: priority
-      })
-      
-      if (response?.taskId) {
+    }
+
+    // Build params with option if provided
+    const params: Record<string, any> = {
+      repo: repositoryData.repositoryGuid,
+      grand: repositoryData.grandGuid || ''
+    }
+
+    // Add option parameter if provided
+    if (option) {
+      params.option = option
+    }
+
+    const result = await executeAction({
+      teamName: machine.teamName,
+      machineName: machine.machineName,
+      bridgeName: machine.bridgeName,
+      functionName,
+      params,
+      priority,
+      description: `${functionName} ${repository.name}`,
+      addedVia: 'machine-repository-list-quick',
+      machineVault: machine.vaultContent || '{}',
+      repositoryGuid: repositoryData.repositoryGuid,
+      repositoryVault: grandRepositoryVault,
+      repositoryLoopbackIp: repositoryData.repoLoopbackIp,
+      repositoryNetworkMode: repositoryData.repoNetworkMode,
+      repositoryTag: repositoryData.repoTag
+    })
+
+    if (result.success) {
+      if (result.taskId) {
         showMessage('success', t('resources:repositories.queueItemCreated'))
         if (onQueueItemCreated) {
-          onQueueItemCreated(response.taskId, machine.machineName)
+          onQueueItemCreated(result.taskId, machine.machineName)
         }
-      } else if (response?.isQueued) {
+      } else if (result.isQueued) {
         showMessage('info', t('resources:repositories.highestPriorityQueued'))
       }
-    } catch (error) {
-      showMessage('error', t('resources:repositories.failedToCreateQueueItem'))
+    } else {
+      showMessage('error', result.error || t('resources:repositories.failedToCreateQueueItem'))
     }
   }
 
   const handleForkRepository = async (repository: Repository) => {
     try {
-      // Find team vault data
-      const team = teams?.find(t => t.teamName === machine.teamName)
-
       // Find the repository vault data
       const repositoryData = teamRepositories.find(r => r.repositoryName === repository.name)
 
@@ -608,8 +590,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           grand: repositoryData.grandGuid || repositoryData.repositoryGuid || ''
         }
 
-        // Build queue vault
-        const queueVault = await buildQueueVault({
+        const result = await executeAction({
           teamName: machine.teamName,
           machineName: machine.machineName,
           bridgeName: machine.bridgeName,
@@ -618,31 +599,25 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           priority: 4,
           description: `Fork ${repository.name}:${repository.repoTag || 'latest'} to ${repository.name}:${forkTag}`,
           addedVia: 'machine-repository-list-fork',
-          teamVault: team?.vaultContent || '{}',
           machineVault: machine.vaultContent || '{}',
           repositoryGuid: repositoryData.repositoryGuid,
           repositoryVault: grandRepositoryVault,
           repositoryLoopbackIp: newRepo.repoLoopbackIp,
           repositoryNetworkMode: newRepo.repoNetworkMode,
-          repositoryTag: newRepo.repoTag,
-          destinationMachineVault: machine.vaultContent
+          repositoryTag: newRepo.repoTag
         })
 
-        const response = await managedQueueMutation.mutateAsync({
-          teamName: machine.teamName,
-          machineName: machine.machineName,
-          bridgeName: machine.bridgeName,
-          queueVault,
-          priority: 4
-        })
-
-        if (response?.taskId) {
-          showMessage('success', t('resources:repositories.forkStarted', { dest: `${repository.name}:${forkTag}` }))
-          if (onQueueItemCreated) {
-            onQueueItemCreated(response.taskId, machine.machineName)
+        if (result.success) {
+          if (result.taskId) {
+            showMessage('success', t('resources:repositories.forkStarted', { dest: `${repository.name}:${forkTag}` }))
+            if (onQueueItemCreated) {
+              onQueueItemCreated(result.taskId, machine.machineName)
+            }
+          } else if (result.isQueued) {
+            showMessage('info', t('resources:repositories.highestPriorityQueued'))
           }
-        } else if (response?.isQueued) {
-          showMessage('info', t('resources:repositories.highestPriorityQueued'))
+        } else {
+          throw new Error(result.error || 'Failed to fork repository')
         }
 
       } catch (createError) {
@@ -691,9 +666,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       cancelText: t('common:cancel'),
       onOk: async () => {
         try {
-          // Find team vault data
-          const team = teams?.find(t => t.teamName === machine.teamName)
-
           // Find the grand repository vault
           let grandRepositoryVault = repositoryData.vaultContent
           if (repositoryData.grandGuid) {
@@ -709,7 +681,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             grand: repositoryData.grandGuid
           }
 
-          const queueVault = await buildQueueVault({
+          const result = await executeAction({
             teamName: machine.teamName,
             machineName: machine.machineName,
             bridgeName: machine.bridgeName,
@@ -718,40 +690,35 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             priority: 4,
             description: `Delete clone ${repository.name}`,
             addedVia: 'machine-repository-list-delete-clone',
-            teamVault: team?.vaultContent || '{}',
             machineVault: machine.vaultContent || '{}',
             repositoryGuid: repositoryData.repositoryGuid,
             repositoryVault: grandRepositoryVault,
             repositoryLoopbackIp: repositoryData.repoLoopbackIp
           })
 
-          const queueResponse = await managedQueueMutation.mutateAsync({
-            teamName: machine.teamName,
-            machineName: machine.machineName,
-            bridgeName: machine.bridgeName,
-            queueVault,
-            priority: 4
-          })
+          if (result.success) {
+            if (result.taskId) {
+              showMessage('success', t('resources:repositories.deleteCloneQueued', { name: repository.name }))
+              if (onQueueItemCreated) {
+                onQueueItemCreated(result.taskId, machine.machineName)
+              }
 
-          if (queueResponse?.taskId) {
-            showMessage('success', t('resources:repositories.deleteCloneQueued', { name: repository.name }))
-            if (onQueueItemCreated) {
-              onQueueItemCreated(queueResponse.taskId, machine.machineName)
+              // Step 2: Delete the credential from database after queuing
+              try {
+                await deleteRepositoryMutation.mutateAsync({
+                  teamName: machine.teamName,
+                  repositoryName: repository.name,
+                  repositoryTag: repository.repoTag || 'latest'
+                })
+                showMessage('success', t('resources:repositories.deleteForkSuccess'))
+              } catch (credError) {
+                showMessage('warning', t('resources:repositories.deleteCloneCredentialFailed'))
+              }
+            } else if (result.isQueued) {
+              showMessage('info', t('resources:repositories.highestPriorityQueued'))
             }
-
-            // Step 2: Delete the credential from database after queuing
-            try {
-              await deleteRepositoryMutation.mutateAsync({
-                teamName: machine.teamName,
-                repositoryName: repository.name,
-                repositoryTag: repository.repoTag || 'latest'
-              })
-              showMessage('success', t('resources:repositories.deleteForkSuccess'))
-            } catch (credError) {
-              showMessage('warning', t('resources:repositories.deleteCloneCredentialFailed'))
-            }
-          } else if (queueResponse?.isQueued) {
-            showMessage('info', t('resources:repositories.highestPriorityQueued'))
+          } else {
+            showMessage('error', result.error || t('resources:repositories.deleteCloneFailed'))
           }
 
         } catch (error) {
@@ -998,9 +965,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         }
 
         try {
-          // Find team vault data
-          const team = teams?.find(t => t.teamName === machine.teamName)
-
           // For grand repositories, use its own vault
           const grandRepositoryVault = repositoryData.vaultContent
 
@@ -1010,7 +974,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             grand: repositoryData.repositoryGuid // Grand points to itself
           }
 
-          const queueVault = await buildQueueVault({
+          const result = await executeAction({
             teamName: machine.teamName,
             machineName: machine.machineName,
             bridgeName: machine.bridgeName,
@@ -1019,40 +983,36 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             priority: 4,
             description: `Delete repository ${repository.name}`,
             addedVia: 'machine-repository-list-delete-grand',
-            teamVault: team?.vaultContent || '{}',
             machineVault: machine.vaultContent || '{}',
             repositoryGuid: repositoryData.repositoryGuid,
             repositoryVault: grandRepositoryVault,
             repositoryLoopbackIp: repositoryData.repoLoopbackIp
           })
 
-          const queueResponse = await managedQueueMutation.mutateAsync({
-            teamName: machine.teamName,
-            machineName: machine.machineName,
-            bridgeName: machine.bridgeName,
-            queueVault,
-            priority: 4
-          })
+          if (result.success) {
+            if (result.taskId) {
+              showMessage('success', t('resources:repositories.deleteGrandQueued', { name: repository.name }))
+              if (onQueueItemCreated) {
+                onQueueItemCreated(result.taskId, machine.machineName)
+              }
 
-          if (queueResponse?.taskId) {
-            showMessage('success', t('resources:repositories.deleteGrandQueued', { name: repository.name }))
-            if (onQueueItemCreated) {
-              onQueueItemCreated(queueResponse.taskId, machine.machineName)
+              // Step 2: Delete the credential from database after queuing
+              try {
+                await deleteRepositoryMutation.mutateAsync({
+                  teamName: machine.teamName,
+                  repositoryName: repository.name,
+                  repositoryTag: repository.repoTag || 'latest'
+                })
+                showMessage('success', t('resources:repositories.deleteGrandSuccess'))
+              } catch (credError) {
+                showMessage('warning', t('resources:repositories.deleteGrandCredentialFailed'))
+              }
+            } else if (result.isQueued) {
+              showMessage('info', t('resources:repositories.highestPriorityQueued'))
             }
-
-            // Step 2: Delete the credential from database after queuing
-            try {
-              await deleteRepositoryMutation.mutateAsync({
-                teamName: machine.teamName,
-                repositoryName: repository.name,
-                repositoryTag: repository.repoTag || 'latest'
-              })
-              showMessage('success', t('resources:repositories.deleteGrandSuccess'))
-            } catch (credError) {
-              showMessage('warning', t('resources:repositories.deleteGrandCredentialFailed'))
-            }
-          } else if (queueResponse?.isQueued) {
-            showMessage('info', t('resources:repositories.highestPriorityQueued'))
+          } else {
+            showMessage('error', result.error || t('resources:repositories.deleteGrandFailed'))
+            return Promise.reject()
           }
 
         } catch (error) {
@@ -1073,9 +1033,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     if (!selectedRepository) return
 
     try {
-      // Find team vault data
-      const team = teams?.find(t => t.teamName === machine.teamName)
-      
       // Find the repository vault data
       const repositoryData = teamRepositories.find(r => r.repositoryName === selectedRepository.name)
       
@@ -1189,7 +1146,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               grand: repositoryData.grandGuid || repositoryData.repositoryGuid || ''
             }
 
-            const queueVault = await buildQueueVault({
+            const result = await executeAction({
               teamName: machine.teamName,
               machineName: machine.machineName,
               bridgeName: machine.bridgeName,
@@ -1198,26 +1155,16 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               priority: functionData.priority,
               description: `${functionData.description} → ${targetMachine}`,
               addedVia: 'machine-repository-list',
-              teamVault: team?.vaultContent || '{}',
               machineVault: machine.vaultContent || '{}',
               repositoryGuid,
               repositoryVault,
               repositoryLoopbackIp: newRepo.repoLoopbackIp,
               repositoryNetworkMode: newRepo.repoNetworkMode,
-              repositoryTag: newRepo.repoTag,
-              destinationMachineVault: targetMachineVault
+              repositoryTag: newRepo.repoTag
             })
 
-            const response = await managedQueueMutation.mutateAsync({
-              teamName: machine.teamName,
-              machineName: machine.machineName,
-              bridgeName: machine.bridgeName,
-              queueVault,
-              priority: functionData.priority
-            })
-
-            if (response?.taskId) {
-              createdTaskIds.push(response.taskId)
+            if (result.success && result.taskId) {
+              createdTaskIds.push(result.taskId)
             }
           } catch (error) {
             showMessage('error', t('resources:repositories.failedToDeployTo', { machine: targetMachine }))
@@ -1274,7 +1221,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               grand: repositoryData.grandGuid || repositoryData.repositoryGuid || ''
             }
 
-            const queueVault = await buildQueueVault({
+            const result = await executeAction({
               teamName: machine.teamName,
               machineName: machine.machineName,
               bridgeName: machine.bridgeName,
@@ -1283,26 +1230,16 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               priority: functionData.priority,
               description: `${functionData.description} → ${targetStorage}`,
               addedVia: 'machine-repository-list',
-              teamVault: team?.vaultContent || '{}',
               machineVault: machine.vaultContent || '{}',
               repositoryGuid,
               repositoryVault,
               repositoryLoopbackIp: repositoryData.repoLoopbackIp,
               repositoryNetworkMode: repositoryData.repoNetworkMode,
-              repositoryTag: repositoryData.repoTag,
-              destinationStorageVault: targetStorageVault
+              repositoryTag: repositoryData.repoTag
             })
 
-            const response = await managedQueueMutation.mutateAsync({
-              teamName: machine.teamName,
-              machineName: machine.machineName,
-              bridgeName: machine.bridgeName,
-              queueVault,
-              priority: functionData.priority
-            })
-
-            if (response?.taskId) {
-              createdTaskIds.push(response.taskId)
+            if (result.success && result.taskId) {
+              createdTaskIds.push(result.taskId)
             }
           } catch (error) {
             showMessage('error', t('resources:repositories.failedToBackupTo', { storage: targetStorage }))
@@ -1342,7 +1279,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       }
       
       // Build queue vault
-      const queueVault = await buildQueueVault({
+      const result = await executeAction({
         teamName: machine.teamName,
         machineName: machine.machineName,
         bridgeName: machine.bridgeName,
@@ -1351,39 +1288,29 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         priority: functionData.priority,
         description: functionData.description,
         addedVia: 'machine-repository-list',
-        teamVault: team?.vaultContent || '{}',
         machineVault: machine.vaultContent || '{}',
         repositoryGuid,
         repositoryVault,
         repositoryLoopbackIp: repositoryData.repoLoopbackIp,
         repositoryNetworkMode: repositoryData.repoNetworkMode,
-        repositoryTag: repositoryData.repoTag,
-        destinationMachineVault,
-        destinationStorageVault,
-        sourceMachineVault,
-        sourceStorageVault
+        repositoryTag: repositoryData.repoTag
       })
-      
-      
-      const response = await managedQueueMutation.mutateAsync({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
-        queueVault,
-        priority: functionData.priority
-      })
-      
+
       setFunctionModalOpen(false)
       setSelectedRepository(null)
 
-      if (response?.taskId) {
-        showMessage('success', t('resources:repositories.queueItemCreated'))
-        if (onQueueItemCreated) {
-          onQueueItemCreated(response.taskId, machine.machineName)
+      if (result.success) {
+        if (result.taskId) {
+          showMessage('success', t('resources:repositories.queueItemCreated'))
+          if (onQueueItemCreated) {
+            onQueueItemCreated(result.taskId, machine.machineName)
+          }
+        } else if (result.isQueued) {
+          // Item was queued for highest priority management
+          showMessage('info', t('resources:repositories.highestPriorityQueued'))
         }
-      } else if (response?.isQueued) {
-        // Item was queued for highest priority management
-        showMessage('info', t('resources:repositories.highestPriorityQueued'))
+      } else {
+        throw new Error(result.error || t('resources:repositories.failedToCreateQueueItem'))
       }
     } catch (error) {
       // Show more specific error message if available
@@ -1767,7 +1694,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                     type="primary"
                     size="small"
                     icon={<FunctionOutlined />}
-                    loading={managedQueueMutation.isPending}
+                    loading={isExecuting}
                     data-testid={`machine-repo-list-group-actions-${groupData.name}`}
                     aria-label={t('machines:remote')}
                   />
@@ -1982,7 +1909,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                   type="primary"
                   size="small"
                   icon={<FunctionOutlined />}
-                  loading={managedQueueMutation.isPending}
+                  loading={isExecuting}
                   data-testid={`machine-repo-list-repo-actions-${record.name}`}
                   aria-label={t('machines:remote')}
                 />
@@ -2150,7 +2077,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               onClick: (e: React.MouseEvent<HTMLElement>) => {
                 const target = e.target as HTMLElement
                 // Don't trigger if clicking on buttons or dropdowns
-                if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
+                if (target.closest('button') || target.closest('.ant-dropdown')) {
                   return
                 }
                 // Group expansion is handled by the expand icon in the name column
@@ -2167,7 +2094,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             onClick: (e: React.MouseEvent<HTMLElement>) => {
               const target = e.target as HTMLElement
               // Don't trigger if clicking on buttons or dropdowns
-              if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
+              if (target.closest('button') || target.closest('.ant-dropdown')) {
                 return
               }
 
@@ -2255,7 +2182,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           )
         }
         allowedCategories={['repository', 'backup', 'network']}
-        loading={managedQueueMutation.isPending}
+        loading={isExecuting}
         showMachineSelection={false}
         teamName={machine.teamName}
         hiddenParams={['repo', 'grand']}

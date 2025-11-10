@@ -414,25 +414,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               menu={{
                 items: [
                   {
-                    key: 'createRepo',
-                    label: t('machines:createRepo'),
-                    icon: <InboxOutlined />,
-                    onClick: () => onCreateRepository && onCreateRepository(record),
-                    'data-testid': `machine-create-repo-${record.machineName}`
-                  },
-                  {
-                    key: 'pull',
-                    label: t('functions:functions.pull.name'),
-                    icon: <CloudDownloadOutlined />,
-                    onClick: () => {
-                      setRemoteFileBrowserModal({
-                        open: true,
-                        machine: record
-                      });
-                    },
-                    'data-testid': `machine-pull-${record.machineName}`
-                  },
-                  {
                     key: 'functions',
                     label: t('machines:runAction'),
                     icon: <FunctionOutlined />,
@@ -1007,7 +988,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               onClick: (e) => {
                 const target = e.target as HTMLElement;
                 // Don't trigger row click if clicking on buttons or dropdowns
-                if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
+                if (target.closest('button') || target.closest('.ant-dropdown')) {
                   return;
                 }
 
