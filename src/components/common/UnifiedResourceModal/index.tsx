@@ -165,6 +165,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       return z.object({
         teamName: z.string().min(1, 'Team name is required'),
         repositoryName: z.string().min(1, 'Repository name is required'),
+        repositoryGuid: z.string().min(1, 'Repository GUID is required'),
         repositoryVault: z.string().optional().default('{}'),
       })
     }
@@ -468,8 +469,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             name: 'repositoryGuid',
             label: t('repositories.guid', { defaultValue: 'Repository GUID' }),
             type: 'text' as const,
-            readOnly: true, // Read-only instead of disabled - allows form submission
-            helperText: t('repositories.guidHelperText', { defaultValue: 'This repository already exists on the machine.' })
+            readOnly: !!(existingData?.repositoryGuid && existingData.repositoryGuid.trim() !== ''), // Only read-only if GUID exists
+            required: true, // Make it required in credential-only mode
+            helperText: existingData?.repositoryGuid
+              ? t('repositories.guidHelperText', { defaultValue: 'This repository already exists on the machine.' })
+              : t('repositories.guidHelperTextNew', { defaultValue: 'Enter the repository GUID (e.g., 550e8400-e29b-41d4-a716-446655440000)' })
           })
         }
       }
@@ -533,13 +537,16 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       
       // Repository GUID field
       if (isCredentialOnlyMode) {
-        // In credential-only mode, always show the GUID field as read-only
+        // In credential-only mode, show the GUID field
         fields.push({
           name: 'repositoryGuid',
           label: t('repositories.guid', { defaultValue: 'Repository GUID' }),
           type: 'text' as const,
-          readOnly: true, // Read-only instead of disabled - allows form submission
-          helperText: t('repositories.guidHelperText', { defaultValue: 'This repository already exists on the machine.' })
+          readOnly: !!(existingData?.repositoryGuid && existingData.repositoryGuid.trim() !== ''), // Only read-only if GUID exists
+          required: true, // Make it required in credential-only mode
+          helperText: existingData?.repositoryGuid
+            ? t('repositories.guidHelperText', { defaultValue: 'This repository already exists on the machine.' })
+            : t('repositories.guidHelperTextNew', { defaultValue: 'Enter the repository GUID (e.g., 550e8400-e29b-41d4-a716-446655440000)' })
         })
       } else if (isExpertMode) {
         // In expert mode (when creating new repo), show as optional editable field

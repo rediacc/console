@@ -71,6 +71,7 @@
     "important": "Important",
     "loading": "Loading...",
     "showingRecords": "Showing records {{start}}-{{end}} of {{total}}",
+    "unknown": "Unknown",
     "vaultVersion": "Vault Version",
     "versionFormat": "v{{version}}"
   },

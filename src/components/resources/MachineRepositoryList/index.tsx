@@ -1167,6 +1167,16 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
       // Handle backup function (multiple storages)
       if (functionData.function.name === 'backup' && functionData.params.storages) {
+        // Validate: Only allow grand repositories to backup to storage
+        if (repositoryData && repositoryData.grandGuid &&
+            repositoryData.grandGuid !== repositoryData.repositoryGuid) {
+          // This is a fork - cannot backup to storage
+          showMessage('error', t('resources:repositories.cannotBackupForkToStorage'))
+          setFunctionModalOpen(false)
+          setSelectedRepository(null)
+          return
+        }
+
         const storagesArray = Array.isArray(functionData.params.storages)
           ? functionData.params.storages
           : [functionData.params.storages]
@@ -1722,12 +1732,15 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           onClick: () => handleRunFunction(record, 'deploy')
         })
 
-        // Backup - always available
+        // Backup - only available for grand repositories (not forks)
+        const isFork = !!(repositoryData?.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid)
         menuItems.push({
           key: 'backup',
           label: t('functions:functions.backup.name'),
           icon: <SaveOutlined style={componentStyles.icon.small} />,
-          onClick: () => handleRunFunction(record, 'backup')
+          onClick: () => handleRunFunction(record, 'backup'),
+          disabled: isFork,
+          title: isFork ? t('resources:repositories.backupForkDisabledTooltip') : undefined
         })
 
         // Apply Template - always available
