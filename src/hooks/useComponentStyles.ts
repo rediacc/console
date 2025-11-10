@@ -55,11 +55,11 @@ export const useComponentStyles = () => {
 
     // Layout
     container: {
-      padding: spacing('CONTAINER'),
+      padding: spacing('PAGE_CONTAINER'),
       maxWidth: '100%',
     },
     section: {
-      marginBottom: spacing('XL'),
+      marginBottom: spacing('PAGE_SECTION_GAP'),
     },
     spacer: {
       margin: spacing('MD'),
@@ -108,14 +108,12 @@ export const useComponentStyles = () => {
     // Theme-aware styles
     sidebar: {
       width: DESIGN_TOKENS.DIMENSIONS.SIDEBAR_WIDTH,
-      boxShadow: theme === 'dark' ? DESIGN_TOKENS.SHADOWS.SIDEBAR_DARK : DESIGN_TOKENS.SHADOWS.SIDEBAR,
-      background: 'var(--color-bg-container)',
-      borderRight: '1px solid var(--color-border-secondary)',
+      background: 'var(--color-bg-primary)',
     },
     header: {
       height: DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT,
       boxShadow: theme === 'dark' ? DESIGN_TOKENS.SHADOWS.HEADER_DARK : DESIGN_TOKENS.SHADOWS.HEADER,
-      background: 'var(--color-bg-container)',
+      background: 'var(--color-bg-primary)',
       borderBottom: '1px solid var(--color-border-secondary)',
     },
 

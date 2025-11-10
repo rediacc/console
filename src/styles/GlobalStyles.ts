@@ -41,6 +41,41 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   /* ============================================
+     PAGE LAYOUT SYSTEM
+     ============================================ */
+  
+  .main-layout-content {
+    --page-padding: ${({ theme }) => theme.spacing.PAGE_CONTAINER}px;
+    --page-section-gap: ${({ theme }) => theme.spacing.PAGE_SECTION_GAP}px;
+    --page-card-padding: ${({ theme }) => theme.spacing.PAGE_CARD_PADDING}px;
+  }
+
+  .page-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: var(--page-padding, ${({ theme }) => theme.spacing.PAGE_CONTAINER}px);
+  }
+
+  .page-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--page-section-gap, ${({ theme }) => theme.spacing.PAGE_SECTION_GAP}px);
+  }
+
+  .page-card {
+    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+    background-color: ${({ theme }) => theme.colors.bgPrimary};
+    box-shadow: ${({ theme }) => theme.shadows.CARD};
+    border: 1px solid var(--color-border-secondary);
+    overflow: hidden;
+  }
+
+  .page-card .ant-card-body {
+    padding: var(--page-card-padding, ${({ theme }) => theme.spacing.PAGE_CARD_PADDING}px);
+  }
+
+  /* ============================================
      CSS COLOR VARIABLES (replacing themes.css)
      ============================================ */
   
@@ -738,7 +773,7 @@ export const GlobalStyles = createGlobalStyle`
     min-height: 0;
     max-height: unset !important;
     overflow-y: auto;
-    padding: 24px;
+    padding: ${({ theme }) => theme.spacing.LG}px;
   }
 
   .modal-fullscreen .ant-modal-footer {

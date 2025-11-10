@@ -170,12 +170,12 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
               {copiedField === field ? t('fieldGenerator.copied') : t('fieldGenerator.copy')}
             </Button>
           </div>
-          <div style={{ 
-            wordBreak: 'break-all', 
-            maxHeight: 100, 
+          <div style={{
+            wordBreak: 'break-all',
+            maxHeight: 100,
             overflow: 'auto',
             padding: spacing('SM'),
-            background: 'var(--color-bg-container)',
+            background: 'var(--color-bg-primary)',
             border: '1px solid var(--color-border-secondary)',
             borderRadius: borderRadius('SM'),
             fontSize: fontSize('XS'),

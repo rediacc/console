@@ -129,13 +129,17 @@ export const EmptyWrapper = styled.div`
 `
 
 export const BellButton = styled(Button)`
-  min-width: ${({ theme }) => theme.dimensions.ICON_LG}px;
-  min-height: ${({ theme }) => theme.dimensions.ICON_LG}px;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
   
   .anticon {
-    font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
+    font-size: 22px;
   }
 `

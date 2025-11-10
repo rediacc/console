@@ -158,7 +158,7 @@ const RepositoryContainersPage: React.FC = () => {
   // Loading state
   if (machinesLoading) {
     return (
-      <div style={{ padding: 24 }}>
+      <div className="page-container">
         <Card>
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
             <Spin size="large" />
@@ -174,7 +174,7 @@ const RepositoryContainersPage: React.FC = () => {
   // Error state - machine not found
   if (!actualMachine) {
     return (
-      <div style={{ padding: 24 }}>
+      <div className="page-container">
         <Card>
           <Alert
             message={t('machines:machineNotFound')}
@@ -201,7 +201,7 @@ const RepositoryContainersPage: React.FC = () => {
   // Error state - repository not found
   if (!actualRepository) {
     return (
-      <div style={{ padding: 24 }}>
+      <div className="page-container">
         <Card>
           <Alert
             message={t('machines:repositoryNotFound')}
@@ -228,7 +228,7 @@ const RepositoryContainersPage: React.FC = () => {
   const actualRepositoryName = actualRepository.name
 
   return (
-    <div style={{ padding: 24, height: '100%' }}>
+    <div className="page-container" style={{ height: '100%' }}>
       <Card style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
         <div style={{ marginBottom: 24, flexShrink: 0 }}>

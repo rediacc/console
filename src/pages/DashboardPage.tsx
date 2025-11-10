@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, Col, Row, Progress, Alert, Badge, Tag, Space, Typography, Statistic, Spin, Empty, Tooltip, theme, Timeline, List, Table } from 'antd';
 import {
@@ -44,25 +44,12 @@ const DESCRIPTION_TRUNCATE_LENGTH = 80; // Shorter for mobile readability
 const DashboardPage = () => {
   const { data: dashboard, isLoading, error } = useDashboard();
   const { data: auditLogs, isLoading: auditLoading } = useRecentAuditLogs(RECENT_AUDIT_LOGS_COUNT);
-  const [isMobile, setIsMobile] = useState(false);
   const { theme: currentTheme } = useTheme();
   const { token } = theme.useToken();
 
-  // Handle responsive behavior
-  useEffect(() => {
-    const handleResize = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   if (isLoading) {
     return (
-      <div style={{ padding: 24, textAlign: 'center' }}>
+      <div className="page-container" style={{ textAlign: 'center' }}>
         <Spin size="large" />
       </div>
     );
@@ -70,7 +57,7 @@ const DashboardPage = () => {
 
   if (error) {
     return (
-      <div style={{ padding: 24 }}>
+      <div className="page-container">
         <Alert
           message="Error"
           description="Failed to load dashboard data. Please try again later."
@@ -85,7 +72,7 @@ const DashboardPage = () => {
 
   if (!dashboard) {
     return (
-      <div style={{ padding: 24 }}>
+      <div className="page-container">
         <Empty description="No dashboard data available" />
       </div>
     );
@@ -149,7 +136,7 @@ const DashboardPage = () => {
   };
 
   return (
-    <div style={{ padding: isMobile ? 16 : 24 }}>
+    <div className="page-container">
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         {/* 1. Alerts - Immediate visibility of critical issues */}
         {dashboard.activeSubscription?.IsExpiringSoon === 1 && (

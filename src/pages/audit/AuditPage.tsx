@@ -274,7 +274,7 @@ const AuditPage = () => {
   ];
 
   return (
-    <div style={{ padding: 24 }}>
+    <div className="page-container">
       {/* Filters */}
       <Card data-testid="audit-filter-card" style={{ marginBottom: 16 }}>
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
