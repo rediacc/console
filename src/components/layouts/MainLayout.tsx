@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { Layout, Avatar, Space, Badge, Typography, Button, Segmented, Dropdown, Divider, message } from 'antd'
+import { Layout, Avatar, Space, Badge, Typography, Button, Segmented, Dropdown, Divider, Tooltip, message } from 'antd'
 import {
   ThunderboltOutlined,
   UserOutlined,
@@ -539,6 +539,14 @@ const MainLayout: React.FC = () => {
                   </span>
                 </div>
               )
+
+              if (collapsed) {
+                return (
+                  <Tooltip title={item.label} placement="right">
+                    {menuItemContent}
+                  </Tooltip>
+                )
+              }
 
               return menuItemContent
             })}

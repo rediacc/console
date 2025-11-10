@@ -3,6 +3,7 @@ import { Machine, Repository } from '@/types'
 import { MachineTable } from './MachineTable'
 import { UnifiedDetailPanel } from './UnifiedDetailPanel'
 import { usePanelWidth } from '@/hooks/usePanelWidth'
+import { DESIGN_TOKENS } from '@/utils/styleConstants'
 
 interface ContainerData {
   id: string
@@ -149,7 +150,7 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
               backgroundColor: 'rgba(0, 0, 0, 0.4)',
               opacity: backdropVisible ? 1 : 0,
               transition: 'opacity 250ms ease-in-out, right 0.3s ease-in-out',
-              zIndex: 1000,
+              zIndex: DESIGN_TOKENS.Z_INDEX.MODAL,
               pointerEvents: backdropVisible ? 'auto' : 'none',
             }}
             onClick={handlePanelClose}

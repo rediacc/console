@@ -14,6 +14,7 @@ import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import { RemoteFileBrowserModal } from '@/components/resources/RemoteFileBrowserModal'
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import { useRepositoryCreation } from '@/hooks/useRepositoryCreation'
+import { DESIGN_TOKENS } from '@/utils/styleConstants'
 
 const { Title } = Typography
 
@@ -419,7 +420,7 @@ const MachineRepositoriesPage: React.FC = () => {
                 backgroundColor: 'rgba(0, 0, 0, 0.4)',
                 opacity: backdropVisible ? 1 : 0,
                 transition: 'opacity 250ms ease-in-out, right 0.3s ease-in-out',
-                zIndex: 1000,
+                zIndex: DESIGN_TOKENS.Z_INDEX.MODAL,
                 pointerEvents: backdropVisible ? 'auto' : 'none',
               }}
               onClick={handlePanelClose}
