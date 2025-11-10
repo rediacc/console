@@ -13,6 +13,8 @@
   "autoSetupAfterCreation": "تشغيل برنامج الإعداد تلقائيًا بعد إنشاء الجهاز",
   "availableFunctions": "الوظائف المتاحة",
   "averageResponse": "متوسط ​​الاستجابة",
+  "backToMachines": "العودة إلى الآلات",
+  "backToRepositories": "العودة إلى المستودعات",
   "bridge": "كوبري",
   "bulkActions": {
     "assignToCluster": "تعيين إلى الكتلة",
@@ -100,6 +102,8 @@
   "machineCount": "آلة | آلات",
   "machineCreatedButSetupFailed": "تم إنشاء الجهاز بنجاح، ولكن تعذر وضع الإعداد في قائمة الانتظار.",
   "machineName": "اسم الآلة",
+  "machineNotFound": "لم يتم العثور على الآلة",
+  "machineNotFoundDescription": "تعذر العثور على الجهاز \"{{machineName}}\". ربما تم حذفه أو ربما لا يمكنك الوصول إليه.",
   "machines": "آلات",
   "machinesConnectedWithFailures": "تم توصيل {{successCount}} من الأجهزة، وفشل {{failedCount}}.",
   "manage": "يدير",
@@ -130,6 +134,9 @@
   "remoteOperations": "العمليات عن بعد",
   "removeFromClusterDescription": "سيؤدي هذا إلى إلغاء تعيين الأجهزة من مجموعاتها الحالية",
   "removeFromClusterWarning": "هل أنت متأكد من أنك تريد إزالة {{count}} من الأجهزة من مجموعاتها؟",
+  "repositoryContainers": "حاويات المستودع",
+  "repositoryNotFound": "لم يتم العثور على المستودع",
+  "repositoryNotFoundDescription": "تعذر العثور على المستودع \"{{repositoryName}}\" على الجهاز \"{{machineName}}\". ربما تم حذفه أو ربما لا يمكنك الوصول إليه.",
   "responseTime": "وقت الاستجابة",
   "runAction": "تشغيل على الخادم",
   "runFunction": "وظيفة التشغيل",
@@ -167,5 +174,7 @@
   "vaultUpdateSuccess": "تم تحديث تكوين مخزن الجهاز بنجاح",
   "vaultVersion": "نسخة قبو",
   "viewBy": "عرض بواسطة",
-  "viewMode": "وضع العرض"
+  "viewContainers": "عرض الحاويات",
+  "viewMode": "وضع العرض",
+  "viewRepositories": "عرض المستودعات"
 }

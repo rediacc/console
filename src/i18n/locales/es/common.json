@@ -70,6 +70,7 @@
     "important": "Importante",
     "loading": "Cargando...",
     "showingRecords": "Mostrando registros {{start}}-{{end}} de {{total}}",
+    "unknown": "Desconocida",
     "vaultVersion": "Versión de bóveda",
     "versionFormat": "v{{versión}}"
   },
@@ -98,15 +99,15 @@
     "architecture": "Arquitectura",
     "audit": "Auditoría",
     "closeMobileMenu": "Cerrar menú móvil",
+    "credentials": "Credenciales",
     "dashboard": "Panel",
     "distributedStorage": "Almacenamiento distribuido",
     "logout": "Cerrar sesión",
+    "machines": "Máquinas",
     "mainNavigation": "Navegación principal",
     "marketplace": "Mercado",
     "openMobileMenu": "Abrir menú móvil",
     "queue": "Cola",
-    "machines": "Máquinas",
-    "credentials": "Credenciales",
     "storage": "Almacenamiento",
     "system": "Sistema"
   },
@@ -547,6 +548,7 @@
     "versionAutoIncrement": "La versión se incrementará automáticamente al guardar",
     "versionWillIncrement": "La versión aumentará a {{version}}"
   },
+  "viewDetails": "Ver detalles",
   "warnings": {
     "sandboxEnvironment": "Entorno de zona de pruebas",
     "sandboxMessage": "Los datos pueden restablecerse durante las actualizaciones. Sólo para pruebas."

@@ -13,6 +13,8 @@
   "autoSetupAfterCreation": "Makine oluşturulduktan sonra kurulumu otomatik olarak çalıştır",
   "availableFunctions": "Mevcut Fonksiyonlar",
   "averageResponse": "Ortalama Yanıt",
+  "backToMachines": "Makinelere Geri Dön",
+  "backToRepositories": "Depolara Geri Dön",
   "bridge": "Köprü",
   "bulkActions": {
     "assignToCluster": "Kümeye Ata",
@@ -100,6 +102,8 @@
   "machineCount": "makine | makineler",
   "machineCreatedButSetupFailed": "Makine başarıyla oluşturuldu ancak kurulum sıraya alınamadı.",
   "machineName": "Makine Adı",
+  "machineNotFound": "Makine Bulunamadı",
+  "machineNotFoundDescription": "\"{{machineName}}\" makinesi bulunamadı. Silinmiş olabilir veya erişiminiz olmayabilir.",
   "machines": "Makineler",
   "machinesConnectedWithFailures": "{{successCount}} makine bağlandı, {{failedCount}} başarısız oldu",
   "manage": "Üstesinden gelmek",
@@ -130,6 +134,9 @@
   "remoteOperations": "Uzaktan İşlemler",
   "removeFromClusterDescription": "Bu, makinelerin mevcut kümelerinden atamasını kaldıracaktır",
   "removeFromClusterWarning": "{{count}} makineyi kümelerinden kaldırmak istediğinizden emin misiniz?",
+  "repositoryContainers": "Depo Konteynerleri",
+  "repositoryNotFound": "Depo Bulunamadı",
+  "repositoryNotFoundDescription": "\"{{repositoryName}}\" deposu \"{{machineName}}\" makinesinde bulunamadı. Silinmiş olabilir veya erişiminiz olmayabilir.",
   "responseTime": "Tepki Süresi",
   "runAction": "Sunucuda Çalıştır",
   "runFunction": "Çalıştırma İşlevi",
@@ -167,5 +174,7 @@
   "vaultUpdateSuccess": "Makine kasası yapılandırması başarıyla güncellendi",
   "vaultVersion": "Kasa Sürümü",
   "viewBy": "Görüntüle",
-  "viewMode": "Görünüm Modu"
+  "viewContainers": "Kapsayıcıları Görüntüle",
+  "viewMode": "Görünüm Modu",
+  "viewRepositories": "Depoları Görüntüle"
 }

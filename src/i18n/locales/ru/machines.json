@@ -13,6 +13,8 @@
   "autoSetupAfterCreation": "Автоматический запуск установки после создания машины",
   "availableFunctions": "Доступные функции",
   "averageResponse": "Средний ответ",
+  "backToMachines": "Вернуться к машинам",
+  "backToRepositories": "Вернуться к репозиториям",
   "bridge": "Мост",
   "bulkActions": {
     "assignToCluster": "Назначить кластеру",
@@ -100,6 +102,8 @@
   "machineCount": "машина | машины",
   "machineCreatedButSetupFailed": "Машина создана успешно, но установку не удалось поставить в очередь.",
   "machineName": "Имя машины",
+  "machineNotFound": "Машина не найдена",
+  "machineNotFoundDescription": "Машина «{{machineName}}» не найдена. Возможно, он был удален или у вас нет к нему доступа.",
   "machines": "Машины",
   "machinesConnectedWithFailures": "Машины: {{successCount}} подключены, {{failedCount}} не удалось",
   "manage": "Управлять",
@@ -130,6 +134,9 @@
   "remoteOperations": "Удаленные операции",
   "removeFromClusterDescription": "Это отменит назначение компьютеров из их текущих кластеров.",
   "removeFromClusterWarning": "Вы уверены, что хотите удалить {{count}} компьютеров из их кластеров?",
+  "repositoryContainers": "Контейнеры репозитория",
+  "repositoryNotFound": "Репозиторий не найден",
+  "repositoryNotFoundDescription": "Репозиторий \"{{repositoryName}}\" не найден на компьютере \"{{machineName}}\". Возможно, он был удален или у вас нет к нему доступа.",
   "responseTime": "Время ответа",
   "runAction": "Запустить на сервере",
   "runFunction": "Функция запуска",
@@ -167,5 +174,7 @@
   "vaultUpdateSuccess": "Конфигурация машинного хранилища успешно обновлена.",
   "vaultVersion": "Версия хранилища",
   "viewBy": "Просмотреть по",
-  "viewMode": "Режим просмотра"
+  "viewContainers": "Просмотр контейнеров",
+  "viewMode": "Режим просмотра",
+  "viewRepositories": "Просмотр репозиториев"
 }

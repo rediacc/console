@@ -52,6 +52,36 @@
         }
       }
     },
+    "backup": {
+      "description": "Repositorio de respaldo en múltiples sistemas de almacenamiento",
+      "name": "respaldo",
+      "params": {
+        "checkpoint": {
+          "help": "Habilite el modo de copia de seguridad activa con punto de control (requiere CRIU, cero tiempo de inactividad para repositorios en línea)",
+          "label": "Habilitar punto de control"
+        },
+        "dest": {
+          "help": "Nombre del archivo de copia de seguridad",
+          "label": "Nombre de archivo de destino"
+        },
+        "option": {
+          "help": "Opciones (por ejemplo, anular)",
+          "label": "Opciones"
+        },
+        "repo": {
+          "help": "Nombre(s) del repositorio, separados por comas",
+          "label": "Repositorio"
+        },
+        "state": {
+          "help": "Valide que el repositorio esté en línea o fuera de línea antes de realizar la copia de seguridad",
+          "label": "Estado requerido"
+        },
+        "storages": {
+          "help": "Seleccione uno o más sistemas de almacenamiento de destino para la copia de seguridad",
+          "label": "Sistemas de almacenamiento de destino"
+        }
+      }
+    },
     "clone": {
       "description": "Clonar repositorio en la misma máquina",
       "name": "clon"
@@ -158,6 +188,36 @@
         }
       }
     },
+    "deploy": {
+      "description": "Implementar repositorio en varias máquinas",
+      "name": "desplegar",
+      "params": {
+        "checkpoint": {
+          "help": "Habilite el modo de implementación en caliente con punto de control (requiere CRIU, cero tiempo de inactividad para repositorios en línea)",
+          "label": "Habilitar punto de control"
+        },
+        "dest": {
+          "help": "Nombre del archivo de implementación",
+          "label": "Nombre de archivo de destino"
+        },
+        "machines": {
+          "help": "Seleccione una o más máquinas de destino para la implementación",
+          "label": "Máquinas objetivo"
+        },
+        "option": {
+          "help": "Opciones (por ejemplo, anular)",
+          "label": "Opciones"
+        },
+        "repo": {
+          "help": "Nombre(s) del repositorio, separados por comas",
+          "label": "Repositorio"
+        },
+        "state": {
+          "help": "Validar que el repositorio esté en línea o fuera de línea antes de implementarlo",
+          "label": "Estado requerido"
+        }
+      }
+    },
     "down": {
       "description": "Detener servicios de repositorio",
       "name": "abajo",
@@ -189,6 +249,10 @@
           "label": "Nuevo tamaño"
         }
       }
+    },
+    "fork": {
+      "description": "Repositorio de bifurcación con etiqueta basada en marca de tiempo",
+      "name": "tenedora"
     },
     "hello": {
       "description": "Función de prueba simple que imprime saludos desde el nombre de host",

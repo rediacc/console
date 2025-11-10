@@ -70,6 +70,7 @@
     "important": "Wichtig",
     "loading": "Laden...",
     "showingRecords": "Es werden Datensätze {{start}}–{{end}} von {{total}} angezeigt",
+    "unknown": "Unbekannt",
     "vaultVersion": "Vault-Version",
     "versionFormat": "v{{Version}}"
   },
@@ -98,15 +99,15 @@
     "architecture": "Architektur",
     "audit": "Prüfung",
     "closeMobileMenu": "Mobiles Menü schließen",
+    "credentials": "Anmeldeinformationen",
     "dashboard": "Armaturenbrett",
     "distributedStorage": "Verteilter Speicher",
     "logout": "Abmelden",
+    "machines": "Maschinen",
     "mainNavigation": "Hauptnavigation",
     "marketplace": "Marktplatz",
     "openMobileMenu": "Öffnen Sie das mobile Menü",
     "queue": "Warteschlange",
-    "machines": "Maschinen",
-    "credentials": "Anmeldeinformationen",
     "storage": "Speicher",
     "system": "System"
   },
@@ -547,6 +548,7 @@
     "versionAutoIncrement": "Die Version wird beim Speichern automatisch erhöht",
     "versionWillIncrement": "Die Version wird auf {{version}} erhöht"
   },
+  "viewDetails": "Details anzeigen",
   "warnings": {
     "sandboxEnvironment": "Sandbox-Umgebung",
     "sandboxMessage": "Bei Aktualisierungen können Daten zurückgesetzt werden. Nur zum Testen."

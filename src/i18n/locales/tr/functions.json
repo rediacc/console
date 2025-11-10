@@ -52,6 +52,36 @@
         }
       }
     },
+    "backup": {
+      "description": "Birden fazla depolama sistemine yedekleme deposu",
+      "name": "yedekleme",
+      "params": {
+        "checkpoint": {
+          "help": "Denetim noktasıyla sıcak yedekleme modunu etkinleştirin (CRIU gerektirir, çevrimiçi depolar için sıfır kesinti süresi)",
+          "label": "Denetim Noktasını Etkinleştir"
+        },
+        "dest": {
+          "help": "Yedekleme dosyasının adı",
+          "label": "Hedef Dosya Adı"
+        },
+        "option": {
+          "help": "Seçenekler (ör. geçersiz kılma)",
+          "label": "Seçenekler"
+        },
+        "repo": {
+          "help": "Depo adları, virgülle ayrılmış",
+          "label": "Depo"
+        },
+        "state": {
+          "help": "Yedeklemeden önce deponun çevrimiçi veya çevrimdışı olduğunu doğrulayın",
+          "label": "Gerekli Durum"
+        },
+        "storages": {
+          "help": "Yedekleme için bir veya daha fazla hedef depolama sistemi seçin",
+          "label": "Hedef Depolama Sistemleri"
+        }
+      }
+    },
     "clone": {
       "description": "Depoyu aynı makinede klonlayın",
       "name": "klon"
@@ -158,6 +188,36 @@
         }
       }
     },
+    "deploy": {
+      "description": "Depoyu birden fazla makineye dağıtın",
+      "name": "dağıtmak",
+      "params": {
+        "checkpoint": {
+          "help": "Denetim noktasıyla çalışırken dağıtım modunu etkinleştirin (çevrimiçi depolar için CRIU, sıfır kesinti süresi gerektirir)",
+          "label": "Denetim Noktasını Etkinleştir"
+        },
+        "dest": {
+          "help": "Dağıtım dosyasının adı",
+          "label": "Hedef Dosya Adı"
+        },
+        "machines": {
+          "help": "Dağıtım için bir veya daha fazla hedef makine seçin",
+          "label": "Hedef Makineler"
+        },
+        "option": {
+          "help": "Seçenekler (ör. geçersiz kılma)",
+          "label": "Seçenekler"
+        },
+        "repo": {
+          "help": "Depo adları, virgülle ayrılmış",
+          "label": "Depo"
+        },
+        "state": {
+          "help": "Dağıtımdan önce deponun çevrimiçi veya çevrimdışı olduğunu doğrulayın",
+          "label": "Gerekli Durum"
+        }
+      }
+    },
     "down": {
       "description": "Depo hizmetlerini durdur",
       "name": "aşağı",
@@ -189,6 +249,10 @@
           "label": "Yeni Boyut"
         }
       }
+    },
+    "fork": {
+      "description": "Zaman damgası tabanlı etikete sahip çatal deposu",
+      "name": "çatal"
     },
     "hello": {
       "description": "Ana bilgisayar adından merhaba yazdıran basit test işlevi",

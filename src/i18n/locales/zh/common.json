@@ -70,6 +70,7 @@
     "important": "重要",
     "loading": "加载中...",
     "showingRecords": "显示第 {{start}}-{{end}} 条记录，共 {{total}} 条",
+    "unknown": "未知",
     "vaultVersion": "保险库版本",
     "versionFormat": "v{{version}}"
   },
@@ -99,15 +100,15 @@
     "architecture": "架构",
     "audit": "审计",
     "closeMobileMenu": "关闭移动菜单",
+    "credentials": "凭据",
     "dashboard": "仪表板",
     "distributedStorage": "分布式存储",
     "logout": "退出",
+    "machines": "机器",
     "mainNavigation": "主导航",
     "marketplace": "Marketplace",
     "openMobileMenu": "打开手机菜单",
     "queue": "队列",
-    "machines": "机器",
-    "credentials": "凭据",
     "storage": "存储",
     "system": "系统"
   },
@@ -558,6 +559,7 @@
     "versionAutoIncrement": "保存时版本将自动递增",
     "versionWillIncrement": "版本将递增到 {{version}}"
   },
+  "viewDetails": "查看详情",
   "warnings": {
     "sandboxEnvironment": "沙盒环境",
     "sandboxMessage": "更新期间数据可能会重置。 仅用于测试。"

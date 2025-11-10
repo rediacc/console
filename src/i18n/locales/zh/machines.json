@@ -14,6 +14,8 @@
   "autoSetupAfterCreation": "创建机器后自动运行设置",
   "availableFunctions": "可用功能",
   "averageResponse": "平均响应",
+  "backToMachines": "返回机器",
+  "backToRepositories": "返回存储库",
   "bridge": "桥接",
   "bulkActions": {
     "assignToCluster": "分配到集群",
@@ -101,6 +103,8 @@
   "machineCount": "台机器",
   "machineCreatedButSetupFailed": "机器创建成功，但无法将设置加入队列。",
   "machineName": "机器名称",
+  "machineNotFound": "未找到机器",
+  "machineNotFoundDescription": "找不到机器“{{machineName}}”。 它可能已被删除，或者您可能无权访问它。",
   "machines": "机器",
   "machinesConnectedWithFailures": "{{successCount}} 台机器连接成功，{{failedCount}} 台失败",
   "manage": "管理",
@@ -131,6 +135,9 @@
   "remoteOperations": "远程操作",
   "removeFromClusterDescription": "这将从当前集群中取消分配机器",
   "removeFromClusterWarning": "您确定要从集群中删除 {{count}} 台机器吗？",
+  "repositoryContainers": "存储库容器",
+  "repositoryNotFound": "未找到存储库",
+  "repositoryNotFoundDescription": "在计算机“{{machineName}}”上找不到存储库“{{repositoryName}}”。 它可能已被删除，或者您可能无权访问它。",
   "responseTime": "响应时间",
   "runAction": "在服务器上运行",
   "runFunction": "运行功能",
@@ -168,5 +175,7 @@
   "vaultUpdateSuccess": "机器保险库配置更新成功",
   "vaultVersion": "保险库版本",
   "viewBy": "查看方式",
-  "viewMode": "查看模式"
+  "viewContainers": "查看容器",
+  "viewMode": "查看模式",
+  "viewRepositories": "查看存储库"
 }

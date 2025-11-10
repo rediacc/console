@@ -52,6 +52,36 @@
         }
       }
     },
+    "backup": {
+      "description": "将存储库备份到多个存储系统",
+      "name": "备份",
+      "params": {
+        "checkpoint": {
+          "help": "启用带检查点的热备份模式（需要CRIU，在线回购零停机）",
+          "label": "启用检查点"
+        },
+        "dest": {
+          "help": "备份文件的名称",
+          "label": "目标文件名"
+        },
+        "option": {
+          "help": "选项（例如覆盖）",
+          "label": "选项"
+        },
+        "repo": {
+          "help": "存储库名称，以逗号分隔",
+          "label": "存储库"
+        },
+        "state": {
+          "help": "备份前验证存储库是否在线或离线",
+          "label": "所需状态"
+        },
+        "storages": {
+          "help": "选择一个或多个目标存储系统进行备份",
+          "label": "目标存储系统"
+        }
+      }
+    },
     "clone": {
       "description": "在同一台机器上克隆存储库",
       "name": "克隆"
@@ -158,6 +188,36 @@
         }
       }
     },
+    "deploy": {
+      "description": "将存储库部署到多台机器",
+      "name": "部署",
+      "params": {
+        "checkpoint": {
+          "help": "启用带检查点的热部署模式（需要 CRIU，在线存储库零停机）",
+          "label": "启用检查点"
+        },
+        "dest": {
+          "help": "部署文件的名称",
+          "label": "目标文件名"
+        },
+        "machines": {
+          "help": "选择一台或多台目标机器进行部署",
+          "label": "目标机器"
+        },
+        "option": {
+          "help": "选项（例如覆盖）",
+          "label": "选项"
+        },
+        "repo": {
+          "help": "存储库名称，以逗号分隔",
+          "label": "存储库"
+        },
+        "state": {
+          "help": "部署前验证存储库是否在线或离线",
+          "label": "所需状态"
+        }
+      }
+    },
     "down": {
       "description": "停止仓库服务",
       "name": "停止",
@@ -189,6 +249,10 @@
           "label": "新尺寸"
         }
       }
+    },
+    "fork": {
+      "description": "具有基于时间戳的标签的分叉存储库",
+      "name": "叉"
     },
     "hello": {
       "description": "从主机名打印hello的简单测试功能",
