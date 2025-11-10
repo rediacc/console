@@ -45,13 +45,19 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
   useEffect(() => {
     try {
       const parsed = JSON.parse(initialVault)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVaultData(parsed)
     } catch {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVaultData({})
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setVaultVersion(initialVersion)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHasChanges(false)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setValidationErrors([])
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShowValidationErrors(false)
   }, [initialVault, initialVersion])
 

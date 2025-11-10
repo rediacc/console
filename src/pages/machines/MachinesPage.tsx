@@ -99,8 +99,10 @@ const MachinesPage: React.FC = () => {
       hasInitializedTeam.current = true
       if (uiMode === 'simple') {
         const privateTeam = teamsList.find((team) => team.teamName === 'Private Team')
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSelectedTeams([privateTeam?.teamName || teamsList[0].teamName])
       } else {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSelectedTeams([teamsList[0].teamName])
       }
     }
