@@ -106,7 +106,7 @@ const MachineRepositoriesPage: React.FC = () => {
   )
 
   // Repository creation hook (handles credentials + queue item)
-  const { createRepository } = useRepositoryCreation(machines)
+  const { createRepository, isCreating } = useRepositoryCreation(machines)
 
   // Fetch repositories (needed for MachineRepositoryList)
   const { data: repositories = [], refetch: refetchRepositories } = useRepositories(

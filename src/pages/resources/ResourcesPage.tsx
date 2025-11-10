@@ -270,7 +270,7 @@ const ResourcesPage: React.FC = () => {
   const updateStorageNameMutation = useUpdateStorageName()
   const deleteStorageMutation = useDeleteStorage()
   const updateStorageVaultMutation = useUpdateStorageVault()
-  
+
   // Queue action hook for function execution
   const { executeAction, isExecuting } = useQueueAction()
   
