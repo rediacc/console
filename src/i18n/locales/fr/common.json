@@ -70,6 +70,7 @@
     "important": "Importante",
     "loading": "Chargement...",
     "showingRecords": "Affichage des enregistrements {{start}}-{{end}} sur {{total}}",
+    "unknown": "Inconnue",
     "vaultVersion": "Version du coffre-fort",
     "versionFormat": "v{{version}}"
   },
@@ -98,15 +99,15 @@
     "architecture": "Architecture",
     "audit": "Audit",
     "closeMobileMenu": "Fermer le menu mobile",
+    "credentials": "Identifiants",
     "dashboard": "Tableau de bord",
     "distributedStorage": "Stockage distribué",
     "logout": "Déconnexion",
+    "machines": "Machines",
     "mainNavigation": "Navigation principale",
     "marketplace": "Marché",
     "openMobileMenu": "Ouvrir le menu mobile",
     "queue": "File d'attente",
-    "machines": "Machines",
-    "credentials": "Identifiants",
     "storage": "Stockage",
     "system": "Système"
   },
@@ -547,6 +548,7 @@
     "versionAutoIncrement": "La version s'incrémentera automatiquement lors de la sauvegarde",
     "versionWillIncrement": "La version passera à {{version}}"
   },
+  "viewDetails": "Afficher les détails",
   "warnings": {
     "sandboxEnvironment": "Environnement bac à sable",
     "sandboxMessage": "Les données peuvent être réinitialisées lors des mises à jour. Pour tests uniquement."

@@ -70,6 +70,7 @@
     "important": "Важный",
     "loading": "Загрузка...",
     "showingRecords": "Показаны записи {{start}}-{{end}} из {{total}}",
+    "unknown": "Неизвестный",
     "vaultVersion": "Версия хранилища",
     "versionFormat": "v{{версия}}"
   },
@@ -98,15 +99,15 @@
     "architecture": "Архитектура",
     "audit": "Аудит",
     "closeMobileMenu": "Закрыть мобильное меню",
+    "credentials": "Учетные данные",
     "dashboard": "Панель управления",
     "distributedStorage": "Распределенное хранилище",
     "logout": "Выход из системы",
+    "machines": "Машины",
     "mainNavigation": "Основная навигация",
     "marketplace": "Торговая площадка",
     "openMobileMenu": "Открыть мобильное меню",
     "queue": "Очередь",
-    "machines": "Машины",
-    "credentials": "Учетные данные",
     "storage": "Хранилище",
     "system": "Система"
   },
@@ -547,6 +548,7 @@
     "versionAutoIncrement": "Версия будет автоматически увеличиваться при сохранении",
     "versionWillIncrement": "Версия увеличится до {{version}}."
   },
+  "viewDetails": "Посмотреть детали",
   "warnings": {
     "sandboxEnvironment": "Песочница",
     "sandboxMessage": "Данные могут быть сброшены во время обновлений. Только для тестирования."

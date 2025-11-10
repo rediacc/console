@@ -13,6 +13,8 @@
   "autoSetupAfterCreation": "Führen Sie das Setup nach der Maschinenerstellung automatisch aus",
   "availableFunctions": "Verfügbare Funktionen",
   "averageResponse": "Durchschnittliche Antwort",
+  "backToMachines": "Zurück zu Maschinen",
+  "backToRepositories": "Zurück zu Repositories",
   "bridge": "Brücke",
   "bulkActions": {
     "assignToCluster": "Dem Cluster zuweisen",
@@ -100,6 +102,8 @@
   "machineCount": "Maschine | Maschinen",
   "machineCreatedButSetupFailed": "Die Maschine wurde erfolgreich erstellt, die Einrichtung konnte jedoch nicht in die Warteschlange gestellt werden.",
   "machineName": "Maschinenname",
+  "machineNotFound": "Maschine nicht gefunden",
+  "machineNotFoundDescription": "Die Maschine „{{machineName}}“ konnte nicht gefunden werden. Möglicherweise wurde es gelöscht oder Sie haben keinen Zugriff darauf.",
   "machines": "Maschinen",
   "machinesConnectedWithFailures": "{{successCount}} Maschinen verbunden, {{failedCount}} fehlgeschlagen",
   "manage": "Verwalten",
@@ -130,6 +134,9 @@
   "remoteOperations": "Fernoperationen",
   "removeFromClusterDescription": "Dadurch wird die Zuordnung der Maschinen zu ihren aktuellen Clustern aufgehoben",
   "removeFromClusterWarning": "Sind Sie sicher, dass Sie {{count}} Maschinen aus ihren Clustern entfernen möchten?",
+  "repositoryContainers": "Repository-Container",
+  "repositoryNotFound": "Repository nicht gefunden",
+  "repositoryNotFoundDescription": "Das Repository „{{repositoryName}}“ konnte auf der Maschine „{{machineName}}“ nicht gefunden werden. Möglicherweise wurde es gelöscht oder Sie haben keinen Zugriff darauf.",
   "responseTime": "Ansprechzeit",
   "runAction": "Auf dem Server ausführen",
   "runFunction": "Funktion ausführen",
@@ -167,5 +174,7 @@
   "vaultUpdateSuccess": "Die Konfiguration des Maschinentresors wurde erfolgreich aktualisiert",
   "vaultVersion": "Vault-Version",
   "viewBy": "Anzeigen nach",
-  "viewMode": "Ansichtsmodus"
+  "viewContainers": "Container anzeigen",
+  "viewMode": "Ansichtsmodus",
+  "viewRepositories": "Repositorys anzeigen"
 }

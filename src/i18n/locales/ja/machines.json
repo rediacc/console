@@ -13,6 +13,8 @@
   "autoSetupAfterCreation": "マシンの作成後にセットアップを自動的に実行する",
   "availableFunctions": "利用できる機能",
   "averageResponse": "平均的な応答",
+  "backToMachines": "マシンに戻る",
+  "backToRepositories": "リポジトリに戻る",
   "bridge": "橋",
   "bulkActions": {
     "assignToCluster": "クラスターに割り当てる",
@@ -100,6 +102,8 @@
   "machineCount": "機械 | 機械",
   "machineCreatedButSetupFailed": "マシンは正常に作成されましたが、セットアップをキューに入れることができませんでした。",
   "machineName": "マシン名",
+  "machineNotFound": "マシンが見つかりません",
+  "machineNotFoundDescription": "マシン「{{machineName}}」が見つかりませんでした。 削除されているか、アクセスできない可能性があります。",
   "machines": "機械",
   "machinesConnectedWithFailures": "{{successCount}} 台のマシンが接続され、{{failedCount}} 台が失敗しました",
   "manage": "管理",
@@ -130,6 +134,9 @@
   "remoteOperations": "遠隔操作",
   "removeFromClusterDescription": "これにより、現在のクラスターからマシンの割り当てが解除されます。",
   "removeFromClusterWarning": "{{count}} 台のマシンをクラスタから削除してもよろしいですか?",
+  "repositoryContainers": "リポジトリコンテナ",
+  "repositoryNotFound": "リポジトリが見つかりません",
+  "repositoryNotFoundDescription": "リポジトリ「{{repositoryName}}」がマシン「{{machineName}}」上で見つかりませんでした。 削除されているか、アクセスできない可能性があります。",
   "responseTime": "応答時間",
   "runAction": "サーバー上で実行",
   "runFunction": "関数の実行",
@@ -167,5 +174,7 @@
   "vaultUpdateSuccess": "マシンボルト構成が正常に更新されました",
   "vaultVersion": "ボールトのバージョン",
   "viewBy": "閲覧者",
-  "viewMode": "ビューモード"
+  "viewContainers": "コンテナの表示",
+  "viewMode": "ビューモード",
+  "viewRepositories": "リポジトリの表示"
 }

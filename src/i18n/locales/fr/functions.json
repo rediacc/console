@@ -52,6 +52,36 @@
         }
       }
     },
+    "backup": {
+      "description": "Référentiel de sauvegarde sur plusieurs systèmes de stockage",
+      "name": "sauvegarde",
+      "params": {
+        "checkpoint": {
+          "help": "Activer le mode de sauvegarde à chaud avec point de contrôle (nécessite CRIU, aucun temps d'arrêt pour les dépôts en ligne)",
+          "label": "Activer le point de contrôle"
+        },
+        "dest": {
+          "help": "Nom du fichier de sauvegarde",
+          "label": "Nom du fichier de destination"
+        },
+        "option": {
+          "help": "Options (par exemple, remplacement)",
+          "label": "Possibilités"
+        },
+        "repo": {
+          "help": "Nom(s) du référentiel, séparés par des virgules",
+          "label": "Dépôt"
+        },
+        "state": {
+          "help": "Vérifiez que le référentiel est en ligne ou hors ligne avant de sauvegarder",
+          "label": "État requis"
+        },
+        "storages": {
+          "help": "Sélectionnez un ou plusieurs systèmes de stockage cibles pour la sauvegarde",
+          "label": "Systèmes de stockage cibles"
+        }
+      }
+    },
     "clone": {
       "description": "Cloner le référentiel sur la même machine",
       "name": "cloner"
@@ -158,6 +188,36 @@
         }
       }
     },
+    "deploy": {
+      "description": "Déployer le référentiel sur plusieurs machines",
+      "name": "déployer",
+      "params": {
+        "checkpoint": {
+          "help": "Activer le mode de déploiement à chaud avec point de contrôle (nécessite CRIU, aucun temps d'arrêt pour les dépôts en ligne)",
+          "label": "Activer le point de contrôle"
+        },
+        "dest": {
+          "help": "Nom du fichier de déploiement",
+          "label": "Nom du fichier de destination"
+        },
+        "machines": {
+          "help": "Sélectionnez une ou plusieurs machines cibles pour le déploiement",
+          "label": "Machines cibles"
+        },
+        "option": {
+          "help": "Options (par exemple, remplacement)",
+          "label": "Possibilités"
+        },
+        "repo": {
+          "help": "Nom(s) du référentiel, séparés par des virgules",
+          "label": "Dépôt"
+        },
+        "state": {
+          "help": "Vérifier que le référentiel est en ligne ou hors ligne avant le déploiement",
+          "label": "État requis"
+        }
+      }
+    },
     "down": {
       "description": "Arrêter les services de référentiel",
       "name": "vers le bas",
@@ -189,6 +249,10 @@
           "label": "Nouvelle taille"
         }
       }
+    },
+    "fork": {
+      "description": "Dépôt Fork avec balise basée sur l'horodatage",
+      "name": "fourchette"
     },
     "hello": {
       "description": "Fonction de test simple qui imprime le bonjour à partir du nom d'hôte",

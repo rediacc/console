@@ -70,6 +70,7 @@
     "important": "Önemli",
     "loading": "Yükleniyor...",
     "showingRecords": "{{total}} kayıttan {{start}}-{{end}} arası kayıtlar gösteriliyor",
+    "unknown": "Bilinmiyor",
     "vaultVersion": "Kasa Sürümü",
     "versionFormat": "v{{versiyon}}"
   },
@@ -98,15 +99,15 @@
     "architecture": "Mimarlık",
     "audit": "Denetim",
     "closeMobileMenu": "Mobil menüyü kapat",
+    "credentials": "Kimlik Bilgileri",
     "dashboard": "Kontrol Paneli",
     "distributedStorage": "Dağıtılmış Depolama",
     "logout": "Oturumu kapat",
+    "machines": "Makineler",
     "mainNavigation": "Ana gezinme",
     "marketplace": "Pazar yeri",
     "openMobileMenu": "Mobil menüyü aç",
     "queue": "Sıra",
-    "machines": "Makineler",
-    "credentials": "Kimlik Bilgileri",
     "storage": "Depolama",
     "system": "Sistem"
   },
@@ -547,6 +548,7 @@
     "versionAutoIncrement": "Sürüm, kaydetme sırasında otomatik olarak artacaktır",
     "versionWillIncrement": "Sürüm {{version}} değerine artırılacak"
   },
+  "viewDetails": "Ayrıntıları Görüntüle",
   "warnings": {
     "sandboxEnvironment": "Korumalı Alan Ortamı",
     "sandboxMessage": "Güncellemeler sırasında veriler sıfırlanabilir. Yalnızca test amaçlıdır."

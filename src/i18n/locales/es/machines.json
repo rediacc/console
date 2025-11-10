@@ -13,6 +13,8 @@
   "autoSetupAfterCreation": "Ejecute automáticamente la configuración después de la creación de la máquina",
   "availableFunctions": "Funciones disponibles",
   "averageResponse": "Respuesta promedio",
+  "backToMachines": "Volver a Máquinas",
+  "backToRepositories": "Volver a los repositorios",
   "bridge": "Puente",
   "bulkActions": {
     "assignToCluster": "Asignar al clúster",
@@ -100,6 +102,8 @@
   "machineCount": "máquina | maquinas",
   "machineCreatedButSetupFailed": "La máquina se creó correctamente, pero la configuración no se pudo poner en cola.",
   "machineName": "Nombre de la máquina",
+  "machineNotFound": "Máquina no encontrada",
+  "machineNotFoundDescription": "No se pudo encontrar la máquina \"{{machineName}}\". Es posible que se haya eliminado o que no tengas acceso a él.",
   "machines": "maquinas",
   "machinesConnectedWithFailures": "{{successCount}} máquinas conectadas, {{failedCount}} falló",
   "manage": "Administrar",
@@ -130,6 +134,9 @@
   "remoteOperations": "Operaciones remotas",
   "removeFromClusterDescription": "Esto desasignará las máquinas de sus clústeres actuales.",
   "removeFromClusterWarning": "¿Está seguro de que desea eliminar {{count}} máquinas de sus clústeres?",
+  "repositoryContainers": "Contenedores de repositorio",
+  "repositoryNotFound": "Repositorio no encontrado",
+  "repositoryNotFoundDescription": "El repositorio \"{{repositoryName}}\" no se pudo encontrar en la máquina \"{{machineName}}\". Es posible que se haya eliminado o que no tengas acceso a él.",
   "responseTime": "Tiempo de respuesta",
   "runAction": "Ejecutar en el servidor",
   "runFunction": "Función de ejecución",
@@ -167,5 +174,7 @@
   "vaultUpdateSuccess": "La configuración de la bóveda de la máquina se actualizó correctamente",
   "vaultVersion": "Versión de bóveda",
   "viewBy": "Ver por",
-  "viewMode": "Modo de visualización"
+  "viewContainers": "Ver contenedores",
+  "viewMode": "Modo de visualización",
+  "viewRepositories": "Ver repositorios"
 }

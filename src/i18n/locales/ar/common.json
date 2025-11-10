@@ -70,6 +70,7 @@
     "important": "مهم",
     "loading": "تحميل...",
     "showingRecords": "عرض السجلات {{start}}-{{end}} من {{total}}",
+    "unknown": "مجهول",
     "vaultVersion": "نسخة قبو",
     "versionFormat": "ضد {{الإصدار}}"
   },
@@ -98,16 +99,16 @@
     "architecture": "بنيان",
     "audit": "مراجعة",
     "closeMobileMenu": "إغلاق قائمة الجوال",
+    "credentials": "أوراق اعتماد",
     "dashboard": "لوحة القيادة",
     "distributedStorage": "التخزين الموزع",
     "logout": "تسجيل الخروج",
+    "machines": "آلات",
     "mainNavigation": "الملاحة الرئيسية",
     "marketplace": "السوق",
     "openMobileMenu": "فتح قائمة الجوال",
     "queue": "طابور",
-    "machines": "الأجهزة",
-    "credentials": "بيانات الاعتماد",
-    "storage": "التخزين",
+    "storage": "تخزين",
     "system": "نظام"
   },
   "nestedObjectEditor": {
@@ -547,6 +548,7 @@
     "versionAutoIncrement": "سيتم زيادة الإصدار تلقائيًا عند الحفظ",
     "versionWillIncrement": "سيتم زيادة الإصدار إلى {{version}}"
   },
+  "viewDetails": "عرض التفاصيل",
   "warnings": {
     "sandboxEnvironment": "بيئة رمل",
     "sandboxMessage": "قد تتم إعادة ضبط البيانات أثناء التحديثات. للاختبار فقط."

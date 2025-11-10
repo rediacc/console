@@ -70,6 +70,7 @@
     "important": "重要",
     "loading": "読み込み中...",
     "showingRecords": "{{total}} 件中 {{start}}～{{end}} 件のレコードを表示しています",
+    "unknown": "未知",
     "vaultVersion": "ボールトのバージョン",
     "versionFormat": "v{{バージョン}}"
   },
@@ -98,15 +99,15 @@
     "architecture": "建築",
     "audit": "監査",
     "closeMobileMenu": "モバイルメニューを閉じる",
+    "credentials": "認証情報",
     "dashboard": "ダッシュボード",
     "distributedStorage": "分散ストレージ",
     "logout": "ログアウト",
+    "machines": "マシン",
     "mainNavigation": "メインナビゲーション",
     "marketplace": "市場",
     "openMobileMenu": "モバイルメニューを開く",
     "queue": "列",
-    "machines": "マシン",
-    "credentials": "認証情報",
     "storage": "ストレージ",
     "system": "システム"
   },
@@ -547,6 +548,7 @@
     "versionAutoIncrement": "バージョンは保存時に自動的にインクリメントされます",
     "versionWillIncrement": "バージョンは {{version}} に増加します"
   },
+  "viewDetails": "詳細を見る",
   "warnings": {
     "sandboxEnvironment": "サンドボックス環境",
     "sandboxMessage": "アップデート中にデータがリセットされる場合があります。 テスト専用。"

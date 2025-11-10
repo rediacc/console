@@ -52,6 +52,36 @@
         }
       }
     },
+    "backup": {
+      "description": "Backup-Repository auf mehreren Speichersystemen",
+      "name": "Sicherung",
+      "params": {
+        "checkpoint": {
+          "help": "Aktivieren Sie den Hot-Backup-Modus mit Checkpoint (erfordert CRIU, keine Ausfallzeit für Online-Repos)",
+          "label": "Checkpoint aktivieren"
+        },
+        "dest": {
+          "help": "Name für die Sicherungsdatei",
+          "label": "Zieldateiname"
+        },
+        "option": {
+          "help": "Optionen (z. B. Überschreiben)",
+          "label": "Optionen"
+        },
+        "repo": {
+          "help": "Repository-Name(n), durch Kommas getrennt",
+          "label": "Repository"
+        },
+        "state": {
+          "help": "Überprüfen Sie vor dem Sichern, ob das Repository online oder offline ist",
+          "label": "Erforderlicher Zustand"
+        },
+        "storages": {
+          "help": "Wählen Sie ein oder mehrere Zielspeichersysteme für die Sicherung aus",
+          "label": "Zielspeichersysteme"
+        }
+      }
+    },
     "clone": {
       "description": "Klonen Sie das Repository auf demselben Computer",
       "name": "Klon"
@@ -158,6 +188,36 @@
         }
       }
     },
+    "deploy": {
+      "description": "Stellen Sie das Repository auf mehreren Computern bereit",
+      "name": "einsetzen",
+      "params": {
+        "checkpoint": {
+          "help": "Aktivieren Sie den Hot-Deploy-Modus mit Prüfpunkt (erfordert CRIU, keine Ausfallzeit für Online-Repos)",
+          "label": "Checkpoint aktivieren"
+        },
+        "dest": {
+          "help": "Name für die Bereitstellungsdatei",
+          "label": "Zieldateiname"
+        },
+        "machines": {
+          "help": "Wählen Sie einen oder mehrere Zielcomputer für die Bereitstellung aus",
+          "label": "Zielmaschinen"
+        },
+        "option": {
+          "help": "Optionen (z. B. Überschreiben)",
+          "label": "Optionen"
+        },
+        "repo": {
+          "help": "Repository-Name(n), durch Kommas getrennt",
+          "label": "Repository"
+        },
+        "state": {
+          "help": "Überprüfen Sie vor der Bereitstellung, ob das Repository online oder offline ist",
+          "label": "Erforderlicher Zustand"
+        }
+      }
+    },
     "down": {
       "description": "Stoppen Sie die Repository-Dienste",
       "name": "runter",
@@ -189,6 +249,10 @@
           "label": "Neue Größe"
         }
       }
+    },
+    "fork": {
+      "description": "Fork-Repository mit zeitstempelbasiertem Tag",
+      "name": "Gabel"
     },
     "hello": {
       "description": "Einfache Testfunktion, die „Hallo“ vom Hostnamen ausgibt",

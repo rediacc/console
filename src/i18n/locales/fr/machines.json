@@ -13,6 +13,8 @@
   "autoSetupAfterCreation": "Exécuter automatiquement l'installation après la création de la machine",
   "availableFunctions": "Fonctions disponibles",
   "averageResponse": "Réponse moyenne",
+  "backToMachines": "Retour à Machines",
+  "backToRepositories": "Retour aux référentiels",
   "bridge": "Pont",
   "bulkActions": {
     "assignToCluster": "Attribuer au cluster",
@@ -100,6 +102,8 @@
   "machineCount": "machines | machines",
   "machineCreatedButSetupFailed": "Machine créée avec succès, mais l'installation n'a pas pu être mise en file d'attente.",
   "machineName": "Nom de l'appareil",
+  "machineNotFound": "Appareil introuvable",
+  "machineNotFoundDescription": "La machine \"{{machineName}}\" est introuvable. Il a peut-être été supprimé ou vous n'y avez peut-être pas accès.",
   "machines": "Machines",
   "machinesConnectedWithFailures": "{{successCount}} machines connectées, {{failedCount}} échecs",
   "manage": "Gérer",
@@ -130,6 +134,9 @@
   "remoteOperations": "Opérations à distance",
   "removeFromClusterDescription": "Cela annulera l'attribution des machines de leurs clusters actuels.",
   "removeFromClusterWarning": "Êtes-vous sûr de vouloir supprimer {{count}} machines de leurs clusters ?",
+  "repositoryContainers": "Conteneurs de référentiel",
+  "repositoryNotFound": "Référentiel introuvable",
+  "repositoryNotFoundDescription": "Le référentiel \"{{repositoryName}}\" est introuvable sur la machine \"{{machineName}}\". Il a peut-être été supprimé ou vous n'y avez peut-être pas accès.",
   "responseTime": "Temps de réponse",
   "runAction": "Exécuter sur le serveur",
   "runFunction": "Exécuter la fonction",
@@ -167,5 +174,7 @@
   "vaultUpdateSuccess": "La configuration du coffre-fort de machines a été mise à jour avec succès",
   "vaultVersion": "Version du coffre-fort",
   "viewBy": "Afficher par",
-  "viewMode": "Mode d'affichage"
+  "viewContainers": "Afficher les conteneurs",
+  "viewMode": "Mode d'affichage",
+  "viewRepositories": "Afficher les référentiels"
 }
