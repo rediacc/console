@@ -1,49 +1,14 @@
 import styled from 'styled-components'
-import { Card, Button, Input, Alert } from 'antd'
-
-export const LoginCard = styled(Card)`
-  width: ${({ theme }) => theme.dimensions.CARD_WIDTH_LG}px;
-  backdrop-filter: blur(8px);
-  background: ${({ theme }) => theme.colors.bgPrimary};
-  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  box-shadow: ${({ theme }) => theme.shadows.CARD};
-  padding: ${({ theme }) => theme.spacing['3']}px;
-  
-  .ant-card-body {
-    padding: 0;
-  }
-  
-  /* Mobile responsive */
-  @media (max-width: 768px) {
-    width: 100%;
-    max-width: 100%;
-    min-height: 100vh;
-    border-radius: 0;
-    border: none;
-    box-shadow: none;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-  
-  @media (max-width: 480px) {
-    padding: ${({ theme }) => theme.spacing['2']}px;
-  }
-`
+import { Button, Input, Alert } from 'antd'
 
 export const LoginContainer = styled.div`
   width: 100%;
-`
+  max-width: ${({ theme }) => theme.dimensions.CARD_WIDTH_LG}px;
+  margin: 0 auto;
+  padding: ${({ theme }) => theme.spacing['3']}px;
 
-export const LanguageSelectorWrapper = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: -${({ theme }) => theme.spacing.SM}px;
-  
-  @media (max-width: 768px) {
-    padding-right: 0;
-    margin-bottom: ${({ theme }) => theme.spacing.MD}px;
+  @media (max-width: 480px) {
+    padding: ${({ theme }) => theme.spacing['2']}px;
   }
 `
 
@@ -52,7 +17,7 @@ export const LogoContainer = styled.div`
   justify-content: center;
   align-items: center;
   height: ${({ theme }) => theme.spacing.XXXXXL}px;
-  margin-top: -${({ theme }) => theme.spacing.SM}px;
+  margin-top: ${({ theme }) => theme.spacing.MD}px;
   
   img {
     height: ${({ theme }) => theme.spacing.XL}px;

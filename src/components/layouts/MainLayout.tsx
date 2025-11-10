@@ -718,7 +718,7 @@ const MainLayout: React.FC = () => {
             )}
           </Space>
           <Space size={isMobile ? spacing('SM') : spacing('MD')} align="center">
-            <LanguageSelector />
+            <LanguageSelector iconOnly={true} />
             <ThemeToggle />
             <NotificationBell />
           </Space>
