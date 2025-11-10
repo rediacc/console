@@ -1056,30 +1056,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       const finalParams = { ...functionData.params }
       const repositoryGuid = repositoryData.repositoryGuid
       const repositoryVault = grandRepositoryVault
-      const destinationMachineVault = undefined
-      const destinationStorageVault = undefined
-      let sourceMachineVault = undefined
-      let sourceStorageVault = undefined
-      
-      // For pull from machine, get source machine vault data
-      if (functionData.function.name === 'pull' && 
-          functionData.params.sourceType === 'machine' && 
-          functionData.params.from) {
-        const sourceMachine = machinesData?.find(m => m.machineName === functionData.params.from)
-        if (sourceMachine && sourceMachine.vaultContent) {
-          sourceMachineVault = sourceMachine.vaultContent
-        }
-      }
-      
-      // For pull from storage, get source storage vault data
-      if (functionData.function.name === 'pull' && 
-          functionData.params.sourceType === 'storage' && 
-          functionData.params.from) {
-        const sourceStorage = storageData?.find(s => s.storageName === functionData.params.from)
-        if (sourceStorage && sourceStorage.vaultContent) {
-          sourceStorageVault = sourceStorage.vaultContent
-        }
-      }
 
       // Handle deploy function (multiple machines)
       if (functionData.function.name === 'deploy' && functionData.params.machines) {
@@ -1130,13 +1106,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         // Now deploy to each target machine using the same repository credential
         for (const targetMachine of machinesArray) {
           try {
-            // Get destination machine vault
-            const destinationMachine = machinesData?.find(m => m.machineName === targetMachine)
-            let targetMachineVault = undefined
-            if (destinationMachine && destinationMachine.vaultContent) {
-              targetMachineVault = destinationMachine.vaultContent
-            }
-
             // Build queue vault for this specific destination
             const deployParams = {
               ...functionData.params,
@@ -1206,13 +1175,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
         for (const targetStorage of storagesArray) {
           try {
-            // Get destination storage vault
-            const destinationStorage = storageData?.find(s => s.storageName === targetStorage)
-            let targetStorageVault = undefined
-            if (destinationStorage && destinationStorage.vaultContent) {
-              targetStorageVault = destinationStorage.vaultContent
-            }
-
             // Build queue vault for this specific storage
             const backupParams = {
               ...functionData.params,

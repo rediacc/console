@@ -69,7 +69,6 @@ import TeamSelector from '@/components/common/TeamSelector'
 import { useRepositoryCreation } from '@/hooks/useRepositoryCreation'
 import { useQueueAction } from '@/hooks/useQueueAction'
 import { type Machine } from '@/types'
-import apiClient from '@/api/client'
 
 const { Title } = Typography
 
@@ -397,9 +396,6 @@ const ResourcesPage: React.FC = () => {
             // If auto-setup is enabled, queue the setup function
             if (autoSetup) {
               try {
-                // Find team vault data
-                const team = teamsList.find(t => t.teamName === data.teamName)
-                
                 // Wait a bit for the machine to be fully created and indexed
                 await new Promise(resolve => setTimeout(resolve, 500))
 

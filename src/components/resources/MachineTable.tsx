@@ -26,7 +26,6 @@ import {
   BranchesOutlined,
   DesktopOutlined,
   DashboardOutlined,
-  CloudDownloadOutlined,
   RightOutlined,
   InfoCircleOutlined,
   CheckCircleOutlined,
