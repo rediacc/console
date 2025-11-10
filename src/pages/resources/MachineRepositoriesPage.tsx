@@ -125,7 +125,7 @@ const MachineRepositoriesPage: React.FC = () => {
   }, [machines, machineName])
 
   const handleBackToMachines = () => {
-    navigate('/resources', { state: { activeTab: 'machines' } })
+    navigate('/machines')
   }
 
   const handleRefresh = async () => {
@@ -299,7 +299,7 @@ const MachineRepositoriesPage: React.FC = () => {
             items={[
               {
                 title: <span style={{ cursor: 'pointer' }}>{t('machines:machines')}</span>,
-                onClick: () => navigate('/resources')
+                onClick: () => navigate('/machines')
               },
               {
                 title: machine?.machineName || machineName

@@ -105,7 +105,9 @@
     "marketplace": "Marktplatz",
     "openMobileMenu": "Öffnen Sie das mobile Menü",
     "queue": "Warteschlange",
-    "resources": "Ressourcen",
+    "machines": "Maschinen",
+    "credentials": "Anmeldeinformationen",
+    "storage": "Speicher",
     "system": "System"
   },
   "nestedObjectEditor": {

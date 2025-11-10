@@ -40,25 +40,26 @@ const VaultEditorModal: React.FC<VaultEditorModalProps> = ({
   const importExportHandlers = useRef<{ handleImport: (file: any) => boolean; handleExport: () => void } | null>(null)
   const validationErrorsRef = useRef<HTMLDivElement>(null)
   const styles = useComponentStyles()
-  const [prevInitialVault, setPrevInitialVault] = useState(initialVault)
-  const [prevInitialVersion, setPrevInitialVersion] = useState(initialVersion)
 
-  // Sync state with initial props during render
-  if (initialVault !== prevInitialVault || initialVersion !== prevInitialVersion) {
-    setPrevInitialVault(initialVault)
-    setPrevInitialVersion(initialVersion)
-
+  // Sync state with initial props when they change
+  useEffect(() => {
     try {
       const parsed = JSON.parse(initialVault)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVaultData(parsed)
     } catch {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVaultData({})
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setVaultVersion(initialVersion)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHasChanges(false)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setValidationErrors([])
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShowValidationErrors(false)
-  }
+  }, [initialVault, initialVersion])
 
   const handleVaultChange = (data: Record<string, any>, changed: boolean) => {
     setVaultData(data)

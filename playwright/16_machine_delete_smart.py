@@ -247,7 +247,7 @@ class MachineDeleteTest:
     def navigate_to_resources(self):
         """Navigate to Resources page"""
         print("6. Navigating to Resources...")
-        resources_test_id = self.config.get("ui", {}).get("resourcesMenuTestId", "main-nav-resources")
+        resources_test_id = self.config.get("ui", {}).get("resourcesMenuTestId", "main-nav-machines")
         
         # Try multiple ways to find resources link
         resources_selectors = [

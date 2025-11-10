@@ -80,7 +80,7 @@ def run(playwright: Playwright) -> None:
         
         # Step 2: Navigate to Resources
         print("\n=== STEP 2: Navigate to Resources ===")
-        resources_link = page.get_by_test_id("main-nav-resources").get_by_text("Resources")
+        resources_link = page.get_by_test_id("main-nav-machines").get_by_text("Machines")
         resources_link.click()
         page.wait_for_load_state("networkidle")
         time.sleep(3)
@@ -200,7 +200,7 @@ def run(playwright: Playwright) -> None:
         
         # Navigate back to Resources
         if "resources" not in page.url:
-            resources_link = page.get_by_test_id("main-nav-resources").get_by_text("Resources")
+            resources_link = page.get_by_test_id("main-nav-machines").get_by_text("Machines")
             resources_link.click()
             page.wait_for_load_state("networkidle")
             time.sleep(3)

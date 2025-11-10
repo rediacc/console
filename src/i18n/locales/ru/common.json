@@ -105,7 +105,9 @@
     "marketplace": "Торговая площадка",
     "openMobileMenu": "Открыть мобильное меню",
     "queue": "Очередь",
-    "resources": "Ресурсы",
+    "machines": "Машины",
+    "credentials": "Учетные данные",
+    "storage": "Хранилище",
     "system": "Система"
   },
   "nestedObjectEditor": {

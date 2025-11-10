@@ -105,7 +105,9 @@
     "marketplace": "Pazar yeri",
     "openMobileMenu": "Mobil menüyü aç",
     "queue": "Sıra",
-    "resources": "Kaynaklar",
+    "machines": "Makineler",
+    "credentials": "Kimlik Bilgileri",
+    "storage": "Depolama",
     "system": "Sistem"
   },
   "nestedObjectEditor": {

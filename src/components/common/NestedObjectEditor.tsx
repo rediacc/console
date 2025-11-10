@@ -95,17 +95,21 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
   'data-testid': dataTestId,
 }) => {
   const { t } = useTranslation('common')
-  const [entries, setEntries] = useState<ObjectEntry[]>([])
+  const [entries, setEntries] = useState<ObjectEntry[]>(() =>
+    Object.entries(value).map(([key, val]) => ({
+      key,
+      value: val,
+      isEditing: false,
+    }))
+  )
   const [newKey, setNewKey] = useState('')
   const [showRawJson, setShowRawJson] = useState(false)
-  const [rawJsonValue, setRawJsonValue] = useState('')
+  const [rawJsonValue, setRawJsonValue] = useState(() => JSON.stringify(value, null, 2))
   const [rawJsonError, setRawJsonError] = useState<string | null>(null)
-  const [structureInfo, setStructureInfo] = useState<ReturnType<typeof detectStructurePattern>>({ isUniform: false })
-  const [prevValue, setPrevValue] = useState(value)
+  const [structureInfo, setStructureInfo] = useState<ReturnType<typeof detectStructurePattern>>(() => detectStructurePattern(value))
 
-  // Sync state with props when value changes (during render, not in effect)
-  if (value !== prevValue) {
-    setPrevValue(value)
+  // Sync state with props when value changes
+  React.useEffect(() => {
     const entriesArray = Object.entries(value).map(([key, val]) => ({
       key,
       value: val,
@@ -117,7 +121,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
     // Detect pattern in the data
     const info = detectStructurePattern(value)
     setStructureInfo(info)
-  }
+  }, [value])
 
   // Convert entries back to object and notify parent
   const updateValue = (newEntries: ObjectEntry[]) => {

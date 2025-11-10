@@ -105,7 +105,9 @@
     "marketplace": "市場",
     "openMobileMenu": "モバイルメニューを開く",
     "queue": "列",
-    "resources": "リソース",
+    "machines": "マシン",
+    "credentials": "認証情報",
+    "storage": "ストレージ",
     "system": "システム"
   },
   "nestedObjectEditor": {

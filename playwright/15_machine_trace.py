@@ -105,7 +105,7 @@ def run(playwright: Playwright) -> None:
         
         # Navigate to Resources
         print("6. Navigating to Resources...")
-        resources_link = page.get_by_test_id("main-nav-resources")
+        resources_link = page.get_by_test_id("main-nav-machines")
         resources_link.click()
         page.wait_for_load_state("networkidle")
         

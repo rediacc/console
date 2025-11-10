@@ -182,7 +182,7 @@ const MarketplacePage: React.FC = () => {
       
       // Optionally navigate to resources page to see the new repository
       setTimeout(() => {
-        navigate('/resources')
+        navigate('/machines')
       }, 1000)
     } catch (error) {
       message.error(t('resources:repository.createError'))
@@ -256,7 +256,7 @@ const MarketplacePage: React.FC = () => {
                     </button>
                     <button 
                       type="button"
-                      onClick={() => navigate('/resources')}
+                      onClick={() => navigate('/machines')}
                       style={{
                         ...styles.buttonSecondary,
                         ...styles.touchTarget,
@@ -293,7 +293,7 @@ const MarketplacePage: React.FC = () => {
                     </button>
                     <button 
                       type="button"
-                      onClick={() => navigate('/resources')}
+                      onClick={() => navigate('/machines')}
                       style={{
                         ...styles.buttonSecondary,
                         ...styles.touchTarget,

@@ -141,7 +141,7 @@ const RepositoryContainersPage: React.FC = () => {
   }
 
   const handleBackToMachines = () => {
-    navigate('/resources')
+    navigate('/machines')
   }
 
   const handleContainerClick = (container: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -238,7 +238,7 @@ const RepositoryContainersPage: React.FC = () => {
             items={[
               {
                 title: <span style={{ cursor: 'pointer' }}>{t('machines:machines')}</span>,
-                onClick: () => navigate('/resources')
+                onClick: () => navigate('/machines')
               },
               {
                 title: <span style={{ cursor: 'pointer' }}>{actualMachine.machineName}</span>,

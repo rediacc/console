@@ -116,7 +116,7 @@ def run(playwright: Playwright) -> None:
         
         # Navigate to Resources
         print("Navigating to Resources...")
-        page.get_by_test_id("main-nav-resources").click()
+        page.get_by_test_id("main-nav-machines").click()
         
         # Wait for Resources page to load
         page.wait_for_selector('[data-testid="resources-create-machine-button"]', state='visible')

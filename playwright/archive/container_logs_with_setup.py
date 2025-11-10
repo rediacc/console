@@ -86,7 +86,7 @@ def run(playwright: Playwright) -> None:
         
         # Step 2: Navigate to Resources and wait for loading
         print("\n=== STEP 2: Navigate to Resources ===")
-        resources_link = page.get_by_test_id("main-nav-resources").get_by_text("Resources")
+        resources_link = page.get_by_test_id("main-nav-machines").get_by_text("Machines")
         resources_link.click()
         
         # Wait longer for the resources to load

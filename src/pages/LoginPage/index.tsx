@@ -372,7 +372,7 @@ const LoginPage: React.FC = () => {
         vault_protocol_state: vaultProtocolState?.toString() || 'none'
       })
 
-      navigate('/resources')
+      navigate('/machines')
     } catch (error: any) {
       // Track login failure
       trackUserAction('login_failure', 'login_form', {
@@ -431,7 +431,7 @@ const LoginPage: React.FC = () => {
 
         // Close modal and navigate
         setShowTFAModal(false)
-        navigate('/resources')
+        navigate('/machines')
       }
     } catch (error: any) {
       // Error is handled by the mutation

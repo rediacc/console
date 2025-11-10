@@ -219,7 +219,7 @@ def run(playwright: Playwright) -> None:
         
         # Navigate to Resources
         print("Navigating to Resources...")
-        resources_nav = page.get_by_test_id("main-nav-resources")
+        resources_nav = page.get_by_test_id("main-nav-machines")
         resources_nav.wait_for(state='visible')
         resources_nav.click()
         

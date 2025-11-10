@@ -85,7 +85,7 @@ class LoginTest(SmartTestBase):
             # Check for dashboard elements
             dashboard_selectors = [
                 "main-nav-dashboard",
-                "main-nav-resources",
+                "main-nav-machines",
                 "main-nav-monitoring"
             ]
             

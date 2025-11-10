@@ -86,6 +86,39 @@ Before opening a PR, run through this quick checklist:
 
 ---
 
+## Common TypeScript & Linter Issues
+
+### Styled Ant Design Table Components
+When wrapping Ant Design's `Table` in styled-components with custom props:
+```ts
+// ✅ Correct: Cast to any to allow generic types and custom props
+export const DataTable = styled(Table as any)<{ $isLoading?: boolean }>`
+  .ant-spin-nested-loading {
+    opacity: ${(props: any) => (props.$isLoading ? 0.65 : 1)};
+  }
+`
+```
+
+### Pagination Callbacks
+Always provide explicit types for pagination callbacks to avoid implicit `any`:
+```tsx
+// ✅ Correct
+showTotal: (total: number, range: [number, number]) => `${start} - ${end} of ${total}`,
+onChange: (page: number, size: number) => { ... }
+```
+
+### React Hooks: setState in useEffect
+When intentionally calling `setState` in `useEffect` (e.g., syncing with props):
+```tsx
+useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  setVaultData(parsed)
+}, [initialVault])
+```
+Use this sparingly—only when synchronizing component state with external changes.
+
+---
+
 ## Prompt Template for Claude (or other assistants)
 ```
 You are updating styles in the console repo.

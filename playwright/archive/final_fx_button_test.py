@@ -75,7 +75,7 @@ def run():
             
             # Navigate to Resources
             print("Navigating to Resources...")
-            resources_link = page.get_by_test_id("main-nav-resources")
+            resources_link = page.get_by_test_id("main-nav-machines")
             resources_link.click()
             time.sleep(3)
             

@@ -106,7 +106,9 @@
     "marketplace": "Marketplace",
     "openMobileMenu": "打开手机菜单",
     "queue": "队列",
-    "resources": "资源",
+    "machines": "机器",
+    "credentials": "凭据",
+    "storage": "存储",
     "system": "系统"
   },
   "nestedObjectEditor": {

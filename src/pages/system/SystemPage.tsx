@@ -1647,17 +1647,19 @@ const SystemPage: React.FC = () => {
                   {t('company.description')}
                 </Text>
 
-                <Tooltip title={t('company.configureVault')}>
-                  <Button
-                    type="primary"
-                    icon={<SettingOutlined />}
-                    onClick={() => setCompanyVaultModalOpen(true)}
-                    size="large"
-                    style={{ marginTop: 16 }}
-                    data-testid="system-company-vault-button"
-                    aria-label={t('company.configureVault')}
-                  />
-                </Tooltip>
+                {featureFlags.isEnabled('companyVaultConfiguration') && (
+                  <Tooltip title={t('company.configureVault')}>
+                    <Button
+                      type="primary"
+                      icon={<SettingOutlined />}
+                      onClick={() => setCompanyVaultModalOpen(true)}
+                      size="large"
+                      style={{ marginTop: 16 }}
+                      data-testid="system-company-vault-button"
+                      aria-label={t('company.configureVault')}
+                    />
+                  </Tooltip>
+                )}
               </Space>
             </Card>
           </Col>
@@ -1676,19 +1678,21 @@ const SystemPage: React.FC = () => {
                 </Text>
 
                 <Space style={{ marginTop: 16 }} wrap>
-                  <Tooltip title={t('personal.configureVault')}>
-                    <Button
-                      type="primary"
-                      icon={<SettingOutlined />}
-                      onClick={() => {
-                        refetchUserVault()
-                        setUserVaultModalOpen(true)
-                      }}
-                      size="large"
-                      data-testid="system-user-vault-button"
-                      aria-label={t('personal.configureVault')}
-                    />
-                  </Tooltip>
+                  {featureFlags.isEnabled('personalVaultConfiguration') && (
+                    <Tooltip title={t('personal.configureVault')}>
+                      <Button
+                        type="primary"
+                        icon={<SettingOutlined />}
+                        onClick={() => {
+                          refetchUserVault()
+                          setUserVaultModalOpen(true)
+                        }}
+                        size="large"
+                        data-testid="system-user-vault-button"
+                        aria-label={t('personal.configureVault')}
+                      />
+                    </Tooltip>
+                  )}
                   <Tooltip title={t('system:actions.changePassword')}>
                     <Button
                       type="primary"

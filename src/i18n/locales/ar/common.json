@@ -105,7 +105,9 @@
     "marketplace": "السوق",
     "openMobileMenu": "فتح قائمة الجوال",
     "queue": "طابور",
-    "resources": "موارد",
+    "machines": "الأجهزة",
+    "credentials": "بيانات الاعتماد",
+    "storage": "التخزين",
     "system": "نظام"
   },
   "nestedObjectEditor": {
