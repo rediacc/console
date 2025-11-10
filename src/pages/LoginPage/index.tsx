@@ -10,7 +10,6 @@ import { hashPassword } from '@/utils/auth'
 import apiClient from '@/api/client'
 import { showMessage } from '@/utils/messages'
 import { useTheme } from '@/context/ThemeContext'
-import LanguageSelector from '@/components/common/LanguageSelector'
 import VersionSelector from '@/components/common/VersionSelector'
 import EndpointSelector from '@/components/common/EndpointSelector'
 import logoBlack from '@/assets/logo_black.png'
@@ -35,9 +34,7 @@ import { configService } from '@/services/configService'
 import SandboxWarning from '@/components/common/SandboxWarning'
 import LocalhostModeIndicator from '@/components/common/LocalhostModeIndicator'
 import {
-  LoginCard,
   LoginContainer,
-  LanguageSelectorWrapper,
   LogoContainer,
   StyledAlert,
   FormLabel,
@@ -447,13 +444,8 @@ const LoginPage: React.FC = () => {
     <>
       <SandboxWarning />
       <LocalhostModeIndicator />
-      <LoginCard>
-        <LoginContainer>
+      <LoginContainer>
           <Space direction="vertical" size={spacing('XL')} style={{ width: '100%' }}>
-            <LanguageSelectorWrapper>
-              <LanguageSelector />
-            </LanguageSelectorWrapper>
-            
             <LogoContainer>
               <img
                 src={theme === 'dark' ? logoWhite : logoBlack}
@@ -637,7 +629,6 @@ const LoginPage: React.FC = () => {
             </SelectorsContainer>
           </Space>
         </LoginContainer>
-      </LoginCard>
 
       {/* TFA Verification Modal */}
       <Modal

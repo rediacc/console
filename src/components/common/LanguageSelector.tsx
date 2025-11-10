@@ -1,9 +1,11 @@
 import React from 'react';
-import { Select } from 'antd';
+import { Select, Button, Dropdown } from 'antd';
 import { GlobalOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
+import { DESIGN_TOKENS } from '@/utils/styleConstants';
+import { useComponentStyles } from '@/hooks/useComponentStyles';
 const { Option } = Select;
 
 interface Language {
@@ -24,8 +26,13 @@ const languages: Language[] = [
   { code: 'ru', name: 'Русский', flag: '🇷🇺' },
 ];
 
-const LanguageSelector: React.FC = () => {
-  const { i18n } = useTranslation();
+interface LanguageSelectorProps {
+  iconOnly?: boolean;
+}
+
+const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false }) => {
+  const { i18n, t } = useTranslation('common');
+  const styles = useComponentStyles();
 
   const handleChange = (value: string) => {
     i18n.changeLanguage(value);
@@ -39,6 +46,42 @@ const LanguageSelector: React.FC = () => {
     };
     dayjs.locale(dayjsLocaleMap[value] || 'en');
   };
+
+  const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
+
+  if (iconOnly) {
+    const menuItems = languages.map((lang) => ({
+      key: lang.code,
+      label: (
+        <span data-testid={`language-option-${lang.code}`}>
+          {lang.flag} {lang.name}
+        </span>
+      ),
+      onClick: () => handleChange(lang.code),
+    }));
+
+    return (
+      <Dropdown
+        menu={{ items: menuItems }}
+        placement="bottomRight"
+        trigger={['click']}
+      >
+        <Button
+          type="text"
+          icon={<GlobalOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD }} />}
+          aria-label={t('language.switch')}
+          title={`${currentLanguage.flag} ${currentLanguage.name}`}
+          data-testid="language-selector-icon"
+          style={{
+            ...styles.touchTarget,
+            borderRadius: DESIGN_TOKENS.BORDER_RADIUS.LG,
+            transition: DESIGN_TOKENS.TRANSITIONS.BUTTON,
+            color: 'var(--color-text-primary)',
+          } as React.CSSProperties}
+        />
+      </Dropdown>
+    );
+  }
 
   return (
     <Select

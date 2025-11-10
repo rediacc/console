@@ -208,14 +208,14 @@ export const GlobalStyles = createGlobalStyle`
   /* ============================================
      MOBILE RESPONSIVE - AUTH LAYOUT
      ============================================ */
-  
+
   @media (max-width: 768px) {
     .auth-layout-content {
       padding: 0 !important;
     }
-    
-    /* Move theme toggle to bottom on mobile */
-    .auth-theme-toggle-wrapper {
+
+    /* Move auth controls (language and theme toggle) to bottom on mobile */
+    .auth-controls-wrapper {
       position: fixed !important;
       top: auto !important;
       bottom: 24px !important;
