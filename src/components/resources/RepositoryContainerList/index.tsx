@@ -4,10 +4,9 @@ import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
 import { FunctionOutlined, PlayCircleOutlined, StopOutlined, ReloadOutlined, DeleteOutlined, PauseCircleOutlined, CheckCircleOutlined, DisconnectOutlined, EyeOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import * as S from './styles'
-import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
-import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
+import { useQueueAction } from '@/hooks/useQueueAction'
 import { Machine } from '@/types'
-import { useTeams } from '@/api/queries/teams'
+import { useRepositories } from '@/api/queries/repositories'
 import type { ColumnsType } from 'antd/es/table'
 import { LocalActionsMenu } from '../LocalActionsMenu'
 import { showMessage } from '@/utils/messages'
@@ -91,9 +90,21 @@ export const RepositoryContainerList: React.FC<RepositoryContainerListProps> = (
   const [containers, setContainers] = useState<Container[]>([])
   const [pluginContainers, setPluginContainers] = useState<Container[]>([])
 
-  const { data: teamsData } = useTeams()
-  const { buildQueueVault } = useQueueVaultBuilder()
-  const managedQueueMutation = useManagedQueueItem()
+  const { executeAction, isExecuting } = useQueueAction()
+  const { data: teamRepositories = [] } = useRepositories(machine.teamName)
+
+  // Find repository data for credentials
+  const repositoryData = teamRepositories.find(r =>
+    r.repositoryName === repository.name ||
+    r.repositoryGuid === repository.originalGuid ||
+    r.repositoryGuid === repository.name
+  )
+
+  // Get grand repository vault (for credentials)
+  const grandRepositoryData = repositoryData?.grandGuid
+    ? teamRepositories.find(r => r.repositoryGuid === repositoryData.grandGuid)
+    : repositoryData
+  const grandRepositoryVault = grandRepositoryData?.vaultContent || '{}'
 
   // Parse containers from machine vaultStatus
   useEffect(() => {
@@ -188,43 +199,37 @@ export const RepositoryContainerList: React.FC<RepositoryContainerListProps> = (
 
   // Handle container actions
   const handleContainerAction = async (container: Container, functionName: string) => {
-    try {
-      const team = teamsData?.find(t => t.teamName === machine.teamName)
+    const result = await executeAction({
+      teamName: machine.teamName,
+      machineName: machine.machineName,
+      bridgeName: machine.bridgeName,
+      functionName,
+      params: {
+        repo: repositoryData?.repositoryGuid || repository.name,
+        container: container.id
+      },
+      priority: 4,
+      description: `${functionName} for container ${container.name}`,
+      addedVia: 'container-action',
+      machineVault: machine.vaultContent || '{}',
+      repositoryGuid: repositoryData?.repositoryGuid,
+      repositoryVault: grandRepositoryVault,
+      repositoryLoopbackIp: repositoryData?.repoLoopbackIp,
+      repositoryNetworkMode: repositoryData?.repoNetworkMode,
+      repositoryTag: repositoryData?.repoTag
+    })
 
-      const queueVault = await buildQueueVault({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
-        functionName,
-        params: {
-          repo: repository.name,
-          container: container.id
-        },
-        priority: 4,
-        description: `${functionName} for container ${container.name}`,
-        addedVia: 'container-action',
-        teamVault: team?.vaultContent || '{}',
-        machineVault: machine.vaultContent || '{}'
-      })
-
-      const response = await managedQueueMutation.mutateAsync({
-        teamName: machine.teamName,
-        machineName: machine.machineName,
-        bridgeName: machine.bridgeName,
-        queueVault,
-        priority: 4
-      })
-
-      if (response?.taskId) {
+    if (result.success) {
+      if (result.taskId) {
         showMessage('success', t('machines:queueItemCreated'))
         if (onQueueItemCreated) {
-          onQueueItemCreated(response.taskId, machine.machineName)
+          onQueueItemCreated(result.taskId, machine.machineName)
         }
-      } else if (response?.isQueued) {
+      } else if (result.isQueued) {
         showMessage('info', t('resources:repositories.highestPriorityQueued'))
       }
-    } catch (error: any) {
-      showMessage('error', error.message || t('common:errors.somethingWentWrong'))
+    } else {
+      showMessage('error', result.error || t('common:errors.somethingWentWrong'))
     }
   }
 
@@ -382,7 +387,7 @@ export const RepositoryContainerList: React.FC<RepositoryContainerListProps> = (
                   type="primary"
                   size="small"
                   icon={<FunctionOutlined />}
-                  loading={managedQueueMutation.isPending}
+                  loading={isExecuting}
                   data-testid={`container-actions-${container.id}`}
                   aria-label={t('machines:remote')}
                 />
@@ -445,7 +450,8 @@ export const RepositoryContainerList: React.FC<RepositoryContainerListProps> = (
             onRow={(container: Container) => ({
               onClick: (e: React.MouseEvent<HTMLElement>) => {
                 const target = e.target as HTMLElement
-                if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
+                // Don't trigger if clicking on buttons or dropdowns
+                if (target.closest('button') || target.closest('.ant-dropdown')) {
                   return
                 }
                 onContainerClick?.(container)
@@ -491,7 +497,8 @@ export const RepositoryContainerList: React.FC<RepositoryContainerListProps> = (
             onRow={(container: Container) => ({
               onClick: (e: React.MouseEvent<HTMLElement>) => {
                 const target = e.target as HTMLElement
-                if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
+                // Don't trigger if clicking on buttons or dropdowns
+                if (target.closest('button') || target.closest('.ant-dropdown')) {
                   return
                 }
                 onContainerClick?.(container)

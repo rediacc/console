@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { Card, Button, Space, Tag, Typography, Spin, Alert, Tooltip, Breadcrumb } from 'antd'
-import { DoubleLeftOutlined, ReloadOutlined, DesktopOutlined } from '@/utils/optimizedIcons'
+import { DoubleLeftOutlined, ReloadOutlined, DesktopOutlined, PlusOutlined, CloudDownloadOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { usePanelWidth } from '@/hooks/usePanelWidth'
@@ -11,6 +11,9 @@ import { MachineRepositoryList } from '@/components/resources/MachineRepositoryL
 import { Machine, Repository } from '@/types'
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
+import { RemoteFileBrowserModal } from '@/components/resources/RemoteFileBrowserModal'
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
+import { useRepositoryCreation } from '@/hooks/useRepositoryCreation'
 
 const { Title } = Typography
 
@@ -79,11 +82,31 @@ const MachineRepositoriesPage: React.FC = () => {
     machineName: null
   })
 
+  // Remote file browser modal state
+  const [remoteFileBrowserModal, setRemoteFileBrowserModal] = useState<{
+    open: boolean
+    machine: Machine | null
+  }>({ open: false, machine: null })
+
+  // Unified resource modal state
+  const [unifiedModalState, setUnifiedModalState] = useState<{
+    open: boolean
+    mode: 'create' | 'edit' | 'vault'
+    data?: any
+    creationContext?: 'credentials-only' | 'normal'
+  }>({
+    open: false,
+    mode: 'create'
+  })
+
   // Fetch all machines to find our specific machine if not passed via state
   const { data: machines = [], isLoading: machinesLoading, error: machinesError, refetch: refetchMachines } = useMachines(
     machine?.teamName ? [machine.teamName] : undefined,
     true
   )
+
+  // Repository creation hook (handles credentials + queue item)
+  const { createRepository } = useRepositoryCreation(machines)
 
   // Fetch repositories (needed for MachineRepositoryList)
   const { data: repositories = [], refetch: refetchRepositories } = useRepositories(
@@ -112,6 +135,51 @@ const MachineRepositoriesPage: React.FC = () => {
       refetchRepositories(),
       refetchMachines()
     ])
+  }
+
+  const handleCreateRepository = () => {
+    if (!machine) return
+
+    // Open the repository creation modal with prefilled machine
+    setUnifiedModalState({
+      open: true,
+      mode: 'create',
+      data: {
+        machineName: machine.machineName,
+        teamName: machine.teamName,
+        prefilledMachine: true
+      },
+      creationContext: 'normal'
+    })
+  }
+
+  const handlePull = () => {
+    if (!machine) return
+
+    setRemoteFileBrowserModal({
+      open: true,
+      machine: machine
+    })
+  }
+
+  const handleUnifiedModalSubmit = async (data: any) => {
+    const result = await createRepository(data)
+
+    if (result.success) {
+      setUnifiedModalState({ open: false, mode: 'create' })
+
+      // If we have a taskId, open the queue trace modal
+      if (result.taskId) {
+        setQueueTraceModal({
+          visible: true,
+          taskId: result.taskId,
+          machineName: result.machineName || null
+        })
+      } else {
+        // No queue item (credentials-only mode), just refresh
+        await handleRefresh()
+      }
+    }
   }
 
   const handleRepositoryClick = (repository: any) => {
@@ -273,15 +341,35 @@ const MachineRepositoriesPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Refresh button */}
-            <Tooltip title={t('common:actions.refresh')}>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={handleRefresh}
-                style={styles.touchTarget}
-                data-testid="machine-repositories-refresh-button"
-              />
-            </Tooltip>
+            {/* Action buttons */}
+            <Space>
+              <Tooltip title={t('machines:createRepo')}>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={handleCreateRepository}
+                  style={styles.touchTarget}
+                  data-testid="machine-repositories-create-repo-button"
+                />
+              </Tooltip>
+              <Tooltip title={t('functions:functions.pull.name')}>
+                <Button
+                  type="primary"
+                  icon={<CloudDownloadOutlined />}
+                  onClick={handlePull}
+                  style={styles.touchTarget}
+                  data-testid="machine-repositories-pull-button"
+                />
+              </Tooltip>
+              <Tooltip title={t('common:actions.refresh')}>
+                <Button
+                  icon={<ReloadOutlined />}
+                  onClick={handleRefresh}
+                  style={styles.touchTarget}
+                  data-testid="machine-repositories-refresh-button"
+                />
+              </Tooltip>
+            </Space>
           </div>
         </div>
 
@@ -365,6 +453,37 @@ const MachineRepositoriesPage: React.FC = () => {
           // Refresh the page after task completion
           handleRefresh()
         }}
+      />
+
+      {/* Remote File Browser Modal */}
+      {remoteFileBrowserModal.machine && (
+        <RemoteFileBrowserModal
+          open={remoteFileBrowserModal.open}
+          onCancel={() => setRemoteFileBrowserModal({ open: false, machine: null })}
+          machineName={remoteFileBrowserModal.machine.machineName}
+          teamName={remoteFileBrowserModal.machine.teamName}
+          bridgeName={remoteFileBrowserModal.machine.bridgeName}
+          onQueueItemCreated={(taskId: string) => {
+            setQueueTraceModal({
+              visible: true,
+              taskId,
+              machineName: remoteFileBrowserModal.machine?.machineName || null
+            })
+            setRemoteFileBrowserModal({ open: false, machine: null })
+          }}
+        />
+      )}
+
+      {/* Unified Resource Modal */}
+      <UnifiedResourceModal
+        open={unifiedModalState.open}
+        onCancel={() => setUnifiedModalState({ open: false, mode: 'create' })}
+        resourceType="repository"
+        mode={unifiedModalState.mode}
+        existingData={unifiedModalState.data}
+        teamFilter={machine?.teamName ? [machine.teamName] : undefined}
+        creationContext={unifiedModalState.creationContext}
+        onSubmit={handleUnifiedModalSubmit}
       />
     </div>
   )
