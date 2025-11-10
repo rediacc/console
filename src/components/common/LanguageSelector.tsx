@@ -37,6 +37,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false })
   const handleChange = (value: string) => {
     i18n.changeLanguage(value);
     // Force a re-render of the entire app by updating the document direction for RTL languages
+    // eslint-disable-next-line react-hooks/immutability
     document.documentElement.dir = value === 'ar' ? 'rtl' : 'ltr';
 
     // Set dayjs locale globally

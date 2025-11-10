@@ -5,16 +5,13 @@ import {
   Table,
   Button,
   Space,
-  
   Input,
   Select,
   Spin,
   Empty,
   Alert,
   Breadcrumb,
-  
   Tooltip,
-  
 } from 'antd';
 import { ModalSize } from '@/types/modal';
 import { ContentSpace, SourceLabel, SourceContainer, SourceSelect, SearchInput, FolderIcon, FileIcon } from './styles';
@@ -33,14 +30,18 @@ import { useDropdownData } from '@/api/queries/useDropdownData';
 import { useStorage } from '@/api/queries/storage';
 import { useMachines } from '@/api/queries/machines';
 import { useTeams } from '@/api/queries/teams';
+import { useRepositories } from '@/api/queries/repositories';
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { waitForQueueItemCompletion } from '@/services/helloService';
 import { showMessage } from '@/utils/messages';
-import { formatTimestamp } from '@/utils/timeUtils';
 
 interface RemoteFile {
   name: string;
+  originalGuid?: string;
+  repositoryName?: string;
+  repoTag?: string;
+  isUnmapped?: boolean;
   size: number;
   isDirectory: boolean;
   modTime?: string;
@@ -74,6 +75,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
   const { data: storageData, isLoading: isLoadingStorage } = useStorage(teamName);
   const { data: machinesData, isLoading: isLoadingMachines } = useMachines(teamName);
   const { data: teamsData } = useTeams();
+  const { data: teamRepositories = [] } = useRepositories(teamName);
   const { buildQueueVault } = useQueueVaultBuilder();
   const { mutateAsync: createQueueItem } = useManagedQueueItem();
 
@@ -121,6 +123,24 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       setSelectedSource(machineName);
     }
   }, [machineName, selectedSource]);
+
+  // Helper function to map GUID to repository display name
+  const mapGuidToRepository = (guid: string) => {
+    const repo = teamRepositories.find(r => r.repositoryGuid === guid);
+    if (!repo) {
+      return {
+        displayName: guid,
+        isUnmapped: true
+      };
+    }
+    const tag = repo.repoTag || 'latest';
+    return {
+      displayName: `${repo.repositoryName}:${tag}`,
+      repositoryName: repo.repositoryName,
+      repoTag: tag,
+      isUnmapped: false
+    };
+  };
 
   const loadFiles = async () => {
     if (!selectedSource) {
@@ -302,23 +322,59 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           
           if (Array.isArray(parsedData)) {
             // Direct array format (SSH ls output or rclone lsjson)
-            fileList = parsedData.map((file: any) => ({
-              name: file.name || file.Name || '',
-              size: parseInt(file.size || file.Size || '0'),
-              isDirectory: file.isDirectory !== undefined ? file.isDirectory : (file.permissions?.startsWith('d') || file.IsDir || false),
-              modTime: file.date ? `${file.date} ${file.time}` : file.ModTime,
-              path: file.Path || (currentPath ? `${currentPath}/${file.name || file.Name}` : file.name || file.Name)
-            }));
+            fileList = parsedData.map((file: any) => {
+              const fileName = file.name || file.Name || '';
+              const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+              const isGuid = guidPattern.test(fileName);
+
+              let displayName = fileName;
+              let repositoryInfo = null;
+
+              if (isGuid && !file.isDirectory && !(file.IsDir)) {
+                repositoryInfo = mapGuidToRepository(fileName);
+                displayName = repositoryInfo.displayName;
+              }
+
+              return {
+                name: displayName,
+                originalGuid: isGuid && !file.isDirectory && !(file.IsDir) ? fileName : undefined,
+                repositoryName: repositoryInfo?.repositoryName,
+                repoTag: repositoryInfo?.repoTag,
+                isUnmapped: repositoryInfo?.isUnmapped || false,
+                size: parseInt(file.size || file.Size || '0'),
+                isDirectory: file.isDirectory !== undefined ? file.isDirectory : (file.permissions?.startsWith('d') || file.IsDir || false),
+                modTime: file.date ? `${file.date} ${file.time}` : file.ModTime,
+                path: file.Path || (currentPath ? `${currentPath}/${file.name || file.Name}` : file.name || file.Name)
+              };
+            });
           } else if (parsedData.entries) {
             // rclone lsjson format with entries wrapper
-            fileList = parsedData.entries.map((file: any) => ({
-              name: file.Name,
-              size: file.Size || 0,
-              isDirectory: file.IsDir || false,
-              modTime: file.ModTime,
-              mimeType: file.MimeType,
-              path: file.Path || (currentPath ? `${currentPath}/${file.Name}` : file.Name)
-            }));
+            fileList = parsedData.entries.map((file: any) => {
+              const fileName = file.Name;
+              const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+              const isGuid = guidPattern.test(fileName);
+
+              let displayName = fileName;
+              let repositoryInfo = null;
+
+              if (isGuid && !file.IsDir) {
+                repositoryInfo = mapGuidToRepository(fileName);
+                displayName = repositoryInfo.displayName;
+              }
+
+              return {
+                name: displayName,
+                originalGuid: isGuid && !file.IsDir ? fileName : undefined,
+                repositoryName: repositoryInfo?.repositoryName,
+                repoTag: repositoryInfo?.repoTag,
+                isUnmapped: repositoryInfo?.isUnmapped || false,
+                size: file.Size || 0,
+                isDirectory: file.IsDir || false,
+                modTime: file.ModTime,
+                mimeType: file.MimeType,
+                path: file.Path || (currentPath ? `${currentPath}/${file.Name}` : file.Name)
+              };
+            });
           }
         } catch (parseError) {
           console.log('Parsing as plain text format:', parseError);
@@ -486,12 +542,13 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           functionName: 'pull',
           params: {
             from: selectedSource,
-            repo: file.name,
+            repo: file.originalGuid || file.name, // Use GUID if available, otherwise use name
+            grand: file.originalGuid || file.name, // Default to repo name (assume pulling a grand, not a fork)
             path: currentPath || '',
             sourceType: isStorageSource ? 'storage' : 'machine'
           },
           priority: 3,
-          description: `Pull ${file.name} from ${selectedSource}`,
+          description: `Pull ${file.repositoryName || file.name} from ${selectedSource}`,
           addedVia: 'file-browser',
           ...additionalVaultData
         });
@@ -538,25 +595,38 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       title: t('resources:remoteFiles.name'),
       dataIndex: 'name',
       key: 'name',
-      render: (name: string, record: RemoteFile) => (
-        <Space>
-          {record.isDirectory ? (
-            <FolderIcon><FolderOutlined /></FolderIcon>
-          ) : (
-            <FileIcon><FileOutlined /></FileIcon>
-          )}
-          {record.isDirectory ? (
-            <a 
-              onClick={() => handleNavigate(currentPath ? `${currentPath}/${name}` : name)}
-              data-testid={`file-browser-folder-${name}`}
-            >
-              {name}
-            </a>
-          ) : (
-            <span data-testid={`file-browser-file-${name}`}>{name}</span>
-          )}
-        </Space>
-      ),
+      render: (name: string, record: RemoteFile) => {
+        const content = (
+          <Space>
+            {record.isDirectory ? (
+              <FolderIcon><FolderOutlined /></FolderIcon>
+            ) : (
+              <FileIcon><FileOutlined /></FileIcon>
+            )}
+            {record.isDirectory ? (
+              <a
+                onClick={() => handleNavigate(currentPath ? `${currentPath}/${name}` : name)}
+                data-testid={`file-browser-folder-${name}`}
+              >
+                {name}
+              </a>
+            ) : (
+              <span data-testid={`file-browser-file-${name}`}>{name}</span>
+            )}
+          </Space>
+        );
+
+        // Show tooltip with original GUID if this is a mapped repository
+        if (record.originalGuid) {
+          return (
+            <Tooltip title={`Original file: ${record.originalGuid}`}>
+              {content}
+            </Tooltip>
+          );
+        }
+
+        return content;
+      },
       sorter: (a, b) => {
         // Directories first
         if (a.isDirectory && !b.isDirectory) return -1;
@@ -569,20 +639,9 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       dataIndex: 'size',
       key: 'size',
       width: 120,
-      render: (size: number, record: RemoteFile) => 
+      render: (size: number, record: RemoteFile) =>
         record.isDirectory ? '-' : formatFileSize(size),
       sorter: (a, b) => a.size - b.size,
-    },
-    {
-      title: t('resources:remoteFiles.modified'),
-      dataIndex: 'modTime',
-      key: 'modTime',
-      width: 200,
-      render: (time: string) => time ? formatTimestamp(time) : '-',
-      sorter: (a, b) => {
-        if (!a.modTime || !b.modTime) return 0;
-        return new Date(a.modTime).getTime() - new Date(b.modTime).getTime();
-      },
     },
   ];
 
