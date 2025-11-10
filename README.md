@@ -90,10 +90,7 @@ npm run dev          # Start development server
 npm run build        # Build for production
 npm run preview      # Preview production build
 npm run lint         # Run ESLint
-npm run type-check   # Run TypeScript type checking
-npm test             # Run unit tests
-npm run test:e2e     # Run Playwright E2E tests
-npm run test:e2e:ui  # Run E2E tests in UI mode
+npx tsc --noEmit     # Run TypeScript type checking
 ```
 
 ### Environment Variables
@@ -116,33 +113,19 @@ This project uses:
 
 ## 🧪 Testing
 
-### Unit Tests
-
-```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run tests with coverage
-npm run test:coverage
-```
-
 ### E2E Tests (Playwright)
 
 ```bash
-# Install browsers (first time only)
-npx playwright install chromium
+# Install Python virtual environment and dependencies
+python3 -m venv .venv
+.venv/bin/pip install -r playwright/requirements.txt
+.venv/bin/python -m playwright install chromium
 
 # Run E2E tests
-npm run test:e2e
-
-# Run in UI mode for debugging
-npm run test:e2e:ui
+.venv/bin/python -m pytest playwright/ -v
 
 # Run specific test file
-npx playwright test tests/login.spec.ts
+.venv/bin/python playwright/smart/test_user_login.py
 ```
 
 ## 🏗️ Architecture
