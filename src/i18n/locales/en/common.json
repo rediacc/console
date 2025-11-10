@@ -107,7 +107,9 @@
     "marketplace": "Marketplace",
     "openMobileMenu": "Open mobile menu",
     "queue": "Queue",
-    "resources": "Resources",
+    "machines": "Machines",
+    "credentials": "Credentials",
+    "storage": "Storage",
     "system": "System"
   },
   "nestedObjectEditor": {

@@ -255,6 +255,20 @@ class FeatureFlags {
       description: '[DEPRECATED] Use dangerZone flag instead. Hide the Danger Zone section including block users, export/import data, and encryption settings'
     },
 
+    // Company Vault Configuration - Expert mode feature
+    companyVaultConfiguration: {
+      requiresLocalhost: true,
+      requiresExpertMode: true,
+      description: 'Configure Vault button in Company Settings section'
+    },
+
+    // Personal Vault Configuration - Expert mode feature
+    personalVaultConfiguration: {
+      requiresLocalhost: true,
+      requiresExpertMode: true,
+      description: 'Configure Vault button in Personal Settings section'
+    },
+
     // Example: Future feature that's disabled for everyone
     // newFeatureX: {
     //   enabled: false,

@@ -68,7 +68,7 @@ def run():
             page.wait_for_url("**/dashboard", timeout=15000)
             
             # Go to Resources
-            page.get_by_test_id("main-nav-resources").click()
+            page.get_by_test_id("main-nav-machines").click()
             time.sleep(3)
             
             # Take initial screenshot
