@@ -243,16 +243,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         key: 'status',
         width: 100,
         align: 'center',
-        sorter: (a: Machine, b: Machine) => {
-          const getStatusValue = (machine: Machine) => {
-            if (!machine.vaultStatusTime) return 0
-            const statusTime = new Date(machine.vaultStatusTime + 'Z')
-            const now = new Date()
-            const diffMinutes = (now.getTime() - statusTime.getTime()) / 1000 / 60
-            return diffMinutes <= 3 ? 1 : 0
-          }
-          return getStatusValue(b) - getStatusValue(a)
-        },
         render: (_: any, record: Machine) => {
           if (!record.vaultStatusTime) {
             return (
@@ -286,7 +276,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         dataIndex: 'machineName',
         key: 'machineName',
         ellipsis: true,
-        sorter: (a: Machine, b: Machine) => a.machineName.localeCompare(b.machineName),
         render: (name: string) => {
           return (
             <Space>
@@ -307,7 +296,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         width: 150,
         ellipsis: true,
         render: (teamName: string) => <Tag color="#8FBC8F">{teamName}</Tag>,
-        sorter: (a: Machine, b: Machine) => a.teamName.localeCompare(b.teamName),
       });
     }
 
@@ -323,7 +311,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             width: 150,
             ellipsis: true,
             render: (regionName: string) => regionName ? <Tag color="purple">{regionName}</Tag> : '-',
-            sorter: (a: Machine, b: Machine) => (a.regionName || '').localeCompare(b.regionName || ''),
           },
           {
             title: t('machines:bridge'),
@@ -332,7 +319,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             width: 150,
             ellipsis: true,
             render: (bridgeName: string) => <Tag color="green">{bridgeName}</Tag>,
-            sorter: (a: Machine, b: Machine) => a.bridgeName.localeCompare(b.bridgeName),
           }
         );
       } else if (uiMode !== 'simple') {
@@ -367,7 +353,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         key: 'queueCount',
         width: 100,
         align: 'center' as const,
-        sorter: (a: Machine, b: Machine) => a.queueCount - b.queueCount,
         render: (count: number) => (
           <Badge count={count} showZero style={{ backgroundColor: count > 0 ? '#52c41a' : '#d9d9d9' }} />
         ),

@@ -105,7 +105,9 @@
     "marketplace": "Mercado",
     "openMobileMenu": "Abrir menú móvil",
     "queue": "Cola",
-    "resources": "Recursos",
+    "machines": "Máquinas",
+    "credentials": "Credenciales",
+    "storage": "Almacenamiento",
     "system": "Sistema"
   },
   "nestedObjectEditor": {

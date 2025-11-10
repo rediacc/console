@@ -167,7 +167,7 @@ class ContainerPauseTest:
         """Navigate to resources page with smart waits"""
         print("📂 Navigating to Resources...")
         
-        resources_selector = '[data-testid="main-nav-resources"]'
+        resources_selector = '[data-testid="main-nav-machines"]'
         resources_link = self.wait_for_element(page, resources_selector)
         
         if not resources_link:

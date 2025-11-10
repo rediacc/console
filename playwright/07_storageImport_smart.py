@@ -59,7 +59,7 @@ class StorageImportPushTest(PlaywrightTestBase):
             
             # Try different selectors for Resources navigation
             try:
-                resources_link = page.get_by_test_id("main-nav-resources").get_by_text("Resources")
+                resources_link = page.get_by_test_id("main-nav-machines").get_by_text("Machines")
                 resources_link.click()
             except:
                 # Fallback selector

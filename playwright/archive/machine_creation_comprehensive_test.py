@@ -144,7 +144,7 @@ def run_comprehensive_machine_creation_test():
             
             # Step 4: Navigate to Resources
             print("\n📍 Step 4: Navigating to Resources...")
-            page.get_by_test_id("main-nav-resources").click()
+            page.get_by_test_id("main-nav-machines").click()
             page.wait_for_selector('[data-testid="resources-create-machine-button"]', state='visible')
             messages = wait_and_capture_messages(page, 2000, "resources_page_loaded")
             all_messages.extend(messages)

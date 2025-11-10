@@ -12,10 +12,12 @@ import {
   SmileOutlined,
   SafetyCertificateOutlined,
   PartitionOutlined,
-  AppstoreOutlined,
+  DesktopOutlined,
   HistoryOutlined,
   ShoppingOutlined,
   HddOutlined,
+  InboxOutlined,
+  CloudOutlined,
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { selectUser, selectCompany } from '@/store/auth/authSelectors'
@@ -125,11 +127,25 @@ const MainLayout: React.FC = () => {
   const allMenuItems = [
     // Non-scrolling pages group
     {
-      key: '/resources',
-      icon: <AppstoreOutlined />,
-      label: t('navigation.resources'),
+      key: '/machines',
+      icon: <DesktopOutlined />,
+      label: t('navigation.machines'),
       showInSimple: true,
-      'data-testid': 'main-nav-resources',
+      'data-testid': 'main-nav-machines',
+    },
+    {
+      key: '/credentials',
+      icon: <InboxOutlined />,
+      label: t('navigation.credentials'),
+      showInSimple: false,
+      'data-testid': 'main-nav-credentials',
+    },
+    {
+      key: '/storage',
+      icon: <CloudOutlined />,
+      label: t('navigation.storage'),
+      showInSimple: false,
+      'data-testid': 'main-nav-storage',
     },
     {
       key: '/distributed-storage',

@@ -43,7 +43,7 @@ class SmartTestBase(TestBase):
             self.logger.log_test_step("navigate_resources", "Navigating to Resources page")
             
             # Click Resources in navigation
-            resources_nav = page.get_by_test_id("main-nav-resources")
+            resources_nav = page.get_by_test_id("main-nav-machines")
             resources_nav.wait_for(state="visible", timeout=5000)
             resources_nav.click()
             

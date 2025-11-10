@@ -23,7 +23,7 @@ import { GlobalStyles } from '@/styles/GlobalStyles'
 
 // Lazy load heavy pages
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
-const ResourcesPage = lazy(() => import('@/pages/resources/ResourcesPage'))
+const MachinesPage = lazy(() => import('@/pages/machines/MachinesPage'))
 const MachineRepositoriesPage = lazy(() => import('@/pages/resources/MachineRepositoriesPage'))
 const RepositoryContainersPage = lazy(() => import('@/pages/resources/RepositoryContainersPage'))
 const DistributedStoragePage = lazy(() => import('@/pages/distributedStorage/DistributedStoragePage'))
@@ -32,6 +32,8 @@ const SystemPage = lazy(() => import('@/pages/system/SystemPage'))
 const ArchitecturePage = lazy(() => import('@/pages/architecture/ArchitecturePage'))
 const AuditPage = lazy(() => import('@/pages/audit/AuditPage'))
 const MarketplacePage = lazy(() => import('@/pages/marketplace/MarketplacePage'))
+const CredentialsPage = lazy(() => import('@/pages/credentials/CredentialsPage'))
+const StoragePage = lazy(() => import('@/pages/storage/StoragePage'))
 
 // Loading component
 const PageLoader: React.FC = () => {
@@ -122,7 +124,7 @@ const AppContent: React.FC = () => {
                   (isAuthenticated || showSessionExpiredDialog || stayLoggedOutMode) ? <MainLayout /> : <Navigate to="/login" replace />
                 }
               >
-                <Route path="/" element={<Navigate to="/resources" replace />} />
+                <Route path="/" element={<Navigate to="/machines" replace />} />
 
                 {/* Dashboard */}
                 <Route path="/dashboard" element={
@@ -132,9 +134,20 @@ const AppContent: React.FC = () => {
                 } />
 
                 {/* Organization */}
-                <Route path="/resources" element={
+                <Route path="/machines" element={
                   <Suspense fallback={<PageLoader />}>
-                    <ResourcesPage />
+                    <MachinesPage />
+                  </Suspense>
+                } />
+                <Route path="/resources" element={<Navigate to="/machines" replace />} />
+                <Route path="/credentials" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <CredentialsPage />
+                  </Suspense>
+                } />
+                <Route path="/storage" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <StoragePage />
                   </Suspense>
                 } />
 

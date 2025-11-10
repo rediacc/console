@@ -245,8 +245,8 @@ class ContainerStopTest:
     def navigate_to_resources(self):
         """Navigate to Resources page"""
         print("6. Navigating to Resources...")
-        resources_test_id = self.config.get("ui", {}).get("resourcesMenuTestId", "main-nav-resources")
-        resources_link = self.page.get_by_test_id(resources_test_id).get_by_text("Resources")
+        resources_test_id = self.config.get("ui", {}).get("resourcesMenuTestId", "main-nav-machines")
+        resources_link = self.page.get_by_test_id(resources_test_id).get_by_text("Machines")
         resources_link.click()
         
         # Wait for network to be idle instead of using sleep

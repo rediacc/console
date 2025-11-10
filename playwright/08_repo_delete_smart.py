@@ -153,7 +153,7 @@ class RepositoryDeleter:
         ui_config = self.config.get('repoDelete', {}).get('ui', {})
         
         # Click Resources menu
-        resources_menu = self.page.get_by_test_id(ui_config.get('resourcesMenuTestId', 'main-nav-resources'))
+        resources_menu = self.page.get_by_test_id(ui_config.get('resourcesMenuTestId', 'main-nav-machines'))
         resources_menu.wait_for(state="visible")
         resources_menu.click()
         
