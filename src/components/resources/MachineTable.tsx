@@ -992,7 +992,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                   return;
                 }
 
-                // Navigate to repositories page
+                // Row clicks always navigate to repositories page
+                // Only the eye button should trigger detail panel (via handleRowClick)
                 navigate(`/machines/${record.machineName}/repositories`, {
                   state: { machine: record }
                 })

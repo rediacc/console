@@ -65,9 +65,7 @@ import {
 import { useDropdownData } from '@/api/queries/useDropdownData'
 // Validation schemas now handled in UnifiedResourceModal
 import { type QueueFunction } from '@/api/queries/queue'
-import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import TeamSelector from '@/components/common/TeamSelector'
-import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import { useRepositoryCreation } from '@/hooks/useRepositoryCreation'
 import { useQueueAction } from '@/hooks/useQueueAction'
 import { type Machine } from '@/types'
@@ -247,7 +245,7 @@ const ResourcesPage: React.FC = () => {
   )
 
   // Repository creation hook (handles credentials + queue item)
-  const { createRepository: createRepositoryWithQueue } = useRepositoryCreation(machines)
+  const { createRepository: createRepositoryWithQueue, isCreating } = useRepositoryCreation(machines)
 
   // Repository hooks - fetch repositories when we have selected teams (needed for machine functions too)
   const { data: repositories = [], isLoading: repositoriesLoading, refetch: refetchRepositories } = useRepositories(
@@ -274,10 +272,8 @@ const ResourcesPage: React.FC = () => {
   const deleteStorageMutation = useDeleteStorage()
   const updateStorageVaultMutation = useUpdateStorageVault()
   
-  // Queue mutation - using managed version for high-priority handling
-  const createQueueItemMutation = useManagedQueueItem()
-  const { buildQueueVault } = useQueueVaultBuilder()
-  const { executeAction } = useQueueAction()
+  // Queue action hook for function execution
+  const { executeAction, isExecuting } = useQueueAction()
   
   // Queue trace modal state
   const [queueTraceModal, setQueueTraceModal] = useState<{
@@ -675,27 +671,23 @@ const ResourcesPage: React.FC = () => {
         }
       }
 
-      const queueVault = await buildQueueVault(queueVaultParams);
-      
-      const response = await createQueueItemMutation.mutateAsync({
-        teamName: currentResource.teamName,
-        machineName,
-        bridgeName,
-        queueVault,
-        priority: functionData.priority
-      });
-      
+      // Execute action using the hook
+      const result = await executeAction(queueVaultParams);
+
       closeUnifiedModal();
-      
-      if (response?.taskId) {
-        showMessage('success', t(`${resourceType}s:queueItemCreated`));
-        setQueueTraceModal({ visible: true, taskId: response.taskId, machineName: machineName });
-      } else if (response?.isQueued) {
-        // Item was queued for highest priority management
-        showMessage('info', t('resources:messages.highestPriorityQueued', { resourceType }));
+
+      if (result.success) {
+        if (result.taskId) {
+          showMessage('success', t(`${resourceType}s:queueItemCreated`));
+          setQueueTraceModal({ visible: true, taskId: result.taskId, machineName });
+        } else if (result.isQueued) {
+          showMessage('info', t('resources:messages.highestPriorityQueued', { resourceType }));
+        }
+      } else {
+        showMessage('error', result.error || t('resources:errors.failedToCreateQueueItem'));
       }
     } catch (error) {
-      // Error is handled by the mutation
+      showMessage('error', t('resources:errors.failedToCreateQueueItem'));
     }
   };
   
@@ -921,7 +913,8 @@ const ResourcesPage: React.FC = () => {
                       updateRepositoryNameMutation.isPending ||
                       createStorageMutation.isPending ||
                       updateStorageNameMutation.isPending ||
-                      createQueueItemMutation.isPending
+                      isExecuting ||
+                      isCreating
 
   const isUpdatingVault = updateMachineVaultMutation.isPending ||
                          updateRepositoryVaultMutation.isPending ||

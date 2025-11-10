@@ -2098,7 +2098,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 return
               }
 
-              // Navigate to containers page
+              // Row clicks always navigate to containers page
+              // Only the eye button should trigger detail panel (via onRepositoryClick)
               navigate(`/machines/${machine.machineName}/repositories/${record.name}/containers`, {
                 state: { machine, repository: record }
               })

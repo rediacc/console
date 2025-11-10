@@ -32,6 +32,16 @@ export interface QueueActionParams {
   storageName?: string
   storageVault?: string
 
+  // Optional: Source vault parameters (for pull operations)
+  sourceMachineVault?: string
+  sourceStorageVault?: string
+  sourceRepositoryVault?: string
+
+  // Optional: Destination vault parameters (for deploy/backup operations)
+  destinationMachineVault?: string
+  destinationStorageVault?: string
+  destinationRepositoryVault?: string
+
   // Optional: Override team vault (if already fetched)
   teamVault?: string
 }
@@ -84,7 +94,15 @@ export function useQueueAction() {
         ...(params.storageName && {
           storageName: params.storageName,
           storageVault: params.storageVault
-        })
+        }),
+        // Source vault parameters (for pull operations)
+        ...(params.sourceMachineVault && { sourceMachineVault: params.sourceMachineVault }),
+        ...(params.sourceStorageVault && { sourceStorageVault: params.sourceStorageVault }),
+        ...(params.sourceRepositoryVault && { sourceRepositoryVault: params.sourceRepositoryVault }),
+        // Destination vault parameters (for deploy/backup operations)
+        ...(params.destinationMachineVault && { destinationMachineVault: params.destinationMachineVault }),
+        ...(params.destinationStorageVault && { destinationStorageVault: params.destinationStorageVault }),
+        ...(params.destinationRepositoryVault && { destinationRepositoryVault: params.destinationRepositoryVault })
       })
 
       // Create queue item

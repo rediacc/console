@@ -450,7 +450,8 @@ export const RepositoryContainerList: React.FC<RepositoryContainerListProps> = (
             onRow={(container: Container) => ({
               onClick: (e: React.MouseEvent<HTMLElement>) => {
                 const target = e.target as HTMLElement
-                if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
+                // Don't trigger if clicking on buttons or dropdowns
+                if (target.closest('button') || target.closest('.ant-dropdown')) {
                   return
                 }
                 onContainerClick?.(container)
@@ -496,7 +497,8 @@ export const RepositoryContainerList: React.FC<RepositoryContainerListProps> = (
             onRow={(container: Container) => ({
               onClick: (e: React.MouseEvent<HTMLElement>) => {
                 const target = e.target as HTMLElement
-                if (target.closest('button') || target.closest('.ant-dropdown-trigger')) {
+                // Don't trigger if clicking on buttons or dropdowns
+                if (target.closest('button') || target.closest('.ant-dropdown')) {
                   return
                 }
                 onContainerClick?.(container)
