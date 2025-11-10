@@ -399,7 +399,7 @@ const QueuePage: React.FC = () => {
 
 
   return (
-    <div style={{ padding: 24 }} data-testid="queue-page-container">
+    <div className="page-container" data-testid="queue-page-container">
       {/* Ultra-Compact Filter & Stats Bar */}
       <Card
         size="small"

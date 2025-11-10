@@ -35,6 +35,10 @@ export const DESIGN_TOKENS = {
     // Semantic spacing
     BASE: 8,
     CONTAINER: 24,
+    PAGE_CONTAINER: 16,
+    PAGE_SECTION_GAP: 16,
+    PAGE_CARD_PADDING: 16,
+    SIDEBAR_CONTENT_GAP: 12,
   },
 
   // Border Radius Scale (matching style-guide.md)

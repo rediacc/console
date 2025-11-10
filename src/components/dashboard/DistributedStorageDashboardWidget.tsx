@@ -97,14 +97,14 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
         <Row gutter={[16, 16]}>
           {assignmentData.map((item) => (
             <Col key={item.type} xs={12} sm={12} md={6}>
-              <Card 
+              <Card
                 data-testid={`ds-widget-stat-${item.type}`}
-                size="small" 
-                style={{ 
+                size="small"
+                style={{
                   textAlign: 'center',
                   borderColor: getAssignmentColor(item.type as any),
                   borderRadius: 'var(--border-radius-lg)',
-                  backgroundColor: 'var(--color-bg-container)',
+                  backgroundColor: 'var(--color-bg-primary)',
                   boxShadow: 'var(--shadow-sm)',
                   ...styles.hoverEffect
                 }}
@@ -139,11 +139,11 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
         {/* Cluster Summary */}
         <Row gutter={[16, 16]}>
           <Col xs={24} md={12}>
-            <div 
+            <div
               data-testid="ds-widget-cluster-summary"
-              style={{ 
-                ...styles.padding.md, 
-                backgroundColor: 'var(--color-bg-container)', 
+              style={{
+                ...styles.padding.md,
+                backgroundColor: 'var(--color-bg-primary)',
                 borderRadius: 'var(--border-radius-lg)',
                 border: '1px solid var(--color-border-secondary)',
                 boxShadow: 'var(--shadow-sm)'
@@ -175,11 +175,11 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
 
           {/* Machine Utilization */}
           <Col xs={24} md={12}>
-            <div 
+            <div
               data-testid="ds-widget-machine-utilization"
-              style={{ 
-                ...styles.padding.md, 
-                backgroundColor: 'var(--color-bg-container)', 
+              style={{
+                ...styles.padding.md,
+                backgroundColor: 'var(--color-bg-primary)',
                 borderRadius: 'var(--border-radius-lg)',
                 border: '1px solid var(--color-border-secondary)',
                 boxShadow: 'var(--shadow-sm)'
@@ -220,9 +220,9 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
               renderItem={(team) => (
                 <List.Item
                   data-testid={`ds-widget-team-item-${team.TeamName.toLowerCase().replace(/\s+/g, '-')}`}
-                  style={{ 
+                  style={{
                     ...styles.padding.sm,
-                    backgroundColor: 'var(--color-bg-container)',
+                    backgroundColor: 'var(--color-bg-primary)',
                     marginBottom: '8px',
                     borderRadius: 'var(--border-radius-md)',
                     border: '1px solid var(--color-border-secondary)',

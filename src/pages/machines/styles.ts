@@ -4,26 +4,17 @@ import { DESIGN_TOKENS } from '@/utils/styleConstants'
 
 const { Title } = Typography
 
-export const PageWrapper = styled.div`
-  padding: ${({ theme }) => theme.spacing.CONTAINER}px;
+export const PageWrapper = styled.div.attrs({ className: 'page-container' })`
   width: 100%;
 `
 
-export const PageCard = styled(Card)`
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  background: ${({ theme }) => theme.colors.bgPrimary};
-  box-shadow: ${({ theme }) => theme.shadows.CARD};
-
-  .ant-card-body {
-    padding: ${({ theme }) => theme.spacing.LG}px;
-  }
-`
+export const PageCard = styled(Card).attrs({ className: 'page-card' })``
 
 export const HeaderSection = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.MD}px;
-  margin-bottom: ${({ theme }) => theme.spacing.LG}px;
+  margin-bottom: ${({ theme }) => theme.spacing.PAGE_SECTION_GAP}px;
 `
 
 export const HeaderRow = styled.div`
