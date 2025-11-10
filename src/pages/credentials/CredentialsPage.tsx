@@ -525,9 +525,9 @@ const CredentialsPage: React.FC = () => {
                   total: originalRepositories.length,
                   showSizeChanger: true,
                   pageSizeOptions: ['10', '20', '50', '100'],
-                  showTotal: (total, range) =>
+                  showTotal: (total: number, range: [number, number]) =>
                     `${t('common:general.showingRecords', { start: range[0], end: range[1], total })}`,
-                  onChange: (page, size) => {
+                  onChange: (page: number, size: number) => {
                     setRepositoryPage(page)
                     if (size && size !== repositoryPageSize) {
                       setRepositoryPageSize(size)

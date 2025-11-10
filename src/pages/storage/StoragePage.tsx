@@ -494,9 +494,9 @@ const StoragePage: React.FC = () => {
                   total: storages.length,
                   showSizeChanger: true,
                   pageSizeOptions: ['10', '20', '50', '100'],
-                  showTotal: (total, range) =>
+                  showTotal: (total: number, range: [number, number]) =>
                     `${t('common:general.showingRecords', { start: range[0], end: range[1], total })}`,
-                  onChange: (page, size) => {
+                  onChange: (page: number, size: number) => {
                     setStoragePage(page)
                     if (size && size !== storagePageSize) {
                       setStoragePageSize(size)

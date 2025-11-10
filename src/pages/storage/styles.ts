@@ -85,9 +85,9 @@ export const ContentSection = styled.div`
   min-height: 400px;
 `
 
-export const DataTable = styled(Table)<{ $isLoading?: boolean }>`
+export const DataTable = styled(Table as any)<{ $isLoading?: boolean }>`
   .ant-spin-nested-loading {
-    opacity: ${({ $isLoading }) => ($isLoading ? 0.65 : 1)};
-    transition: ${({ theme }) => theme.transitions.DEFAULT};
+    opacity: ${(props: any) => (props.$isLoading ? 0.65 : 1)};
+    transition: ${(props: any) => props.theme.transitions.DEFAULT};
   }
 `
