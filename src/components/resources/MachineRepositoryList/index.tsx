@@ -198,8 +198,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const { executeAction, isExecuting } = useQueueAction()
   const { data: teams } = useTeams()
   const { data: teamRepositories = [], isLoading: repositoriesLoading, refetch: refetchRepositories } = useRepositories(machine.teamName)
-  const { data: machinesData = [] } = useMachines(machine.teamName)
-  const { data: storageData = [] } = useStorage(machine.teamName)
   const createRepositoryMutation = useCreateRepository()
   const deleteRepositoryMutation = useDeleteRepository()
   const promoteRepositoryMutation = usePromoteRepositoryToGrand()
