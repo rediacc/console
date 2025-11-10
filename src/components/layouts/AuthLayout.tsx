@@ -14,16 +14,16 @@ const AuthLayout: React.FC = () => {
   const styles = useComponentStyles()
 
   const backgroundStyle = theme === 'dark'
-    ? { background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)' }
-    : { background: 'linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)' }
+    ? { background: '#0a0a0a' }
+    : { background: '#f8f9fa' }
 
   return (
     <Layout style={{ minHeight: '100vh', ...backgroundStyle }} data-testid="auth-layout-container">
       <div
         style={{
           position: 'absolute',
-          top: spacing('CONTAINER'),
-          right: spacing('CONTAINER'),
+          top: spacing('PAGE_CONTAINER'),
+          right: spacing('PAGE_CONTAINER'),
           zIndex: DESIGN_TOKENS.Z_INDEX.DROPDOWN
         }}
         className="auth-controls-wrapper"
@@ -37,7 +37,7 @@ const AuthLayout: React.FC = () => {
       <Content
         style={{
           ...styles.flexCenter,
-          padding: spacing('CONTAINER'),
+          padding: spacing('PAGE_CONTAINER'),
         }}
         data-testid="auth-layout-content"
         className="auth-layout-content"

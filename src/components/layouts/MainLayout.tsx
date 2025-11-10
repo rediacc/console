@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { Layout, Avatar, Space, Badge, Typography, Button, Segmented, Tooltip, message } from 'antd'
+import { Layout, Avatar, Space, Badge, Typography, Button, Segmented, Dropdown, Divider, message } from 'antd'
 import {
   ThunderboltOutlined,
   UserOutlined,
   SettingOutlined,
   LogoutOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
+  MenuOutlined,
   SmileOutlined,
   SafetyCertificateOutlined,
   PartitionOutlined,
@@ -45,11 +44,14 @@ import { featureFlags } from '@/config/featureFlags'
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
 
+const SIDEBAR_EXPANDED_WIDTH = 200
+const SIDEBAR_COLLAPSED_WIDTH = 64
+const HEADER_ACTION_SIZE = 48
+const HEADER_HEIGHT = DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT
+
 const MainLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
-  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false)
-  const [mobileMenuVisible, setMobileMenuVisible] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
   const dispatch = useDispatch()
@@ -62,22 +64,6 @@ const MainLayout: React.FC = () => {
   const { data: companyData } = useCompanyInfo()
   const styles = useComponentStyles()
   const { trackUserAction } = useTelemetry()
-
-  // Handle responsive behavior
-  useEffect(() => {
-    const handleResize = () => {
-      const mobile = window.innerWidth < 768
-      setIsMobile(mobile)
-      if (mobile) {
-        setCollapsed(true)
-        setMobileMenuVisible(false)
-      }
-    }
-
-    handleResize()
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
 
   // Update company name when company data is loaded
   useEffect(() => {
@@ -262,6 +248,14 @@ const MainLayout: React.FC = () => {
     navigate('/login')
   }
 
+  const handleSidebarToggle = () => {
+    const action = collapsed ? 'sidebar_expand' : 'sidebar_collapse'
+    trackUserAction('ui_interaction', action, {
+      current_page: location.pathname
+    })
+    setCollapsed(prev => !prev)
+  }
+
   // Filter and map menu items based on UI mode, plan, and feature flags
   // React Compiler will automatically optimize this
   const menuItems = allMenuItems
@@ -300,117 +294,209 @@ const MainLayout: React.FC = () => {
   // All pages are now scrollable, so no pages need the no-scroll class
   const noScrollPages: string[] = []
   const isNoScrollPage = noScrollPages.includes(location.pathname)
+  const sidebarWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_EXPANDED_WIDTH
+  const contentMargin = 0
+
+  const userMenuOverlay = (
+    <div
+      style={{
+        width: 320,
+        backgroundColor: 'var(--color-bg-primary)',
+        borderRadius: borderRadius('LG'),
+        boxShadow: DESIGN_TOKENS.SHADOWS.XL,
+        border: '1px solid var(--color-border-secondary)',
+        padding: spacing('MD'),
+        display: 'flex',
+        flexDirection: 'column',
+        gap: spacing('MD'),
+      }}
+    >
+      <div style={{ display: 'flex', gap: spacing('SM'), alignItems: 'center' }}>
+        <Avatar
+          icon={<UserOutlined />}
+          size={DESIGN_TOKENS.DIMENSIONS.ICON_XXL}
+          style={{ backgroundColor: 'var(--color-text-tertiary)' }}
+        />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Text strong style={{ display: 'block' }}>
+            {user?.email}
+          </Text>
+          {company && (
+            <Text style={{ fontSize: 12, color: 'var(--color-text-secondary)', display: 'block' }}>
+              {company}
+            </Text>
+          )}
+          {companyData?.activeSubscription && (
+            <Badge
+              count={companyData.activeSubscription.PlanCode}
+              style={{
+                backgroundColor: 'var(--color-primary)',
+                fontSize: DESIGN_TOKENS.FONT_SIZE.XS,
+                fontWeight: DESIGN_TOKENS.FONT_WEIGHT.SEMIBOLD,
+                padding: `0 ${spacing('SM')}px`,
+                height: DESIGN_TOKENS.DIMENSIONS.ICON_MD,
+                lineHeight: `${DESIGN_TOKENS.DIMENSIONS.ICON_MD}px`,
+                borderRadius: borderRadius('XL'),
+                marginTop: spacing('XS'),
+                boxShadow: DESIGN_TOKENS.SHADOWS.BUTTON_DEFAULT,
+              }}
+            />
+          )}
+        </div>
+      </div>
+
+      <Divider style={{ margin: 0 }} />
+
+      <div>
+        <Text
+          style={{
+            fontSize: 12,
+            color: 'var(--color-text-secondary)',
+          }}
+        >
+          {t('uiMode.label', { defaultValue: 'Interface Mode' })}
+        </Text>
+        <Segmented
+          block
+          value={uiMode}
+          onChange={(value) => {
+            if (value !== uiMode) {
+              handleModeToggle()
+            }
+          }}
+          options={[
+            {
+              label: (
+                <Space size={4}>
+                  <SmileOutlined />
+                  <span>{t('uiMode.simple')}</span>
+                </Space>
+              ),
+              value: 'simple',
+            },
+            {
+              label: (
+                <Space size={4}>
+                  <SafetyCertificateOutlined />
+                  <span>{t('uiMode.expert')}</span>
+                </Space>
+              ),
+              value: 'expert',
+            },
+          ]}
+          style={{ marginTop: spacing('XS'), background: 'var(--color-bg-tertiary)' }}
+          data-testid="main-mode-toggle"
+        />
+      </div>
+
+      <Divider style={{ margin: 0 }} />
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: spacing('SM') }}>
+        <div>
+          <Text strong style={{ display: 'block' }}>
+            {t('appearance.label', { defaultValue: 'Appearance' })}
+          </Text>
+          <Text style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
+            {t('appearance.description', { defaultValue: 'Device theme' })}
+          </Text>
+        </div>
+        <ThemeToggle />
+      </div>
+
+      <Divider style={{ margin: 0 }} />
+
+      <div>
+        <Text strong style={{ display: 'block', marginBottom: spacing('XS') }}>
+          {t('language.label', { defaultValue: 'Language' })}
+        </Text>
+        <LanguageSelector iconOnly={false} />
+      </div>
+
+      <Divider style={{ margin: 0 }} />
+
+      <Button
+        type="text"
+        icon={<LogoutOutlined />}
+        onClick={handleLogout}
+        className="logout-button"
+        data-testid="main-logout-button"
+        style={{ width: '100%', justifyContent: 'flex-start', gap: spacing('SM') }}
+      >
+        {t('navigation.logout')}
+      </Button>
+    </div>
+  )
 
   return (
     <>
       <SandboxWarning />
       <LocalhostModeIndicator />
       <Layout style={{ minHeight: '100vh' }} className={isNoScrollPage ? 'no-scroll-page' : ''}>
-        {/* Mobile overlay */}
-        {isMobile && mobileMenuVisible && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            zIndex: DESIGN_TOKENS.Z_INDEX.DROPDOWN - 2, // 998 - below navigation but above content
-          }}
-          onClick={() => setMobileMenuVisible(false)}
-          aria-hidden="true"
-          role="presentation"
-        />
-      )}
       <Sider
         trigger={null}
         collapsible
-        collapsed={isMobile ? !mobileMenuVisible : collapsed}
+        collapsed={collapsed}
+        width={SIDEBAR_EXPANDED_WIDTH}
+        collapsedWidth={SIDEBAR_COLLAPSED_WIDTH}
         role="navigation"
         aria-label={t('navigation.mainNavigation')}
         style={{
           ...styles.sidebar,
           position: 'fixed',
-          left: isMobile ? (mobileMenuVisible ? 0 : '-200px') : 0,
-          top: 0,
-          bottom: 0,
-          height: '100vh',
+          left: 0,
+          top: DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT,
+          height: `calc(100vh - ${DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT}px)`,
           overflow: 'hidden',
           zIndex: DESIGN_TOKENS.Z_INDEX.DROPDOWN - 1, // 999 - below dropdowns and modals
-          width: isMobile ? 200 : (collapsed ? 80 : 200),
+          width: sidebarWidth,
+          borderRight: 'none',
+          boxShadow: 'none',
           transition: `left ${DESIGN_TOKENS.TRANSITIONS.SLOW}, width ${DESIGN_TOKENS.TRANSITIONS.DEFAULT}`,
         }}
       >
         <div
           style={{
-            height: DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT,
-            ...styles.flexCenter,
-            borderBottom: '1px solid var(--color-border-secondary)',
-            padding: collapsed ? `0 ${spacing('SM')}px` : `0 ${spacing('MD')}px`,
-            flexShrink: 0,
-            cursor: 'pointer',
+            ...styles.flexColumn as React.CSSProperties,
+            height: '100%',
+            overflow: 'hidden',
+            paddingTop: spacing('MD'),
           }}
-          onClick={() => {
-            trackUserAction('navigation', '/dashboard', {
-              trigger: 'logo_click',
-              from_page: location.pathname
-            })
-            navigate('/dashboard')
-          }}
-          data-testid="main-logo-home"
         >
-          <img
-            src={theme === 'dark' ? logoWhite : logoBlack}
-            alt="Rediacc Logo"
-            style={{
-              height: DESIGN_TOKENS.DIMENSIONS.ICON_XL,
-              width: 'auto',
-              maxWidth: collapsed ? 64 : 150,
-              objectFit: 'contain',
-              transition: `max-width ${DESIGN_TOKENS.TRANSITIONS.SLOW}`,
-            }}
-          />
-        </div>
-        <div style={{ ...styles.flexColumn as React.CSSProperties, height: `calc(100% - ${DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT}px)`, overflow: 'hidden' }}>
-          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: spacing('LG') }}>
             {menuItems.map((item) => {
               if (item.type === 'divider') {
-                return <div key={item.key} style={{ height: 1, margin: '12px 16px', background: 'var(--color-border-secondary)', opacity: 0.6 }} />
+                return <React.Fragment key={item.key} />
               }
               
               const isSelected = location.pathname === item.key
+              const padding = collapsed ? '10px 12px' : '10px 18px'
               const menuItemContent = (
                 <div
+                  key={item.key}
                   onClick={() => {
                     // Track navigation click
                     trackUserAction('navigation', item.key, {
                       menu_item: item.label,
                       ui_mode: uiMode,
-                      is_mobile: isMobile,
                       sidebar_collapsed: collapsed,
                       from_page: location.pathname
                     })
 
                     navigate(item.key)
-                    if (isMobile) {
-                      setMobileMenuVisible(false)
-                    }
                   }}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    padding: collapsed ? '10px 0' : '10px 24px',
-                    margin: '4px 8px',
-                    borderRadius: '6px',
+                    padding,
+                    margin: '4px 12px',
+                    borderRadius: '12px',
                     cursor: 'pointer',
-                    minHeight: '44px',
-                    justifyContent: collapsed ? 'center' : 'flex-start',
-                    backgroundColor: isSelected ? 'rgba(85, 107, 47, 0.1)' : 'transparent',
-                    borderRight: isSelected ? '3px solid var(--color-primary)' : 'none',
+                    minHeight: 44,
+                    justifyContent: 'flex-start',
+                    backgroundColor: isSelected ? 'var(--color-primary-bg)' : 'transparent',
                     color: isSelected ? 'var(--color-primary)' : 'var(--color-text-primary)',
-                    fontWeight: isSelected ? 600 : 400,
-                    transition: 'all 0.2s ease',
+                    fontWeight: isSelected ? 600 : 500,
+                    transition: 'background-color 0.2s ease, color 0.2s ease',
                   }}
                   onMouseEnter={(e) => {
                     if (!isSelected) {
@@ -426,322 +512,143 @@ const MainLayout: React.FC = () => {
                 >
                   <span style={{ 
                     fontSize: 20, 
-                    marginRight: collapsed ? 0 : 12,
+                    marginRight: 12,
                     color: isSelected ? 'var(--color-primary)' : 'inherit',
                     display: 'inline-flex',
                     alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 20,
+                    height: 20,
+                    flexShrink: 0,
                   }}>
                     {item.icon}
                   </span>
-                  {!collapsed && <span>{item.label}</span>}
+                  <span
+                    style={{
+                      marginLeft: 8,
+                      overflow: 'hidden',
+                      whiteSpace: 'nowrap',
+                      textOverflow: 'ellipsis',
+                      color: isSelected ? 'var(--color-primary)' : 'var(--color-text-primary)',
+                      opacity: collapsed ? 0.85 : 1,
+                      transition: 'opacity 0.2s ease',
+                      flex: 1,
+                    }}
+                  >
+                    {item.label}
+                  </span>
                 </div>
               )
 
-              if (collapsed) {
-                return (
-                  <Tooltip key={item.key} title={item.label} placement="right">
-                    {menuItemContent}
-                  </Tooltip>
-                )
-              }
-              
-              return <div key={item.key}>{menuItemContent}</div>
+              return menuItemContent
             })}
-          </div>
-          <div
-            style={{
-              borderTop: '1px solid var(--color-border-secondary)',
-              background: 'var(--color-bg-secondary)',
-            }}
-          >
-            {/* User info section */}
-            <div
-              style={{
-                padding: collapsed ? `${spacing('SM')}px ${spacing('SM')}px` : `${spacing('SM')}px ${spacing('MD')}px`,
-                borderBottom: '1px solid var(--color-border-secondary)',
-                ...styles.flexStart,
-                gap: spacing('SM'),
-              }}
-            >
-              {collapsed ? (
-                <Tooltip 
-                  title={(
-                    <div>
-                      <div>{user?.email}</div>
-                      {company && <div style={{ fontSize: '12px', marginTop: '4px' }}>{company}</div>}
-                    </div>
-                  )} 
-                  placement="right"
-                >
-                  <Avatar 
-                    icon={<UserOutlined />} 
-                    size={DESIGN_TOKENS.DIMENSIONS.ICON_LG}
-                    style={{ backgroundColor: 'var(--color-text-tertiary)', cursor: 'pointer' }} 
-                  />
-                </Tooltip>
-              ) : (
-                <>
-                  <Avatar 
-                    icon={<UserOutlined />} 
-                    size={DESIGN_TOKENS.DIMENSIONS.ICON_XL}
-                    style={{ backgroundColor: 'var(--color-text-tertiary)' }} 
-                  />
-                  <div style={{ flex: 1, overflow: 'hidden' }}>
-                    <Text 
-                      ellipsis 
-                      style={{ 
-                        display: 'block', 
-                        fontSize: '14px',
-                        fontWeight: 500,
-                      }}
-                    >
-                      {user?.email}
-                    </Text>
-                    {company && (
-                      <Text 
-                        ellipsis
-                        style={{ 
-                          display: 'block', 
-                          fontSize: '12px',
-                          color: 'var(--color-text-secondary)',
-                        }}
-                      >
-                        {company}
-                      </Text>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-            
-            {/* UI Mode switch section */}
-            <div
-              style={{
-                padding: collapsed ? '16px 8px' : '16px',
-                borderTop: '1px solid var(--color-border-secondary)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: collapsed ? 'center' : 'stretch',
-                gap: 12,
-                transition: 'all 0.3s ease',
-              }}
-            >
-              {collapsed ? (
-                <Tooltip 
-                  title={uiMode === 'simple' ? t('uiMode.simple') : t('uiMode.expert')} 
-                  placement="right"
-                >
-                  <div 
-                    className="ui-mode-icon"
-                    style={{ 
-                      fontSize: 20, 
-                      color: '#556b2f',
-                      display: 'flex',
-                      alignItems: 'center',
-                      cursor: 'pointer',
-                    }}
-                    onClick={handleModeToggle}
-                    data-testid="main-mode-icon"
-                    aria-label={uiMode === 'simple' ? t('uiMode.simple') : t('uiMode.expert')}
-                  >
-                    {uiMode === 'simple' ? (
-                      <SmileOutlined />
-                    ) : (
-                      <SafetyCertificateOutlined />
-                    )}
-                  </div>
-                </Tooltip>
-              ) : (
-                <>
-                  <Text style={{ 
-                    fontSize: 12,
-                    color: 'var(--color-text-secondary)',
-                    textAlign: 'center',
-                  }}>
-                    {t('uiMode.label', { defaultValue: 'Interface Mode' })}
-                  </Text>
-                  <Segmented
-                    block
-                    value={uiMode}
-                    onChange={(value) => {
-                      if (value !== uiMode) {
-                        handleModeToggle()
-                      }
-                    }}
-                    options={[
-                      {
-                        label: (
-                          <Space size={4} style={{ padding: '4px 0' }}>
-                            <SmileOutlined />
-                            <span>{t('uiMode.simple')}</span>
-                          </Space>
-                        ),
-                        value: 'simple',
-                      },
-                      {
-                        label: (
-                          <Space size={4} style={{ padding: '4px 0' }}>
-                            <SafetyCertificateOutlined />
-                            <span>{t('uiMode.expert')}</span>
-                          </Space>
-                        ),
-                        value: 'expert',
-                      },
-                    ]}
-                    style={{
-                      background: 'var(--color-bg-tertiary)',
-                    }}
-                    data-testid="main-mode-toggle"
-                  />
-                </>
-              )}
-            </div>
-            
-            {/* Logout button */}
-            <div
-              style={{
-                padding: collapsed ? '8px' : '8px 16px',
-                borderTop: '1px solid var(--color-border-secondary)',
-              }}
-            >
-              {collapsed ? (
-                <Tooltip title={t('navigation.logout')} placement="right">
-                  <Button
-                    type="text"
-                    icon={<LogoutOutlined />}
-                    onClick={handleLogout}
-                    className="logout-button"
-                    data-testid="main-logout-button"
-                    aria-label={t('navigation.logout')}
-                    style={{
-                      width: '100%',
-                      ...styles.flexStart,
-                      justifyContent: 'center',
-                      transition: DESIGN_TOKENS.TRANSITIONS.SLOW,
-                      padding: `${spacing('XS')}px 0`,
-                      minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
-                    }}
-                  />
-                </Tooltip>
-              ) : (
-                <Button
-                  type="text"
-                  icon={<LogoutOutlined />}
-                  onClick={handleLogout}
-                  className="logout-button"
-                  data-testid="main-logout-button"
-                  style={{
-                    width: '100%',
-                    ...styles.flexStart,
-                    justifyContent: 'flex-start',
-                    gap: spacing('SM'),
-                    transition: DESIGN_TOKENS.TRANSITIONS.SLOW,
-                    padding: `${spacing('XS')}px ${spacing('SM')}px`,
-                    minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
-                  }}
-                >
-                  <span style={{ flex: 0 }}>{t('navigation.logout')}</span>
-                </Button>
-              )}
-            </div>
           </div>
         </div>
       </Sider>
-      <Layout style={{ 
-        marginLeft: isMobile ? 0 : (collapsed ? 80 : 200), 
-        transition: 'margin-left 0.2s' 
-      }}>
+      <Layout>
         <Header
           style={{
             ...styles.header,
-            padding: isMobile ? `0 ${spacing('MD')}px` : `0 ${spacing('CONTAINER')}px`,
+            paddingRight: spacing('PAGE_CONTAINER'),
+            paddingLeft: spacing('MD'),
             ...styles.flexBetween,
+            boxShadow: theme === 'dark' ? DESIGN_TOKENS.SHADOWS.HEADER_DARK : DESIGN_TOKENS.SHADOWS.HEADER,
+            borderBottom: '1px solid var(--color-border-secondary)',
+            backgroundColor: 'var(--color-bg-primary)',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: HEADER_HEIGHT,
+            width: '100%',
+            zIndex: DESIGN_TOKENS.Z_INDEX.DROPDOWN + 1,
+            transition: `${DESIGN_TOKENS.TRANSITIONS.DEFAULT}`,
           }}
         >
-          <Space>
-            {isMobile ? (
-              <Button
-                type="text"
-                icon={<MenuUnfoldOutlined />}
-                onClick={() => {
-                  trackUserAction('ui_interaction', 'mobile_menu_toggle', {
-                    action: mobileMenuVisible ? 'close' : 'open',
-                    current_page: location.pathname
-                  })
-                  setMobileMenuVisible(!mobileMenuVisible)
-                }}
-                data-testid="mobile-menu-toggle"
-                aria-label={mobileMenuVisible ? t('navigation.closeMobileMenu') : t('navigation.openMobileMenu')}
-                aria-expanded={mobileMenuVisible}
+          <div style={{ display: 'flex', alignItems: 'center', gap: spacing('MD') }}>
+            <Button
+              type="text"
+              shape="circle"
+              icon={<MenuOutlined />}
+              onClick={handleSidebarToggle}
+              data-testid="sidebar-toggle-button"
+              aria-label={collapsed
+                ? t('navigation.expandSidebar', { defaultValue: 'Expand sidebar' })
+                : t('navigation.collapseSidebar', { defaultValue: 'Collapse sidebar' })}
+              aria-pressed={collapsed}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 18,
+                color: 'var(--color-text-primary)',
+              }}
+            />
+            <div
+              style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+              onClick={() => {
+                trackUserAction('navigation', '/dashboard', {
+                  trigger: 'logo_click',
+                  from_page: location.pathname
+                })
+                navigate('/dashboard')
+              }}
+              data-testid="main-logo-home"
+            >
+              <img
+                src={theme === 'dark' ? logoWhite : logoBlack}
+                alt="Rediacc Logo"
                 style={{
-                  ...styles.touchTarget,
-                  fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_LG,
-                }}
-              />
-            ) : collapsed ? (
-              <Button
-                type="text"
-                icon={<MenuUnfoldOutlined />}
-                onClick={() => {
-                  trackUserAction('ui_interaction', 'sidebar_expand', {
-                    current_page: location.pathname
-                  })
-                  setCollapsed(false)
-                }}
-                data-testid="main-sidebar-expand"
-                style={{
-                  ...styles.touchTarget,
-                  fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_LG,
-                }}
-              />
-            ) : (
-              <Button
-                type="text"
-                icon={<MenuFoldOutlined />}
-                onClick={() => {
-                  trackUserAction('ui_interaction', 'sidebar_collapse', {
-                    current_page: location.pathname
-                  })
-                  setCollapsed(true)
-                }}
-                data-testid="main-sidebar-collapse"
-                style={{
-                  ...styles.touchTarget,
-                  fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_LG,
-                }}
-              />
-            )}
-            {company && !isMobile && (
-              <Text strong style={{ marginLeft: spacing('MD') }}>
-                {company}
-              </Text>
-            )}
-            {companyData?.activeSubscription && !isMobile && (
-              <Badge
-                count={companyData.activeSubscription.PlanCode}
-                style={{
-                  backgroundColor: 'var(--color-primary)',
-                  fontSize: DESIGN_TOKENS.FONT_SIZE.XS,
-                  fontWeight: DESIGN_TOKENS.FONT_WEIGHT.SEMIBOLD,
-                  padding: `0 ${spacing('SM') + 2}px`,
                   height: DESIGN_TOKENS.DIMENSIONS.ICON_LG,
-                  lineHeight: `${DESIGN_TOKENS.DIMENSIONS.ICON_LG}px`,
-                  borderRadius: borderRadius('XL'),
-                  marginLeft: spacing('SM'),
-                  boxShadow: DESIGN_TOKENS.SHADOWS.BUTTON_DEFAULT
+                  width: 'auto',
+                  objectFit: 'contain',
+                  marginTop: -spacing('XS'),
+                  marginLeft: -spacing('XS'),
                 }}
               />
-            )}
-          </Space>
-          <Space size={isMobile ? spacing('SM') : spacing('MD')} align="center">
-            <LanguageSelector iconOnly={true} />
-            <ThemeToggle />
+            </div>
+          </div>
+          <Space size={spacing('MD')} align="center">
             <NotificationBell />
+            <Dropdown
+              trigger={['click']}
+              placement="bottomRight"
+              dropdownRender={() => userMenuOverlay}
+              overlayStyle={{ minWidth: 300 }}
+            >
+              <Button
+                type="text"
+                aria-label={t('navigation.userMenu', { defaultValue: 'Open user menu' })}
+                style={{
+                  width: HEADER_ACTION_SIZE,
+                  height: HEADER_ACTION_SIZE,
+                  borderRadius: borderRadius('FULL'),
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 0,
+                }}
+                >
+                  <Avatar
+                    icon={<UserOutlined />}
+                    size={DESIGN_TOKENS.DIMENSIONS.ICON_XL}
+                    style={{ backgroundColor: 'var(--color-text-tertiary)' }}
+                  />
+              </Button>
+            </Dropdown>
           </Space>
         </Header>
         <Content
+          className="main-layout-content"
           style={{
-            margin: isMobile ? spacing('XS') : spacing('SM'),
+            paddingTop: HEADER_HEIGHT + spacing('PAGE_SECTION_GAP'),
+            marginRight: contentMargin,
+            marginBottom: contentMargin,
+            marginLeft: contentMargin + sidebarWidth,
+            transition: 'margin-left 0.2s ease',
             minHeight: 280,
             position: 'relative',
           }}

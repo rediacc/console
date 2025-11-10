@@ -143,7 +143,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
       })}
 
       <Form.Item 
-        style={{ marginBottom: 0, marginTop: spacing('CONTAINER') }}
+        style={{ marginBottom: 0, marginTop: spacing('PAGE_CONTAINER') }}
         wrapperCol={{ offset: labelCol.span, span: wrapperCol.span }}
       >
         <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
