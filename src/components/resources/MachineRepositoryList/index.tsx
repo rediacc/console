@@ -1902,7 +1902,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                   size="small"
                   icon={<KeyOutlined />}
                   onClick={() => onCreateRepository(machine, record.originalGuid || record.name)}
-                  style={componentStyles.touchTarget}
+                  style={componentStyles.controlSurface}
                   data-testid={`machine-repo-list-add-credential-${record.name}`}
                   aria-label={t('resources:repositories.addCredential')}
                 />

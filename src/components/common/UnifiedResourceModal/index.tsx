@@ -973,7 +973,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                     data-testid="resource-modal-import-button"
                     icon={<UploadOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_SM }} />}
                     style={{
-                      minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                      minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT,
                       borderRadius: borderRadius('LG'),
                       fontSize: fontSize('SM')
                     }}
@@ -990,7 +990,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                     }
                   }}
                   style={{
-                    minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                    minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT,
                     borderRadius: borderRadius('LG'),
                     fontSize: fontSize('SM')
                   }}
@@ -1011,7 +1011,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                 fontSize: fontSize('SM'),
                 display: 'flex',
                 alignItems: 'center',
-                minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE
+                minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT
               }}
             >
               {t('machines:autoSetupAfterCreation')}
@@ -1023,7 +1023,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
             data-testid="resource-modal-cancel-button" 
             onClick={onCancel}
             style={{
-              minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+              minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT,
               borderRadius: borderRadius('LG'),
               fontSize: fontSize('SM')
             }}
@@ -1036,7 +1036,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
               data-testid="resource-modal-vault-button"
               onClick={() => setShowVaultModal(true)}
               style={{
-                minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT,
                 borderRadius: borderRadius('LG'),
                 fontSize: fontSize('SM')
               }}
@@ -1050,7 +1050,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
               data-testid="resource-modal-functions-button"
               onClick={() => setShowFunctionModal(true)}
               style={{
-                minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT,
                 borderRadius: borderRadius('LG'),
                 fontSize: fontSize('SM')
               }}
@@ -1073,7 +1073,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
               ...styles.buttonPrimary,
               background: 'var(--color-primary)', 
               borderColor: 'var(--color-primary)',
-              minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE
+              minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT
             }}
           >
             {mode === 'create' ? t('general.create') : t('general.save')}

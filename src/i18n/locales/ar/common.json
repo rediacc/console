@@ -98,7 +98,6 @@
   "navigation": {
     "architecture": "بنيان",
     "audit": "مراجعة",
-    "closeMobileMenu": "إغلاق قائمة الجوال",
     "credentials": "أوراق اعتماد",
     "dashboard": "لوحة القيادة",
     "distributedStorage": "التخزين الموزع",
@@ -106,7 +105,6 @@
     "machines": "آلات",
     "mainNavigation": "الملاحة الرئيسية",
     "marketplace": "السوق",
-    "openMobileMenu": "فتح قائمة الجوال",
     "queue": "طابور",
     "storage": "تخزين",
     "system": "نظام"

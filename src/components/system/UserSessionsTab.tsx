@@ -157,7 +157,7 @@ const UserSessionsTab: React.FC = () => {
               loading={deleteUserRequestMutation.isPending}
               style={{
                 ...tableStyles.tableActionButton,
-                ...styles.touchTargetSmall
+                ...styles.controlSurfaceSmall
               }}
               aria-label={t('userSessions.terminate')}
             />
@@ -264,7 +264,7 @@ const UserSessionsTab: React.FC = () => {
                 loading={isLoading}
                 style={{
                   ...styles.buttonSecondary,
-                  ...styles.touchTargetSmall
+                  ...styles.controlSurfaceSmall
                 }}
                 aria-label={t('common:actions.refresh')}
               />

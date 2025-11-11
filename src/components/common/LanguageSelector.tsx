@@ -74,7 +74,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false })
           title={`${currentLanguage.flag} ${currentLanguage.name}`}
           data-testid="language-selector-icon"
           style={{
-            ...styles.touchTarget,
+            ...styles.controlSurface,
             borderRadius: DESIGN_TOKENS.BORDER_RADIUS.LG,
             transition: DESIGN_TOKENS.TRANSITIONS.BUTTON,
             color: 'var(--color-text-primary)',

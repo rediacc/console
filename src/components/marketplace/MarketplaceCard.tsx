@@ -106,7 +106,7 @@ const MarketplaceCard: React.FC<MarketplaceCardProps> = ({
                   {getTemplateDescription(template.readme)}
                 </Paragraph>
                 <div style={{ 
-                  ...styles.touchTarget,
+                  ...styles.controlSurface,
                   background: 'var(--color-fill-tertiary)',
                   borderRadius: borderRadius('MD'),
                   overflow: 'hidden',
@@ -116,7 +116,7 @@ const MarketplaceCard: React.FC<MarketplaceCardProps> = ({
                     <img 
                       src={template.iconUrl} 
                       alt={template.name}
-                      style={{ width: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE, height: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE, objectFit: 'contain' }}
+                      style={{ width: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT, height: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT, objectFit: 'contain' }}
                       onError={(e) => {
                         e.currentTarget.style.display = 'none'
                         const icon = document.createElement('div')

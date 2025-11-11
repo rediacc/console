@@ -1,15 +1,11 @@
 import styled from 'styled-components'
-import { Button, Input, Alert } from 'antd'
+import { Button, Input, Alert, Space, Form } from 'antd'
 
 export const LoginContainer = styled.div`
   width: 100%;
   max-width: ${({ theme }) => theme.dimensions.CARD_WIDTH_LG}px;
   margin: 0 auto;
   padding: ${({ theme }) => theme.spacing['3']}px;
-
-  @media (max-width: 480px) {
-    padding: ${({ theme }) => theme.spacing['2']}px;
-  }
 `
 
 export const LogoContainer = styled.div`
@@ -24,11 +20,6 @@ export const LogoContainer = styled.div`
     width: auto;
     max-width: 150px;
     object-fit: contain;
-  }
-  
-  @media (max-width: 768px) {
-    margin-top: ${({ theme }) => theme.spacing.MD}px;
-    margin-bottom: ${({ theme }) => theme.spacing.MD}px;
   }
 `
 
@@ -114,11 +105,6 @@ export const LoginButton = styled(Button)`
   
   &:active:not(:disabled) {
     transform: translateY(0);
-  }
-  
-  @media (max-width: 480px) {
-    height: 48px;
-    font-size: 16px;
   }
 `
 
@@ -215,11 +201,11 @@ export const SelectorsContainer = styled.div`
       align-items: center !important;
     }
     
-    /* Fix button content alignment */
-    &.ant-btn {
-      display: inline-flex !important;
-      align-items: center !important;
-      justify-content: center !important;
+  /* Fix button content alignment */
+  &.ant-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
       
       .ant-btn-icon {
         display: flex !important;
@@ -228,11 +214,22 @@ export const SelectorsContainer = styled.div`
       }
     }
   }
-  
-  @media (max-width: 768px) {
-    margin-top: ${({ theme }) => theme.spacing.XL}px;
-    margin-bottom: ${({ theme }) => theme.spacing.MD}px;
-  }
+`
+
+export const SelectorSpacer = styled.div<{ $hasSpacing: boolean }>`
+  margin-bottom: ${({ $hasSpacing, theme }) => ($hasSpacing ? `${theme.spacing.SM}px` : 0)};
+`
+
+export const FullWidthStack = styled(Space)`
+  width: 100%;
+`
+
+export const LargeGapFormItem = styled(Form.Item)`
+  margin-bottom: ${({ theme }) => theme.spacing.LG}px !important;
+`
+
+export const NoMarginFormItem = styled(Form.Item)`
+  margin-bottom: 0 !important;
 `
 
 export const TFAModalTitle = styled.div`
@@ -338,15 +335,6 @@ export const StyledInput = styled(Input)`
     transition: background-color 5000s ease-in-out 0s;
   }
   
-  /* Mobile responsive */
-  @media (max-width: 480px) {
-    height: 48px;
-    font-size: 16px; /* Prevent zoom on iOS */
-    
-    input.ant-input {
-      font-size: 16px;
-    }
-  }
 `
 
 export const StyledPasswordInput = styled(Input.Password)`
@@ -438,13 +426,4 @@ export const StyledPasswordInput = styled(Input.Password)`
     transition: background-color 5000s ease-in-out 0s;
   }
   
-  /* Mobile responsive */
-  @media (max-width: 480px) {
-    height: 48px;
-    font-size: 16px; /* Prevent zoom on iOS */
-    
-    input.ant-input {
-      font-size: 16px;
-    }
-  }
 `

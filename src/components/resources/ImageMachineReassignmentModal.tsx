@@ -85,14 +85,14 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
         'data-testid': 'image-reassign-submit',
         style: {
           ...styles.buttonPrimary,
-          ...styles.touchTarget
+          ...styles.controlSurface
         }
       }}
       cancelButtonProps={{
         'data-testid': 'image-reassign-cancel',
         style: {
           ...styles.buttonSecondary,
-          ...styles.touchTarget
+          ...styles.controlSurface
         }
       }}
       className={ModalSize.Medium}

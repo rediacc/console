@@ -219,7 +219,7 @@ export const useSmartRefresh = (
       setRefreshInterval(30000) // Reset to fast refresh on activity
     }
 
-    const events = ['mousedown', 'keydown', 'scroll', 'touchstart']
+    const events = ['mousedown', 'keydown', 'scroll']
     events.forEach(event => {
       document.addEventListener(event, updateActivity, { passive: true })
     })

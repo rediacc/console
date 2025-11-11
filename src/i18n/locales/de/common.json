@@ -98,7 +98,6 @@
   "navigation": {
     "architecture": "Architektur",
     "audit": "Prüfung",
-    "closeMobileMenu": "Mobiles Menü schließen",
     "credentials": "Anmeldeinformationen",
     "dashboard": "Armaturenbrett",
     "distributedStorage": "Verteilter Speicher",
@@ -106,7 +105,6 @@
     "machines": "Maschinen",
     "mainNavigation": "Hauptnavigation",
     "marketplace": "Marktplatz",
-    "openMobileMenu": "Öffnen Sie das mobile Menü",
     "queue": "Warteschlange",
     "storage": "Speicher",
     "system": "System"

@@ -98,7 +98,6 @@
   "navigation": {
     "architecture": "Архитектура",
     "audit": "Аудит",
-    "closeMobileMenu": "Закрыть мобильное меню",
     "credentials": "Учетные данные",
     "dashboard": "Панель управления",
     "distributedStorage": "Распределенное хранилище",
@@ -106,7 +105,6 @@
     "machines": "Машины",
     "mainNavigation": "Основная навигация",
     "marketplace": "Торговая площадка",
-    "openMobileMenu": "Открыть мобильное меню",
     "queue": "Очередь",
     "storage": "Хранилище",
     "system": "Система"

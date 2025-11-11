@@ -98,7 +98,6 @@
   "navigation": {
     "architecture": "Mimarlık",
     "audit": "Denetim",
-    "closeMobileMenu": "Mobil menüyü kapat",
     "credentials": "Kimlik Bilgileri",
     "dashboard": "Kontrol Paneli",
     "distributedStorage": "Dağıtılmış Depolama",
@@ -106,7 +105,6 @@
     "machines": "Makineler",
     "mainNavigation": "Ana gezinme",
     "marketplace": "Pazar yeri",
-    "openMobileMenu": "Mobil menüyü aç",
     "queue": "Sıra",
     "storage": "Depolama",
     "system": "Sistem"

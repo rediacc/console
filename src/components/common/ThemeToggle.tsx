@@ -25,7 +25,7 @@ export const ThemeToggle: React.FC = () => {
       title={switchText}
       data-testid="theme-toggle-button"
       style={{
-        ...styles.touchTarget,
+        ...styles.controlSurface,
         borderRadius: DESIGN_TOKENS.BORDER_RADIUS.LG,
         transition: DESIGN_TOKENS.TRANSITIONS.BUTTON,
         color: 'var(--color-text-primary)',

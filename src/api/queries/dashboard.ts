@@ -60,7 +60,7 @@ interface SubscriptionDetail {
   isTrial: number;
 }
 
-interface QueueTeamIssue {
+export interface QueueTeamIssue {
   TeamName: string;
   TotalItems: number;
   PendingItems: number;
@@ -68,7 +68,7 @@ interface QueueTeamIssue {
   StaleItems: number;
 }
 
-interface QueueMachineIssue {
+export interface QueueMachineIssue {
   MachineName: string;
   TeamName: string;
   BridgeName: string;

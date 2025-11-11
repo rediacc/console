@@ -98,7 +98,6 @@
   "navigation": {
     "architecture": "建築",
     "audit": "監査",
-    "closeMobileMenu": "モバイルメニューを閉じる",
     "credentials": "認証情報",
     "dashboard": "ダッシュボード",
     "distributedStorage": "分散ストレージ",
@@ -106,7 +105,6 @@
     "machines": "マシン",
     "mainNavigation": "メインナビゲーション",
     "marketplace": "市場",
-    "openMobileMenu": "モバイルメニューを開く",
     "queue": "列",
     "storage": "ストレージ",
     "system": "システム"

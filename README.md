@@ -20,7 +20,7 @@ The Rediacc Console is a modern web-based interface for managing distributed inf
 - **Multi-language Support**: Internationalization (i18n) with multiple language support
 - **Secure Authentication**: Token-based authentication with automatic rotation
 - **Vault Encryption**: Client-side encryption for sensitive data
-- **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
+- **Desktop-Optimized Layout**: Tuned for widescreen workflows with fixed panel widths
 
 ## 🚀 Quick Start
 

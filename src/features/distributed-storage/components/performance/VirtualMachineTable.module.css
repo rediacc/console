@@ -34,7 +34,7 @@
   transition: background-color 0.2s ease;
   display: flex;
   align-items: center;
-  min-height: 44px; /* WCAG touch target compliance */
+  min-height: 44px; /* Maintain a consistent desktop row height */
 }
 
 .row:hover {
@@ -84,19 +84,4 @@
   align-items: center;
   justify-content: center;
   padding: 16px;
-}
-
-/* Mobile responsive */
-@media (max-width: 768px) {
-  .teamName {
-    display: none;
-  }
-  
-  .machineName {
-    min-width: 150px;
-  }
-  
-  .status {
-    width: 150px;
-  }
 }

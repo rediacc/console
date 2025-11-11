@@ -258,7 +258,7 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
               onClick={handleCreate}
               size="small"
               data-testid="snapshot-list-create-button"
-              style={componentStyles.touchTarget}
+              style={componentStyles.controlSurface}
               aria-label={t('snapshots.create')}
             />
           </Tooltip>

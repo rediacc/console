@@ -1,17 +1,34 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { Card, Button, Space, Tag, Typography, Spin, Alert, Tooltip, Breadcrumb } from 'antd'
+import { Button, Space, Tag, Typography, Spin, Alert, Tooltip } from 'antd'
 import { DoubleLeftOutlined, ReloadOutlined, InboxOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
-import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { usePanelWidth } from '@/hooks/usePanelWidth'
 import { useMachines } from '@/api/queries/machines'
 import { RepositoryContainerList } from '@/components/resources/RepositoryContainerList'
 import { Machine } from '@/types'
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
+import {
+  PageWrapper,
+  FullHeightCard,
+  BreadcrumbWrapper,
+  HeaderSection,
+  HeaderRow,
+  TitleColumn,
+  TitleRow,
+  TagRow,
+  ActionsRow,
+  IconButton,
+  SplitLayout,
+  ListPanel,
+  DetailBackdrop,
+  CenteredState,
+  ErrorWrapper,
+  HeaderTitleText,
+} from './styles'
 
-const { Title } = Typography
+const { Text } = Typography
 
 // Repository interface from vaultStatus (runtime data)
 interface Repository {
@@ -69,7 +86,6 @@ const RepositoryContainersPage: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useTranslation(['resources', 'machines', 'common'])
-  const styles = useComponentStyles()
 
   // Extract machine and repository from navigation state
   const machine = (location.state as any)?.machine as Machine | undefined
@@ -158,94 +174,81 @@ const RepositoryContainersPage: React.FC = () => {
   // Loading state
   if (machinesLoading) {
     return (
-      <div className="page-container">
-        <Card>
-          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+      <PageWrapper>
+        <FullHeightCard>
+          <CenteredState>
             <Spin size="large" />
-            <div style={{ marginTop: 16, color: 'var(--ant-color-text-secondary)' }}>
-              {t('common:general.loading')}
-            </div>
-          </div>
-        </Card>
-      </div>
+            <Text type="secondary">{t('common:general.loading')}</Text>
+          </CenteredState>
+        </FullHeightCard>
+      </PageWrapper>
     )
   }
 
   // Error state - machine not found
   if (!actualMachine) {
     return (
-      <div className="page-container">
-        <Card>
+      <PageWrapper>
+        <FullHeightCard>
           <Alert
             message={t('machines:machineNotFound')}
             description={
-              <div>
+              <ErrorWrapper>
                 <p>{t('machines:machineNotFoundDescription', { machineName })}</p>
-                <Button
-                  type="primary"
-                  onClick={handleBackToMachines}
-                  style={{ marginTop: 16 }}
-                >
+                <Button type="primary" onClick={handleBackToMachines}>
                   {t('machines:backToMachines')}
                 </Button>
-              </div>
+              </ErrorWrapper>
             }
             type="error"
             showIcon
           />
-        </Card>
-      </div>
+        </FullHeightCard>
+      </PageWrapper>
     )
   }
 
   // Error state - repository not found
   if (!actualRepository) {
     return (
-      <div className="page-container">
-        <Card>
+      <PageWrapper>
+        <FullHeightCard>
           <Alert
             message={t('machines:repositoryNotFound')}
             description={
-              <div>
+              <ErrorWrapper>
                 <p>{t('machines:repositoryNotFoundDescription', { repositoryName, machineName })}</p>
-                <Button
-                  type="primary"
-                  onClick={handleBackToRepositories}
-                  style={{ marginTop: 16 }}
-                >
+                <Button type="primary" onClick={handleBackToRepositories}>
                   {t('machines:backToRepositories')}
                 </Button>
-              </div>
+              </ErrorWrapper>
             }
             type="error"
             showIcon
           />
-        </Card>
-      </div>
+        </FullHeightCard>
+      </PageWrapper>
     )
   }
 
   const actualRepositoryName = actualRepository.name
 
   return (
-    <div className="page-container" style={{ height: '100%' }}>
-      <Card style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        {/* Header */}
-        <div style={{ marginBottom: 24, flexShrink: 0 }}>
-          {/* Breadcrumb Navigation */}
-          <Breadcrumb
-            style={{ marginBottom: 16 }}
+    <PageWrapper>
+      <FullHeightCard>
+        <HeaderSection>
+          <BreadcrumbWrapper
             items={[
               {
-                title: <span style={{ cursor: 'pointer' }}>{t('machines:machines')}</span>,
+                title: <span>{t('machines:machines')}</span>,
                 onClick: () => navigate('/machines')
               },
               {
-                title: <span style={{ cursor: 'pointer' }}>{actualMachine.machineName}</span>,
+                title: <span>{actualMachine.machineName}</span>,
                 onClick: () => navigate(`/machines/${machineName}/repositories`, { state: { machine: actualMachine } })
               },
               {
-                title: <span style={{ cursor: 'pointer' }}>{t('resources:repositories.repositories')}</span>,
+                title: <span>{t('resources:repositories.repositories')}</span>,
                 onClick: () => navigate(`/machines/${machineName}/repositories`, { state: { machine: actualMachine } })
               },
               {
@@ -258,84 +261,61 @@ const RepositoryContainersPage: React.FC = () => {
             data-testid="repository-containers-breadcrumb"
           />
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div style={{ flex: 1 }}>
-              {/* Back button and title */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12 }}>
+          <HeaderRow>
+            <TitleColumn>
+              <TitleRow>
                 <Tooltip title={t('machines:backToRepositories')}>
-                  <Button
+                  <IconButton
                     icon={<DoubleLeftOutlined />}
                     onClick={handleBackToRepositories}
-                    style={styles.touchTarget}
+                    aria-label={t('machines:backToRepositories')}
                     data-testid="repository-containers-back-button"
                   />
                 </Tooltip>
-                <Title level={4} style={{ ...styles.heading4, margin: 0 }}>
+                <HeaderTitleText level={4}>
                   <Space>
                     <InboxOutlined />
                     <span>{t('machines:repositoryContainers')}: {actualRepositoryName}</span>
                   </Space>
-                </Title>
-              </div>
-
-              {/* Machine and Repository info tags */}
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                </HeaderTitleText>
+              </TitleRow>
+              <TagRow>
                 <Tag color="purple">{t('machines:machine')}: {actualMachine.machineName}</Tag>
                 <Tag color="green">{t('machines:team')}: {actualMachine.teamName}</Tag>
                 <Tag color="blue">{t('machines:bridge')}: {actualMachine.bridgeName}</Tag>
                 {actualMachine.regionName && (
                   <Tag color="cyan">{t('machines:region')}: {actualMachine.regionName}</Tag>
                 )}
-              </div>
-            </div>
+              </TagRow>
+            </TitleColumn>
 
-            {/* Refresh button */}
-            <Tooltip title={t('common:actions.refresh')}>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={handleRefresh}
-                style={styles.touchTarget}
-                data-testid="repository-containers-refresh-button"
-              />
-            </Tooltip>
-          </div>
-        </div>
+            <ActionsRow>
+              <Tooltip title={t('common:actions.refresh')}>
+                <IconButton
+                  icon={<ReloadOutlined />}
+                  onClick={handleRefresh}
+                  data-testid="repository-containers-refresh-button"
+                />
+              </Tooltip>
+            </ActionsRow>
+          </HeaderRow>
+        </HeaderSection>
 
-        {/* Container List */}
-        <div
-          style={{
-            display: 'flex',
-            flex: 1,
-            overflow: 'hidden',
-            position: 'relative'
-          }}
-        >
-          {/* Left Panel - Container List */}
-          <div
-            style={{
-              width: selectedResource ? `calc(100% - ${actualPanelWidth}px)` : '100%',
-              height: '100%',
-              overflow: 'auto',
-              minWidth: 300,
-              transition: 'width 0.3s ease-in-out',
-            }}
-          >
-            {actualMachine && actualRepository && (
-              <RepositoryContainerList
-                machine={actualMachine}
-                repository={actualRepository}
-                key={`${actualMachine.machineName}-${actualRepositoryName}-${refreshKey}`}
-                refreshKey={refreshKey}
-                onContainerClick={handleContainerClick}
-                highlightedContainer={selectedContainer as any} // eslint-disable-line @typescript-eslint/no-explicit-any
-                onQueueItemCreated={(taskId, machineName) => {
-                  setQueueTraceModal({ visible: true, taskId, machineName })
-                }}
-              />
-            )}
-          </div>
+        <SplitLayout>
+          <ListPanel $showDetail={Boolean(selectedResource)} $detailWidth={actualPanelWidth}>
+            <RepositoryContainerList
+              machine={actualMachine}
+              repository={actualRepository}
+              key={`${actualMachine.machineName}-${actualRepositoryName}-${refreshKey}`}
+              refreshKey={refreshKey}
+              onContainerClick={handleContainerClick}
+              highlightedContainer={selectedContainer as any}
+              onQueueItemCreated={(taskId, machineName) => {
+                setQueueTraceModal({ visible: true, taskId, machineName })
+              }}
+            />
+          </ListPanel>
 
-          {/* Right Panel - Detail Panel */}
           {selectedResource && (
             <UnifiedDetailPanel
               type={selectedResource.type}
@@ -353,41 +333,30 @@ const RepositoryContainersPage: React.FC = () => {
             />
           )}
 
-          {/* Backdrop for detail panel */}
           {selectedResource && !isPanelCollapsed && (
-            <div
-              style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.2)',
-                zIndex: 999,
-                pointerEvents: 'auto'
-              }}
+            <DetailBackdrop
+              $right={0}
+              $visible={true}
               onClick={() => {
                 setSelectedContainer(null)
                 setIsPanelCollapsed(true)
               }}
             />
           )}
-        </div>
-      </Card>
+        </SplitLayout>
+      </FullHeightCard>
 
-      {/* Queue Item Trace Modal */}
       {queueTraceModal.visible && (
         <QueueItemTraceModal
           taskId={queueTraceModal.taskId}
           visible={queueTraceModal.visible}
           onClose={() => {
             setQueueTraceModal({ visible: false, taskId: '', machineName: '' })
-            // Refresh the page after task completion
             handleRefresh()
           }}
         />
       )}
-    </div>
+    </PageWrapper>
   )
 }
 

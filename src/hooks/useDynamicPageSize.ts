@@ -67,18 +67,11 @@ export const useDynamicPageSize = (
       resizeObserverRef.current.observe(tableContainerRef.current);
     }
 
-    // Also listen to window resize as a fallback
-    const handleResize = () => {
-      debouncedCalculatePageSizeRef.current?.();
-    };
-    window.addEventListener('resize', handleResize);
-
     // Cleanup
     return () => {
       if (resizeObserverRef.current) {
         resizeObserverRef.current.disconnect();
       }
-      window.removeEventListener('resize', handleResize);
       debouncedCalculatePageSizeRef.current?.cancel();
     };
   }, [calculatePageSize, tableContainerRef]);

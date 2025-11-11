@@ -161,7 +161,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
               }
               onClick={() => handleCopy(field, value)}
               style={{
-                minHeight: DESIGN_TOKENS.TOUCH_TARGET.SMALL,
+                minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT_SM,
                 borderRadius: borderRadius('SM'),
                 fontSize: fontSize('XS')
               }}
@@ -208,7 +208,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
             style={{ 
               ...styles.buttonPrimary,
               backgroundColor: 'var(--color-primary)',
-              minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE
+              minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT
             }}
             data-testid="vault-editor-generate-button"
           >
@@ -219,7 +219,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
             <Button 
               onClick={() => setGeneratedValues({})} 
               style={{
-                minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT,
                 borderRadius: borderRadius('LG'),
                 fontSize: fontSize('SM')
               }}
@@ -232,7 +232,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
               onClick={handleGenerate}
               loading={generating}
               style={{
-                minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT,
                 borderRadius: borderRadius('LG'),
                 fontSize: fontSize('SM')
               }}
@@ -246,7 +246,7 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
               style={{ 
                 ...styles.buttonPrimary,
                 backgroundColor: 'var(--color-primary)',
-                minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE
+                minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT
               }}
               data-testid="vault-editor-apply-generated"
             >
@@ -279,8 +279,8 @@ const FieldGenerator: React.FC<FieldGeneratorProps> = (props) => {
           size="small"
           style={{ 
             color: 'var(--color-primary)',
-            minHeight: DESIGN_TOKENS.TOUCH_TARGET.SMALL,
-            minWidth: DESIGN_TOKENS.TOUCH_TARGET.SMALL,
+            minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT_SM,
+            minWidth: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT_SM,
             borderRadius: borderRadius('SM')
           }}
           data-testid={props['data-testid'] || 'vault-editor-field-generator'}

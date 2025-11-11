@@ -607,7 +607,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               type={groupBy === 'machine' ? 'primary' : 'default'}
               icon={<DesktopOutlined />}
               onClick={() => setGroupBy('machine')}
-              style={styles.touchTargetSmall}
+              style={styles.controlSurfaceSmall}
               data-testid="machine-view-toggle-machine"
               aria-label={t('machines:machine')}
             />
@@ -620,7 +620,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               type={groupBy === 'bridge' ? 'primary' : 'default'}
               icon={<CloudServerOutlined />}
               onClick={() => setGroupBy('bridge')}
-              style={styles.touchTargetSmall}
+              style={styles.controlSurfaceSmall}
               data-testid="machine-view-toggle-bridge"
               aria-label={t('machines:groupByBridge')}
             />
@@ -631,7 +631,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               type={groupBy === 'team' ? 'primary' : 'default'}
               icon={<TeamOutlined />}
               onClick={() => setGroupBy('team')}
-              style={styles.touchTargetSmall}
+              style={styles.controlSurfaceSmall}
               data-testid="machine-view-toggle-team"
               aria-label={t('machines:groupByTeam')}
             />
@@ -643,7 +643,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                 type={groupBy === 'region' ? 'primary' : 'default'}
                 icon={<GlobalOutlined />}
                 onClick={() => setGroupBy('region')}
-                style={styles.touchTargetSmall}
+                style={styles.controlSurfaceSmall}
                 data-testid="machine-view-toggle-region"
                 aria-label={t('machines:groupByRegion')}
               />
@@ -655,7 +655,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               type={groupBy === 'repository' ? 'primary' : 'default'}
               icon={<InboxOutlined />}
               onClick={() => setGroupBy('repository')}
-              style={styles.touchTargetSmall}
+              style={styles.controlSurfaceSmall}
               data-testid="machine-view-toggle-repository"
               aria-label={t('machines:groupByRepository')}
             />
@@ -666,7 +666,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               type={groupBy === 'status' ? 'primary' : 'default'}
               icon={<DashboardOutlined />}
               onClick={() => setGroupBy('status')}
-              style={styles.touchTargetSmall}
+              style={styles.controlSurfaceSmall}
               data-testid="machine-view-toggle-status"
               aria-label={t('machines:groupByStatus')}
             />
@@ -677,7 +677,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               type={groupBy === 'grand' ? 'primary' : 'default'}
               icon={<BranchesOutlined />}
               onClick={() => setGroupBy('grand')}
-              style={styles.touchTargetSmall}
+              style={styles.controlSurfaceSmall}
               data-testid="machine-view-toggle-grand"
               aria-label={t('machines:groupByGrand')}
             />
@@ -928,7 +928,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
                       e.stopPropagation();
                       navigate(`/machines/${machine.machineName}/repositories`, { state: { machine } });
                     }}
-                    style={{ ...styles.touchTargetSmall }}
+                    style={{ ...styles.controlSurfaceSmall }}
                   >
                     {t('machines:viewRepositories')}
                   </Button>

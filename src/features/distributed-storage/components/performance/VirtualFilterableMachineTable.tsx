@@ -195,7 +195,7 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
               loading={loading}
               style={{
                 ...styles.buttonSecondary,
-                ...styles.touchTarget
+                ...styles.controlSurface
               }}
             >
               Refresh

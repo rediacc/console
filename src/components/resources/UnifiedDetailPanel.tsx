@@ -99,8 +99,7 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
       if (!isDragging.current) return
 
       const deltaX = dragStartX.current - e.clientX
-      const windowWidth = window.innerWidth
-      const maxWidth = Math.min(800, windowWidth - 400) // Leave at least 400px for the table
+      const maxWidth = 800
       const newWidth = Math.max(300, Math.min(maxWidth, dragStartWidth.current + deltaX))
       onSplitWidthChange(newWidth)
     }
@@ -216,7 +215,7 @@ export const UnifiedDetailPanel: React.FC<UnifiedDetailPanelProps> = ({
               icon={<DoubleLeftOutlined />}
               onClick={onToggleCollapse}
               style={{
-                ...styles.touchTarget,
+                ...styles.controlSurface,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

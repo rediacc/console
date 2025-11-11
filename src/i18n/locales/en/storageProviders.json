@@ -632,7 +632,7 @@
         "Can connect multiple cloud accounts",
         "Data stored in EU (GDPR compliant)",
         "Supports WebDAV access",
-        "Has desktop and mobile apps"
+        "Has desktop apps plus companion clients"
       ]
     },
     "linkbox": {
@@ -649,7 +649,7 @@
       "tips": [
         "Simple sharing options",
         "Direct download links",
-        "Mobile apps available",
+        "Companion apps available",
         "Affordable pricing tiers"
       ]
     },
@@ -699,7 +699,7 @@
         "Free tier includes 8GB storage",
         "Popular in Russian-speaking countries",
         "Supports large file uploads",
-        "Has mobile and desktop sync apps"
+        "Has sync apps for multiple platforms"
       ]
     },
     "mega": {
@@ -897,7 +897,7 @@
         "Choose EU or US region based on your location",
         "Crypto folder provides client-side encryption",
         "Has lifetime plans available",
-        "Mobile and desktop sync clients available"
+        "Sync clients available across platforms"
       ]
     },
     "pikpak": {
@@ -920,7 +920,7 @@
         "Supports offline downloading",
         "Built-in media player",
         "Good for torrenting to cloud",
-        "Has mobile apps with streaming"
+        "Has companion apps with streaming"
       ]
     },
     "pixeldrain": {
@@ -1562,7 +1562,7 @@
       "name": "Yandex Disk",
       "tips": [
         "Free tier includes 10GB of storage",
-        "Supports automatic photo upload from mobile devices",
+        "Supports automatic photo upload from devices",
         "Has desktop sync clients for all major platforms",
         "Office document collaboration available"
       ]

@@ -3,10 +3,23 @@ import { Spin } from 'antd'
 import { useGetMachineAssignmentStatus } from '@/api/queries/distributedStorage'
 import MachineAssignmentStatusBadge from './MachineAssignmentStatusBadge'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
-import type { Machine } from '@/types'
+import type { Machine, MachineAssignmentType } from '@/types'
 
 interface MachineAssignmentStatusCellProps {
   machine: Machine
+}
+
+const normalizeAssignmentType = (value?: string | null): MachineAssignmentType => {
+  if (!value) return 'AVAILABLE'
+  const normalized = value.toString().toUpperCase()
+  if (normalized === 'CLUSTER' || normalized === 'IMAGE' || normalized === 'CLONE') {
+    return normalized
+  }
+  return 'AVAILABLE'
+}
+
+const getAssignmentDetails = (value?: string | null) => {
+  return value ?? undefined
 }
 
 const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = ({ machine }) => {
@@ -66,17 +79,28 @@ const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = 
     )
   }
 
+  const assignmentType = normalizeAssignmentType(
+    data.assignmentType ||
+    (data as Record<string, unknown>)?.assignment_type as string ||
+    (data as Record<string, unknown>)?.AssignmentType as string
+  )
+  const assignmentDetails = getAssignmentDetails(
+    data.assignmentDetails ||
+    (data as Record<string, unknown>)?.assignment_details as string ||
+    (data as Record<string, unknown>)?.AssignmentDetails as string
+  )
+
   return (
     <div 
-      data-testid={`machine-status-cell-${data.assignmentType.toLowerCase()}`}
+      data-testid={`machine-status-cell-${assignmentType.toLowerCase()}`}
       style={{
         ...styles.flexStart,
         minHeight: '24px'
       }}
     >
       <MachineAssignmentStatusBadge 
-        assignmentType={data.assignmentType}
-        assignmentDetails={data.assignmentDetails}
+        assignmentType={assignmentType}
+        assignmentDetails={assignmentDetails}
         size="small"
       />
     </div>

@@ -156,7 +156,7 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
             size="small"
             onClick={() => setSelectedMachines([])}
             data-testid="ds-machines-clear-selection"
-            style={componentStyles.touchTarget}
+            style={componentStyles.controlSurface}
           >
             {t('common:actions.clearSelection')}
           </Button>
@@ -167,7 +167,7 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
             icon={<CloudServerOutlined />}
             onClick={() => setBulkAssignClusterModal(true)}
             data-testid="ds-machines-bulk-assign-cluster"
-            style={componentStyles.touchTarget}
+            style={componentStyles.controlSurface}
           >
             {t('machines:bulkActions.assignToCluster')}
           </Button>
@@ -175,7 +175,7 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
             icon={<CloudServerOutlined />}
             onClick={() => setRemoveFromClusterModal(true)}
             data-testid="ds-machines-bulk-remove-cluster"
-            style={componentStyles.touchTarget}
+            style={componentStyles.controlSurface}
           >
             {t('machines:bulkActions.removeFromCluster')}
           </Button>
@@ -183,7 +183,7 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
             icon={<InfoCircleOutlined />}
             onClick={() => setViewAssignmentStatusModal(true)}
             data-testid="ds-machines-bulk-view-status"
-            style={componentStyles.touchTarget}
+            style={componentStyles.controlSurface}
           >
             {t('machines:bulkActions.viewAssignmentStatus')}
           </Button>
@@ -238,7 +238,7 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
                 icon={<ExportOutlined />}
                 onClick={handleExport}
                 data-testid="ds-machines-export-button"
-                style={componentStyles.touchTarget}
+                style={componentStyles.controlSurface}
               >
                 {t('machines.actions.exportReport')}
               </Button>

@@ -143,7 +143,7 @@ export const DistributedStorageSection: React.FC<DistributedStorageSectionProps>
                 onClick={onViewDetails}
                 style={{
                   ...styles.buttonSecondary,
-                  ...styles.touchTargetSmall
+                  ...styles.controlSurfaceSmall
                 }}
                 data-testid="ds-section-history-button"
               >
@@ -158,7 +158,7 @@ export const DistributedStorageSection: React.FC<DistributedStorageSectionProps>
                 onClick={onManageAssignment}
                 style={{
                   ...styles.buttonPrimary,
-                  ...styles.touchTargetSmall
+                  ...styles.controlSurfaceSmall
                 }}
                 data-testid="ds-section-manage-button"
               >

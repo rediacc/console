@@ -215,7 +215,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
               type="text"
               icon={<DoubleRightOutlined />}
               onClick={onClose}
-              style={componentStyles.touchTarget}
+              style={componentStyles.controlSurface}
               data-testid="repo-detail-collapse"
               aria-label="Collapse Panel"
             />

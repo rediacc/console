@@ -30,7 +30,6 @@ This document captures the styling architecture introduced in PR #84 (_merged on
 - Colors:
   - Prefer `theme.colors.*` on components that render inside the `ThemeProvider`.
   - Use CSS variables (`var(--color-*)`) when a value must be shared with pure CSS context (e.g. Ant Design dropdown content). `GlobalStyles` defines these per `data-theme`.
-- Breakpoints: rely on the breakpoint values defined in `StyledTheme.breakpoints` (`640px`, `1024px`, `1280px`, `1536px`) unless a design spec demands something different.
 
 ---
 
@@ -59,7 +58,7 @@ Global classes live in `GlobalStyles.ts` and should be applied via the `classNam
 | `modal-full` | 1600px | Dashboards, wide tables |
 | `modal-fullscreen` | 100vw / 100vh | Full viewport experiences |
 
-Each modal body automatically constrains height and scroll behaviour, with tablet and mobile overrides also centralised there. Do not duplicate these rules elsewhere—set the class and trust the global system.
+Each modal body automatically constrains height and scroll behaviour for the fixed desktop canvas. Do not duplicate these rules elsewhere—set the class and trust the global system.
 
 ---
 
@@ -73,7 +72,7 @@ Each modal body automatically constrains height and scroll behaviour, with table
 ## Adding or Migrating Components
 1. **Create** or update the component’s `styles.ts`.
 2. **Import** tokens from the theme—no ad-hoc constants.
-3. **Keep** accessibility in mind. Touch targets should respect `DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE`, and scroll areas should style their scrollbars like the existing modals.
+3. **Keep** accessibility in mind. Icon buttons should use the control surface sizes in `DESIGN_TOKENS.DIMENSIONS`, and scroll areas should style their scrollbars like the existing modals.
 4. **Annotate** tricky overrides with a short comment.
 5. **Delete** the old `.css` file once the component compiles and renders correctly in both light and dark themes.
 

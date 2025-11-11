@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Card, Spin, Alert, Space, Typography, Radio, Button, Tooltip, Statistic, Row, Col, Select } from 'antd'
+import { Spin, Alert, Space, Typography, Radio, Button, Tooltip, Statistic, Row, Col, Select } from 'antd'
 import { 
   FullscreenOutlined, 
   FullscreenExitOutlined, 
@@ -17,10 +17,33 @@ import {
 import { useTranslation } from 'react-i18next'
 import { useCompanyArchitecture } from '@/api/queries/architecture'
 import { useTheme } from '@/context/ThemeContext'
-import { useComponentStyles } from '@/hooks/useComponentStyles'
 import * as d3 from 'd3'
+import {
+  PageWrapper,
+  ContentStack,
+  SectionCard,
+  HeaderStack,
+  HeaderRow,
+  ActionGroup,
+  IconButton,
+  CompactIconButton,
+  FiltersRow,
+  FilterLabel,
+  FilterSelectWrapper,
+  FilterActions,
+  VisualizationContainer,
+  LoadingOverlay,
+  LoadingMessage,
+  VisualizationCanvas,
+  LegendGrid,
+  LegendItem,
+  LegendIcon,
+  SectionTitleText,
+  CenteredState,
+  CenteredMessage,
+} from './styles'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 
 interface GraphNode extends d3.SimulationNodeDatum {
   nodeType: string
@@ -48,7 +71,6 @@ const ArchitecturePage: React.FC = () => {
   const svgRef = useRef<SVGSVGElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const { theme } = useTheme()
-  const styles = useComponentStyles()
 
   // Available entity types for filtering
   const entityTypes = [
@@ -628,38 +650,42 @@ const ArchitecturePage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
+      <CenteredState>
         <Spin size="large" />
-        <div style={{ marginTop: 16, color: 'var(--ant-color-text-secondary)' }}>
-          {t('messages.loading', { ns: 'common' })}
-        </div>
-      </div>
+        <CenteredMessage>{t('messages.loading', { ns: 'common' })}</CenteredMessage>
+      </CenteredState>
     )
   }
 
   if (error) {
     return (
-      <Alert
-        message={t('messages.error', { ns: 'common' })}
-        description={error instanceof Error ? error.message : t('architecture.fetchError')}
-        type="error"
-        showIcon
-        action={
-          <Tooltip title={t('actions.retry', { ns: 'common' })}>
-            <Button 
-              size="small" 
-              icon={<ReloadOutlined />}
-              onClick={() => refetch()}
-              aria-label={t('actions.retry', { ns: 'common' })}
-            />
-          </Tooltip>
-        }
-      />
+      <PageWrapper>
+        <Alert
+          message={t('messages.error', { ns: 'common' })}
+          description={error instanceof Error ? error.message : t('architecture.fetchError')}
+          type="error"
+          showIcon
+          action={
+            <Tooltip title={t('actions.retry', { ns: 'common' })}>
+              <Button
+                size="small"
+                icon={<ReloadOutlined />}
+                onClick={() => refetch()}
+                aria-label={t('actions.retry', { ns: 'common' })}
+              />
+            </Tooltip>
+          }
+        />
+      </PageWrapper>
     )
   }
 
   if (!data) {
-    return <Alert message={t('architecture.noData')} type="info" showIcon />
+    return (
+      <PageWrapper>
+        <Alert message={t('architecture.noData')} type="info" showIcon />
+      </PageWrapper>
+    )
   }
 
   // Count nodes by type (filtered)
@@ -674,111 +700,93 @@ const ArchitecturePage: React.FC = () => {
   }
 
   return (
-    <div data-testid="architecture-page">
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+    <PageWrapper data-testid="architecture-page">
+      <ContentStack>
         {/* Header */}
-        <Card style={styles.card}>
-          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Title level={4} style={{ ...styles.heading4, margin: 0 }}>
-                {t('architecture.title')}
-              </Title>
-              <Space>
-                <Radio.Group 
-                  value={viewMode} 
+        <SectionCard>
+          <HeaderStack>
+            <HeaderRow>
+              <SectionTitleText level={4}>{t('architecture.title')}</SectionTitleText>
+              <ActionGroup>
+                <Radio.Group
+                  value={viewMode}
                   onChange={(e) => setViewMode(e.target.value)}
                   data-testid="architecture-view-mode-selector"
                 >
-                  <Radio.Button value="hierarchy" data-testid="architecture-view-hierarchy">{t('architecture.viewHierarchy')}</Radio.Button>
-                  <Radio.Button value="force" data-testid="architecture-view-force">{t('architecture.viewForce')}</Radio.Button>
-                  <Radio.Button value="radial" data-testid="architecture-view-radial">{t('architecture.viewRadial')}</Radio.Button>
+                  <Radio.Button value="hierarchy" data-testid="architecture-view-hierarchy">
+                    {t('architecture.viewHierarchy')}
+                  </Radio.Button>
+                  <Radio.Button value="force" data-testid="architecture-view-force">
+                    {t('architecture.viewForce')}
+                  </Radio.Button>
+                  <Radio.Button value="radial" data-testid="architecture-view-radial">
+                    {t('architecture.viewRadial')}
+                  </Radio.Button>
                 </Radio.Group>
                 <Tooltip title={t('actions.refresh', { ns: 'common' })}>
-                  <Button 
-                    icon={<ReloadOutlined />} 
-                    style={styles.touchTarget}
+                  <IconButton
+                    icon={<ReloadOutlined />}
                     onClick={() => refetch()}
                     data-testid="architecture-refresh-button"
                   />
                 </Tooltip>
                 <Tooltip title={isFullscreen ? t('actions.exitFullscreen', { ns: 'common' }) : t('actions.fullscreen', { ns: 'common' })}>
-                  <Button 
+                  <IconButton
                     icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
-                    style={styles.touchTarget}
                     onClick={toggleFullscreen}
                     data-testid="architecture-fullscreen-button"
                   />
                 </Tooltip>
-              </Space>
-            </div>
+              </ActionGroup>
+            </HeaderRow>
 
-            {/* Filter Controls */}
-            <div style={{ 
-              display: 'flex', 
-              flexDirection: window.innerWidth < 768 ? 'column' : 'row',
-              alignItems: window.innerWidth < 768 ? 'stretch' : 'center', 
-              gap: window.innerWidth < 768 ? '12px' : '16px' 
-            }}>
-              <Space align="center" style={{ marginBottom: window.innerWidth < 768 ? '8px' : '0' }}>
-                <FilterOutlined style={{ color: '#556b2f' }} />
+            <FiltersRow>
+              <FilterLabel>
+                <FilterOutlined />
                 <Text strong>{t('architecture.filterEntities', { ns: 'system' })}</Text>
-              </Space>
-              <Select
-                mode="multiple"
-                allowClear
-                placeholder={t('architecture.selectEntities', { ns: 'system' })}
-                value={selectedEntityTypes}
-                onChange={setSelectedEntityTypes}
-                style={{ 
-                  minWidth: window.innerWidth < 768 ? '100%' : 400,
-                  minHeight: window.innerWidth < 768 ? '44px' : 'auto'
-                }}
-                maxTagCount={window.innerWidth < 768 ? 2 : 3}
-                maxTagPlaceholder={(omittedValues) => `+${omittedValues.length} more`}
-                data-testid="architecture-entity-filter"
-              >
-                {entityTypes.map(type => (
-                  <Select.Option key={type.value} value={type.value} data-testid={`architecture-filter-${type.value}`}>
-                    <Space>
-                      <span>{type.icon}</span>
-                      <span>{type.label}</span>
-                    </Space>
-                  </Select.Option>
-                ))}
-              </Select>
-              <Space style={{ 
-                justifyContent: window.innerWidth < 768 ? 'space-between' : 'flex-start',
-                width: window.innerWidth < 768 ? '100%' : 'auto'
-              }}>
+              </FilterLabel>
+              <FilterSelectWrapper>
+                <Select
+                  mode="multiple"
+                  allowClear
+                  placeholder={t('architecture.selectEntities', { ns: 'system' })}
+                  value={selectedEntityTypes}
+                  onChange={setSelectedEntityTypes}
+                  maxTagCount={3}
+                  maxTagPlaceholder={(omittedValues) => `+${omittedValues.length} more`}
+                  data-testid="architecture-entity-filter"
+                >
+                  {entityTypes.map(type => (
+                    <Select.Option key={type.value} value={type.value} data-testid={`architecture-filter-${type.value}`}>
+                      <Space>
+                        <span>{type.icon}</span>
+                        <span>{type.label}</span>
+                      </Space>
+                    </Select.Option>
+                  ))}
+                </Select>
+              </FilterSelectWrapper>
+              <FilterActions>
                 <Tooltip title={t('architecture.selectAll', { ns: 'system' })}>
-                  <Button
+                  <CompactIconButton
                     icon={<CheckOutlined />}
-                    size={'small'}
-                    style={{
-                      ...styles.touchTargetSmall,
-                      flex: window.innerWidth < 768 ? '1' : 'none'
-                    }}
+                    size="small"
                     onClick={() => setSelectedEntityTypes(entityTypes.map(t => t.value))}
                     data-testid="architecture-select-all-button"
                     aria-label={t('architecture.selectAll', { ns: 'system' })}
                   />
                 </Tooltip>
                 <Tooltip title={t('architecture.clearAll', { ns: 'system' })}>
-                  <Button
+                  <CompactIconButton
                     icon={<MinusCircleOutlined />}
-                    size={'small'}
-                    style={{
-                      ...styles.touchTargetSmall,
-                      flex: window.innerWidth < 768 ? '1' : 'none',
-                      marginLeft: window.innerWidth < 768 ? '8px' : '0'
-                    }}
+                    size="small"
                     onClick={() => setSelectedEntityTypes([])}
                     data-testid="architecture-clear-all-button"
                     aria-label={t('architecture.clearAll', { ns: 'system' })}
                   />
                 </Tooltip>
-              </Space>
-            </div>
+              </FilterActions>
+            </FiltersRow>
 
             {/* Summary Stats */}
             <Row gutter={16}>
@@ -832,38 +840,25 @@ const ArchitecturePage: React.FC = () => {
                 />
               </Col>
             </Row>
-          </Space>
-        </Card>
+          </HeaderStack>
+        </SectionCard>
 
         {/* Visualization */}
-        <Card style={styles.card}>
-          <div ref={containerRef} style={{ width: '100%', height: '600px', overflow: 'hidden', position: 'relative' }} data-testid="architecture-visualization-container">
+        <SectionCard>
+          <VisualizationContainer ref={containerRef} data-testid="architecture-visualization-container">
             {isVisualizationLoading && (
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 10
-              }}>
+              <LoadingOverlay>
                 <Spin size="large" />
-                <div style={{ marginTop: 16, color: 'var(--ant-color-text-secondary)' }}>
-                  {t('messages.loading', { ns: 'common' })}
-                </div>
-              </div>
+                <LoadingMessage>{t('messages.loading', { ns: 'common' })}</LoadingMessage>
+              </LoadingOverlay>
             )}
-            <svg ref={svgRef} style={{ width: '100%', height: '100%' }} data-testid="architecture-svg"></svg>
-          </div>
-        </Card>
+            <VisualizationCanvas ref={svgRef} data-testid="architecture-svg" />
+          </VisualizationContainer>
+        </SectionCard>
 
         {/* Legend */}
-        <Card title={t('architecture.legend')} style={styles.card}>
-          <Row gutter={[16, 16]}>
+        <SectionCard title={t('architecture.legend')}>
+          <LegendGrid>
             {Object.entries({
               company: t('architecture.nodeCompany'),
               user: t('architecture.nodeUser'),
@@ -874,30 +869,17 @@ const ArchitecturePage: React.FC = () => {
               repository: t('architecture.nodeRepository'),
               storage: t('architecture.nodeStorage'),
             }).map(([type, label]) => (
-              <Col span={6} key={type} data-testid={`architecture-legend-${type}`}>
-                <Space>
-                  <div
-                    style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: '50%',
-                      backgroundColor: getNodeColor(type),
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '12px',
-                    }}
-                  >
-                    {getNodeIcon(type)}
-                  </div>
-                  <Text>{label}</Text>
-                </Space>
-              </Col>
+              <LegendItem key={type} data-testid={`architecture-legend-${type}`}>
+                <LegendIcon $color={getNodeColor(type)}>
+                  {getNodeIcon(type)}
+                </LegendIcon>
+                <Text>{label}</Text>
+              </LegendItem>
             ))}
-          </Row>
-        </Card>
-      </Space>
-    </div>
+          </LegendGrid>
+        </SectionCard>
+      </ContentStack>
+    </PageWrapper>
   )
 }
 

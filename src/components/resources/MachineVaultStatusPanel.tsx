@@ -230,7 +230,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
               type="text"
               icon={<DoubleRightOutlined />}
               onClick={onClose}
-              style={componentStyles.touchTarget}
+              style={componentStyles.controlSurface}
               data-testid="vault-status-collapse"
               aria-label="Collapse Panel"
             />
