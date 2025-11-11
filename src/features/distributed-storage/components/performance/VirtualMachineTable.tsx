@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useEffect } from 'react'
-import { FixedSizeList as List } from 'react-window'
+import { List, ListImperativeAPI, RowComponentProps } from 'react-window'
 import * as InfiniteLoaderModule from 'react-window-infinite-loader'
 import { Checkbox, Space, Spin } from 'antd'
 import { Machine } from '@/types'
@@ -24,6 +24,14 @@ interface RowData {
   machine: Machine
   index: number
   style: React.CSSProperties
+}
+
+interface VirtualMachineListRowProps {
+  machines: Machine[]
+  isItemLoaded: (index: number) => boolean
+  selectable: boolean
+  onRowClick?: (machine: Machine) => void
+  renderActions?: (machine: Machine) => React.ReactNode
 }
 
 const MachineRow: React.FC<RowData & {
@@ -101,7 +109,7 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
   onRowClick,
   renderActions
 }) => {
-  const listRef = useRef<List>(null)
+  const listRef = useRef<ListImperativeAPI | null>(null)
   const { selectedMachines } = useMachineSelection()
   const tableStyles = useTableStyles()
 
@@ -121,8 +129,16 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
   }, [loadMore, loading])
 
   // Render a single row
-  const Row = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {
-    if (!isItemLoaded(index)) {
+  const RowComponent = useCallback(({
+    index,
+    style,
+    machines: rowMachines,
+    isItemLoaded: rowIsItemLoaded,
+    selectable: rowSelectable,
+    onRowClick: rowOnRowClick,
+    renderActions: rowRenderActions
+  }: RowComponentProps<VirtualMachineListRowProps>) => {
+    if (!rowIsItemLoaded(index)) {
       return (
         <div 
           style={style} 
@@ -134,24 +150,31 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
       )
     }
 
-    const machine = machines[index]
+    const machine = rowMachines[index]
     return (
       <MachineRow
-        key={machine.machineName}
         machine={machine}
         index={index}
         style={style}
-        selectable={selectable}
-        onRowClick={onRowClick}
-        renderActions={renderActions}
+        selectable={rowSelectable}
+        onRowClick={rowOnRowClick}
+        renderActions={rowRenderActions}
       />
     )
-  }, [machines, isItemLoaded, selectable, onRowClick, renderActions])
+  }, [])
+
+  const rowProps = useMemo<VirtualMachineListRowProps>(() => ({
+    machines,
+    isItemLoaded,
+    selectable,
+    onRowClick,
+    renderActions
+  }), [machines, isItemLoaded, selectable, onRowClick, renderActions])
 
   // Scroll to top when machines change significantly
   useEffect(() => {
     if (listRef.current && machines.length > 0) {
-      listRef.current.scrollToItem(0)
+      listRef.current.scrollToRow({ index: 0 })
     }
   }, [machines.length])
 
@@ -167,13 +190,13 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
       case 'ArrowDown':
         e.preventDefault()
         if (currentIndex < machines.length - 1) {
-          listRef.current.scrollToItem(currentIndex + 1)
+          listRef.current.scrollToRow({ index: currentIndex + 1 })
         }
         break
       case 'ArrowUp':
         e.preventDefault()
         if (currentIndex > 0) {
-          listRef.current.scrollToItem(currentIndex - 1)
+          listRef.current.scrollToRow({ index: currentIndex - 1 })
         }
         break
     }
@@ -181,50 +204,44 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
 
   const content = useMemo(() => {
     if (loadMore && hasMore) {
-      // v1.8.11 API: InfiniteLoader pattern
+      // Use InfiniteLoader to lazily fetch additional rows as the user scrolls
       const InfiniteLoader = (InfiniteLoaderModule as any).InfiniteLoader
-      const renderList = ({ onRowsRendered }: any) => (
-        <List
-          ref={(list: any) => {
-            (listRef as any).current = list
-          }}
-          height={height}
-          itemCount={itemCount}
-          itemSize={rowHeight}
-          onItemsRendered={onRowsRendered}
-          overscanCount={5}
-          data-testid="virtual-machine-list"
-          width="100%"
-        >
-          {Row}
-        </List>
-      )
-
       return (
         <InfiniteLoader
           isRowLoaded={isItemLoaded}
           rowCount={itemCount}
           loadMoreRows={loadMoreItems}
         >
-          {renderList}
+          {({ onRowsRendered }: { onRowsRendered: (props: { startIndex: number; stopIndex: number }) => void }) => (
+            <List
+              listRef={listRef}
+              rowCount={itemCount}
+              rowHeight={rowHeight}
+              overscanCount={5}
+              onRowsRendered={onRowsRendered}
+              rowComponent={RowComponent}
+              rowProps={rowProps}
+              style={{ height, width: '100%' }}
+              data-testid="virtual-machine-list"
+            />
+          )}
         </InfiniteLoader>
       )
     }
 
     return (
       <List
-        ref={listRef}
-        height={height}
-        itemCount={machines.length}
-        itemSize={rowHeight}
+        listRef={listRef}
+        rowCount={machines.length}
+        rowHeight={rowHeight}
         overscanCount={5}
+        rowComponent={RowComponent}
+        rowProps={rowProps}
+        style={{ height, width: '100%' }}
         data-testid="virtual-machine-list"
-        width="100%"
-      >
-        {Row}
-      </List>
+      />
     )
-  }, [loadMore, hasMore, isItemLoaded, itemCount, loadMoreItems, height, rowHeight, Row, machines.length])
+  }, [loadMore, hasMore, isItemLoaded, itemCount, loadMoreItems, height, rowHeight, RowComponent, rowProps, machines.length])
 
   return (
     <div
