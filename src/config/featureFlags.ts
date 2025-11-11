@@ -38,7 +38,7 @@
  * On Localhost domain:
  *   - Toggles "Localhost Mode"
  *   - Shows ALL features (ignores all requirement flags, even enabled: false)
- *   - Blue banner appears: "Localhost Mode: All features enabled"
+ *   - No additional UI banner is shown; features simply unlock
  *
  * ============================================================================
  * FEATURE FLAG PROPERTIES

@@ -32,7 +32,6 @@ import RegistrationModal from '@/components/auth/RegistrationModal'
 import { generateRandomEmail, generateRandomCompanyName, generateRandomPassword } from '@/utils/cryptoGenerators'
 import { configService } from '@/services/configService'
 import SandboxWarning from '@/components/common/SandboxWarning'
-import LocalhostModeIndicator from '@/components/common/LocalhostModeIndicator'
 import {
   LoginContainer,
   LogoContainer,
@@ -447,7 +446,6 @@ const LoginPage: React.FC = () => {
   return (
     <>
       <SandboxWarning />
-      <LocalhostModeIndicator />
       <LoginContainer>
           <FullWidthStack direction="vertical" size={spacing('XL')}>
             <LogoContainer>
