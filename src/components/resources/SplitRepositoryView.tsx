@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Repository } from '@/api/queries/repositories'
 import { Table, Button, Tag, Space, Empty, Typography, Dropdown, Tooltip } from 'antd'
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
@@ -46,25 +46,7 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
   const tableStyles = useTableStyles()
   const componentStyles = useComponentStyles()
   
-  // Calculate 25% of window width for the panel
-  const calculatePanelWidth = () => {
-    const windowWidth = window.innerWidth
-    const panelWidth = Math.floor(windowWidth * 0.25)
-    // Ensure minimum width of 300px and maximum of 600px
-    return Math.max(300, Math.min(600, panelWidth))
-  }
-  
-  const [splitWidth, setSplitWidth] = useState(calculatePanelWidth)
-
-  // Update panel width on window resize
-  useEffect(() => {
-    const handleResize = () => {
-      setSplitWidth(calculatePanelWidth())
-    }
-
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+  const [splitWidth, setSplitWidth] = useState(420)
 
   const handleRowClick = (repository: Repository) => {
     onRepositorySelect(repository)
@@ -107,7 +89,7 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
             type="link"
             onClick={() => handleRowClick(record)}
             style={{
-              ...componentStyles.touchTarget,
+              ...componentStyles.controlSurface,
               padding: 0,
               height: 'auto',
               fontWeight: selectedRepository?.repositoryGuid === record.repositoryGuid ? 'bold' : 'normal'
@@ -194,7 +176,7 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
               size="small"
               icon={<FunctionOutlined />}
               onClick={(e) => e.stopPropagation()}
-              style={componentStyles.touchTarget}
+              style={componentStyles.controlSurface}
               data-testid={`split-repo-view-actions-button-${record.repositoryName}`}
             >
               {t('common:actions.actions')}
@@ -254,7 +236,7 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
               type="primary"
               icon={<CloudUploadOutlined />}
               onClick={onCreateRepository}
-              style={componentStyles.touchTarget}
+              style={componentStyles.controlSurface}
               data-testid="split-repo-view-create-button"
             >
               {t('resources:repositories.create')}

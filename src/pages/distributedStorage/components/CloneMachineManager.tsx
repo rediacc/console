@@ -277,7 +277,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
                 icon={<PlusOutlined />}
                 onClick={handleAddMachines}
                 data-testid="clone-manager-button-add"
-                style={componentStyles.touchTarget}
+                style={componentStyles.controlSurface}
                 aria-label={t('machines:assignToClone')}
               />
             </Tooltip>
@@ -289,7 +289,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
                   onClick={handleRemoveMachines}
                   loading={isRemoving}
                   data-testid="clone-manager-button-remove"
-                  style={componentStyles.touchTarget}
+                  style={componentStyles.controlSurface}
                   aria-label={`${t('machines:removeFromClone')} (${selectedMachines.length})`}
                 />
               </Tooltip>
@@ -299,7 +299,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
                 icon={<ReloadOutlined />}
                 onClick={() => refetchMachines()}
                 data-testid="clone-manager-button-refresh"
-                style={componentStyles.touchTarget}
+                style={componentStyles.controlSurface}
                 aria-label={t('common:actions.refresh')}
               />
             </Tooltip>
@@ -309,7 +309,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
                 onClick={handleExport}
                 disabled={assignedMachines.length === 0}
                 data-testid="clone-manager-button-export"
-                style={componentStyles.touchTarget}
+                style={componentStyles.controlSurface}
                 aria-label={t('common:actions.export')}
               />
             </Tooltip>
@@ -351,7 +351,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
             icon={<PlusOutlined />} 
             onClick={handleAddMachines}
             data-testid="clone-manager-button-add-empty"
-            style={componentStyles.touchTarget}
+            style={componentStyles.controlSurface}
           >
             {t('distributedStorage:clones.assignMachines')}
           </Button>

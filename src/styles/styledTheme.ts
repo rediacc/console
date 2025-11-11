@@ -73,13 +73,6 @@ export interface StyledTheme {
   // Transitions
   transitions: typeof DESIGN_TOKENS.TRANSITIONS
   
-  // Breakpoints
-  breakpoints: {
-    mobile: string
-    tablet: string
-    desktop: string
-    wide: string
-  }
 }
 
 export const lightTheme: StyledTheme = {
@@ -133,13 +126,6 @@ export const lightTheme: StyledTheme = {
   shadows: DESIGN_TOKENS.SHADOWS,
   zIndex: DESIGN_TOKENS.Z_INDEX,
   transitions: DESIGN_TOKENS.TRANSITIONS,
-  
-  breakpoints: {
-    mobile: '640px',
-    tablet: '1024px',
-    desktop: '1280px',
-    wide: '1536px',
-  },
 }
 
 export const darkTheme: StyledTheme = {
@@ -193,11 +179,4 @@ export const darkTheme: StyledTheme = {
   shadows: DESIGN_TOKENS.SHADOWS,
   zIndex: DESIGN_TOKENS.Z_INDEX,
   transitions: DESIGN_TOKENS.TRANSITIONS,
-  
-  breakpoints: {
-    mobile: '640px',
-    tablet: '1024px',
-    desktop: '1280px',
-    wide: '1536px',
-  },
 }

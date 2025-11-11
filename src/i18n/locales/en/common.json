@@ -99,13 +99,11 @@
   "navigation": {
     "architecture": "Architecture",
     "audit": "Audit",
-    "closeMobileMenu": "Close mobile menu",
     "dashboard": "Dashboard",
     "distributedStorage": "Distributed Storage",
     "logout": "Logout",
     "mainNavigation": "Main navigation",
     "marketplace": "Marketplace",
-    "openMobileMenu": "Open mobile menu",
     "queue": "Queue",
     "machines": "Machines",
     "credentials": "Credentials",

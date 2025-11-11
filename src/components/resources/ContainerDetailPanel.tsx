@@ -164,7 +164,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
               type="text"
               icon={<DoubleRightOutlined />}
               onClick={onClose}
-              style={componentStyles.touchTarget}
+              style={componentStyles.controlSurface}
               data-testid="container-detail-collapse"
               aria-label="Collapse Panel"
             />

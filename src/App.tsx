@@ -15,14 +15,14 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { initializeApiClient } from '@/api/init'
 import AuthLayout from '@/components/layouts/AuthLayout'
 import MainLayout from '@/components/layouts/MainLayout'
-import LoginPage from '@/pages/LoginPage'
+import LoginPage from '@/pages/login'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { getBasePath } from '@/utils/basePath'
 import { featureFlags } from '@/config/featureFlags'
 import { GlobalStyles } from '@/styles/GlobalStyles'
 
 // Lazy load heavy pages
-const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
+const DashboardPage = lazy(() => import('@/pages/dashboard'))
 const MachinesPage = lazy(() => import('@/pages/machines/MachinesPage'))
 const MachineRepositoriesPage = lazy(() => import('@/pages/resources/MachineRepositoriesPage'))
 const RepositoryContainersPage = lazy(() => import('@/pages/resources/RepositoryContainersPage'))

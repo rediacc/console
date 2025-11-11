@@ -10,7 +10,6 @@ const LocalhostModeIndicator: React.FC = () => {
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     return isLocalhost && featureFlags.isLocalhostModeEnabled()
   })
-  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false)
 
   useEffect(() => {
     // Check if running on localhost domain
@@ -29,17 +28,6 @@ const LocalhostModeIndicator: React.FC = () => {
     const interval = setInterval(checkLocalhostMode, 500)
 
     return () => clearInterval(interval)
-  }, [])
-
-  // Handle responsive behavior
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-
-    handleResize()
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
   }, [])
 
   useEffect(() => {
@@ -71,7 +59,7 @@ const LocalhostModeIndicator: React.FC = () => {
       style={{
         position: 'fixed',
         top: 0,
-        left: isMobile ? 0 : 200, // Start after sidebar on desktop (200px), full width on mobile
+        left: 200,
         right: 0,
         zIndex: 1001, // Higher than navigation
         borderRadius: 0,

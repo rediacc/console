@@ -1,11 +1,4 @@
 export const DESIGN_TOKENS = {
-  // Touch Targets - WCAG 2.1 AA compliance (minimum 44px)
-  TOUCH_TARGET: {
-    MIN_SIZE: 44,
-    LARGE: 48,
-    SMALL: 36, // Only for dense interfaces where 44px isn't practical
-  },
-
   // Spacing Scale - 8px base system (matching style-guide.md)
   SPACING: {
     '0.5': 4,    // 0.5 * base
@@ -104,6 +97,11 @@ export const DESIGN_TOKENS = {
 
   // Common Component Dimensions (matching style-guide.md)
   DIMENSIONS: {
+    // Desktop control surfaces
+    CONTROL_HEIGHT: 32,
+    CONTROL_HEIGHT_SM: 28,
+    CONTROL_HEIGHT_LG: 40,
+
     // Form inputs (style-guide specifies padding: 10px 14px)
     INPUT_HEIGHT: 44,      // Adjusted for WCAG touch target
     INPUT_HEIGHT_SM: 36,
@@ -187,7 +185,7 @@ export const DESIGN_TOKENS = {
 } as const
 
 // Style object generators for common patterns
-export const createTouchTargetStyle = (size: number = DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE) => ({
+export const createControlSurfaceStyle = (size: number = DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT) => ({
   width: size,
   height: size,
   minWidth: size,
@@ -259,21 +257,3 @@ export const spacing = (size: keyof typeof DESIGN_TOKENS.SPACING) => DESIGN_TOKE
 export const borderRadius = (size: keyof typeof DESIGN_TOKENS.BORDER_RADIUS) => DESIGN_TOKENS.BORDER_RADIUS[size]
 export const fontSize = (size: keyof typeof DESIGN_TOKENS.FONT_SIZE) => DESIGN_TOKENS.FONT_SIZE[size]
 export const fontWeight = (weight: keyof typeof DESIGN_TOKENS.FONT_WEIGHT) => DESIGN_TOKENS.FONT_WEIGHT[weight]
-
-// Media query helpers (matching style-guide.md responsive breakpoints)
-export const BREAKPOINTS = {
-  MOBILE: 640,     // Mobile: < 640px
-  TABLET: 1024,    // Tablet: 640px - 1024px  
-  DESKTOP: 1280,   // Desktop: 1024px - 1280px
-  WIDE: 1536,      // Wide: > 1280px
-  // Legacy aliases for backward compatibility
-  XS: 480,
-  SM: 640,
-  MD: 768,
-  LG: 1024,
-  XL: 1280,
-  XXL: 1536,
-} as const
-
-export const mediaQuery = (breakpoint: keyof typeof BREAKPOINTS) => 
-  `@media (min-width: ${BREAKPOINTS[breakpoint]}px)`

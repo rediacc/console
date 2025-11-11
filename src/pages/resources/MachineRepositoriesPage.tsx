@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { Card, Button, Space, Tag, Typography, Spin, Alert, Tooltip, Breadcrumb } from 'antd'
+import { Button, Space, Tag, Typography, Spin, Alert, Tooltip } from 'antd'
 import { DoubleLeftOutlined, ReloadOutlined, DesktopOutlined, PlusOutlined, CloudDownloadOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
-import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { usePanelWidth } from '@/hooks/usePanelWidth'
 import { useMachines } from '@/api/queries/machines'
 import { useRepositories } from '@/api/queries/repositories'
@@ -14,9 +13,26 @@ import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import { RemoteFileBrowserModal } from '@/components/resources/RemoteFileBrowserModal'
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import { useRepositoryCreation } from '@/hooks/useRepositoryCreation'
-import { DESIGN_TOKENS } from '@/utils/styleConstants'
+import {
+  PageWrapper,
+  FullHeightCard,
+  BreadcrumbWrapper,
+  HeaderSection,
+  HeaderRow,
+  TitleColumn,
+  TitleRow,
+  TagRow,
+  ActionsRow,
+  IconButton,
+  HeaderTitleText,
+  SplitLayout,
+  ListPanel,
+  DetailBackdrop,
+  CenteredState,
+  ErrorWrapper,
+} from './styles'
 
-const { Title } = Typography
+const { Title, Text } = Typography
 
 interface ContainerData {
   id: string
@@ -51,7 +67,6 @@ const MachineRepositoriesPage: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useTranslation(['resources', 'machines', 'common'])
-  const styles = useComponentStyles()
 
   // State for machine data - can come from route state or API
   const routeState = location.state as { machine?: Machine } | null
@@ -249,57 +264,48 @@ const MachineRepositoriesPage: React.FC = () => {
   // Loading state
   if (machinesLoading && !machine) {
     return (
-      <div className="page-container">
-        <Card>
-          <div style={{ textAlign: 'center', padding: '100px 0' }}>
+      <PageWrapper>
+        <FullHeightCard>
+          <CenteredState>
             <Spin size="large" />
-            <div style={{ marginTop: 16, color: 'var(--ant-color-text-secondary)' }}>
-              {t('common:general.loading')}
-            </div>
-          </div>
-        </Card>
-      </div>
+            <Text type="secondary">{t('common:general.loading')}</Text>
+          </CenteredState>
+        </FullHeightCard>
+      </PageWrapper>
     )
   }
 
   // Error state - machine not found
   if (machinesError || (!machinesLoading && !machine)) {
     return (
-      <div className="page-container">
-        <Card>
+      <PageWrapper>
+        <FullHeightCard>
           <Alert
             message={t('machines:machineNotFound')}
             description={
-              <div>
+              <ErrorWrapper>
                 <p>{t('machines:machineNotFoundDescription', { machineName })}</p>
-                <Button
-                  type="primary"
-                  onClick={handleBackToMachines}
-                  style={{ marginTop: 16 }}
-                >
+                <Button type="primary" onClick={handleBackToMachines}>
                   {t('machines:backToMachines')}
                 </Button>
-              </div>
+              </ErrorWrapper>
             }
             type="error"
             showIcon
           />
-        </Card>
-      </div>
+        </FullHeightCard>
+      </PageWrapper>
     )
   }
 
   return (
-    <div className="page-container" style={{ height: '100%' }}>
-      <Card style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        {/* Header */}
-        <div style={{ marginBottom: 24, flexShrink: 0 }}>
-          {/* Breadcrumb Navigation */}
-          <Breadcrumb
-            style={{ marginBottom: 16 }}
+    <PageWrapper>
+      <FullHeightCard>
+        <HeaderSection>
+          <BreadcrumbWrapper
             items={[
               {
-                title: <span style={{ cursor: 'pointer' }}>{t('machines:machines')}</span>,
+                title: <span>{t('machines:machines')}</span>,
                 onClick: () => navigate('/machines')
               },
               {
@@ -312,87 +318,63 @@ const MachineRepositoriesPage: React.FC = () => {
             data-testid="machine-repositories-breadcrumb"
           />
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div style={{ flex: 1 }}>
-              {/* Back button and title */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12 }}>
+          <HeaderRow>
+            <TitleColumn>
+              <TitleRow>
                 <Tooltip title={t('machines:backToMachines')}>
-                  <Button
+                  <IconButton
                     icon={<DoubleLeftOutlined />}
                     onClick={handleBackToMachines}
-                    style={styles.touchTarget}
+                    aria-label={t('machines:backToMachines')}
                     data-testid="machine-repositories-back-button"
                   />
                 </Tooltip>
-                <Title level={4} style={{ ...styles.heading4, margin: 0 }}>
+                <HeaderTitleText level={4}>
                   <Space>
                     <DesktopOutlined />
                     <span>{t('machines:machine')}: {machine?.machineName}</span>
                   </Space>
-                </Title>
-              </div>
-
-              {/* Machine info tags */}
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                </HeaderTitleText>
+              </TitleRow>
+              <TagRow>
                 <Tag color="green">{t('machines:team')}: {machine?.teamName}</Tag>
                 <Tag color="blue">{t('machines:bridge')}: {machine?.bridgeName}</Tag>
                 {machine?.regionName && (
                   <Tag color="purple">{t('machines:region')}: {machine.regionName}</Tag>
                 )}
-              </div>
-            </div>
+              </TagRow>
+            </TitleColumn>
 
-            {/* Action buttons */}
-            <Space>
+            <ActionsRow>
               <Tooltip title={t('machines:createRepo')}>
-                <Button
+                <IconButton
                   type="primary"
                   icon={<PlusOutlined />}
                   onClick={handleCreateRepository}
-                  style={styles.touchTarget}
                   data-testid="machine-repositories-create-repo-button"
                 />
               </Tooltip>
               <Tooltip title={t('functions:functions.pull.name')}>
-                <Button
+                <IconButton
                   type="primary"
                   icon={<CloudDownloadOutlined />}
                   onClick={handlePull}
-                  style={styles.touchTarget}
                   data-testid="machine-repositories-pull-button"
                 />
               </Tooltip>
               <Tooltip title={t('common:actions.refresh')}>
-                <Button
+                <IconButton
                   icon={<ReloadOutlined />}
                   onClick={handleRefresh}
-                  style={styles.touchTarget}
                   data-testid="machine-repositories-refresh-button"
                 />
               </Tooltip>
-            </Space>
-          </div>
-        </div>
+            </ActionsRow>
+          </HeaderRow>
+        </HeaderSection>
 
-        {/* Repository List */}
-        <div
-          style={{
-            display: 'flex',
-            flex: 1,
-            overflow: 'hidden',
-            position: 'relative'
-          }}
-        >
-          {/* Left Panel - Repository List */}
-          <div
-            style={{
-              width: selectedResource ? `calc(100% - ${actualPanelWidth}px)` : '100%',
-              height: '100%',
-              overflow: 'auto',
-              minWidth: 300,
-              transition: 'width 0.3s ease-in-out',
-            }}
-          >
+        <SplitLayout>
+          <ListPanel $showDetail={Boolean(selectedResource)} $detailWidth={actualPanelWidth}>
             {machine && (
               <MachineRepositoryList
                 machine={machine}
@@ -406,29 +388,17 @@ const MachineRepositoriesPage: React.FC = () => {
                 }}
               />
             )}
-          </div>
+          </ListPanel>
 
-          {/* Backdrop - appears when panel is open, covers full viewport */}
           {shouldRenderBackdrop && (
-            <div
-              style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: actualPanelWidth,
-                bottom: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                opacity: backdropVisible ? 1 : 0,
-                transition: 'opacity 250ms ease-in-out, right 0.3s ease-in-out',
-                zIndex: DESIGN_TOKENS.Z_INDEX.MODAL,
-                pointerEvents: backdropVisible ? 'auto' : 'none',
-              }}
+            <DetailBackdrop
+              $right={actualPanelWidth}
+              $visible={backdropVisible}
               onClick={handlePanelClose}
               data-testid="machine-repositories-backdrop"
             />
           )}
 
-          {/* Right Panel - Detail Panel */}
           {selectedResource && (
             <UnifiedDetailPanel
               type={'repositoryName' in selectedResource ? 'repository' : 'container'}
@@ -442,21 +412,18 @@ const MachineRepositoriesPage: React.FC = () => {
               collapsedWidth={COLLAPSED_PANEL_WIDTH}
             />
           )}
-        </div>
-      </Card>
+        </SplitLayout>
+      </FullHeightCard>
 
-      {/* Queue Item Trace Modal */}
       <QueueItemTraceModal
         taskId={queueTraceModal.taskId}
         visible={queueTraceModal.visible}
         onClose={() => {
           setQueueTraceModal({ visible: false, taskId: null, machineName: null })
-          // Refresh the page after task completion
           handleRefresh()
         }}
       />
 
-      {/* Remote File Browser Modal */}
       {remoteFileBrowserModal.machine && (
         <RemoteFileBrowserModal
           open={remoteFileBrowserModal.open}
@@ -475,7 +442,6 @@ const MachineRepositoriesPage: React.FC = () => {
         />
       )}
 
-      {/* Unified Resource Modal */}
       <UnifiedResourceModal
         open={unifiedModalState.open}
         onCancel={() => setUnifiedModalState({ open: false, mode: 'create' })}
@@ -486,7 +452,7 @@ const MachineRepositoriesPage: React.FC = () => {
         creationContext={unifiedModalState.creationContext}
         onSubmit={handleUnifiedModalSubmit}
       />
-    </div>
+    </PageWrapper>
   )
 }
 

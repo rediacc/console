@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useTheme } from '@/context/ThemeContext'
 import {
   DESIGN_TOKENS,
-  createTouchTargetStyle,
+  createControlSurfaceStyle,
   createCardStyle,
   createModalStyle,
   createInputStyle,
@@ -18,10 +18,10 @@ export const useComponentStyles = () => {
   const { theme } = useTheme()
 
   return useMemo(() => ({
-    // Touch targets
-    touchTarget: createTouchTargetStyle(),
-    touchTargetLarge: createTouchTargetStyle(DESIGN_TOKENS.TOUCH_TARGET.LARGE),
-    touchTargetSmall: createTouchTargetStyle(DESIGN_TOKENS.TOUCH_TARGET.SMALL),
+    // Control surfaces
+    controlSurface: createControlSurfaceStyle(),
+    controlSurfaceLarge: createControlSurfaceStyle(DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT_LG),
+    controlSurfaceSmall: createControlSurfaceStyle(DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT_SM),
 
     // Cards and modals
     card: createCardStyle(),
@@ -255,7 +255,7 @@ export const useTableStyles = () => {
     },
     
     tableActionButton: {
-      ...createTouchTargetStyle(DESIGN_TOKENS.TOUCH_TARGET.SMALL),
+      ...createControlSurfaceStyle(DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT_SM),
       borderRadius: borderRadius('SM'),
       border: 'none',
       background: 'transparent',
@@ -284,7 +284,7 @@ export const useNavigationStyles = () => {
       cursor: 'pointer',
       textDecoration: 'none',
       color: 'var(--color-text-primary)',
-      minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+      minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT,
       '&:hover': {
         background: 'var(--color-fill-tertiary)',
       },

@@ -322,7 +322,7 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
           icon={<PlusOutlined />}
           onClick={handleCreate}
           data-testid="rbd-create-image-button"
-          style={componentStyles.touchTarget}
+          style={componentStyles.controlSurface}
         >
           {t('images.create')}
         </Button>

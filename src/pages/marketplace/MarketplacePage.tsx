@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Card, Row, Col, Input, Space, Typography, Spin, Empty, Segmented, Divider, message } from 'antd'
+import { Row, Col, Input, Space, Typography, Spin, Empty, Segmented, message } from 'antd'
 import {
   SearchOutlined,
   AppstoreOutlined,
@@ -7,12 +7,28 @@ import {
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { useComponentStyles } from '@/hooks/useComponentStyles'
 import MarketplaceCard from '@/components/marketplace/MarketplaceCard'
 import TemplatePreviewModal from '@/components/common/TemplatePreviewModal'
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import { useCreateRepository } from '@/api/queries/repositories'
 import { templateService } from '@/services/templateService'
+import {
+  PageWrapper,
+  ControlsRow,
+  ViewToggle,
+  LoadingState,
+  LoadingMessage,
+  EmptyCard,
+  EmptyStack,
+  HintText,
+  PrimaryButton,
+  SecondaryButton,
+  CategorySection,
+  CategoryHeader,
+  CategoryTitle,
+  CategoryDescription,
+  CategoryDivider,
+} from './styles'
 
 const { Title, Text } = Typography
 const { Search } = Input
@@ -38,7 +54,6 @@ interface CategoryGroup {
 const MarketplacePage: React.FC = () => {
   const { t } = useTranslation(['marketplace', 'resources', 'common'])
   const navigate = useNavigate()
-  const styles = useComponentStyles()
   // const { data: dropdownData } = useDropdownData() // Not used in marketplace
   const createRepositoryMutation = useCreateRepository()
   
@@ -190,15 +205,14 @@ const MarketplacePage: React.FC = () => {
   }
 
   return (
-    <div className="page-container">
+    <PageWrapper>
       {/* Search and Controls */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+      <ControlsRow gutter={[16, 16]}>
         <Col xs={24} sm={12} md={8}>
           <Search
             placeholder={t('marketplace:searchPlaceholder')}
             allowClear
             size="large"
-            style={styles.inputLarge}
             prefix={<SearchOutlined />}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -207,7 +221,7 @@ const MarketplacePage: React.FC = () => {
           />
         </Col>
         <Col xs={24} sm={12} md={16}>
-          <Space style={{ width: '100%', justifyContent: 'flex-end' }} wrap>
+          <ViewToggle wrap>
             <Segmented
               value={viewMode}
               onChange={setViewMode as any}
@@ -217,112 +231,78 @@ const MarketplacePage: React.FC = () => {
               ]}
               data-testid="marketplace-view-mode-toggle"
             />
-          </Space>
+          </ViewToggle>
         </Col>
-      </Row>
+      </ControlsRow>
 
       {/* Main Content - Templates by Category */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px 0' }} data-testid="marketplace-loading">
+        <LoadingState data-testid="marketplace-loading">
           <Spin size="large" />
-          <div style={{ marginTop: 16, color: 'var(--ant-color-text-secondary)' }}>
-            {t('marketplace:loading')}
-          </div>
-        </div>
+          <LoadingMessage>{t('marketplace:loading')}</LoadingMessage>
+        </LoadingState>
       ) : categoryGroups.length === 0 ? (
-        <Card style={styles.card} data-testid="marketplace-empty-state">
+        <EmptyCard data-testid="marketplace-empty-state">
           <Empty
             description={
               searchTerm ? (
-                <Space direction="vertical" align="center" size="middle" style={{ textAlign: 'center' }}>
+                <EmptyStack>
                   <Text>{t('marketplace:noTemplatesFound')}</Text>
-                  <Text type="secondary" style={{ fontSize: 14 }}>
+                  <HintText>
                     Try adjusting your search terms or browse all available templates
-                  </Text>
+                  </HintText>
                   <Space>
-                    <button 
-                      type="button"
+                    <PrimaryButton
                       onClick={() => setSearchTerm('')}
-                      style={{
-                        ...styles.buttonPrimary,
-                        ...styles.touchTarget,
-                        background: 'var(--color-primary)',
-                        color: 'white',
-                        border: 'none'
-                      }}
+                      type="primary"
                       data-testid="marketplace-clear-search"
                     >
                       Clear Search
-                    </button>
-                    <button 
-                      type="button"
+                    </PrimaryButton>
+                    <SecondaryButton
                       onClick={() => navigate('/machines')}
-                      style={{
-                        ...styles.buttonSecondary,
-                        ...styles.touchTarget,
-                        background: 'transparent',
-                        color: 'var(--color-primary)',
-                        border: '1px solid var(--color-primary)'
-                      }}
                       data-testid="marketplace-view-resources"
                     >
                       View My Resources
-                    </button>
+                    </SecondaryButton>
                   </Space>
-                </Space>
+                </EmptyStack>
               ) : (
-                <Space direction="vertical" align="center" size="middle" style={{ textAlign: 'center' }}>
+                <EmptyStack>
                   <Text>No templates available at this time</Text>
-                  <Text type="secondary" style={{ fontSize: 14 }}>
+                  <HintText>
                     Marketplace templates are currently being loaded or configured
-                  </Text>
+                  </HintText>
                   <Space>
-                    <button 
-                      type="button"
+                    <PrimaryButton
                       onClick={() => fetchTemplates()}
-                      style={{
-                        ...styles.buttonPrimary,
-                        ...styles.touchTarget,
-                        background: 'var(--color-primary)',
-                        color: 'white',
-                        border: 'none'
-                      }}
+                      type="primary"
                       data-testid="marketplace-refresh"
                     >
                       Refresh Templates
-                    </button>
-                    <button 
-                      type="button"
+                    </PrimaryButton>
+                    <SecondaryButton
                       onClick={() => navigate('/machines')}
-                      style={{
-                        ...styles.buttonSecondary,
-                        ...styles.touchTarget,
-                        background: 'transparent',
-                        color: 'var(--color-primary)',
-                        border: '1px solid var(--color-primary)'
-                      }}
                       data-testid="marketplace-create-resource"
                     >
                       Create Custom Resource
-                    </button>
+                    </SecondaryButton>
                   </Space>
-                </Space>
+                </EmptyStack>
               )
             }
             image={Empty.PRESENTED_IMAGE_SIMPLE}
           />
-        </Card>
+        </EmptyCard>
       ) : (
         <div>
           {categoryGroups.map((group, index) => (
-            <div key={group.key} style={{ marginBottom: 48 }} data-testid={`marketplace-category-${group.key}`}>
+            <CategorySection key={group.key} data-testid={`marketplace-category-${group.key}`}>
               {/* Category Header */}
-              <div style={{ marginBottom: 16 }}>
-                <div>
-                  <Title level={4} style={{ margin: 0 }}>{group.title}</Title>
-                  <Text type="secondary">{group.description}</Text>
-                </div>
-              </div>
+              <CategoryHeader>
+                <CategoryTitle level={4}>{group.title}</CategoryTitle>
+                <CategoryDescription>{group.description}</CategoryDescription>
+              </CategoryHeader>
               
               {/* Templates in this category */}
               <Row gutter={[16, 16]}>
@@ -350,9 +330,9 @@ const MarketplacePage: React.FC = () => {
               
               {/* Divider between categories */}
               {index < categoryGroups.length - 1 && (
-                <Divider style={{ marginTop: 32 }} />
+                <CategoryDivider />
               )}
-            </div>
+            </CategorySection>
           ))}
         </div>
       )}
@@ -391,7 +371,7 @@ const MarketplacePage: React.FC = () => {
           isSubmitting={createRepositoryMutation.isPending}
         />
       )}
-    </div>
+    </PageWrapper>
   )
 }
 

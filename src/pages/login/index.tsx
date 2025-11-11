@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
-import { Form, Button, Typography, Space, Alert, Tooltip, Modal } from 'antd'
+import { Form, Button, Typography, Alert, Tooltip, Modal } from 'antd'
 import { UserOutlined, LockOutlined, KeyOutlined, InfoCircleOutlined, SafetyCertificateOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { loginSuccess } from '@/store/auth/authSlice'
@@ -52,6 +52,10 @@ import {
   TFAVerifyButton,
   StyledInput,
   StyledPasswordInput,
+  FullWidthStack,
+  LargeGapFormItem,
+  NoMarginFormItem,
+  SelectorSpacer,
 } from './styles'
 
 const { Text } = Typography
@@ -445,7 +449,7 @@ const LoginPage: React.FC = () => {
       <SandboxWarning />
       <LocalhostModeIndicator />
       <LoginContainer>
-          <Space direction="vertical" size={spacing('XL')} style={{ width: '100%' }}>
+          <FullWidthStack direction="vertical" size={spacing('XL')}>
             <LogoContainer>
               <img
                 src={theme === 'dark' ? logoWhite : logoBlack}
@@ -499,7 +503,7 @@ const LoginPage: React.FC = () => {
             />
           </Form.Item>
 
-            <Form.Item
+            <LargeGapFormItem
               name="password"
               label={
                 <FormLabel htmlFor="login-password-input">
@@ -507,7 +511,6 @@ const LoginPage: React.FC = () => {
                 </FormLabel>
               }
             rules={[{ required: true, message: t('common:messages.required') }]}
-            style={{ marginBottom: spacing('LG') }}
             validateStatus={error ? 'error' : undefined}
           >
             <StyledPasswordInput
@@ -520,7 +523,7 @@ const LoginPage: React.FC = () => {
               aria-label={t('auth:login.password')}
               aria-describedby="password-error"
             />
-          </Form.Item>
+          </LargeGapFormItem>
 
             {/* Progressive disclosure: Show master password field only when needed */}
             {(vaultProtocolState === VaultProtocolState.PASSWORD_REQUIRED ||
@@ -575,7 +578,7 @@ const LoginPage: React.FC = () => {
               </AdvancedOptionsContainer>
             )}
 
-            <Form.Item style={{ marginBottom: spacing('LG') }}>
+            <LargeGapFormItem>
               <LoginButton
                 type="primary"
                 htmlType="submit"
@@ -586,7 +589,7 @@ const LoginPage: React.FC = () => {
               >
                 {loading ? t('auth:login.signingIn') : t('auth:login.signIn')}
               </LoginButton>
-            </Form.Item>
+            </LargeGapFormItem>
           
           </Form>
 
@@ -612,9 +615,9 @@ const LoginPage: React.FC = () => {
                 <AdvancedOptionsContainer>
                   {/* Endpoint Selector */}
                   {endpointSelectorVisible && (
-                    <div style={{ marginBottom: versionSelectorVisible ? spacing('SM') : 0 }}>
+                    <SelectorSpacer $hasSpacing={versionSelectorVisible}>
                       <EndpointSelector onHealthCheckComplete={handleHealthCheckComplete} />
-                    </div>
+                    </SelectorSpacer>
                   )}
 
                   {/* Version Selector (Dropdown Mode) */}
@@ -627,7 +630,7 @@ const LoginPage: React.FC = () => {
               {/* Always-visible version display (Static Text Mode) */}
               <VersionSelector showDropdown={false} />
             </SelectorsContainer>
-          </Space>
+          </FullWidthStack>
         </LoginContainer>
 
       {/* TFA Verification Modal */}
@@ -647,7 +650,7 @@ const LoginPage: React.FC = () => {
         footer={null}
         className={ModalSize.Medium}
       >
-        <Space direction="vertical" size={spacing('MD')} style={{ width: '100%' }}>
+        <FullWidthStack direction="vertical" size={spacing('MD')}>
           <Alert
             message={t('login.twoFactorAuth.required')}
             description={t('login.twoFactorAuth.description')}
@@ -681,7 +684,7 @@ const LoginPage: React.FC = () => {
               />
             </Form.Item>
             
-            <Form.Item style={{ marginBottom: 0 }}>
+            <NoMarginFormItem>
               <TFAButtonContainer>
                 <Button
                   onClick={() => {
@@ -702,9 +705,9 @@ const LoginPage: React.FC = () => {
                   {t('login.twoFactorAuth.verify')}
                 </TFAVerifyButton>
               </TFAButtonContainer>
-            </Form.Item>
+            </NoMarginFormItem>
           </Form>
-        </Space>
+        </FullWidthStack>
       </Modal>
 
       {/* Registration Modal */}

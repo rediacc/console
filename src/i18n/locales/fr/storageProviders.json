@@ -632,7 +632,7 @@
         "Peut connecter plusieurs comptes cloud",
         "Données stockées dans l'UE (conforme au RGPD)",
         "Prend en charge l'accès WebDAV",
-        "Possède des applications de bureau et mobiles"
+        "Possède des applications de bureau et des clients supplémentaires"
       ]
     },
     "linkbox": {
@@ -649,7 +649,7 @@
       "tips": [
         "Options de partage simples",
         "Liens de téléchargement direct",
-        "Applications mobiles disponibles",
+        "Applications disponibles",
         "Niveaux de tarification abordables"
       ]
     },
@@ -699,7 +699,7 @@
         "Le niveau gratuit comprend 8 Go de stockage",
         "Populaire dans les pays russophones",
         "Prend en charge les téléchargements de fichiers volumineux",
-        "Possède des applications de synchronisation mobiles et de bureau"
+        "Possède des applications de synchronisation pour bureau et autres appareils"
       ]
     },
     "mega": {
@@ -897,7 +897,7 @@
         "Choisissez la région UE ou États-Unis en fonction de votre emplacement",
         "Le dossier Crypto fournit un cryptage côté client",
         "A des plans à vie disponibles",
-        "Clients de synchronisation mobiles et de bureau disponibles"
+        "Clients de synchronisation de bureau et supplémentaires disponibles"
       ]
     },
     "pikpak": {
@@ -920,7 +920,7 @@
         "Prend en charge le téléchargement hors ligne",
         "Lecteur multimédia intégré",
         "Idéal pour le torrenting vers le cloud",
-        "Possède des applications mobiles avec streaming"
+        "Possède des applications complémentaires avec streaming"
       ]
     },
     "pixeldrain": {
@@ -1242,7 +1242,7 @@
         "Conçu pour une utilisation en entreprise",
         "Prend en charge les transferts de fichiers volumineux",
         "Dispose de pistes d'audit et de fonctionnalités de conformité",
-        "Applications mobiles disponibles pour toutes les plateformes"
+        "Applications disponibles pour toutes les plateformes"
       ]
     },
     "sia": {
@@ -1562,7 +1562,7 @@
       "name": "Disque Yandex",
       "tips": [
         "Le niveau gratuit comprend 10 Go de stockage",
-        "Prend en charge le téléchargement automatique de photos à partir d'appareils mobiles",
+        "Prend en charge le téléchargement automatique de photos à partir d'appareils",
         "Possède des clients de synchronisation de bureau pour toutes les principales plates-formes",
         "Collaboration de documents bureautiques disponible"
       ]

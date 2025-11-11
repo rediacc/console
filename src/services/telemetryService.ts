@@ -93,7 +93,6 @@ class TelemetryService {
         'browser.platform': navigator.platform || 'unknown',
         'screen.resolution': `${screen.width}x${screen.height}`,
         'screen.color_depth': screen.colorDepth,
-        'viewport.size': `${window.innerWidth}x${window.innerHeight}`,
         'session.id': this.generateSessionId(),
         'telemetry.sdk.name': 'opentelemetry',
         'telemetry.sdk.version': '2.0',
