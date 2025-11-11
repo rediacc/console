@@ -43,7 +43,7 @@ class SecureMemoryStorage {
     return crypto.subtle.deriveKey(
       {
         name: 'PBKDF2',
-        salt: salt,
+        salt: new Uint8Array(salt),
         iterations: 100000, // OWASP recommended minimum
         hash: 'SHA-256'
       },
