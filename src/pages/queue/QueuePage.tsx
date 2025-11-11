@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import { Typography, Space, Modal, Tag, Tabs, Tooltip, Dropdown } from 'antd'
 import { ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, WarningOutlined, GlobalOutlined, ClockCircleOutlined, ReloadOutlined, ExportOutlined, HistoryOutlined, SearchOutlined } from '@/utils/optimizedIcons'
-import { useQueueItems, useCancelQueueItem, QueueFilters } from '@/api/queries/queue'
+import { useQueueItems, useCancelQueueItem, QueueFilters, type QueueStatistics } from '@/api/queries/queue'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import ResourceListView from '@/components/common/ResourceListView'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
@@ -83,7 +83,7 @@ const QueuePage: React.FC = () => {
   const { data: dropdownData } = useDropdownData()
   const cancelQueueItemMutation = useCancelQueueItem()
 
-  const statistics: Record<string, number> = (queueData?.statistics as Record<string, number>) || {}
+  const statistics = (queueData?.statistics ?? ({} as Partial<QueueStatistics>))
   const totalCount = statistics.totalCount ?? queueData?.items?.length ?? 0
   const activeCount = (statistics.pendingCount ?? 0) + (statistics.assignedCount ?? 0) + (statistics.processingCount ?? 0)
   const failedCount = statistics.failedCount ?? 0
@@ -447,7 +447,8 @@ const QueuePage: React.FC = () => {
               placeholder="Team"
               value={viewTeam || undefined}
               onChange={(value) => {
-                setViewTeam(value || '')
+                const nextValue = typeof value === 'string' ? value : ''
+                setViewTeam(nextValue)
                 setFilters({ ...filters, machineName: '' })
               }}
               allowClear
@@ -459,9 +460,11 @@ const QueuePage: React.FC = () => {
               $minWidth={150}
               placeholder="Machine"
               value={filters.machineName || undefined}
-              onChange={(value) => setFilters({ ...filters, machineName: value || '' })}
+              onChange={(value) =>
+                setFilters({ ...filters, machineName: (value as string) || '' })
+              }
               allowClear
-              options={(dropdownData?.machines || []).map(machine => ({ label: machine, value: machine }))}
+              options={(dropdownData?.machines || []).map((machine: string) => ({ label: machine, value: machine }))}
               data-testid="queue-filter-machine"
             />
             <FilterSelect
@@ -469,7 +472,9 @@ const QueuePage: React.FC = () => {
               $minWidth={130}
               placeholder="Region"
               value={filters.regionName || undefined}
-              onChange={(value) => setFilters({ ...filters, regionName: value || '' })}
+              onChange={(value) =>
+                setFilters({ ...filters, regionName: (value as string) || '' })
+              }
               allowClear
               options={dropdownData?.regions || []}
               data-testid="queue-filter-region"
@@ -479,7 +484,9 @@ const QueuePage: React.FC = () => {
               $minWidth={130}
               placeholder="Bridge"
               value={filters.bridgeName || undefined}
-              onChange={(value) => setFilters({ ...filters, bridgeName: value || '' })}
+              onChange={(value) =>
+                setFilters({ ...filters, bridgeName: (value as string) || '' })
+              }
               allowClear
               options={dropdownData?.bridges || []}
               data-testid="queue-filter-bridge"

@@ -32,7 +32,7 @@ import {
   ErrorWrapper,
 } from './styles'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 
 interface ContainerData {
   id: string

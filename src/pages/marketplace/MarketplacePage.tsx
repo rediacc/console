@@ -30,7 +30,7 @@ import {
   CategoryDivider,
 } from './styles'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 const { Search } = Input
 
 interface Template {

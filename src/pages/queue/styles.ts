@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { Card, Button, Space, Tabs, Select, DatePicker, Input, Typography, Checkbox, Badge } from 'antd'
+import { Card, Button, Space, Select, DatePicker, Input, Typography, Checkbox, Badge } from 'antd'
 import { PageContainer } from '@/styles/primitives'
 
 const { Text } = Typography

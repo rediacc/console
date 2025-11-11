@@ -28,7 +28,7 @@ import {
   HeaderTitleText,
 } from './styles'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 
 // Repository interface from vaultStatus (runtime data)
 interface Repository {

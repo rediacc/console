@@ -176,7 +176,7 @@ import {
   ErrorWrapper,
 } from './styles'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 
 const SystemPage: React.FC = () => {
   const { t } = useTranslation('settings')
@@ -1878,7 +1878,7 @@ const SystemPage: React.FC = () => {
                     <FullWidthSelect
                       placeholder="Select permission to add"
                       value={selectedPermission}
-                      onChange={setSelectedPermission}
+                      onChange={(value) => setSelectedPermission((value as string) || '')}
                       showSearch
                       filterOption={(input, option) =>
                         String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
@@ -1932,7 +1932,7 @@ const SystemPage: React.FC = () => {
         <FullWidthSelect
           placeholder="Select user"
           value={selectedUser}
-          onChange={setSelectedUser}
+          onChange={(value) => setSelectedUser((value as string) || '')}
           showSearch
           filterOption={(input, option) =>
             (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
@@ -1987,7 +1987,7 @@ const SystemPage: React.FC = () => {
           <Form.Item label="Permission Group">
             <Select
               value={selectedUserGroup}
-              onChange={setSelectedUserGroup}
+              onChange={(value) => setSelectedUserGroup((value as string) || '')}
               placeholder="Select permission group"
               options={permissionGroups?.map(group => ({
                 value: group.permissionGroupName,
@@ -2095,7 +2095,7 @@ const SystemPage: React.FC = () => {
                     <FullWidthSelect
                       placeholder="Select user to add"
                       value={selectedMemberEmail}
-                      onChange={setSelectedMemberEmail}
+                      onChange={(value) => setSelectedMemberEmail((value as string) || '')}
                       showSearch
                       filterOption={(input, option) =>
                         String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())

@@ -1,5 +1,4 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
 import { Col, Row, Alert, Tag, Typography, Statistic, Spin, Empty, Tooltip, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useTheme as useStyledTheme } from 'styled-components'
@@ -25,7 +24,7 @@ import {
   RobotOutlined,
   TeamOutlined,
 } from '@/utils/optimizedIcons'
-import { useDashboard } from '@/api/queries/dashboard'
+import { useDashboard, type QueueTeamIssue, type QueueMachineIssue } from '@/api/queries/dashboard'
 import { useRecentAuditLogs } from '@/api/queries/audit'
 import DistributedStorageDashboardWidget from '@/components/dashboard/DistributedStorageDashboardWidget'
 import {
@@ -125,7 +124,7 @@ const DashboardPage: React.FC = () => {
     return date.toLocaleDateString()
   }
 
-  const machineIssueColumns: ColumnsType<any> = [
+  const machineIssueColumns: ColumnsType<QueueMachineIssue> = [
     {
       title: 'Machine',
       dataIndex: 'MachineName',
@@ -142,7 +141,7 @@ const DashboardPage: React.FC = () => {
       title: 'Status',
       key: 'status',
       width: 200,
-      render: (_: unknown, record: any) => (
+      render: (_: unknown, record: QueueMachineIssue) => (
         <InlineStack>
           {(record.StaleItems || 0) > 0 && <Tag color="warning">{record.StaleItems} stale</Tag>}
           <Tag color="blue">{record.PendingItems || 0} pending</Tag>
@@ -187,11 +186,13 @@ const DashboardPage: React.FC = () => {
 
   const activeSubscriptions = dashboard.allActiveSubscriptions || []
   const queueStats = dashboard.queueStats
-  const hasQueueDetails = Boolean(
-    queueStats &&
-    ((Array.isArray(queueStats.TeamIssues) && queueStats.TeamIssues.length > 0) ||
-      (Array.isArray(queueStats.MachineIssues) && queueStats.MachineIssues.length > 0))
-  )
+  const teamIssues: QueueTeamIssue[] = Array.isArray(queueStats?.TeamIssues)
+    ? (queueStats!.TeamIssues as QueueTeamIssue[])
+    : []
+  const machineIssues: QueueMachineIssue[] = Array.isArray(queueStats?.MachineIssues)
+    ? (queueStats!.MachineIssues as QueueMachineIssue[])
+    : []
+  const hasQueueDetails = Boolean(queueStats && (teamIssues.length > 0 || machineIssues.length > 0))
 
   return (
     <PageWrapper>
@@ -525,36 +526,39 @@ const DashboardPage: React.FC = () => {
 
               <Col xs={24} lg={16}>
                 <StatList>
-                  {Array.isArray(queueStats.TeamIssues) && queueStats.TeamIssues.length > 0 && (
+                  {teamIssues.length > 0 && (
                     <div>
                       <Text strong style={{ marginBottom: theme.spacing.SM }}> 
                         <TeamOutlined /> Team Queue Status
                       </Text>
                       <BorderlessList
                         size="small"
-                        dataSource={queueStats.TeamIssues}
+                        dataSource={teamIssues}
                         data-testid="dashboard-list-team-issues"
-                        renderItem={(team) => (
-                          <BorderlessListItem>
-                            <FlexBetween>
-                              <Text strong>{team.TeamName}</Text>
-                              <InlineStack>
-                                {(team.StaleItems || 0) > 0 && (
-                                  <Tag color="warning">
-                                    <WarningOutlined /> {team.StaleItems} stale
-                                  </Tag>
-                                )}
-                                <Tag color="blue">{team.PendingItems || 0} pending</Tag>
-                                <Tag color="processing">{team.ActiveItems || 0} active</Tag>
-                              </InlineStack>
-                            </FlexBetween>
-                          </BorderlessListItem>
-                        )}
+                        renderItem={(team) => {
+                          const teamIssue = team as QueueTeamIssue
+                          return (
+                            <BorderlessListItem>
+                              <FlexBetween>
+                                <Text strong>{teamIssue.TeamName}</Text>
+                                <InlineStack>
+                                  {(teamIssue.StaleItems || 0) > 0 && (
+                                    <Tag color="warning">
+                                      <WarningOutlined /> {teamIssue.StaleItems} stale
+                                    </Tag>
+                                  )}
+                                  <Tag color="blue">{teamIssue.PendingItems || 0} pending</Tag>
+                                  <Tag color="processing">{teamIssue.ActiveItems || 0} active</Tag>
+                                </InlineStack>
+                              </FlexBetween>
+                            </BorderlessListItem>
+                          )
+                        }}
                       />
                     </div>
                   )}
 
-                  {Array.isArray(queueStats.MachineIssues) && queueStats.MachineIssues.length > 0 && (
+                  {machineIssues.length > 0 && (
                     <div>
                       <Text strong style={{ marginBottom: theme.spacing.SM }}>
                         <DesktopOutlined /> Machine Queue Status
@@ -562,7 +566,7 @@ const DashboardPage: React.FC = () => {
                       <HorizontalScroll>
                         <Table
                           size="small"
-                          dataSource={queueStats.MachineIssues}
+                          dataSource={machineIssues}
                           pagination={false}
                           columns={machineIssueColumns}
                           data-testid="dashboard-table-machine-issues"

@@ -27,9 +27,6 @@ import {
   ActionButtonFull,
   CompactButton,
   TableCard,
-  TableHeader,
-  TableActions,
-  NoResults,
 } from './styles';
 import type { ColumnsType } from 'antd/es/table';
 

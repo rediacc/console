@@ -5,6 +5,8 @@ export interface DropdownData {
   teams: Array<{ value: string; label: string }>
   allTeams: Array<{ value: string; label: string; memberCount: number }>
   regions: Array<{ value: string; label: string; bridgeCount: number }>
+  machines?: string[]
+  bridges?: Array<{ value: string; label: string }>
   bridgesByRegion: Array<{
     regionName: string
     bridges: Array<{ value: string; label: string; machineCount: number }>
@@ -40,7 +42,7 @@ export interface DropdownData {
 }
 
 const DROPDOWN_FIELDS = [
-  'teams', 'allTeams', 'regions', 'bridgesByRegion', 
+  'teams', 'allTeams', 'regions', 'bridgesByRegion', 'machines', 'bridges',
   'machinesByTeam', 'users', 'permissionGroups', 'permissions', 'subscriptionPlans'
 ] as const
 

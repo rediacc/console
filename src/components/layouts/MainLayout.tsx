@@ -470,9 +470,10 @@ const MainLayout: React.FC = () => {
               
               const isSelected = location.pathname === item.key
               const padding = collapsed ? '10px 12px' : '10px 18px'
+              const itemKey = item.key || item.label
               const menuItemContent = (
                 <div
-                  key={item.key}
+                  key={itemKey}
                   onClick={() => {
                     // Track navigation click
                     trackUserAction('navigation', item.key, {
@@ -542,7 +543,7 @@ const MainLayout: React.FC = () => {
 
               if (collapsed) {
                 return (
-                  <Tooltip title={item.label} placement="right">
+                  <Tooltip key={itemKey} title={item.label} placement="right">
                     {menuItemContent}
                   </Tooltip>
                 )
