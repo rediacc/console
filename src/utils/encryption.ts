@@ -39,7 +39,7 @@ async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey>
   return crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt: salt,
+      salt: new Uint8Array(salt),
       iterations: ENCRYPTION_CONFIG.ITERATIONS,
       hash: 'SHA-256'
     },
@@ -82,11 +82,11 @@ async function performEncryption(
   return crypto.subtle.encrypt(
     {
       name: 'AES-GCM',
-      iv: iv,
+      iv: new Uint8Array(iv),
       tagLength: ENCRYPTION_CONFIG.TAG_LENGTH * 8 // in bits
     },
     key,
-    data
+    new Uint8Array(data)
   );
 }
 
@@ -140,11 +140,11 @@ async function performDecryption(
   return crypto.subtle.decrypt(
     {
       name: 'AES-GCM',
-      iv: iv,
+      iv: new Uint8Array(iv),
       tagLength: ENCRYPTION_CONFIG.TAG_LENGTH * 8
     },
     key,
-    ciphertext
+    new Uint8Array(ciphertext)
   );
 }
 

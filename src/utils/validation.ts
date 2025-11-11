@@ -78,15 +78,16 @@ export const createRepositorySchema = withVault({
   ]).optional()  // Optional repository GUID
 }, 'repositoryVault')
   .refine((data) => {
+    if (!data) return true
     // If repositoryGuid is provided (credential-only mode), machine and size are not required
     // Otherwise, both machine and size must be provided for physical storage creation
-    const isCredentialOnlyMode = data.repositoryGuid && data.repositoryGuid.trim() !== ''
+    const isCredentialOnlyMode = typeof data.repositoryGuid === 'string' && data.repositoryGuid.trim() !== ''
     if (isCredentialOnlyMode) {
       return true  // No additional requirements in credential-only mode
     }
     // In normal mode, both machine and size are required
-    return (data.machineName && data.machineName.trim() !== '') && 
-           (data.size && data.size.trim() !== '')
+    return (typeof data.machineName === 'string' && data.machineName.trim() !== '') && 
+           (typeof data.size === 'string' && data.size.trim() !== '')
   }, {
     message: 'Machine and size are required when creating new repository storage',
     path: ['machineName']  // Show error on machine field
