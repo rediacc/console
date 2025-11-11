@@ -130,6 +130,7 @@ class FeatureFlags {
   private isDevelopment = false
   private isPowerModeActive: boolean = false  // Global power mode state (session-only)
   private isLocalhostModeActive: boolean = false  // Localhost mode state (session-only)
+  private listeners: Set<() => void> = new Set()
 
   constructor() {
     // Will be initialized after API connection is established
@@ -374,6 +375,8 @@ class FeatureFlags {
         enabledFeatures: this.getEnabledFeatures()
       })
     }
+
+    this.notifyListeners()
   }
 
   /**
@@ -410,6 +413,7 @@ class FeatureFlags {
         console.log(`[LocalhostMode] Localhost mode ${this.isLocalhostModeActive ? 'enabled' : 'disabled'}`)
       }
 
+      this.notifyListeners()
       return this.isLocalhostModeActive
     } else {
       // Toggle power mode (original behavior)
@@ -419,6 +423,7 @@ class FeatureFlags {
         console.log(`[PowerMode] Global power mode ${this.isPowerModeActive ? 'enabled' : 'disabled'}`)
       }
 
+      this.notifyListeners()
       return this.isPowerModeActive
     }
   }
@@ -432,6 +437,8 @@ class FeatureFlags {
     if (import.meta.env.DEV) {
       console.log('[PowerMode] Global power mode enabled')
     }
+
+    this.notifyListeners()
   }
 
   /**
@@ -448,6 +455,27 @@ class FeatureFlags {
    */
   isLocalhostModeEnabled(): boolean {
     return this.isLocalhostModeActive
+  }
+
+  /**
+   * Subscribe to feature flag changes (power/localhost mode toggles, development state updates).
+   * Returns an unsubscribe function.
+   */
+  subscribe(listener: () => void): () => void {
+    this.listeners.add(listener)
+    return () => {
+      this.listeners.delete(listener)
+    }
+  }
+
+  private notifyListeners(): void {
+    this.listeners.forEach(listener => {
+      try {
+        listener()
+      } catch (error) {
+        console.error('[FeatureFlags] Listener error', error)
+      }
+    })
   }
 }
 

@@ -77,6 +77,7 @@ const AppContent: React.FC = () => {
   const isAuthenticated = useSelector(selectIsAuthenticated)
   const showSessionExpiredDialog = useSelector((state: RootState) => state.auth.showSessionExpiredDialog)
   const stayLoggedOutMode = useSelector((state: RootState) => state.auth.stayLoggedOutMode)
+  const [, setFeatureFlagVersion] = React.useState(0)
 
   useEffect(() => {
     const initialize = async () => {
@@ -103,6 +104,13 @@ const AppContent: React.FC = () => {
 
     initialize()
   }, [dispatch])
+
+  useEffect(() => {
+    const unsubscribe = featureFlags.subscribe(() => {
+      setFeatureFlagVersion((version) => version + 1)
+    })
+    return unsubscribe
+  }, [])
 
   return (
       <AppProviders>
