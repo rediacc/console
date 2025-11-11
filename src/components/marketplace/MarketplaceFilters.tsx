@@ -105,7 +105,7 @@ const MarketplaceFilters: React.FC<MarketplaceFiltersProps> = ({
                 value="" 
                 data-testid="marketplace-filter-category-all"
                 style={{ 
-                  minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                  minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT,
                   display: 'flex',
                   alignItems: 'center'
                 }}
@@ -118,7 +118,7 @@ const MarketplaceFilters: React.FC<MarketplaceFiltersProps> = ({
                   value={option.value} 
                   data-testid={`marketplace-filter-category-${option.value}`}
                   style={{ 
-                    minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                    minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT,
                     display: 'flex',
                     alignItems: 'center'
                   }}
@@ -146,7 +146,7 @@ const MarketplaceFilters: React.FC<MarketplaceFiltersProps> = ({
                 value="" 
                 data-testid="marketplace-filter-difficulty-all"
                 style={{ 
-                  minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                  minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT,
                   display: 'flex',
                   alignItems: 'center'
                 }}
@@ -159,7 +159,7 @@ const MarketplaceFilters: React.FC<MarketplaceFiltersProps> = ({
                   value={option.value} 
                   data-testid={`marketplace-filter-difficulty-${option.value}`}
                   style={{ 
-                    minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                    minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT,
                     display: 'flex',
                     alignItems: 'center'
                   }}
@@ -228,7 +228,7 @@ const MarketplaceFilters: React.FC<MarketplaceFiltersProps> = ({
               }}
               data-testid="marketplace-filter-popular-production-ready"
               style={{
-                minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT,
                 display: 'flex',
                 alignItems: 'center',
                 borderRadius: borderRadius('SM'),
@@ -249,7 +249,7 @@ const MarketplaceFilters: React.FC<MarketplaceFiltersProps> = ({
               }}
               data-testid="marketplace-filter-popular-docker"
               style={{
-                minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT,
                 display: 'flex',
                 alignItems: 'center',
                 borderRadius: borderRadius('SM'),
@@ -270,7 +270,7 @@ const MarketplaceFilters: React.FC<MarketplaceFiltersProps> = ({
               }}
               data-testid="marketplace-filter-popular-ha"
               style={{
-                minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT,
                 display: 'flex',
                 alignItems: 'center',
                 borderRadius: borderRadius('SM'),

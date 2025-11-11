@@ -241,40 +241,6 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   /* ============================================
-     MOBILE RESPONSIVE - AUTH LAYOUT
-     ============================================ */
-
-  @media (max-width: 768px) {
-    .auth-layout-content {
-      padding: 0 !important;
-    }
-
-    /* Move auth controls (language and theme toggle) to bottom on mobile */
-    .auth-controls-wrapper {
-      position: fixed !important;
-      top: auto !important;
-      bottom: 24px !important;
-      right: 24px !important;
-      z-index: 1000 !important;
-    }
-  }
-
-  /* ============================================
-     MOBILE TOUCH TARGETS
-     ============================================ */
-  
-  @media (max-width: 480px) {
-    /* Enhanced touch targets for mobile */
-    .ant-btn:focus,
-    .ant-select-focused .ant-select-selector,
-    .ant-radio-button-wrapper:focus {
-      box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.primary} !important;
-      border-color: ${({ theme }) => theme.colors.primary} !important;
-      outline: none !important;
-    }
-  }
-
-  /* ============================================
      THEME TRANSITIONS (from themes.css)
      ============================================ */
   
@@ -779,42 +745,6 @@ export const GlobalStyles = createGlobalStyle`
   .modal-fullscreen .ant-modal-footer {
     flex-shrink: 0;
     border-top: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  }
-
-  /* Responsive adjustments for tablets */
-  @media (max-width: 768px) {
-    .modal-sm { width: 95vw !important; }
-    .modal-sm .ant-modal-body { max-height: 80vh; }
-    
-    .modal-md { width: 96vw !important; }
-    .modal-md .ant-modal-body { max-height: 85vh; }
-    
-    .modal-lg { width: 97vw !important; }
-    .modal-lg .ant-modal-body { max-height: 90vh; }
-    
-    .modal-xl { width: 98vw !important; }
-    .modal-xl .ant-modal-body { max-height: 92vh; }
-    
-    .modal-full { width: 99vw !important; }
-    .modal-full .ant-modal-body { max-height: 95vh; }
-  }
-
-  /* Responsive adjustments for mobile */
-  @media (max-width: 480px) {
-    .modal-sm { width: 98vw !important; }
-    .modal-sm .ant-modal-body { max-height: 85vh; }
-    
-    .modal-md { width: 99vw !important; }
-    .modal-md .ant-modal-body { max-height: 90vh; }
-    
-    .modal-lg { width: 99vw !important; }
-    .modal-lg .ant-modal-body { max-height: 92vh; }
-    
-    .modal-xl { width: 99vw !important; }
-    .modal-xl .ant-modal-body { max-height: 95vh; }
-    
-    .modal-full { width: 100vw !important; }
-    .modal-full .ant-modal-body { max-height: 98vh; }
   }
 
   /* ============================================

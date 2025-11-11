@@ -69,6 +69,7 @@ export interface QueueFilters {
   teamName?: string // Comma-separated team names
   machineName?: string
   bridgeName?: string
+  regionName?: string
   status?: string // Comma-separated status values
   priority?: number
   minPriority?: number

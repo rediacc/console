@@ -45,7 +45,6 @@ import VaultEditorModal from '@/components/common/VaultEditorModal'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
 import UnifiedResourceModal, { ResourceType } from '@/components/common/UnifiedResourceModal'
 import UserSessionsTab from '@/components/system/UserSessionsTab'
-import { DESIGN_TOKENS } from '@/utils/styleConstants'
 import { ModalSize } from '@/types/modal'
 import TwoFactorSettings from '@/components/settings/TwoFactorSettings'
 import { useDropdownData } from '@/api/queries/useDropdownData'
@@ -124,8 +123,60 @@ import {
   createUserSchema, 
   CreateUserForm
 } from '@/utils/validation'
+import {
+  PageWrapper,
+  SectionStack,
+  SectionHeading,
+  SettingsCard,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardActions,
+  ListTitleRow,
+  ListTitle,
+  ListSubtitle,
+  IconWrapper,
+  PrimaryBadge,
+  RegionsSection,
+  RegionsListWrapper,
+  CardHeaderRow,
+  SecondaryText,
+  PaddedEmpty,
+  CenteredState,
+  LoadingHint,
+  ModalStack,
+  ModalStackLarge,
+  InlineFormRow,
+  FullWidthSelect,
+  FullWidthInput,
+  TokenCopyRow,
+  ModalAlert,
+  FormItemSpaced,
+  FormItemNoMargin,
+  FormItemActions,
+  FormItemActionsLg,
+  ModalActions,
+  DangerSection,
+  DangerHeading,
+  DangerCard,
+  DangerStack,
+  RightAlign,
+  DangerDivider,
+  BulletedList,
+  InlineList,
+  MutedList,
+  WarningNote,
+  DangerText,
+  OrderedList,
+  RequirementsList,
+  CaptionText,
+  CenteredBlock,
+  ACTIONS_COLUMN_WIDTH,
+  ErrorWrapper,
+} from './styles'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 
 const SystemPage: React.FC = () => {
   const { t } = useTranslation('settings')
@@ -901,7 +952,9 @@ const SystemPage: React.FC = () => {
       key: 'permissionGroupName',
       render: (text: string) => (
         <Space>
-          <SafetyOutlined style={{ color: '#556b2f' }} />
+          <IconWrapper>
+            <SafetyOutlined />
+          </IconWrapper>
           <strong>{text}</strong>
         </Space>
       ),
@@ -913,7 +966,9 @@ const SystemPage: React.FC = () => {
       width: 100,
       render: (count: number) => (
         <Badge count={count} showZero>
-          <UserOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD }} />
+          <IconWrapper $tone="inherit">
+            <UserOutlined />
+          </IconWrapper>
         </Badge>
       ),
     },
@@ -923,9 +978,11 @@ const SystemPage: React.FC = () => {
       key: 'permissionCount',
       width: 120,
       render: (count: number) => (
-        <Badge count={count} showZero style={{ backgroundColor: '#556b2f' }}>
-          <KeyOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD }} />
-        </Badge>
+        <PrimaryBadge count={count} showZero>
+          <IconWrapper $tone="inherit">
+            <KeyOutlined />
+          </IconWrapper>
+        </PrimaryBadge>
       ),
     },
     {
@@ -1010,7 +1067,9 @@ const SystemPage: React.FC = () => {
       key: 'userEmail',
       render: (email: string) => (
         <Space>
-          <UserOutlined style={{ color: '#556b2f' }} />
+          <IconWrapper>
+            <UserOutlined />
+          </IconWrapper>
           <strong>{email}</strong>
         </Space>
       ),
@@ -1118,7 +1177,9 @@ const SystemPage: React.FC = () => {
       key: 'teamName',
       render: (text: string) => (
         <Space>
-          <TeamOutlined style={{ color: '#556b2f' }} />
+          <IconWrapper>
+            <TeamOutlined />
+          </IconWrapper>
           <strong>{text}</strong>
         </Space>
       ),
@@ -1130,7 +1191,9 @@ const SystemPage: React.FC = () => {
       width: 100,
       render: (count: number) => (
         <Badge count={count} showZero>
-          <UserOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_MD }} />
+          <IconWrapper $tone="inherit">
+            <UserOutlined />
+          </IconWrapper>
         </Badge>
       ),
     },
@@ -1256,7 +1319,9 @@ const SystemPage: React.FC = () => {
       key: 'regionName',
       render: (text: string) => (
         <Space>
-          <EnvironmentOutlined style={{ color: '#556b2f' }} />
+          <IconWrapper>
+            <EnvironmentOutlined />
+          </IconWrapper>
           <strong>{text}</strong>
         </Space>
       ),
@@ -1346,7 +1411,9 @@ const SystemPage: React.FC = () => {
       key: 'bridgeName',
       render: (text: string, record: Bridge) => (
         <Space>
-          <ApiOutlined style={{ color: '#556b2f' }} />
+          <IconWrapper>
+            <ApiOutlined />
+          </IconWrapper>
           <strong>{text}</strong>
           {(record.hasAccess as number) === 1 && (
             <Tag color="green" icon={<CheckCircleOutlined />}>
@@ -1403,7 +1470,7 @@ const SystemPage: React.FC = () => {
     {
       title: tOrg('general.actions'),
       key: 'actions',
-      width: DESIGN_TOKENS.DIMENSIONS.MODAL_WIDTH,
+      width: ACTIONS_COLUMN_WIDTH,
       render: (_: any, record: Bridge) => (
         <Space>
           <Tooltip title={tOrg('general.edit')}>
@@ -1511,10 +1578,10 @@ const SystemPage: React.FC = () => {
     children: (
       <ResourceListView
         title={
-          <Space>
-            <span style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.BASE, fontWeight: DESIGN_TOKENS.FONT_WEIGHT.MEDIUM }}>Users</span>
-            <span style={{ fontSize: 14, color: '#666' }}>Manage users and their permissions</span>
-          </Space>
+          <ListTitleRow>
+            <ListTitle>Users</ListTitle>
+            <ListSubtitle>Manage users and their permissions</ListSubtitle>
+          </ListTitleRow>
         }
         loading={usersLoading}
         data={users}
@@ -1548,10 +1615,10 @@ const SystemPage: React.FC = () => {
     children: (
       <ResourceListView
         title={
-          <Space>
-            <span style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.BASE, fontWeight: DESIGN_TOKENS.FONT_WEIGHT.MEDIUM }}>Permission Groups</span>
-            <span style={{ fontSize: 14, color: '#666' }}>Manage permission groups and their assignments</span>
-          </Space>
+          <ListTitleRow>
+            <ListTitle>Permission Groups</ListTitle>
+            <ListSubtitle>Manage permission groups and their assignments</ListSubtitle>
+          </ListTitleRow>
         }
         loading={permissionsLoading}
         data={permissionGroups}
@@ -1585,10 +1652,10 @@ const SystemPage: React.FC = () => {
     children: (
       <ResourceListView
         title={
-          <Space>
-            <span style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.BASE, fontWeight: DESIGN_TOKENS.FONT_WEIGHT.MEDIUM }}>Teams</span>
-            <span style={{ fontSize: 14, color: '#666' }}>Manage teams and their members</span>
-          </Space>
+          <ListTitleRow>
+            <ListTitle>Teams</ListTitle>
+            <ListSubtitle>Manage teams and their members</ListSubtitle>
+          </ListTitleRow>
         }
         loading={teamsLoading}
         data={teams}
@@ -1628,56 +1695,57 @@ const SystemPage: React.FC = () => {
     : [usersTab, teamsTab, permissionsTab, userSessionsTab]
 
   return (
-    <div className="page-container">
+    <PageWrapper>
       {/* Settings Section */}
-      <Space direction="vertical" size={24} style={{ width: '100%', marginBottom: 24 }}>
-        <Title level={3}>{t('title')}</Title>
+      <SectionStack>
+        <SectionHeading level={3}>{t('title')}</SectionHeading>
 
         <Row gutter={[16, 16]}>
           {/* Company Settings Card */}
           <Col xs={24} lg={12}>
-            <Card style={{ height: '100%' }}>
-              <Space direction="vertical" size={16} style={{ width: '100%' }}>
-                <Space>
-                  <BankOutlined style={{ fontSize: 24, color: '#556b2f' }} />
-                  <Title level={4} style={{ margin: 0 }}>{t('company.title')}</Title>
-                </Space>
-                
-                <Text type="secondary">
-                  {t('company.description')}
-                </Text>
+            <SettingsCard>
+              <CardContent>
+                <CardHeader>
+                  <IconWrapper $size="lg">
+                    <BankOutlined />
+                  </IconWrapper>
+                  <CardTitle level={4}>{t('company.title')}</CardTitle>
+                </CardHeader>
+
+                <CardDescription>{t('company.description')}</CardDescription>
 
                 {featureFlags.isEnabled('companyVaultConfiguration') && (
-                  <Tooltip title={t('company.configureVault')}>
-                    <Button
-                      type="primary"
-                      icon={<SettingOutlined />}
-                      onClick={() => setCompanyVaultModalOpen(true)}
-                      size="large"
-                      style={{ marginTop: 16 }}
-                      data-testid="system-company-vault-button"
-                      aria-label={t('company.configureVault')}
-                    />
-                  </Tooltip>
+                  <CardActions>
+                    <Tooltip title={t('company.configureVault')}>
+                      <Button
+                        type="primary"
+                        icon={<SettingOutlined />}
+                        onClick={() => setCompanyVaultModalOpen(true)}
+                        size="large"
+                        data-testid="system-company-vault-button"
+                        aria-label={t('company.configureVault')}
+                      />
+                    </Tooltip>
+                  </CardActions>
                 )}
-              </Space>
-            </Card>
+              </CardContent>
+            </SettingsCard>
           </Col>
 
           {/* User Settings Card */}
           <Col xs={24} lg={12}>
-            <Card style={{ height: '100%' }}>
-              <Space direction="vertical" size={16} style={{ width: '100%' }}>
-                <Space>
-                  <UserOutlined style={{ fontSize: 24, color: '#556b2f' }} />
-                  <Title level={4} style={{ margin: 0 }}>{t('personal.title')}</Title>
-                </Space>
-                
-                <Text type="secondary">
-                  {t('personal.description')}
-                </Text>
+            <SettingsCard>
+              <CardContent>
+                <CardHeader>
+                  <IconWrapper $size="lg">
+                    <UserOutlined />
+                  </IconWrapper>
+                  <CardTitle level={4}>{t('personal.title')}</CardTitle>
+                </CardHeader>
 
-                <Space style={{ marginTop: 16 }} wrap>
+                <CardDescription>{t('personal.description')}</CardDescription>
+
+                <CardActions>
                   {featureFlags.isEnabled('personalVaultConfiguration') && (
                     <Tooltip title={t('personal.configureVault')}>
                       <Button
@@ -1713,15 +1781,15 @@ const SystemPage: React.FC = () => {
                       aria-label={t('system:actions.twoFactorAuth')}
                     />
                   </Tooltip>
-                </Space>
-              </Space>
-            </Card>
+                </CardActions>
+              </CardContent>
+            </SettingsCard>
           </Col>
         </Row>
-      </Space>
+      </SectionStack>
 
       {/* New Title Between Settings and Users */}
-      <Title level={3} style={{ marginBottom: 24 }}>Users, Teams & Permissions</Title>
+      <SectionHeading level={3}>Users, Teams & Permissions</SectionHeading>
 
       <Card>
         <Tabs
@@ -1805,13 +1873,12 @@ const SystemPage: React.FC = () => {
               key: 'add',
               label: 'Add Permissions',
               children: (
-                <Space direction="vertical" style={{ width: '100%' }} size={16}>
-                  <Space style={{ width: '100%' }}>
-                    <Select
+                <ModalStack>
+                  <InlineFormRow>
+                    <FullWidthSelect
                       placeholder="Select permission to add"
-                      style={{ width: '100%' }}
                       value={selectedPermission}
-                      onChange={setSelectedPermission}
+                      onChange={(value) => setSelectedPermission((value as string) || '')}
                       showSearch
                       filterOption={(input, option) =>
                         String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
@@ -1829,7 +1896,7 @@ const SystemPage: React.FC = () => {
                           {perm.name}
                         </Select.Option>
                       ))}
-                    </Select>
+                    </FullWidthSelect>
                     <Tooltip title={t('system:actions.addPermission')}>
                       <Button
                         type="primary"
@@ -1841,8 +1908,8 @@ const SystemPage: React.FC = () => {
                         icon={<PlusOutlined />}
                       />
                     </Tooltip>
-                  </Space>
-                </Space>
+                  </InlineFormRow>
+                </ModalStack>
               ),
             },
           ]}
@@ -1862,11 +1929,10 @@ const SystemPage: React.FC = () => {
         okButtonProps={{ 'data-testid': 'modal-assign-user-ok' }}
         cancelButtonProps={{ 'data-testid': 'modal-assign-user-cancel' }}
       >
-        <Select
+        <FullWidthSelect
           placeholder="Select user"
-          style={{ width: '100%' }}
           value={selectedUser}
-          onChange={setSelectedUser}
+          onChange={(value) => setSelectedUser((value as string) || '')}
           showSearch
           filterOption={(input, option) =>
             (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
@@ -1921,7 +1987,7 @@ const SystemPage: React.FC = () => {
           <Form.Item label="Permission Group">
             <Select
               value={selectedUserGroup}
-              onChange={setSelectedUserGroup}
+              onChange={(value) => setSelectedUserGroup((value as string) || '')}
               placeholder="Select permission group"
               options={permissionGroups?.map(group => ({
                 value: group.permissionGroupName,
@@ -2024,13 +2090,12 @@ const SystemPage: React.FC = () => {
               key: 'add',
               label: 'Add Members',
               children: (
-                <Space direction="vertical" style={{ width: '100%' }} size={16}>
-                  <Space style={{ width: '100%' }}>
-                    <Select
+                <ModalStack>
+                  <InlineFormRow>
+                    <FullWidthSelect
                       placeholder="Select user to add"
-                      style={{ width: '100%' }}
                       value={selectedMemberEmail}
-                      onChange={setSelectedMemberEmail}
+                      onChange={(value) => setSelectedMemberEmail((value as string) || '')}
                       showSearch
                       filterOption={(input, option) =>
                         String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
@@ -2051,8 +2116,8 @@ const SystemPage: React.FC = () => {
                         aria-label={t('system:actions.addMember')}
                       />
                     </Tooltip>
-                  </Space>
-                </Space>
+                  </InlineFormRow>
+                </ModalStack>
               ),
             },
           ]}
@@ -2063,116 +2128,117 @@ const SystemPage: React.FC = () => {
 
       {/* Regions & Infrastructure Section */}
       {featureFlags.isEnabled('regionsInfrastructure') && (
-        <>
-          <Title level={3} style={{ marginTop: 48, marginBottom: 24 }}>{tSystem('regionsInfrastructure.title')}</Title>
-          
+        <RegionsSection>
+          <SectionHeading level={3}>{tSystem('regionsInfrastructure.title')}</SectionHeading>
+
           <Card>
-        <Row gutter={[24, 24]}>
-          <Col span={24}>
-            <ResourceListView
-              title={
-                <Space>
-                  <span style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.BASE, fontWeight: DESIGN_TOKENS.FONT_WEIGHT.MEDIUM }}>{tOrg('regions.title')}</span>
-                  <span style={{ fontSize: 14, color: '#666' }}>{tOrg('regions.selectRegionPrompt')}</span>
-                </Space>
-              }
-              loading={regionsLoading}
-              data={regionsList}
-              columns={regionColumns}
-              rowKey="regionName"
-              searchPlaceholder={tOrg('regions.searchRegions')}
-              data-testid="system-region-table"
-              actions={
-                <Tooltip title={tOrg('regions.createRegion')}>
-                  <Button 
-                    type="primary" 
-                    icon={<PlusOutlined />}
-                    onClick={() => openUnifiedModal('region', 'create')}
-                    data-testid="system-create-region-button"
-                    aria-label={tOrg('regions.createRegion')}
+            <Row gutter={[24, 24]}>
+              <Col span={24}>
+                <RegionsListWrapper>
+                  <ResourceListView
+                    title={
+                      <ListTitleRow>
+                        <ListTitle>{tOrg('regions.title')}</ListTitle>
+                        <ListSubtitle>{tOrg('regions.selectRegionPrompt')}</ListSubtitle>
+                      </ListTitleRow>
+                    }
+                    loading={regionsLoading}
+                    data={regionsList}
+                    columns={regionColumns}
+                    rowKey="regionName"
+                    searchPlaceholder={tOrg('regions.searchRegions')}
+                    data-testid="system-region-table"
+                    actions={
+                      <Tooltip title={tOrg('regions.createRegion')}>
+                        <Button 
+                          type="primary" 
+                          icon={<PlusOutlined />}
+                          onClick={() => openUnifiedModal('region', 'create')}
+                          data-testid="system-create-region-button"
+                          aria-label={tOrg('regions.createRegion')}
+                        />
+                      </Tooltip>
+                    }
+                    rowSelection={{
+                      type: 'radio',
+                      selectedRowKeys: selectedRegion ? [selectedRegion] : [],
+                      onChange: (selectedRowKeys: React.Key[]) => {
+                        setSelectedRegion(selectedRowKeys[0] as string || null)
+                      },
+                    }}
+                    onRow={(record) => ({
+                      onClick: () => setSelectedRegion(record.regionName),
+                      className: [
+                        'clickable-row',
+                        selectedRegion === record.regionName ? 'selected-row' : '',
+                      ].filter(Boolean).join(' '),
+                    })}
                   />
-                </Tooltip>
-              }
-              rowSelection={{
-                type: 'radio',
-                selectedRowKeys: selectedRegion ? [selectedRegion] : [],
-                onChange: (selectedRowKeys: React.Key[]) => {
-                  setSelectedRegion(selectedRowKeys[0] as string || null)
-                },
-              }}
-              onRow={(record) => ({
-                onClick: () => setSelectedRegion(record.regionName),
-                className: selectedRegion === record.regionName ? 'selected-row' : '',
-                style: { cursor: 'pointer' },
-              })}
-            />
-          </Col>
+                </RegionsListWrapper>
+              </Col>
 
-          {!featureFlags.isEnabled('disableBridge') && (
-            <Col span={24}>
-              <Card>
-                <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <Title level={4} style={{ margin: 0 }}>
-                      {selectedRegion ? tOrg('regions.bridgesInRegion', { region: selectedRegion }) : tOrg('bridges.title')}
-                    </Title>
-                    {!selectedRegion && (
-                      <Text type="secondary" style={{ fontSize: 14 }}>
-                        {tOrg('regions.selectRegionToView')}
-                      </Text>
-                    )}
-                  </div>
-                  {selectedRegion && (
-                    <Tooltip title={tOrg('bridges.createBridge')}>
-                      <Button
-                        type="primary"
-                        icon={<PlusOutlined />}
-                        onClick={() => {
-                          openUnifiedModal('bridge', 'create', { regionName: selectedRegion })
-                        }}
-                        data-testid="system-create-bridge-button"
-                        aria-label={tOrg('bridges.createBridge')}
+              {!featureFlags.isEnabled('disableBridge') && (
+                <Col span={24}>
+                  <Card>
+                    <CardHeaderRow>
+                      <div>
+                        <CardTitle level={4}>
+                          {selectedRegion ? tOrg('regions.bridgesInRegion', { region: selectedRegion }) : tOrg('bridges.title')}
+                        </CardTitle>
+                        {!selectedRegion && (
+                          <SecondaryText>
+                            {tOrg('regions.selectRegionToView')}
+                          </SecondaryText>
+                        )}
+                      </div>
+                      {selectedRegion && (
+                        <Tooltip title={tOrg('bridges.createBridge')}>
+                          <Button
+                            type="primary"
+                            icon={<PlusOutlined />}
+                            onClick={() => {
+                              openUnifiedModal('bridge', 'create', { regionName: selectedRegion })
+                            }}
+                            data-testid="system-create-bridge-button"
+                            aria-label={tOrg('bridges.createBridge')}
+                          />
+                        </Tooltip>
+                      )}
+                    </CardHeaderRow>
+
+                    {!selectedRegion ? (
+                      <PaddedEmpty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description={tOrg('regions.selectRegionPrompt')}
                       />
-                    </Tooltip>
-                  )}
-                </div>
-
-                {!selectedRegion ? (
-                  <Empty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description={tOrg('regions.selectRegionPrompt')}
-                    style={{ padding: '40px 0' }}
-                  />
-                ) : bridgesLoading ? (
-                  <div style={{ textAlign: 'center', padding: '100px 0' }}>
-                    <Spin size="large" />
-                    <div style={{ marginTop: 16, color: 'var(--ant-color-text-secondary)' }}>
-                      {t('common:general.loading')}
-                    </div>
-                  </div>
-                ) : (
-                  <Table
-                    columns={bridgeColumns}
-                    dataSource={bridgesList}
-                    rowKey="bridgeName"
-                    pagination={{
-                      total: bridgesList.length || 0,
-                      pageSize: 10,
-                      showSizeChanger: true,
-                      showTotal: (total) => tOrg('bridges.totalBridges', { total }),
-                    }}
-                    locale={{
-                      emptyText: tOrg('bridges.noBridges'),
-                    }}
-                    data-testid="system-bridge-table"
-                  />
-                )}
-              </Card>
-            </Col>
-          )}
-        </Row>
-      </Card>
-        </>
+                    ) : bridgesLoading ? (
+                      <CenteredState>
+                        <Spin size="large" />
+                        <LoadingHint>{t('common:general.loading')}</LoadingHint>
+                      </CenteredState>
+                    ) : (
+                      <Table
+                        columns={bridgeColumns}
+                        dataSource={bridgesList}
+                        rowKey="bridgeName"
+                        pagination={{
+                          total: bridgesList.length || 0,
+                          pageSize: 10,
+                          showSizeChanger: true,
+                          showTotal: (total) => tOrg('bridges.totalBridges', { total }),
+                        }}
+                        locale={{
+                          emptyText: tOrg('bridges.noBridges'),
+                        }}
+                        data-testid="system-bridge-table"
+                      />
+                    )}
+                  </Card>
+                </Col>
+              )}
+            </Row>
+          </Card>
+        </RegionsSection>
       )}
 
       {!featureFlags.isEnabled('disableBridge') && (
@@ -2200,29 +2266,33 @@ const SystemPage: React.FC = () => {
             // Check if we have the necessary access
             if (bridge.hasAccess === 0) {
               return (
-                <Alert
-                  message="Access Denied"
-                  description="You don't have the necessary permissions to view bridge credentials. Please contact an administrator."
-                  type="error"
-                  showIcon
-                />
+                <ErrorWrapper>
+                  <Alert
+                    message="Access Denied"
+                    description="You don't have the necessary permissions to view bridge credentials. Please contact an administrator."
+                    type="error"
+                    showIcon
+                  />
+                </ErrorWrapper>
               )
             }
 
             if (!token) {
               return (
-                <Alert
-                  message="No Bridge Token Available"
-                  description="Bridge credentials are not available. This could be because you don't have the necessary permissions, or the bridge credentials vault has not been created. Administrators can use 'Reset Auth' to generate new credentials."
-                  type="info"
-                  showIcon
-                />
+                <ErrorWrapper>
+                  <Alert
+                    message="No Bridge Token Available"
+                    description="Bridge credentials are not available. This could be because you don't have the necessary permissions, or the bridge credentials vault has not been created. Administrators can use 'Reset Auth' to generate new credentials."
+                    type="info"
+                    showIcon
+                  />
+                </ErrorWrapper>
               )
             }
 
             return (
-              <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                <Alert
+              <ModalStackLarge>
+                <ModalAlert
                   message="Bridge Authentication Token"
                   description="This token is used by the bridge to authenticate its first connection to the system. After the first successful use, the bridge will receive a new token for subsequent requests. If this token has already been used, you'll need to use 'Reset Auth' to generate new credentials."
                   type="warning"
@@ -2231,11 +2301,10 @@ const SystemPage: React.FC = () => {
 
                 <div>
                   <Text strong>Token:</Text>
-                  <Space.Compact style={{ marginTop: 8, width: '100%' }}>
-                    <Input
+                  <TokenCopyRow>
+                    <FullWidthInput
                       value={token}
                       readOnly
-                      style={{ width: '100%' }}
                       autoComplete="off"
                     />
                     <Button
@@ -2245,16 +2314,16 @@ const SystemPage: React.FC = () => {
                         message.success('Token copied to clipboard')
                       }}
                     />
-                  </Space.Compact>
+                  </TokenCopyRow>
                 </div>
 
-                <Alert
+                <ModalAlert
                   message="Important"
                   description="Keep this token secure. It provides access to process queue items on behalf of your organization. If you suspect the token has been compromised, use 'Reset Auth' immediately."
                   type="info"
                   showIcon
                 />
-              </Space>
+              </ModalStackLarge>
             )
           })()}
         </Modal>
@@ -2295,189 +2364,195 @@ const SystemPage: React.FC = () => {
 
       {/* Danger Zone Section */}
       {featureFlags.isEnabled('dangerZone') && (
-        <>
-          <Title level={3} style={{ marginTop: 48, marginBottom: 24, color: '#ff4d4f' }}>
+        <DangerSection>
+          <DangerHeading level={3}>
             <WarningOutlined /> {tSystem('dangerZone.title')}
-          </Title>
-          
-          <Card style={{ borderColor: '#ff4d4f' }}>
-        <Space direction="vertical" size={24} style={{ width: '100%' }}>
-          
-          {/* Block/Unblock User Requests */}
-          <Row gutter={[16, 16]} align="middle">
-            <Col xs={24} lg={16}>
-              <Space direction="vertical" size={8}>
-                <Title level={5} style={{ margin: 0 }}>{tSystem('dangerZone.blockUserRequests.title')}</Title>
-                <Text type="secondary">
-                  {tSystem('dangerZone.blockUserRequests.description')}
-                </Text>
-              </Space>
-            </Col>
-            <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
-              <Space>
-                <Popconfirm
-                  title={tSystem('dangerZone.blockUserRequests.confirmBlock.title')}
-                  description={
-                    <Space direction="vertical">
-                      <Text>{tSystem('dangerZone.blockUserRequests.confirmBlock.description')}</Text>
-                      <ul style={{ margin: '8px 0', paddingLeft: 20 }}>
-                        <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect1')}</li>
-                        <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect2')}</li>
-                        <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect3')}</li>
-                      </ul>
-                      <Text strong>{tSystem('dangerZone.blockUserRequests.confirmBlock.confirm')}</Text>
-                    </Space>
-                  }
-                  onConfirm={() => blockUserRequestsMutation.mutate(true)}
-                  okText={tSystem('dangerZone.blockUserRequests.confirmBlock.okText')}
-                  cancelText={tCommon('general.cancel')}
-                  okButtonProps={{ danger: true }}
-                >
-                  <Tooltip title={tSystem('dangerZone.blockUserRequests.blockButton')}>
-                    <Button 
-                      type="primary"
-                      danger
-                      icon={<LockOutlined />}
-                      loading={blockUserRequestsMutation.isPending}
-                      aria-label={tSystem('dangerZone.blockUserRequests.blockButton')}
-                    />
-                  </Tooltip>
-                </Popconfirm>
-                <Popconfirm
-                  title={tSystem('dangerZone.blockUserRequests.confirmUnblock.title')}
-                  description={tSystem('dangerZone.blockUserRequests.confirmUnblock.description')}
-                  onConfirm={() => blockUserRequestsMutation.mutate(false)}
-                  okText={tSystem('dangerZone.blockUserRequests.confirmUnblock.okText')}
-                  cancelText={tCommon('general.cancel')}
-                >
-                  <Tooltip title={tSystem('dangerZone.blockUserRequests.unblockButton')}>
-                    <Button 
-                      type="primary"
-                      icon={<UnlockOutlined />}
-                      loading={blockUserRequestsMutation.isPending}
-                      aria-label={tSystem('dangerZone.blockUserRequests.unblockButton')}
-                    />
-                  </Tooltip>
-                </Popconfirm>
-              </Space>
-            </Col>
-          </Row>
+          </DangerHeading>
 
-          <hr style={{ margin: 0, borderColor: '#f0f0f0' }} />
+          <DangerCard>
+            <DangerStack>
+              {/* Block/Unblock User Requests */}
+              <Row gutter={[16, 16]} align="middle">
+                <Col xs={24} lg={16}>
+                  <Space direction="vertical" size={8}>
+                    <CardTitle level={5}>{tSystem('dangerZone.blockUserRequests.title')}</CardTitle>
+                    <CardDescription>
+                      {tSystem('dangerZone.blockUserRequests.description')}
+                    </CardDescription>
+                  </Space>
+                </Col>
+                <Col xs={24} lg={8}>
+                  <RightAlign>
+                    <Popconfirm
+                      title={tSystem('dangerZone.blockUserRequests.confirmBlock.title')}
+                      description={
+                        <ModalStack>
+                          <Text>{tSystem('dangerZone.blockUserRequests.confirmBlock.description')}</Text>
+                          <BulletedList>
+                            <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect1')}</li>
+                            <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect2')}</li>
+                            <li>{tSystem('dangerZone.blockUserRequests.confirmBlock.effect3')}</li>
+                          </BulletedList>
+                          <Text strong>{tSystem('dangerZone.blockUserRequests.confirmBlock.confirm')}</Text>
+                        </ModalStack>
+                      }
+                      onConfirm={() => blockUserRequestsMutation.mutate(true)}
+                      okText={tSystem('dangerZone.blockUserRequests.confirmBlock.okText')}
+                      cancelText={tCommon('general.cancel')}
+                      okButtonProps={{ danger: true }}
+                    >
+                      <Tooltip title={tSystem('dangerZone.blockUserRequests.blockButton')}>
+                        <Button 
+                          type="primary"
+                          danger
+                          icon={<LockOutlined />}
+                          loading={blockUserRequestsMutation.isPending}
+                          aria-label={tSystem('dangerZone.blockUserRequests.blockButton')}
+                        />
+                      </Tooltip>
+                    </Popconfirm>
+                    <Popconfirm
+                      title={tSystem('dangerZone.blockUserRequests.confirmUnblock.title')}
+                      description={tSystem('dangerZone.blockUserRequests.confirmUnblock.description')}
+                      onConfirm={() => blockUserRequestsMutation.mutate(false)}
+                      okText={tSystem('dangerZone.blockUserRequests.confirmUnblock.okText')}
+                      cancelText={tCommon('general.cancel')}
+                    >
+                      <Tooltip title={tSystem('dangerZone.blockUserRequests.unblockButton')}>
+                        <Button 
+                          type="primary"
+                          icon={<UnlockOutlined />}
+                          loading={blockUserRequestsMutation.isPending}
+                          aria-label={tSystem('dangerZone.blockUserRequests.unblockButton')}
+                        />
+                      </Tooltip>
+                    </Popconfirm>
+                  </RightAlign>
+                </Col>
+              </Row>
 
-          {/* Export Company Vaults */}
-          <Row gutter={[16, 16]} align="middle">
-            <Col xs={24} lg={16}>
-              <Space direction="vertical" size={8}>
-                <Title level={5} style={{ margin: 0 }}>{tSystem('dangerZone.exportVaults.title')}</Title>
-                <Text type="secondary">
-                  {tSystem('dangerZone.exportVaults.description')}
-                </Text>
-              </Space>
-            </Col>
-            <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
-              <Tooltip title={tSystem('dangerZone.exportVaults.button')}>
-                <Button 
-                  type="primary"
-                  icon={<DownloadOutlined />}
-                  onClick={handleExportVaults}
-                  loading={exportVaultsQuery.isFetching}
-                  data-testid="system-export-vaults-button"
-                  aria-label={tSystem('dangerZone.exportVaults.button')}
-                />
-              </Tooltip>
-            </Col>
-          </Row>
+              <DangerDivider />
 
-          <hr style={{ margin: 0, borderColor: '#f0f0f0' }} />
+              {/* Export Company Vaults */}
+              <Row gutter={[16, 16]} align="middle">
+                <Col xs={24} lg={16}>
+                  <Space direction="vertical" size={8}>
+                    <CardTitle level={5}>{tSystem('dangerZone.exportVaults.title')}</CardTitle>
+                    <CardDescription>
+                      {tSystem('dangerZone.exportVaults.description')}
+                    </CardDescription>
+                  </Space>
+                </Col>
+                <Col xs={24} lg={8}>
+                  <RightAlign>
+                    <Tooltip title={tSystem('dangerZone.exportVaults.button')}>
+                      <Button 
+                        type="primary"
+                        icon={<DownloadOutlined />}
+                        onClick={handleExportVaults}
+                        loading={exportVaultsQuery.isFetching}
+                        data-testid="system-export-vaults-button"
+                        aria-label={tSystem('dangerZone.exportVaults.button')}
+                      />
+                    </Tooltip>
+                  </RightAlign>
+                </Col>
+              </Row>
 
-          {/* Export Company Data */}
-          <Row gutter={[16, 16]} align="middle">
-            <Col xs={24} lg={16}>
-              <Space direction="vertical" size={8}>
-                <Title level={5} style={{ margin: 0 }}>{tSystem('dangerZone.exportData.title')}</Title>
-                <Text type="secondary">
-                  {tSystem('dangerZone.exportData.description')}
-                </Text>
-              </Space>
-            </Col>
-            <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
-              <Tooltip title={tSystem('dangerZone.exportData.button')}>
-                <Button 
-                  type="primary"
-                  icon={<ExportOutlined />}
-                  onClick={handleExportCompanyData}
-                  loading={exportCompanyDataQuery.isFetching}
-                  data-testid="system-export-data-button"
-                  aria-label={tSystem('dangerZone.exportData.button')}
-                />
-              </Tooltip>
-            </Col>
-          </Row>
+              <DangerDivider />
 
-          <hr style={{ margin: 0, borderColor: '#f0f0f0' }} />
+              {/* Export Company Data */}
+              <Row gutter={[16, 16]} align="middle">
+                <Col xs={24} lg={16}>
+                  <Space direction="vertical" size={8}>
+                    <CardTitle level={5}>{tSystem('dangerZone.exportData.title')}</CardTitle>
+                    <CardDescription>
+                      {tSystem('dangerZone.exportData.description')}
+                    </CardDescription>
+                  </Space>
+                </Col>
+                <Col xs={24} lg={8}>
+                  <RightAlign>
+                    <Tooltip title={tSystem('dangerZone.exportData.button')}>
+                      <Button 
+                        type="primary"
+                        icon={<ExportOutlined />}
+                        onClick={handleExportCompanyData}
+                        loading={exportCompanyDataQuery.isFetching}
+                        data-testid="system-export-data-button"
+                        aria-label={tSystem('dangerZone.exportData.button')}
+                      />
+                    </Tooltip>
+                  </RightAlign>
+                </Col>
+              </Row>
 
-          {/* Import Company Data */}
-          <Row gutter={[16, 16]} align="middle">
-            <Col xs={24} lg={16}>
-              <Space direction="vertical" size={8}>
-                <Title level={5} style={{ margin: 0 }}>{tSystem('dangerZone.importData.title')}</Title>
-                <Text type="secondary">
-                  {tSystem('dangerZone.importData.description')}
-                </Text>
-              </Space>
-            </Col>
-            <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
-              <Tooltip title={tSystem('dangerZone.importData.button')}>
-                <Button 
-                  type="primary"
-                  danger
-                  icon={<ImportOutlined />}
-                  onClick={() => setImportModalOpen(true)}
-                  data-testid="system-import-data-button"
-                  aria-label={tSystem('dangerZone.importData.button')}
-                />
-              </Tooltip>
-            </Col>
-          </Row>
+              <DangerDivider />
 
-          <hr style={{ margin: 0, borderColor: '#f0f0f0' }} />
+              {/* Import Company Data */}
+              <Row gutter={[16, 16]} align="middle">
+                <Col xs={24} lg={16}>
+                  <Space direction="vertical" size={8}>
+                    <CardTitle level={5}>{tSystem('dangerZone.importData.title')}</CardTitle>
+                    <CardDescription>
+                      {tSystem('dangerZone.importData.description')}
+                    </CardDescription>
+                  </Space>
+                </Col>
+                <Col xs={24} lg={8}>
+                  <RightAlign>
+                    <Tooltip title={tSystem('dangerZone.importData.button')}>
+                      <Button 
+                        type="primary"
+                        danger
+                        icon={<ImportOutlined />}
+                        onClick={() => setImportModalOpen(true)}
+                        data-testid="system-import-data-button"
+                        aria-label={tSystem('dangerZone.importData.button')}
+                      />
+                    </Tooltip>
+                  </RightAlign>
+                </Col>
+              </Row>
 
-          {/* Update Master Password */}
-          <Row gutter={[16, 16]} align="middle">
-            <Col xs={24} lg={16}>
-              <Space direction="vertical" size={8}>
-                <Title level={5} style={{ margin: 0 }}>{tSystem('dangerZone.updateMasterPassword.title')}</Title>
-                <Text type="secondary">
-                  {tSystem('dangerZone.updateMasterPassword.description')}
-                </Text>
-                <ul style={{ margin: '8px 0 0 20px', fontSize: 14, color: 'rgba(0, 0, 0, 0.45)' }}>
-                  <li>{tSystem('dangerZone.updateMasterPassword.effect1')}</li>
-                  <li>{tSystem('dangerZone.updateMasterPassword.effect2')}</li>
-                  <li>{tSystem('dangerZone.updateMasterPassword.effect3')}</li>
-                </ul>
-                <Text type="secondary" strong style={{ display: 'block', marginTop: 8 }}>
-                  {tSystem('dangerZone.updateMasterPassword.warning')}
-                </Text>
-              </Space>
-            </Col>
-            <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
-              <Tooltip title={tSystem('dangerZone.updateMasterPassword.button')}>
-                <Button 
-                  type="primary"
-                  danger
-                  icon={<KeyOutlined />}
-                  onClick={() => setMasterPasswordModalOpen(true)}
-                  data-testid="system-update-master-password-button"
-                  aria-label={tSystem('dangerZone.updateMasterPassword.button')}
-                />
-              </Tooltip>
-            </Col>
-          </Row>
+              <DangerDivider />
 
-        </Space>
-      </Card>
-        </>
+              {/* Update Master Password */}
+              <Row gutter={[16, 16]} align="middle">
+                <Col xs={24} lg={16}>
+                  <Space direction="vertical" size={8}>
+                    <CardTitle level={5}>{tSystem('dangerZone.updateMasterPassword.title')}</CardTitle>
+                    <CardDescription>
+                      {tSystem('dangerZone.updateMasterPassword.description')}
+                    </CardDescription>
+                    <MutedList>
+                      <li>{tSystem('dangerZone.updateMasterPassword.effect1')}</li>
+                      <li>{tSystem('dangerZone.updateMasterPassword.effect2')}</li>
+                      <li>{tSystem('dangerZone.updateMasterPassword.effect3')}</li>
+                    </MutedList>
+                    <WarningNote type="secondary" strong>
+                      {tSystem('dangerZone.updateMasterPassword.warning')}
+                    </WarningNote>
+                  </Space>
+                </Col>
+                <Col xs={24} lg={8}>
+                  <RightAlign>
+                    <Tooltip title={tSystem('dangerZone.updateMasterPassword.button')}>
+                      <Button 
+                        type="primary"
+                        danger
+                        icon={<KeyOutlined />}
+                        onClick={() => setMasterPasswordModalOpen(true)}
+                        data-testid="system-update-master-password-button"
+                        aria-label={tSystem('dangerZone.updateMasterPassword.button')}
+                      />
+                    </Tooltip>
+                  </RightAlign>
+                </Col>
+              </Row>
+            </DangerStack>
+          </DangerCard>
+        </DangerSection>
       )}
 
       {/* Master Password Update Modal */}
@@ -2499,9 +2574,8 @@ const SystemPage: React.FC = () => {
         >
           {/* Operation Type Selection - Only show when there are multiple options */}
           {currentMasterPassword && (
-            <Form.Item
+            <FormItemSpaced
               label={tSystem('dangerZone.updateMasterPassword.modal.operationType')}
-              style={{ marginBottom: 24 }}
             >
               <Radio.Group 
                 value={masterPasswordOperation} 
@@ -2515,31 +2589,30 @@ const SystemPage: React.FC = () => {
                   <Radio value="remove">{tSystem('dangerZone.updateMasterPassword.modal.operationRemove')}</Radio>
                 </Space>
               </Radio.Group>
-            </Form.Item>
+            </FormItemSpaced>
           )}
 
-          <Alert
+          <ModalAlert
             message={<>{'\u26A0\uFE0F'} {tSystem('dangerZone.updateMasterPassword.modal.warningTitle').replace('⚠️ ', '')}</>}
             description={
               <Space direction="vertical" size={8}>
                 <Text>{tSystem(`dangerZone.updateMasterPassword.modal.warningDescription${masterPasswordOperation.charAt(0).toUpperCase() + masterPasswordOperation.slice(1)}`)}</Text>
-                <ul style={{ margin: '4px 0', paddingLeft: 20 }}>
+                <InlineList>
                   <li>{tSystem('dangerZone.updateMasterPassword.modal.warningEffect1')}</li>
                   <li>{tSystem('dangerZone.updateMasterPassword.modal.warningEffect2')}</li>
                   <li>{tSystem(`dangerZone.updateMasterPassword.modal.warningEffect3${masterPasswordOperation.charAt(0).toUpperCase() + masterPasswordOperation.slice(1)}`)}</li>
                   {masterPasswordOperation !== 'remove' && (
                     <li>{tSystem('dangerZone.updateMasterPassword.modal.warningEffect4')}</li>
                   )}
-                </ul>
+                </InlineList>
                 <Text strong>{tSystem('dangerZone.updateMasterPassword.modal.warningPermanent')}</Text>
-                <Text strong style={{ color: '#ff4d4f' }}>
+                <DangerText strong>
                   {tSystem(masterPasswordOperation === 'remove' ? 'dangerZone.updateMasterPassword.modal.warningSecureRemove' : 'dangerZone.updateMasterPassword.modal.warningSecure')}
-                </Text>
+                </DangerText>
               </Space>
             }
             type="warning"
             showIcon
-            style={{ marginBottom: 24 }}
           />
           
           {/* Only show password fields for create and update operations */}
@@ -2589,16 +2662,15 @@ const SystemPage: React.FC = () => {
             </>
           )}
 
-          <Alert
+          <ModalAlert
             message={tCommon('general.important')}
             description={tSystem(`dangerZone.updateMasterPassword.modal.importantNote${masterPasswordOperation === 'create' ? 'Create' : masterPasswordOperation === 'remove' ? 'Remove' : ''}`)}
             type="info"
             showIcon
-            style={{ marginBottom: 24 }}
           />
 
-          <Form.Item style={{ marginBottom: 0 }}>
-            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+          <FormItemNoMargin>
+            <ModalActions>
               <Button 
                 onClick={() => {
                   setMasterPasswordModalOpen(false)
@@ -2619,8 +2691,8 @@ const SystemPage: React.FC = () => {
               >
                 {tSystem(`dangerZone.updateMasterPassword.modal.submit${masterPasswordOperation.charAt(0).toUpperCase() + masterPasswordOperation.slice(1)}`)}
               </Button>
-            </Space>
-          </Form.Item>
+            </ModalActions>
+          </FormItemNoMargin>
         </Form>
       </Modal>
 
@@ -2648,8 +2720,8 @@ const SystemPage: React.FC = () => {
             </Button>
           ]}
         >
-          <Space direction="vertical" style={{ width: '100%' }} size={16}>
-            <Alert
+          <ModalStack>
+            <ModalAlert
               message="Warning"
               description={`Are you sure you want to reset authorization for bridge "${resetAuthModal.bridgeName}"? This will generate new credentials.`}
               type="warning"
@@ -2672,7 +2744,7 @@ const SystemPage: React.FC = () => {
                 </Checkbox>
               </Form.Item>
             </Form>
-          </Space>
+          </ModalStack>
         </Modal>
       )}
 
@@ -2687,20 +2759,20 @@ const SystemPage: React.FC = () => {
           status="success"
           title={tSystem(`dangerZone.updateMasterPassword.success.title${completedOperation.charAt(0).toUpperCase() + completedOperation.slice(1)}`)}
           subTitle={
-            <Space direction="vertical" size={24} style={{ width: '100%' }}>
+            <ModalStackLarge>
               <div>
                 <Typography.Paragraph>
                   {tSystem('dangerZone.updateMasterPassword.success.nextSteps')}
                 </Typography.Paragraph>
-                <ol style={{ textAlign: 'left', paddingLeft: 20 }}>
+                <OrderedList>
                   <li>{tSystem('dangerZone.updateMasterPassword.success.step1')}</li>
                   <li>{tSystem(`dangerZone.updateMasterPassword.success.step2${completedOperation === 'remove' ? 'Remove' : ''}`)}</li>
                   <li>{tSystem(`dangerZone.updateMasterPassword.success.step3${completedOperation === 'remove' ? 'Remove' : ''}`)}</li>
                   <li>{tSystem(`dangerZone.updateMasterPassword.success.step4${completedOperation === 'remove' ? 'Remove' : ''}`)}</li>
-                </ol>
+                </OrderedList>
               </div>
               
-              <div style={{ textAlign: 'center' }}>
+              <CenteredBlock>
                 <Typography.Title level={4}>
                   {tSystem('dangerZone.updateMasterPassword.success.redirecting')}
                 </Typography.Title>
@@ -2710,8 +2782,8 @@ const SystemPage: React.FC = () => {
                 <Typography.Text type="secondary">
                   {tSystem('dangerZone.updateMasterPassword.success.seconds')}
                 </Typography.Text>
-              </div>
-              
+              </CenteredBlock>
+
               <Button 
                 type="primary" 
                 size="large" 
@@ -2723,7 +2795,7 @@ const SystemPage: React.FC = () => {
               >
                 {tSystem('dangerZone.updateMasterPassword.success.loginNow')}
               </Button>
-            </Space>
+            </ModalStackLarge>
           }
         />
       </Modal>
@@ -2745,20 +2817,19 @@ const SystemPage: React.FC = () => {
           onFinish={handleChangePassword}
           autoComplete="off"
         >
-          <Alert
+          <ModalAlert
             message="Password Requirements"
             description={
-              <ul style={{ margin: '8px 0 0 20px', fontSize: 14 }}>
+              <RequirementsList>
                 <li>At least 8 characters long</li>
                 <li>Contains at least one uppercase letter</li>
                 <li>Contains at least one lowercase letter</li>
                 <li>Contains at least one number</li>
                 <li>Contains at least one special character</li>
-              </ul>
+              </RequirementsList>
             }
             type="info"
             showIcon
-            style={{ marginBottom: 24 }}
           />
 
           <Form.Item
@@ -2803,8 +2874,8 @@ const SystemPage: React.FC = () => {
             />
           </Form.Item>
 
-          <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
-            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+          <FormItemActions>
+            <ModalActions>
               <Button
                 onClick={() => {
                   setChangePasswordModalOpen(false)
@@ -2820,8 +2891,8 @@ const SystemPage: React.FC = () => {
               >
                 Change Password
               </Button>
-            </Space>
-          </Form.Item>
+            </ModalActions>
+          </FormItemActions>
         </Form>
       </Modal>
 
@@ -2849,12 +2920,11 @@ const SystemPage: React.FC = () => {
           layout="vertical"
           onFinish={handleImportCompanyData}
         >
-          <Alert
+          <ModalAlert
             message={tSystem('dangerZone.importData.modal.warning')}
             description={tSystem('dangerZone.importData.modal.warningText')}
             type="warning"
             showIcon
-            style={{ marginBottom: 24 }}
           />
 
           <Form.Item
@@ -2887,25 +2957,25 @@ const SystemPage: React.FC = () => {
                 <Radio value="skip">
                   <Space direction="vertical" size={0}>
                     <Text strong>{tSystem('dangerZone.importData.modal.modeSkip')}</Text>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
+                    <CaptionText>
                       {tSystem('dangerZone.importData.modal.modeSkipDesc')}
-                    </Text>
+                    </CaptionText>
                   </Space>
                 </Radio>
                 <Radio value="override">
                   <Space direction="vertical" size={0}>
                     <Text strong>{tSystem('dangerZone.importData.modal.modeOverride')}</Text>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
+                    <CaptionText>
                       {tSystem('dangerZone.importData.modal.modeOverrideDesc')}
-                    </Text>
+                    </CaptionText>
                   </Space>
                 </Radio>
               </Space>
             </Radio.Group>
           </Form.Item>
 
-          <Form.Item style={{ marginBottom: 0, marginTop: 32 }}>
-            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+          <FormItemActionsLg>
+            <ModalActions>
               <Button
                 onClick={() => {
                   setImportModalOpen(false)
@@ -2924,11 +2994,11 @@ const SystemPage: React.FC = () => {
               >
                 {tSystem('dangerZone.importData.modal.import')}
               </Button>
-            </Space>
-          </Form.Item>
+            </ModalActions>
+          </FormItemActionsLg>
         </Form>
       </Modal>
-    </div>
+    </PageWrapper>
   )
 }
 

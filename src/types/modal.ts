@@ -12,7 +12,6 @@
 
 /**
  * Modal size enum with CSS class names
- * Each value corresponds to a CSS class that defines responsive modal dimensions
  */
 export enum ModalSize {
   /** Small modal - ideal for confirmations, simple forms */
@@ -41,8 +40,6 @@ export type ModalSizeValue = `${ModalSize}`
 export interface ModalConfig {
   /** Size preset to apply */
   size: ModalSize
-  /** Whether to add responsive modal styling */
-  responsive?: boolean
   /** Whether modal content should be scrollable */
   scrollable?: boolean
   /** Custom CSS class to add alongside size class */
@@ -51,14 +48,10 @@ export interface ModalConfig {
 
 /**
  * Helper function to generate modal className string
- * Combines size class with optional responsive and custom classes
+ * Combines size class with optional scrollable/custom classes
  */
 export function getModalClassName(config: ModalConfig): string {
   const classes: string[] = [config.size as string]
-
-  if (config.responsive !== false) {
-    classes.push('modal-responsive' as string)
-  }
 
   if (config.scrollable) {
     classes.push('modal-content-scrollable' as string)

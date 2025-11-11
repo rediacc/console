@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { Card, Tabs, Button, Empty, Row, Col, Alert, Typography, Tooltip } from 'antd'
+import { Tabs, Empty, Alert, Tooltip } from 'antd'
 import { 
   PlusOutlined, 
   DatabaseOutlined,
@@ -10,7 +10,6 @@ import {
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useCompanyInfo } from '@/api/queries/dashboard'
-import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { useTeams } from '@/api/queries/teams'
 import TeamSelector from '@/components/common/TeamSelector'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
@@ -31,12 +30,22 @@ import {
   useDeleteDistributedStorageCluster,
   useDeleteDistributedStoragePool
 } from '@/api/queries/distributedStorage'
-
-const { Title } = Typography
+import {
+  PageWrapper,
+  PageCard,
+  HeaderSection,
+  HeaderRow,
+  TitleGroup,
+  HeaderTitle,
+  TeamSelectorWrapper,
+  ActionGroup,
+  PrimaryIconButton,
+  SecondaryIconButton,
+  EmptyState,
+} from './styles'
 
 const DistributedStoragePage: React.FC = () => {
   const { t } = useTranslation(['distributedStorage', 'common'])
-  const styles = useComponentStyles()
   const [selectedTeams, setSelectedTeams] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState('clusters')
   const [modalState, setModalState] = useState<{
@@ -105,17 +114,11 @@ const DistributedStoragePage: React.FC = () => {
   // Show debug info in UI temporarily
   if (!companyData) {
     return (
-      <Row gutter={24}>
-        <Col span={24}>
-          <Card style={styles.card}>
-            <Alert
-              message="Loading company data..."
-              type="info"
-              showIcon
-            />
-          </Card>
-        </Col>
-      </Row>
+      <PageWrapper>
+        <PageCard>
+          <Alert message="Loading company data..." type="info" showIcon />
+        </PageCard>
+      </PageWrapper>
     )
   }
   
@@ -265,139 +268,102 @@ const DistributedStoragePage: React.FC = () => {
   // Render access denied message if no access
   if (!hasDistributedStorageAccess) {
     return (
-      <Row gutter={24}>
-        <Col span={24}>
-          <Card style={styles.card}>
-            <Alert
-              message={t('accessDenied.title')}
-              description={
-                <>
-                  {t('accessDenied.description')}
-                  <br /><br />
-                  <strong>Debug Info:</strong>
-                  <br />
-                  Current Plan: {planCode || 'No plan detected'}
-                  <br />
-                  Has Access: {String(hasDistributedStorageAccess)}
-                  <br />
-                  Company Data: {JSON.stringify(companyData, null, 2)}
-                </>
-              }
-              type="warning"
-              showIcon
-              icon={<SettingOutlined />}
-            />
-          </Card>
-        </Col>
-      </Row>
+      <PageWrapper>
+        <PageCard>
+          <Alert
+            message={t('accessDenied.title')}
+            description={
+              <>
+                {t('accessDenied.description')}
+                <br />
+                <br />
+                <strong>Debug Info:</strong>
+                <br />
+                Current Plan: {planCode || 'No plan detected'}
+                <br />
+                Has Access: {String(hasDistributedStorageAccess)}
+                <br />
+                Company Data: {JSON.stringify(companyData, null, 2)}
+              </>
+            }
+            type="warning"
+            showIcon
+            icon={<SettingOutlined />}
+          />
+        </PageCard>
+      </PageWrapper>
     )
   }
   
   return (
-    <>
-      <Row gutter={24}>
-        <Col span={24}>
-          <Card style={styles.card}>
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 16
-              }}>
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 16,
-                  flex: '1 1 auto',
-                  minWidth: 0
-                }}>
-                  <Title level={4} style={{ ...styles.heading4, margin: 0, flexShrink: 0 }}>
-                    {t('title')}
-                  </Title>
-                  <TeamSelector
-                    teams={teamsList}
-                    selectedTeams={selectedTeams}
-                    onChange={setSelectedTeams}
-                    loading={teamsLoading}
-                    placeholder={t('selectTeamToView')}
-                    style={{ 
-                      minWidth: 250, 
-                      maxWidth: 400,
-                      width: '100%'
-                    }}
-                    data-testid="ds-team-selector"
-                  />
-                </div>
-                
-                {selectedTeams.length > 0 && (
-                  <div style={{ 
-                    display: 'flex',
-                    gap: 8,
-                    flexShrink: 0
-                  }}>
-                    {activeTab !== 'machines' && (
-                      <Tooltip title={activeTab === 'clusters' ? t('clusters.create') : t('pools.create')}>
-                        <Button 
-                          type="primary" 
-                          icon={<PlusOutlined />}
-                          style={{
-                            ...styles.buttonPrimary,
-                            ...styles.touchTarget,
-                            background: '#556b2f',
-                            borderColor: '#556b2f'
-                          }}
-                          onClick={() => {
-                            if (activeTab === 'clusters') {
-                              openModal('cluster', 'create')
-                            } else if (activeTab === 'pools') {
-                              openModal('pool', 'create')
-                            }
-                          }}
-                          data-testid={activeTab === 'clusters' ? 'ds-create-cluster-button' : 'ds-create-pool-button'}
-                          aria-label={activeTab === 'clusters' ? t('clusters.create') : t('pools.create')}
-                        />
-                      </Tooltip>
-                    )}
-                    <Tooltip title={t('common:actions.refresh')}>
-                      <Button 
-                        icon={<ReloadOutlined />}
-                        style={styles.touchTarget}
-                        onClick={() => {
-                          if (activeTab === 'clusters') {
-                            refetchClusters()
-                          } else if (activeTab === 'pools') {
-                            refetchPools()
-                          }
-                          // Machines tab handles its own refresh
-                        }}
-                        data-testid="ds-refresh-button"
-                        aria-label={t('common:actions.refresh')}
-                      />
-                    </Tooltip>
-                  </div>
+    <PageWrapper>
+      <PageCard>
+        <HeaderSection>
+          <HeaderRow>
+            <TitleGroup>
+              <HeaderTitle level={4}>{t('title')}</HeaderTitle>
+              <TeamSelectorWrapper>
+                <TeamSelector
+                  teams={teamsList}
+                  selectedTeams={selectedTeams}
+                  onChange={setSelectedTeams}
+                  loading={teamsLoading}
+                  placeholder={t('selectTeamToView')}
+                  data-testid="ds-team-selector"
+                />
+              </TeamSelectorWrapper>
+            </TitleGroup>
+            {selectedTeams.length > 0 && (
+              <ActionGroup>
+                {activeTab !== 'machines' && (
+                  <Tooltip title={activeTab === 'clusters' ? t('clusters.create') : t('pools.create')}>
+                    <PrimaryIconButton
+                      type="primary"
+                      icon={<PlusOutlined />}
+                      onClick={() => {
+                        if (activeTab === 'clusters') {
+                          openModal('cluster', 'create')
+                        } else if (activeTab === 'pools') {
+                          openModal('pool', 'create')
+                        }
+                      }}
+                      data-testid={activeTab === 'clusters' ? 'ds-create-cluster-button' : 'ds-create-pool-button'}
+                      aria-label={activeTab === 'clusters' ? t('clusters.create') : t('pools.create')}
+                    />
+                  </Tooltip>
                 )}
-              </div>
-            </div>
-            
-            {selectedTeams.length === 0 ? (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={t('selectTeamPrompt')}
-                style={{ padding: '40px 0' }}
-              />
-            ) : (
-              <Tabs
-                activeKey={activeTab}
-                onChange={setActiveTab}
-                items={tabItems}
-                data-testid="ds-tabs"
-              />
+                <Tooltip title={t('common:actions.refresh')}>
+                  <SecondaryIconButton
+                    icon={<ReloadOutlined />}
+                    onClick={() => {
+                      if (activeTab === 'clusters') {
+                        refetchClusters()
+                      } else if (activeTab === 'pools') {
+                        refetchPools()
+                      }
+                    }}
+                    data-testid="ds-refresh-button"
+                    aria-label={t('common:actions.refresh')}
+                  />
+                </Tooltip>
+              </ActionGroup>
             )}
-          </Card>
-        </Col>
-      </Row>
+          </HeaderRow>
+        </HeaderSection>
+
+        {selectedTeams.length === 0 ? (
+          <EmptyState>
+            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('selectTeamPrompt')} />
+          </EmptyState>
+        ) : (
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            items={tabItems}
+            data-testid="ds-tabs"
+          />
+        )}
+      </PageCard>
       
       {/* Unified Resource Modal */}
       <UnifiedResourceModal
@@ -469,7 +435,7 @@ const DistributedStoragePage: React.FC = () => {
           }
         }}
       />
-    </>
+    </PageWrapper>
   )
 }
 

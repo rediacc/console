@@ -336,7 +336,7 @@ const MarketplacePreview: React.FC<MarketplacePreviewProps> = ({
                           backgroundColor: selectedFileIndex === index ? 'rgba(85, 107, 47, 0.1)' : 'transparent',
                           borderLeft: selectedFileIndex === index ? '3px solid var(--color-primary)' : '3px solid transparent',
                           transition: DESIGN_TOKENS.TRANSITIONS.DEFAULT,
-                          minHeight: DESIGN_TOKENS.TOUCH_TARGET.MIN_SIZE,
+                          minHeight: DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT,
                           display: 'flex',
                           alignItems: 'center'
                         }}

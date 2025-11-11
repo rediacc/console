@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react'
-import { Typography, Button, Space, Modal, Select, Card, Tag, Badge, Tabs, Row, Col, Tooltip, DatePicker, Checkbox, Dropdown, Input } from 'antd'
+import { Typography, Space, Modal, Tag, Tabs, Tooltip, Dropdown } from 'antd'
 import { ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, WarningOutlined, GlobalOutlined, ClockCircleOutlined, ReloadOutlined, ExportOutlined, HistoryOutlined, SearchOutlined } from '@/utils/optimizedIcons'
-import { useQueueItems, useCancelQueueItem, QueueFilters } from '@/api/queries/queue'
+import { useQueueItems, useCancelQueueItem, QueueFilters, type QueueStatistics } from '@/api/queries/queue'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import ResourceListView from '@/components/common/ResourceListView'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
@@ -9,14 +9,30 @@ import { showMessage } from '@/utils/messages'
 import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'
 import { formatTimestampAsIs } from '@/utils/timeUtils'
-import { useComponentStyles } from '@/hooks/useComponentStyles'
+import {
+  PageWrapper,
+  FiltersCard,
+  FiltersGrid,
+  FilterSelect,
+  FilterRangePicker,
+  FilterInput,
+  FilterTagBar,
+  ClearFiltersButton,
+  StatsBar,
+  StatItem,
+  StatLabel,
+  StatValue,
+  StatDivider,
+  StatIcon,
+  IconButton,
+  TabLabel,
+  TabCount,
+  FilterCheckbox,
+} from './styles'
 
 const { Text } = Typography
-const { RangePicker } = DatePicker
-
 const QueuePage: React.FC = () => {
   const { t } = useTranslation(['queue', 'common'])
-  const styles = useComponentStyles()
   const [viewTeam, setViewTeam] = useState<string>('') // Team for viewing queue items
   const [activeTab, setActiveTab] = useState<string>('active') // Track which tab is active
   const [filters, setFilters] = useState<QueueFilters>({
@@ -66,6 +82,30 @@ const QueuePage: React.FC = () => {
   const { data: queueData, isLoading, refetch, isRefetching } = useQueueItems(queryFilters)
   const { data: dropdownData } = useDropdownData()
   const cancelQueueItemMutation = useCancelQueueItem()
+
+  const statistics = (queueData?.statistics ?? ({} as Partial<QueueStatistics>))
+  const totalCount = statistics.totalCount ?? queueData?.items?.length ?? 0
+  const activeCount = (statistics.pendingCount ?? 0) + (statistics.assignedCount ?? 0) + (statistics.processingCount ?? 0)
+  const failedCount = statistics.failedCount ?? 0
+  const staleCount = statistics.staleCount ?? 0
+  const completedCount = statistics.completedCount ?? 0
+  const cancelledCount = statistics.cancelledCount ?? 0
+
+  const items = queueData?.items || []
+  const activeItems = items.filter((item: any) => !['COMPLETED', 'CANCELLED', 'FAILED'].includes(item.healthStatus))
+  const completedItems = items.filter((item: any) => item.healthStatus === 'COMPLETED')
+  const cancelledItems = items.filter((item: any) => item.healthStatus === 'CANCELLED')
+  const failedItems = items.filter((item: any) => item.healthStatus === 'FAILED')
+
+  const hasActiveFilters =
+    Boolean(viewTeam) ||
+    Boolean(filters.machineName) ||
+    Boolean(filters.regionName) ||
+    Boolean(filters.bridgeName) ||
+    Boolean(filters.onlyStale) ||
+    statusFilter.length > 0 ||
+    Boolean(dateRange) ||
+    (taskIdFilter && isValidGuid(taskIdFilter))
 
   const isFetching = isLoading || isRefetching
 
@@ -368,11 +408,10 @@ const QueuePage: React.FC = () => {
       render: (_: any, record: any) => (
         <Space size="small">
           <Tooltip title="Trace">
-            <Button
+            <IconButton
               size="small"
               type="primary"
               icon={<HistoryOutlined />}
-              style={styles.touchTargetSmall}
               onClick={() => handleViewTrace(record.taskId)}
               data-testid={`queue-trace-button-${record.taskId}`}
               aria-label="Trace"
@@ -380,11 +419,10 @@ const QueuePage: React.FC = () => {
           </Tooltip>
           {record.canBeCancelled && record.healthStatus !== 'CANCELLED' && record.healthStatus !== 'CANCELLING' && (
             <Tooltip title="Cancel">
-              <Button
+              <IconButton
                 size="small"
                 danger
                 icon={<CloseCircleOutlined />}
-                style={styles.touchTargetSmall}
                 onClick={() => handleCancelQueueItem(record.taskId)}
                 loading={cancelQueueItemMutation.isPending}
                 data-testid={`queue-cancel-button-${record.taskId}`}
@@ -399,235 +437,237 @@ const QueuePage: React.FC = () => {
 
 
   return (
-    <div className="page-container" data-testid="queue-page-container">
-      {/* Ultra-Compact Filter & Stats Bar */}
-      <Card
-        size="small"
-        style={{ marginBottom: 16, padding: '8px 12px' }}
-        data-testid="queue-filters-card"
-      >
-        <Row gutter={[8, 8]} align="middle" wrap>
-          {/* Filters Section */}
-          <Col flex="auto">
-            <Space size={8} wrap>
-              <Select
-                size="small"
-                style={{ minWidth: 150 }}
-                placeholder="Team"
-                value={viewTeam || undefined}
-                onChange={(value) => {
-                  setViewTeam(value || '')
-                  setFilters({ ...filters, machineName: '' })
-                }}
-                allowClear
-                showSearch
-                filterOption={(input, option) =>
-                  (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
-                }
-                options={dropdownData?.teams || []}
-                data-testid="queue-filter-team"
-              />
+    <PageWrapper data-testid="queue-page-container">
+      <FiltersCard size="small" data-testid="queue-filters-card">
+        <FiltersGrid direction="vertical">
+          <Space size={8} wrap>
+            <FilterSelect
+              size="small"
+              $minWidth={150}
+              placeholder="Team"
+              value={viewTeam || undefined}
+              onChange={(value) => {
+                const nextValue = typeof value === 'string' ? value : ''
+                setViewTeam(nextValue)
+                setFilters({ ...filters, machineName: '' })
+              }}
+              allowClear
+              options={dropdownData?.teams || []}
+              data-testid="queue-filter-team"
+            />
+            <FilterSelect
+              size="small"
+              $minWidth={150}
+              placeholder="Machine"
+              value={filters.machineName || undefined}
+              onChange={(value) =>
+                setFilters({ ...filters, machineName: (value as string) || '' })
+              }
+              allowClear
+              options={(dropdownData?.machines || []).map((machine: string) => ({ label: machine, value: machine }))}
+              data-testid="queue-filter-machine"
+            />
+            <FilterSelect
+              size="small"
+              $minWidth={130}
+              placeholder="Region"
+              value={filters.regionName || undefined}
+              onChange={(value) =>
+                setFilters({ ...filters, regionName: (value as string) || '' })
+              }
+              allowClear
+              options={dropdownData?.regions || []}
+              data-testid="queue-filter-region"
+            />
+            <FilterSelect
+              size="small"
+              $minWidth={130}
+              placeholder="Bridge"
+              value={filters.bridgeName || undefined}
+              onChange={(value) =>
+                setFilters({ ...filters, bridgeName: (value as string) || '' })
+              }
+              allowClear
+              options={dropdownData?.bridges || []}
+              data-testid="queue-filter-bridge"
+            />
+            <FilterRangePicker
+              size="small"
+              value={dateRange as any}
+              onChange={(dates) => setDateRange(dates as any)}
+              allowClear
+              placeholder={[t('queue:filters.dateFrom'), t('queue:filters.dateTo')]}
+              data-testid="queue-filter-date"
+            />
+            <FilterSelect
+              size="small"
+              mode="multiple"
+              $minWidth={160}
+              placeholder="Status"
+              value={statusFilter}
+              onChange={(values) => setStatusFilter(values as string[])}
+              options={[
+                { label: t('queue:statusPending'), value: 'PENDING' },
+                { label: t('queue:statusActive'), value: 'ACTIVE' },
+                { label: t('queue:statusStale'), value: 'STALE' },
+                { label: t('queue:statusCompleted'), value: 'COMPLETED' },
+                { label: t('queue:statusCancelled'), value: 'CANCELLED' },
+                { label: t('queue:statusFailed'), value: 'FAILED' },
+              ]}
+              data-testid="queue-filter-status"
+            />
+            <FilterInput
+              size="small"
+              placeholder="Task ID (GUID)"
+              prefix={<SearchOutlined />}
+              value={taskIdFilter}
+              onChange={(e) => setTaskIdFilter(e.target.value)}
+              allowClear
+              data-testid="queue-filter-task"
+            />
+            <FilterCheckbox
+              checked={filters.onlyStale}
+              onChange={(e) => setFilters({ ...filters, onlyStale: e.target.checked })}
+              data-testid="queue-checkbox-only-stale"
+            >
+              {t('queue:filters.onlyStale')}
+            </FilterCheckbox>
+          </Space>
 
-              <Select
-                size="small"
-                mode="multiple"
-                style={{ minWidth: 150 }}
-                placeholder="Status"
-                value={statusFilter}
-                onChange={setStatusFilter}
-                allowClear
-                maxTagCount="responsive"
-                data-testid="queue-filter-status"
-              >
-                <Select.Option value="PENDING">{t('queue:statusPending')}</Select.Option>
-                <Select.Option value="ACTIVE">{t('queue:statusActive')}</Select.Option>
-                <Select.Option value="STALE">{t('queue:statusStale')}</Select.Option>
-                <Select.Option value="CANCELLING">{t('queue:statusCancelling')}</Select.Option>
-                <Select.Option value="COMPLETED">{t('queue:statusCompleted')}</Select.Option>
-                <Select.Option value="FAILED">{t('queue:statusFailed')}</Select.Option>
-                <Select.Option value="CANCELLED">{t('queue:statusCancelled')}</Select.Option>
-              </Select>
-
-              <RangePicker
-                size="small"
-                format="YYYY-MM-DD"
-                value={dateRange}
-                onChange={(dates) => setDateRange(dates)}
-                placeholder={['Start', 'End']}
-                presets={[
-                  { label: 'Today', value: [dayjs().startOf('day'), dayjs().endOf('day')] },
-                  { label: 'Last 7D', value: [dayjs().subtract(7, 'day').startOf('day'), dayjs()] },
-                  { label: 'Last 30D', value: [dayjs().subtract(30, 'day').startOf('day'), dayjs()] },
-                ]}
-                data-testid="queue-filter-date"
-              />
-
-              <Checkbox
-                checked={filters.onlyStale}
-                onChange={(e) => setFilters({ ...filters, onlyStale: e.target.checked })}
-                data-testid="queue-checkbox-only-stale"
-              >
-                {t('queue:onlyStale')}
-              </Checkbox>
-
+          {hasActiveFilters && (
+            <FilterTagBar>
               {viewTeam && (
-                <>
-                  <Select
-                    size="small"
-                    style={{ minWidth: 130 }}
-                    placeholder="Machine"
-                    value={filters.machineName || undefined}
-                    onChange={(value) => setFilters({ ...filters, machineName: value || '' })}
-                    allowClear
-                    showSearch
-                    filterOption={(input, option) =>
-                      (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
-                    }
-                    options={dropdownData?.machinesByTeam?.find(t => t.teamName === viewTeam)?.machines || []}
-                    data-testid="queue-filter-machine"
-                  />
-
-                  <Input
-                    size="small"
-                    placeholder="Task ID"
-                    value={taskIdFilter}
-                    onChange={(e) => setTaskIdFilter(e.target.value)}
-                    prefix={<SearchOutlined />}
-                    allowClear
-                    status={taskIdFilter && !isValidGuid(taskIdFilter) ? 'error' : undefined}
-                    style={{ width: 200 }}
-                    data-testid="queue-filter-taskid"
-                  />
-                </>
+                <Tag closable onClose={() => setViewTeam('')} color="blue">
+                  {dropdownData?.teams?.find(t => t.value === viewTeam)?.label || viewTeam}
+                </Tag>
               )}
-
-              {/* Active Filter Pills - Inline */}
-              {(viewTeam || dateRange || statusFilter.length > 0 || (taskIdFilter && isValidGuid(taskIdFilter)) || filters.onlyStale) && (
-                <>
-                  {viewTeam && (
-                    <Tag closable onClose={() => setViewTeam('')} color="blue">
-                      {dropdownData?.teams?.find(t => t.value === viewTeam)?.label || viewTeam}
-                    </Tag>
-                  )}
-                  {dateRange && (
-                    <Tag closable onClose={() => setDateRange(null)} color="blue">
-                      {dateRange[0]?.format('MM/DD')}→{dateRange[1]?.format('MM/DD')}
-                    </Tag>
-                  )}
-                  {statusFilter.map(status => (
-                    <Tag
-                      key={status}
-                      closable
-                      onClose={() => setStatusFilter(statusFilter.filter(s => s !== status))}
-                      color="blue"
-                    >
-                      {status}
-                    </Tag>
-                  ))}
-                  {taskIdFilter && isValidGuid(taskIdFilter) && (
-                    <Tag closable onClose={() => setTaskIdFilter('')} color="blue">
-                      {taskIdFilter.substring(0, 8)}...
-                    </Tag>
-                  )}
-                  {filters.onlyStale && (
-                    <Tag closable onClose={() => setFilters({ ...filters, onlyStale: false })} color="orange">
-                      Stale
-                    </Tag>
-                  )}
-                  <Button
-                    type="link"
-                    size="small"
-                    onClick={() => {
-                      setViewTeam('')
-                      setDateRange(null)
-                      setStatusFilter([])
-                      setTaskIdFilter('')
-                      setFilters({ ...filters, onlyStale: false })
-                    }}
-                    style={{ padding: '0 4px', height: 'auto' }}
-                  >
-                    Clear
-                  </Button>
-                </>
+              {filters.machineName && (
+                <Tag closable onClose={() => setFilters({ ...filters, machineName: '' })} color="blue">
+                  {filters.machineName}
+                </Tag>
               )}
-            </Space>
-          </Col>
+              {filters.regionName && (
+                <Tag closable onClose={() => setFilters({ ...filters, regionName: '' })} color="blue">
+                  {filters.regionName}
+                </Tag>
+              )}
+              {filters.bridgeName && (
+                <Tag closable onClose={() => setFilters({ ...filters, bridgeName: '' })} color="blue">
+                  {filters.bridgeName}
+                </Tag>
+              )}
+              {dateRange && (
+                <Tag closable onClose={() => setDateRange(null)} color="blue">
+                  {dateRange[0]?.format('MM/DD')}→{dateRange[1]?.format('MM/DD')}
+                </Tag>
+              )}
+              {statusFilter.map(status => (
+                <Tag key={status} closable onClose={() => setStatusFilter(statusFilter.filter(s => s !== status))} color="blue">
+                  {status}
+                </Tag>
+              ))}
+              {taskIdFilter && isValidGuid(taskIdFilter) && (
+                <Tag closable onClose={() => setTaskIdFilter('')} color="blue">
+                  {taskIdFilter.substring(0, 8)}...
+                </Tag>
+              )}
+              {filters.onlyStale && (
+                <Tag closable onClose={() => setFilters({ ...filters, onlyStale: false })} color="orange">
+                  Stale
+                </Tag>
+              )}
+              <ClearFiltersButton
+                type="link"
+                size="small"
+                onClick={() => {
+                  setViewTeam('')
+                  setDateRange(null)
+                  setStatusFilter([])
+                  setTaskIdFilter('')
+                  setFilters({ ...filters, onlyStale: false, machineName: '', regionName: '', bridgeName: '' })
+                }}
+              >
+                Clear
+              </ClearFiltersButton>
+            </FilterTagBar>
+          )}
 
-          {/* Statistics Section - Inline */}
-          <Col flex="none">
-            <Space size={12} split={<span style={{ color: '#d9d9d9' }}>|</span>}>
-              <Space size={4}>
-                <ThunderboltOutlined style={{ fontSize: 12 }} />
-                <Text type="secondary" style={{ fontSize: 12 }}>{t('queue:statistics.total')}:</Text>
-                <Text strong style={{ fontSize: 12 }}>{(queueData?.statistics as any)?.totalCount || 0}</Text>
-              </Space>
-              <Space size={4}>
-                <PlayCircleOutlined style={{ fontSize: 12, color: '#1890ff' }} />
-                <Text type="secondary" style={{ fontSize: 12 }}>{t('queue:statistics.active')}:</Text>
-                <Text strong style={{ fontSize: 12, color: '#1890ff' }}>
-                  {((queueData?.statistics as any)?.pendingCount || 0) +
-                   ((queueData?.statistics as any)?.assignedCount || 0) +
-                   ((queueData?.statistics as any)?.processingCount || 0)}
-                </Text>
-              </Space>
-              <Space size={4}>
-                <ExclamationCircleOutlined style={{ fontSize: 12, color: '#ff4d4f' }} />
-                <Text type="secondary" style={{ fontSize: 12 }}>{t('queue:statistics.failed')}:</Text>
-                <Text strong style={{ fontSize: 12, color: '#ff4d4f' }}>{(queueData?.statistics as any)?.failedCount || 0}</Text>
-              </Space>
-              <Space size={4}>
-                <WarningOutlined style={{ fontSize: 12, color: '#faad14' }} />
-                <Text type="secondary" style={{ fontSize: 12 }}>{t('queue:statistics.stale')}:</Text>
-                <Text strong style={{ fontSize: 12, color: '#faad14' }}>{(queueData?.statistics as any)?.staleCount || 0}</Text>
-              </Space>
-            </Space>
-          </Col>
+          <StatsBar>
+            <StatItem>
+              <StatIcon>
+                <ThunderboltOutlined />
+              </StatIcon>
+              <StatLabel>{t('queue:statistics.total')}:</StatLabel>
+              <StatValue>{totalCount}</StatValue>
+            </StatItem>
+            <StatDivider />
+            <StatItem>
+              <StatIcon $color="var(--color-info)">
+                <PlayCircleOutlined />
+              </StatIcon>
+              <StatLabel>{t('queue:statistics.active')}:</StatLabel>
+              <StatValue $color="var(--color-info)">{activeCount}</StatValue>
+            </StatItem>
+            <StatDivider />
+            <StatItem>
+              <StatIcon $color="var(--color-error)">
+                <ExclamationCircleOutlined />
+              </StatIcon>
+              <StatLabel>{t('queue:statistics.failed')}:</StatLabel>
+              <StatValue $color="var(--color-error)">{failedCount}</StatValue>
+            </StatItem>
+            <StatDivider />
+            <StatItem>
+              <StatIcon $color="var(--color-warning)">
+                <WarningOutlined />
+              </StatIcon>
+              <StatLabel>{t('queue:statistics.stale')}:</StatLabel>
+              <StatValue $color="var(--color-warning)">{staleCount}</StatValue>
+            </StatItem>
+          </StatsBar>
 
-          {/* Actions Section */}
-          <Col flex="none">
-            <Space size={4}>
-              <Tooltip title={t('common:actions.refresh')}>
-                <Button
+          <Space size={4}>
+            <Tooltip title={t('common:actions.refresh')}>
+              <IconButton
+                size="small"
+                icon={<ReloadOutlined />}
+                onClick={() => refetch()}
+                loading={isFetching}
+                data-testid="queue-refresh-button"
+              />
+            </Tooltip>
+            <Dropdown
+              menu={{
+                items: [
+                  { key: 'csv', label: t('common:exportCSV'), onClick: () => handleExport('csv') },
+                  { key: 'json', label: t('common:exportJSON'), onClick: () => handleExport('json') }
+                ]
+              }}
+            >
+              <Tooltip title={t('common:export')}>
+                <IconButton
                   size="small"
-                  icon={<ReloadOutlined />}
-                  onClick={() => refetch()}
-                  loading={isFetching}
-                  data-testid="queue-refresh-button"
+                  icon={<ExportOutlined />}
+                  data-testid="queue-export-dropdown"
                 />
               </Tooltip>
-              <Dropdown
-                menu={{
-                  items: [
-                    { key: 'csv', label: t('common:exportCSV'), onClick: () => handleExport('csv') },
-                    { key: 'json', label: t('common:exportJSON'), onClick: () => handleExport('json') }
-                  ]
-                }}
-              >
-                <Tooltip title={t('common:export')}>
-                  <Button
-                    size="small"
-                    icon={<ExportOutlined />}
-                    data-testid="queue-export-dropdown"
-                  />
-                </Tooltip>
-              </Dropdown>
-            </Space>
-          </Col>
-        </Row>
-      </Card>
+            </Dropdown>
+          </Space>
+        </FiltersGrid>
+      </FiltersCard>
 
       <Tabs
-            activeKey={activeTab}
-            onChange={setActiveTab}
-            data-testid="queue-tabs"
-          >
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        data-testid="queue-tabs"
+      >
             <Tabs.TabPane 
               tab={
                 <Tooltip title={t('queue:tabs.active.tooltip')}>
-                  <Space data-testid="queue-tab-active">
-                    <span style={{ marginRight: 8 }}>{t('queue:tabs.active.title')}</span>
-                    <Badge count={queueData?.items?.filter((item: any) => !['COMPLETED', 'CANCELLED', 'FAILED'].includes(item.healthStatus)).length || 0} color="gold" />
-                  </Space>
+                  <TabLabel data-testid="queue-tab-active">
+                    {t('queue:tabs.active.title')}
+                    <TabCount count={activeItems.length} $color="#faad14" />
+                  </TabLabel>
                 </Tooltip>
               } 
               key="active"
@@ -635,7 +675,7 @@ const QueuePage: React.FC = () => {
             >
               <ResourceListView
                 loading={isLoading || isRefetching}
-                data={queueData?.items?.filter((item: any) => !['COMPLETED', 'CANCELLED', 'FAILED'].includes(item.healthStatus)) || []}
+                data={activeItems}
                 columns={queueColumns}
                 rowKey="taskId"
                 searchPlaceholder="Search queue items..."
@@ -660,10 +700,10 @@ const QueuePage: React.FC = () => {
             <Tabs.TabPane 
               tab={
                 <Tooltip title={t('queue:tabs.completed.tooltip')}>
-                  <Space data-testid="queue-tab-completed">
-                    <span style={{ marginRight: 8 }}>{t('queue:tabs.completed.title')}</span>
-                    <Badge count={(queueData?.statistics as any)?.completedCount || 0} showZero color="#52c41a" />
-                  </Space>
+                  <TabLabel data-testid="queue-tab-completed">
+                    {t('queue:tabs.completed.title')}
+                    <TabCount count={completedCount || completedItems.length} showZero $color="#52c41a" />
+                  </TabLabel>
                 </Tooltip>
               } 
               key="completed"
@@ -671,7 +711,7 @@ const QueuePage: React.FC = () => {
             >
               <ResourceListView
                 loading={isLoading || isRefetching}
-                data={queueData?.items?.filter((item: any) => item.healthStatus === 'COMPLETED') || []}
+                data={completedItems}
                 columns={queueColumns}
                 rowKey="taskId"
                 searchPlaceholder="Search completed items..."
@@ -696,10 +736,10 @@ const QueuePage: React.FC = () => {
             <Tabs.TabPane 
               tab={
                 <Tooltip title={t('queue:tabs.cancelled.tooltip')}>
-                  <Space data-testid="queue-tab-cancelled">
-                    <span style={{ marginRight: 8 }}>{t('queue:tabs.cancelled.title')}</span>
-                    <Badge count={(queueData?.statistics as any)?.cancelledCount || 0} showZero color="#ff4d4f" />
-                  </Space>
+                  <TabLabel data-testid="queue-tab-cancelled">
+                    {t('queue:tabs.cancelled.title')}
+                    <TabCount count={cancelledCount || cancelledItems.length} showZero $color="#ff4d4f" />
+                  </TabLabel>
                 </Tooltip>
               } 
               key="cancelled"
@@ -707,7 +747,7 @@ const QueuePage: React.FC = () => {
             >
               <ResourceListView
                 loading={isLoading || isRefetching}
-                data={queueData?.items?.filter((item: any) => item.healthStatus === 'CANCELLED') || []}
+                data={cancelledItems}
                 columns={queueColumns}
                 rowKey="taskId"
                 searchPlaceholder="Search cancelled items..."
@@ -732,10 +772,10 @@ const QueuePage: React.FC = () => {
             <Tabs.TabPane 
               tab={
                 <Tooltip title={t('queue:tabs.failed.tooltip')}>
-                  <Space data-testid="queue-tab-failed">
-                    <span style={{ marginRight: 8 }}>{t('queue:tabs.failed.title')}</span>
-                    <Badge count={(queueData?.statistics as any)?.failedCount || 0} showZero color="#ff4d4f" />
-                  </Space>
+                  <TabLabel data-testid="queue-tab-failed">
+                    {t('queue:tabs.failed.title')}
+                    <TabCount count={failedCount || failedItems.length} showZero $color="#ff4d4f" />
+                  </TabLabel>
                 </Tooltip>
               } 
               key="failed"
@@ -743,7 +783,7 @@ const QueuePage: React.FC = () => {
             >
               <ResourceListView
                 loading={isLoading || isRefetching}
-                data={queueData?.items?.filter((item: any) => item.healthStatus === 'FAILED') || []}
+                data={failedItems}
                 columns={queueColumns}
                 rowKey="taskId"
                 searchPlaceholder="Search failed items..."
@@ -764,18 +804,17 @@ const QueuePage: React.FC = () => {
                 }}
               />
             </Tabs.TabPane>
-          </Tabs>
+      </Tabs>
 
-          {/* Trace Modal */}
-          <QueueItemTraceModal
-            taskId={selectedTaskId}
-            visible={traceModalVisible}
-            onClose={() => {
-              setTraceModalVisible(false)
-              setSelectedTaskId(null)
-            }}
-          />
-    </div>
+      <QueueItemTraceModal
+        taskId={selectedTaskId}
+        visible={traceModalVisible}
+        onClose={() => {
+          setTraceModalVisible(false)
+          setSelectedTaskId(null)
+        }}
+      />
+    </PageWrapper>
   )
 }
 

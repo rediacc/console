@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, Space, Typography, DatePicker, Select, Button, Table, Tag, Input, Row, Col, Empty, Dropdown, message, Alert, Tooltip, theme } from 'antd';
+import { Space, Typography, DatePicker, Select, Button, Table, Tag, Input, Row, Col, Empty, Dropdown, message, Alert, Tooltip, theme } from 'antd';
 import {
   FilterOutlined,
   ReloadOutlined,
@@ -17,7 +17,17 @@ import {
 import { useAuditLogs, AuditLog } from '../../api/queries/audit';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import { useComponentStyles } from '@/hooks/useComponentStyles';
+import {
+  PageWrapper,
+  ContentStack,
+  FilterCard,
+  FilterField,
+  FilterLabel,
+  PlaceholderLabel,
+  ActionButtonFull,
+  CompactButton,
+  TableCard,
+} from './styles';
 import type { ColumnsType } from 'antd/es/table';
 
 const { Text } = Typography;
@@ -26,7 +36,6 @@ const { RangePicker } = DatePicker;
 const AuditPage = () => {
   const { t } = useTranslation(['system', 'common']);
   const { token } = theme.useToken();
-  const styles = useComponentStyles();
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([
     dayjs().subtract(7, 'days'),
     dayjs()
@@ -274,19 +283,19 @@ const AuditPage = () => {
   ];
 
   return (
-    <div className="page-container">
-      {/* Filters */}
-      <Card data-testid="audit-filter-card" style={{ marginBottom: 16 }}>
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+    <PageWrapper>
+      <ContentStack>
+        {/* Filters */}
+        <FilterCard data-testid="audit-filter-card">
+          <Space direction="vertical" size="large">
           <Row gutter={[24, 16]}>
             <Col xs={24} sm={24} md={8}>
-              <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                <Text strong style={{ fontSize: '14px', color: token.colorText }}>{t('system:audit.filters.dateRange')}</Text>
+              <FilterField>
+                <FilterLabel>{t('system:audit.filters.dateRange')}</FilterLabel>
                 <RangePicker
                   data-testid="audit-filter-date"
                   value={dateRange}
                   onChange={(dates) => setDateRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null])}
-                  style={{ width: '100%' }}
                   allowClear={false}
                   showTime={{
                     format: 'HH:mm:ss',
@@ -302,28 +311,27 @@ const AuditPage = () => {
                     { label: t('common:lastMonth'), value: [dayjs().subtract(1, 'month').startOf('month'), dayjs().subtract(1, 'month').endOf('month')] },
                   ]}
                 />
-              </Space>
+              </FilterField>
             </Col>
             <Col xs={24} sm={12} md={6}>
-              <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                <Text strong style={{ fontSize: '14px', color: token.colorText }}>{t('system:audit.filters.entityType')}</Text>
+              <FilterField>
+                <FilterLabel>{t('system:audit.filters.entityType')}</FilterLabel>
                 <Select
                   data-testid="audit-filter-entity"
                   placeholder={t('system:audit.filters.allEntities')}
                   allowClear
                   value={entityFilter}
                   onChange={setEntityFilter}
-                  style={{ width: '100%' }}
                   options={[
                     { label: t('system:audit.filters.allEntities'), value: undefined },
                     ...entityTypes.map(entity => ({ label: entity, value: entity }))
                   ]}
                 />
-              </Space>
+              </FilterField>
             </Col>
             <Col xs={24} sm={12} md={6}>
-              <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                <Text strong style={{ fontSize: '14px', color: token.colorText }}>{t('system:audit.filters.search')}</Text>
+              <FilterField>
+                <FilterLabel>{t('system:audit.filters.search')}</FilterLabel>
                 <Input
                   data-testid="audit-filter-search"
                   placeholder={t('system:audit.filters.searchPlaceholder')}
@@ -333,25 +341,24 @@ const AuditPage = () => {
                   allowClear
                   autoComplete="off"
                 />
-              </Space>
+              </FilterField>
             </Col>
             <Col xs={24} sm={12} md={2}>
-              <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                <Text strong style={{ fontSize: '14px', color: 'transparent' }}>{t('system:audit.filters.actions')}</Text>
-                <Button
+              <FilterField>
+                <PlaceholderLabel>{t('system:audit.filters.actions')}</PlaceholderLabel>
+                <ActionButtonFull
                   data-testid="audit-refresh-button"
                   icon={<ReloadOutlined />}
                   onClick={() => refetch()}
                   loading={isLoading}
-                  style={{ ...styles.touchTarget, width: '100%' }}
                 >
                   {t('common:actions.refresh')}
-                </Button>
-              </Space>
+                </ActionButtonFull>
+              </FilterField>
             </Col>
             <Col xs={24} sm={12} md={2}>
-              <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                <Text strong style={{ fontSize: '14px', color: 'transparent' }}>{t('system:audit.filters.export')}</Text>
+              <FilterField>
+                <PlaceholderLabel>{t('system:audit.filters.export')}</PlaceholderLabel>
                 <Tooltip 
                   title={
                     !filteredLogs || filteredLogs.length === 0 
@@ -363,20 +370,19 @@ const AuditPage = () => {
                     menu={{ items: exportMenuItems }}
                     disabled={!filteredLogs || filteredLogs.length === 0}
                   >
-                    <Button 
+                    <ActionButtonFull 
                       data-testid="audit-export-button"
                       icon={<DownloadOutlined />} 
-                      style={{ ...styles.touchTarget, width: '100%' }}
                     >
                       {t('common:actions.export')}
-                    </Button>
+                    </ActionButtonFull>
                   </Dropdown>
                 </Tooltip>
-              </Space>
+              </FilterField>
             </Col>
           </Row>
-        </Space>
-      </Card>
+          </Space>
+        </FilterCard>
 
       {/* Error Display */}
       {isError && (
@@ -386,22 +392,20 @@ const AuditPage = () => {
           type="error"
           closable
           showIcon
-          style={{ marginBottom: 16 }}
           action={
-            <Button
+            <CompactButton
               size="small"
-              style={styles.touchTargetSmall}
               onClick={() => refetch()}
               loading={isLoading}
             >
               {t('system:audit.errors.tryAgain')}
-            </Button>
+            </CompactButton>
           }
         />
       )}
 
       {/* Audit Logs Table */}
-      <Card data-testid="audit-table-card">
+      <TableCard data-testid="audit-table-card">
         <Table
           data-testid="audit-table"
           columns={columns}
@@ -442,7 +446,6 @@ const AuditPage = () => {
                     {!isError && (
                       <Button
                         type="link"
-                        style={styles.touchTarget}
                         onClick={() => {
                           setSearchText('');
                           setEntityFilter(undefined);
@@ -458,8 +461,9 @@ const AuditPage = () => {
             )
           }}
         />
-      </Card>
-    </div>
+      </TableCard>
+    </ContentStack>
+  </PageWrapper>
   );
 };
 

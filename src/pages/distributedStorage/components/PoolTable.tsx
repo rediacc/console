@@ -206,7 +206,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
         description={t('pools.noPools')}
         style={componentStyles.marginBottom.xl}
       >
-        <Button type="primary" onClick={onCreatePool} data-testid="ds-create-pool-empty" style={componentStyles.touchTarget}>
+        <Button type="primary" onClick={onCreatePool} data-testid="ds-create-pool-empty" style={componentStyles.controlSurface}>
           {t('pools.create')}
         </Button>
       </Empty>

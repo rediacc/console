@@ -37,7 +37,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, borderRadius } from '@/utils/styleConstants'
 import SandboxWarning from '@/components/common/SandboxWarning'
-import LocalhostModeIndicator from '@/components/common/LocalhostModeIndicator'
 import { useTelemetry } from '@/components/common/TelemetryProvider'
 import { featureFlags } from '@/config/featureFlags'
 
@@ -430,7 +429,6 @@ const MainLayout: React.FC = () => {
   return (
     <>
       <SandboxWarning />
-      <LocalhostModeIndicator />
       <Layout style={{ minHeight: '100vh' }} className={isNoScrollPage ? 'no-scroll-page' : ''}>
       <Sider
         trigger={null}
@@ -470,9 +468,10 @@ const MainLayout: React.FC = () => {
               
               const isSelected = location.pathname === item.key
               const padding = collapsed ? '10px 12px' : '10px 18px'
+              const itemKey = item.key || item.label
               const menuItemContent = (
                 <div
-                  key={item.key}
+                  key={itemKey}
                   onClick={() => {
                     // Track navigation click
                     trackUserAction('navigation', item.key, {
@@ -542,7 +541,7 @@ const MainLayout: React.FC = () => {
 
               if (collapsed) {
                 return (
-                  <Tooltip title={item.label} placement="right">
+                  <Tooltip key={itemKey} title={item.label} placement="right">
                     {menuItemContent}
                   </Tooltip>
                 )
