@@ -972,7 +972,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
               onClick: (e) => {
                 const target = e.target as HTMLElement;
                 // Don't trigger row click if clicking on buttons or dropdowns
-                if (target.closest('button') || target.closest('.ant-dropdown')) {
+                if (target.closest('button') || target.closest('.ant-dropdown') || target.closest('.ant-dropdown-menu')) {
                   return;
                 }
 
