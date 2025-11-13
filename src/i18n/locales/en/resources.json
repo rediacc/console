@@ -321,6 +321,8 @@
     "deleteOptionsMessage": "To delete this repository, you must either delete all forks first or promote one of them to become the new original repository.",
     "deleteRepository": "Delete Repository",
     "deleteSuccess": "Repository deleted successfully",
+    "destinationMachineNotFound": "Destination machine '{{machine}}' not found in team",
+    "destinationStorageNotFound": "Destination storage '{{storage}}' not found in team",
     "deviceName": "Device",
     "diskSpace": "Disk Space",
     "diskUsage": "Disk Usage",

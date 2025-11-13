@@ -10,6 +10,8 @@ import { useQueueAction } from '@/hooks/useQueueAction'
 import { Machine } from '@/types'
 import { useTeams } from '@/api/queries/teams'
 import { useRepositories, useCreateRepository, useDeleteRepository, usePromoteRepositoryToGrand, useUpdateRepositoryName } from '@/api/queries/repositories'
+import { useMachines } from '@/api/queries/machines'
+import { useStorage } from '@/api/queries/storage'
 import type { ColumnsType } from 'antd/es/table'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 import { LocalActionsMenu } from '../LocalActionsMenu'
@@ -196,6 +198,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const { executeAction, isExecuting } = useQueueAction()
   const { data: teams } = useTeams()
   const { data: teamRepositories = [], isLoading: repositoriesLoading, refetch: refetchRepositories } = useRepositories(machine.teamName)
+  const { data: teamMachines = [] } = useMachines(machine.teamName)
+  const { data: teamStorages = [] } = useStorage(machine.teamName)
   const createRepositoryMutation = useCreateRepository()
   const deleteRepositoryMutation = useDeleteRepository()
   const promoteRepositoryMutation = usePromoteRepositoryToGrand()
@@ -1102,9 +1106,18 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         // Now deploy to each target machine using the same repository credential
         for (const targetMachine of machinesArray) {
           try {
+            // Find the destination machine's vault data
+            const destinationMachine = teamMachines.find(m => m.machineName === targetMachine)
+            if (!destinationMachine) {
+              showMessage('error', t('resources:repositories.destinationMachineNotFound', { machine: targetMachine }))
+              continue
+            }
+
             // Build queue vault for this specific destination
             const deployParams = {
               ...functionData.params,
+              // Convert machines array to comma-separated string for bash script
+              machines: machinesArray.join(','),
               to: targetMachine,
               dest: newRepo.repositoryGuid,
               repo: repositoryData.repositoryGuid,
@@ -1121,6 +1134,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               description: `${functionData.description} → ${targetMachine}`,
               addedVia: 'machine-repository-list',
               machineVault: machine.vaultContent || '{}',
+              destinationMachineVault: destinationMachine.vaultContent || '{}',
               repositoryGuid,
               repositoryVault,
               repositoryLoopbackIp: newRepo.repoLoopbackIp,
@@ -1181,9 +1195,18 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
         for (const targetStorage of storagesArray) {
           try {
+            // Find the destination storage's vault data
+            const destinationStorage = teamStorages.find(s => s.storageName === targetStorage)
+            if (!destinationStorage) {
+              showMessage('error', t('resources:repositories.destinationStorageNotFound', { storage: targetStorage }))
+              continue
+            }
+
             // Build queue vault for this specific storage
             const backupParams = {
               ...functionData.params,
+              // Convert storages array to comma-separated string for bash script
+              storages: storagesArray.join(','),
               to: targetStorage,
               repo: repositoryData.repositoryGuid,
               grand: repositoryData.grandGuid || repositoryData.repositoryGuid || ''
@@ -1199,6 +1222,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               description: `${functionData.description} → ${targetStorage}`,
               addedVia: 'machine-repository-list',
               machineVault: machine.vaultContent || '{}',
+              destinationStorageVault: destinationStorage.vaultContent || '{}',
               repositoryGuid,
               repositoryVault,
               repositoryLoopbackIp: repositoryData.repoLoopbackIp,

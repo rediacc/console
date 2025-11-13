@@ -355,46 +355,6 @@
         }
       }
     },
-    "plugin": {
-      "name": "plugin",
-      "category": "repository",
-      "requirements": {
-        "machine": true,
-        "team": true,
-        "repository": true,
-        "plugin": true
-      },
-      "params": {
-        "repo": {
-          "type": "string",
-          "required": true
-        },
-        "plugin": {
-          "type": "string",
-          "required": true
-        }
-      }
-    },
-    "plugout": {
-      "name": "plugout",
-      "category": "repository",
-      "requirements": {
-        "machine": true,
-        "team": true,
-        "repository": true,
-        "plugin": true
-      },
-      "params": {
-        "repo": {
-          "type": "string",
-          "required": true
-        },
-        "plugin": {
-          "type": "string",
-          "required": true
-        }
-      }
-    },
     "apply_template": {
       "name": "apply_template",
       "category": "repository",
@@ -681,38 +641,6 @@
           "required": false,
           "default": "json",
           "options": ["json", "text"]
-        }
-      }
-    },
-    "service_list": {
-      "name": "service_list",
-      "category": "repository",
-      "showInMenu": false,
-      "requirements": {
-        "machine": true,
-        "team": true,
-        "repository": true
-      },
-      "params": {
-        "repo": {
-          "type": "string",
-          "required": true
-        }
-      }
-    },
-    "container_list": {
-      "name": "container_list",
-      "category": "repository",
-      "showInMenu": false,
-      "requirements": {
-        "machine": true,
-        "team": true,
-        "repository": true
-      },
-      "params": {
-        "repo": {
-          "type": "string",
-          "required": true
         }
       }
     },
