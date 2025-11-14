@@ -106,11 +106,19 @@
     "machines": "机器",
     "mainNavigation": "主导航",
     "marketplace": "Marketplace",
+    "organization": "组织",
+    "organizationAccess": "使用权",
+    "organizationTeams": "团队",
+    "organizationUsers": "用户",
     "queue": "队列",
+    "settings": "设置",
+    "settingsCompany": "公司",
+    "settingsInfrastructure": "基础设施",
+    "settingsProfile": "轮廓",
     "storage": "存储",
-    "system": "系统",
     "storageCloud": "Cloud",
-    "storageDistributed": "Distributed"
+    "storageDistributed": "Distributed",
+    "system": "系统"
   },
   "nestedObjectEditor": {
     "Active": "激活",

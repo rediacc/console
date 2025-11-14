@@ -6,6 +6,26 @@
     "title": "会社の設定"
   },
   "personal": {
+    "changePassword": {
+      "confirmPasswordLabel": "新しいパスワードの確認",
+      "confirmPasswordMismatch": "パスワードが一致しません",
+      "confirmPasswordPlaceholder": "新しいパスワードを確認します",
+      "confirmPasswordRequired": "新しいパスワードを確認してください",
+      "newPasswordLabel": "新しいパスワード",
+      "newPasswordMin": "パスワードは8文字以上である必要があります",
+      "newPasswordPattern": "パスワードには大文字、小文字、数字、特殊文字が含まれている必要があります",
+      "newPasswordPlaceholder": "新しいパスワードを入力してください",
+      "newPasswordRequired": "新しいパスワードを入力してください",
+      "requirement1": "少なくとも 8 文字の長さ",
+      "requirement2": "大文字と小文字が含まれています",
+      "requirement3": "少なくとも 1 つの数字が含まれています",
+      "requirement4": "少なくとも 1 つの特殊文字が含まれています",
+      "requirementsTitle": "パスワード要件",
+      "submit": "パスワードを変更する",
+      "successContent": "パスワードが変更されました。 {{秒}} 秒後にログアウトされます...",
+      "successTitle": "パスワードが正常に変更されました",
+      "title": "パスワードを変更する"
+    },
     "configureVault": "ボールトの構成",
     "description": "個人用ボルト設定を構成してエクスペリエンスをカスタマイズします。",
     "modalTitle": "ユーザーボルトの構成",

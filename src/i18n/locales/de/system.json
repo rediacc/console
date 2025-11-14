@@ -1,4 +1,8 @@
 {
+  "accessControl": {
+    "expertOnlyMessage": "Wechseln Sie in den Expertenmodus, um diese Seite anzuzeigen.",
+    "expertOnlyTitle": "Expertenmodus erforderlich"
+  },
   "actions": {
     "addMember": "Mitglied hinzufügen",
     "addPermission": "Berechtigung hinzufügen",

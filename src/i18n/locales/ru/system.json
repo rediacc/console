@@ -1,4 +1,8 @@
 {
+  "accessControl": {
+    "expertOnlyMessage": "Переключитесь в экспертный режим, чтобы просмотреть эту страницу.",
+    "expertOnlyTitle": "Требуется экспертный режим"
+  },
   "actions": {
     "addMember": "Добавить участника",
     "addPermission": "Добавить разрешение",

@@ -1,4 +1,8 @@
 {
+  "accessControl": {
+    "expertOnlyMessage": "Cambie al modo experto para ver esta página.",
+    "expertOnlyTitle": "Modo experto requerido"
+  },
   "actions": {
     "addMember": "Agregar miembro",
     "addPermission": "Agregar permiso",

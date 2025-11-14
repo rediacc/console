@@ -6,6 +6,26 @@
     "title": "Configuración de la empresa"
   },
   "personal": {
+    "changePassword": {
+      "confirmPasswordLabel": "Confirmar nueva contraseña",
+      "confirmPasswordMismatch": "Las contraseñas no coinciden",
+      "confirmPasswordPlaceholder": "Confirmar nueva contraseña",
+      "confirmPasswordRequired": "Por favor confirma tu nueva contraseña",
+      "newPasswordLabel": "Nueva contraseña",
+      "newPasswordMin": "La contraseña debe tener al menos 8 caracteres",
+      "newPasswordPattern": "La contraseña debe contener mayúsculas, minúsculas, números y caracteres especiales.",
+      "newPasswordPlaceholder": "Ingrese una nueva contraseña",
+      "newPasswordRequired": "Por favor ingrese su nueva contraseña",
+      "requirement1": "Al menos 8 caracteres",
+      "requirement2": "Contiene letras mayúsculas y minúsculas.",
+      "requirement3": "Contiene al menos un número",
+      "requirement4": "Contiene al menos un carácter especial.",
+      "requirementsTitle": "Requisitos de contraseña",
+      "submit": "Cambiar la contraseña",
+      "successContent": "Su contraseña ha sido cambiada. Cerrarás tu sesión en {{segundos}} segundos...",
+      "successTitle": "Contraseña cambiada exitosamente",
+      "title": "Cambiar la contraseña"
+    },
     "configureVault": "Configurar bóveda",
     "description": "Configure los ajustes de su bóveda personal para personalizar su experiencia.",
     "modalTitle": "Configurar la bóveda de usuario",
