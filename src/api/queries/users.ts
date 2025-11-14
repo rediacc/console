@@ -3,6 +3,7 @@ import apiClient from '@/api/client'
 import { createMutation } from '@/api/utils/mutationFactory'
 import { hashPassword } from '@/utils/auth'
 import { showMessage } from '@/utils/messages'
+import i18n from '@/i18n/config'
 
 export interface User {
   userEmail: string
@@ -65,6 +66,7 @@ export const useCreateUser = createMutation<{ email: string; password: string }>
     return {
       newUserEmail: data.email,
       newUserHash: passwordHash,
+      languagePreference: i18n.language || 'en',
     }
   }
 })
@@ -105,6 +107,16 @@ export const useUpdateUserEmail = createMutation<{ currentUserEmail: string; new
   invalidateKeys: ['users'],
   successMessage: (vars) => `Email updated to "${vars.newUserEmail}"`,
   errorMessage: 'Failed to update email'
+})
+
+// Update user language preference
+export const useUpdateUserLanguage = createMutation<string>({
+  endpoint: '/UpdateUserLanguage',
+  method: 'put',
+  invalidateKeys: [],
+  successMessage: () => 'Language preference saved',
+  errorMessage: 'Failed to save language preference',
+  transformData: (preferredLanguage) => ({ preferredLanguage })
 })
 
 // Get permission groups

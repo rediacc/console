@@ -2,10 +2,13 @@ import React from 'react';
 import { Select, Button, Dropdown } from 'antd';
 import { GlobalOutlined } from '@/utils/optimizedIcons';
 import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { useComponentStyles } from '@/hooks/useComponentStyles';
+import { useUpdateUserLanguage } from '@/api/queries/users';
+import type { RootState } from '@/store';
 const { Option } = Select;
 
 interface Language {
@@ -33,6 +36,8 @@ interface LanguageSelectorProps {
 const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false }) => {
   const { i18n, t } = useTranslation('common');
   const styles = useComponentStyles();
+  const updateLanguageMutation = useUpdateUserLanguage();
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
 
   const handleChange = (value: string) => {
     i18n.changeLanguage(value);
@@ -46,6 +51,11 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false })
       es: 'es'
     };
     dayjs.locale(dayjsLocaleMap[value] || 'en');
+
+    // Save to backend if authenticated
+    if (isAuthenticated) {
+      updateLanguageMutation.mutate(value);
+    }
   };
 
   const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];

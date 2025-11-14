@@ -105,11 +105,19 @@
     "machines": "آلات",
     "mainNavigation": "الملاحة الرئيسية",
     "marketplace": "السوق",
+    "organization": "منظمة",
+    "organizationAccess": "وصول",
+    "organizationTeams": "فرق",
+    "organizationUsers": "المستخدمين",
     "queue": "طابور",
+    "settings": "إعدادات",
+    "settingsCompany": "شركة",
+    "settingsInfrastructure": "بنية تحتية",
+    "settingsProfile": "حساب تعريفي",
     "storage": "تخزين",
-    "system": "نظام",
-    "storageCloud": "Cloud",
-    "storageDistributed": "Distributed"
+    "storageCloud": "سحاب",
+    "storageDistributed": "وزعت",
+    "system": "نظام"
   },
   "nestedObjectEditor": {
     "Active": "نشيط",

@@ -1,4 +1,8 @@
 {
+  "accessControl": {
+    "expertOnlyMessage": "Bu sayfayı görüntülemek için uzman moduna geçin.",
+    "expertOnlyTitle": "Uzman Modu Gerekli"
+  },
   "actions": {
     "addMember": "Üye Ekle",
     "addPermission": "İzin Ekle",

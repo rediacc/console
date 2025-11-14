@@ -105,11 +105,19 @@
     "machines": "Maschinen",
     "mainNavigation": "Hauptnavigation",
     "marketplace": "Marktplatz",
+    "organization": "Organisation",
+    "organizationAccess": "Zugang",
+    "organizationTeams": "Mannschaften",
+    "organizationUsers": "Benutzer",
     "queue": "Warteschlange",
+    "settings": "Einstellungen",
+    "settingsCompany": "Unternehmen",
+    "settingsInfrastructure": "Infrastruktur",
+    "settingsProfile": "Profil",
     "storage": "Speicher",
-    "system": "System",
     "storageCloud": "Cloud",
-    "storageDistributed": "Distributed"
+    "storageDistributed": "Distributed",
+    "system": "System"
   },
   "nestedObjectEditor": {
     "Active": "Aktiv",

@@ -146,7 +146,7 @@ const LoginPage: React.FC = () => {
   const [form] = Form.useForm<LoginForm>()
   const [twoFAForm] = Form.useForm()
   const { theme } = useTheme()
-  const { t } = useTranslation(['auth', 'common'])
+  const { t, i18n } = useTranslation(['auth', 'common'])
   const verifyTFAMutation = useVerifyTFA()
   const { trackUserAction } = useTelemetry()
 
@@ -353,9 +353,15 @@ const LoginPage: React.FC = () => {
         await masterPasswordService.setMasterPassword(values.masterPassword)
       }
 
+      // Apply user's preferred language if available
+      const preferredLanguage = userData.preferredLanguage
+      if (preferredLanguage && preferredLanguage !== i18n.language) {
+        await i18n.changeLanguage(preferredLanguage)
+      }
+
       // Update Redux store with all relevant data (token and masterPassword are now stored separately for security)
       dispatch(loginSuccess({
-        user: { email: values.email, company: companyName },
+        user: { email: values.email, company: companyName, preferredLanguage },
         company: companyName,
         vaultCompany: vaultCompany,
         companyEncryptionEnabled: companyHasEncryption,
@@ -417,9 +423,15 @@ const LoginPage: React.FC = () => {
           await masterPasswordService.setMasterPassword(masterPassword)
         }
 
+        // Apply user's preferred language if available
+        const preferredLanguage = userData.preferredLanguage
+        if (preferredLanguage && preferredLanguage !== i18n.language) {
+          await i18n.changeLanguage(preferredLanguage)
+        }
+
         // Update Redux store
         dispatch(loginSuccess({
-          user: { email, company: companyName },
+          user: { email, company: companyName, preferredLanguage },
           company: companyName,
           vaultCompany: vaultCompany,
           companyEncryptionEnabled: companyHasEncryption,

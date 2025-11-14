@@ -1,4 +1,8 @@
 {
+  "accessControl": {
+    "expertOnlyMessage": "このページを表示するには、エキスパート モードに切り替えてください。",
+    "expertOnlyTitle": "エキスパートモードが必要です"
+  },
   "actions": {
     "addMember": "メンバーを追加",
     "addPermission": "権限の追加",

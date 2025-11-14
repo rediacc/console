@@ -6,6 +6,26 @@
     "title": "Paramètres de l'entreprise"
   },
   "personal": {
+    "changePassword": {
+      "confirmPasswordLabel": "Confirmer le nouveau mot de passe",
+      "confirmPasswordMismatch": "Les mots de passe ne correspondent pas",
+      "confirmPasswordPlaceholder": "Confirmer le nouveau mot de passe",
+      "confirmPasswordRequired": "Veuillez confirmer votre nouveau mot de passe",
+      "newPasswordLabel": "Nouveau mot de passe",
+      "newPasswordMin": "Le mot de passe doit comporter au moins 8 caractères",
+      "newPasswordPattern": "Le mot de passe doit contenir des majuscules, des minuscules, des chiffres et des caractères spéciaux",
+      "newPasswordPlaceholder": "Entrez le nouveau mot de passe",
+      "newPasswordRequired": "Veuillez entrer votre nouveau mot de passe",
+      "requirement1": "Au moins 8 caractères",
+      "requirement2": "Contient des lettres majuscules et minuscules",
+      "requirement3": "Contient au moins un chiffre",
+      "requirement4": "Contient au moins un caractère spécial",
+      "requirementsTitle": "Exigences de mot de passe",
+      "submit": "Changer le mot de passe",
+      "successContent": "Votre mot de passe a été modifié. Vous serez déconnecté dans {{seconds}} secondes...",
+      "successTitle": "Mot de passe modifié avec succès",
+      "title": "Changer le mot de passe"
+    },
     "configureVault": "Configurer le coffre-fort",
     "description": "Configurez les paramètres de votre coffre-fort personnel pour personnaliser votre expérience.",
     "modalTitle": "Configurer le coffre-fort utilisateur",

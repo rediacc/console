@@ -105,11 +105,19 @@
     "machines": "Машины",
     "mainNavigation": "Основная навигация",
     "marketplace": "Торговая площадка",
+    "organization": "Организация",
+    "organizationAccess": "Доступ",
+    "organizationTeams": "Команды",
+    "organizationUsers": "Пользователи",
     "queue": "Очередь",
+    "settings": "Настройки",
+    "settingsCompany": "Компания",
+    "settingsInfrastructure": "Инфраструктура",
+    "settingsProfile": "Профиль",
     "storage": "Хранилище",
-    "system": "Система",
     "storageCloud": "Cloud",
-    "storageDistributed": "Distributed"
+    "storageDistributed": "Distributed",
+    "system": "Система"
   },
   "nestedObjectEditor": {
     "Active": "Активный",

@@ -105,11 +105,19 @@
     "machines": "Makineler",
     "mainNavigation": "Ana gezinme",
     "marketplace": "Pazar yeri",
+    "organization": "Organizasyon",
+    "organizationAccess": "Erişim",
+    "organizationTeams": "Takımlar",
+    "organizationUsers": "Kullanıcılar",
     "queue": "Sıra",
+    "settings": "Ayarlar",
+    "settingsCompany": "Şirket",
+    "settingsInfrastructure": "Altyapı",
+    "settingsProfile": "Profil",
     "storage": "Depolama",
-    "system": "Sistem",
     "storageCloud": "Cloud",
-    "storageDistributed": "Distributed"
+    "storageDistributed": "Distributed",
+    "system": "Sistem"
   },
   "nestedObjectEditor": {
     "Active": "Aktif",

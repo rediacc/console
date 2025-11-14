@@ -6,6 +6,26 @@
     "title": "公司设置"
   },
   "personal": {
+    "changePassword": {
+      "confirmPasswordLabel": "确认新密码",
+      "confirmPasswordMismatch": "密码不匹配",
+      "confirmPasswordPlaceholder": "确认新密码",
+      "confirmPasswordRequired": "请确认您的新密码",
+      "newPasswordLabel": "新密码",
+      "newPasswordMin": "密码长度必须至少为 8 个字符",
+      "newPasswordPattern": "密码必须包含大写、小写、数字和特殊字符",
+      "newPasswordPlaceholder": "输入新密码",
+      "newPasswordRequired": "请输入您的新密码",
+      "requirement1": "至少 8 个字符长",
+      "requirement2": "包含大写和小写字母",
+      "requirement3": "至少包含一个数字",
+      "requirement4": "至少包含一个特殊字符",
+      "requirementsTitle": "密码要求",
+      "submit": "更改密码",
+      "successContent": "您的密码已更改。 您将在 {{seconds}} 秒后注销...",
+      "successTitle": "密码修改成功",
+      "title": "更改密码"
+    },
     "configureVault": "配置保险库",
     "description": "配置您的个人保险库设置以自定义您的体验。",
     "modalTitle": "配置用户保险库",

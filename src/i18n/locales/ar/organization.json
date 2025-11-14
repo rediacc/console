@@ -1,78 +1,78 @@
 {
-  "users": {
-    "heading": "Users",
-    "title": "Users",
-    "subtitle": "Manage users and their permissions",
-    "searchPlaceholder": "Search users...",
-    "status": {
-      "active": "Active",
-      "inactive": "Inactive"
-    },
-    "permissionGroups": {
-      "none": "No Group"
-    },
-    "lastActive": {
-      "never": "Never"
-    },
-    "form": {
-      "emailLabel": "Email",
-      "passwordLabel": "Password",
-      "passwordPlaceholder": "Enter password"
-    },
+  "access": {
+    "heading": "التحكم في الوصول",
     "modals": {
-      "createTitle": "Create User",
-      "assignTitle": "Assign Permissions",
-      "permissionGroupLabel": "Permission Group",
-      "permissionGroupPlaceholder": "Select permission group",
-      "usersLabel": "users",
-      "permissionsLabel": "permissions"
+      "addPermissionButton": "إضافة إذن",
+      "addPermissionsTab": "إضافة أذونات",
+      "assignUserTitle": "تعيين المستخدم",
+      "assignUserTo": "إلى {{مجموعة}}",
+      "createGroupTitle": "إنشاء مجموعة الأذونات",
+      "currentPermissionsTab": "الأذونات الحالية",
+      "deleteGroupDescription": "هل أنت متأكد أنك تريد حذف المجموعة \"{{group}}\"؟",
+      "deleteGroupTitle": "حذف مجموعة الأذونات",
+      "groupNameRequired": "الرجاء إدخال اسم المجموعة",
+      "groupPlaceholder": "أدخل اسم المجموعة",
+      "managePermissionsTitle": "إدارة الأذونات",
+      "noPermissions": "لم يتم تعيين أذونات",
+      "permissionPlaceholder": "حدد إذنًا للإضافة",
+      "userPlaceholder": "حدد المستخدم"
+    },
+    "permissions": {
+      "searchPlaceholder": "البحث في مجموعات الأذونات...",
+      "subtitle": "إدارة مجموعات الأذونات ومهامها",
+      "title": "مجموعات الأذونات"
+    },
+    "tabs": {
+      "permissions": "الأذونات",
+      "sessions": "الجلسات"
     }
   },
   "teams": {
-    "heading": "Teams",
-    "title": "Teams",
-    "subtitle": "Manage teams and their members",
-    "searchPlaceholder": "Search teams...",
+    "heading": "فرق",
     "manageMembers": {
-      "title": "Manage Team Members",
-      "currentTab": "Current Members",
-      "addTab": "Add Member",
-      "removeTitle": "Remove Team Member",
-      "removeDescription": "Are you sure you want to remove \"{{email}}\" from this team?",
-      "removeButton": "Remove",
-      "memberStatus": "Member",
-      "accessStatus": "Has Access",
-      "pendingStatus": "Pending",
-      "empty": "No members in this team",
-      "selectUser": "Select user"
-    }
-  },
-  "access": {
-    "heading": "Access Control",
-    "tabs": {
-      "permissions": "Permissions",
-      "sessions": "Sessions"
+      "accessStatus": "لديه حق الوصول",
+      "addTab": "إضافة عضو",
+      "currentTab": "الأعضاء الحاليين",
+      "empty": "لا يوجد أعضاء في هذا الفريق",
+      "memberStatus": "عضو",
+      "pendingStatus": "قيد الانتظار",
+      "removeButton": "يزيل",
+      "removeDescription": "هل أنت متأكد أنك تريد إزالة \"{{email}}\" من هذا الفريق؟",
+      "removeTitle": "إزالة عضو الفريق",
+      "selectUser": "حدد المستخدم",
+      "title": "إدارة أعضاء الفريق"
     },
-    "permissions": {
-      "title": "Permission Groups",
-      "subtitle": "Manage permission groups and their assignments",
-      "searchPlaceholder": "Search permission groups..."
+    "searchPlaceholder": "فرق البحث...",
+    "subtitle": "إدارة الفرق وأعضائها",
+    "title": "فرق"
+  },
+  "users": {
+    "form": {
+      "emailLabel": "بريد إلكتروني",
+      "passwordLabel": "كلمة المرور",
+      "passwordPlaceholder": "أدخل كلمة المرور"
+    },
+    "heading": "المستخدمين",
+    "lastActive": {
+      "never": "أبداً"
     },
     "modals": {
-      "createGroupTitle": "Create Permission Group",
-      "groupPlaceholder": "Enter group name",
-      "groupNameRequired": "Please enter a group name",
-      "managePermissionsTitle": "Manage Permissions",
-      "currentPermissionsTab": "Current Permissions",
-      "addPermissionsTab": "Add Permissions",
-      "noPermissions": "No permissions assigned",
-      "permissionPlaceholder": "Select permission to add",
-      "addPermissionButton": "Add Permission",
-      "assignUserTitle": "Assign User",
-      "assignUserTo": "to {{group}}",
-      "userPlaceholder": "Select user",
-      "deleteGroupTitle": "Delete Permission Group",
-      "deleteGroupDescription": "Are you sure you want to delete group \"{{group}}\"?"
-    }
+      "assignTitle": "تعيين الأذونات",
+      "createTitle": "إنشاء مستخدم",
+      "permissionGroupLabel": "مجموعة الأذونات",
+      "permissionGroupPlaceholder": "حدد مجموعة الأذونات",
+      "permissionsLabel": "الأذونات",
+      "usersLabel": "المستخدمين"
+    },
+    "permissionGroups": {
+      "none": "لا توجد مجموعة"
+    },
+    "searchPlaceholder": "البحث عن المستخدمين...",
+    "status": {
+      "active": "نشيط",
+      "inactive": "غير نشط"
+    },
+    "subtitle": "إدارة المستخدمين وأذوناتهم",
+    "title": "المستخدمين"
   }
 }

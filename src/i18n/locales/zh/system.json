@@ -1,4 +1,8 @@
 {
+  "accessControl": {
+    "expertOnlyMessage": "切换到专家模式查看此页面。",
+    "expertOnlyTitle": "需要专家模式"
+  },
   "actions": {
     "addMember": "添加会员",
     "addPermission": "添加权限",

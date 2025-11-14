@@ -1,4 +1,8 @@
 {
+  "accessControl": {
+    "expertOnlyMessage": "قم بالتبديل إلى وضع الخبراء لعرض هذه الصفحة.",
+    "expertOnlyTitle": "مطلوب وضع الخبراء"
+  },
   "actions": {
     "addMember": "إضافة عضو",
     "addPermission": "إضافة إذن",

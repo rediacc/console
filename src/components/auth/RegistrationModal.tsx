@@ -56,7 +56,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   autoSubmit = false,
   onRegistrationComplete 
 }) => {
-  const { t } = useTranslation(['auth', 'common'])
+  const { t, i18n } = useTranslation(['auth', 'common'])
   const styles = useFormStyles()
   const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -131,7 +131,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       const response = await axiosClient.post('/CreateNewCompany', {
         companyName: values.companyName,
         captchaToken: hCaptchaToken,
-        userEmailAddress: values.email
+        userEmailAddress: values.email,
+        languagePreference: i18n.language || 'en'
       }, {
         headers: {
           'Rediacc-UserEmail': values.email,

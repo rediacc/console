@@ -4,6 +4,7 @@ interface User {
   email: string
   company?: string
   role?: string
+  preferredLanguage?: string
 }
 
 interface AuthState {
