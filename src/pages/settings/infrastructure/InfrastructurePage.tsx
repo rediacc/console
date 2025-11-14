@@ -42,12 +42,12 @@ import {
   InfrastructureSectionHeading,
 } from './styles'
 import {
-  RegionsSection,
   RegionsListWrapper,
   ListTitleRow,
   ListTitle,
   ListSubtitle,
   CardHeaderRow,
+  CardTitle,
   SecondaryText,
   PaddedEmpty,
   CenteredState,

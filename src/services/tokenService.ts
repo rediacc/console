@@ -140,4 +140,4 @@ export const tokenService = TokenService.getInstance()
 // Helper functions for backward compatibility
 export const getAuthToken = (): Promise<string | null> => tokenService.getToken()
 export const setAuthToken = (token: string): Promise<void> => tokenService.setToken(token)
-export const clearAuthToken = (): void => tokenService.clearToken()
+export const clearAuthToken = (): Promise<void> => tokenService.clearToken()
