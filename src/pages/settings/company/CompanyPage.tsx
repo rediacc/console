@@ -122,7 +122,7 @@ const CompanyPage: React.FC = () => {
 
   useEffect(() => {
     if (masterPasswordModalOpen) {
-      // eslint-disable-next-line react-compiler/react-compiler
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMasterPasswordOperation(currentMasterPassword ? 'update' : 'create')
     }
   }, [masterPasswordModalOpen, currentMasterPassword])

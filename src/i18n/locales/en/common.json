@@ -114,7 +114,9 @@
     "settings": "Settings",
     "settingsProfile": "Profile",
     "settingsCompany": "Company",
-    "settingsInfrastructure": "Infrastructure"
+    "settingsInfrastructure": "Infrastructure",
+    "storageCloud": "Cloud",
+    "storageDistributed": "Distributed"
   },
   "nestedObjectEditor": {
     "Active": "Active",

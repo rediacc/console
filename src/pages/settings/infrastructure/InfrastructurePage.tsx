@@ -111,7 +111,7 @@ const InfrastructurePage: React.FC = () => {
 
   useEffect(() => {
     if (regionsList.length > 0 && !selectedRegion) {
-      // eslint-disable-next-line react-compiler/react-compiler
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedRegion(regionsList[0].regionName)
     }
   }, [regionsList, selectedRegion])

@@ -107,7 +107,9 @@
     "marketplace": "市場",
     "queue": "列",
     "storage": "ストレージ",
-    "system": "システム"
+    "system": "システム",
+    "storageCloud": "Cloud",
+    "storageDistributed": "Distributed"
   },
   "nestedObjectEditor": {
     "Active": "アクティブ",

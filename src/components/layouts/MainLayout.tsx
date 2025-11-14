@@ -209,6 +209,22 @@ const MainLayout: React.FC = () => {
       label: t('navigation.storage'),
       showInSimple: false,
       'data-testid': 'main-nav-storage',
+      children: [
+        {
+          key: '/storage',
+          label: t('navigation.storageCloud'),
+          showInSimple: false,
+          'data-testid': 'sub-nav-storage-cloud',
+        },
+        {
+          key: '/distributed-storage',
+          label: t('navigation.storageDistributed'),
+          showInSimple: false,
+          requiresPlan: ['ENTERPRISE', 'BUSINESS', 'Enterprise', 'Business'],
+          featureFlag: 'distributedStorage',
+          'data-testid': 'sub-nav-storage-distributed',
+        },
+      ],
     },
     {
       key: '/credentials',
@@ -216,15 +232,6 @@ const MainLayout: React.FC = () => {
       label: t('navigation.credentials'),
       showInSimple: false,
       'data-testid': 'main-nav-credentials',
-    },
-    {
-      key: '/distributed-storage',
-      icon: <HddOutlined />,
-      label: t('navigation.distributedStorage'),
-      showInSimple: false,
-      requiresPlan: ['ENTERPRISE', 'BUSINESS', 'Enterprise', 'Business'],
-      featureFlag: 'distributedStorage',
-      'data-testid': 'main-nav-distributed-storage',
     },
     {
       key: '/queue',
@@ -365,7 +372,7 @@ const MainLayout: React.FC = () => {
       .filter(Boolean) as MenuConfig[]
   }
 
-  // eslint-disable-next-line react-compiler/react-compiler
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const menuItems = useMemo(() => buildMenuItems(uiMode), [uiMode, companyData])
 
   const flattenMenuRoutes = (items: MenuConfig[]) => {
@@ -378,7 +385,7 @@ const MainLayout: React.FC = () => {
       .filter(item => item.children?.some(child => location.pathname.startsWith(child.key)))
       .map(item => item.key)
 
-    // eslint-disable-next-line react-compiler/react-compiler
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setExpandedParentKeys(activeParents)
   }, [location.pathname, menuItems])
 
