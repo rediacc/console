@@ -107,7 +107,9 @@
     "marketplace": "Pazar yeri",
     "queue": "Sıra",
     "storage": "Depolama",
-    "system": "Sistem"
+    "system": "Sistem",
+    "storageCloud": "Cloud",
+    "storageDistributed": "Distributed"
   },
   "nestedObjectEditor": {
     "Active": "Aktif",

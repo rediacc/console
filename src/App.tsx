@@ -28,12 +28,16 @@ const MachineRepositoriesPage = lazy(() => import('@/pages/resources/MachineRepo
 const RepositoryContainersPage = lazy(() => import('@/pages/resources/RepositoryContainersPage'))
 const DistributedStoragePage = lazy(() => import('@/pages/distributedStorage/DistributedStoragePage'))
 const QueuePage = lazy(() => import('@/pages/queue/QueuePage'))
-const SystemPage = lazy(() => import('@/pages/system/SystemPage'))
 const ArchitecturePage = lazy(() => import('@/pages/architecture/ArchitecturePage'))
 const AuditPage = lazy(() => import('@/pages/audit/AuditPage'))
-const MarketplacePage = lazy(() => import('@/pages/marketplace/MarketplacePage'))
 const CredentialsPage = lazy(() => import('@/pages/credentials/CredentialsPage'))
 const StoragePage = lazy(() => import('@/pages/storage/StoragePage'))
+const UsersPage = lazy(() => import('@/pages/organization/users/UsersPage'))
+const TeamsPage = lazy(() => import('@/pages/organization/teams/TeamsPage'))
+const AccessPage = lazy(() => import('@/pages/organization/access/AccessPage'))
+const ProfilePage = lazy(() => import('@/pages/settings/profile/ProfilePage'))
+const CompanyPage = lazy(() => import('@/pages/settings/company/CompanyPage'))
+const InfrastructurePage = lazy(() => import('@/pages/settings/infrastructure/InfrastructurePage'))
 
 // Loading component
 const PageLoader: React.FC = () => {
@@ -159,6 +163,44 @@ const AppContent: React.FC = () => {
                   </Suspense>
                 } />
 
+                {/* Organization redirects */}
+                <Route path="/organization" element={<Navigate to="/organization/users" replace />} />
+                <Route path="/settings" element={<Navigate to="/settings/profile" replace />} />
+
+                {/* Organization */}
+                <Route path="/organization/users" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <UsersPage />
+                  </Suspense>
+                } />
+                <Route path="/organization/teams" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <TeamsPage />
+                  </Suspense>
+                } />
+                <Route path="/organization/access" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <AccessPage />
+                  </Suspense>
+                } />
+
+                {/* Settings */}
+                <Route path="/settings/profile" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ProfilePage />
+                  </Suspense>
+                } />
+                <Route path="/settings/company" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <CompanyPage />
+                  </Suspense>
+                } />
+                <Route path="/settings/infrastructure" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <InfrastructurePage />
+                  </Suspense>
+                } />
+
                 {/* Machine Repositories */}
                 <Route path="/machines/:machineName/repositories" element={
                   <Suspense fallback={<PageLoader />}>
@@ -180,24 +222,10 @@ const AppContent: React.FC = () => {
                   </Suspense>
                 } />
 
-                {/* Marketplace */}
-                <Route path="/marketplace" element={
-                  <Suspense fallback={<PageLoader />}>
-                    <MarketplacePage />
-                  </Suspense>
-                } />
-
                 {/* Queue */}
                 <Route path="/queue" element={
                   <Suspense fallback={<PageLoader />}>
                     <QueuePage />
-                  </Suspense>
-                } />
-
-                {/* System (Users & Permissions) */}
-                <Route path="/system" element={
-                  <Suspense fallback={<PageLoader />}>
-                    <SystemPage />
                   </Suspense>
                 } />
 

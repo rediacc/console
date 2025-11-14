@@ -107,7 +107,9 @@
     "marketplace": "Торговая площадка",
     "queue": "Очередь",
     "storage": "Хранилище",
-    "system": "Система"
+    "system": "Система",
+    "storageCloud": "Cloud",
+    "storageDistributed": "Distributed"
   },
   "nestedObjectEditor": {
     "Active": "Активный",

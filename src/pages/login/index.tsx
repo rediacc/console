@@ -25,7 +25,6 @@ import {
   getVaultProtocolMessage 
 } from '@/utils/vaultProtocol'
 import { masterPasswordService } from '@/services/masterPasswordService'
-import { tokenService } from '@/services/tokenService'
 import { useTelemetry } from '@/components/common/TelemetryProvider'
 import { useVerifyTFA } from '@/api/queries/twoFactor'
 import RegistrationModal from '@/components/auth/RegistrationModal'

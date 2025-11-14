@@ -107,7 +107,9 @@
     "marketplace": "Mercado",
     "queue": "Cola",
     "storage": "Almacenamiento",
-    "system": "Sistema"
+    "system": "Sistema",
+    "storageCloud": "Cloud",
+    "storageDistributed": "Distributed"
   },
   "nestedObjectEditor": {
     "Active": "Activa",

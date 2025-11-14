@@ -107,7 +107,9 @@
     "marketplace": "Marktplatz",
     "queue": "Warteschlange",
     "storage": "Speicher",
-    "system": "System"
+    "system": "System",
+    "storageCloud": "Cloud",
+    "storageDistributed": "Distributed"
   },
   "nestedObjectEditor": {
     "Active": "Aktiv",

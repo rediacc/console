@@ -103,12 +103,20 @@
     "distributedStorage": "Distributed Storage",
     "logout": "Logout",
     "mainNavigation": "Main navigation",
-    "marketplace": "Marketplace",
     "queue": "Queue",
     "machines": "Machines",
     "credentials": "Credentials",
     "storage": "Storage",
-    "system": "System"
+    "organization": "Organization",
+    "organizationUsers": "Users",
+    "organizationTeams": "Teams",
+    "organizationAccess": "Access",
+    "settings": "Settings",
+    "settingsProfile": "Profile",
+    "settingsCompany": "Company",
+    "settingsInfrastructure": "Infrastructure",
+    "storageCloud": "Cloud",
+    "storageDistributed": "Distributed"
   },
   "nestedObjectEditor": {
     "Active": "Active",

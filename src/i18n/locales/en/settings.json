@@ -9,7 +9,27 @@
     "configureVault": "Configure Vault",
     "description": "Configure your personal vault settings to customize your experience.",
     "modalTitle": "Configure User Vault",
-    "title": "Personal Settings"
+    "title": "Personal Settings",
+    "changePassword": {
+      "title": "Change Password",
+      "requirementsTitle": "Password Requirements",
+      "requirement1": "At least 8 characters long",
+      "requirement2": "Contains uppercase and lowercase letters",
+      "requirement3": "Contains at least one number",
+      "requirement4": "Contains at least one special character",
+      "newPasswordLabel": "New Password",
+      "newPasswordRequired": "Please enter your new password",
+      "newPasswordMin": "Password must be at least 8 characters long",
+      "newPasswordPattern": "Password must contain uppercase, lowercase, number and special character",
+      "newPasswordPlaceholder": "Enter new password",
+      "confirmPasswordLabel": "Confirm New Password",
+      "confirmPasswordRequired": "Please confirm your new password",
+      "confirmPasswordMismatch": "Passwords do not match",
+      "confirmPasswordPlaceholder": "Confirm new password",
+      "submit": "Change Password",
+      "successTitle": "Password Changed Successfully",
+      "successContent": "Your password has been changed. You will be logged out in {{seconds}} seconds..."
+    }
   },
   "title": "Settings",
   "twoFactorAuth": {

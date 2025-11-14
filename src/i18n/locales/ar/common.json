@@ -107,7 +107,9 @@
     "marketplace": "السوق",
     "queue": "طابور",
     "storage": "تخزين",
-    "system": "نظام"
+    "system": "نظام",
+    "storageCloud": "Cloud",
+    "storageDistributed": "Distributed"
   },
   "nestedObjectEditor": {
     "Active": "نشيط",
