@@ -14,7 +14,6 @@ import {
   DesktopOutlined,
   HistoryOutlined,
   ShopOutlined,
-  HddOutlined,
   InboxOutlined,
   CloudOutlined,
   TeamOutlined,
