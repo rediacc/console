@@ -336,6 +336,8 @@
     "deleteSuccess": "Dépôt supprimé avec succès",
     "deploymentPartialSuccess": "{{success}} déploiements sur {{total}} mis en file d'attente avec succès",
     "deploymentQueued": "{{count}} tâches de déploiement mises en file d'attente avec succès",
+    "destinationMachineNotFound": "La machine de destination '{{machine}}' est introuvable dans l'équipe",
+    "destinationStorageNotFound": "Le stockage de destination '{{storage}}' est introuvable dans l'équipe",
     "deviceName": "Appareil",
     "diskSpace": "Espace disque",
     "diskUsage": "Utilisation du disque",

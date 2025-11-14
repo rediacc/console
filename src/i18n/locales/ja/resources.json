@@ -336,6 +336,8 @@
     "deleteSuccess": "リポジトリが正常に削除されました",
     "deploymentPartialSuccess": "{{total}} 件中 {{success}} 件のデプロイメントが正常にキューに登録されました",
     "deploymentQueued": "{{count}} 個のデプロイメント タスクが正常にキューに追加されました",
+    "destinationMachineNotFound": "宛先マシン「{{machine}}」がチーム内に見つかりません",
+    "destinationStorageNotFound": "宛先ストレージ「{{storage}}」がチーム内に見つかりません",
     "deviceName": "デバイス",
     "diskSpace": "ディスク容量",
     "diskUsage": "ディスク使用量",

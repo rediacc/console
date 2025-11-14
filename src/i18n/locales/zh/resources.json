@@ -340,6 +340,8 @@
     "deleteSuccess": "仓库删除成功",
     "deploymentPartialSuccess": "{{success}} 个部署（共 {{total}} 个）已成功排队",
     "deploymentQueued": "{{count}} 个部署任务已成功排队",
+    "destinationMachineNotFound": "在团队中找不到目标计算机“{{machine}}”",
+    "destinationStorageNotFound": "在团队中找不到目标存储“{{storage}}”",
     "deviceName": "设备",
     "diskSpace": "磁盘空间",
     "diskUsage": "磁盘使用情况",

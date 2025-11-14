@@ -70,9 +70,10 @@ const MainLayout: React.FC = () => {
       if (companyData?.companyInfo?.CompanyName && companyData.companyInfo.CompanyName !== company) {
         dispatch(updateCompany(companyData.companyInfo.CompanyName))
         // Also update secure storage to persist the company name
+        // Token is managed separately by tokenService/interceptor
         const authData = await getAuthData()
-        if (authData.token && authData.email) {
-          await saveAuthData(authData.token, authData.email, companyData.companyInfo.CompanyName)
+        if (authData.email) {
+          await saveAuthData(authData.email, companyData.companyInfo.CompanyName)
         }
       }
     }
@@ -240,7 +241,7 @@ const MainLayout: React.FC = () => {
     } catch (error) {
       // Continue with logout even if API call fails
     }
-    clearAuthData()
+    await clearAuthData()
     masterPasswordService.clearMasterPassword() // Clear master password from secure memory
     queryClient.clear() // Clear all React Query caches
     dispatch(logout())

@@ -41,18 +41,15 @@ class ApiClient {
   private client: AxiosInstance
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private requestQueue: Promise<any> = Promise.resolve()
-  private isUpdatingToken = false
 
   private readonly HTTP_UNAUTHORIZED = 401
   private readonly HTTP_SERVER_ERROR = 500
-  private readonly TOKEN_UPDATE_DELAY_MS = 5
 
   // Method to update API URL dynamically
   updateApiUrl(newUrl: string) {
     API_BASE_URL = newUrl
     this.client.defaults.baseURL = API_BASE_URL + API_PREFIX
   }
-  private readonly TOKEN_UPDATE_POLL_INTERVAL_MS = 10
 
   constructor() {
     // Initialize with empty baseURL, will be set after health check
@@ -147,13 +144,21 @@ class ApiClient {
     if (!API_BASE_URL) {
       await this.initializeBaseUrl()
     }
-    
-    const response = await axios.post<ApiResponse>(
-      `${API_BASE_URL}${API_PREFIX}/CreateAuthenticationRequest`,
-      { name: sessionName },
-      { headers: { 'Rediacc-UserEmail': email, 'Rediacc-UserHash': passwordHash } }
-    )
-    return response.data
+
+    // Route through request queue for consistency and proper token handling
+    return this.queueRequest(async () => {
+      // Use the configured axios instance for consistent interceptor handling
+      return this.client.post<ApiResponse>(
+        '/CreateAuthenticationRequest',
+        { name: sessionName },
+        {
+          headers: {
+            'Rediacc-UserEmail': email,
+            'Rediacc-UserHash': passwordHash
+          }
+        }
+      )
+    })
   }
 
   async logout() {
@@ -194,18 +199,13 @@ class ApiClient {
 
   private async queueRequest<T>(request: () => Promise<AxiosResponse<ApiResponse<T>>>): Promise<ApiResponse<T>> {
     const executeRequest = async () => {
-      await this.waitForTokenUpdate()
+      // Token locking is now handled by tokenService/tokenLockManager
+      // No need for explicit waitForTokenUpdate - locks handle synchronization
       return (await request()).data
     }
 
     this.requestQueue = this.requestQueue.then(executeRequest).catch(executeRequest)
     return this.requestQueue
-  }
-
-  private async waitForTokenUpdate(): Promise<void> {
-    while (this.isUpdatingToken) {
-      await new Promise(resolve => setTimeout(resolve, this.TOKEN_UPDATE_POLL_INTERVAL_MS))
-    }
   }
 
   private async handleResponseDecryption(responseData: ApiResponse): Promise<ApiResponse> {
@@ -261,13 +261,9 @@ class ApiClient {
     const newToken = responseData.resultSets?.[0]?.data?.[0]?.nextRequestToken
     if (!newToken) return
 
-    this.isUpdatingToken = true
-    try {
-      await tokenService.updateToken(newToken)
-      await new Promise(resolve => setTimeout(resolve, this.TOKEN_UPDATE_DELAY_MS))
-    } finally {
-      this.isUpdatingToken = false
-    }
+    // Token rotation is now handled by tokenService with proper locking
+    // No need for manual flag management or arbitrary delays
+    await tokenService.updateToken(newToken)
   }
 
   private handleResponseError(error: any): Promise<never> {

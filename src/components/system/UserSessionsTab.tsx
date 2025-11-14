@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Table, Button, Card, Statistic, Row, Col, Tag, Input, Space, Popconfirm, message, Tooltip } from 'antd'
-import { SearchOutlined, CloseCircleOutlined, ReloadOutlined } from '@/utils/optimizedIcons'
+import { SearchOutlined, CloseCircleOutlined, ReloadOutlined, LinkOutlined, BranchesOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useUserRequests, useDeleteUserRequest, type UserRequest } from '@/api/queries/users'
 import { useSelector } from 'react-redux'
@@ -35,11 +35,15 @@ const UserSessionsTab: React.FC = () => {
     }
   }
 
-  const filteredSessions = sessions.filter((session: UserRequest) =>
-    session.userEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    session.ipAddress.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    session.sessionName.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredSessions = sessions.filter((session: UserRequest) => {
+    const searchLower = searchTerm.toLowerCase()
+    return (
+      session.userEmail.toLowerCase().includes(searchLower) ||
+      (session.ipAddress && session.ipAddress.toLowerCase().includes(searchLower)) ||
+      session.sessionName.toLowerCase().includes(searchLower) ||
+      (session.userAgent && session.userAgent.toLowerCase().includes(searchLower))
+    )
+  })
 
   const activeSessions = sessions.filter((session: UserRequest) => session.isActive)
 
@@ -70,13 +74,54 @@ const UserSessionsTab: React.FC = () => {
       title: t('userSessions.columns.sessionName'),
       dataIndex: 'sessionName',
       key: 'sessionName',
-      width: 150,
+      width: 220,
+      render: (name: string, record: UserRequest) => {
+        const childCount = filteredSessions.filter(s => s.parentRequestId === record.requestId).length
+        return (
+          <Space>
+            <span style={styles.body}>{name}</span>
+            {record.parentRequestId && (
+              <Tooltip title={t('userSessions.forkToken')}>
+                <Tag
+                  color="blue"
+                  icon={<LinkOutlined />}
+                  style={{
+                    borderRadius: 'var(--border-radius-sm)',
+                    ...styles.caption
+                  }}
+                >
+                  {t('userSessions.fork')}
+                </Tag>
+              </Tooltip>
+            )}
+            {childCount > 0 && (
+              <Tooltip title={t('userSessions.hasChildren', { count: childCount })}>
+                <Tag
+                  color="purple"
+                  icon={<BranchesOutlined />}
+                  style={{
+                    borderRadius: 'var(--border-radius-sm)',
+                    ...styles.caption
+                  }}
+                >
+                  {childCount}
+                </Tag>
+              </Tooltip>
+            )}
+          </Space>
+        )
+      }
     },
     {
       title: t('userSessions.columns.ipAddress'),
       dataIndex: 'ipAddress',
       key: 'ipAddress',
-      width: 120,
+      width: 140,
+      render: (ip: string | null) => (
+        <span style={{ ...styles.body, color: ip ? 'inherit' : 'var(--color-text-tertiary)' }}>
+          {ip ? ip : t('userSessions.notAvailable')}
+        </span>
+      )
     },
     {
       title: t('userSessions.columns.userAgent'),
@@ -84,6 +129,13 @@ const UserSessionsTab: React.FC = () => {
       key: 'userAgent',
       width: 300,
       ellipsis: true,
+      render: (agent: string | null) => (
+        <Tooltip title={agent ? agent : t('userSessions.notAvailable')}>
+          <span style={{ ...styles.body, color: agent ? 'inherit' : 'var(--color-text-tertiary)' }}>
+            {agent ? agent : t('userSessions.notAvailable')}
+          </span>
+        </Tooltip>
+      )
     },
     {
       title: t('userSessions.columns.status'),
@@ -295,7 +347,7 @@ const UserSessionsTab: React.FC = () => {
             data-testid="sessions-table"
             columns={columns}
             dataSource={filteredSessions}
-            rowKey="requestId"
+            rowKey={(record) => record.requestId.toString()}
             loading={isLoading}
             pagination={{
               pageSize: 10,

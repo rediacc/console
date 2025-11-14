@@ -336,6 +336,8 @@
     "deleteSuccess": "Repositorio eliminado exitosamente",
     "deploymentPartialSuccess": "{{éxito}} de {{total}} implementaciones en cola exitosamente",
     "deploymentQueued": "{{count}} tarea(s) de implementación en cola exitosamente",
+    "destinationMachineNotFound": "La máquina de destino '{{machine}}' no se encuentra en el equipo",
+    "destinationStorageNotFound": "El almacenamiento de destino '{{storage}}' no se encuentra en el equipo",
     "deviceName": "Dispositivo",
     "diskSpace": "Espacio en disco",
     "diskUsage": "Uso del disco",

@@ -336,6 +336,8 @@
     "deleteSuccess": "Depo başarıyla silindi",
     "deploymentPartialSuccess": "{{total}} dağıtımdan {{success}} tanesi başarıyla sıraya alındı",
     "deploymentQueued": "{{count}} dağıtım görevi başarıyla sıraya alındı",
+    "destinationMachineNotFound": "Hedef makine '{{machine}}' ekipte bulunamadı",
+    "destinationStorageNotFound": "Hedef depolama alanı '{{storage}}' ekipte bulunamadı",
     "deviceName": "Cihaz",
     "diskSpace": "Disk Alanı",
     "diskUsage": "Disk Kullanımı",
