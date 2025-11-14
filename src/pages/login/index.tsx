@@ -295,23 +295,18 @@ const LoginPage: React.FC = () => {
         throw new Error(loginResponse.errors?.join('; ') || 'Login failed')
       }
 
-      // Extract token and company data
+      // Extract user data from response
       const userData = loginResponse.resultSets[0].data[0]
-      
-      const token = userData.nextRequestToken
-      if (!token) {
-        throw new Error('No authentication token received')
-      }
 
       // Check if TFA is required
       const isAuthorized = userData.isAuthorized
       const authenticationStatus = userData.authenticationStatus
-      
+
       // If TFA is required but not authorized, show TFA modal
       if (authenticationStatus === 'TFA_REQUIRED' && !isAuthorized) {
         // Store the login data for after TFA verification
+        // Note: Token is already saved by response interceptor
         setPendingTFAData({
-          token,
           email: values.email,
           userData,
           masterPassword: values.masterPassword
@@ -324,11 +319,11 @@ const LoginPage: React.FC = () => {
       // Extract VaultCompany and company name from response
       const vaultCompany = userData.vaultCompany || null
       const companyName = userData.CompanyName || userData.company || null
-      
+
       // Analyze vault protocol state
       const companyHasEncryption = isEncrypted(vaultCompany)
       const userProvidedPassword = !!values.masterPassword
-      
+
       // Validate master password if company has encryption and user provided password
       let passwordValid: boolean | undefined = undefined
       if (companyHasEncryption && userProvidedPassword) {
@@ -337,22 +332,22 @@ const LoginPage: React.FC = () => {
           values.masterPassword!
         )
       }
-      
+
       // Determine protocol state
       const protocolState = analyzeVaultProtocolState(
         vaultCompany,
         userProvidedPassword,
         passwordValid
       )
-      
+
       // Handle different protocol states
       const protocolResult = handleProtocolState(protocolState, t, form, setError, setVaultProtocolState)
       if (protocolResult.shouldReturn) {
         return
       }
 
-      // Save auth data
-      await saveAuthData(token, values.email, companyName)
+      // Save auth data (email and company only - token is managed by interceptor)
+      await saveAuthData(values.email, companyName)
 
       // Store master password in secure memory if encryption is enabled
       if (companyHasEncryption && values.masterPassword) {
@@ -392,13 +387,12 @@ const LoginPage: React.FC = () => {
 
   const handleTFAVerification = async () => {
     try {
-      // Set the token temporarily for the TFA verification request
-      const { token } = pendingTFAData
-      await tokenService.setToken(token)
-      
+      // Token is already set by login response interceptor
+      // No manual token management needed - interceptor handles rotation
+
       // Verify the TFA code
       const result = await verifyTFAMutation.mutateAsync({ code: twoFACode })
-      
+
       if (result.isAuthorized) {
         // Check if this is because TFA is not enabled
         if (result.hasTFAEnabled === false) {
@@ -407,23 +401,23 @@ const LoginPage: React.FC = () => {
           setTwoFACode('')
           return
         }
-        
+
         // Continue with the login process using stored data
-        const { token, email, userData, masterPassword } = pendingTFAData
-        
+        const { email, userData, masterPassword } = pendingTFAData
+
         // Extract VaultCompany and company name from stored userData
         const vaultCompany = userData.vaultCompany || null
         const companyName = userData.CompanyName || userData.company || null
-        
-        // Save auth data
-        await saveAuthData(token, email, companyName)
-        
+
+        // Save auth data (email and company only - token is managed by interceptor)
+        await saveAuthData(email, companyName)
+
         // Store master password if encryption is enabled
         const companyHasEncryption = isEncrypted(vaultCompany)
         if (companyHasEncryption && masterPassword) {
           await masterPasswordService.setMasterPassword(masterPassword)
         }
-        
+
         // Update Redux store
         dispatch(loginSuccess({
           user: { email, company: companyName },
@@ -438,8 +432,7 @@ const LoginPage: React.FC = () => {
       }
     } catch (error: any) {
       // Error is handled by the mutation
-      // Clear the temporarily set token on error
-      tokenService.clearToken()
+      // No need to clear token - it's managed by interceptor
     }
   }
 

@@ -27,10 +27,11 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 // Session storage helpers using secure memory storage
-export async function saveAuthData(token: string, email: string, company?: string) {
-  // Use token service for token storage (provides additional security)
-  await tokenService.setToken(token)
+// Note: Token is managed separately by tokenService and should NOT be saved manually
+// Token rotation is handled automatically by API response interceptor
+export async function saveAuthData(email: string, company?: string) {
   // Store email and company in secure storage
+  // Token is managed by tokenService and rotated automatically by interceptor
   await secureStorage.setItem(STORAGE_KEYS.USER_EMAIL, email)
   if (company) {
     await secureStorage.setItem(STORAGE_KEYS.USER_COMPANY, company)
@@ -47,9 +48,9 @@ export async function getAuthData() {
   return { token, email, company }
 }
 
-export function clearAuthData() {
+export async function clearAuthData() {
   // Clear token using token service
-  tokenService.clearToken()
+  await tokenService.clearToken()
   // Clear other auth data
   secureStorage.removeItem(STORAGE_KEYS.USER_EMAIL)
   secureStorage.removeItem(STORAGE_KEYS.USER_COMPANY)

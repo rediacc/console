@@ -19,14 +19,17 @@ export interface PermissionGroup {
 }
 
 export interface UserRequest {
-  requestId: string
+  requestId: number
   userEmail: string
   sessionName: string
-  ipAddress: string
-  userAgent: string
+  ipAddress: string | null
+  userAgent: string | null
   createdAt: string
   lastActivity: string
   isActive: boolean
+  parentRequestId: number | null
+  permissionsName: string
+  expirationTime: string | null
 }
 
 // Get all users
@@ -155,21 +158,23 @@ export const useUserRequests = () => {
     queryKey: ['user-requests'],
     queryFn: async () => {
       const response = await apiClient.get('/GetUserRequests')
-      return response.resultSets[1]?.data || []
+      return response.resultSets[1]?.data as UserRequest[] || []
     },
-    staleTime: 10 * 1000, // 10 seconds - refresh more frequently for active sessions
-    refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
+    staleTime: 10 * 1000,
+    refetchInterval: 30 * 1000,
   })
 }
 
 // Delete/terminate a user request/session
-export const useDeleteUserRequest = createMutation<{ requestId: string }>({
+export const useDeleteUserRequest = createMutation<{ requestId: number }>({
   endpoint: '/DeleteUserRequest',
   method: 'delete',
   invalidateKeys: ['user-requests'],
-  successMessage: () => `User session terminated successfully`,
-  errorMessage: 'Failed to terminate user session',
-  transformData: (data) => ({ requestId: data.requestId })
+  successMessage: () => 'Session terminated successfully',
+  errorMessage: 'Failed to terminate session',
+  transformData: (data) => ({
+    targetRequestId: data.requestId
+  })
 })
 
 // Get current user's vault data

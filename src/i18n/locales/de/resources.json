@@ -336,6 +336,8 @@
     "deleteSuccess": "Repository erfolgreich gelöscht",
     "deploymentPartialSuccess": "{{success}} von {{total}} Bereitstellungen wurden erfolgreich in die Warteschlange gestellt",
     "deploymentQueued": "{{count}} Bereitstellungsaufgabe(n) wurden erfolgreich in die Warteschlange gestellt",
+    "destinationMachineNotFound": "Zielmaschine „{{machine}}“ nicht im Team gefunden",
+    "destinationStorageNotFound": "Der Zielspeicher „{{storage}}“ wurde im Team nicht gefunden",
     "deviceName": "Gerät",
     "diskSpace": "Speicherplatz",
     "diskUsage": "Festplattennutzung",

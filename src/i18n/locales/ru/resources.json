@@ -336,6 +336,8 @@
     "deleteSuccess": "Репозиторий успешно удален",
     "deploymentPartialSuccess": "{{success}} из {{total}} развертываний успешно поставлено в очередь",
     "deploymentQueued": "{{count}} задачи развертывания успешно поставлены в очередь",
+    "destinationMachineNotFound": "Целевая машина '{{machine}}' не найдена в команде",
+    "destinationStorageNotFound": "Целевое хранилище '{{storage}}' не найдено в команде",
     "deviceName": "Устройство",
     "diskSpace": "Дисковое пространство",
     "diskUsage": "Использование диска",
