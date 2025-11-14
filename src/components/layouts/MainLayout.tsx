@@ -365,6 +365,7 @@ const MainLayout: React.FC = () => {
       .filter(Boolean) as MenuConfig[]
   }
 
+  // eslint-disable-next-line react-compiler/react-compiler
   const menuItems = useMemo(() => buildMenuItems(uiMode), [uiMode, companyData])
 
   const flattenMenuRoutes = (items: MenuConfig[]) => {
@@ -377,6 +378,7 @@ const MainLayout: React.FC = () => {
       .filter(item => item.children?.some(child => location.pathname.startsWith(child.key)))
       .map(item => item.key)
 
+    // eslint-disable-next-line react-compiler/react-compiler
     setExpandedParentKeys(activeParents)
   }, [location.pathname, menuItems])
 

@@ -111,6 +111,7 @@ const InfrastructurePage: React.FC = () => {
 
   useEffect(() => {
     if (regionsList.length > 0 && !selectedRegion) {
+      // eslint-disable-next-line react-compiler/react-compiler
       setSelectedRegion(regionsList[0].regionName)
     }
   }, [regionsList, selectedRegion])
@@ -510,106 +511,104 @@ const InfrastructurePage: React.FC = () => {
       <InfrastructureSectionStack>
         <InfrastructureSectionHeading level={3}>{tSystem('regionsInfrastructure.title')}</InfrastructureSectionHeading>
 
-        <Card>
-          <Row gutter={[24, 24]}>
+        <Row gutter={[24, 24]}>
+          <Col span={24}>
+            <RegionsListWrapper>
+              <ResourceListView
+                title={
+                  <ListTitleRow>
+                    <ListTitle>{t('regions.title')}</ListTitle>
+                    <ListSubtitle>{t('regions.selectRegionPrompt')}</ListSubtitle>
+                  </ListTitleRow>
+                }
+                loading={regionsLoading}
+                data={regionsList}
+                columns={regionColumns}
+                rowKey="regionName"
+                searchPlaceholder={t('regions.searchRegions')}
+                data-testid="system-region-table"
+                actions={
+                  <Tooltip title={t('regions.createRegion')}>
+                    <Button
+                      type="primary"
+                      icon={<PlusOutlined />}
+                      onClick={() => openUnifiedModal('region', 'create')}
+                      data-testid="system-create-region-button"
+                      aria-label={t('regions.createRegion')}
+                    />
+                  </Tooltip>
+                }
+                rowSelection={{
+                  type: 'radio',
+                  selectedRowKeys: selectedRegion ? [selectedRegion] : [],
+                  onChange: (selectedRowKeys) => setSelectedRegion((selectedRowKeys[0] as string) || null),
+                }}
+                onRow={(record) => ({
+                  onClick: () => setSelectedRegion(record.regionName),
+                  className: [
+                    'clickable-row',
+                    selectedRegion === record.regionName ? 'selected-row' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' '),
+                })}
+              />
+            </RegionsListWrapper>
+          </Col>
+
+          {!featureFlags.isEnabled('disableBridge') && (
             <Col span={24}>
-              <RegionsListWrapper>
-                <ResourceListView
-                  title={
-                    <ListTitleRow>
-                      <ListTitle>{t('regions.title')}</ListTitle>
-                      <ListSubtitle>{t('regions.selectRegionPrompt')}</ListSubtitle>
-                    </ListTitleRow>
-                  }
-                  loading={regionsLoading}
-                  data={regionsList}
-                  columns={regionColumns}
-                  rowKey="regionName"
-                  searchPlaceholder={t('regions.searchRegions')}
-                  data-testid="system-region-table"
-                  actions={
-                    <Tooltip title={t('regions.createRegion')}>
+              <Card>
+                <CardHeaderRow>
+                  <div>
+                    <CardTitle level={4}>
+                      {selectedRegion
+                        ? t('regions.bridgesInRegion', { region: selectedRegion })
+                        : t('bridges.title')}
+                    </CardTitle>
+                    {!selectedRegion && (
+                      <SecondaryText>{t('regions.selectRegionToView')}</SecondaryText>
+                    )}
+                  </div>
+                  {selectedRegion && (
+                    <Tooltip title={t('bridges.createBridge')}>
                       <Button
                         type="primary"
                         icon={<PlusOutlined />}
-                        onClick={() => openUnifiedModal('region', 'create')}
-                        data-testid="system-create-region-button"
-                        aria-label={t('regions.createRegion')}
+                        onClick={() => openUnifiedModal('bridge', 'create', { regionName: selectedRegion })}
+                        data-testid="system-create-bridge-button"
+                        aria-label={t('bridges.createBridge')}
                       />
                     </Tooltip>
-                  }
-                  rowSelection={{
-                    type: 'radio',
-                    selectedRowKeys: selectedRegion ? [selectedRegion] : [],
-                    onChange: (selectedRowKeys) => setSelectedRegion((selectedRowKeys[0] as string) || null),
-                  }}
-                  onRow={(record) => ({
-                    onClick: () => setSelectedRegion(record.regionName),
-                    className: [
-                      'clickable-row',
-                      selectedRegion === record.regionName ? 'selected-row' : '',
-                    ]
-                      .filter(Boolean)
-                      .join(' '),
-                  })}
-                />
-              </RegionsListWrapper>
-            </Col>
-
-            {!featureFlags.isEnabled('disableBridge') && (
-              <Col span={24}>
-                <Card>
-                  <CardHeaderRow>
-                    <div>
-                      <CardTitle level={4}>
-                        {selectedRegion
-                          ? t('regions.bridgesInRegion', { region: selectedRegion })
-                          : t('bridges.title')}
-                      </CardTitle>
-                      {!selectedRegion && (
-                        <SecondaryText>{t('regions.selectRegionToView')}</SecondaryText>
-                      )}
-                    </div>
-                    {selectedRegion && (
-                      <Tooltip title={t('bridges.createBridge')}>
-                        <Button
-                          type="primary"
-                          icon={<PlusOutlined />}
-                          onClick={() => openUnifiedModal('bridge', 'create', { regionName: selectedRegion })}
-                          data-testid="system-create-bridge-button"
-                          aria-label={t('bridges.createBridge')}
-                        />
-                      </Tooltip>
-                    )}
-                  </CardHeaderRow>
-
-                  {!selectedRegion ? (
-                    <PaddedEmpty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('regions.selectRegionPrompt')} />
-                  ) : bridgesLoading ? (
-                    <CenteredState>
-                      <Spin size="large" />
-                      <LoadingHint>{tCommon('general.loading')}</LoadingHint>
-                    </CenteredState>
-                  ) : (
-                    <Table
-                      columns={bridgeColumns}
-                      dataSource={bridgesList}
-                      rowKey="bridgeName"
-                      pagination={{
-                        total: bridgesList.length || 0,
-                        pageSize: 10,
-                        showSizeChanger: true,
-                        showTotal: (total) => t('bridges.totalBridges', { total }),
-                      }}
-                      locale={{ emptyText: t('bridges.noBridges') }}
-                      data-testid="system-bridge-table"
-                    />
                   )}
-                </Card>
-              </Col>
-            )}
-          </Row>
-        </Card>
+                </CardHeaderRow>
+
+                {!selectedRegion ? (
+                  <PaddedEmpty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('regions.selectRegionPrompt')} />
+                ) : bridgesLoading ? (
+                  <CenteredState>
+                    <Spin size="large" />
+                    <LoadingHint>{tCommon('general.loading')}</LoadingHint>
+                  </CenteredState>
+                ) : (
+                  <Table
+                    columns={bridgeColumns}
+                    dataSource={bridgesList}
+                    rowKey="bridgeName"
+                    pagination={{
+                      total: bridgesList.length || 0,
+                      pageSize: 10,
+                      showSizeChanger: true,
+                      showTotal: (total) => t('bridges.totalBridges', { total }),
+                    }}
+                    locale={{ emptyText: t('bridges.noBridges') }}
+                    data-testid="system-bridge-table"
+                  />
+                )}
+              </Card>
+            </Col>
+          )}
+        </Row>
       </InfrastructureSectionStack>
 
       {!featureFlags.isEnabled('disableBridge') && (
