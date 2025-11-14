@@ -158,12 +158,6 @@ class FeatureFlags {
       description: 'Distributed storage cluster management - allows creating and managing storage clusters'
     },
 
-    // Marketplace - Beta feature
-    marketplace: {
-      requiresLocalhost: true,  // Hide in production builds
-      description: 'Template marketplace for quick deployments'
-    },
-
     // Assign to Cluster - Beta feature (menu item in MachineTable)
     assignToCluster: {
       requiresLocalhost: true,  // Hide in production builds

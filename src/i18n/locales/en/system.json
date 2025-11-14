@@ -17,6 +17,10 @@
     "trace": "Trace",
     "twoFactorAuth": "Two-Factor Authentication"
   },
+  "accessControl": {
+    "expertOnlyTitle": "Expert Mode Required",
+    "expertOnlyMessage": "Switch to expert mode to view this page."
+  },
   "audit": {
     "columns": {
       "action": "Action",

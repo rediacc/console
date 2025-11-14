@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Layout, Avatar, Space, Badge, Typography, Button, Segmented, Dropdown, Divider, Tooltip, message } from 'antd'
@@ -13,10 +13,11 @@ import {
   PartitionOutlined,
   DesktopOutlined,
   HistoryOutlined,
-  ShoppingOutlined,
+  ShopOutlined,
   HddOutlined,
   InboxOutlined,
   CloudOutlined,
+  TeamOutlined,
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { selectUser, selectCompany } from '@/store/auth/authSelectors'
@@ -48,9 +49,29 @@ const SIDEBAR_COLLAPSED_WIDTH = 64
 const HEADER_ACTION_SIZE = 48
 const HEADER_HEIGHT = DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT
 
+type MenuBaseConfig = {
+  key: string
+  label?: string
+  showInSimple: boolean
+  requiresPlan?: string[]
+  featureFlag?: string
+  'data-testid'?: string
+}
+
+type MenuChildConfig = MenuBaseConfig & {
+  label: string
+}
+
+type MenuConfig = MenuBaseConfig & {
+  icon?: React.ReactNode
+  type?: 'divider'
+  children?: MenuChildConfig[]
+}
+
 const MainLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [expandedParentKeys, setExpandedParentKeys] = useState<string[]>([])
   const navigate = useNavigate()
   const location = useLocation()
   const dispatch = useDispatch()
@@ -110,14 +131,84 @@ const MainLayout: React.FC = () => {
   }, [])
 
   // Define all menu items with visibility flags
-  const allMenuItems = [
-    // Non-scrolling pages group
+  const allMenuItems: MenuConfig[] = [
+    // Core management - People & teams first (WHO)
+    {
+      key: '/organization',
+      icon: <TeamOutlined />,
+      label: t('navigation.organization'),
+      showInSimple: true,
+      'data-testid': 'main-nav-organization',
+      children: [
+        {
+          key: '/organization/users',
+          label: t('navigation.organizationUsers'),
+          showInSimple: true,
+          'data-testid': 'sub-nav-organization-users',
+        },
+        {
+          key: '/organization/teams',
+          label: t('navigation.organizationTeams'),
+          showInSimple: true,
+          'data-testid': 'sub-nav-organization-teams',
+        },
+        {
+          key: '/organization/access',
+          label: t('navigation.organizationAccess'),
+          showInSimple: false,
+          'data-testid': 'sub-nav-organization-access',
+        },
+      ],
+    },
+    // Core infrastructure (WHAT)
     {
       key: '/machines',
       icon: <DesktopOutlined />,
       label: t('navigation.machines'),
       showInSimple: true,
       'data-testid': 'main-nav-machines',
+    },
+    // Configuration (HOW)
+    {
+      key: '/settings',
+      icon: <SettingOutlined />,
+      label: t('navigation.settings'),
+      showInSimple: true,
+      'data-testid': 'main-nav-settings',
+      children: [
+        {
+          key: '/settings/profile',
+          label: t('navigation.settingsProfile'),
+          showInSimple: true,
+          'data-testid': 'sub-nav-settings-profile',
+        },
+        {
+          key: '/settings/company',
+          label: t('navigation.settingsCompany'),
+          showInSimple: false,
+          'data-testid': 'sub-nav-settings-company',
+        },
+        {
+          key: '/settings/infrastructure',
+          label: t('navigation.settingsInfrastructure'),
+          showInSimple: false,
+          featureFlag: 'regionsInfrastructure',
+          'data-testid': 'sub-nav-settings-infrastructure',
+        },
+      ],
+    },
+    {
+      key: 'divider-1',
+      type: 'divider',
+      showInSimple: true,
+    },
+    // Advanced features - Resources & operations
+    {
+      key: '/storage',
+      icon: <CloudOutlined />,
+      label: t('navigation.storage'),
+      showInSimple: false,
+      'data-testid': 'main-nav-storage',
     },
     {
       key: '/credentials',
@@ -127,35 +218,20 @@ const MainLayout: React.FC = () => {
       'data-testid': 'main-nav-credentials',
     },
     {
-      key: '/storage',
-      icon: <CloudOutlined />,
-      label: t('navigation.storage'),
-      showInSimple: false,
-      'data-testid': 'main-nav-storage',
-    },
-    {
       key: '/distributed-storage',
       icon: <HddOutlined />,
       label: t('navigation.distributedStorage'),
-      showInSimple: false, // Show in expert mode only
-      requiresPlan: ['ENTERPRISE', 'BUSINESS', 'Enterprise', 'Business'], // Support both uppercase and proper case
-      featureFlag: 'distributedStorage', // Beta feature - managed by feature flags
-      'data-testid': 'main-nav-distributed-storage',
-    },
-    {
-      key: '/marketplace',
-      icon: <ShoppingOutlined />,
-      label: t('navigation.marketplace'),
       showInSimple: false,
-      featureFlag: 'marketplace', // Beta feature - managed by feature flags
-      'data-testid': 'main-nav-marketplace',
+      requiresPlan: ['ENTERPRISE', 'BUSINESS', 'Enterprise', 'Business'],
+      featureFlag: 'distributedStorage',
+      'data-testid': 'main-nav-distributed-storage',
     },
     {
       key: '/queue',
       icon: <ThunderboltOutlined />,
       label: t('navigation.queue'),
       showInSimple: false,
-      featureFlag: 'queueManagement', // Expert mode feature - managed by feature flags
+      featureFlag: 'queueManagement',
       'data-testid': 'main-nav-queue',
     },
     {
@@ -163,29 +239,24 @@ const MainLayout: React.FC = () => {
       icon: <HistoryOutlined />,
       label: t('navigation.audit'),
       showInSimple: false,
-      featureFlag: 'auditLogs', // Expert mode feature - managed by feature flags
+      featureFlag: 'auditLogs',
       'data-testid': 'main-nav-audit',
     },
-    {
-      key: 'divider-1',
-      type: 'divider',
-      showInSimple: true,
-    },
-    // Scrolling pages group
     {
       key: '/architecture',
       icon: <PartitionOutlined />,
       label: t('navigation.architecture'),
       showInSimple: false,
-      featureFlag: 'architecture', // Beta feature - managed by feature flags
+      featureFlag: 'architecture',
       'data-testid': 'main-nav-architecture',
     },
     {
-      key: '/system',
-      icon: <SettingOutlined />,
-      label: t('navigation.system'),
-      showInSimple: true,
-      'data-testid': 'main-nav-system',
+      key: '/marketplace',
+      icon: <ShopOutlined />,
+      label: t('navigation.marketplace'),
+      showInSimple: false,
+      featureFlag: 'marketplace',
+      'data-testid': 'main-nav-marketplace',
     },
   ]
 
@@ -206,22 +277,15 @@ const MainLayout: React.FC = () => {
       current_page: location.pathname
     })
     
-    // Check if current page is visible in the new mode
     const currentPath = location.pathname
-    const currentMenuItem = allMenuItems.find(item => item.key === currentPath)
-    
-    const isCurrentPageVisibleInNewMode = currentMenuItem && (
-      newMode === 'expert' || currentMenuItem.showInSimple
-    )
-    
-    // Only navigate if current page is not visible in new mode
+    const nextMenuItems = buildMenuItems(newMode)
+    const visibleRoutes = flattenMenuRoutes(nextMenuItems)
+    const isCurrentPageVisibleInNewMode = visibleRoutes.some(route => currentPath.startsWith(route))
+
     if (!isCurrentPageVisibleInNewMode) {
-      const firstVisibleItem = allMenuItems.find(item => 
-        item.type !== 'divider' && (newMode === 'expert' || item.showInSimple)
-      )
-      
-      if (firstVisibleItem) {
-        navigate(firstVisibleItem.key)
+      const firstVisibleRoute = visibleRoutes[0]
+      if (firstVisibleRoute) {
+        navigate(firstVisibleRoute)
       }
     }
     
@@ -256,39 +320,65 @@ const MainLayout: React.FC = () => {
     setCollapsed(prev => !prev)
   }
 
-  // Filter and map menu items based on UI mode, plan, and feature flags
-  // React Compiler will automatically optimize this
-  const menuItems = allMenuItems
-    .filter(item => {
-      // Check UI mode visibility
-      if (item.type !== 'divider' && !(uiMode === 'expert' || item.showInSimple)) {
+  const isMenuEntryVisible = (entry: MenuBaseConfig, mode: 'simple' | 'expert') => {
+    if (!(mode === 'expert' || entry.showInSimple)) {
+      return false
+    }
+
+    if (entry.requiresPlan) {
+      if (!companyData?.activeSubscription) {
         return false
       }
-
-      // Check plan requirements
-      if (item.requiresPlan) {
-        // If no subscription data, hide the item
-        if (!companyData?.activeSubscription) {
-          return false
-        }
-        const currentPlan = companyData.activeSubscription.PlanCode
-        // Check if current plan matches any required plan (already uppercase)
-        const hasRequiredPlan = item.requiresPlan.some(
-          requiredPlan => requiredPlan.toUpperCase() === currentPlan
-        )
-        if (!hasRequiredPlan) {
-          return false
-        }
-      }
-
-      // Check feature flag requirements (replaces requiresDevelopment)
-      if (item.featureFlag && !featureFlags.isEnabled(item.featureFlag)) {
+      const currentPlan = companyData.activeSubscription.PlanCode
+      const hasRequiredPlan = entry.requiresPlan.some(
+        requiredPlan => requiredPlan.toUpperCase() === currentPlan
+      )
+      if (!hasRequiredPlan) {
         return false
       }
+    }
 
-      return true
-    })
-    .map(({ showInSimple, requiresPlan, featureFlag, ...item }) => item)
+    if (entry.featureFlag && !featureFlags.isEnabled(entry.featureFlag)) {
+      return false
+    }
+
+    return true
+  }
+
+  const buildMenuItems = (mode: 'simple' | 'expert') => {
+    return allMenuItems
+      .map(item => {
+        if (item.type === 'divider') {
+          return item
+        }
+
+        if (item.children) {
+          const visibleChildren = item.children.filter(child => isMenuEntryVisible(child, mode))
+          if (!visibleChildren.length) {
+            return null
+          }
+          return { ...item, children: visibleChildren }
+        }
+
+        return isMenuEntryVisible(item, mode) ? item : null
+      })
+      .filter(Boolean) as MenuConfig[]
+  }
+
+  const menuItems = useMemo(() => buildMenuItems(uiMode), [uiMode, companyData])
+
+  const flattenMenuRoutes = (items: MenuConfig[]) => {
+    return items.flatMap(item => (item.children ? item.children.map(child => child.key) : [item.key]))
+  }
+
+  useEffect(() => {
+    const activeParents = menuItems
+      .filter(item => item.children)
+      .filter(item => item.children?.some(child => location.pathname.startsWith(child.key)))
+      .map(item => item.key)
+
+    setExpandedParentKeys(activeParents)
+  }, [location.pathname, menuItems])
 
   // Determine if current page needs no-scroll behavior
   // All pages are now scrollable, so no pages need the no-scroll class
@@ -467,23 +557,34 @@ const MainLayout: React.FC = () => {
                 return <React.Fragment key={item.key} />
               }
               
-              const isSelected = location.pathname === item.key
+              const visibleChildren = item.children || []
+              const hasChildren = visibleChildren.length > 0
+              const isChildActive = (childKey: string) => location.pathname.startsWith(childKey)
+              const isParentActive = hasChildren
+                ? visibleChildren.some(child => isChildActive(child.key))
+                : location.pathname.startsWith(item.key)
+              const isExpanded = hasChildren ? expandedParentKeys.includes(item.key) || isParentActive : false
               const padding = collapsed ? '10px 12px' : '10px 18px'
               const itemKey = item.key || item.label
-              const menuItemContent = (
+
+              const handleParentClick = () => {
+                const targetRoute = hasChildren ? visibleChildren[0]?.key : item.key
+                if (!targetRoute) {
+                  return
+                }
+                trackUserAction('navigation', targetRoute, {
+                  menu_item: item.label,
+                  ui_mode: uiMode,
+                  sidebar_collapsed: collapsed,
+                  from_page: location.pathname
+                })
+                navigate(targetRoute)
+              }
+
+              const parentContent = (
                 <div
                   key={itemKey}
-                  onClick={() => {
-                    // Track navigation click
-                    trackUserAction('navigation', item.key, {
-                      menu_item: item.label,
-                      ui_mode: uiMode,
-                      sidebar_collapsed: collapsed,
-                      from_page: location.pathname
-                    })
-
-                    navigate(item.key)
-                  }}
+                  onClick={handleParentClick}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -493,18 +594,18 @@ const MainLayout: React.FC = () => {
                     cursor: 'pointer',
                     minHeight: 44,
                     justifyContent: 'flex-start',
-                    backgroundColor: isSelected ? 'var(--color-primary-bg)' : 'transparent',
-                    color: isSelected ? 'var(--color-primary)' : 'var(--color-text-primary)',
-                    fontWeight: isSelected ? 600 : 500,
+                    backgroundColor: isParentActive ? 'var(--color-primary-bg)' : 'transparent',
+                    color: isParentActive ? 'var(--color-primary)' : 'var(--color-text-primary)',
+                    fontWeight: isParentActive ? 600 : 500,
                     transition: 'background-color 0.2s ease, color 0.2s ease',
                   }}
                   onMouseEnter={(e) => {
-                    if (!isSelected) {
+                    if (!isParentActive) {
                       e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (!isSelected) {
+                    if (!isParentActive) {
                       e.currentTarget.style.backgroundColor = 'transparent'
                     }
                   }}
@@ -513,7 +614,7 @@ const MainLayout: React.FC = () => {
                   <span style={{ 
                     fontSize: 20, 
                     marginRight: 12,
-                    color: isSelected ? 'var(--color-primary)' : 'inherit',
+                    color: isParentActive ? 'var(--color-primary)' : 'inherit',
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -529,7 +630,7 @@ const MainLayout: React.FC = () => {
                       overflow: 'hidden',
                       whiteSpace: 'nowrap',
                       textOverflow: 'ellipsis',
-                      color: isSelected ? 'var(--color-primary)' : 'var(--color-text-primary)',
+                      color: isParentActive ? 'var(--color-primary)' : 'var(--color-text-primary)',
                       opacity: collapsed ? 0.85 : 1,
                       transition: 'opacity 0.2s ease',
                       flex: 1,
@@ -541,14 +642,97 @@ const MainLayout: React.FC = () => {
               )
 
               if (collapsed) {
+                const tooltipContent = hasChildren ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: spacing('XS') }}>
+                    {visibleChildren.map(child => {
+                      const childActive = isChildActive(child.key)
+                      return (
+                        <div
+                          key={child.key}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            event.preventDefault()
+                            trackUserAction('navigation', child.key, {
+                              menu_item: child.label,
+                              ui_mode: uiMode,
+                              sidebar_collapsed: collapsed,
+                              from_page: location.pathname
+                            })
+                            navigate(child.key)
+                          }}
+                          style={{
+                            padding: `${spacing('XS')}px ${spacing('SM')}px`,
+                            borderRadius: spacing('SM'),
+                            backgroundColor: childActive ? 'var(--color-primary-bg)' : 'transparent',
+                            color: childActive ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                            cursor: 'pointer',
+                            fontSize: 13,
+                            minWidth: 140,
+                          }}
+                          data-testid={child['data-testid']}
+                        >
+                          {child.label}
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : item.label
+
                 return (
-                  <Tooltip key={itemKey} title={item.label} placement="right">
-                    {menuItemContent}
+                  <Tooltip key={itemKey} title={tooltipContent} placement="right" overlayInnerStyle={hasChildren ? { padding: spacing('SM') } : undefined}>
+                    {parentContent}
                   </Tooltip>
                 )
               }
 
-              return menuItemContent
+              return (
+                <div key={itemKey}>
+                  {parentContent}
+                  {hasChildren && (
+                    <div
+                      style={{
+                        margin: '2px 16px 0 40px',
+                        padding: `${spacing('XS')}px 0`,
+                        overflow: 'hidden',
+                        maxHeight: isExpanded ? 400 : 0,
+                        transition: `max-height ${DESIGN_TOKENS.TRANSITIONS.DEFAULT}, opacity ${DESIGN_TOKENS.TRANSITIONS.DEFAULT}`,
+                        opacity: isExpanded ? 1 : 0,
+                      }}
+                    >
+                      {visibleChildren.map(child => {
+                        const childActive = isChildActive(child.key)
+                        return (
+                          <div
+                            key={child.key}
+                            onClick={() => {
+                              trackUserAction('navigation', child.key, {
+                                menu_item: child.label,
+                                ui_mode: uiMode,
+                                sidebar_collapsed: collapsed,
+                                from_page: location.pathname
+                              })
+                              navigate(child.key)
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              padding: `${spacing('SM')}px ${spacing('LG')}px`,
+                              fontSize: 14,
+                              color: childActive ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                              cursor: 'pointer',
+                              backgroundColor: childActive ? 'var(--color-primary-bg)' : 'transparent',
+                              transition: `background-color ${DESIGN_TOKENS.TRANSITIONS.DEFAULT}, color ${DESIGN_TOKENS.TRANSITIONS.DEFAULT}`,
+                            }}
+                            data-testid={child['data-testid']}
+                          >
+                            {child.label}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )
             })}
           </div>
         </div>
