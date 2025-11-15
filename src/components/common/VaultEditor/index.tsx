@@ -157,8 +157,8 @@ type StorageProvidersConfig = {
   providers: Record<string, StorageProviderDefinition>
 }
 
-const vaultDefinitionConfig = vaultDefinitions as VaultDefinitionsConfig
-const storageProviderConfig = storageProviders as StorageProvidersConfig
+const vaultDefinitionConfig = vaultDefinitions as unknown as VaultDefinitionsConfig
+const storageProviderConfig = storageProviders as unknown as StorageProvidersConfig
 
 // Helper components for reduced repetition
 const FieldLabel: React.FC<{ label: string; description?: string }> = ({ label, description }) => (
@@ -388,7 +388,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   
   // Helper for JSON field validation and handling
   const getJsonFieldProps = (isArray = false) => {
-    const validator: Rule['validator'] = (_rule, value) => {
+    const validator = (_rule: any, value: any) => {
       if (!value) {
         return Promise.resolve()
       }
@@ -515,7 +515,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         }
       }
     }
-  }, [testTraceData, form, t, handleFormChange, onOsSetupStatusChange, onTestConnectionStateChange])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testTraceData, form, t, onOsSetupStatusChange, onTestConnectionStateChange])
 
   // Calculate extra fields not in schema
   useEffect(() => {
@@ -603,12 +604,12 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       
       // Initialize ssh_key_configured state for MACHINE and BRIDGE entities
       if ((entityType === 'MACHINE' || entityType === 'BRIDGE') && formData.ssh_key_configured !== undefined) {
-        setSshKeyConfigured(formData.ssh_key_configured)
+        setSshKeyConfigured(typeof formData.ssh_key_configured === 'boolean' ? formData.ssh_key_configured : false)
       }
-      
+
       // Initialize provider for STORAGE entity
       if (entityType === 'STORAGE' && formData.provider) {
-        setSelectedProvider(formData.provider)
+        setSelectedProvider(typeof formData.provider === 'string' ? formData.provider : null)
       }
       
       // Calculate extra fields for this data
@@ -676,7 +677,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         handleExport,
       })
     }
-  }, [onImportExport, handleImport, handleExport])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onImportExport])
 
   const formatValidationErrors = (errorInfo?: ValidateErrorEntity<VaultFormValues>) =>
     errorInfo?.errorFields?.map((field) => `${field.name.join('.')}: ${field.errors.join(', ')}`) ?? []
@@ -686,7 +688,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
 
     // Handle provider changes for STORAGE entity
     if (entityType === 'STORAGE' && changedValues?.provider !== undefined) {
-      setSelectedProvider(changedValues.provider)
+      setSelectedProvider(typeof changedValues.provider === 'string' ? changedValues.provider : null)
 
       // Clear provider-specific fields when provider changes
       if (providerFields) {
@@ -751,8 +753,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       if (validationTargets.length > 0) {
         try {
           await form.validateFields(validationTargets, { validateOnly: true })
-        } catch (errorInfo: ValidateErrorEntity<VaultFormValues>) {
-          accumulatedErrors.push(...formatValidationErrors(errorInfo))
+        } catch (errorInfo: unknown) {
+          accumulatedErrors.push(...formatValidationErrors(errorInfo as ValidateErrorEntity<VaultFormValues>))
         }
       }
 
@@ -763,8 +765,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
         } else {
           onValidate?.(true)
         }
-      } catch (errorInfo: ValidateErrorEntity<VaultFormValues>) {
-        const overallErrors = formatValidationErrors(errorInfo)
+      } catch (errorInfo: unknown) {
+        const overallErrors = formatValidationErrors(errorInfo as ValidateErrorEntity<VaultFormValues>)
         const combined = overallErrors.length > 0 ? overallErrors : accumulatedErrors
         onValidate?.(false, combined)
       }
@@ -1068,7 +1070,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
             rules={rules}
           >
             <NestedObjectEditor
-              fieldDefinition={field}
+              fieldDefinition={field as any}
               title={fieldLabel}
               description={fieldDescription}
               data-testid={`vault-editor-field-${fieldName}`}

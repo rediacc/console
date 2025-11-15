@@ -154,7 +154,7 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
             mode="multiple"
             placeholder={t('machines:selectMachines')}
             value={selectedMachines}
-            onChange={setSelectedMachines}
+            onChange={(value) => setSelectedMachines(value as string[])}
             showSearch
             filterOption={(input, option) =>
               (option?.label ?? '').toLowerCase().includes(input.toLowerCase())

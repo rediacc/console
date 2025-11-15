@@ -23,7 +23,7 @@ const resolveIconSize = (size: IconSize, theme: StyledTheme) => {
       return `${theme.fontSize.LG}px`
     case 'sm':
     default:
-      return `${theme.fontSize.MD}px`
+      return `${theme.fontSize.SM}px`
   }
 }
 

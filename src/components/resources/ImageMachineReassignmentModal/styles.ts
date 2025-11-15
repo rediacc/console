@@ -70,7 +70,7 @@ export const InfoAlert = BaseAlert
 export const WarningAlert = BaseAlert
 
 export const MachineIcon = styled(CloudServerOutlined)`
-  font-size: ${({ theme }) => theme.fontSize.MD}px;
+  font-size: ${({ theme }) => theme.fontSize.BASE}px;
   color: ${({ theme }) => theme.colors.primary};
 `
 

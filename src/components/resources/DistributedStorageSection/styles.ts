@@ -10,7 +10,7 @@ type IconTone = 'primary' | 'muted' | 'info' | 'warning'
 const resolveIconSize = (size: IconSize, theme: StyledTheme) => {
   switch (size) {
     case 'sm':
-      return `${theme.fontSize.MD}px`
+      return `${theme.fontSize.SM}px`
     case 'lg':
       return `${theme.fontSize.XL}px`
     case 'md':
@@ -54,7 +54,7 @@ export const DividerContent = styled.div`
 `
 
 export const SectionTitle = styled.span`
-  font-size: ${({ theme }) => theme.fontSize.MD}px;
+  font-size: ${({ theme }) => theme.fontSize.BASE}px;
   font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   color: ${({ theme }) => theme.colors.textPrimary};
 `

@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react'
 import { Dropdown, Tooltip, message } from 'antd'
 import type { MenuProps } from 'antd'
-import type { ItemType } from 'antd/es/menu/hooks/useItems'
+type ItemType = NonNullable<MenuProps['items']>[number]
 import {
   DesktopOutlined,
   CodeOutlined,

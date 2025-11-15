@@ -51,11 +51,12 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
 }) => {
   const { t } = useTranslation(['machines', 'common'])
 
-  const handleChange = (selectedValues: string[]) => {
-    if (maxSelection && selectedValues.length > maxSelection) {
+  const handleChange = (selectedValues: unknown) => {
+    const values = selectedValues as string[]
+    if (maxSelection && values.length > maxSelection) {
       return
     }
-    onChange?.(selectedValues)
+    onChange?.(values)
   }
 
   const filterOption = (input: string, option?: DefaultOptionType): boolean => {
@@ -89,7 +90,7 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
         <OptionContent data-testid={`available-machines-option-content-${machine.machineName}`}>
           <MachineMeta>
             <MachineIcon as={CloudServerOutlined} />
-            <MachineName $dimmed={isDisabled}>{machine.machineName}</MachineName>
+            <MachineName $dimmed={!!isDisabled}>{machine.machineName}</MachineName>
             <TeamTag data-testid={`available-machines-team-tag-${machine.machineName}`}>
               {machine.teamName}
             </TeamTag>
