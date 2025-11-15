@@ -11,26 +11,26 @@
       "name": "Konteyner İşlevleri"
     },
     "machine": {
-      "description": "Temel sistem kurulumu ve bakım fonksiyonları",
+      "description": "Temel sistem kurulumu ve bakım işlevleri",
       "name": "Makine Fonksiyonları"
     },
     "network": {
-      "description": "Ağ ve soket haritalama işlemleri",
+      "description": "Ağ ve soket eşleme işlemleri",
       "name": "Ağ İşlevleri"
     },
     "repository": {
-      "description": "Depo yönetimi ve operasyonları",
+      "description": "Depo yönetimi ve işlemleri",
       "name": "Depo İşlevleri"
     }
   },
   "checkboxOptions": {
-    "mountRepositoryFirst": "Önce depoyu bağlayın",
+    "mountRepositoryFirst": "Önce depoyu monte edin",
     "overrideExistingFile": "Mevcut dosyayı geçersiz kıl",
-    "preparationOnly": "Yalnızca hazırlık",
-    "unmountAfterStopping": "Durdurduktan sonra bağlantıyı kes"
+    "preparationOnly": "Sadece hazırlık",
+    "unmountAfterStopping": "Durdurduktan sonra bağlantıyı kaldırın"
   },
-  "configure": "Yapılandır",
-  "currentPriority": "Akım",
+  "configure": "Yapılandırma",
+  "currentPriority": "Güncel",
   "description": "Açıklama (isteğe bağlı)",
   "descriptionPlaceholder": "Bu kuyruk öğesi için özel bir açıklama ekleyin",
   "functions": {
@@ -47,29 +47,29 @@
           "label": "Depo"
         },
         "tmpl": {
-          "help": "Depoya uygulanacak şablonu seçin",
+          "help": "Depoya uygulamak için bir şablon seçin",
           "label": "Şablon"
         }
       }
     },
     "backup": {
-      "description": "Birden fazla depolama sistemine yedekleme deposu",
+      "description": "Depoyu birden fazla depolama sistemine yedekleme",
       "name": "yedekleme",
       "params": {
         "checkpoint": {
-          "help": "Denetim noktasıyla sıcak yedekleme modunu etkinleştirin (CRIU gerektirir, çevrimiçi depolar için sıfır kesinti süresi)",
-          "label": "Denetim Noktasını Etkinleştir"
+          "help": "Kontrol noktası ile sıcak yedekleme modunu etkinleştirin (CRIU gerektirir, çevrimiçi depolar için sıfır kesinti süresi)",
+          "label": "Kontrol Noktasını Etkinleştir"
         },
         "dest": {
-          "help": "Yedekleme dosyasının adı",
+          "help": "Yedekleme dosyası için ad",
           "label": "Hedef Dosya Adı"
         },
         "option": {
-          "help": "Seçenekler (ör. geçersiz kılma)",
+          "help": "Seçenekler (örn. geçersiz kılma)",
           "label": "Seçenekler"
         },
         "repo": {
-          "help": "Depo adları, virgülle ayrılmış",
+          "help": "Depo ad(lar)ı, virgülle ayrılmış",
           "label": "Depo"
         },
         "state": {
@@ -82,26 +82,22 @@
         }
       }
     },
-    "clone": {
-      "description": "Depoyu aynı makinede klonlayın",
-      "name": "klon"
-    },
     "container_inspect": {
-      "description": "Docker konteyner ayrıntılarını inceleyin",
-      "name": "konteyner_inspect",
+      "description": "Docker kapsayıcı ayrıntılarını inceleme",
+      "name": "container_inspect",
       "params": {
         "container": {
-          "help": "Kapsayıcı adı veya kimliği",
+          "help": "Konteyner adı veya kimliği",
           "label": "Konteyner"
         }
       }
     },
     "container_logs": {
-      "description": "Docker konteyner günlüklerini görüntüleyin",
-      "name": "konteyner_logları",
+      "description": "Docker kapsayıcı günlüklerini görüntüleme",
+      "name": "container_logs",
       "params": {
         "container": {
-          "help": "Kapsayıcı adı veya kimliği",
+          "help": "Konteyner adı veya kimliği",
           "label": "Konteyner"
         },
         "follow": {
@@ -110,94 +106,94 @@
         },
         "lines": {
           "help": "Gösterilecek satır sayısı (varsayılan: 100)",
-          "label": "çizgiler"
+          "label": "Çizgiler"
         }
       }
     },
     "container_pause": {
-      "description": "Çalışan bir Docker kapsayıcısını duraklatın",
-      "name": "duraklatma",
+      "description": "Çalışan bir Docker konteynerini duraklatma",
+      "name": "duraklama",
       "params": {
         "container": {
-          "help": "Kapsayıcı adı veya kimliği",
+          "help": "Konteyner adı veya kimliği",
           "label": "Konteyner"
         }
       }
     },
     "container_remove": {
-      "description": "Docker kapsayıcısını kaldırma",
-      "name": "kaldırmak",
+      "description": "Docker konteynerini kaldırma",
+      "name": "Kaldır",
       "params": {
         "container": {
-          "help": "Kapsayıcı adı veya kimliği",
+          "help": "Konteyner adı veya kimliği",
           "label": "Konteyner"
         },
         "force": {
-          "help": "Çalışan konteynerin zorla çıkarılması",
+          "help": "Çalışan konteyneri zorla çıkarma",
           "label": "Kaldırmaya Zorla"
         }
       }
     },
     "container_restart": {
-      "description": "Docker kapsayıcısını yeniden başlatın",
-      "name": "tekrar başlat",
+      "description": "Docker konteynerini yeniden başlatma",
+      "name": "yeniden başlat",
       "params": {
         "container": {
-          "help": "Kapsayıcı adı veya kimliği",
+          "help": "Konteyner adı veya kimliği",
           "label": "Konteyner"
         }
       }
     },
     "container_start": {
-      "description": "Docker kapsayıcısı başlatma",
-      "name": "başlangıç",
+      "description": "Bir Docker konteyneri başlatma",
+      "name": "başla",
       "params": {
         "container": {
-          "help": "Kapsayıcı adı veya kimliği",
+          "help": "Konteyner adı veya kimliği",
           "label": "Konteyner"
         }
       }
     },
     "container_stats": {
-      "description": "Docker kapsayıcısı kaynak kullanım istatistiklerini görüntüle",
-      "name": "konteyner_stats",
+      "description": "Docker kapsayıcı kaynak kullanım istatistiklerini görüntüleme",
+      "name": "container_stats",
       "params": {
         "container": {
-          "help": "Kapsayıcı adı veya kimliği (isteğe bağlı - boşsa tümünü gösterir)",
+          "help": "Konteyner adı veya kimliği (isteğe bağlı - boşsa tümünü gösterir)",
           "label": "Konteyner"
         }
       }
     },
     "container_stop": {
-      "description": "Çalışan bir Docker kapsayıcısını durdurma",
-      "name": "durmak",
+      "description": "Çalışan bir Docker konteynerini durdurma",
+      "name": "Dur",
       "params": {
         "container": {
-          "help": "Kapsayıcı adı veya kimliği",
+          "help": "Konteyner adı veya kimliği",
           "label": "Konteyner"
         }
       }
     },
     "container_unpause": {
-      "description": "Duraklatılmış bir Docker kapsayıcısının duraklatmasını kaldırma",
+      "description": "Duraklatılmış bir Docker konteynerinin duraklamasını kaldırma",
       "name": "duraklatmayı kaldır",
       "params": {
         "container": {
-          "help": "Kapsayıcı adı veya kimliği",
+          "help": "Konteyner adı veya kimliği",
           "label": "Konteyner"
         }
       }
     },
     "deploy": {
-      "description": "Depoyu birden fazla makineye dağıtın",
-      "name": "dağıtmak",
+      "description": "Depoyu birden fazla makineye dağıtma",
+      "name": "konuşlandırmak",
       "params": {
         "checkpoint": {
-          "help": "Denetim noktasıyla çalışırken dağıtım modunu etkinleştirin (çevrimiçi depolar için CRIU, sıfır kesinti süresi gerektirir)",
-          "label": "Denetim Noktasını Etkinleştir"
+          "help": "Kontrol noktası ile sıcak dağıtım modunu etkinleştirin (CRIU gerektirir, çevrimiçi depolar için sıfır kesinti süresi)",
+          "label": "Kontrol Noktasını Etkinleştir"
         },
         "dest": {
-          "help": "Dağıtım dosyasının adı",
+          "help": "Dağıtım dosyası için ad",
           "label": "Hedef Dosya Adı"
         },
         "machines": {
@@ -205,21 +201,21 @@
           "label": "Hedef Makineler"
         },
         "option": {
-          "help": "Seçenekler (ör. geçersiz kılma)",
+          "help": "Seçenekler (örn. geçersiz kılma)",
           "label": "Seçenekler"
         },
         "repo": {
-          "help": "Depo adları, virgülle ayrılmış",
+          "help": "Depo ad(lar)ı, virgülle ayrılmış",
           "label": "Depo"
         },
         "state": {
-          "help": "Dağıtımdan önce deponun çevrimiçi veya çevrimdışı olduğunu doğrulayın",
+          "help": "Dağıtmadan önce deponun çevrimiçi veya çevrimdışı olduğunu doğrulayın",
           "label": "Gerekli Durum"
         }
       }
     },
     "down": {
-      "description": "Depo hizmetlerini durdur",
+      "description": "Depo hizmetlerini durdurma",
       "name": "aşağı",
       "params": {
         "option": {
@@ -227,17 +223,17 @@
           "label": "Seçenekler"
         },
         "repo": {
-          "help": "Depo adları, virgülle ayrılmış",
+          "help": "Depo ad(lar)ı, virgülle ayrılmış",
           "label": "Depo"
         }
       }
     },
     "expand": {
-      "description": "Sıfır kesinti süresiyle depo depolama alanını çevrimiçi olarak genişletin",
+      "description": "Depo depolama alanını sıfır kesinti ile çevrimiçi olarak genişletin",
       "name": "genişletmek",
       "params": {
         "grand": {
-          "help": "Büyük depo GUID'si",
+          "help": "Büyük depo GUID",
           "label": "Büyük Depo"
         },
         "repo": {
@@ -245,57 +241,57 @@
           "label": "Depo"
         },
         "size": {
-          "help": "Yeni boyut (ör. 20G) - mevcut boyuttan daha büyük olmalıdır",
+          "help": "Yeni boyut (örn. 20G) - mevcut boyuttan daha büyük olmalıdır",
           "label": "Yeni Boyut"
         }
       }
     },
     "fork": {
-      "description": "Zaman damgası tabanlı etikete sahip çatal deposu",
+      "description": "Depoyu zaman damgası tabanlı etiketle çatallama",
       "name": "çatal"
     },
     "hello": {
-      "description": "Ana bilgisayar adından merhaba yazdıran basit test işlevi",
+      "description": "Hostname'den hello yazdıran basit test fonksiyonu",
       "name": "Merhaba"
     },
     "list": {
       "description": "Uzak depolama konumlarındaki dosyaları listeleme",
-      "name": "Uzak Dosyaları Listeleme",
+      "name": "dosyaları listele",
       "params": {
         "format": {
-          "help": "Dosya listeleme formatı",
-          "label": "Çıkış Formatı"
+          "help": "Dosya listesi için format",
+          "label": "Çıktı Formatı"
         },
         "from": {
-          "help": "Dosyaların listeleneceği makine veya depolama sistemi",
-          "label": "Kaynak Konumu"
+          "help": "Dosyaları listelemek için makine veya depolama sistemi",
+          "label": "Kaynak Konum"
         },
         "path": {
-          "help": "Depolama alanı içindeki isteğe bağlı yol",
+          "help": "Depolama alanı içinde isteğe bağlı yol",
           "label": "Yol"
         }
       }
     },
     "mount": {
-      "description": "Depo dosya sistemlerini bağlayın",
+      "description": "Depo dosya sistemlerini bağlama",
       "name": "montaj",
       "params": {
         "checkpoint": {
-          "help": "Varsa kapları kontrol noktasından geri yükleyin (CRIU gerektirir)",
-          "label": "Denetim Noktası Geri Yüklemesini Etkinleştir"
+          "help": "Varsa konteynerleri kontrol noktasından geri yükleme (CRIU gerektirir)",
+          "label": "Kontrol Noktası Geri Yüklemeyi Etkinleştir"
         },
         "from": {
-          "help": "Montaj yapılacak uzak makine",
+          "help": "Bağlanılacak uzak makine",
           "label": "Makineden"
         },
         "repo": {
-          "help": "Depo adları, virgülle ayrılmış",
+          "help": "Depo ad(lar)ı, virgülle ayrılmış",
           "label": "Depo"
         }
       }
     },
     "new": {
-      "description": "Yeni bir depo oluştur",
+      "description": "Yeni bir depo oluşturun",
       "name": "yeni",
       "params": {
         "repo": {
@@ -303,18 +299,18 @@
           "label": "Depo"
         },
         "size": {
-          "help": "Depo boyutu (ör. 10G)",
+          "help": "Depo boyutu (örn. 10G)",
           "label": "Boyut"
         }
       }
     },
     "ownership": {
-      "description": "Kod deposu sahipliğini değiştir",
-      "name": "mülkiyet",
+      "description": "Depo sahipliğini değiştirme",
+      "name": "sahiplik",
       "params": {
         "from": {
           "help": "Şu anki sahibi",
-          "label": "Şimdiki Sahip"
+          "label": "Mevcut Sahibi"
         },
         "repo": {
           "help": "Depo adı",
@@ -322,12 +318,12 @@
         },
         "to": {
           "help": "Yeni sahip (varsayılan: evrensel kullanıcı)",
-          "label": "Yeni Sahip"
+          "label": "Yeni Sahibi"
         }
       }
     },
     "ping": {
-      "description": "Makinenin ağ bağlantısını test edin",
+      "description": "Makineye ağ bağlantısını test edin",
       "name": "ping"
     },
     "plugin": {
@@ -335,83 +331,83 @@
       "name": "eklenti",
       "params": {
         "plugin": {
-          "help": "Eklenti adları, virgülle ayrılmış",
+          "help": "Eklenti ad(lar)ı, virgülle ayrılmış",
           "label": "Eklenti"
         },
         "repo": {
-          "help": "Depo adları, virgülle ayrılmış",
+          "help": "Depo ad(lar)ı, virgülle ayrılmış",
           "label": "Depo"
         }
       }
     },
     "plugout": {
-      "description": "Depo eklentilerini devre dışı bırakın",
-      "name": "fiş",
+      "description": "Depo eklentilerini devre dışı bırakma",
+      "name": "plugout",
       "params": {
         "plugin": {
-          "help": "Eklenti adları, virgülle ayrılmış",
+          "help": "Eklenti ad(lar)ı, virgülle ayrılmış",
           "label": "Eklenti"
         },
         "repo": {
-          "help": "Depo adları, virgülle ayrılmış",
+          "help": "Depo ad(lar)ı, virgülle ayrılmış",
           "label": "Depo"
         }
       }
     },
     "pull": {
-      "description": "Depoyu uzak depolama biriminden çekin",
-      "name": "Çekmek",
+      "description": "Depoyu uzak depolamadan çekme",
+      "name": "çek",
       "params": {
         "from": {
           "help": "Kaynak makineyi veya depolamayı seçin",
           "label": "Kaynak"
         },
         "repo": {
-          "help": "Depo adları, virgülle ayrılmış",
+          "help": "Depo ad(lar)ı, virgülle ayrılmış",
           "label": "Depo"
         },
         "sourceType": {
-          "help": "Makineden mi yoksa depodan mı çekileceğini seçin",
+          "help": "Bir makineden mi yoksa depodan mı çekileceğini seçin",
           "label": "Kaynak Türü"
         }
       }
     },
     "push": {
-      "description": "Depoyu uzak depolama birimine aktarın",
+      "description": "Depoyu uzak depolamaya itin",
       "name": "itmek",
       "params": {
         "checkpoint": {
-          "help": "Denetim noktasıyla sıcak yedekleme modunu etkinleştirin (CRIU gerektirir, çevrimiçi depolar için sıfır kesinti süresi)",
-          "label": "Denetim Noktasını Etkinleştir"
+          "help": "Kontrol noktası ile sıcak yedekleme modunu etkinleştirin (CRIU gerektirir, çevrimiçi depolar için sıfır kesinti süresi)",
+          "label": "Kontrol Noktasını Etkinleştir"
         },
         "dest": {
-          "help": "Yedekleme dosyasının adı",
+          "help": "Yedekleme dosyası için ad",
           "label": "Hedef Dosya Adı"
         },
         "destinationType": {
-          "help": "Bir makineye mi yoksa depolama birimine mi aktarılacağını seçin",
+          "help": "Bir makineye mi yoksa depoya mı itileceğini seçin",
           "label": "Hedef Türü"
         },
         "option": {
-          "help": "Seçenekler (ör. geçersiz kılma)",
+          "help": "Seçenekler (örn. geçersiz kılma)",
           "label": "Seçenekler"
         },
         "repo": {
-          "help": "Depo adları, virgülle ayrılmış",
+          "help": "Depo ad(lar)ı, virgülle ayrılmış",
           "label": "Depo"
         },
         "state": {
-          "help": "Göndermeden önce deponun çevrimiçi veya çevrimdışı olduğunu doğrulayın",
+          "help": "İtmeden önce deponun çevrimiçi veya çevrimdışı olduğunu doğrulayın",
           "label": "Gerekli Durum"
         },
         "to": {
-          "help": "Hedef makineyi veya depolamayı seçin",
-          "label": "Varış noktası"
+          "help": "Hedef makineyi veya depolama alanını seçin",
+          "label": "Hedef"
         }
       }
     },
     "resize": {
-      "description": "Depo depolama alanını yeniden boyutlandırın (çevrimdışı işlem - havuzun bağlantısı kesilmelidir)",
+      "description": "Depo depolama alanını yeniden boyutlandırma (çevrimdışı işlem - deponun bağlantısı kaldırılmalıdır)",
       "name": "yeniden boyutlandır",
       "params": {
         "repo": {
@@ -419,7 +415,7 @@
           "label": "Depo"
         },
         "size": {
-          "help": "Yeni boyut (ör. 20G) - mevcut boyuttan daha büyük veya daha küçük olabilir",
+          "help": "Yeni boyut (örn. 20G) - mevcut boyuttan daha büyük veya daha küçük olabilir",
           "label": "Yeni Boyut"
         }
       }
@@ -435,82 +431,82 @@
       }
     },
     "setup": {
-      "description": "Gerekli araç ve konfigürasyonlarla işletim sistemini kurun",
-      "name": "kurmak",
+      "description": "İşletim sistemini gerekli araçlar ve konfigürasyonlarla kurma",
+      "name": "kurulum",
       "params": {
         "datastore_size": {
-          "help": "Veri deposu boyutu (ör. %95, 100G)",
+          "help": "Veri deposu boyutu (örn. %95, 100G)",
           "label": "Veri Deposu Boyutu"
         },
         "docker_source": {
-          "help": "Docker nasıl kurulur (docker-repo = resmi depo, paket yöneticisi = işletim sistemi paketleri, snap = snap deposu, manuel = atla)",
+          "help": "Docker nasıl kurulur (docker-repo = resmi depo, package-manager = işletim sistemi paketleri, snap = snap deposu, manual = atla)",
           "label": "Docker Kurulum Kaynağı"
         },
         "install_amd_driver": {
-          "help": "AMD GPU sürücülerini yükleyin (otomatik = önce GPU'yu algıla, doğru = her zaman yükle, yanlış = atla)",
-          "label": "AMD GPU Sürücüsünü yükleyin"
+          "help": "AMD GPU sürücülerini yükle (auto = önce GPU'yu algıla, true = her zaman yükle, false = atla)",
+          "label": "AMD GPU Sürücüsünü Yükleme"
         },
         "install_criu": {
-          "help": "Denetim noktası/geri yükleme desteği için CRIU'yu yükleyin (auto = çekirdek >= 3.11 ise yükle, true = zorla yükleme, false = atla, manuel = kullanıcı yüklemeleri)",
-          "label": "CREATE'i yükle"
+          "help": "Kontrol noktası/geri yükleme desteği için CRIU'yu yükleyin (auto = kernel >= 3.11 ise yükle, true = yüklemeye zorla, false = atla, manual = kullanıcı yükler)",
+          "label": "CRIU'yu yükleyin"
         },
         "install_nvidia_driver": {
-          "help": "NVIDIA GPU sürücülerini yükleyin (otomatik = önce GPU'yu algıla, doğru = her zaman yükle, yanlış = atla)",
-          "label": "NVIDIA GPU Sürücüsünü yükleyin"
+          "help": "NVIDIA GPU sürücülerini yükleme (auto = önce GPU'yu algıla, true = her zaman yükle, false = atla)",
+          "label": "NVIDIA GPU Sürücüsünü Yükleme"
         },
         "rclone_source": {
-          "help": "Rclone nasıl kurulur (install-script = resmi komut dosyası, paket yöneticisi = apt/dnf, manuel = skip)",
+          "help": "rclone nasıl kurulur (install-script = resmi betik, package-manager = apt/dnf, manual = atla)",
           "label": "Rclone Kurulum Kaynağı"
         },
         "source": {
-          "help": "Paket kaynağı",
+          "help": "Kaynak paket",
           "label": "Kaynak"
         }
       }
     },
     "uninstall": {
       "description": "Sistem bileşenlerini temizleme ve kaldırma",
-      "name": "kaldır"
+      "name": "Kaldır"
     },
     "unmount": {
-      "description": "Depo dosya sistemlerinin bağlantısını kesin",
-      "name": "bağlantısını kesmek",
+      "description": "Depo dosya sistemlerinin bağlantısını kaldırın",
+      "name": "unmount",
       "params": {
         "checkpoint": {
-          "help": "Bağlantıyı kesmeden önce kontrol noktası oluşturun (CRIU gerektirir)",
+          "help": "Bağlantıyı kaldırmadan önce kontrol noktası oluşturun (CRIU gerektirir)",
           "label": "Kontrol Noktası Oluştur"
         },
         "from": {
-          "help": "Bağlantının kesileceği uzak makine",
+          "help": "Bağlantısı kaldırılacak uzak makine",
           "label": "Makineden"
         },
         "repo": {
-          "help": "Depo adları, virgülle ayrılmış",
+          "help": "Depo ad(lar)ı, virgülle ayrılmış",
           "label": "Depo"
         }
       }
     },
     "up": {
-      "description": "Rediaccfile kullanarak depo hizmetlerini başlatın",
+      "description": "Rediaccfile kullanarak depo hizmetlerini başlatma",
       "name": "yukarı",
       "params": {
         "option": {
-          "help": "Seçenekler (ör. yalnızca hazırlık)",
+          "help": "Seçenekler (örn. sadece hazırlık)",
           "label": "Seçenekler"
         },
         "repo": {
-          "help": "Depo adları, virgülle ayrılmış",
+          "help": "Depo ad(lar)ı, virgülle ayrılmış",
           "label": "Depo"
         }
       }
     },
     "validate": {
-      "description": "Hazırlık, yukarı, durum kontrolleri, test ve aşağı işlemlerini çalıştırarak depoyu doğrulayın",
+      "description": "Hazırlık, yukarı, sağlık kontrolleri, test ve aşağı işlemlerini çalıştırarak depoyu doğrulayın",
       "name": "doğrulamak",
       "params": {
         "cleanup": {
-          "help": "Doğrulama tamamlandıktan sonra deponun bağlantısını kesin",
-          "label": "Temizlemek"
+          "help": "Doğrulama tamamlandıktan sonra deponun bağlantısını kaldırın",
+          "label": "Temizleme"
         },
         "grand": {
           "help": "Ana depo adı",
@@ -525,7 +521,7 @@
           "label": "Aşağı Atla"
         },
         "skip_prep": {
-          "help": "Yakın zamanda çalıştırıldıysanız hazırlık aşamasını atlayın",
+          "help": "Yakın zamanda çalıştırıldıysa hazırlık aşamasını atlayın",
           "label": "Hazırlığı Atla"
         },
         "timeout": {
@@ -535,41 +531,41 @@
       }
     }
   },
-  "missingRequiredParams": "Lütfen gerekli tüm parametreleri girin: {{params}}",
+  "missingRequiredParams": "Lütfen gerekli tüm parametreleri doldurun: {{params}}",
   "onlinePushLearnMore": "Çevrimiçi ve çevrimdışı itmeler hakkında daha fazla bilgi edinin →",
-  "onlinePushWarningMessage": "Hizmetler çalışırken takılı bir havuzun itilmesi veri tutarsızlıklarına neden olabilir.",
-  "onlinePushWarningTitle": "Çevrimiçi Anlık Uyarı",
+  "onlinePushWarningMessage": "Hizmetler çalışırken bağlı bir depoyu itmek veri tutarsızlıklarına neden olabilir.",
+  "onlinePushWarningTitle": "Çevrimiçi Push Uyarısı",
   "priority": "Öncelik",
-  "priorityAboveNormal": "Normalin üstünde",
+  "priorityAboveNormal": "Normalin Üzerinde",
   "priorityBelowNormal": "Normal",
-  "priorityHelp": "Görevler önce önceliğe, ardından yaşa göre işlenir",
+  "priorityHelp": "Görevler önce önceliğe göre, sonra yaşa göre işlenir",
   "priorityHigh": "Yüksek",
-  "priorityHighDescription": "Birden fazla eşzamanlı yüksek öncelikli göreve izin verir. Daha hızlı işlenmesi gereken önemli görevler için kullanın.",
-  "priorityHighWarning": "Yüksek Öncelik (2)",
+  "priorityHighDescription": "Birden fazla eş zamanlı yüksek öncelikli göreve izin verir. Daha hızlı işlem gerektiren önemli görevler için kullanın.",
+  "priorityHighWarning": "Yüksek Öncelikli (2)",
   "priorityHighest": "En yüksek",
-  "priorityHighestDescription": "En yüksek öncelikli bir görevi gönderdiğinizde, mevcut en yüksek öncelikli görevlerinizin tümü otomatik olarak iptal edilir. Yalnızca acil müdahale gerektiren acil kritik görevler için kullanın.",
-  "priorityHighestTimeout": "P1 görevleri 33 saniye sonra zaman aşımına uğradı",
-  "priorityHighestTimeoutWarning": "SSH testleri, durum kontrolleri ve durum sorguları gibi hızlı işlemler için en iyisi. Daha uzun kritik görevler için P2'yi kullanın (katmana dayalı zaman aşımı: 2-96 saat).",
+  "priorityHighestDescription": "En yüksek öncelikli bir görev göndermek, sahip olduğunuz mevcut en yüksek öncelikli görevleri otomatik olarak iptal edecektir. Yalnızca hemen ilgilenilmesi gereken acil kritik görevler için kullanın.",
+  "priorityHighestTimeout": "P1 görevleri 33 saniye sonra zaman aşımına uğrar",
+  "priorityHighestTimeoutWarning": "SSH testleri, sağlık kontrolleri ve durum sorguları gibi hızlı işlemler için en iyisidir. Daha uzun kritik görevler için P2 kullanın (katman tabanlı zaman aşımı: 2-96 saat).",
   "priorityHighestWarning": "En Yüksek Öncelik (1)",
   "priorityLow": "Düşük",
-  "priorityLowDescription": "Standart işlem hızı. Çoğu operasyon ve günlük görevler için önerilir.",
+  "priorityLowDescription": "Standart işlem hızı. Çoğu işlem ve günlük görevler için önerilir.",
   "priorityLowWarning": "Normal Öncelik (4)",
   "priorityLowestDescription": "En yavaş işlem hızı. Toplu işlemler veya zaman kısıtlaması olmayan görevler için kullanın.",
   "priorityLowestWarning": "En Düşük Öncelik (5)",
-  "priorityNormal": "Normalin üstünde",
-  "priorityNormalDescription": "Standart işlem hızından daha hızlı. Normalden daha hızlı işlenmesi gereken görevler için kullanın.",
-  "priorityNormalWarning": "Normal Önceliğin Üstünde (3)",
+  "priorityNormal": "Normalin Üzerinde",
+  "priorityNormalDescription": "Standart işlem hızından daha yüksek. Normalden daha hızlı işlem gerektiren görevler için kullanın.",
+  "priorityNormalWarning": "Normalin Üzerinde Öncelik (3)",
   "priorityPopoverLevels": "Öncelik Seviyeleri:",
-  "priorityPopoverP1": "33 saniyelik mola. SSH testleri, durum kontrolleri ve durum sorguları gibi hızlı işlemler için. Anında yürütme için ayrılmış yuvalar.",
-  "priorityPopoverP2": "Katman zaman aşımı (2-96 saat). Rezerve slotlar. Önemli kritik görevler için.",
-  "priorityPopoverP3": "Katman zaman aşımı (2-96 saat). Normal yuvalar. Daha hızlı işlem gerektiren görevler için.",
-  "priorityPopoverP4": "Katman zaman aşımı (2-96 saat). Çoğu işlem için standart işleme.",
-  "priorityPopoverP5": "Katman zaman aşımı (2-96 saat). Zaman kısıtlaması olmayan toplu işlemler için.",
+  "priorityPopoverP1": "33 saniyelik zaman aşımı. SSH testleri, sağlık kontrolleri ve durum sorguları gibi hızlı işlemler için. Anında yürütme için ayrılmış yuvalar.",
+  "priorityPopoverP2": "Kademe zaman aşımı (2-96h). Ayrılmış yuvalar. Önemli kritik görevler için.",
+  "priorityPopoverP3": "Kademe zaman aşımı (2-96 saat). Normal yuvalar. Daha hızlı işlem gerektiren görevler için.",
+  "priorityPopoverP4": "Kademe zaman aşımı (2-96 saat). Çoğu işlem için standart işlem.",
+  "priorityPopoverP5": "Kademe zaman aşımı (2-96h). Zaman kısıtlaması olmayan toplu işlemler için.",
   "priorityPopoverTitle": "Öncelik Sistemi",
   "quickTaskBadge": "Hızlı Görev",
-  "quickTaskDescription": "30 saniyeden kısa sürede tamamlanır",
-  "searchFunctions": "Arama işlevleri...",
-  "selectFunction": "İşlev Seç",
+  "quickTaskDescription": "30 saniyenin altında tamamlanır",
+  "searchFunctions": "Arama fonksiyonları...",
+  "selectFunction": "Fonksiyon Seçiniz",
   "selectFunctionToConfigure": "Yapılandırmak için bir işlev seçin",
   "validationError": "Doğrulama Hatası"
 }

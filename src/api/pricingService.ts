@@ -90,7 +90,7 @@ export const getPlanPrice = (pricing: PricingConfig, planCode: string): number |
   // Map plan codes to pricing keys
   const planMap: Record<string, string> = {
     'COMMUNITY': 'community',
-    'PRO': 'pro',
+    'PROFESSIONAL': 'professional',
     'BUSINESS': 'business',
     'ENTERPRISE': 'enterprise'
   };
