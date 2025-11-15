@@ -257,8 +257,8 @@ const AccessPage: React.FC = () => {
         </AccessListHeader>
       }
       loading={permissionsLoading}
-      data={permissionGroups}
-      columns={permissionColumns}
+      data={permissionGroups as any}
+      columns={permissionColumns as any}
       rowKey="permissionGroupName"
       searchPlaceholder={t('access.permissions.searchPlaceholder', { defaultValue: 'Search permission groups...' })}
       data-testid="system-permission-group-table"

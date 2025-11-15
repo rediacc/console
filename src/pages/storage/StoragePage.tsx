@@ -517,7 +517,7 @@ const StoragePage: React.FC = () => {
         onCancel={closeUnifiedModal}
         resourceType="storage"
         mode={unifiedModalState.mode}
-        existingData={unifiedModalState.data || currentResource || undefined}
+        existingData={(unifiedModalState.data || currentResource) as any}
         teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
         onSubmit={handleUnifiedModalSubmit}
         onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}

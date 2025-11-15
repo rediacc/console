@@ -522,8 +522,8 @@ const InfrastructurePage: React.FC = () => {
                   </ListTitleRow>
                 }
                 loading={regionsLoading}
-                data={regionsList}
-                columns={regionColumns}
+                data={regionsList as any}
+                columns={regionColumns as any}
                 rowKey="regionName"
                 searchPlaceholder={t('regions.searchRegions')}
                 data-testid="system-region-table"
@@ -544,10 +544,10 @@ const InfrastructurePage: React.FC = () => {
                   onChange: (selectedRowKeys) => setSelectedRegion((selectedRowKeys[0] as string) || null),
                 }}
                 onRow={(record) => ({
-                  onClick: () => setSelectedRegion(record.regionName),
+                  onClick: () => setSelectedRegion((record as any).regionName),
                   className: [
                     'clickable-row',
-                    selectedRegion === record.regionName ? 'selected-row' : '',
+                    selectedRegion === (record as any).regionName ? 'selected-row' : '',
                   ]
                     .filter(Boolean)
                     .join(' '),

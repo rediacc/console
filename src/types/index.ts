@@ -74,3 +74,10 @@ export interface Repository {
   vaultContent?: string
   grandGuid?: string
 }
+
+export interface PluginContainer {
+  name: string
+  image: string
+  status: string
+  [key: string]: unknown
+}
