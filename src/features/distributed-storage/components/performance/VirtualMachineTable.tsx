@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useEffect } from 'react'
-import { FixedSizeList } from 'react-window'
+import ReactWindow from 'react-window'
 import * as InfiniteLoaderModule from 'react-window-infinite-loader'
 import { Checkbox, Space, Spin } from 'antd'
 import { Machine } from '@/types'
@@ -8,9 +8,9 @@ import { useMachineSelection } from '@/store/distributedStorage/hooks'
 import { useTableStyles } from '@/hooks/useComponentStyles'
 import styles from './VirtualMachineTable.module.css'
 
-const List = FixedSizeList
+const List = ReactWindow.FixedSizeList
 
-type VirtualizedList = FixedSizeList<VirtualMachineListRowProps>
+type VirtualizedList = any
 type ListChildProps<T = any> = { index: number; style: React.CSSProperties; data: T }
 
 interface VirtualMachineTableProps {
