@@ -281,7 +281,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   const schema = useMemo(() => getSchema(), [resourceType, mode, uiMode])
 
   const form = useForm<ResourceFormValues>({
-    resolver: zodResolver(schema as z.ZodTypeAny) as Resolver<ResourceFormValues, any, ResourceFormValues>,
+    resolver: zodResolver(schema) as unknown as Resolver<ResourceFormValues, any, ResourceFormValues>,
     defaultValues: getDefaultValues(),
   })
 
