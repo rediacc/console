@@ -1,66 +1,66 @@
 {
   "company": {
-    "configureVault": "Apps Kasasını Yapılandır",
-    "description": "Kuruluş çapındaki yapılandırmaları yönetmek için şirket kasası ayarlarınızı yapılandırın.",
+    "configureVault": "Kasayı Yapılandırma",
+    "description": "Kuruluş genelindeki yapılandırmaları yönetmek için şirket kasası ayarlarınızı yapılandırın.",
     "modalTitle": "Şirket Kasasını Yapılandırma",
     "title": "Şirket Ayarları"
   },
   "personal": {
     "changePassword": {
       "confirmPasswordLabel": "Yeni Şifreyi Onayla",
-      "confirmPasswordMismatch": "Şifreler eşleşmiyor",
+      "confirmPasswordMismatch": "Parolalar eşleşmiyor",
       "confirmPasswordPlaceholder": "Yeni şifreyi onayla",
       "confirmPasswordRequired": "Lütfen yeni şifrenizi onaylayın",
       "newPasswordLabel": "Yeni Şifre",
       "newPasswordMin": "Şifre en az 8 karakter uzunluğunda olmalıdır",
       "newPasswordPattern": "Şifre büyük harf, küçük harf, sayı ve özel karakter içermelidir",
-      "newPasswordPlaceholder": "Yeni şifreyi girin",
+      "newPasswordPlaceholder": "Yeni şifre girin",
       "newPasswordRequired": "Lütfen yeni şifrenizi girin",
       "requirement1": "En az 8 karakter uzunluğunda",
       "requirement2": "Büyük ve küçük harfler içerir",
       "requirement3": "En az bir sayı içerir",
       "requirement4": "En az bir özel karakter içerir",
-      "requirementsTitle": "Şifre Gereksinimleri",
-      "submit": "Şifre değiştir",
-      "successContent": "Şifreniz değiştirildi. {{seconds}} saniye içinde çıkış yapacaksınız...",
+      "requirementsTitle": "Parola Gereksinimleri",
+      "submit": "Şifre Değiştir",
+      "successContent": "Şifreniz değiştirildi. Oturumunuz {{seconds}} saniye içinde kapatılacaktır...",
       "successTitle": "Şifre Başarıyla Değiştirildi",
-      "title": "Şifre değiştir"
+      "title": "Şifre Değiştir"
     },
-    "configureVault": "Apps Kasasını Yapılandır",
-    "description": "Deneyiminizi kişiselleştirmek için kişisel kasa ayarlarınızı yapılandırın.",
-    "modalTitle": "Kullanıcı Kasasını Yapılandırın",
+    "configureVault": "Kasayı Yapılandırma",
+    "description": "Deneyiminizi özelleştirmek için kişisel kasa ayarlarınızı yapılandırın.",
+    "modalTitle": "Kullanıcı Kasasını Yapılandırma",
     "title": "Kişisel Ayarlar"
   },
   "title": "Ayarlar",
   "twoFactorAuth": {
-    "disable": "İki Faktörlü Kimlik Doğrulamayı Devre Dışı Bırak",
+    "disable": "İki Faktörlü Kimlik Doğrulamayı Devre Dışı Bırakma",
     "disableModal": {
-      "codeFormat": "Kod yalnızca rakamlardan oluşmalıdır",
+      "codeFormat": "Kod yalnızca sayı içermelidir",
       "codeLabel": "TFA Kodu",
-      "codeLength": "Kod tam olarak 6 haneli olmalıdır",
+      "codeLength": "Kod tam olarak 6 basamaklı olmalıdır",
       "codePlaceholder": "000000",
-      "codeRequired": "TFA kodu gerekli",
-      "passwordLabel": "Mevcut Şifre",
-      "passwordPlaceholder": "Mevcut şifrenizi girin",
-      "passwordRequired": "Şifre gerekli",
+      "codeRequired": "TFA kodu gereklidir",
+      "passwordLabel": "Geçerli Şifre",
+      "passwordPlaceholder": "Geçerli şifrenizi girin",
+      "passwordRequired": "Şifre gereklidir",
       "submit": "TFA'yı devre dışı bırak",
-      "title": "İki Faktörlü Kimlik Doğrulamayı Devre Dışı Bırak",
+      "title": "İki Faktörlü Kimlik Doğrulamayı Devre Dışı Bırakma",
       "warning": "Güvenlik Uyarısı",
-      "warningDescription": "TFA'yı devre dışı bırakmak hesabınızı daha az güvenli hale getirecektir. Devam etmek için mevcut şifrenizi ve geçerli bir TFA kodunu girmeniz gerekecektir."
+      "warningDescription": "TFA'yı devre dışı bırakmak hesabınızı daha az güvenli hale getirecektir. Devam etmek için mevcut şifrenizi ve geçerli bir TFA kodu girmeniz gerekir."
     },
-    "done": "Tamamlamak",
+    "done": "Bitti",
     "enable": "İki Faktörlü Kimlik Doğrulamayı Etkinleştir",
     "enableModal": {
-      "passwordLabel": "Mevcut Şifre",
-      "passwordPlaceholder": "Mevcut şifrenizi girin",
-      "passwordRequired": "Şifre gerekli",
-      "submit": "TFA'yı etkinleştir",
+      "passwordLabel": "Geçerli Şifre",
+      "passwordPlaceholder": "Geçerli şifrenizi girin",
+      "passwordRequired": "Şifre gereklidir",
+      "submit": "TFA'yı Etkinleştir",
       "title": "İki Faktörlü Kimlik Doğrulamayı Etkinleştir",
       "warning": "Güvenlik Doğrulaması Gerekli",
       "warningDescription": "İki faktörlü kimlik doğrulamayı etkinleştirmek için lütfen hesap şifrenizi girin."
     },
     "enableSuccess": {
-      "subtitle": "Hesabınız artık TFA ile korunuyor.",
+      "subtitle": "Hesabınız artık TFA ile korunmaktadır.",
       "title": "İki Faktörlü Kimlik Doğrulama Etkinleştirildi!",
       "verified": "TFA Başarıyla Doğrulandı",
       "verifiedDescription": "Kimlik doğrulayıcı uygulamanız başarıyla yapılandırıldı ve iki faktörlü kimlik doğrulama artık hesabınızda etkin."
@@ -70,35 +70,35 @@
       "instructions": "Bu gizli anahtarı kimlik doğrulayıcı uygulamanıza girin:",
       "title": "Manuel Kurulum"
     },
-    "saveSecretWarning": "Bu gizli anahtarı güvenli bir yere saklayın. Kimlik doğrulayıcı cihazınızı kaybederseniz hesabınıza erişimi geri kazanmak için buna ihtiyacınız olacak.",
-    "scanQRCode": "Bu QR kodunu kimlik doğrulayıcı uygulamanızla tarayın",
-    "secretCopied": "Gizli anahtar panoya kopyalandı",
+    "saveSecretWarning": "Bu gizli anahtarı güvenli bir yere kaydedin. Kimlik doğrulayıcı cihazınızı kaybederseniz hesabınıza erişimi kurtarmak için buna ihtiyacınız olacaktır.",
+    "scanQRCode": "Kimlik doğrulayıcı uygulamanızla bu QR kodunu tarayın",
+    "secretCopied": "Panoya kopyalanan gizli anahtar",
     "setupMethods": {
       "manual": "Manuel Giriş",
       "qrCode": "QR Kodu"
     },
     "status": {
-      "disabled": "İki Faktörlü Kimlik Doğrulama Devre Dışı Bırakıldı",
+      "disabled": "İki Faktörlü Kimlik Doğrulama Devre Dışı",
       "disabledDescription": "Hesabınıza ekstra bir güvenlik katmanı ekleyin.",
-      "enabled": "İki Faktörlü Kimlik Doğrulama Etkin",
-      "enabledDescription": "Hesabınız ek bir güvenlik katmanıyla korunmaktadır."
+      "enabled": "İki Faktörlü Kimlik Doğrulama Etkinleştirildi",
+      "enabledDescription": "Hesabınız ek bir güvenlik katmanı ile korunmaktadır."
     },
     "title": "İki Faktörlü Kimlik Doğrulama",
     "verification": {
-      "codeFormat": "Kod yalnızca rakamlardan oluşmalıdır",
+      "codeFormat": "Kod yalnızca sayı içermelidir",
       "codeLabel": "Doğrulama Kodu",
-      "codeLength": "Kod tam olarak 6 haneli olmalıdır",
+      "codeLength": "Kod tam olarak 6 basamaklı olmalıdır",
       "codePlaceholder": "000000",
-      "codeRequired": "Doğrulama kodu gerekli",
+      "codeRequired": "Doğrulama kodu gereklidir",
       "submit": "TFA'yı Doğrulayın ve Etkinleştirin",
-      "subtitle": "QR kodunu tarayın veya kimlik doğrulama uygulamanıza gizli anahtarı girin, ardından doğrulamak için 6 haneli kodu girin.",
+      "subtitle": "QR kodunu tarayın veya kimlik doğrulayıcı uygulamanıza gizli anahtarı girin, ardından doğrulamak için 6 basamaklı kodu girin.",
       "title": "Kimlik Doğrulayıcınızı Doğrulayın"
     },
     "whatIs": {
       "benefit1": "Şifreniz ele geçirilse bile hesabınızı korur",
-      "benefit2": "Endüstri standardı TOTP (Zamana Dayalı Tek Kullanımlık Şifre) algoritmasını kullanır",
-      "benefit3": "Google Authenticator, Authy veya Microsoft Authenticator gibi popüler kimlik doğrulama uygulamalarıyla çalışır",
-      "description": "İki Faktörlü Kimlik Doğrulama (TFA), şifrenize ek olarak telefonunuzdan zamana dayalı bir kod alınmasını gerektirerek hesabınıza ekstra bir güvenlik katmanı ekler.",
+      "benefit2": "Endüstri standardı TOTP (Zaman Tabanlı Tek Kullanımlık Şifre) algoritmasını kullanır",
+      "benefit3": "Google Authenticator, Authy veya Microsoft Authenticator gibi popüler kimlik doğrulayıcı uygulamalarıyla çalışır",
+      "description": "İki Faktörlü Kimlik Doğrulama (TFA), şifrenize ek olarak telefonunuzdan zamana dayalı bir kod isteyerek hesabınıza ekstra bir güvenlik katmanı ekler.",
       "title": "İki Faktörlü Kimlik Doğrulama Nedir?"
     }
   }

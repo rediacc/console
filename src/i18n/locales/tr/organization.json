@@ -1,78 +1,78 @@
 {
-  "users": {
-    "heading": "Users",
-    "title": "Users",
-    "subtitle": "Manage users and their permissions",
-    "searchPlaceholder": "Search users...",
-    "status": {
-      "active": "Active",
-      "inactive": "Inactive"
-    },
-    "permissionGroups": {
-      "none": "No Group"
-    },
-    "lastActive": {
-      "never": "Never"
-    },
-    "form": {
-      "emailLabel": "Email",
-      "passwordLabel": "Password",
-      "passwordPlaceholder": "Enter password"
-    },
+  "access": {
+    "heading": "Erişim Kontrolü",
     "modals": {
-      "createTitle": "Create User",
-      "assignTitle": "Assign Permissions",
-      "permissionGroupLabel": "Permission Group",
-      "permissionGroupPlaceholder": "Select permission group",
-      "usersLabel": "users",
-      "permissionsLabel": "permissions"
+      "addPermissionButton": "İzin Ekleme",
+      "addPermissionsTab": "İzin Ekleme",
+      "assignUserTitle": "Kullanıcı Atama",
+      "assignUserTo": "{{group}}'a",
+      "createGroupTitle": "İzin Grubu Oluşturma",
+      "currentPermissionsTab": "Geçerli İzinler",
+      "deleteGroupDescription": "\"{{group}}\" grubunu silmek istediğinizden emin misiniz?",
+      "deleteGroupTitle": "İzin Grubunu Sil",
+      "groupNameRequired": "Lütfen bir grup adı girin",
+      "groupPlaceholder": "Grup adını girin",
+      "managePermissionsTitle": "İzinleri Yönet",
+      "noPermissions": "Atanmış izin yok",
+      "permissionPlaceholder": "Eklemek için izin seçin",
+      "userPlaceholder": "Kullanıcı seçin"
+    },
+    "permissions": {
+      "searchPlaceholder": "Arama izin grupları...",
+      "subtitle": "İzin gruplarını ve atamalarını yönetme",
+      "title": "İzin Grupları"
+    },
+    "tabs": {
+      "permissions": "İzinler",
+      "sessions": "Oturumlar"
     }
   },
   "teams": {
-    "heading": "Teams",
-    "title": "Teams",
-    "subtitle": "Manage teams and their members",
-    "searchPlaceholder": "Search teams...",
+    "heading": "Takımlar",
     "manageMembers": {
-      "title": "Manage Team Members",
-      "currentTab": "Current Members",
-      "addTab": "Add Member",
-      "removeTitle": "Remove Team Member",
-      "removeDescription": "Are you sure you want to remove \"{{email}}\" from this team?",
-      "removeButton": "Remove",
-      "memberStatus": "Member",
-      "accessStatus": "Has Access",
-      "pendingStatus": "Pending",
-      "empty": "No members in this team",
-      "selectUser": "Select user"
-    }
-  },
-  "access": {
-    "heading": "Access Control",
-    "tabs": {
-      "permissions": "Permissions",
-      "sessions": "Sessions"
+      "accessStatus": "Erişimi Var",
+      "addTab": "Üye Ekle",
+      "currentTab": "Mevcut Üyeler",
+      "empty": "Bu ekipte üye yok",
+      "memberStatus": "Üye",
+      "pendingStatus": "Beklemede",
+      "removeButton": "Kaldırmak",
+      "removeDescription": "Bu ekipten \"{{email}}\" kaldırmak istediğinizden emin misiniz?",
+      "removeTitle": "Ekip Üyesini Kaldır",
+      "selectUser": "Kullanıcı seçin",
+      "title": "Ekip Üyelerini Yönetme"
     },
-    "permissions": {
-      "title": "Permission Groups",
-      "subtitle": "Manage permission groups and their assignments",
-      "searchPlaceholder": "Search permission groups..."
+    "searchPlaceholder": "Arama ekipleri...",
+    "subtitle": "Ekipleri ve üyelerini yönetme",
+    "title": "Takımlar"
+  },
+  "users": {
+    "form": {
+      "emailLabel": "E-posta",
+      "passwordLabel": "Şifre",
+      "passwordPlaceholder": "Şifre girin"
+    },
+    "heading": "Kullanıcılar",
+    "lastActive": {
+      "never": "Asla"
     },
     "modals": {
-      "createGroupTitle": "Create Permission Group",
-      "groupPlaceholder": "Enter group name",
-      "groupNameRequired": "Please enter a group name",
-      "managePermissionsTitle": "Manage Permissions",
-      "currentPermissionsTab": "Current Permissions",
-      "addPermissionsTab": "Add Permissions",
-      "noPermissions": "No permissions assigned",
-      "permissionPlaceholder": "Select permission to add",
-      "addPermissionButton": "Add Permission",
-      "assignUserTitle": "Assign User",
-      "assignUserTo": "to {{group}}",
-      "userPlaceholder": "Select user",
-      "deleteGroupTitle": "Delete Permission Group",
-      "deleteGroupDescription": "Are you sure you want to delete group \"{{group}}\"?"
-    }
+      "assignTitle": "İzinleri Atama",
+      "createTitle": "Kullanıcı Oluştur",
+      "permissionGroupLabel": "İzin Grubu",
+      "permissionGroupPlaceholder": "İzin grubunu seçin",
+      "permissionsLabel": "izinler",
+      "usersLabel": "kullanıcılar"
+    },
+    "permissionGroups": {
+      "none": "Grup Yok"
+    },
+    "searchPlaceholder": "Arama kullanıcıları...",
+    "status": {
+      "active": "Aktif",
+      "inactive": "Aktif değil"
+    },
+    "subtitle": "Kullanıcıları ve izinlerini yönetme",
+    "title": "Kullanıcılar"
   }
 }

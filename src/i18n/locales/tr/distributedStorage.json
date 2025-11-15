@@ -2,22 +2,22 @@
   "assignment": {
     "actions": {
       "assignToCluster": "Kümeye Atandı",
-      "assignedToClone": "Klonlamaya Atandı",
-      "assignedToImage": "Resme Atandı",
-      "reassignedImage": "Yeniden Atanan Resim",
-      "removedFromClone": "Klondan kaldırıldı",
-      "removedFromCluster": "Kümeden kaldırıldı"
+      "assignedToClone": "Klon'a Atandı",
+      "assignedToImage": "Görüntüye Atandı",
+      "reassignedImage": "Yeniden Atanan Görüntü",
+      "removedFromClone": "Klon'dan kaldırıldı",
+      "removedFromCluster": "Kümeden Çıkarıldı"
     },
-    "assignedTo": "{{type}}'a atandı: {{name}}",
-    "assignedToClone": "Klonlamaya Atandı",
+    "assignedTo": "{{type}}'a atandı: YER SAHIBI_1__",
+    "assignedToClone": "Klon'a Atandı",
     "assignedToCluster": "Kümeye Atandı",
-    "assignedToImage": "Resme Atandı",
+    "assignedToImage": "Görüntüye Atandı",
     "available": "Mevcut",
-    "currentAssignment": "Mevcut Ödev",
-    "history": "Ödev Geçmişi",
+    "currentAssignment": "Mevcut Görevlendirme",
+    "history": "Görevlendirme Geçmişi",
     "none": "Hiçbiri",
     "status": "Atama Durumu",
-    "viewStatus": "Ödev Durumunu Görüntüle"
+    "viewStatus": "Atama Durumunu Görüntüle"
   },
   "assignmentStatus": {
     "available": "Mevcut",
@@ -27,110 +27,110 @@
   },
   "clones": {
     "addMachine": "Makine Ekle",
-    "assignMachines": "Makineleri Ata",
-    "assignedMachines": "Atanan Makineler",
+    "assignMachines": "Makine Atama",
+    "assignedMachines": "Atanmış Makineler",
     "exportMachines": "İhracat Makineleri",
-    "machineManager": "Makine Müdürü",
-    "noMachinesAssigned": "Bu klona atanan makine yok",
+    "machineManager": "Makine Yöneticisi",
+    "noMachinesAssigned": "Bu klona atanmış makine yok",
     "removeMachine": "Makineyi Kaldır",
-    "removeSelectedMachines": "Seçilen Makineleri Kaldır",
+    "removeSelectedMachines": "Seçili Makineleri Kaldır",
     "searchMachines": "Arama makineleri...",
     "statistics": "İstatistikler",
     "title": "Klonlar",
     "totalMachines": "Toplam Makineler"
   },
   "clusters": {
-    "assignMachines": "Makineleri Ata",
-    "assignedMachines": "Atanan Makineler",
+    "assignMachines": "Makine Atama",
+    "assignedMachines": "Atanmış Makineler",
     "availableMachines": "Mevcut Makineler",
-    "clusterDetails": "Küme Ayrıntıları",
-    "configureVault": "Apps Kasasını Yapılandır",
+    "clusterDetails": "Küme ayrıntıları",
+    "configureVault": "Kasayı Yapılandırma",
     "createCluster": "Küme Oluştur",
-    "deleteCluster": "Kümeyi Sil",
+    "deleteCluster": "Küme Silme",
     "editCluster": "Kümeyi Düzenle",
-    "fsid": "kan",
+    "fsid": "FSID",
     "manageMachines": "Makineleri Yönet",
-    "monitorHosts": "Ana Bilgisayarları İzle",
-    "name": "Küme Adı",
-    "noMachinesAssigned": "Bu kümeye atanan makine yok",
-    "removeFromCluster": "Kümeden kaldır",
+    "monitorHosts": "Ana Bilgisayarları İzleme",
+    "name": "Küme adı",
+    "noMachinesAssigned": "Bu kümeye atanmış makine yok",
+    "removeFromCluster": "Kümeden Çıkarma",
     "secretKey": "Gizli Anahtar",
     "title": "Kümeler"
   },
   "common": {
     "actions": "Eylemler",
-    "cancel": "İptal etmek",
-    "close": "Kapalı",
-    "confirm": "Onaylamak",
-    "delete": "Silmek",
+    "cancel": "İptal",
+    "close": "Kapat",
+    "confirm": "Onaylayın",
+    "delete": "Silme",
     "details": "Detaylar",
-    "edit": "Düzenlemek",
+    "edit": "Düzenle",
     "error": "Hata",
     "loading": "Yükleniyor...",
     "refresh": "Yenile",
-    "save": "Kaydetmek",
+    "save": "Kaydet",
     "success": "Başarı"
   },
   "dashboard": {
-    "avgMachinesPerCluster": "Ortalama Makineler/Küme",
+    "avgMachinesPerCluster": "Avg Makineler/Küme",
     "clusterSummary": "Küme Özeti",
     "machineUtilization": "Makine Kullanımı",
-    "subtitle": "Tüm ekiplerdeki toplam {{total}} makine",
-    "teamBreakdown": "Takım Makina Dağıtımı",
-    "title": "Dağıtılmış Depolama Makineleri",
+    "subtitle": "{{total}} tüm ekiplerdeki toplam makineler",
+    "teamBreakdown": "Takım Makine Dağıtımı",
+    "title": "Dağıtık Depolama Makineleri",
     "totalClusters": "Toplam Kümeler",
-    "utilizationDetails": "{{total}} makineden {{used}} tanesi kullanımda"
+    "utilizationDetails": "{{total}} makinelerinin {{used}}'ı kullanımda"
   },
-  "description": "Dağıtılmış depolama kümelerini, havuzları, görüntüleri ve anlık görüntüleri yönetin",
+  "description": "Dağıtılmış depolama kümelerini, havuzlarını, görüntülerini ve anlık görüntülerini yönetme",
   "images": {
-    "assignedMachine": "Atanan Makine",
+    "assignedMachine": "Atanmış Makine",
     "name": "Resim Adı",
-    "reassignMachine": "Makineyi Yeniden Ata",
+    "reassignMachine": "Makineyi Yeniden Atayın",
     "reassignmentModal": {
-      "currentAssignment": "Mevcut Ödev",
+      "currentAssignment": "Mevcut Görevlendirme",
       "noMachineAssigned": "Şu anda atanmış makine yok",
-      "selectNewMachine": "Yeni Makineyi Seçin",
-      "title": "Görüntüyü Makineye Yeniden Ata",
-      "warning": "Uyarı: Bir görüntünün farklı bir makineye yeniden atanması, veriler taşınana kadar mevcut makinede kullanılamaz hale gelecektir."
+      "selectNewMachine": "Yeni Makine Seçin",
+      "title": "Görüntüyü Makineye Yeniden Atayın",
+      "warning": "Uyarı: Bir görüntünün farklı bir makineye yeniden atanması, veriler taşınana kadar mevcut makinede kullanılamaz hale gelmesine neden olur."
     },
-    "reassignmentSuccess": "Resim makinesi ataması başarıyla güncellendi",
-    "title": "Görseller"
+    "reassignmentSuccess": "Görüntü makinesi ataması başarıyla güncellendi",
+    "title": "Görüntüler"
   },
   "machineSection": {
-    "manageAssignment": "Ödevi Yönet",
+    "manageAssignment": "Atamayı Yönet",
     "notAssigned": "Herhangi bir dağıtılmış depolama kaynağına atanmamış",
     "title": "Dağıtılmış Depolama",
-    "viewDetails": "Ayrıntıları Görüntüle"
+    "viewDetails": "Detayları Görüntüle"
   },
   "machines": {
     "actions": {
       "exportReport": "Raporu Dışa Aktar",
-      "removeAssignment": "Ödevi Kaldır",
-      "viewDetails": "Ayrıntıları Görüntüle"
+      "removeAssignment": "Atamayı Kaldır",
+      "viewDetails": "Detayları Görüntüle"
     },
     "filters": {
-      "allStatuses": "Tüm Durumlar",
+      "allStatuses": "Tüm durumlar",
       "assignmentStatus": "Atama Durumu",
       "searchPlaceholder": "Arama makineleri..."
     },
     "summary": {
       "assignedToClones": "Klonlara Atandı",
-      "assignedToClusters": "Kümelere Atandı",
-      "assignedToImages": "Resimlere Atandı",
+      "assignedToClusters": "Kümelere Atananlar",
+      "assignedToImages": "Görüntülere Atandı",
       "available": "Mevcut",
       "title": "Makine Kullanılabilirliği",
       "total": "Toplam Makineler"
     }
   },
   "pools": {
-    "configureVault": "Apps Kasasını Yapılandır",
+    "configureVault": "Kasayı Yapılandırma",
     "create": "Havuz Oluştur",
     "createPool": "Havuz Oluştur",
-    "crush": "EZME Kuralı",
-    "deletePool": "Havuzu Sil",
-    "editPool": "Havuzu Düzenle",
-    "minSize": "Minimum Boyut",
-    "name": "Havuz Adı",
+    "crush": "CRUSH Kuralı",
+    "deletePool": "Havuz Silme",
+    "editPool": "Havuz Düzenleme",
+    "minSize": "Min Boyut",
+    "name": "Havuz adı",
     "noPools": "Havuz bulunamadı",
     "pgNum": "PG Numarası",
     "pgpNum": "PGP Numarası",
@@ -140,7 +140,7 @@
     "title": "Havuzlar"
   },
   "snapshots": {
-    "title": "Anlık görüntüler"
+    "title": "Anlık Görüntüler"
   },
   "tabs": {
     "clusters": "Kümeler",
@@ -149,11 +149,11 @@
   },
   "title": "Dağıtılmış Depolama",
   "warnings": {
-    "dataLoss": "Uyarı: Makinelerin kaldırılması, düzgün şekilde taşınmaması durumunda veri kaybına neden olabilir.",
+    "dataLoss": "Uyarı: Makinelerin kaldırılması, uygun şekilde taşınmazsa veri kaybına neden olabilir.",
     "exclusivity": "Makineler aynı anda yalnızca bir kaynağa (küme, görüntü veya klon) atanabilir.",
-    "exclusivityClone": "Bu makine şu anda bir klona atanmış. Başka bir yere atanabilmesi için klondan çıkarılması gerekir.",
-    "exclusivityCluster": "Bu makine şu anda bir kümeye atanmış. Başka bir yere atanabilmesi için önce kümeden kaldırılması gerekir.",
-    "exclusivityImage": "Bu makine şu anda bir görüntüye atanmış. Bu makinenin başka bir yerde kullanılabilmesi için görüntünün yeniden atanması gerekir.",
-    "reassignment": "Kaynakların yeniden atanması, hizmet kesintisini önlemek için dikkatli planlama gerektirir."
+    "exclusivityClone": "Bu makine şu anda bir klona atanmıştır. Başka bir yere atanmadan önce klondan çıkarılması gerekir.",
+    "exclusivityCluster": "Bu makine şu anda bir kümeye atanmış durumda. Başka bir yere atanmadan önce kümeden çıkarılması gerekir.",
+    "exclusivityImage": "Bu makine şu anda bir resme atanmıştır. Bu makinenin başka bir yerde kullanılabilmesi için görüntünün yeniden atanması gerekir.",
+    "reassignment": "Kaynakların yeniden atanması, hizmet kesintisinden kaçınmak için dikkatli bir planlama gerektirir."
   }
 }
