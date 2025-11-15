@@ -1,9 +1,5 @@
 import React, { useCallback, useMemo, useRef, useEffect } from 'react'
-import {
-  FixedSizeList as List,
-  ListChildComponentProps
-} from 'react-window'
-import type { FixedSizeList } from 'react-window'
+import * as ReactWindow from 'react-window'
 import * as InfiniteLoaderModule from 'react-window-infinite-loader'
 import { Checkbox, Space, Spin } from 'antd'
 import { Machine } from '@/types'
@@ -11,6 +7,11 @@ import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmen
 import { useMachineSelection } from '@/store/distributedStorage/hooks'
 import { useTableStyles } from '@/hooks/useComponentStyles'
 import styles from './VirtualMachineTable.module.css'
+
+const { FixedSizeList: List } = ReactWindow
+
+type VirtualizedList = ReactWindow.FixedSizeList<VirtualMachineListRowProps>
+type ListChildProps<T = any> = ReactWindow.ListChildComponentProps<T>
 
 interface VirtualMachineTableProps {
   machines: Machine[]
@@ -113,8 +114,8 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
   onRowClick,
   renderActions
 }) => {
-  const listRef = useRef<FixedSizeList<VirtualMachineListRowProps> | null>(null)
-  const setListRef = useCallback((instance: FixedSizeList<VirtualMachineListRowProps> | null) => {
+  const listRef = useRef<VirtualizedList | null>(null)
+  const setListRef = useCallback((instance: VirtualizedList | null) => {
     listRef.current = instance
   }, [])
   const { selectedMachines } = useMachineSelection()
@@ -136,11 +137,11 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
   }, [loadMore, loading])
 
   // Render a single row
-  const RowComponent = useCallback(({
+const RowComponent = useCallback(({
     index,
     style,
     data
-  }: ListChildComponentProps<VirtualMachineListRowProps>) => {
+  }: ListChildProps<VirtualMachineListRowProps>) => {
     const {
       machines: rowMachines,
       isItemLoaded: rowIsItemLoaded,
@@ -223,8 +224,8 @@ export const VirtualMachineTable: React.FC<VirtualMachineTableProps> = ({
           rowCount={itemCount}
           loadMoreRows={loadMoreItems}
         >
-          {({ onItemsRendered, ref }: { onItemsRendered: any; ref: (instance: FixedSizeList<VirtualMachineListRowProps> | null) => void }) => {
-            const combinedRef = (instance: FixedSizeList<VirtualMachineListRowProps> | null) => {
+          {({ onItemsRendered, ref }: { onItemsRendered: any; ref: (instance: VirtualizedList | null) => void }) => {
+            const combinedRef = (instance: VirtualizedList | null) => {
               setListRef(instance)
               ref(instance)
             }
