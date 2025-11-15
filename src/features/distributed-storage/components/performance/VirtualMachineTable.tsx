@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useEffect } from 'react'
-import { FixedSizeList as List } from 'react-window'
+import { List as ReactWindowList } from 'react-window'
 import * as InfiniteLoaderModule from 'react-window-infinite-loader'
 import { Checkbox, Space, Spin } from 'antd'
 import { Machine } from '@/types'
@@ -7,6 +7,9 @@ import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmen
 import { useMachineSelection } from '@/store/distributedStorage/hooks'
 import { useTableStyles } from '@/hooks/useComponentStyles'
 import styles from './VirtualMachineTable.module.css'
+
+// Cast to any to support both react-window v1.x and v2.x APIs
+const List = ReactWindowList as any
 
 type VirtualizedList = any
 type ListChildProps<T = any> = { index: number; style: React.CSSProperties; data: T }
