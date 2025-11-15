@@ -581,7 +581,7 @@ const MainLayout: React.FC = () => {
                   return
                 }
                 trackUserAction('navigation', targetRoute, {
-                  menu_item: item.label,
+                  menu_item: item.label || '',
                   ui_mode: uiMode,
                   sidebar_collapsed: collapsed,
                   from_page: location.pathname

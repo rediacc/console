@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
+import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig, AxiosRequestConfig } from 'axios'
 
 // Extend axios config to include metadata
 declare module 'axios' {
@@ -177,25 +177,25 @@ class ApiClient {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private async makeRequest<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
-    return this.queueRequest(() => this.client.post<ApiResponse<T>>(endpoint, data || {}))
+  private async makeRequest<T = any>(endpoint: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
+    return this.queueRequest(() => this.client.post<ApiResponse<T>>(endpoint, data || {}, config))
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  get = <T = any>(endpoint: string, params?: any): Promise<ApiResponse<T>> =>
-    this.makeRequest<T>(endpoint, params)
+  get = <T = any>(endpoint: string, params?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> =>
+    this.makeRequest<T>(endpoint, params, config)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  post = <T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> =>
-    this.makeRequest<T>(endpoint, data)
+  post = <T = any>(endpoint: string, data: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> =>
+    this.makeRequest<T>(endpoint, data, config)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  put = <T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> =>
-    this.makeRequest<T>(endpoint, data)
+  put = <T = any>(endpoint: string, data: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> =>
+    this.makeRequest<T>(endpoint, data, config)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  delete = <T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> =>
-    this.makeRequest<T>(endpoint, data)
+  delete = <T = any>(endpoint: string, data: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> =>
+    this.makeRequest<T>(endpoint, data, config)
 
   private async queueRequest<T>(request: () => Promise<AxiosResponse<ApiResponse<T>>>): Promise<ApiResponse<T>> {
     const executeRequest = async () => {

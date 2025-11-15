@@ -310,8 +310,8 @@ const TeamsPage: React.FC = () => {
             </TeamsListHeader>
           }
           loading={teamsLoading}
-          data={teams}
-          columns={teamColumns}
+          data={teams as any}
+          columns={teamColumns as any}
           rowKey="teamName"
           searchPlaceholder={t('teams.searchPlaceholder', { defaultValue: 'Search teams...' })}
           data-testid="system-team-table"
@@ -445,7 +445,7 @@ const TeamsPage: React.FC = () => {
         onCancel={closeUnifiedModal}
         resourceType="team"
         mode={unifiedModalState.mode}
-        existingData={unifiedModalState.data || undefined}
+        existingData={unifiedModalState.data as any}
         onSubmit={handleUnifiedModalSubmit}
         onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
         isSubmitting={createTeamMutation.isPending || updateTeamNameMutation.isPending}
