@@ -1,10 +1,10 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react'
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { Modal, Space, Typography, Upload, message } from 'antd'
 import type { UploadFile } from 'antd/es/upload/interface'
 
 // message.error is imported from antd
 import { AppstoreOutlined } from '@/utils/optimizedIcons'
-import { useForm } from 'react-hook-form'
+import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
@@ -72,7 +72,7 @@ export interface UnifiedResourceModalProps {
   creationContext?: 'credentials-only' | 'normal'
 }
 
-type ResourceFormValues = Record<string, unknown>
+type ResourceFormValues = Record<string, any>
 
 type ExistingResourceData = Partial<Machine> & Partial<Repository> & Record<string, unknown>
 
@@ -136,8 +136,15 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   // State for auto-setup after machine creation
   const [autoSetupEnabled, setAutoSetupEnabled] = useState(true)
 
+  const resolvePreselectedTemplate = (): string | null => {
+    if (existingData && typeof (existingData as Record<string, unknown>).preselectedTemplate === 'string') {
+      return (existingData as Record<string, string>).preselectedTemplate || null
+    }
+    return null
+  }
+
   // State for template selection (for repositories)
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(existingData?.preselectedTemplate || null)
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(resolvePreselectedTemplate())
   const [showTemplateDetails, setShowTemplateDetails] = useState(false)
   const [templateToView, setTemplateToView] = useState<string | null>(null)
   
@@ -271,8 +278,10 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     return finalDefaults
   }
 
+  const schema = useMemo(() => getSchema(), [resourceType, mode, uiMode])
+
   const form = useForm<ResourceFormValues>({
-    resolver: zodResolver<ResourceFormValues>(getSchema()),
+    resolver: zodResolver(schema as z.ZodTypeAny) as Resolver<ResourceFormValues, any, ResourceFormValues>,
     defaultValues: getDefaultValues(),
   })
 
@@ -281,7 +290,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
 
   // Get filtered bridges based on selected region - moved inside getFormFields to avoid unnecessary re-renders
   const getFilteredBridges = useCallback(
-    (regionName: string | null) => {
+    (regionName: string | null): Array<{ value: string; label: string }> => {
       if (!regionName || !dropdownData?.bridgesByRegion) return []
 
       const regionData = dropdownData.bridgesByRegion.find(
@@ -329,10 +338,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       form.reset(getDefaultValues())
       
       // Reset template selection for repositories (unless preselected)
-      if (resourceType === 'repository' && !existingData?.preselectedTemplate) {
-        setSelectedTemplate(null)
-      } else if (resourceType === 'repository' && existingData?.preselectedTemplate) {
-        setSelectedTemplate(existingData.preselectedTemplate)
+      if (resourceType === 'repository') {
+        const preselected = resolvePreselectedTemplate()
+        setSelectedTemplate(preselected)
       }
       
       // Set team if preselected or from existing data
@@ -340,7 +348,10 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
         form.setValue('teamName', existingData.teamName)
       } else if (teamFilter) {
         if (Array.isArray(teamFilter) && teamFilter.length === 1) {
-          form.setValue('teamName', teamFilter[0])
+          const [singleTeam] = teamFilter
+          if (singleTeam) {
+            form.setValue('teamName', singleTeam)
+          }
         } else if (!Array.isArray(teamFilter)) {
           form.setValue('teamName', teamFilter)
         }
@@ -348,7 +359,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
 
       // For repositories, set prefilled machine
       if (resourceType === 'repository' && existingData?.machineName) {
-        form.setValue('machineName' as keyof ResourceFormValues, existingData.machineName)
+        form.setValue('machineName', existingData.machineName)
       }
 
       // For machines, set default region and bridge
@@ -432,7 +443,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     placeholder: t('regions.placeholders.selectRegion'),
     required: true,
     type: 'select' as const,
-    options: mapToOptions(dropdownData?.regions),
+    options: mapToOptions(dropdownData?.regions) as Array<{ value: string; label: string }>,
   })
 
   const createBridgeField = (): FormFieldConfig => {
@@ -745,27 +756,40 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   const getEntityType = () => resourceType.toUpperCase()
   const getVaultFieldName = () => `${resourceType}Vault`
   
-  const createFunctionSubtitle = () => (
-    <Space size="small">
-      <Text type="secondary">{t('machines:team')}:</Text>
-      <Text strong>{existingData.teamName}</Text>
-      {['machine', 'repository', 'storage'].includes(resourceType) && (
-        <>
-          <SecondaryLabel type="secondary">
-            {t(
-              resourceType === 'machine'
-                ? 'machines:machine'
-                : resourceType === 'storage'
-                  ? 'resources:storage.storage'
-                  : 'repositories.repository'
-            )}
-            :
-          </SecondaryLabel>
-          <Text strong>{existingData[`${resourceType}Name`]}</Text>
-        </>
-      )}
-    </Space>
-  )
+  const createFunctionSubtitle = (): React.ReactNode => {
+    if (!existingData) {
+      return null
+    }
+
+    const teamLabel: string =
+      typeof existingData.teamName === 'string' ? existingData.teamName : t('common:unknown')
+
+    const resourceNameKey = `${resourceType}Name`
+    const resourceNameValue = (existingData as Record<string, unknown>)[resourceNameKey]
+    const resourceName: string = typeof resourceNameValue === 'string' ? resourceNameValue : ''
+
+    return (
+      <Space size="small">
+        <Text type="secondary">{t('machines:team')}:</Text>
+        <Text strong>{teamLabel}</Text>
+        {['machine', 'repository', 'storage'].includes(resourceType) && resourceName && (
+          <>
+            <SecondaryLabel type="secondary">
+              {t(
+                resourceType === 'machine'
+                  ? 'machines:machine'
+                  : resourceType === 'storage'
+                    ? 'resources:storage.storage'
+                    : 'repositories.repository'
+              )}
+              :
+            </SecondaryLabel>
+            <Text strong>{resourceName}</Text>
+          </>
+        )}
+      </Space>
+    )
+  }
   
   const getFunctionTitle = () => {
     if (resourceType === 'machine') return t('machines:systemFunctions')

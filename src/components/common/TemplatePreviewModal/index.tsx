@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import type { CSSProperties, ComponentPropsWithoutRef } from 'react'
+import type { ComponentPropsWithoutRef } from 'react'
 import { Tag, Spin, Row, Col, List } from 'antd'
 import { ModalSize } from '@/types/modal'
 import {
@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 import type { Components as MarkdownComponents } from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import type { SyntaxHighlighterProps } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { templateService } from '@/services/templateService'
 import {
@@ -115,10 +116,10 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
   const [loadedTemplate, setLoadedTemplate] = useState<Template | null>(null)
   const [iconFailed, setIconFailed] = useState(false)
 
-  const codeTheme: Record<string, CSSProperties> = vscDarkPlus as Record<string, CSSProperties>
+  const codeTheme = vscDarkPlus as SyntaxHighlighterProps['style']
 
   const markdownComponents: MarkdownComponents = {
-    code({ inline, className, children, ...codeProps }: CodeRendererProps) {
+    code({ inline, className, children }: CodeRendererProps) {
       const match = /language-(\w+)/.exec(className ?? '')
 
       if (!inline && match) {
@@ -127,7 +128,6 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
             style={codeTheme}
             language={match[1]}
             PreTag="div"
-            {...codeProps}
           >
             {String(children).replace(/\n$/, '')}
           </SyntaxHighlighter>
@@ -135,7 +135,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       }
 
       return (
-        <code className={className} {...codeProps}>
+        <code className={className}>
           {children}
         </code>
       )

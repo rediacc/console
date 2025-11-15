@@ -667,7 +667,8 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                   (functionParams[`${paramName}_unit`] as string | undefined) ||
                                   (paramInfo.units?.[0] === 'percentage' ? '%' : paramInfo.units?.[0] || '')
                                 }
-                                onChange={(unit: string) => {
+                                onChange={(unitValue) => {
+                                  const unit = String(unitValue ?? '')
                                   setFunctionParams((prev) => {
                                     const currentValue = prev[`${paramName}_value`]
                                     return {
