@@ -2,6 +2,24 @@ import React, { ReactNode, useEffect, useRef } from 'react'
 import { useTelemetry } from '../TelemetryProvider'
 import { TrackerContainer } from './styles'
 
+type TelemetryAttributes = Record<string, string | number | boolean>
+
+interface ClickContext {
+  shouldTrack: true
+  target: string
+  elementType: string
+  text: string
+  testId?: string
+  customData: TelemetryAttributes
+}
+
+type ClickContextResult = ClickContext | { shouldTrack: false }
+
+interface FormContext {
+  formName: string
+  testId?: string
+}
+
 interface InteractionTrackerProps {
   children: ReactNode
 }
@@ -36,13 +54,23 @@ export const InteractionTracker: React.FC<InteractionTrackerProps> = ({ children
       const context = extractClickContext(target)
       if (!context.shouldTrack) return
 
-      trackUserAction('click', context.target, {
+      const details: TelemetryAttributes = {
         element_type: context.elementType,
         element_text: context.text,
         page_url: window.location.pathname,
-        data_testid: context.testId,
-        ...context.customData
+      }
+
+      if (context.testId) {
+        details.data_testid = context.testId
+      }
+
+      Object.entries(context.customData).forEach(([key, value]) => {
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+          details[key] = value
+        }
       })
+
+      trackUserAction('click', context.target, details)
     }
 
     const handleSubmit = (event: SubmitEvent) => {
@@ -51,13 +79,18 @@ export const InteractionTracker: React.FC<InteractionTrackerProps> = ({ children
 
       const context = extractFormContext(target)
 
-      trackUserAction('form_submit', context.formName, {
+      const details: TelemetryAttributes = {
         form_action: target.action || 'unknown',
         form_method: target.method || 'GET',
         field_count: target.elements.length,
         page_url: window.location.pathname,
-        data_testid: context.testId
-      })
+      }
+
+      if (context.testId) {
+        details.data_testid = context.testId
+      }
+
+      trackUserAction('form_submit', context.formName, details)
     }
 
     // Use capture phase to catch events before they bubble
@@ -76,7 +109,7 @@ export const InteractionTracker: React.FC<InteractionTrackerProps> = ({ children
 /**
  * Extracts contextual information from a clicked element
  */
-function extractClickContext(element: HTMLElement) {
+function extractClickContext(element: HTMLElement): ClickContextResult {
   // Skip tracking for certain elements to avoid noise
   const skipSelectors = [
     'input[type="text"]',
@@ -93,16 +126,15 @@ function extractClickContext(element: HTMLElement) {
     return { shouldTrack: false }
   }
 
-  // Find the most relevant parent element
   const clickableElement = findClickableParent(element)
 
   const elementType = getElementType(clickableElement)
   const text = extractElementText(clickableElement)
   const testId = clickableElement.getAttribute('data-testid') ||
-                 clickableElement.closest('[data-testid]')?.getAttribute('data-testid')
+                 clickableElement.closest('[data-testid]')?.getAttribute('data-testid') ||
+                 undefined
 
-  // Extract custom data from data attributes
-  const customData: Record<string, any> = {}
+  const customData: TelemetryAttributes = {}
   Array.from(clickableElement.attributes).forEach(attr => {
     if (attr.name.startsWith('data-track-')) {
       const key = attr.name.replace('data-track-', '')
@@ -116,7 +148,7 @@ function extractClickContext(element: HTMLElement) {
     elementType,
     text,
     testId,
-    customData
+    customData,
   }
 }
 
@@ -194,9 +226,10 @@ function extractElementText(element: HTMLElement): string {
 /**
  * Extracts contextual information from a form
  */
-function extractFormContext(form: HTMLFormElement) {
+function extractFormContext(form: HTMLFormElement): FormContext {
   const testId = form.getAttribute('data-testid') ||
-                 form.closest('[data-testid]')?.getAttribute('data-testid')
+                 form.closest('[data-testid]')?.getAttribute('data-testid') ||
+                 undefined
 
   // Try to determine form name from various sources
   const formName = form.name ||

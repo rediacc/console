@@ -1,4 +1,4 @@
-import React, { type Key, type ReactNode } from 'react'
+import type { Key, ReactNode } from 'react'
 import { Table, Spin, Empty, type TableProps, Tooltip } from 'antd'
 import { SearchOutlined, PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons'
 import {

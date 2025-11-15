@@ -48,6 +48,11 @@ interface WebVitalsGlobal {
 
 type ResourceElement = HTMLImageElement | HTMLScriptElement | HTMLLinkElement
 
+type LayoutShiftEntry = PerformanceEntry & {
+  value: number
+  hadRecentInput?: boolean
+}
+
 const TelemetryContext = createContext<TelemetryContextType | null>(null)
 
 const getPageUrl = () => (typeof window === 'undefined' ? 'unknown' : window.location.href)
@@ -210,7 +215,7 @@ export const TelemetryProvider: React.FC<TelemetryProviderProps> = ({ children }
       let clsValue = 0
       const clsObserver = new PerformanceObserver((list) => {
         list.getEntries().forEach((entry) => {
-          const layoutShiftEntry = entry as LayoutShift
+          const layoutShiftEntry = entry as LayoutShiftEntry
           if (!layoutShiftEntry.hadRecentInput) {
             clsValue += layoutShiftEntry.value
           }

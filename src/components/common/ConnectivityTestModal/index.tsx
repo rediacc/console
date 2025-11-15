@@ -335,7 +335,7 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
             pagination={false}
             scroll={{ y: 400 }}
             loading={machines.length === 0}
-            rowClassName={(record) => `status-${record.status}`}
+            rowClassName={(record: TestResult) => `status-${record.status}`}
             data-testid="connectivity-results-table"
           />
 

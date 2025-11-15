@@ -402,7 +402,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
 
     // Reset form
     setSelectedFunction(null)
-    setFunctionParams({})
+    setFunctionParams({} as FunctionParams)
     setFunctionPriority(4)
     setFunctionDescription('')
     setFunctionSearchTerm('')
@@ -413,7 +413,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   const handleCancel = () => {
     // Reset form
     setSelectedFunction(null)
-    setFunctionParams({})
+    setFunctionParams({} as FunctionParams)
     setFunctionPriority(4)
     setFunctionDescription('')
     setFunctionSearchTerm('')
@@ -627,21 +627,24 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                 }
                                 onChange={(value) => {
                                   if (value === null || value === undefined) {
-                                    setFunctionParams({
-                                      ...functionParams,
+                                    setFunctionParams((prev) => ({
+                                      ...prev,
                                       [`${paramName}_value`]: undefined,
                                       [paramName]: ''
-                                    })
+                                    }))
                                   } else {
                                     const numValue = typeof value === 'string' ? parseInt(value, 10) : value
                                     if (!Number.isNaN(numValue) && numValue > 0 && paramInfo.units) {
-                                      const unit =
-                                        (functionParams[`${paramName}_unit`] as string | undefined) ||
-                                        (paramInfo.units[0] === 'percentage' ? '%' : paramInfo.units[0])
-                                      setFunctionParams({
-                                        ...functionParams,
-                                        [`${paramName}_value`]: numValue,
-                                        [paramName]: `${numValue}${unit}`
+                                      setFunctionParams((prev) => {
+                                        const unit =
+                                          (prev[`${paramName}_unit`] as string | undefined) ||
+                                          (paramInfo.units![0] === 'percentage' ? '%' : paramInfo.units![0])
+
+                                        return {
+                                          ...prev,
+                                          [`${paramName}_value`]: numValue,
+                                          [paramName]: `${numValue}${unit}`
+                                        }
                                       })
                                     }
                                   }
@@ -664,13 +667,15 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                   (functionParams[`${paramName}_unit`] as string | undefined) ||
                                   (paramInfo.units?.[0] === 'percentage' ? '%' : paramInfo.units?.[0] || '')
                                 }
-                                onChange={(unit) => {
-                                  const currentValue = functionParams[`${paramName}_value`]
-                                  setFunctionParams({
-                                    ...functionParams,
-                                    [`${paramName}_unit`]: unit,
-                                    [paramName]:
-                                      typeof currentValue === 'number' ? `${currentValue}${unit}` : ''
+                                onChange={(unit: string) => {
+                                  setFunctionParams((prev) => {
+                                    const currentValue = prev[`${paramName}_value`]
+                                    return {
+                                      ...prev,
+                                      [`${paramName}_unit`]: unit,
+                                      [paramName]:
+                                        typeof currentValue === 'number' ? `${currentValue}${unit}` : ''
+                                    }
                                   })
                                 }}
                                 options={paramInfo.units?.map(unit => ({
@@ -681,18 +686,20 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                               />
                             </SizeInputGroup>
                           ) : paramInfo.options && paramInfo.options.length > 0 ? (
-                            <Select
-                              value={getSelectValue(paramName) ?? paramInfo.default ?? ''}
-                              onChange={(value) => {
-                                const newParams = {
-                                  ...functionParams,
-                                  [paramName]: value
-                                }
-                                // If this is destinationType parameter and it changes, clear the 'to' field
-                                if (paramName === 'destinationType' && value !== getSelectValue(paramName)) {
-                                  newParams['to'] = ''
-                                }
-                                setFunctionParams(newParams)
+                            <Select<string>
+                              value={(getSelectValue(paramName) as string) ?? paramInfo.default ?? ''}
+                              onChange={(value: string) => {
+                                setFunctionParams((prev) => {
+                                  const previousValue = prev[paramName]
+                                  const updatedParams: FunctionParams = {
+                                    ...prev,
+                                    [paramName]: value,
+                                  }
+                                  if (paramName === 'destinationType' && value !== previousValue) {
+                                    updatedParams['to'] = ''
+                                  }
+                                  return updatedParams
+                                })
                               }}
                               placeholder={paramInfo.help || ''}
                               options={paramInfo.options.map(option => ({
@@ -705,10 +712,10 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                             <Select
                               value={getStringParam(paramName)}
                               onChange={(value) => {
-                                setFunctionParams({
-                                  ...functionParams,
+                                setFunctionParams((prev) => ({
+                                  ...prev,
                                   [paramName]: value
-                                })
+                                }))
                               }}
                               placeholder={t('resources:repositories.selectRepository')}
                               options={repositories?.map(repo => ({
@@ -726,10 +733,10 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                             <Select
                               value={getStringParam(paramName)}
                               onChange={(value) => {
-                                setFunctionParams({
-                                  ...functionParams,
+                                setFunctionParams((prev) => ({
+                                  ...prev,
                                   [paramName]: value
-                                })
+                                }))
                               }}
                               placeholder={
                                 getStringParam('destinationType') === 'machine' 
@@ -765,10 +772,10 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                             <Select
                               value={getStringParam(paramName)}
                               onChange={(value) => {
-                                setFunctionParams({
-                                  ...functionParams,
+                                setFunctionParams((prev) => ({
+                                  ...prev,
                                   [paramName]: value
-                                })
+                                }))
                               }}
                               placeholder={
                                 getStringParam('sourceType') === 'machine' 
@@ -805,10 +812,10 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                               mode="multiple"
                               value={getArrayParam(paramName)}
                               onChange={(value) => {
-                                setFunctionParams({
-                                  ...functionParams,
+                                setFunctionParams((prev) => ({
+                                  ...prev,
                                   [paramName]: value
-                                })
+                                }))
                               }}
                               placeholder={t('machines:selectMachines')}
                               options={
@@ -831,10 +838,10 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                               mode="multiple"
                               value={getArrayParam(paramName)}
                               onChange={(value) => {
-                                setFunctionParams({
-                                  ...functionParams,
+                                setFunctionParams((prev) => ({
+                                  ...prev,
                                   [paramName]: value
-                                })
+                                }))
                               }}
                               placeholder={t('resources:storage.selectStorageSystems')}
                               options={
@@ -878,10 +885,10 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                                         ? Array.from(new Set([...selectedValues, option.value]))
                                         : selectedValues.filter(value => value !== option.value)
 
-                                      setFunctionParams({
-                                        ...functionParams,
+                                      setFunctionParams((prev) => ({
+                                        ...prev,
                                         [paramName]: updatedValues.join(' ')
-                                      })
+                                      }))
                                     }}
                                     data-testid={`function-modal-param-${paramName}-${option.value}`}
                                   >
@@ -891,10 +898,12 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                               })}
                               <AdditionalOptionsInput
                                 value={getStringParam(paramName)}
-                                onChange={(e) => setFunctionParams({
-                                  ...functionParams,
-                                  [paramName]: e.target.value
-                                })}
+                                onChange={(e) =>
+                                  setFunctionParams((prev) => ({
+                                    ...prev,
+                                    [paramName]: e.target.value
+                                  }))
+                                }
                                 placeholder={t('functions:additionalOptions')}
                                 autoComplete="off"
                                 data-testid={`function-modal-param-${paramName}-additional`}
@@ -903,10 +912,12 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                           ) : (
                             <Input
                               value={getStringParam(paramName)}
-                              onChange={(e) => setFunctionParams({
-                                ...functionParams,
-                                [paramName]: e.target.value
-                              })}
+                              onChange={(e) =>
+                                setFunctionParams((prev) => ({
+                                  ...prev,
+                                  [paramName]: e.target.value
+                                }))
+                              }
                               placeholder={paramInfo.help || ''}
                               autoComplete="off"
                               data-testid={`function-modal-param-${paramName}`}

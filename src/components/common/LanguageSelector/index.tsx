@@ -6,7 +6,7 @@ import { useSelector } from 'react-redux';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import { useUpdateUserLanguage } from '@/api/queries/users';
-import type { RootState } from '@/store';
+import type { RootState } from '@/store/store';
 import { LanguageButton, LanguageSelect, LanguageOption } from './styles';
 const { Option } = Select;
 
@@ -89,7 +89,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ iconOnly = false })
   return (
     <LanguageSelect
       value={i18n.language}
-      onChange={handleChange}
+      onChange={(value) => handleChange(value as string)}
       suffixIcon={<GlobalOutlined />}
       popupMatchSelectWidth={false}
       data-testid="language-selector"

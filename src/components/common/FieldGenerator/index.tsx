@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Popover, Radio, message, Tooltip } from 'antd'
+import { Popover, message, Tooltip } from 'antd'
 import { KeyOutlined, ReloadOutlined, CopyOutlined, CheckOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { 
@@ -15,7 +15,6 @@ import {
   OptionRadio,
   GeneratedValueCard,
   ValueHeader,
-  ValueActions,
   ValueContent,
   ActionRow,
   ControlButton,

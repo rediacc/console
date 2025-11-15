@@ -43,11 +43,6 @@ export const ValueHeader = styled.div`
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
 `
 
-export const ValueActions = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing.XS}px;
-`
-
 export const ValueContent = styled.div`
   word-break: break-all;
   max-height: 100px;

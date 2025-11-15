@@ -271,7 +271,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                     value={imageValue}
                     onChange={(event) =>
                       handleUpdateEntry(index, {
-                        value: { ...entry.value, image: event.target.value },
+                        value: { ...(entry.value as NestedRecord), image: event.target.value },
                       })
                     }
                     disabled={readOnly}
@@ -290,7 +290,7 @@ export const NestedObjectEditor: React.FC<NestedObjectEditorProps> = ({
                     checked={activeValue}
                     onChange={(checked) =>
                       handleUpdateEntry(index, {
-                        value: { ...entry.value, active: checked },
+                        value: { ...(entry.value as NestedRecord), active: checked },
                       })
                     }
                     disabled={readOnly}

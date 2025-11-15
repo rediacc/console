@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import type { CSSProperties } from 'react'
+import type { CSSProperties, ComponentPropsWithoutRef } from 'react'
 import { Tag, Spin, Row, Col, List } from 'antd'
 import { ModalSize } from '@/types/modal'
 import {
@@ -95,6 +95,10 @@ interface TemplatePreviewModalProps {
   context?: 'marketplace' | 'repository-creation'
 }
 
+type CodeRendererProps = ComponentPropsWithoutRef<'code'> & {
+  inline?: boolean
+}
+
 const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
   visible,
   template,
@@ -114,7 +118,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
   const codeTheme: Record<string, CSSProperties> = vscDarkPlus as Record<string, CSSProperties>
 
   const markdownComponents: MarkdownComponents = {
-    code({ inline, className, children, ...codeProps }) {
+    code({ inline, className, children, ...codeProps }: CodeRendererProps) {
       const match = /language-(\w+)/.exec(className ?? '')
 
       if (!inline && match) {
