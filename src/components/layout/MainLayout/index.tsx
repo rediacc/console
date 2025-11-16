@@ -135,7 +135,7 @@ const MainLayout: React.FC = () => {
   }
 
   const handleSidebarToggle = () => {
-    // Mobilde drawer toggle, desktop'ta sidebar collapse
+    // Toggle drawer on mobile, collapse sidebar on desktop
     const isMobile = window.innerWidth <= 768
     if (isMobile) {
       setMobileMenuOpen(prev => !prev)

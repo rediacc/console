@@ -130,7 +130,7 @@ export const RefreshButton = styled(Button)`
 `
 
 export const TableWrapper = styled.div`
-  /* Mobil cihazlarda daha iyi scroll deneyimi */
+  /* Better scroll experience on mobile devices */
   @media (max-width: 576px) {
     -webkit-overflow-scrolling: touch;
     
@@ -151,13 +151,13 @@ export const TableWrapper = styled.div`
     }
   }
 
-  /* Pagination içindeki select'i küçült */
+  /* Shrink the select in pagination */
   .ant-pagination-options {
     .ant-select {
       .ant-select-selector {
         height: 32px !important;
         min-height: 32px !important;
-        padding: 0 32px 0 12px !important; /* Sağda arrow için alan, solda text için */
+        padding: 0 32px 0 12px !important; /* Space for arrow on right, text on left */
       }
       
       .ant-select-selection-item {

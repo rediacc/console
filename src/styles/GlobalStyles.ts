@@ -714,12 +714,12 @@ export const GlobalStyles = createGlobalStyle`
     gap: ${({ theme }) => theme.spacing.SM}px;
     flex-wrap: wrap;
 
-    /* Sol taraftaki butonlar (Import/Export) */
+    /* Buttons on the left (Import/Export) */
     > div:first-child {
       margin-right: auto;
     }
 
-    /* Sağ taraftaki butonlar (Cancel/Create) */
+    /* Buttons on the right (Cancel/Create) */
     > button,
     > .ant-btn {
       margin-left: 0;

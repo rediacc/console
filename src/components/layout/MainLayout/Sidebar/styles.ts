@@ -17,7 +17,7 @@ export const StyledSider = styled(Sider)<{ $sidebarWidth: number; $isDrawer?: bo
   box-shadow: none;
   transition: left ${DESIGN_TOKENS.TRANSITIONS.SLOW}, width ${DESIGN_TOKENS.TRANSITIONS.DEFAULT};
 
-  /* Mobilde sidebar'ı gizle - sadece drawer kullan */
+  /* Hide sidebar on mobile - use drawer only */
   @media (max-width: 768px) {
     display: ${({ $isDrawer }) => ($isDrawer ? 'block' : 'none')};
   }

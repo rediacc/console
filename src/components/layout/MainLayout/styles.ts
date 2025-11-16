@@ -90,7 +90,7 @@ export const StyledContent = styled(Content)<{ $marginLeft: number; $paddingTop:
   min-height: 280px;
   position: relative;
 
-  /* Mobilde sidebar margin'i kaldır */
+  /* Remove sidebar margin on mobile */
   @media (max-width: 768px) {
     margin-left: 0 !important;
   }

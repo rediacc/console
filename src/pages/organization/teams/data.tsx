@@ -46,7 +46,7 @@ export const getTeamColumns = ({
         </Space>
       ),
     },
-    // Mobil için birleşik Stats kolonu (sadece xs'de göster, sm'de gizle)
+    // Combined Stats column for mobile (show only on xs, hide on sm)
     {
       title: tSystem('tables.teams.stats', { defaultValue: 'Stats' }),
       key: 'stats',
@@ -82,7 +82,7 @@ export const getTeamColumns = ({
         </Space>
       ),
     },
-    // Desktop için ayrı kolonlar (sm ve üzerinde göster)
+    // Separate columns for desktop (show on sm and above)
     {
       title: tSystem('tables.teams.members'),
       dataIndex: 'memberCount',
