@@ -13,7 +13,25 @@ This document captures the styling architecture introduced in PR #84 (_merged on
 
 ---
 
-## Folder & File Conventions
+## Component Structure & Organization
+
+> **📁 For component structure, refactoring, and file organization, see [REFACTORING.md](./REFACTORING.md)**
+>
+> REFACTORING.md covers:
+> - Component folder structure (when to use folders vs files)
+> - File naming conventions (PascalCase, camelCase rules)
+> - Component splitting patterns (extracting types, helpers, sub-components)
+> - Table data extraction
+> - Mobile responsive patterns
+> - Step-by-step refactoring process
+
+This document (STYLE.md) focuses specifically on **styling conventions** using styled-components.
+
+---
+
+## Folder & File Conventions for Styling
+
+### Styling Files
 - `ComponentName/index.tsx` imports from `./styles` and never exports styled primitives itself.
 - `styles.ts` files:
   - `import styled from 'styled-components'` as the default.
@@ -21,6 +39,7 @@ This document captures the styling architecture introduced in PR #84 (_merged on
   - Use semantic names (`NotificationDropdown`, `LoginCard`) instead of generic wrappers.
   - Prefix transient props with `$` (e.g. `$isRead`) so styled-components strips them from the DOM. See `NotificationBell/styles.ts` and `QueueItemTraceModal/styles.ts`.
 - Keep unused keyframes or helper functions out of the file; PR #119 removed legacy animations for this reason.
+- **Never use inline styles or CSS classes** - always use styled-components (except for global utilities)
 
 ---
 
@@ -85,18 +104,22 @@ Before opening a PR, run through this quick checklist:
 
 ---
 
-## Common TypeScript & Linter Issues
+## TypeScript Rules
 
-### Styled Ant Design Table Components
-When wrapping Ant Design's `Table` in styled-components with custom props:
+### No `any` Types
+**Never use `any` types** - always provide proper TypeScript types.
+
+**Exception:** When wrapping Ant Design's `Table` in styled-components, you must cast to `any` due to generic type limitations:
 ```ts
-// ✅ Correct: Cast to any to allow generic types and custom props
+// ✅ ONLY acceptable use of 'any' - Ant Design Table wrapper
 export const DataTable = styled(Table as any)<{ $isLoading?: boolean }>`
   .ant-spin-nested-loading {
     opacity: ${(props: any) => (props.$isLoading ? 0.65 : 1)};
   }
 `
 ```
+
+This is the **ONLY** acceptable use of `any`. All other cases must use proper types.
 
 ### Pagination Callbacks
 Always provide explicit types for pagination callbacks to avoid implicit `any`:
@@ -115,6 +138,24 @@ useEffect(() => {
 }, [initialVault])
 ```
 Use this sparingly—only when synchronizing component state with external changes.
+
+---
+
+## Code Quality & Readability
+
+### General Principles
+1. **Readability and reusability are paramount** - write self-documenting code
+2. **Avoid unnecessary comments** - code should be clear enough without them
+3. **Keep functions focused** - single responsibility principle
+4. **Extract reusable logic** - DRY (Don't Repeat Yourself)
+
+### When to Comment
+- ✅ Complex business logic that isn't immediately obvious
+- ✅ Workarounds for known bugs or limitations
+- ✅ Non-obvious performance optimizations
+- ❌ Obvious code that explains itself
+- ❌ Commented-out code (delete it instead)
+- ❌ TODO comments (create issues instead)
 
 ---
 

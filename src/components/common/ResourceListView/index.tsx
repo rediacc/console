@@ -16,6 +16,7 @@ import {
   EmptyActions,
   CreateButton,
   RefreshButton,
+  TableWrapper,
 } from './styles'
 
 interface ResourceListViewProps<T extends Record<string, unknown> = Record<string, unknown>> {
@@ -157,19 +158,21 @@ function ResourceListView<T extends Record<string, unknown> = Record<string, unk
           data-testid="resource-list-empty"
         />
       ) : (
-        <Table<T>
-          columns={columns}
-          dataSource={data}
-          rowKey={rowKey}
-          pagination={resolvedPagination}
-          onRow={(record, index) => ({
-            ...onRow?.(record, index),
-            'data-testid': getRowDataTestId(record),
-          })}
-          rowSelection={rowSelection}
-          scroll={{ x: 'max-content' }}
-          data-testid="resource-list-table"
-        />
+        <TableWrapper>
+          <Table<T>
+            columns={columns}
+            dataSource={data}
+            rowKey={rowKey}
+            pagination={resolvedPagination}
+            onRow={(record, index) => ({
+              ...onRow?.(record, index),
+              'data-testid': getRowDataTestId(record),
+            })}
+            rowSelection={rowSelection}
+            scroll={{ x: true }}
+            data-testid="resource-list-table"
+          />
+        </TableWrapper>
       )}
     </ContainerCard>
   )

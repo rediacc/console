@@ -1,21 +1,15 @@
-import styled from 'styled-components'
-import {
-  PageWrapper as BasePageWrapper,
-  SectionStack as BaseSectionStack,
-  SectionHeading as BaseSectionHeading,
-  ListTitleRow as BaseListTitleRow,
-  ListTitle as BaseListTitle,
-  ListSubtitle as BaseListSubtitle,
-} from '@/pages/system/styles'
+/**
+ * DEPRECATED: Use @/components/Layout instead
+ * 
+ * All components are now available from @/components/Layout:
+ *   import { PageWrapper, SectionStack, SectionHeading, ListTitleRow, ListTitle, ListSubtitle } from '@/components/ui'
+ */
 
-export const UsersPageWrapper = styled(BasePageWrapper)``
-
-export const UsersSectionStack = styled(BaseSectionStack)``
-
-export const UsersSectionHeading = styled(BaseSectionHeading)``
-
-export const UsersListHeader = styled(BaseListTitleRow)``
-
-export const UsersListTitle = styled(BaseListTitle)``
-
-export const UsersListSubtitle = styled(BaseListSubtitle)``
+export { 
+  PageWrapper as UsersPageWrapper,
+  SectionStack as UsersSectionStack,
+  SectionHeading as UsersSectionHeading,
+  ListTitleRow as UsersListHeader,
+  ListTitle as UsersListTitle,
+  ListSubtitle as UsersListSubtitle,
+} from '@/components/ui'

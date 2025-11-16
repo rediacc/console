@@ -33,7 +33,8 @@ import {
   AccessListSubtitle,
 } from './styles'
 import { ModalSize } from '@/types/modal'
-import { ModalStack, InlineFormRow, FullWidthSelect } from '@/pages/system/styles'
+import { ModalStack, InlineFormRow } from '@/components/ui'
+import { FullWidthSelect } from '@/pages/system/styles'
 import { showMessage } from '@/utils/messages'
 import { RootState } from '@/store/store'
 

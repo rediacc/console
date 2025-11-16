@@ -192,22 +192,24 @@ const NotificationBell: React.FC = () => {
   )
 
   return (
-    <Dropdown
-      trigger={['click']}
-      placement="bottomRight"
-      open={dropdownOpen}
-      onOpenChange={setDropdownOpen}
-      menu={{ items: [] }}
-      popupRender={() => dropdownContent}
-    >
-      <Badge count={unreadCount} size="small">
+    <Badge count={unreadCount} offset={[-4, 4]}>
+      <Dropdown
+        trigger={['click']}
+        placement="bottomRight"
+        open={dropdownOpen}
+        onOpenChange={setDropdownOpen}
+        menu={{ items: [] }}
+        popupRender={() => dropdownContent}
+      >
         <BellButton
-          type="text"
+          type='default'
+          shape='circle'
+          size='large'
           icon={<BellOutlined />}
           data-testid="notification-bell"
         />
-      </Badge>
-    </Dropdown>
+      </Dropdown>
+    </Badge>
   )
 }
 

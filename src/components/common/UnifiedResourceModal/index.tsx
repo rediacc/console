@@ -156,7 +156,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     storage: { key: 'storage', createKey: 'resources:storage.createStorage' },
     repository: { key: 'repositories', createKey: 'resources:repositories.createRepository' },
     machine: { key: 'machines', createKey: 'machines:createMachine' },
-    team: { key: 'teams', createKey: 'system:teams.createTeam' },
+    team: { key: 'teams', createKey: 'resources:teams.createTeam' },
     region: { key: 'regions', createKey: 'system:regions.createRegion' },
     bridge: { key: 'bridges', createKey: 'system:bridges.createBridge' },
     cluster: { key: 'clusters', createKey: 'distributedStorage:clusters.createCluster' },

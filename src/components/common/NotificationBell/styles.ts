@@ -4,19 +4,21 @@ import { Button, Typography } from 'antd'
 const { Text } = Typography
 
 export const NotificationDropdown = styled.div`
-  background-color: ${({ theme }) => theme.colors.bgPrimary};
-  border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-  box-shadow: ${({ theme }) => theme.shadows.MD};
+  background-color: var(--color-bg-primary);
+  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   max-height: 500px;
   min-width: 380px;
+  border: 1px solid var(--color-border-secondary);
 `
 
 export const NotificationHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: ${({ theme }) => `${theme.spacing.SM}px ${theme.spacing.MD}px`};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.borderSecondary};
+  padding: ${({ theme }) => `${theme.spacing.MD}px ${theme.spacing.LG}px`};
+  border-bottom: 1px solid var(--color-border-secondary);
+  background-color: var(--color-bg-secondary);
 `
 
 export const NotificationTitle = styled(Text)`
@@ -47,15 +49,15 @@ export const NotificationListWrapper = styled.div`
 `
 
 export const NotificationItem = styled.div<{ $isRead: boolean }>`
-  padding: ${({ theme }) => `${theme.spacing.SM}px ${theme.spacing.MD}px`};
+  padding: ${({ theme }) => `${theme.spacing.MD}px ${theme.spacing.LG}px`};
   cursor: pointer;
-  transition: ${({ theme }) => theme.transitions.DEFAULT};
-  background-color: ${({ theme, $isRead }) => 
-    $isRead ? 'transparent' : theme.colors.primaryBg};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.borderSecondary};
+  transition: all 0.2s ease;
+  background-color: ${({ $isRead }) =>
+    $isRead ? 'transparent' : 'var(--color-bg-selected)'};
+  border-bottom: 1px solid var(--color-border-secondary);
   
   &:hover {
-    background-color: ${({ theme }) => theme.colors.bgHover};
+    background-color: var(--color-bg-tertiary);
   }
   
   &:last-child {
@@ -129,17 +131,22 @@ export const EmptyWrapper = styled.div`
 `
 
 export const BellButton = styled(Button)`
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
-  min-height: 48px;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  
+  &:hover {
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-primary);
+  }
+  
+  &:focus,
+  &:active,
+  &:focus-visible {
+    background-color: var(--color-bg-tertiary);
+  }
   
   .anticon {
-    font-size: 22px;
+    font-size: 24px;
   }
 `

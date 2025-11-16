@@ -1,12 +1,9 @@
-import styled from 'styled-components'
-import {
-  PageWrapper as BasePageWrapper,
-  SectionStack as BaseSectionStack,
-  SectionHeading as BaseSectionHeading,
-} from '@/pages/system/styles'
+/**
+ * DEPRECATED: Use @/components/Layout instead
+ */
 
-export const CompanyPageWrapper = styled(BasePageWrapper)``
-
-export const CompanySectionStack = styled(BaseSectionStack)``
-
-export const CompanySectionHeading = styled(BaseSectionHeading)``
+export { 
+  PageWrapper as CompanyPageWrapper,
+  SectionStack as CompanySectionStack,
+  SectionHeading as CompanySectionHeading,
+} from '@/components/ui'

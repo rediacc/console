@@ -76,10 +76,8 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
     const styles = useFormStyles()
     const [vaultData, setVaultData] = useState<Record<string, any>>(initialVaultData)
     const [isVaultValid, setIsVaultValid] = useState(true)
-    const [vaultValidationErrors, setVaultValidationErrors] = useState<string[]>([])
     const [showVaultValidationErrors, setShowVaultValidationErrors] = useState(false)
     const importExportHandlers = useRef<{ handleImport: (file: any) => boolean; handleExport: () => void } | null>(null)
-    const validationErrorsRef = useRef<HTMLDivElement>(null)
 
 
     const {
@@ -94,15 +92,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
       setValue(vaultFieldName as any, JSON.stringify(vaultData))
     }, [vaultData, setValue, vaultFieldName])
 
-    // Auto-scroll to validation errors when they appear
-    useEffect(() => {
-      if (showVaultValidationErrors && validationErrorsRef.current) {
-        validationErrorsRef.current.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
-        })
-      }
-    }, [showVaultValidationErrors])
+    // Removed auto-scroll to validation errors - errors now shown only on fields
 
     const handleFormSubmit = async (formData: any) => {
       // Skip vault validation for repository credentials
@@ -133,9 +123,8 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
       setVaultData(data)
     }
 
-    const handleVaultValidate = (valid: boolean, errors?: string[]) => {
+    const handleVaultValidate = (valid: boolean) => {
       setIsVaultValid(valid)
-      setVaultValidationErrors(errors || [])
     }
 
     // Expose submit method to parent
@@ -310,24 +299,6 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
 
     return (
       <div style={{ ...styles.flexColumn as React.CSSProperties, gap: spacing('SM'), height: '100%' }}>
-        {/* Validation Errors - displayed at top for visibility */}
-        {showVaultValidationErrors && vaultValidationErrors.length > 0 && (
-          <div ref={validationErrorsRef} style={{ marginBottom: spacing('SM') }}>
-            <Alert
-              message={t('vaultEditor.validationErrors')}
-              description={
-                <ul style={{ margin: 0, paddingLeft: spacing('LG') }}>
-                  {vaultValidationErrors.map((error, index) => (
-                    <li key={index}>{error}</li>
-                  ))}
-                </ul>
-              }
-              type="error"
-              showIcon
-            />
-          </div>
-        )}
-
         {/* Form Section */}
         <Form 
           data-testid="resource-modal-form"
@@ -390,6 +361,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
             initialData={initialVaultData}
             onChange={handleVaultChange}
             onValidate={handleVaultValidate}
+            showValidationErrors={showVaultValidationErrors}
             teamName={teamName}
             bridgeName={bridgeName}
             onTestConnectionStateChange={onTestConnectionStateChange}

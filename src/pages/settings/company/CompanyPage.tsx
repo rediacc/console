@@ -52,7 +52,6 @@ import {
   CompanySectionHeading,
 } from './styles'
 import {
-  SettingsCard,
   CardContent,
   CardHeader,
   CardTitle,
@@ -61,14 +60,9 @@ import {
   IconWrapper,
   ModalStack,
   ModalStackLarge,
-  ModalAlert,
-  FormItemSpaced,
-  FormItemNoMargin,
   ModalActions,
-  FormItemActionsLg,
   DangerSection,
   DangerHeading,
-  DangerCard,
   DangerStack,
   RightAlign,
   DangerDivider,
@@ -79,6 +73,14 @@ import {
   RequirementsList,
   CaptionText,
   CenteredBlock,
+} from '@/components/ui'
+import {
+  SettingsCard,
+  DangerCard,
+  ModalAlert,
+  FormItemSpaced,
+  FormItemNoMargin,
+  FormItemActionsLg,
 } from '@/pages/system/styles'
 
 const CompanyPage: React.FC = () => {

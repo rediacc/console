@@ -15,6 +15,7 @@ import {
   Descriptions,
   Select,
 } from 'antd'
+import type { FormInstance } from 'antd'
 import {
   InfoCircleOutlined,
   WarningOutlined,
@@ -100,6 +101,8 @@ interface VaultEditorProps {
   onValidate?: (isValid: boolean, errors?: string[]) => void
   onImportExport?: (handlers: { handleImport: (file: UploadFile) => boolean; handleExport: () => void }) => void
   onFieldMovement?: (movedToExtra: string[], movedFromExtra: string[]) => void
+  onFormReady?: (form: FormInstance<VaultFormValues>) => void // Callback when form is ready
+  showValidationErrors?: boolean // Whether to show validation errors on fields
   teamName?: string // For SSH test connection
   bridgeName?: string // For SSH test connection
   onTestConnectionStateChange?: (success: boolean) => void // Callback for test connection state
@@ -199,6 +202,8 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   onValidate,
   onImportExport,
   onFieldMovement,
+  onFormReady,
+  showValidationErrors = false,
   teamName = 'Default Team',
   bridgeName = 'Default Bridge',
   onTestConnectionStateChange,
@@ -253,6 +258,11 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       setRawJsonError(t('vaultEditor.failedToSerialize'))
     }
   }, [t])
+
+  // Helper function to format validation errors
+  const formatValidationErrors = useCallback((errorInfo?: ValidateErrorEntity<VaultFormValues>) =>
+    errorInfo?.errorFields?.map((field) => `${field.name.join('.')}: ${field.errors.join(', ')}`) ?? []
+  , [])
 
   // Track previous modal open state
   const prevModalOpenRef = useRef(isModalOpen)
@@ -311,7 +321,7 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   }
   
   // Helper to process extra fields
-  const processExtraFields = useCallback((data: VaultFormValues, schemaFields: string[]) => {
+  const processExtraFields = useCallback((data: VaultFormValues, schemaFields: string[], currentExtras: VaultFormValues) => {
     const extras: VaultFormValues = {}
     const movedToExtra: string[] = []
     const movedFromExtra: string[] = []
@@ -325,21 +335,21 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     Object.entries(data).forEach(([key, value]) => {
       if (key !== 'extraFields' && !schemaFields.includes(key)) {
         extras[key] = value
-        if (!extraFields[key] && value !== undefined) {
+        if (!currentExtras[key] && value !== undefined) {
           movedToExtra.push(key)
         }
       }
     })
     
     // Check if any fields were moved from extraFields back to regular fields
-    Object.keys(extraFields).forEach(key => {
+    Object.keys(currentExtras).forEach(key => {
       if (!extras[key] && schemaFields.includes(key) && data[key] !== undefined) {
         movedFromExtra.push(key)
       }
     })
     
     return { extras, movedToExtra, movedFromExtra }
-  }, [extraFields])
+  }, [])
   
   // Helper to show field movement toast messages
   const showFieldMovementToasts = useCallback((movedToExtra: string[], movedFromExtra: string[]) => {
@@ -518,6 +528,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [testTraceData, form, t, onOsSetupStatusChange, onTestConnectionStateChange])
 
+  // Stabilize importedData to prevent unnecessary re-renders
+  const importedDataString = useMemo(() => JSON.stringify(importedData), [importedData])
+
   // Calculate extra fields not in schema
   useEffect(() => {
     if (!entityDef) return
@@ -532,18 +545,25 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       }
     }
     
-    const { extras, movedToExtra, movedFromExtra } = processExtraFields(importedData, schemaFields)
+    const { extras, movedToExtra, movedFromExtra } = processExtraFields(importedData, schemaFields, extraFields)
     
-    setExtraFields(extras)
+    // Only update if extras actually changed
+    const extrasString = JSON.stringify(extras)
+    const currentExtrasString = JSON.stringify(extraFields)
+    
+    if (extrasString !== currentExtrasString) {
+      setExtraFields(extras)
 
-    // Notify about field movements
-    if ((movedToExtra.length > 0 || movedFromExtra.length > 0) && onFieldMovement) {
-      onFieldMovement(movedToExtra, movedFromExtra)
+      // Notify about field movements
+      if ((movedToExtra.length > 0 || movedFromExtra.length > 0) && onFieldMovement) {
+        onFieldMovement(movedToExtra, movedFromExtra)
+      }
+
+      // Show toast messages for field movements
+      showFieldMovementToasts(movedToExtra, movedFromExtra)
     }
-
-    // Show toast messages for field movements
-    showFieldMovementToasts(movedToExtra, movedFromExtra)
-  }, [importedData, entityDef, entityType, processExtraFields, onFieldMovement, showFieldMovementToasts])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [importedDataString, entityDef, entityType, processExtraFields, onFieldMovement, showFieldMovementToasts])
 
   // Initialize form with data
   useEffect(() => {
@@ -649,25 +669,38 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       // Remember what data we initialized with
       setLastInitializedData(currentDataString)
 
-      // Validate initial data - but skip validation for repositories in edit mode
-      // to avoid race condition with credential field requirements
-      if (!(isEditMode && entityType === 'REPOSITORY')) {
-        // Use immediate validation for non-repository entities or create mode without surfacing errors
-        form.validateFields(undefined, { validateOnly: true })
-          .then(() => {
-            onValidate?.(true)
-          })
-          .catch((errorInfo: ValidateErrorEntity<VaultFormValues>) => {
-            const errors = formatValidationErrors(errorInfo)
-            onValidate?.(false, errors)
-          })
-      } else {
-        // For repositories in edit mode, mark as valid immediately
-        // since credential field is optional in edit mode
-        onValidate?.(true)
-      }
+      // Validate initial data after form is initialized
+      // Use setTimeout to ensure form fields are registered
+      setTimeout(() => {
+        if (!(isEditMode && entityType === 'REPOSITORY')) {
+          // Validate silently without showing errors
+          form.validateFields(undefined, { validateOnly: true })
+            .then(() => {
+              onValidate?.(true)
+              // Clear error states if we shouldn't show them
+              if (!showValidationErrors) {
+                form.getFieldsError().forEach(({ name }) => {
+                  form.setFields([{ name, errors: [] }])
+                })
+              }
+            })
+            .catch((errorInfo: ValidateErrorEntity<VaultFormValues>) => {
+              const errors = formatValidationErrors(errorInfo)
+              onValidate?.(false, errors)
+              // Clear error states from fields if we shouldn't show them
+              if (!showValidationErrors) {
+                form.getFieldsError().forEach(({ name }) => {
+                  form.setFields([{ name, errors: [] }])
+                })
+              }
+            })
+        } else {
+          // For repositories in edit mode, mark as valid immediately
+          onValidate?.(true)
+        }
+      }, 100)
     }
-  }, [form, entityDef, entityType, initialData, updateRawJson, isEditMode, onValidate, lastInitializedData])
+  }, [form, entityDef, entityType, initialData, updateRawJson, isEditMode, onValidate, lastInitializedData, formatValidationErrors, showValidationErrors])
 
   // Pass import/export handlers to parent
   useEffect(() => {
@@ -680,8 +713,21 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onImportExport])
 
-  const formatValidationErrors = (errorInfo?: ValidateErrorEntity<VaultFormValues>) =>
-    errorInfo?.errorFields?.map((field) => `${field.name.join('.')}: ${field.errors.join(', ')}`) ?? []
+  // Pass form instance to parent when ready
+  useEffect(() => {
+    if (onFormReady && form) {
+      onFormReady(form)
+    }
+  }, [onFormReady, form])
+
+  // When showValidationErrors changes to true, re-validate to show errors
+  useEffect(() => {
+    if (showValidationErrors) {
+      form.validateFields().catch(() => {
+        // Errors will be shown on fields
+      })
+    }
+  }, [showValidationErrors, form])
 
   const handleFormChange = useCallback((changedValues?: Partial<VaultFormValues>) => {
     const formData = form.getFieldsValue() as VaultFormValues
@@ -741,39 +787,26 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
     // Use direct onChange for immediate updates (no debouncing)
     directOnChange(completeData, hasChanges)
 
-    // Then validate
-    const validationTargets =
-      changedValues?.ssh_key_configured !== undefined && (entityType === 'MACHINE' || entityType === 'BRIDGE')
-        ? Object.keys(formData).filter(key => key !== 'ssh_password')
-        : Object.keys(changedValues || {})
-
-    const performValidation = async () => {
-      const accumulatedErrors: string[] = []
-
-      if (validationTargets.length > 0) {
-        try {
-          await form.validateFields(validationTargets, { validateOnly: true })
-        } catch (errorInfo: unknown) {
-          accumulatedErrors.push(...formatValidationErrors(errorInfo as ValidateErrorEntity<VaultFormValues>))
+    // Validate to update parent's isValid state
+    // If showValidationErrors is true, show errors on fields; otherwise validate silently
+    const validateOptions = showValidationErrors ? undefined : { validateOnly: true }
+    
+    form.validateFields(undefined, validateOptions)
+      .then(() => {
+        onValidate?.(true)
+      })
+      .catch((errorInfo: ValidateErrorEntity<VaultFormValues>) => {
+        const errors = formatValidationErrors(errorInfo)
+        onValidate?.(false, errors)
+        
+        // If we shouldn't show errors, clear them from fields
+        if (!showValidationErrors) {
+          form.getFieldsError().forEach(({ name }) => {
+            form.setFields([{ name, errors: [] }])
+          })
         }
-      }
-
-      try {
-        await form.validateFields(undefined, { validateOnly: true })
-        if (accumulatedErrors.length > 0) {
-          onValidate?.(false, accumulatedErrors)
-        } else {
-          onValidate?.(true)
-        }
-      } catch (errorInfo: unknown) {
-        const overallErrors = formatValidationErrors(errorInfo as ValidateErrorEntity<VaultFormValues>)
-        const combined = overallErrors.length > 0 ? overallErrors : accumulatedErrors
-        onValidate?.(false, combined)
-      }
-    }
-
-    void performValidation()
-  }, [entityType, providerFields, form, selectedProvider, extraFields, initialData, updateRawJson, directOnChange, onValidate, entityDef])
+      })
+  }, [entityType, providerFields, form, selectedProvider, extraFields, initialData, updateRawJson, directOnChange, onValidate, entityDef, formatValidationErrors, showValidationErrors])
 
   const handleRawJsonChange = (value: string | undefined) => {
     if (!value) return
@@ -867,13 +900,9 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
       const hasChanges = JSON.stringify(completeData) !== JSON.stringify(initialData)
       directOnChange(completeData, hasChanges)
 
-      // Validate
-      form.validateFields()
-        .then(() => onValidate?.(true))
-        .catch((errorInfo: ValidateErrorEntity<VaultFormValues>) => {
-          const errors = formatValidationErrors(errorInfo)
-          onValidate?.(false, errors)
-        })
+      // Don't validate here to avoid showing errors on raw JSON edit
+      // Parent will validate when user submits
+      onValidate?.(true)
     } catch {
       setRawJsonError(t('vaultEditor.invalidJsonFormat'))
     }
@@ -1338,6 +1367,14 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                           loading={isCreatingQueueItem || isTestingConnection}
                           data-testid="vault-editor-test-connection"
                           onClick={async () => {
+                          // Validate form before testing connection
+                          try {
+                            await form.validateFields()
+                          } catch (errorInfo) {
+                            message.error(t('vaultEditor.pleaseFixErrors'))
+                            return
+                          }
+
                           const values = form.getFieldsValue()
                           const { ip, user, ssh_password, port, datastore } = values
 

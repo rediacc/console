@@ -164,8 +164,6 @@ const createComponentConfig = (isDark: boolean) => {
       selectorBg: theme.bgPrimary,
     },
     Button: {
-      controlHeight: 44,
-      controlHeightLG: 48,
       borderRadius: 6,
       paddingContentHorizontal: 16,
       paddingContentVertical: 8,
