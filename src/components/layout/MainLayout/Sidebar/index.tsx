@@ -25,6 +25,7 @@ type SidebarProps = {
   expandedParentKeys: string[]
   uiMode: 'simple' | 'expert'
   onNavigate: (route: string, metadata: Record<string, unknown>) => void
+  isDrawer?: boolean
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -34,6 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   expandedParentKeys,
   uiMode,
   onNavigate,
+  isDrawer = false,
 }) => {
   const { t } = useTranslation('common')
   const navigate = useNavigate()
@@ -77,10 +79,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       collapsedWidth={SIDEBAR_COLLAPSED_WIDTH}
       width={sidebarWidth}
       $sidebarWidth={sidebarWidth}
+      $isDrawer={isDrawer}
       role="navigation"
       aria-label={t('navigation.mainNavigation')}
     >
-      <SidebarContent>
+      <SidebarContent $isDrawer={isDrawer}>
         <MenuScrollArea>
           {menuItems.map((item) => {
 

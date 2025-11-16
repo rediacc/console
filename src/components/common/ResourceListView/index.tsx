@@ -169,7 +169,7 @@ function ResourceListView<T extends Record<string, unknown> = Record<string, unk
               'data-testid': getRowDataTestId(record),
             })}
             rowSelection={rowSelection}
-            scroll={{ x: 'max-content' }}
+            scroll={{ x: true }}
             data-testid="resource-list-table"
           />
         </TableWrapper>

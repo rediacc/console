@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Button, Tooltip, Modal, List, Popconfirm, Tabs, Card, Space, Tag } from 'antd'
+import { Button, Tooltip, List, Popconfirm, Tabs, Card, Space, Tag, Modal } from 'antd'
 import {
   UserOutlined,
   DeleteOutlined,

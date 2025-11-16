@@ -667,6 +667,45 @@ export const GlobalStyles = createGlobalStyle`
     background-color: ${({ theme }) => theme.colors.textSecondary};
   }
 
+  /* Mobile responsive styles - applies to ALL modals */
+  @media (max-width: 768px) {
+    .ant-modal {
+      max-width: calc(100vw - 32px) !important;
+      margin: 16px auto;
+    }
+
+    .ant-modal-content {
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+    }
+
+    .ant-modal-body {
+      padding: ${({ theme }) => theme.spacing.MD}px;
+    }
+
+    .ant-tabs-nav {
+      margin-bottom: ${({ theme }) => theme.spacing.SM}px;
+    }
+
+    .ant-list-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: ${({ theme }) => theme.spacing.SM}px;
+
+      .ant-list-item-action {
+        margin-left: 0;
+        margin-top: ${({ theme }) => theme.spacing.XS}px;
+      }
+    }
+  }
+
+  /* Notification dropdown - List.Item.Meta title margin fix */
+  .notification-dropdown {
+    .ant-list-item-meta-title {
+      margin-top: 0 !important;
+    }
+  }
+
   /* Small Modal - 480px max-width */
   .modal-sm {
     max-width: 480px !important;

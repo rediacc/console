@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { Layout, Dropdown, message } from 'antd'
+import { Layout, Dropdown, message, Drawer } from 'antd'
 import { UserOutlined, MenuOutlined, SmileOutlined, SafetyCertificateOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { selectUser, selectCompany } from '@/store/auth/authSelectors'
@@ -46,6 +46,7 @@ import {
 
 const MainLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [expandedParentKeys, setExpandedParentKeys] = useState<string[]>([])
   const navigate = useNavigate()
@@ -134,11 +135,24 @@ const MainLayout: React.FC = () => {
   }
 
   const handleSidebarToggle = () => {
-    const action = collapsed ? 'sidebar_expand' : 'sidebar_collapse'
-    trackUserAction('ui_interaction', action, {
-      current_page: location.pathname
-    })
-    setCollapsed(prev => !prev)
+    // Mobilde drawer toggle, desktop'ta sidebar collapse
+    const isMobile = window.innerWidth <= 768
+    if (isMobile) {
+      setMobileMenuOpen(prev => !prev)
+      trackUserAction('ui_interaction', 'mobile_menu_toggle', {
+        current_page: location.pathname
+      })
+    } else {
+      const action = collapsed ? 'sidebar_expand' : 'sidebar_collapse'
+      trackUserAction('ui_interaction', action, {
+        current_page: location.pathname
+      })
+      setCollapsed(prev => !prev)
+    }
+  }
+
+  const handleMobileMenuClose = () => {
+    setMobileMenuOpen(false)
   }
 
   const handleNavigate = (route: string, metadata: Record<string, unknown>) => {
@@ -161,6 +175,7 @@ const MainLayout: React.FC = () => {
     <>
       <SandboxWarning />
       <MainLayoutContainer>
+        {/* Desktop Sidebar */}
         <Sidebar
           collapsed={collapsed}
           sidebarWidth={sidebarWidth}
@@ -169,6 +184,33 @@ const MainLayout: React.FC = () => {
           uiMode={uiMode}
           onNavigate={handleNavigate}
         />
+        
+        {/* Mobile Drawer */}
+        <Drawer
+          title={null}
+          placement="left"
+          onClose={handleMobileMenuClose}
+          open={mobileMenuOpen}
+          width={280}
+          styles={{
+            body: { padding: 0, backgroundColor: 'var(--color-bg-primary)' },
+            header: { display: 'none' }
+          }}
+        >
+          <Sidebar
+            collapsed={false}
+            sidebarWidth={280}
+            menuItems={menuItems}
+            expandedParentKeys={expandedParentKeys}
+            uiMode={uiMode}
+            isDrawer={true}
+            onNavigate={(route, metadata) => {
+              handleNavigate(route, metadata)
+              handleMobileMenuClose()
+            }}
+          />
+        </Drawer>
+
         <Layout>
           <StyledHeader $isDark={theme === 'dark'}>
             <HeaderLeft>

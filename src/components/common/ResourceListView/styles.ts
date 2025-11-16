@@ -22,6 +22,11 @@ export const HeaderRow = styled.div`
   justify-content: space-between;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.MD}px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
 `
 
 export const ControlGroup = styled.div`
@@ -30,6 +35,12 @@ export const ControlGroup = styled.div`
   min-width: 0;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.MD}px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
 `
 
 export const FiltersSlot = styled.div`
@@ -41,6 +52,11 @@ export const ActionsGroup = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing.SM}px;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: flex-end;
+  }
 `
 
 export const SearchInput = styled(Input.Search)`
@@ -114,6 +130,27 @@ export const RefreshButton = styled(Button)`
 `
 
 export const TableWrapper = styled.div`
+  /* Mobil cihazlarda daha iyi scroll deneyimi */
+  @media (max-width: 576px) {
+    -webkit-overflow-scrolling: touch;
+    
+    .ant-table-wrapper {
+      overflow-x: auto;
+    }
+    
+    .ant-table-pagination {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: ${({ theme }) => theme.spacing.SM}px;
+      
+      .ant-pagination-total-text {
+        flex-basis: 100%;
+        text-align: center;
+        margin-bottom: ${({ theme }) => theme.spacing.XS}px;
+      }
+    }
+  }
+
   /* Pagination içindeki select'i küçült */
   .ant-pagination-options {
     .ant-select {

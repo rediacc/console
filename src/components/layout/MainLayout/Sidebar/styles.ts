@@ -4,25 +4,32 @@ import { DESIGN_TOKENS } from '@/utils/styleConstants'
 
 const { Sider } = Layout
 
-export const StyledSider = styled(Sider)<{ $sidebarWidth: number }>`
-  position: fixed;
+export const StyledSider = styled(Sider)<{ $sidebarWidth: number; $isDrawer?: boolean }>`
+  position: ${({ $isDrawer }) => ($isDrawer ? 'static' : 'fixed')};
   left: 0;
-  top: ${DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT}px;
-  height: calc(100vh - ${DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT}px);
+  top: ${({ $isDrawer }) => ($isDrawer ? '0' : `${DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT}px`)};
+  height: ${({ $isDrawer }) => 
+    $isDrawer ? '100%' : `calc(100vh - ${DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT}px)`};
   overflow: hidden;
   z-index: ${DESIGN_TOKENS.Z_INDEX.DROPDOWN - 1};
   width: ${({ $sidebarWidth }) => $sidebarWidth}px;
   border-right: none;
   box-shadow: none;
   transition: left ${DESIGN_TOKENS.TRANSITIONS.SLOW}, width ${DESIGN_TOKENS.TRANSITIONS.DEFAULT};
+
+  /* Mobilde sidebar'ı gizle - sadece drawer kullan */
+  @media (max-width: 768px) {
+    display: ${({ $isDrawer }) => ($isDrawer ? 'block' : 'none')};
+  }
 `
 
-export const SidebarContent = styled.div`
+export const SidebarContent = styled.div<{ $isDrawer?: boolean }>`
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  padding-top: ${({ theme }) => theme.spacing.MD}px;
+  padding-top: ${({ theme, $isDrawer }) => 
+    $isDrawer ? `${DESIGN_TOKENS.DIMENSIONS.HEADER_HEIGHT + theme.spacing.MD}px` : `${theme.spacing.MD}px`};
 `
 
 export const MenuScrollArea = styled.div`

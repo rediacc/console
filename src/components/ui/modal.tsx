@@ -5,6 +5,8 @@
  * - ModalStack: Vertical stack for modal content
  * - ModalStackLarge: Larger gap variant
  * - ModalActions: Action buttons container
+ * 
+ * Note: All Ant Design Modals are automatically responsive via GlobalStyles
  */
 
 import styled from 'styled-components'

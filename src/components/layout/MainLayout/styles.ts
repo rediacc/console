@@ -89,6 +89,11 @@ export const StyledContent = styled(Content)<{ $marginLeft: number; $paddingTop:
   transition: margin-left 0.2s ease;
   min-height: 280px;
   position: relative;
+
+  /* Mobilde sidebar margin'i kaldır */
+  @media (max-width: 768px) {
+    margin-left: 0 !important;
+  }
 `
 
 export const TransitionOverlay = styled.div`

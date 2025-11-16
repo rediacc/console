@@ -38,6 +38,7 @@ export const getTeamColumns = ({
       title: tSystem('tables.teams.teamName'),
       dataIndex: 'teamName',
       key: 'teamName',
+      width: 150,
       render: (text: string) => (
         <Space>
           <TeamOutlined />
@@ -45,11 +46,49 @@ export const getTeamColumns = ({
         </Space>
       ),
     },
+    // Mobil için birleşik Stats kolonu (sadece xs'de göster, sm'de gizle)
+    {
+      title: tSystem('tables.teams.stats', { defaultValue: 'Stats' }),
+      key: 'stats',
+      width: 140,
+      responsive: ['xs'],
+      render: (_, record: Team) => (
+        <Space direction="vertical" size={4} style={{ width: '100%' }}>
+          <Tooltip title={`${record.memberCount} ${tSystem('tables.teams.members')}`}>
+            <Space size="small">
+              <Badge count={record.memberCount} showZero size="small">
+                <UserOutlined />
+              </Badge>
+            </Space>
+          </Tooltip>
+          <Tooltip title={`${record.machineCount} ${tSystem('tables.teams.machines')}`}>
+            <Space size="small">
+              <DesktopOutlined />
+              <span>{record.machineCount}</span>
+            </Space>
+          </Tooltip>
+          <Tooltip title={`${record.repoCount || 0} ${tSystem('tables.teams.repositories')}`}>
+            <Space size="small">
+              <DatabaseOutlined />
+              <span>{record.repoCount || 0}</span>
+            </Space>
+          </Tooltip>
+          <Tooltip title={`${record.storageCount || 0} ${tSystem('tables.teams.storage')}`}>
+            <Space size="small">
+              <CloudServerOutlined />
+              <span>{record.storageCount || 0}</span>
+            </Space>
+          </Tooltip>
+        </Space>
+      ),
+    },
+    // Desktop için ayrı kolonlar (sm ve üzerinde göster)
     {
       title: tSystem('tables.teams.members'),
       dataIndex: 'memberCount',
       key: 'memberCount',
       width: 100,
+      responsive: ['sm'],
       render: (count: number) => (
         <Badge count={count} showZero>
           <UserOutlined />
@@ -61,6 +100,7 @@ export const getTeamColumns = ({
       dataIndex: 'machineCount',
       key: 'machineCount',
       width: 100,
+      responsive: ['sm'],
       render: (count: number) => (
         <Space>
           <DesktopOutlined />
@@ -73,6 +113,7 @@ export const getTeamColumns = ({
       dataIndex: 'repoCount',
       key: 'repoCount',
       width: 120,
+      responsive: ['sm'],
       render: (count: number) => (
         <Space>
           <DatabaseOutlined />
@@ -85,6 +126,7 @@ export const getTeamColumns = ({
       dataIndex: 'storageCount',
       key: 'storageCount',
       width: 120,
+      responsive: ['sm'],
       render: (count: number) => (
         <Space>
           <CloudServerOutlined />
@@ -109,9 +151,9 @@ export const getTeamColumns = ({
   columns.push({
     title: tSystem('tables.teams.actions'),
     key: 'actions',
-    width: 350,
+    width: 160,
     render: (_, record: Team) => (
-      <Space>
+      <Space size={4} wrap>
         <Tooltip title={tSystem('actions.edit')}>
           <Button
             type="primary"
