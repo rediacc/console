@@ -52,8 +52,8 @@ export const NotificationItem = styled.div<{ $isRead: boolean }>`
   padding: ${({ theme }) => `${theme.spacing.MD}px ${theme.spacing.LG}px`};
   cursor: pointer;
   transition: all 0.2s ease;
-  background-color: ${({ $isRead }) => 
-    $isRead ? 'transparent' : 'var(--color-primary-bg)'};
+  background-color: ${({ $isRead }) =>
+    $isRead ? 'transparent' : 'var(--color-bg-selected)'};
   border-bottom: 1px solid var(--color-border-secondary);
   
   &:hover {
