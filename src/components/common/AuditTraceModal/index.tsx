@@ -62,67 +62,49 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
   )
 
   // Map icon hints to actual icons
+  // Using grayscale with opacity variations for differentiation
   const getIcon = (iconHint: string) => {
+    // Use CSS variables for theme-aware colors
+    const errorColor = 'var(--color-error)'
+    const defaultColor = 'var(--color-text-secondary)'
+
     switch (iconHint) {
       case 'plus-circle':
-        return <IconWrapper $color="#52c41a"><PlusCircleOutlined /></IconWrapper>
+        return <IconWrapper $color={defaultColor}><PlusCircleOutlined /></IconWrapper>
       case 'edit':
-        return <IconWrapper $color="#1890ff"><EditOutlined /></IconWrapper>
+        return <IconWrapper $color={defaultColor}><EditOutlined /></IconWrapper>
       case 'trash':
-        return <IconWrapper $color="#ff4d4f"><DeleteOutlined /></IconWrapper>
+        return <IconWrapper $color={errorColor}><DeleteOutlined /></IconWrapper>
       case 'lock':
-        return <IconWrapper $color="#fa8c16"><LockOutlined /></IconWrapper>
+        return <IconWrapper $color={defaultColor}><LockOutlined /></IconWrapper>
       case 'key':
-        return <IconWrapper $color="#722ed1"><KeyOutlined /></IconWrapper>
+        return <IconWrapper $color={defaultColor}><KeyOutlined /></IconWrapper>
       case 'users':
-        return <IconWrapper $color="#13c2c2"><UserOutlined /></IconWrapper>
+        return <IconWrapper $color={defaultColor}><UserOutlined /></IconWrapper>
       case 'check-circle':
-        return <IconWrapper $color="#52c41a"><CheckCircleOutlined /></IconWrapper>
+        return <IconWrapper $color={defaultColor}><CheckCircleOutlined /></IconWrapper>
       case 'x-circle':
-        return <IconWrapper $color="#ff4d4f"><CloseCircleOutlined /></IconWrapper>
+        return <IconWrapper $color={errorColor}><CloseCircleOutlined /></IconWrapper>
       case 'database':
-        return <IconWrapper $color="#1890ff"><DatabaseOutlined /></IconWrapper>
+        return <IconWrapper $color={defaultColor}><DatabaseOutlined /></IconWrapper>
       case 'hdd':
-        return <IconWrapper $color="#fa8c16"><HddOutlined /></IconWrapper>
+        return <IconWrapper $color={defaultColor}><HddOutlined /></IconWrapper>
       case 'copy':
-        return <IconWrapper $color="#722ed1"><CopyOutlined /></IconWrapper>
+        return <IconWrapper $color={defaultColor}><CopyOutlined /></IconWrapper>
       default:
-        return <IconWrapper $color="#1890ff"><InfoCircleOutlined /></IconWrapper>
+        return <IconWrapper $color={defaultColor}><InfoCircleOutlined /></IconWrapper>
     }
   }
 
   // Get action color based on type
+  // Using grayscale system - only 'error' for actual delete/cancel actions
   const getActionColor = (actionType: string) => {
     switch (actionType) {
-      case 'Created':
-        return 'green'
-      case 'Updated':
-      case 'Renamed':
-        return 'blue'
       case 'Deleted':
-        return 'red'
-      case 'Activated':
-        return 'cyan'
-      case 'Deactivated':
-        return 'orange'
-      case 'Security Update':
-      case 'Security Setting':
-        return 'gold'
-      case 'Completed':
-        return 'success'
       case 'Cancelled':
-        return 'error'
-      case 'Assigned to Cluster':
-      case 'Assigned to Image':
-      case 'Assigned to Clone':
-        return 'blue'
-      case 'Removed from Cluster':
-      case 'Removed from Clone':
-        return 'orange'
-      case 'Reassigned Image':
-        return 'purple'
+        return 'error'  // Red for destructive actions only
       default:
-        return 'default'
+        return 'default'  // Grayscale for all other actions
     }
   }
 

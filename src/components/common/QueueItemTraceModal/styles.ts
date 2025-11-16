@@ -73,8 +73,8 @@ export const LastFetchedText = styled.span`
 `;
 
 export const ConsoleOutputContainer = styled.div<{ $theme: string }>`
-  background-color: ${({ $theme }) => $theme === 'dark' ? '#1f1f1f' : '#f5f5f5'};
-  border: 1px solid ${({ $theme }) => $theme === 'dark' ? '#303030' : '#d9d9d9'};
+  background-color: ${({ theme }) => theme.colors.bgSecondary};
+  border: 1px solid ${({ theme }) => theme.colors.borderPrimary};
   border-radius: ${({ theme }) => theme.borderRadius.SM}px;
   padding: ${({ theme }) => theme.spacing.SM}px;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
@@ -84,20 +84,20 @@ export const ConsoleOutputContainer = styled.div<{ $theme: string }>`
   word-break: break-word;
   height: 400px;
   overflow-y: auto;
-  
+
   &::-webkit-scrollbar {
     width: 8px;
   }
-  
+
   &::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   &::-webkit-scrollbar-thumb {
     background: ${({ theme }) => theme.colors.borderSecondary};
     border-radius: 4px;
   }
-  
+
   &::-webkit-scrollbar-thumb:hover {
     background: ${({ theme }) => theme.colors.textSecondary};
   }
