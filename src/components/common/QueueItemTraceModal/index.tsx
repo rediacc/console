@@ -791,7 +791,6 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             <Card
               data-testid="queue-trace-simple-overview"
               style={{
-                ...styles.card,
                 marginBottom: spacing('MD')
               }}
             >
@@ -890,7 +889,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                 {!simpleMode && (
                   <Row gutter={[spacing('MD'), spacing('MD')]} style={{ textAlign: 'center' }}>
                     <Col span={8}>
-                      <div data-testid="queue-trace-info-duration" className="queue-trace-key-info" style={{ padding: spacing('SM'), borderRadius: DESIGN_TOKENS.BORDER_RADIUS.LG, background: styles.colors?.bgSecondary }}>
+                      <div data-testid="queue-trace-info-duration" className="queue-trace-key-info" style={{ padding: spacing('SM'), borderRadius: DESIGN_TOKENS.BORDER_RADIUS.LG, background: 'var(--color-bg-secondary)' }}>
                         <Text type="secondary">Duration</Text>
                         <div>
                           <Text strong style={{ fontSize: DESIGN_TOKENS.FONT_SIZE.LG }}>
@@ -900,7 +899,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                       </div>
                     </Col>
                     <Col span={8}>
-                      <div data-testid="queue-trace-info-machine" className="queue-trace-key-info" style={{ padding: spacing('SM'), borderRadius: DESIGN_TOKENS.BORDER_RADIUS.LG, background: styles.colors?.bgSecondary }}>
+                      <div data-testid="queue-trace-info-machine" className="queue-trace-key-info" style={{ padding: spacing('SM'), borderRadius: DESIGN_TOKENS.BORDER_RADIUS.LG, background: 'var(--color-bg-secondary)' }}>
                         <Text type="secondary">Machine</Text>
                         <div>
                           <Text strong>{traceData.queueDetails.machineName}</Text>
@@ -908,7 +907,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                       </div>
                     </Col>
                     <Col span={8}>
-                      <div data-testid="queue-trace-info-priority" className="queue-trace-key-info" style={{ padding: spacing('SM'), borderRadius: DESIGN_TOKENS.BORDER_RADIUS.LG, background: styles.colors?.bgSecondary }}>
+                      <div data-testid="queue-trace-info-priority" className="queue-trace-key-info" style={{ padding: spacing('SM'), borderRadius: DESIGN_TOKENS.BORDER_RADIUS.LG, background: 'var(--color-bg-secondary)' }}>
                         <Text type="secondary">Priority</Text>
                         <div>
                           <Tag color={getPriorityInfo(normalizeProperty(traceData.queueDetails, 'priority', 'Priority')).color}>
@@ -1078,7 +1077,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                             value={traceData.queueDetails.assignedTime ? dayjs().diff(dayjs(traceData.queueDetails.assignedTime), 'minute') : 'N/A'}
                             suffix={traceData.queueDetails.assignedTime ? 'min' : ''}
                             prefix={<HourglassOutlined />}
-                            valueStyle={{ color: isTaskStale() ? styles.colors?.error : undefined }}
+                            valueStyle={{ color: isTaskStale() ? 'var(--color-error)' : undefined }}
                           />
                         </Col>
                       </Row>
@@ -1326,10 +1325,10 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                                 const status = compatibility.compatibility_status || 'unknown'
                                 
                                 const statusConfig = {
-                                  compatible: { type: 'success' as const, icon: <CheckCircleOutlined />, color: styles.colors?.success || '#4a4a4a' },
-                                  warning: { type: 'warning' as const, icon: <WarningOutlined />, color: styles.colors?.warning || '#5a5a5a' },
-                                  incompatible: { type: 'error' as const, icon: <ExclamationCircleOutlined />, color: styles.colors?.error || '#dc3545' },
-                                  unknown: { type: 'info' as const, icon: <QuestionCircleOutlined />, color: styles.colors?.info || '#6a6a6a' }
+                                  compatible: { type: 'success' as const, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
+                                  warning: { type: 'warning' as const, icon: <WarningOutlined />, color: 'var(--color-warning)' },
+                                  incompatible: { type: 'error' as const, icon: <ExclamationCircleOutlined />, color: 'var(--color-error)' },
+                                  unknown: { type: 'info' as const, icon: <QuestionCircleOutlined />, color: 'var(--color-info)' }
                                 }
                                 
                                 const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.unknown
@@ -1576,7 +1575,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                         value={traceData.machineStats.currentQueueDepth}
                         prefix={<HourglassOutlined />}
                         suffix="tasks"
-                        valueStyle={{ color: traceData.machineStats.currentQueueDepth > 50 ? styles.colors?.error : styles.colors?.textPrimary }}
+                        valueStyle={{ color: traceData.machineStats.currentQueueDepth > 50 ? 'var(--color-error)' : 'var(--color-text-primary)' }}
                       />
                       <Progress
                         percent={Math.min(100, (traceData.machineStats.currentQueueDepth / 100) * 100)}
@@ -1602,7 +1601,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                         title="Processing Capacity"
                         value={`${traceData.machineStats.activeProcessingCount}/${traceData.machineStats.maxConcurrentTasks || 'N/A'}`}
                         prefix={<DashboardOutlined />}
-                        valueStyle={{ color: traceData.machineStats.activeProcessingCount >= (traceData.machineStats.maxConcurrentTasks || 0) ? styles.colors?.error : styles.colors?.textPrimary }}
+                        valueStyle={{ color: traceData.machineStats.activeProcessingCount >= (traceData.machineStats.maxConcurrentTasks || 0) ? 'var(--color-error)' : 'var(--color-text-primary)' }}
                       />
                       <Progress
                         percent={traceData.machineStats.maxConcurrentTasks ? Math.min(100, (traceData.machineStats.activeProcessingCount / traceData.machineStats.maxConcurrentTasks) * 100) : 0}

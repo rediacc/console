@@ -64,8 +64,9 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
   // Map icon hints to actual icons
   // Using grayscale with opacity variations for differentiation
   const getIcon = (iconHint: string) => {
-    const errorColor = styles.colors?.error || '#dc3545'
-    const defaultColor = styles.colors?.textSecondary || 'currentColor'
+    // Use CSS variables for theme-aware colors
+    const errorColor = 'var(--color-error)'
+    const defaultColor = 'var(--color-text-secondary)'
 
     switch (iconHint) {
       case 'plus-circle':
