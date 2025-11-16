@@ -1,0 +1,145 @@
+import {
+  ThunderboltOutlined,
+  SettingOutlined,
+  PartitionOutlined,
+  DesktopOutlined,
+  HistoryOutlined,
+  ShopOutlined,
+  InboxOutlined,
+  CloudOutlined,
+  TeamOutlined,
+} from '@/utils/optimizedIcons'
+import type { TFunction } from 'i18next'
+import type { MenuConfig } from './types'
+
+export const getMenuItems = (t: TFunction): MenuConfig[] => [
+  {
+    key: '/organization',
+    icon: <TeamOutlined />,
+    label: t('navigation.organization'),
+    showInSimple: true,
+    'data-testid': 'main-nav-organization',
+    children: [
+      {
+        key: '/organization/users',
+        label: t('navigation.organizationUsers'),
+        showInSimple: true,
+        'data-testid': 'sub-nav-organization-users',
+      },
+      {
+        key: '/organization/teams',
+        label: t('navigation.organizationTeams'),
+        showInSimple: true,
+        'data-testid': 'sub-nav-organization-teams',
+      },
+      {
+        key: '/organization/access',
+        label: t('navigation.organizationAccess'),
+        showInSimple: false,
+        'data-testid': 'sub-nav-organization-access',
+      },
+    ],
+  },
+  {
+    key: '/machines',
+    icon: <DesktopOutlined />,
+    label: t('navigation.machines'),
+    showInSimple: true,
+    'data-testid': 'main-nav-machines',
+  },
+  {
+    key: '/settings',
+    icon: <SettingOutlined />,
+    label: t('navigation.settings'),
+    showInSimple: true,
+    'data-testid': 'main-nav-settings',
+    children: [
+      {
+        key: '/settings/profile',
+        label: t('navigation.settingsProfile'),
+        showInSimple: true,
+        'data-testid': 'sub-nav-settings-profile',
+      },
+      {
+        key: '/settings/company',
+        label: t('navigation.settingsCompany'),
+        showInSimple: false,
+        'data-testid': 'sub-nav-settings-company',
+      },
+      {
+        key: '/settings/infrastructure',
+        label: t('navigation.settingsInfrastructure'),
+        showInSimple: false,
+        featureFlag: 'regionsInfrastructure',
+        'data-testid': 'sub-nav-settings-infrastructure',
+      },
+    ],
+  },
+  {
+    key: 'divider-1',
+    type: 'divider',
+    showInSimple: true,
+  },
+  {
+    key: '/storage',
+    icon: <CloudOutlined />,
+    label: t('navigation.storage'),
+    showInSimple: false,
+    'data-testid': 'main-nav-storage',
+    children: [
+      {
+        key: '/storage',
+        label: t('navigation.storageCloud'),
+        showInSimple: false,
+        'data-testid': 'sub-nav-storage-cloud',
+      },
+      {
+        key: '/distributed-storage',
+        label: t('navigation.storageDistributed'),
+        showInSimple: false,
+        requiresPlan: ['ENTERPRISE', 'BUSINESS', 'Enterprise', 'Business'],
+        featureFlag: 'distributedStorage',
+        'data-testid': 'sub-nav-storage-distributed',
+      },
+    ],
+  },
+  {
+    key: '/credentials',
+    icon: <InboxOutlined />,
+    label: t('navigation.credentials'),
+    showInSimple: false,
+    'data-testid': 'main-nav-credentials',
+  },
+  {
+    key: '/queue',
+    icon: <ThunderboltOutlined />,
+    label: t('navigation.queue'),
+    showInSimple: false,
+    featureFlag: 'queueManagement',
+    'data-testid': 'main-nav-queue',
+  },
+  {
+    key: '/audit',
+    icon: <HistoryOutlined />,
+    label: t('navigation.audit'),
+    showInSimple: false,
+    featureFlag: 'auditLogs',
+    'data-testid': 'main-nav-audit',
+  },
+  {
+    key: '/architecture',
+    icon: <PartitionOutlined />,
+    label: t('navigation.architecture'),
+    showInSimple: false,
+    featureFlag: 'architecture',
+    'data-testid': 'main-nav-architecture',
+  },
+  {
+    key: '/marketplace',
+    icon: <ShopOutlined />,
+    label: t('navigation.marketplace'),
+    showInSimple: false,
+    featureFlag: 'marketplace',
+    'data-testid': 'main-nav-marketplace',
+  },
+]

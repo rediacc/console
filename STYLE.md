@@ -14,6 +14,56 @@ This document captures the styling architecture introduced in PR #84 (_merged on
 ---
 
 ## Folder & File Conventions
+
+### Component Organization (Updated Nov 2025)
+```
+src/
+├── components/
+│   ├── layout/              # Route-level layouts (singular - AuthLayout, MainLayout)
+│   ├── ui/                  # Reusable styled primitives (organized by category)
+│   │   ├── page.tsx         # PageWrapper, SectionStack, SectionHeading
+│   │   ├── card.tsx         # Card-related components
+│   │   ├── list.tsx         # List-related components
+│   │   ├── modal.tsx        # Modal layout components
+│   │   ├── form.tsx         # Form layout components
+│   │   ├── text.tsx         # Text variants
+│   │   ├── danger.tsx       # Danger zone components
+│   │   ├── utils.tsx        # Utility components
+│   │   └── index.ts         # Barrel export
+│   └── common/              # Business logic components
+│       └── ResourceListView/
+```
+
+### Naming & Structure Rules
+1. **Category folders are lowercase** (e.g., `layout/`, `ui/`, `common/`, `auth/`)
+2. **Component folders use PascalCase** matching the component name (e.g., `AuthLayout/`, `MainLayout/`, `ResourceListView/`)
+3. **Each component folder must contain `index.tsx` or `index.ts`** as the main export
+4. **Component files use PascalCase** (e.g., `AuthLayout.tsx`, `MainLayout.tsx`)
+5. **Helper files use camelCase** (e.g., `menuItems.tsx`, `utils.ts`, `helpers.ts`)
+6. **NEVER use kebab-case** (e.g., ❌ `menu-config.tsx`, ❌ `user-utils.ts`)
+7. **Maximum file size: 300 lines** - split larger files into logical modules
+8. **Table data definitions** go in `data.ts` or `data.tsx` next to the component's `index.tsx`
+
+**Example structure:**
+```
+components/
+├── layout/              # Category (lowercase)
+│   ├── AuthLayout/      # Component (PascalCase)
+│   │   ├── index.tsx    # Main component
+│   │   └── styles.ts    # Styled components
+│   └── MainLayout/      # Component (PascalCase)
+│       ├── index.tsx    # Main component
+│       ├── styles.ts    # Styled components
+│       ├── types.ts     # Type definitions (camelCase)
+│       └── menuItems.tsx # Helper file (camelCase)
+└── common/              # Category (lowercase)
+    └── ResourceListView/  # Component (PascalCase)
+        ├── index.tsx
+        ├── styles.ts
+        └── data.ts      # Table columns (camelCase)
+```
+
+### Styling Files
 - `ComponentName/index.tsx` imports from `./styles` and never exports styled primitives itself.
 - `styles.ts` files:
   - `import styled from 'styled-components'` as the default.
@@ -21,6 +71,7 @@ This document captures the styling architecture introduced in PR #84 (_merged on
   - Use semantic names (`NotificationDropdown`, `LoginCard`) instead of generic wrappers.
   - Prefix transient props with `$` (e.g. `$isRead`) so styled-components strips them from the DOM. See `NotificationBell/styles.ts` and `QueueItemTraceModal/styles.ts`.
 - Keep unused keyframes or helper functions out of the file; PR #119 removed legacy animations for this reason.
+- **Never use inline styles or CSS classes** - always use styled-components (except for global utilities)
 
 ---
 
@@ -85,18 +136,22 @@ Before opening a PR, run through this quick checklist:
 
 ---
 
-## Common TypeScript & Linter Issues
+## TypeScript Rules
 
-### Styled Ant Design Table Components
-When wrapping Ant Design's `Table` in styled-components with custom props:
+### No `any` Types
+**Never use `any` types** - always provide proper TypeScript types.
+
+**Exception:** When wrapping Ant Design's `Table` in styled-components, you must cast to `any` due to generic type limitations:
 ```ts
-// ✅ Correct: Cast to any to allow generic types and custom props
+// ✅ ONLY acceptable use of 'any' - Ant Design Table wrapper
 export const DataTable = styled(Table as any)<{ $isLoading?: boolean }>`
   .ant-spin-nested-loading {
     opacity: ${(props: any) => (props.$isLoading ? 0.65 : 1)};
   }
 `
 ```
+
+This is the **ONLY** acceptable use of `any`. All other cases must use proper types.
 
 ### Pagination Callbacks
 Always provide explicit types for pagination callbacks to avoid implicit `any`:
@@ -115,6 +170,24 @@ useEffect(() => {
 }, [initialVault])
 ```
 Use this sparingly—only when synchronizing component state with external changes.
+
+---
+
+## Code Quality & Readability
+
+### General Principles
+1. **Readability and reusability are paramount** - write self-documenting code
+2. **Avoid unnecessary comments** - code should be clear enough without them
+3. **Keep functions focused** - single responsibility principle
+4. **Extract reusable logic** - DRY (Don't Repeat Yourself)
+
+### When to Comment
+- ✅ Complex business logic that isn't immediately obvious
+- ✅ Workarounds for known bugs or limitations
+- ✅ Non-obvious performance optimizations
+- ❌ Obvious code that explains itself
+- ❌ Commented-out code (delete it instead)
+- ❌ TODO comments (create issues instead)
 
 ---
 

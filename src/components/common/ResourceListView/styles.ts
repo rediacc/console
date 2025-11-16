@@ -112,3 +112,27 @@ export const RefreshButton = styled(Button)`
     ${actionButtonStyles};
   }
 `
+
+export const TableWrapper = styled.div`
+  /* Pagination içindeki select'i küçült */
+  .ant-pagination-options {
+    .ant-select {
+      .ant-select-selector {
+        height: 32px !important;
+        min-height: 32px !important;
+        padding: 0 32px 0 12px !important; /* Sağda arrow için alan, solda text için */
+      }
+      
+      .ant-select-selection-item {
+        line-height: 30px !important;
+        padding-right: 0 !important;
+      }
+      
+      .ant-select-arrow {
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        right: 6px !important;
+      }
+    }
+  }
+`

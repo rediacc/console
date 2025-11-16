@@ -22,17 +22,19 @@ import {
   ProfileSectionHeading,
 } from './styles'
 import {
-  SettingsCard,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
   CardActions,
   IconWrapper,
-  ModalAlert,
   RequirementsList,
-  FormItemActions,
   ModalActions,
+} from '@/components/ui'
+import {
+  SettingsCard,
+  ModalAlert,
+  FormItemActions,
 } from '@/pages/system/styles'
 
 const ProfilePage: React.FC = () => {

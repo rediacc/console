@@ -1,13 +1,7 @@
 import React, { useState } from 'react'
-import { Button, Tooltip, Space, Tag, Badge, Modal, List, Popconfirm, Tabs, Card } from 'antd'
+import { Button, Tooltip, Modal, List, Popconfirm, Tabs, Card, Space, Tag } from 'antd'
 import {
-  TeamOutlined,
   UserOutlined,
-  DesktopOutlined,
-  DatabaseOutlined,
-  CloudServerOutlined,
-  EditOutlined,
-  HistoryOutlined,
   DeleteOutlined,
   PlusOutlined,
 } from '@/utils/optimizedIcons'
@@ -16,7 +10,6 @@ import ResourceListView from '@/components/common/ResourceListView'
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
 import { ModalSize } from '@/types/modal'
-import { featureFlags } from '@/config/featureFlags'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import {
   useTeams,
@@ -31,15 +24,17 @@ import {
   TeamMember,
 } from '@/api/queries/teams'
 import {
-  TeamsPageWrapper,
-  TeamsSectionStack,
-  TeamsSectionHeading,
-  TeamsListHeader,
-  TeamsListTitle,
-  TeamsListSubtitle,
-  TeamsInlineFormRow,
-} from './styles'
-import { ModalStack, FullWidthSelect } from '@/pages/system/styles'
+  PageWrapper,
+  SectionStack,
+  SectionHeading,
+  ListTitleRow,
+  ListTitle,
+  ListSubtitle,
+  InlineFormRow,
+  ModalStack,
+} from '@/components/ui'
+import { FullWidthSelect } from '@/pages/system/styles'
+import { getTeamColumns } from './data'
 
 const TeamsPage: React.FC = () => {
   const { t } = useTranslation('organization')
@@ -79,10 +74,13 @@ const TeamsPage: React.FC = () => {
     setUnifiedModalState({ open: false, mode: 'create', data: null })
   }
 
-  const handleUnifiedModalSubmit = async (data: any) => {
+  const handleUnifiedModalSubmit = async (data: Partial<Team> & { teamVault?: string }) => {
     try {
       if (unifiedModalState.mode === 'create') {
-        await createTeamMutation.mutateAsync(data)
+        if (!data.teamName) {
+          throw new Error('Team name is required')
+        }
+        await createTeamMutation.mutateAsync({ teamName: data.teamName, teamVault: data.teamVault })
       } else if (unifiedModalState.data) {
         if (data.teamName && data.teamName !== unifiedModalState.data.teamName) {
           await updateTeamNameMutation.mutateAsync({
@@ -154,164 +152,39 @@ const TeamsPage: React.FC = () => {
     }
   }
 
-  const teamColumns = [
-    {
-      title: tSystem('tables.teams.teamName'),
-      dataIndex: 'teamName',
-      key: 'teamName',
-      render: (text: string) => (
-        <Space>
-          <TeamOutlined />
-          <strong>{text}</strong>
-        </Space>
-      ),
+  const teamColumns = getTeamColumns({
+    tSystem,
+    tCommon,
+    onEdit: (team) => openUnifiedModal('edit', team),
+    onManageMembers: (team) => {
+      setSelectedTeam(team)
+      setIsManageTeamModalOpen(true)
     },
-    {
-      title: tSystem('tables.teams.members'),
-      dataIndex: 'memberCount',
-      key: 'memberCount',
-      width: 100,
-      render: (count: number) => (
-        <Badge count={count} showZero>
-          <UserOutlined />
-        </Badge>
-      ),
-    },
-    {
-      title: tSystem('tables.teams.machines'),
-      dataIndex: 'machineCount',
-      key: 'machineCount',
-      width: 100,
-      render: (count: number) => (
-        <Space>
-          <DesktopOutlined />
-          <span>{count}</span>
-        </Space>
-      ),
-    },
-    {
-      title: tSystem('tables.teams.repositories'),
-      dataIndex: 'repoCount',
-      key: 'repoCount',
-      width: 120,
-      render: (count: number) => (
-        <Space>
-          <DatabaseOutlined />
-          <span>{count || 0}</span>
-        </Space>
-      ),
-    },
-    {
-      title: tSystem('tables.teams.storage'),
-      dataIndex: 'storageCount',
-      key: 'storageCount',
-      width: 120,
-      render: (count: number) => (
-        <Space>
-          <CloudServerOutlined />
-          <span>{count || 0}</span>
-        </Space>
-      ),
-    },
-    ...(featureFlags.isEnabled('vaultVersionColumns')
-      ? [
-          {
-            title: tSystem('tables.teams.vaultVersion'),
-            dataIndex: 'vaultVersion',
-            key: 'vaultVersion',
-            width: 120,
-            render: (version: number) => <Tag>{tCommon('general.versionFormat', { defaultValue: 'v{{version}}', version })}</Tag>,
-          },
-        ]
-      : []),
-    {
-      title: tSystem('tables.teams.actions'),
-      key: 'actions',
-      width: 350,
-      render: (_: any, record: Team) => (
-        <Space>
-          <Tooltip title={tSystem('actions.edit')}>
-            <Button
-              type="primary"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => openUnifiedModal('edit', record)}
-              data-testid={`system-team-edit-button-${record.teamName}`}
-              aria-label={tSystem('actions.edit')}
-            />
-          </Tooltip>
-          <Tooltip title={tSystem('actions.members')}>
-            <Button
-              type="primary"
-              size="small"
-              icon={<UserOutlined />}
-              onClick={() => {
-                setSelectedTeam(record)
-                setIsManageTeamModalOpen(true)
-              }}
-              data-testid={`system-team-members-button-${record.teamName}`}
-              aria-label={tSystem('actions.members')}
-            />
-          </Tooltip>
-          <Tooltip title={tSystem('actions.trace')}>
-            <Button
-              type="primary"
-              size="small"
-              icon={<HistoryOutlined />}
-              onClick={() =>
-                setAuditTraceModal({
-                  open: true,
-                  entityType: 'Team',
-                  entityIdentifier: record.teamName,
-                  entityName: record.teamName,
-                })
-              }
-              data-testid={`system-team-trace-button-${record.teamName}`}
-              aria-label={tSystem('actions.trace')}
-            />
-          </Tooltip>
-          <Popconfirm
-            title={tSystem('teams.delete.confirmTitle', { defaultValue: 'Delete Team' })}
-            description={tSystem('teams.delete.confirmDescription', {
-              defaultValue: 'Are you sure you want to delete team "{{teamName}}"?',
-              teamName: record.teamName,
-            })}
-            onConfirm={() => handleDeleteTeam(record.teamName)}
-            okText={tCommon('general.yes')}
-            cancelText={tCommon('general.no')}
-            okButtonProps={{ danger: true }}
-          >
-            <Tooltip title={tCommon('actions.delete')}>
-              <Button
-                type="primary"
-                danger
-                size="small"
-                icon={<DeleteOutlined />}
-                loading={deleteTeamMutation.isPending}
-                data-testid={`system-team-delete-button-${record.teamName}`}
-                aria-label={tCommon('actions.delete')}
-              />
-            </Tooltip>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ]
+    onTrace: (team) =>
+      setAuditTraceModal({
+        open: true,
+        entityType: 'Team',
+        entityIdentifier: team.teamName,
+        entityName: team.teamName,
+      }),
+    onDelete: handleDeleteTeam,
+    isDeleting: deleteTeamMutation.isPending,
+  })
 
   return (
-    <TeamsPageWrapper>
-      <TeamsSectionStack>
-        <TeamsSectionHeading level={3}>{t('teams.heading', { defaultValue: 'Teams' })}</TeamsSectionHeading>
-        <ResourceListView
+    <PageWrapper>
+      <SectionStack>
+        <SectionHeading level={3}>{t('teams.heading', { defaultValue: 'Teams' })}</SectionHeading>
+        <ResourceListView<Team>
           title={
-            <TeamsListHeader>
-              <TeamsListTitle>{t('teams.title', { defaultValue: 'Teams' })}</TeamsListTitle>
-              <TeamsListSubtitle>{t('teams.subtitle', { defaultValue: 'Manage teams and their members' })}</TeamsListSubtitle>
-            </TeamsListHeader>
+            <ListTitleRow>
+              <ListTitle>{t('teams.title', { defaultValue: 'Teams' })}</ListTitle>
+              <ListSubtitle>{t('teams.subtitle', { defaultValue: 'Manage teams and their members' })}</ListSubtitle>
+            </ListTitleRow>
           }
           loading={teamsLoading}
-          data={teams as any}
-          columns={teamColumns as any}
+          data={teams}
+          columns={teamColumns}
           rowKey="teamName"
           searchPlaceholder={t('teams.searchPlaceholder', { defaultValue: 'Search teams...' })}
           data-testid="system-team-table"
@@ -327,7 +200,7 @@ const TeamsPage: React.FC = () => {
             </Tooltip>
           }
         />
-      </TeamsSectionStack>
+      </SectionStack>
 
       <Modal
         title={t('teams.manageMembers.title', {
@@ -403,7 +276,7 @@ const TeamsPage: React.FC = () => {
               label: t('teams.manageMembers.addTab', { defaultValue: 'Add Member' }),
               children: (
                 <ModalStack>
-                  <TeamsInlineFormRow>
+                  <InlineFormRow>
                     <FullWidthSelect
                       showSearch
                       placeholder={t('teams.manageMembers.selectUser', { defaultValue: 'Select user' })}
@@ -432,7 +305,7 @@ const TeamsPage: React.FC = () => {
                         aria-label={tSystem('actions.addMember')}
                       />
                     </Tooltip>
-                  </TeamsInlineFormRow>
+                  </InlineFormRow>
                 </ModalStack>
               ),
             },
@@ -445,7 +318,7 @@ const TeamsPage: React.FC = () => {
         onCancel={closeUnifiedModal}
         resourceType="team"
         mode={unifiedModalState.mode}
-        existingData={unifiedModalState.data as any}
+        existingData={unifiedModalState.data ?? undefined}
         onSubmit={handleUnifiedModalSubmit}
         onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
         isSubmitting={createTeamMutation.isPending || updateTeamNameMutation.isPending}
@@ -459,7 +332,7 @@ const TeamsPage: React.FC = () => {
         entityIdentifier={auditTraceModal.entityIdentifier}
         entityName={auditTraceModal.entityName}
       />
-    </TeamsPageWrapper>
+    </PageWrapper>
   )
 }
 
