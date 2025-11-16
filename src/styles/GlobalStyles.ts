@@ -309,7 +309,7 @@ export const GlobalStyles = createGlobalStyle`
   .ant-btn:not(:disabled):focus-visible {
     outline: none !important;
     outline-offset: 0 !important;
-    box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.2) !important;
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.shadow} !important;
     border-color: var(--color-primary) !important;
     transition: all 0.2s ease !important;
   }
@@ -329,7 +329,7 @@ export const GlobalStyles = createGlobalStyle`
   [tabindex]:focus-visible {
     outline: 3px solid var(--color-primary) !important;
     outline-offset: 2px;
-    box-shadow: 0 0 0 4px rgba(26, 26, 26, 0.25);
+    box-shadow: 0 0 0 4px ${({ theme }) => theme.colors.shadow};
     border-radius: 4px;
   }
 
@@ -390,7 +390,7 @@ export const GlobalStyles = createGlobalStyle`
 
   .ant-btn-primary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    box-shadow: ${({ theme }) => theme.shadows.BUTTON_HOVER};
   }
 
   /* ============================================
@@ -520,19 +520,19 @@ export const GlobalStyles = createGlobalStyle`
      ============================================ */
 
   .ant-table-tbody > tr.ant-table-row-selected > td {
-    background: rgba(26, 26, 26, 0.08) !important;
+    background: var(--color-bg-selected) !important;
   }
 
   .ant-table-tbody > tr.ant-table-row-selected:hover > td {
-    background: rgba(26, 26, 26, 0.12) !important;
+    background: var(--color-bg-active) !important;
   }
 
   [data-theme="dark"] .ant-table-tbody > tr.ant-table-row-selected > td {
-    background: rgba(229, 229, 229, 0.15) !important;  // Higher contrast in dark mode
+    background: var(--color-bg-selected) !important;
   }
 
   [data-theme="dark"] .ant-table-tbody > tr.ant-table-row-selected:hover > td {
-    background: rgba(229, 229, 229, 0.25) !important;  // More visible on hover
+    background: var(--color-bg-active) !important;
   }
 
   /* ============================================
