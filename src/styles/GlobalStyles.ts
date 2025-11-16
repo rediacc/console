@@ -98,11 +98,13 @@ export const GlobalStyles = createGlobalStyle`
     --color-bg-tertiary: ${colorTokens.light.bgTertiary};
     --color-bg-hover: ${colorTokens.light.bgHover};
     --color-bg-active: ${colorTokens.light.bgActive};
+    --color-bg-selected: ${colorTokens.light.bgSelected};
     --color-text-primary: ${colorTokens.light.textPrimary};
     --color-text-secondary: ${colorTokens.light.textSecondary};
     --color-text-tertiary: ${colorTokens.light.textTertiary};
     --color-text-muted: ${colorTokens.light.textMuted};
     --color-text-inverse: ${colorTokens.light.textInverse};
+    --color-text-selected: ${colorTokens.light.textSelected};
     --color-border-primary: ${colorTokens.light.borderPrimary};
     --color-border-secondary: ${colorTokens.light.borderSecondary};
     --color-border-hover: ${colorTokens.light.borderHover};
@@ -115,11 +117,13 @@ export const GlobalStyles = createGlobalStyle`
     --color-bg-tertiary: ${colorTokens.dark.bgTertiary};
     --color-bg-hover: ${colorTokens.dark.bgHover};
     --color-bg-active: ${colorTokens.dark.bgActive};
+    --color-bg-selected: ${colorTokens.dark.bgSelected};
     --color-text-primary: ${colorTokens.dark.textPrimary};
     --color-text-secondary: ${colorTokens.dark.textSecondary};
     --color-text-tertiary: ${colorTokens.dark.textTertiary};
     --color-text-muted: ${colorTokens.dark.textMuted};
     --color-text-inverse: ${colorTokens.dark.textInverse};
+    --color-text-selected: ${colorTokens.dark.textSelected};
     --color-border-primary: ${colorTokens.dark.borderPrimary};
     --color-border-secondary: ${colorTokens.dark.borderSecondary};
     --color-border-hover: ${colorTokens.dark.borderHover};
@@ -305,7 +309,7 @@ export const GlobalStyles = createGlobalStyle`
   .ant-btn:not(:disabled):focus-visible {
     outline: none !important;
     outline-offset: 0 !important;
-    box-shadow: 0 0 0 2px rgba(85, 107, 47, 0.2) !important;
+    box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.2) !important;
     border-color: var(--color-primary) !important;
     transition: all 0.2s ease !important;
   }
@@ -325,7 +329,7 @@ export const GlobalStyles = createGlobalStyle`
   [tabindex]:focus-visible {
     outline: 3px solid var(--color-primary) !important;
     outline-offset: 2px;
-    box-shadow: 0 0 0 4px rgba(85, 107, 47, 0.25);
+    box-shadow: 0 0 0 4px rgba(26, 26, 26, 0.25);
     border-radius: 4px;
   }
 
@@ -386,7 +390,7 @@ export const GlobalStyles = createGlobalStyle`
 
   .ant-btn-primary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(85, 107, 47, 0.35);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
   }
 
   /* ============================================
@@ -516,19 +520,19 @@ export const GlobalStyles = createGlobalStyle`
      ============================================ */
 
   .ant-table-tbody > tr.ant-table-row-selected > td {
-    background: rgba(85, 107, 47, 0.08) !important;
+    background: rgba(26, 26, 26, 0.08) !important;
   }
 
   .ant-table-tbody > tr.ant-table-row-selected:hover > td {
-    background: rgba(85, 107, 47, 0.12) !important;
+    background: rgba(26, 26, 26, 0.12) !important;
   }
 
   [data-theme="dark"] .ant-table-tbody > tr.ant-table-row-selected > td {
-    background: rgba(125, 155, 73, 0.15) !important;
+    background: rgba(229, 229, 229, 0.15) !important;  // Higher contrast in dark mode
   }
 
   [data-theme="dark"] .ant-table-tbody > tr.ant-table-row-selected:hover > td {
-    background: rgba(125, 155, 73, 0.2) !important;
+    background: rgba(229, 229, 229, 0.25) !important;  // More visible on hover
   }
 
   /* ============================================
@@ -589,19 +593,20 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   .ant-pagination-item-active {
-    background-color: ${({ theme }) => theme.colors.primary};
-    border-color: ${({ theme }) => theme.colors.primary};
-    
+    background-color: var(--color-bg-selected);
+    border-color: var(--color-bg-selected);
+
     a {
-      color: #ffffff !important;
+      color: var(--color-text-selected) !important;
     }
-    
+
     &:hover {
-      background-color: ${({ theme }) => theme.colors.primaryHover};
-      border-color: ${({ theme }) => theme.colors.primaryHover};
-      
+      background-color: var(--color-bg-selected);
+      border-color: var(--color-bg-selected);
+      opacity: 0.9;
+
       a {
-        color: #ffffff !important;
+        color: var(--color-text-selected) !important;
       }
     }
   }

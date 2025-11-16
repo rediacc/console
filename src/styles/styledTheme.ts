@@ -23,17 +23,19 @@ export interface StyledTheme {
     bgTertiary: string
     bgHover: string
     bgActive: string
+    bgSelected: string        // High-contrast selection background
     bgSuccess: string
     bgWarning: string
     bgError: string
     bgInfo: string
-    
+
     // Text colors
     textPrimary: string
     textSecondary: string
     textTertiary: string
     textMuted: string
     textInverse: string
+    textSelected: string       // High-contrast selection text
     
     // Border colors
     borderPrimary: string
@@ -94,16 +96,18 @@ export const lightTheme: StyledTheme = {
     bgTertiary: colorTokens.light.bgTertiary,
     bgHover: colorTokens.light.bgHover,
     bgActive: colorTokens.light.bgActive,
-    bgSuccess: '#d3f9d8',
-    bgWarning: '#fff3cd',
-    bgError: '#f8d7da',
-    bgInfo: '#d1ecf1',
-    
+    bgSelected: colorTokens.light.bgSelected,
+    bgSuccess: '#e9ecef',     // Light gray
+    bgWarning: '#dee2e6',     // Medium light gray
+    bgError: '#f8d7da',       // Keep red for errors
+    bgInfo: '#f1f3f5',        // Very light gray
+
     textPrimary: colorTokens.light.textPrimary,
     textSecondary: colorTokens.light.textSecondary,
     textTertiary: colorTokens.light.textTertiary,
     textMuted: colorTokens.light.textMuted,
     textInverse: colorTokens.light.textInverse,
+    textSelected: colorTokens.light.textSelected,
     
     borderPrimary: colorTokens.light.borderPrimary,
     borderSecondary: colorTokens.light.borderSecondary,
@@ -147,16 +151,18 @@ export const darkTheme: StyledTheme = {
     bgTertiary: colorTokens.dark.bgTertiary,
     bgHover: colorTokens.dark.bgHover,
     bgActive: colorTokens.dark.bgActive,
-    bgSuccess: '#155724',
-    bgWarning: '#856404',
-    bgError: '#721c24',
-    bgInfo: '#004085',
-    
+    bgSelected: colorTokens.dark.bgSelected,  // Medium-light gray (not inverted)
+    bgSuccess: '#2a2a2a',     // Medium dark gray
+    bgWarning: '#3a3a3a',     // Lighter dark gray
+    bgError: '#721c24',       // Keep red for errors
+    bgInfo: '#27272a',        // Dark gray
+
     textPrimary: colorTokens.dark.textPrimary,
     textSecondary: colorTokens.dark.textSecondary,
     textTertiary: colorTokens.dark.textTertiary,
     textMuted: colorTokens.dark.textMuted,
     textInverse: colorTokens.dark.textInverse,
+    textSelected: colorTokens.dark.textSelected,  // White for good contrast
     
     borderPrimary: colorTokens.dark.borderPrimary,
     borderSecondary: colorTokens.dark.borderSecondary,
