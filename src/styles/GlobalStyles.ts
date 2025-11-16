@@ -706,6 +706,26 @@ export const GlobalStyles = createGlobalStyle`
     }
   }
 
+  /* Modal footer - better button alignment */
+  .ant-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: ${({ theme }) => theme.spacing.SM}px;
+    flex-wrap: wrap;
+
+    /* Sol taraftaki butonlar (Import/Export) */
+    > div:first-child {
+      margin-right: auto;
+    }
+
+    /* Sağ taraftaki butonlar (Cancel/Create) */
+    > button,
+    > .ant-btn {
+      margin-left: 0;
+    }
+  }
+
   /* Small Modal - 480px max-width */
   .modal-sm {
     max-width: 480px !important;
