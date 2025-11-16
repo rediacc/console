@@ -49,22 +49,22 @@ export const MenuItem = styled.div<{ $isActive: boolean; $padding: string; $coll
   min-height: 44px;
   justify-content: ${({ $collapsed }) => ($collapsed ? 'center' : 'flex-start')};
   background-color: ${({ $isActive }) =>
-    $isActive ? 'var(--color-primary-bg)' : 'transparent'};
+    $isActive ? 'var(--color-bg-selected)' : 'transparent'};
   color: ${({ $isActive }) =>
-    $isActive ? 'var(--color-primary)' : 'var(--color-text-primary)'};
+    $isActive ? 'var(--color-text-selected)' : 'var(--color-text-primary)'};
   font-weight: ${({ $isActive }) => ($isActive ? 600 : 500)};
   transition: all 0.2s ease;
 
   &:hover {
     background-color: ${({ $isActive }) =>
-      $isActive ? 'var(--color-primary-bg)' : 'var(--color-bg-hover)'};
+      $isActive ? 'var(--color-bg-selected)' : 'var(--color-bg-hover)'};
   }
 `
 
 export const MenuIcon = styled.span<{ $isActive: boolean; $collapsed?: boolean }>`
   font-size: 20px;
   margin-right: ${({ $collapsed }) => ($collapsed ? '0' : '12px')};
-  color: ${({ $isActive }) => ($isActive ? 'var(--color-primary)' : 'inherit')};
+  color: ${({ $isActive }) => ($isActive ? 'var(--color-text-selected)' : 'inherit')};
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -79,7 +79,7 @@ export const MenuLabel = styled.span<{ $isActive: boolean; $collapsed: boolean }
   white-space: nowrap;
   text-overflow: ellipsis;
   color: ${({ $isActive }) =>
-    $isActive ? 'var(--color-primary)' : 'var(--color-text-primary)'};
+    $isActive ? 'var(--color-text-selected)' : 'var(--color-text-primary)'};
   display: ${({ $collapsed }) => ($collapsed ? 'none' : 'block')};
   transition: opacity 0.2s ease;
   flex: 1;
@@ -101,7 +101,7 @@ export const TooltipItem = styled.div<{ $isActive: boolean }>`
   border-radius: ${({ theme }) => theme.borderRadius.MD}px;
 
   color: ${({ $isActive }) =>
-    $isActive ? 'var(--color-primary)' : 'var(--color-text-primary)'};
+    $isActive ? 'var(--color-text-selected)' : 'var(--color-text-primary)'};
   font-weight: ${({ $isActive }) => ($isActive ? 600 : 500)};
   cursor: pointer;
   font-size: 14px;
@@ -110,14 +110,14 @@ export const TooltipItem = styled.div<{ $isActive: boolean }>`
 
   &:hover {
     background-color: ${({ $isActive }) =>
-      $isActive ? 'var(--color-primary-bg)' : 'var(--color-bg-hover)'};
+      $isActive ? 'var(--color-bg-selected)' : 'var(--color-bg-hover)'};
   }
 `
 
 export const TooltipLabel = styled.div<{ $isActive: boolean }>`
   padding: ${({ theme }) => `${theme.spacing.SM}px ${theme.spacing.MD}px`};
   color: ${({ $isActive }) =>
-    $isActive ? 'var(--color-primary)' : 'var(--color-text-primary)'};
+    $isActive ? 'var(--color-text-selected)' : 'var(--color-text-primary)'};
   font-weight: ${({ $isActive }) => ($isActive ? 600 : 500)};
   font-size: 14px;
   min-width: 160px;
@@ -141,16 +141,16 @@ export const SubMenuItem = styled.div<{ $isActive: boolean }>`
   border-radius: 12px;
   font-size: 14px;
   color: ${({ $isActive }) =>
-    $isActive ? 'var(--color-primary)' : 'var(--color-text-secondary)'};
+    $isActive ? 'var(--color-text-selected)' : 'var(--color-text-secondary)'};
   font-weight: ${({ $isActive }) => ($isActive ? 600 : 500)};
   cursor: pointer;
   background-color: ${({ $isActive }) =>
-    $isActive ? 'var(--color-primary-bg)' : 'transparent'};
+    $isActive ? 'var(--color-bg-selected)' : 'transparent'};
   transition: background-color ${DESIGN_TOKENS.TRANSITIONS.DEFAULT},
     color ${DESIGN_TOKENS.TRANSITIONS.DEFAULT};
 
   &:hover {
     background-color: ${({ $isActive }) =>
-      $isActive ? 'var(--color-primary-bg)' : 'var(--color-bg-hover)'};
+      $isActive ? 'var(--color-bg-selected)' : 'var(--color-bg-hover)'};
   }
 `
