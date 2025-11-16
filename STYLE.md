@@ -13,55 +13,23 @@ This document captures the styling architecture introduced in PR #84 (_merged on
 
 ---
 
-## Folder & File Conventions
+## Component Structure & Organization
 
-### Component Organization (Updated Nov 2025)
-```
-src/
-├── components/
-│   ├── layout/              # Route-level layouts (singular - AuthLayout, MainLayout)
-│   ├── ui/                  # Reusable styled primitives (organized by category)
-│   │   ├── page.tsx         # PageWrapper, SectionStack, SectionHeading
-│   │   ├── card.tsx         # Card-related components
-│   │   ├── list.tsx         # List-related components
-│   │   ├── modal.tsx        # Modal layout components
-│   │   ├── form.tsx         # Form layout components
-│   │   ├── text.tsx         # Text variants
-│   │   ├── danger.tsx       # Danger zone components
-│   │   ├── utils.tsx        # Utility components
-│   │   └── index.ts         # Barrel export
-│   └── common/              # Business logic components
-│       └── ResourceListView/
-```
+> **📁 For component structure, refactoring, and file organization, see [REFACTORING.md](./REFACTORING.md)**
+>
+> REFACTORING.md covers:
+> - Component folder structure (when to use folders vs files)
+> - File naming conventions (PascalCase, camelCase rules)
+> - Component splitting patterns (extracting types, helpers, sub-components)
+> - Table data extraction
+> - Mobile responsive patterns
+> - Step-by-step refactoring process
 
-### Naming & Structure Rules
-1. **Category folders are lowercase** (e.g., `layout/`, `ui/`, `common/`, `auth/`)
-2. **Component folders use PascalCase** matching the component name (e.g., `AuthLayout/`, `MainLayout/`, `ResourceListView/`)
-3. **Each component folder must contain `index.tsx` or `index.ts`** as the main export
-4. **Component files use PascalCase** (e.g., `AuthLayout.tsx`, `MainLayout.tsx`)
-5. **Helper files use camelCase** (e.g., `menuItems.tsx`, `utils.ts`, `helpers.ts`)
-6. **NEVER use kebab-case** (e.g., ❌ `menu-config.tsx`, ❌ `user-utils.ts`)
-7. **Maximum file size: 300 lines** - split larger files into logical modules
-8. **Table data definitions** go in `data.ts` or `data.tsx` next to the component's `index.tsx`
+This document (STYLE.md) focuses specifically on **styling conventions** using styled-components.
 
-**Example structure:**
-```
-components/
-├── layout/              # Category (lowercase)
-│   ├── AuthLayout/      # Component (PascalCase)
-│   │   ├── index.tsx    # Main component
-│   │   └── styles.ts    # Styled components
-│   └── MainLayout/      # Component (PascalCase)
-│       ├── index.tsx    # Main component
-│       ├── styles.ts    # Styled components
-│       ├── types.ts     # Type definitions (camelCase)
-│       └── menuItems.tsx # Helper file (camelCase)
-└── common/              # Category (lowercase)
-    └── ResourceListView/  # Component (PascalCase)
-        ├── index.tsx
-        ├── styles.ts
-        └── data.ts      # Table columns (camelCase)
-```
+---
+
+## Folder & File Conventions for Styling
 
 ### Styling Files
 - `ComponentName/index.tsx` imports from `./styles` and never exports styled primitives itself.
