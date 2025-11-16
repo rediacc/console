@@ -666,7 +666,7 @@ const QueuePage: React.FC = () => {
                 <Tooltip title={t('queue:tabs.active.tooltip')}>
                   <TabLabel data-testid="queue-tab-active">
                     {t('queue:tabs.active.title')}
-                    <TabCount count={activeItems.length} $color="#faad14" />
+                    <TabCount count={activeItems.length} $color="#5a5a5a" />
                   </TabLabel>
                 </Tooltip>
               } 
@@ -702,7 +702,7 @@ const QueuePage: React.FC = () => {
                 <Tooltip title={t('queue:tabs.completed.tooltip')}>
                   <TabLabel data-testid="queue-tab-completed">
                     {t('queue:tabs.completed.title')}
-                    <TabCount count={completedCount || completedItems.length} showZero $color="#52c41a" />
+                    <TabCount count={completedCount || completedItems.length} showZero $color="#4a4a4a" />
                   </TabLabel>
                 </Tooltip>
               } 
@@ -738,7 +738,7 @@ const QueuePage: React.FC = () => {
                 <Tooltip title={t('queue:tabs.cancelled.tooltip')}>
                   <TabLabel data-testid="queue-tab-cancelled">
                     {t('queue:tabs.cancelled.title')}
-                    <TabCount count={cancelledCount || cancelledItems.length} showZero $color="#ff4d4f" />
+                    <TabCount count={cancelledCount || cancelledItems.length} showZero $color="#6a6a6a" />
                   </TabLabel>
                 </Tooltip>
               } 

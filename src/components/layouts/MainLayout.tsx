@@ -602,8 +602,8 @@ const MainLayout: React.FC = () => {
                     cursor: 'pointer',
                     minHeight: 44,
                     justifyContent: 'flex-start',
-                    backgroundColor: isParentActive ? 'var(--color-primary-bg)' : 'transparent',
-                    color: isParentActive ? 'var(--color-primary)' : 'var(--color-text-primary)',
+                    backgroundColor: isParentActive ? 'var(--color-bg-selected)' : 'transparent',
+                    color: isParentActive ? 'var(--color-text-selected)' : 'var(--color-text-primary)',
                     fontWeight: isParentActive ? 600 : 500,
                     transition: 'background-color 0.2s ease, color 0.2s ease',
                   }}
@@ -619,10 +619,10 @@ const MainLayout: React.FC = () => {
                   }}
                   data-testid={item['data-testid']}
                 >
-                  <span style={{ 
-                    fontSize: 20, 
+                  <span style={{
+                    fontSize: 20,
                     marginRight: 12,
-                    color: isParentActive ? 'var(--color-primary)' : 'inherit',
+                    color: isParentActive ? 'var(--color-text-selected)' : 'inherit',
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -638,7 +638,7 @@ const MainLayout: React.FC = () => {
                       overflow: 'hidden',
                       whiteSpace: 'nowrap',
                       textOverflow: 'ellipsis',
-                      color: isParentActive ? 'var(--color-primary)' : 'var(--color-text-primary)',
+                      color: isParentActive ? 'var(--color-text-selected)' : 'var(--color-text-primary)',
                       opacity: collapsed ? 0.85 : 1,
                       transition: 'opacity 0.2s ease',
                       flex: 1,
@@ -671,8 +671,8 @@ const MainLayout: React.FC = () => {
                           style={{
                             padding: `${spacing('XS')}px ${spacing('SM')}px`,
                             borderRadius: spacing('SM'),
-                            backgroundColor: childActive ? 'var(--color-primary-bg)' : 'transparent',
-                            color: childActive ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                            backgroundColor: childActive ? 'var(--color-bg-selected)' : 'transparent',
+                            color: childActive ? 'var(--color-text-selected)' : 'var(--color-text-secondary)',
                             cursor: 'pointer',
                             fontSize: 13,
                             minWidth: 140,
@@ -726,9 +726,9 @@ const MainLayout: React.FC = () => {
                               alignItems: 'center',
                               padding: `${spacing('SM')}px ${spacing('LG')}px`,
                               fontSize: 14,
-                              color: childActive ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                              color: childActive ? 'var(--color-text-selected)' : 'var(--color-text-secondary)',
                               cursor: 'pointer',
-                              backgroundColor: childActive ? 'var(--color-primary-bg)' : 'transparent',
+                              backgroundColor: childActive ? 'var(--color-bg-selected)' : 'transparent',
                               transition: `background-color ${DESIGN_TOKENS.TRANSITIONS.DEFAULT}, color ${DESIGN_TOKENS.TRANSITIONS.DEFAULT}`,
                             }}
                             data-testid={child['data-testid']}

@@ -273,7 +273,7 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
       <Badge 
         count={machines.length} 
         showZero 
-        style={{ backgroundColor: machines.length > 0 ? '#52c41a' : '#d9d9d9' }}
+        style={{ backgroundColor: machines.length > 0 ? '#4a4a4a' : '#d9d9d9' }}
         data-testid={`clone-list-machine-badge-${clone.cloneName}`}
       >
         <CloudServerOutlined style={{ fontSize: 16 }} />

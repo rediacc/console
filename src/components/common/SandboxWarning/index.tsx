@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react'
+import { Alert } from 'antd'
 import { ExclamationCircleOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { configService } from '@/services/configService'
-import { DESIGN_TOKENS } from '@/utils/styleConstants'
-import { SandboxBanner, BannerMessage } from './styles'
 
 const SandboxWarning: React.FC = () => {
   const { t } = useTranslation('common')
@@ -12,6 +11,8 @@ const SandboxWarning: React.FC = () => {
   useEffect(() => {
     const loadInstanceName = async () => {
       const name = await configService.getInstanceName()
+      console.log('SandboxWarning: Instance name loaded:', name)
+      // Show warning only for sandbox instances
       setIsVisible(name.toLowerCase() === 'sandbox')
     }
     loadInstanceName()
@@ -20,7 +21,7 @@ const SandboxWarning: React.FC = () => {
   useEffect(() => {
     // Add padding to body when warning is visible
     if (isVisible) {
-      document.body.style.paddingTop = `${DESIGN_TOKENS.SPACING['5']}px`
+      document.body.style.paddingTop = '40px'
     }
     return () => {
       document.body.style.paddingTop = ''
@@ -32,19 +33,33 @@ const SandboxWarning: React.FC = () => {
   }
 
   return (
-    <SandboxBanner
+    <Alert
       banner
       type="warning"
       showIcon={false}
       closable={false}
       message={
-        <BannerMessage>
-          <ExclamationCircleOutlined />
-          <span>
-            <strong>{t('warnings.sandboxEnvironment')}:</strong> {t('warnings.sandboxMessage')}
-          </span>
-        </BannerMessage>
+        <div style={{ textAlign: 'center', padding: '2px 0' }}>
+          <ExclamationCircleOutlined style={{ marginRight: 8 }} />
+          <strong>{t('warnings.sandboxEnvironment')}:</strong> {t('warnings.sandboxMessage')}
+        </div>
       }
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 200,
+        right: 0,
+        zIndex: 1001, // Higher than navigation
+        borderRadius: 0,
+        border: 'none',
+        backgroundColor: '#dee2e6',
+        color: '#3a3a3a',
+        borderBottom: '1px solid #adb5bd',
+        minHeight: '40px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
     />
   )
 }

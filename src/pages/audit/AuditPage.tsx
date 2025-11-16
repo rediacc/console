@@ -121,7 +121,7 @@ const AuditPage = () => {
       })),
       onFilter: (value, record) => record.action === value,
       filterIcon: (filtered: boolean) => (
-        <FilterOutlined style={{ color: filtered ? '#1890ff' : undefined, fontSize: '14px' }} />
+        <FilterOutlined style={{ color: filtered ? '#4a4a4a' : undefined, fontSize: '14px' }} />
       )
     },
     {
@@ -141,7 +141,7 @@ const AuditPage = () => {
       })),
       onFilter: (value, record) => record.entity === value,
       filterIcon: (filtered: boolean) => (
-        <FilterOutlined style={{ color: filtered ? '#1890ff' : undefined, fontSize: '14px' }} />
+        <FilterOutlined style={{ color: filtered ? '#4a4a4a' : undefined, fontSize: '14px' }} />
       )
     },
     {
@@ -174,7 +174,7 @@ const AuditPage = () => {
       })),
       onFilter: (value, record) => record.actionByUser === value,
       filterIcon: (filtered: boolean) => (
-        <FilterOutlined style={{ color: filtered ? '#1890ff' : undefined, fontSize: '14px' }} />
+        <FilterOutlined style={{ color: filtered ? '#4a4a4a' : undefined, fontSize: '14px' }} />
       )
     },
     {

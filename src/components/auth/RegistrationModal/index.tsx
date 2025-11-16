@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { Form, Input, Steps, Alert, Checkbox } from 'antd'
+import { Modal, Form, Input, Button, Steps, Alert, Space, Typography, Checkbox } from 'antd'
 import { 
   UserOutlined, 
   LockOutlined, 
@@ -13,27 +13,14 @@ import { showMessage } from '@/utils/messages'
 import { hashPassword } from '@/utils/auth'
 import apiClient from '@/api/client'
 import HCaptcha from '@hcaptcha/react-hcaptcha'
+import { useFormStyles } from '@/hooks/useComponentStyles'
+import { DESIGN_TOKENS, spacing } from '@/utils/styleConstants'
 import { ModalSize } from '@/types/modal'
 import { LanguageLink } from '@/components/common/LanguageLink'
-import {
-  StyledModal,
-  VerticalStack,
-  FormField,
-  TermsRow,
-  TermsField,
-  CaptchaWrapper,
-  SubmitButton,
-  VerificationButton,
-  CodeInput,
-  SuccessContainer,
-  SuccessIcon,
-  SuccessTitle,
-  SuccessDescription,
-  StepsWrapper,
-} from './styles'
 
 
 const { Step } = Steps
+const { Text } = Typography
 const hCaptchaSiteKey = import.meta.env.VITE_HCAPTCHA_SITE_KEY || ''
 const isCaptchaEnabled = !!hCaptchaSiteKey 
 
@@ -70,6 +57,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   onRegistrationComplete 
 }) => {
   const { t, i18n } = useTranslation(['auth', 'common'])
+  const styles = useFormStyles()
   const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -139,7 +127,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       const passwordHash = await hashPassword(values.password)
 
       // Call CreateNewCompany with headers and captcha token
-      const response = await apiClient.post('/CreateNewCompany', {
+      const axiosClient = (apiClient as any).client
+      const response = await axiosClient.post('/CreateNewCompany', {
         companyName: values.companyName,
         captchaToken: hCaptchaToken,
         userEmailAddress: values.email,
@@ -151,8 +140,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         }
       })
 
-      if (response.failure !== 0) {
-        throw new Error(response.errors?.join('; ') || 'Registration failed')
+      if (response.data.failure !== 0) {
+        throw new Error(response.data.errors?.join('; ') || 'Registration failed')
       }
 
       // Store registration data for verification step
@@ -166,8 +155,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       // Move to verification step
       setCurrentStep(1)
       showMessage('success', t('auth:registration.registrationSuccess'))
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : t('auth:registration.registrationFailed')
+    } catch (error: any) {
+      const errorMessage = error.message || t('auth:registration.registrationFailed')
       setError(errorMessage)
       showMessage('error', errorMessage)
       
@@ -230,8 +219,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
       // Close modal immediately after success
       handleClose()
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : t('auth:registration.activationFailed')
+    } catch (error: any) {
+      const errorMessage = error.message || t('auth:registration.activationFailed')
       setError(errorMessage)
       showMessage('error', errorMessage)
     } finally {
@@ -263,13 +252,14 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       requiredMark={false}
       data-testid="registration-form"
     >
-      <FormField
+      <Form.Item
         name="companyName"
         label={t('auth:registration.companyName')}
         rules={[
           { required: true, message: t('common:messages.required') },
           { min: 3, message: t('auth:registration.companyNameMin') }
         ]}
+        style={{ marginBottom: 12 }}
       >
         <Input
           prefix={<BankOutlined />}
@@ -278,15 +268,16 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           // Styles handled by CSS
           data-testid="registration-company-input"
         />
-      </FormField>
+      </Form.Item>
 
-      <FormField
+      <Form.Item
         name="email"
         label={t('auth:registration.email')}
         rules={[
           { required: true, message: t('common:messages.required') },
           { type: 'email', message: t('common:messages.invalidEmail') }
         ]}
+        style={{ marginBottom: 12 }}
       >
         <Input
           prefix={<MailOutlined />}
@@ -296,15 +287,16 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           // Styles handled by CSS
           data-testid="registration-email-input"
         />
-      </FormField>
+      </Form.Item>
 
-      <FormField
+      <Form.Item
         name="password"
         label={t('auth:registration.password')}
         rules={[
           { required: true, message: t('common:messages.required') },
           { min: 8, message: t('auth:registration.passwordMin') }
         ]}
+        style={{ marginBottom: 12 }}
       >
         <Input.Password
           prefix={<LockOutlined />}
@@ -314,9 +306,9 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           // Styles handled by CSS
           data-testid="registration-password-input"
         />
-      </FormField>
+      </Form.Item>
 
-      <FormField
+      <Form.Item
         name="passwordConfirm"
         label={t('auth:registration.passwordConfirm')}
         dependencies={['password']}
@@ -331,6 +323,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
             },
           }),
         ]}
+        style={{ marginBottom: 12 }}
       >
         <Input.Password
           prefix={<LockOutlined />}
@@ -340,12 +333,12 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           // Styles handled by CSS
           data-testid="registration-password-confirm-input"
         />
-      </FormField>
+      </Form.Item>
 
       {/* Terms and HCaptcha side by side */}
-      <TermsRow>
+      <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', marginBottom: 12 }}>
         {/* Terms and Conditions */}
-        <TermsField
+        <Form.Item
           name="termsAccepted"
           valuePropName="checked"
           rules={[
@@ -354,6 +347,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 value ? Promise.resolve() : Promise.reject(new Error(t('auth:registration.termsRequired', 'You must accept the terms and conditions')))
             }
           ]}
+          style={{ marginBottom: 0, flex: 1 }}
         >
           <Checkbox>
             {t('auth:registration.termsText', 'I accept the terms and conditions {terms} and {privacy}').split('{terms}')[0]}
@@ -366,11 +360,11 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
             </LanguageLink>
             {t('auth:registration.termsText', 'I accept the terms and conditions {terms} and {privacy}').split('{privacy}')[1]}
           </Checkbox>
-        </TermsField>
+        </Form.Item>
 
         {/* HCaptcha - only render if enabled */}
         {isCaptchaEnabled && (
-          <CaptchaWrapper>
+          <div style={{ flex: '0 0 auto' }}>
             <HCaptcha
               sitekey={hCaptchaSiteKey}
               onVerify={onHCaptchaChange}
@@ -380,23 +374,27 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
               theme="light"
               size="normal"
             />
-          </CaptchaWrapper>
+          </div>
         )}
-      </TermsRow>
+      </div>
 
-      <FormField $noMargin>
-        <SubmitButton
+      <Form.Item style={{ marginBottom: 0 }}>
+        <Button
           type="primary"
           htmlType="submit"
           block
           size="large"
           loading={loading}
           disabled={isCaptchaEnabled && !hCaptchaToken}
+          style={{
+            // Button styles handled by CSS
+            marginTop: 8
+          }}
           data-testid="registration-submit-button"
         >
           {t('auth:registration.createAccount')}
-        </SubmitButton>
-      </FormField>
+        </Button>
+      </Form.Item>
     </Form>
   )
 
@@ -408,7 +406,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       requiredMark={false}
       data-testid="registration-verification-form"
     >
-      <VerticalStack direction="vertical" size="middle">
+      <Space direction="vertical" size={spacing('SM')} style={{ width: '100%' }}>
         <Alert
           message={t('auth:registration.verificationRequired')}
           description={t('auth:registration.verificationDescription')}
@@ -417,7 +415,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           data-testid="registration-verification-alert"
         />
 
-        <FormField
+        <Form.Item
           name="activationCode"
           label={t('auth:registration.activationCode')}
           rules={[
@@ -425,44 +423,54 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
             { len: 6, message: t('auth:registration.activationCodeLength') },
             { pattern: /^\d{6}$/, message: t('auth:registration.activationCodeFormat') }
           ]}
+          style={{ marginBottom: 12 }}
         >
-          <CodeInput
+          <Input
             size="large"
             placeholder={t('auth:registration.activationCodePlaceholder')}
             autoComplete="off"
             maxLength={6}
+            style={{
+              // Base styles handled by CSS
+              textAlign: 'center',
+              fontSize: '20px',
+              letterSpacing: '8px'
+            }}
             data-testid="registration-activation-code-input"
           />
-        </FormField>
+        </Form.Item>
 
-        <FormField $noMargin>
-          <VerificationButton
+        <Form.Item style={{ marginBottom: 0 }}>
+          <Button
             type="primary"
             htmlType="submit"
             block
             size="large"
             loading={loading}
+            style={{
+              ...styles.buttonPrimary,
+              height: DESIGN_TOKENS.DIMENSIONS.INPUT_HEIGHT,
+              marginTop: 8
+            }}
             data-testid="registration-verify-button"
           >
             {t('auth:registration.verifyAccount')}
-          </VerificationButton>
-        </FormField>
-      </VerticalStack>
+          </Button>
+        </Form.Item>
+      </Space>
     </Form>
   )
 
   const renderSuccess = () => (
-    <SuccessContainer data-testid="registration-success-container">
-      <SuccessIcon data-testid="registration-success-icon">
-        <CheckCircleOutlined />
-      </SuccessIcon>
-      <SuccessTitle data-testid="registration-success-title">
+    <div style={{ textAlign: 'center', padding: `${spacing('LG')}px 0` }} data-testid="registration-success-container">
+      <CheckCircleOutlined style={{ fontSize: DESIGN_TOKENS.DIMENSIONS.ICON_XXXL, color: '#4a4a4a' }} data-testid="registration-success-icon" />
+      <Typography.Title level={4} style={{ marginTop: spacing('MD') }} data-testid="registration-success-title">
         {t('auth:registration.successTitle')}
-      </SuccessTitle>
-      <SuccessDescription data-testid="registration-success-description">
+      </Typography.Title>
+      <Text type="secondary" data-testid="registration-success-description">
         {t('auth:registration.successDescription')}
-      </SuccessDescription>
-    </SuccessContainer>
+      </Text>
+    </div>
   )
 
   const renderContent = () => {
@@ -479,7 +487,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   }
 
   return (
-    <StyledModal
+    <Modal
       title={t('auth:registration.title')}
       open={visible}
       onCancel={handleClose}
@@ -488,12 +496,12 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       destroyOnHidden
       data-testid="registration-modal"
     >
-      <VerticalStack direction="vertical" size="middle">
-        <StepsWrapper current={currentStep} size="small" data-testid="registration-steps">
+      <Space direction="vertical" size={spacing('SM')} style={{ width: '100%' }}>
+        <Steps current={currentStep} size="small" style={{ marginBottom: 8 }} data-testid="registration-steps">
           <Step title={t('auth:registration.steps.register')} icon={<UserOutlined />} data-testid="registration-step-register" />
           <Step title={t('auth:registration.steps.verify')} icon={<SafetyCertificateOutlined />} data-testid="registration-step-verify" />
           <Step title={t('auth:registration.steps.complete')} icon={<CheckCircleOutlined />} data-testid="registration-step-complete" />
-        </StepsWrapper>
+        </Steps>
 
         {error && (
           <Alert
@@ -507,8 +515,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         )}
 
         {renderContent()}
-      </VerticalStack>
-    </StyledModal>
+      </Space>
+    </Modal>
   )
 }
 
