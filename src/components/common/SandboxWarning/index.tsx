@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { Alert } from 'antd'
 import { ExclamationCircleOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { configService } from '@/services/configService'
+import { SandboxBanner, BannerMessage } from './styles'
 
 const SandboxWarning: React.FC = () => {
   const { t } = useTranslation('common')
@@ -33,33 +33,17 @@ const SandboxWarning: React.FC = () => {
   }
 
   return (
-    <Alert
+    <SandboxBanner
       banner
       type="warning"
       showIcon={false}
       closable={false}
       message={
-        <div style={{ textAlign: 'center', padding: '2px 0' }}>
-          <ExclamationCircleOutlined style={{ marginRight: 8 }} />
+        <BannerMessage>
+          <ExclamationCircleOutlined />
           <strong>{t('warnings.sandboxEnvironment')}:</strong> {t('warnings.sandboxMessage')}
-        </div>
+        </BannerMessage>
       }
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 200,
-        right: 0,
-        zIndex: 1001, // Higher than navigation
-        borderRadius: 0,
-        border: 'none',
-        backgroundColor: '#dee2e6',
-        color: '#3a3a3a',
-        borderBottom: '1px solid #adb5bd',
-        minHeight: '40px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}
     />
   )
 }
