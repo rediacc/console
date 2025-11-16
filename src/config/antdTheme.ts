@@ -2,36 +2,38 @@ import type { ThemeConfig } from 'antd'
 
 /**
  * Brand Colors (theme-independent)
+ * Grayscale palette with minimal red for errors only
  */
 const brandColors = {
-  primary: '#556b2f',
-  primaryHover: '#4c6029',
-  secondary: '#808000',
-  secondaryHover: '#6e6e00',
-  accent: '#7d9b49',
-  success: '#28a745',
-  warning: '#fd7e14',
-  error: '#dc3545',
-  info: '#007bff',
+  primary: '#1a1a1a',      // Dark gray
+  primaryHover: '#0a0a0a', // Darker gray
+  secondary: '#4a4a4a',    // Medium gray
+  secondaryHover: '#3a3a3a', // Darker medium gray
+  accent: '#6a6a6a',       // Light gray
+  success: '#4a4a4a',      // Gray (no green)
+  warning: '#5a5a5a',      // Gray (no orange)
+  error: '#dc3545',        // Red (only exception)
+  info: '#6a6a6a',         // Gray (no blue)
 }
 
 /**
  * Derived Colors (alpha variants)
+ * All grayscale except error shadow
  */
 const derivedColors = {
-  primaryBg: 'rgba(85, 107, 47, 0.1)',
-  primaryBgHover: 'rgba(85, 107, 47, 0.05)',
-  primaryBgActive: 'rgba(85, 107, 47, 0.15)',
-  primaryShadow: '0 2px 8px rgba(85, 107, 47, 0.15)',
-  
-  accentBg: 'rgba(125, 155, 73, 0.1)',
-  accentBgHover: 'rgba(125, 155, 73, 0.1)',
-  accentBgActive: 'rgba(125, 155, 73, 0.2)',
-  accentBgSelected: 'rgba(125, 155, 73, 0.2)',
-  accentBgStrong: 'rgba(125, 155, 73, 0.25)',
-  accentShadow: '0 2px 8px rgba(125, 155, 73, 0.2)',
-  
-  errorShadow: '0 2px 8px rgba(220, 53, 69, 0.15)',
+  primaryBg: 'rgba(26, 26, 26, 0.05)',        // primary with low opacity
+  primaryBgHover: 'rgba(26, 26, 26, 0.08)',   // primary with slightly higher opacity
+  primaryBgActive: 'rgba(26, 26, 26, 0.12)',  // primary with medium opacity
+  primaryShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+
+  accentBg: 'rgba(106, 106, 106, 0.1)',       // accent with low opacity
+  accentBgHover: 'rgba(106, 106, 106, 0.15)',  // accent with medium opacity
+  accentBgActive: 'rgba(106, 106, 106, 0.2)',  // accent with higher opacity
+  accentBgSelected: 'rgba(106, 106, 106, 0.2)',
+  accentBgStrong: 'rgba(106, 106, 106, 0.25)',
+  accentShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+
+  errorShadow: '0 2px 8px rgba(220, 53, 69, 0.15)', // Keep red for errors
 }
 
 /**
@@ -44,11 +46,13 @@ const themeColors = {
     bgTertiary: '#e9ecef',
     bgHover: '#f1f3f5',
     bgActive: '#e9ecef',
+    bgSelected: '#e9ecef',      // Subtle selected state for light theme
     textPrimary: '#1a1a1a',
     textSecondary: '#3d4852',
     textTertiary: '#5a6570',
     textMuted: '#9ca3af',
     textInverse: '#ffffff',
+    textSelected: '#1a1a1a',    // Dark text for selected states
     borderPrimary: '#dee2e6',
     borderSecondary: '#e9ecef',
     borderHover: '#adb5bd',
@@ -64,11 +68,13 @@ const themeColors = {
     bgTertiary: '#2a2a2a',
     bgHover: '#2d2d2d',
     bgActive: '#3a3a3a',
+    bgSelected: '#4a4a4a',      // Medium-light gray for selected states (not inverted)
     textPrimary: '#fafafa',
     textSecondary: '#e5e7eb',
     textTertiary: '#d1d5db',
     textMuted: '#9ca3af',
     textInverse: '#1a1a1a',
+    textSelected: '#ffffff',    // White text for selected states
     borderPrimary: '#27272a',
     borderSecondary: '#3f3f46',
     borderHover: '#52525b',
@@ -153,7 +159,7 @@ const createComponentConfig = (isDark: boolean) => {
       borderRadius: 6,
       colorBorder: theme.borderPrimary,
       colorBgContainer: theme.bgPrimary,
-      optionSelectedBg: primaryBg,
+      optionSelectedBg: theme.bgSelected,    // High-contrast selection background
       optionActiveBg: primaryBgHover,
       controlOutline: primaryBg,
       selectorBg: theme.bgPrimary,
@@ -222,15 +228,15 @@ const createComponentConfig = (isDark: boolean) => {
       cardBg: theme.bgPrimary,
       cardGutter: 4,
       horizontalMargin: '0 0 16px 0',
-      itemActiveColor: primaryColor,
-      itemHoverColor: primaryColor,
-      itemSelectedColor: primaryColor,
-      inkBarColor: primaryColor,
+      itemActiveColor: theme.textPrimary,   // High-contrast text for active tab
+      itemHoverColor: theme.textSecondary,   // Slightly muted for hover
+      itemSelectedColor: theme.textPrimary,  // High-contrast text for selected tab
+      inkBarColor: theme.textPrimary,        // Visible ink bar
     },
     Menu: {
       itemBg: 'transparent',
-      itemSelectedBg: primaryBgSelected,
-      itemSelectedColor: primaryColor,
+      itemSelectedBg: theme.bgSelected,      // High-contrast selection in dark mode
+      itemSelectedColor: theme.textSelected,  // High-contrast text in dark mode
       itemHoverBg: primaryBgHover,
       itemHoverColor: primaryColor,
       itemActiveBg: primaryBgActive,
@@ -241,11 +247,11 @@ const createComponentConfig = (isDark: boolean) => {
     Dropdown: {
       borderRadiusLG: 8,
       controlItemBgHover: primaryBgHover,
-      controlItemBgActive: primaryBg,
+      controlItemBgActive: theme.bgSelected,  // High-contrast selection background
       boxShadowSecondary: theme.shadowMd,
     },
     Pagination: {
-      itemActiveBg: primaryColor,
+      itemActiveBg: theme.bgSelected,       // High-contrast selection background
       itemLinkBg: theme.bgPrimary,
       itemBg: theme.bgPrimary,
       itemSize: 32,

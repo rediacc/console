@@ -1,5 +1,5 @@
 import React from 'react'
-import { Tooltip } from 'antd'
+import { Badge, Tooltip } from 'antd'
 import {
   CloudServerOutlined,
   FileImageOutlined,
@@ -7,9 +7,9 @@ import {
   CheckCircleOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
+import { useComponentStyles } from '@/hooks/useComponentStyles'
 import type { MachineAssignmentType } from '@/types'
-import type { StatusVariant } from '@/styles/primitives'
-import { AssignmentBadge, AssignmentTag, IconWrapper, TooltipText } from './styles'
+import { StyledTag, StyledBadgeWrapper } from './styles'
 
 interface MachineAssignmentStatusBadgeProps {
   assignmentType: MachineAssignmentType
@@ -25,38 +25,44 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
   size = 'default'
 }) => {
   const { t } = useTranslation('machines')
+  const styles = useComponentStyles()
 
   const getStatusConfig = () => {
     switch (assignmentType) {
       case 'AVAILABLE':
         return {
-          variant: 'success' as StatusVariant,
-          icon: <CheckCircleOutlined />,
+          opacity: 1.0, // Solid - available/active state
+          icon: <CheckCircleOutlined style={styles.icon.small} />,
           text: t('assignmentStatus.available'),
+          badgeStatus: 'default' as const
         }
       case 'CLUSTER':
         return {
-          variant: 'processing' as StatusVariant,
-          icon: <CloudServerOutlined />,
+          opacity: 0.7, // Medium - processing/in-use state
+          icon: <CloudServerOutlined style={styles.icon.small} />,
           text: t('assignmentStatus.cluster'),
+          badgeStatus: 'default' as const
         }
       case 'IMAGE':
         return {
-          variant: 'info' as StatusVariant,
-          icon: <FileImageOutlined />,
+          opacity: 0.7, // Medium - processing/in-use state
+          icon: <FileImageOutlined style={styles.icon.small} />,
           text: t('assignmentStatus.image'),
+          badgeStatus: 'default' as const
         }
       case 'CLONE':
         return {
-          variant: 'warning' as StatusVariant,
-          icon: <CopyOutlined />,
+          opacity: 0.7, // Medium - processing/in-use state
+          icon: <CopyOutlined style={styles.icon.small} />,
           text: t('assignmentStatus.clone'),
+          badgeStatus: 'default' as const
         }
       default:
         return {
-          variant: 'neutral' as StatusVariant,
+          opacity: 0.5, // Light - inactive/unknown state
           icon: null,
           text: 'Unknown',
+          badgeStatus: 'default' as const
         }
     }
   }
@@ -65,13 +71,13 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
 
   if (size === 'small') {
     const content = (
-      <AssignmentTag
-        $variant={config.variant}
-        icon={showIcon ? <IconWrapper>{config.icon}</IconWrapper> : undefined}
+      <StyledTag
+        $opacity={config.opacity}
+        icon={showIcon ? config.icon : undefined}
         data-testid={`machine-status-badge-tag-${assignmentType.toLowerCase()}`}
       >
-        {config.text}
-      </AssignmentTag>
+        <span style={styles.caption}>{config.text}</span>
+      </StyledTag>
     )
 
     return assignmentDetails ? (
@@ -85,19 +91,30 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
 
   return (
     <Tooltip
-      title={
-        assignmentDetails ? <TooltipText>{assignmentDetails}</TooltipText> : undefined
-      }
+      title={assignmentDetails ? (
+        <span style={styles.caption}>{assignmentDetails}</span>
+      ) : undefined}
     >
-      <span data-testid="machine-status-badge-tooltip-wrapper">
-        <AssignmentBadge
-          $variant={config.variant}
-          data-testid={`machine-status-badge-${assignmentType.toLowerCase()}`}
-        >
-          {showIcon && <IconWrapper>{config.icon}</IconWrapper>}
-          {config.text}
-        </AssignmentBadge>
-      </span>
+      <StyledBadgeWrapper
+        $opacity={config.opacity}
+        data-testid="machine-status-badge-tooltip-wrapper"
+      >
+        <Badge
+          status={config.badgeStatus}
+          text={
+            <span
+              style={{
+                ...styles.flexStart,
+                gap: '4px'
+              }}
+              data-testid={`machine-status-badge-${assignmentType.toLowerCase()}`}
+            >
+              {showIcon && config.icon}
+              <span style={styles.caption}>{config.text}</span>
+            </span>
+          }
+        />
+      </StyledBadgeWrapper>
     </Tooltip>
   )
 }
