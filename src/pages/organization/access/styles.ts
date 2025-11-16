@@ -1,21 +1,12 @@
-import styled from 'styled-components'
-import {
-  PageWrapper as BasePageWrapper,
-  SectionStack as BaseSectionStack,
-  SectionHeading as BaseSectionHeading,
-  ListTitleRow as BaseListTitleRow,
-  ListTitle as BaseListTitle,
-  ListSubtitle as BaseListSubtitle,
-} from '@/pages/system/styles'
+/**
+ * DEPRECATED: Use @/components/Layout instead
+ */
 
-export const AccessPageWrapper = styled(BasePageWrapper)``
-
-export const AccessSectionStack = styled(BaseSectionStack)``
-
-export const AccessSectionHeading = styled(BaseSectionHeading)``
-
-export const AccessListHeader = styled(BaseListTitleRow)``
-
-export const AccessListTitle = styled(BaseListTitle)``
-
-export const AccessListSubtitle = styled(BaseListSubtitle)``
+export { 
+  PageWrapper as AccessPageWrapper,
+  SectionStack as AccessSectionStack,
+  SectionHeading as AccessSectionHeading,
+  ListTitleRow as AccessListHeader,
+  ListTitle as AccessListTitle,
+  ListSubtitle as AccessListSubtitle,
+} from '@/components/ui'

@@ -22,6 +22,11 @@ export const HeaderRow = styled.div`
   justify-content: space-between;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.MD}px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
 `
 
 export const ControlGroup = styled.div`
@@ -30,6 +35,12 @@ export const ControlGroup = styled.div`
   min-width: 0;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.MD}px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
 `
 
 export const FiltersSlot = styled.div`
@@ -41,6 +52,11 @@ export const ActionsGroup = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing.SM}px;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: flex-end;
+  }
 `
 
 export const SearchInput = styled(Input.Search)`
@@ -110,5 +126,50 @@ export const CreateButton = styled(Button)`
 export const RefreshButton = styled(Button)`
   && {
     ${actionButtonStyles};
+  }
+`
+
+export const TableWrapper = styled.div`
+  /* Better scroll experience on mobile devices */
+  @media (max-width: 576px) {
+    -webkit-overflow-scrolling: touch;
+    
+    .ant-table-wrapper {
+      overflow-x: auto;
+    }
+    
+    .ant-table-pagination {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: ${({ theme }) => theme.spacing.SM}px;
+      
+      .ant-pagination-total-text {
+        flex-basis: 100%;
+        text-align: center;
+        margin-bottom: ${({ theme }) => theme.spacing.XS}px;
+      }
+    }
+  }
+
+  /* Shrink the select in pagination */
+  .ant-pagination-options {
+    .ant-select {
+      .ant-select-selector {
+        height: 32px !important;
+        min-height: 32px !important;
+        padding: 0 32px 0 12px !important; /* Space for arrow on right, text on left */
+      }
+      
+      .ant-select-selection-item {
+        line-height: 30px !important;
+        padding-right: 0 !important;
+      }
+      
+      .ant-select-arrow {
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        right: 6px !important;
+      }
+    }
   }
 `

@@ -3,7 +3,7 @@ import apiClient from '@/api/client'
 import { createResourceMutation, createVaultUpdateMutation, createMutation } from '@/api/utils/mutationFactory'
 import { extractResourceData, extractTableData } from '@/api/utils/responseHelpers'
 
-export interface Team {
+export interface Team extends Record<string, unknown> {
   teamName: string
   memberCount: number
   machineCount: number

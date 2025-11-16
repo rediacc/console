@@ -37,11 +37,9 @@ import {
   Bridge,
 } from '@/api/queries/bridges'
 import {
-  InfrastructurePageWrapper,
-  InfrastructureSectionStack,
-  InfrastructureSectionHeading,
-} from './styles'
-import {
+  PageWrapper,
+  SectionStack,
+  SectionHeading,
   RegionsListWrapper,
   ListTitleRow,
   ListTitle,
@@ -54,10 +52,12 @@ import {
   LoadingHint,
   ModalStack,
   ModalStackLarge,
+  ErrorWrapper,
+} from '@/components/ui'
+import {
   ModalAlert,
   TokenCopyRow,
   FullWidthInput,
-  ErrorWrapper,
   ACTIONS_COLUMN_WIDTH,
 } from '@/pages/system/styles'
 import { useSelector } from 'react-redux'
@@ -484,32 +484,32 @@ const InfrastructurePage: React.FC = () => {
 
   if (uiMode === 'simple') {
     return (
-      <InfrastructurePageWrapper>
+      <PageWrapper>
         <Result
           status="403"
           title={tSystem('accessControl.expertOnlyTitle', { defaultValue: 'Expert Mode Required' })}
           subTitle={tSystem('accessControl.expertOnlyMessage', { defaultValue: 'Switch to expert mode to manage infrastructure.' })}
         />
-      </InfrastructurePageWrapper>
+      </PageWrapper>
     )
   }
 
   if (!featureFlags.isEnabled('regionsInfrastructure')) {
     return (
-      <InfrastructurePageWrapper>
+      <PageWrapper>
         <Result
           status="info"
           title={t('regionsInfrastructure.unavailableTitle', { defaultValue: 'Regions & Infrastructure Disabled' })}
           subTitle={t('regionsInfrastructure.unavailableDescription', { defaultValue: 'Enable the regionsInfrastructure feature flag to access this page.' })}
         />
-      </InfrastructurePageWrapper>
+      </PageWrapper>
     )
   }
 
   return (
-    <InfrastructurePageWrapper>
-      <InfrastructureSectionStack>
-        <InfrastructureSectionHeading level={3}>{tSystem('regionsInfrastructure.title')}</InfrastructureSectionHeading>
+    <PageWrapper>
+      <SectionStack>
+        <SectionHeading level={3}>{tSystem('regionsInfrastructure.title')}</SectionHeading>
 
         <Row gutter={[24, 24]}>
           <Col span={24}>
@@ -609,7 +609,7 @@ const InfrastructurePage: React.FC = () => {
             </Col>
           )}
         </Row>
-      </InfrastructureSectionStack>
+      </SectionStack>
 
       {!featureFlags.isEnabled('disableBridge') && (
         <Modal
@@ -771,7 +771,7 @@ const InfrastructurePage: React.FC = () => {
           </ModalStack>
         </Modal>
       )}
-    </InfrastructurePageWrapper>
+    </PageWrapper>
   )
 }
 
