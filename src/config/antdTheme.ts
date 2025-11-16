@@ -129,7 +129,6 @@ const createComponentConfig = (isDark: boolean) => {
   const primaryBg = isDark ? derivedColors.accentBg : derivedColors.primaryBg
   const primaryBgHover = isDark ? derivedColors.accentBgHover : derivedColors.primaryBgHover
   const primaryBgActive = isDark ? derivedColors.accentBgActive : derivedColors.primaryBgActive
-  const primaryBgSelected = isDark ? derivedColors.accentBgSelected : derivedColors.primaryBg
   const primaryShadow = isDark ? derivedColors.accentShadow : derivedColors.primaryShadow
   
   return {

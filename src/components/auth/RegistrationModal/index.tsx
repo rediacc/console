@@ -16,7 +16,7 @@ import HCaptcha from '@hcaptcha/react-hcaptcha'
 import { useFormStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing } from '@/utils/styleConstants'
 import { ModalSize } from '@/types/modal'
-import { LanguageLink } from '@/components/common/languageLink'
+import { LanguageLink } from '@/components/common/LanguageLink'
 
 
 const { Step } = Steps
