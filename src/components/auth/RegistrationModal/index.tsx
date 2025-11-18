@@ -393,7 +393,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           block
           size="large"
           loading={loading}
-          disabled={isCaptchaEnabled && !turnstileToken}
+          disabled={isCaptchaEnabled && !ciMode && !turnstileToken}
           data-testid="registration-submit-button"
         >
           {t('auth:registration.createAccount')}
