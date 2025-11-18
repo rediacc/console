@@ -12,7 +12,6 @@
   "dependencies": {
     "@ant-design/charts": "^2.6.6",
     "@ant-design/icons": "^6.1.0",
-    "@hcaptcha/react-hcaptcha": "^1.12.1",
     "@hookform/resolvers": "^5.2.2",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/auto-instrumentations-web": "^0.53.0",
