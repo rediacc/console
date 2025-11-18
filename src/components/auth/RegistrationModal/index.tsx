@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next'
 import { showMessage } from '@/utils/messages'
 import { hashPassword } from '@/utils/auth'
 import apiClient from '@/api/client'
-import HCaptcha from '@hcaptcha/react-hcaptcha'
+import { Turnstile } from '@/components/common/Turnstile'
 import { LanguageLink } from '@/components/common/LanguageLink'
 import {
   StyledModal,
@@ -33,8 +33,8 @@ import {
 
 
 const { Step } = StepsWrapper
-const hCaptchaSiteKey = import.meta.env.VITE_HCAPTCHA_SITE_KEY || ''
-const isCaptchaEnabled = !!hCaptchaSiteKey 
+const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || ''
+const isCaptchaEnabled = !!turnstileSiteKey 
 
 interface RegistrationModalProps {
   visible: boolean
@@ -72,8 +72,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [hCaptchaToken, setHCaptchaToken] = useState<string | null>(null)
-  const hCaptchaRef = useRef<HCaptcha>(null)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const [ciMode, setCiMode] = useState<boolean>(false)
   
   const [registrationData, setRegistrationData] = useState<{
     email: string
@@ -84,6 +84,23 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   
   const [registrationForm] = Form.useForm<RegistrationForm>()
   const [verificationForm] = Form.useForm<VerificationForm>()
+
+  // Check if CI mode is enabled (for testing/e2e)
+  React.useEffect(() => {
+    const checkCiMode = async () => {
+      try {
+        const axiosClient = (apiClient as any).client
+        const response = await axiosClient.get('/health')
+        if (response.data?.ciMode === true) {
+          setCiMode(true)
+        }
+      } catch (error) {
+        // Silently fail - assume CI mode is off
+        console.debug('Could not fetch health status:', error)
+      }
+    }
+    checkCiMode()
+  }, [])
 
   // Auto-fill and auto-submit logic
   React.useEffect(() => {
@@ -118,8 +135,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   }, [currentStep, autoFillData, autoSubmit, verificationForm])
 
   const handleRegistration = async (values: RegistrationForm) => {
-    // Check hCaptcha token only if captcha is enabled
-    if (isCaptchaEnabled && !hCaptchaToken) {
+    // Check Turnstile token only if captcha is enabled and not in CI mode
+    if (isCaptchaEnabled && !ciMode && !turnstileToken) {
       setError(t('auth:registration.captchaRequired', 'Please complete the captcha'))
       return
     }
@@ -141,7 +158,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       const axiosClient = (apiClient as any).client
       const response = await axiosClient.post('/CreateNewCompany', {
         companyName: values.companyName,
-        captchaToken: hCaptchaToken,
+        captchaToken: turnstileToken,
         userEmailAddress: values.email,
         languagePreference: i18n.language || 'en'
       }, {
@@ -170,32 +187,27 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
       const errorMessage = error.message || t('auth:registration.registrationFailed')
       setError(errorMessage)
       showMessage('error', errorMessage)
-      
-      // Reset captcha on error
-      if (hCaptchaRef.current) {
-        hCaptchaRef.current.resetCaptcha()
-        setHCaptchaToken(null)
-      }
+
+      // Reset Turnstile token on error (widget will auto-reset)
+      setTurnstileToken(null)
     } finally {
       setLoading(false)
     }
   }
 
-  // HCaptcha handlers
-  const onHCaptchaChange = (token: string | null) => {
-    setHCaptchaToken(token)
-    if (token) {
-      setError(null) // Clear error when captcha is completed
-    }
+  // Turnstile handlers
+  const onTurnstileSuccess = (token: string) => {
+    setTurnstileToken(token)
+    setError(null) // Clear error when captcha is completed
   }
 
-  const onHCaptchaExpire = () => {
-    setHCaptchaToken(null)
+  const onTurnstileExpire = () => {
+    setTurnstileToken(null)
   }
 
-  const onHCaptchaError = (err: string) => {
-    console.error('HCaptcha error:', err)
-    setHCaptchaToken(null)
+  const onTurnstileError = (errorCode?: string) => {
+    console.error('Turnstile error:', errorCode)
+    setTurnstileToken(null)
   }
 
   const handleVerification = async (values: VerificationForm) => {
@@ -243,15 +255,10 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
     setCurrentStep(0)
     setError(null)
     setRegistrationData(null)
-    setHCaptchaToken(null)
+    setTurnstileToken(null)
     registrationForm.resetFields()
     verificationForm.resetFields()
-    
-    // Reset captcha when closing
-    if (hCaptchaRef.current) {
-      hCaptchaRef.current.resetCaptcha()
-    }
-    
+
     onClose()
   }
 
@@ -365,17 +372,15 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           </Checkbox>
         </TermsField>
 
-        {/* HCaptcha - only render if enabled */}
-        {isCaptchaEnabled && (
+        {/* Cloudflare Turnstile - only render if enabled and not in CI mode */}
+        {isCaptchaEnabled && !ciMode && (
           <CaptchaWrapper>
-            <HCaptcha
-              sitekey={hCaptchaSiteKey}
-              onVerify={onHCaptchaChange}
-              onExpire={onHCaptchaExpire}
-              onError={onHCaptchaError}
-              ref={hCaptchaRef}
+            <Turnstile
+              sitekey={turnstileSiteKey}
+              onVerify={onTurnstileSuccess}
+              onExpire={onTurnstileExpire}
+              onError={onTurnstileError}
               theme="light"
-              size="normal"
             />
           </CaptchaWrapper>
         )}
@@ -388,7 +393,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
           block
           size="large"
           loading={loading}
-          disabled={isCaptchaEnabled && !hCaptchaToken}
+          disabled={isCaptchaEnabled && !turnstileToken}
           data-testid="registration-submit-button"
         >
           {t('auth:registration.createAccount')}
