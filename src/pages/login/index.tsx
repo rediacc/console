@@ -29,7 +29,6 @@ import { useTelemetry } from '@/components/common/TelemetryProvider'
 import { useVerifyTFA } from '@/api/queries/twoFactor'
 import RegistrationModal from '@/components/auth/RegistrationModal'
 import { generateRandomEmail, generateRandomCompanyName, generateRandomPassword } from '@/utils/cryptoGenerators'
-import { configService } from '@/services/configService'
 import SandboxWarning from '@/components/common/SandboxWarning'
 import {
   LoginContainer,
@@ -154,33 +153,39 @@ const LoginPage: React.FC = () => {
   useEffect(() => {
     const checkRegistrationMode = async () => {
       const registerParam = searchParams.get('register')
-      
+
       if (registerParam === 'quick') {
-        // Check if we're in sandbox mode
-        const instanceName = await configService.getInstanceName()
-        
-        if (instanceName.toLowerCase() === 'sandbox') {
-          // Generate random registration data for quick registration
-          const randomData = {
-            email: generateRandomEmail(),
-            password: generateRandomPassword(),
-            companyName: generateRandomCompanyName(),
-            activationCode: '111111' // Fixed code for sandbox quick registration
+        // Check if we're in CI/TEST mode
+        try {
+          const response = await (apiClient as any).client.get('/health')
+          const ciMode = response.data?.ciMode === true
+
+          if (ciMode) {
+            // Generate random registration data for quick registration
+            const randomData = {
+              email: generateRandomEmail(),
+              password: generateRandomPassword(),
+              companyName: generateRandomCompanyName(),
+              activationCode: '111111' // Fixed code for CI/TEST mode
+            }
+
+            console.log('🚀 Quick Registration Mode (CI/TEST Only)', {
+              email: randomData.email,
+              company: randomData.companyName,
+              message: 'Using verification code: 111111'
+            })
+
+            setQuickRegistrationData(randomData)
+            setIsQuickRegistration(true)
+            setShowRegistration(true)
+          } else {
+            // Not in CI mode, fall back to normal registration
+            console.warn('Quick registration is only available in CI/TEST mode')
+            showMessage('warning', 'Quick registration is only available in CI/TEST mode')
+            setShowRegistration(true)
           }
-          
-          console.log('🚀 Quick Registration Mode (Sandbox Only)', {
-            email: randomData.email,
-            company: randomData.companyName,
-            message: 'Using verification code: 111111'
-          })
-          
-          setQuickRegistrationData(randomData)
-          setIsQuickRegistration(true)
-          setShowRegistration(true)
-        } else {
-          // Not in sandbox, fall back to normal registration
-          console.warn('Quick registration is only available in sandbox instances')
-          showMessage('warning', 'Quick registration is only available in sandbox environments')
+        } catch (error) {
+          console.error('Could not check CI mode, falling back to normal registration', error)
           setShowRegistration(true)
         }
       } else if (registerParam === 'manual') {
