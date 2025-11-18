@@ -29,7 +29,6 @@ import { useTelemetry } from '@/components/common/TelemetryProvider'
 import { useVerifyTFA } from '@/api/queries/twoFactor'
 import RegistrationModal from '@/components/auth/RegistrationModal'
 import { generateRandomEmail, generateRandomCompanyName, generateRandomPassword } from '@/utils/cryptoGenerators'
-import { configService } from '@/services/configService'
 import SandboxWarning from '@/components/common/SandboxWarning'
 import {
   LoginContainer,
