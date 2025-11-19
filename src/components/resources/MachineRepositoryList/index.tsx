@@ -89,14 +89,14 @@ const groupRepositoriesByName = (repos: Repository[], teamRepos: any[]): Grouped
     const grandTag = tags.find(r => {
       const tagData = teamRepos.find(tr =>
         tr.repositoryName === r.name &&
-        (tr.repoTag || 'latest') === (r.repoTag || 'latest')
+        tr.repoTag === r.repoTag
       )
       // Grand repo has no parentGuid or parentGuid equals repositoryGuid
       return tagData && (!tagData.parentGuid || tagData.parentGuid === tagData.repositoryGuid)
     }) || null
 
-    // All other tags are forks
-    const forkTags = tags.filter(r => r !== grandTag)
+    // All other tags are forks - sort them by tag name (chronologically since tags include timestamps)
+    const forkTags = tags.filter(r => r !== grandTag).sort((a, b) => a.repoTag.localeCompare(b.repoTag))
 
     return {
       name,
@@ -317,8 +317,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
                 // Sort repositories hierarchically: originals first, then their children
                 const sortedRepositories = repositoriesWithPluginCounts.sort((a: Repository, b: Repository) => {
-                  const aData = teamRepositories.find(r => r.repositoryName === a.name)
-                  const bData = teamRepositories.find(r => r.repositoryName === b.name)
+                  const aData = teamRepositories.find(r => r.repositoryName === a.name && r.repoTag === a.repoTag)
+                  const bData = teamRepositories.find(r => r.repositoryName === b.name && r.repoTag === b.repoTag)
 
                   // Get family names (grand parent name or self)
                   const aFamily = aData?.grandGuid ? teamRepositories.find(r => r.repositoryGuid === aData.grandGuid)?.repositoryName || a.name : a.name
@@ -474,8 +474,11 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   }
 
   const handleQuickAction = async (repository: Repository, functionName: string, priority: number = 4, option?: string) => {
-    // Find the repository vault data
-    const repositoryData = teamRepositories.find(r => r.repositoryName === repository.name)
+    // Find the repository vault data - must match both name AND tag to distinguish forks from grand repos
+    const repositoryData = teamRepositories.find(r =>
+      r.repositoryName === repository.name &&
+      r.repoTag === repository.repoTag
+    )
 
     if (!repositoryData || !repositoryData.vaultContent) {
       showMessage('error', t('resources:repositories.noCredentialsFound', { name: repository.name }))
@@ -535,8 +538,11 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
   const handleForkRepository = async (repository: Repository) => {
     try {
-      // Find the repository vault data
-      const repositoryData = teamRepositories.find(r => r.repositoryName === repository.name)
+      // Find the repository vault data - must match both name AND tag to distinguish forks from grand repos
+      const repositoryData = teamRepositories.find(r =>
+        r.repositoryName === repository.name &&
+        r.repoTag === repository.repoTag
+      )
 
       if (!repositoryData || !repositoryData.vaultContent) {
         showMessage('error', t('resources:repositories.noCredentialsFound', { name: repository.name }))
@@ -643,8 +649,11 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   }
 
   const handleDeleteFork = async (repository: Repository) => {
-    // Find the repository data
-    const repositoryData = teamRepositories.find(r => r.repositoryName === repository.name)
+    // Find the repository data - must match both name AND tag to distinguish forks from grand repos
+    const repositoryData = teamRepositories.find(r =>
+      r.repositoryName === repository.name &&
+      r.repoTag === repository.repoTag
+    )
 
     if (!repositoryData) {
       showMessage('error', t('resources:repositories.repositoryNotFound'))
@@ -729,8 +738,11 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   }
 
   const handlePromoteToGrand = async (repository: Repository) => {
-    // Find the repository data
-    const repositoryData = teamRepositories.find(r => r.repositoryName === repository.name)
+    // Find the repository data - must match both name AND tag to distinguish forks from grand repos
+    const repositoryData = teamRepositories.find(r =>
+      r.repositoryName === repository.name &&
+      r.repoTag === repository.repoTag
+    )
 
     if (!repositoryData) {
       showMessage('error', t('resources:repositories.repositoryNotFound'))
@@ -870,8 +882,11 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   }
 
   const handleDeleteGrandRepository = async (repository: Repository) => {
-    // Find the repository data
-    const repositoryData = teamRepositories.find(r => r.repositoryName === repository.name)
+    // Find the repository data - must match both name AND tag to distinguish forks from grand repos
+    const repositoryData = teamRepositories.find(r =>
+      r.repositoryName === repository.name &&
+      r.repoTag === repository.repoTag
+    )
 
     if (!repositoryData) {
       showMessage('error', t('resources:repositories.repositoryNotFound'))
@@ -1033,10 +1048,12 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     if (!selectedRepository) return
 
     try {
-      // Find the repository vault data
-      const repositoryData = teamRepositories.find(r => r.repositoryName === selectedRepository.name)
-      
-      
+      // Find the repository vault data - must match both name AND tag to distinguish forks from grand repos
+      const repositoryData = teamRepositories.find(r =>
+        r.repositoryName === selectedRepository.name &&
+        r.repoTag === selectedRepository.repoTag
+      )
+
       if (!repositoryData || !repositoryData.vaultContent) {
         showMessage('error', t('resources:repositories.noCredentialsFound', { name: selectedRepository.name }))
         setFunctionModalOpen(false)
@@ -1563,7 +1580,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           // Render tag row (indented, with tree connector)
           const tagData = teamRepositories.find(r =>
             r.repositoryName === record.name &&
-            (r.repoTag || 'latest') === (record.repoTag || 'latest')
+            r.repoTag === record.repoTag
           )
           const isGrand = tagData && (!tagData.parentGuid || tagData.parentGuid === tagData.repositoryGuid)
           const treeConnector = record._isLastInGroup ? '└─' : '├─'
@@ -1583,7 +1600,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           // Look up repository data to determine if it's a clone or original
           const repositoryData = teamRepositories.find(r =>
             r.repositoryName === record.name &&
-            (r.repoTag || 'latest') === (record.repoTag || 'latest')
+            r.repoTag === record.repoTag
           )
           const isOriginal = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid === repositoryData.repositoryGuid
 
@@ -1700,7 +1717,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         // Look up repository data from database to get grandGuid
         const repositoryData = teamRepositories.find(r =>
           r.repositoryName === record.name &&
-          (r.repoTag || 'latest') === (record.repoTag || 'latest')
+          r.repoTag === record.repoTag
         )
 
         // Build smart menu items based on repository state
@@ -1713,7 +1730,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           key: 'up',
           label: t('functions:functions.up.name'),
           icon: <PlayCircleOutlined style={componentStyles.icon.small} />,
-          onClick: () => handleQuickAction(record, 'up', 4, 'mount')
+          onClick: (info) => {
+            info.domEvent.stopPropagation()
+            handleQuickAction(record, 'up', 4, 'mount')
+          }
         })
 
         // Down - only when mounted
@@ -1722,7 +1742,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             key: 'down',
             label: t('functions:functions.down.name'),
             icon: <PauseCircleOutlined style={componentStyles.icon.small} />,
-            onClick: () => handleQuickAction(record, 'down', 4, 'unmount')
+            onClick: (info) => {
+              info.domEvent.stopPropagation()
+              handleQuickAction(record, 'down', 4, 'unmount')
+            }
           })
         }
 
@@ -1732,7 +1755,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             key: 'validate',
             label: t('functions:functions.validate.name'),
             icon: <CheckCircleOutlined style={componentStyles.icon.small} />,
-            onClick: () => handleRunFunction(record, 'validate')
+            onClick: (info) => {
+              info.domEvent.stopPropagation()
+              handleRunFunction(record, 'validate')
+            }
           })
         }
 
@@ -1741,7 +1767,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           key: 'fork',
           label: t('functions:functions.fork.name'),
           icon: <CopyOutlined style={componentStyles.icon.small} />,
-          onClick: () => handleForkRepository(record)
+          onClick: (info) => {
+            info.domEvent.stopPropagation()
+            handleForkRepository(record)
+          }
         })
 
         // Deploy - always available
@@ -1749,7 +1778,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           key: 'deploy',
           label: t('functions:functions.deploy.name'),
           icon: <CloudUploadOutlined style={componentStyles.icon.small} />,
-          onClick: () => handleRunFunction(record, 'deploy')
+          onClick: (info) => {
+            info.domEvent.stopPropagation()
+            handleRunFunction(record, 'deploy')
+          }
         })
 
         // Backup - only available for grand repositories (not forks)
@@ -1758,7 +1790,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           key: 'backup',
           label: t('functions:functions.backup.name'),
           icon: <SaveOutlined style={componentStyles.icon.small} />,
-          onClick: () => handleRunFunction(record, 'backup'),
+          onClick: (info) => {
+            info.domEvent.stopPropagation()
+            handleRunFunction(record, 'backup')
+          },
           disabled: isFork,
           title: isFork ? t('resources:repositories.backupForkDisabledTooltip') : undefined
         })
@@ -1768,7 +1803,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           key: 'apply_template',
           label: t('functions:functions.apply_template.name'),
           icon: <AppstoreOutlined style={componentStyles.icon.small} />,
-          onClick: () => handleRunFunction(record, 'apply_template')
+          onClick: (info) => {
+            info.domEvent.stopPropagation()
+            handleRunFunction(record, 'apply_template')
+          }
         })
 
         // ADVANCED SUBMENU FOR STORAGE OPERATIONS
@@ -1780,14 +1818,20 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             key: 'mount',
             label: t('resources:repositories.mount'),
             icon: <DatabaseOutlined style={componentStyles.icon.small} />,
-            onClick: () => handleQuickAction(record, 'mount', 4)
+            onClick: (info) => {
+              info.domEvent.stopPropagation()
+              handleQuickAction(record, 'mount', 4)
+            }
           })
         } else {
           advancedSubmenuItems.push({
             key: 'unmount',
             label: t('resources:repositories.unmount'),
             icon: <DisconnectOutlined style={componentStyles.icon.small} />,
-            onClick: () => handleQuickAction(record, 'unmount', 4)
+            onClick: (info) => {
+              info.domEvent.stopPropagation()
+              handleQuickAction(record, 'unmount', 4)
+            }
           })
         }
 
@@ -1797,7 +1841,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             key: 'resize',
             label: t('functions:functions.resize.name'),
             icon: <ShrinkOutlined style={componentStyles.icon.small} />,
-            onClick: () => handleRunFunction(record, 'resize')
+            onClick: (info) => {
+              info.domEvent.stopPropagation()
+              handleRunFunction(record, 'resize')
+            }
           })
         }
 
@@ -1807,7 +1854,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             key: 'expand',
             label: t('functions:functions.expand.name'),
             icon: <ExpandOutlined style={componentStyles.icon.small} />,
-            onClick: () => handleRunFunction(record, 'expand')
+            onClick: (info) => {
+              info.domEvent.stopPropagation()
+              handleRunFunction(record, 'expand')
+            }
           })
         }
 
@@ -1822,7 +1872,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           key: 'experimental',
           label: t('machines:experimental'),
           icon: <FunctionOutlined style={componentStyles.icon.small} />,
-          onClick: () => handleRunFunction(record)
+          onClick: (info) => {
+            info.domEvent.stopPropagation()
+            handleRunFunction(record)
+          }
         })
 
         // Add Advanced submenu if there are items
@@ -1841,13 +1894,19 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             key: 'promote-to-grand',
             label: t('resources:repositories.promoteToGrand'),
             icon: <RiseOutlined style={componentStyles.icon.small} />,
-            onClick: () => handlePromoteToGrand(record)
+            onClick: (info) => {
+              info.domEvent.stopPropagation()
+              handlePromoteToGrand(record)
+            }
           })
           menuItems.push({
             key: 'delete-fork',
             label: t('resources:repositories.deleteFork'),
             icon: <DeleteOutlined style={componentStyles.icon.small} />,
-            onClick: () => handleDeleteFork(record),
+            onClick: (info) => {
+              info.domEvent.stopPropagation()
+              handleDeleteFork(record)
+            },
             danger: true
           })
         }
@@ -1864,7 +1923,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           key: 'rename',
           label: t('resources:repositories.rename'),
           icon: <EditOutlined style={componentStyles.icon.small} />,
-          onClick: () => handleRenameRepository(record)
+          onClick: (info) => {
+            info.domEvent.stopPropagation()
+            handleRenameRepository(record)
+          }
         })
 
         // Delete Grand Repository - only for grand repositories (no parent)
@@ -1873,7 +1935,10 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             key: 'delete-grand',
             label: t('resources:repositories.deleteGrand'),
             icon: <DeleteOutlined style={componentStyles.icon.small} />,
-            onClick: () => handleDeleteGrandRepository(record),
+            onClick: (info) => {
+              info.domEvent.stopPropagation()
+              handleDeleteGrandRepository(record)
+            },
             danger: true
           })
         }
@@ -2048,7 +2113,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           if (record._isTagRow) {
             const repositoryData = teamRepositories.find(r =>
               r.repositoryName === record.name &&
-              (r.repoTag || 'latest') === (record.repoTag || 'latest')
+              r.repoTag === record.repoTag
             )
             const isFork = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid
             return isFork ? 'repository-fork-row' : 'repository-grand-row'
@@ -2057,7 +2122,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           // Regular single repository rows
           const repositoryData = teamRepositories.find(r =>
             r.repositoryName === record.name &&
-            (r.repoTag || 'latest') === (record.repoTag || 'latest')
+            r.repoTag === record.repoTag
           )
           const isClone = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid
           return isClone ? 'repository-clone-row' : ''
@@ -2157,7 +2222,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 <Tag color="#556b2f">{machine.machineName}</Tag>
               </Space>
               {selectedFunction === 'push' && (() => {
-                const currentRepoData = teamRepositories.find(r => r.repositoryName === selectedRepository.name);
+                const currentRepoData = teamRepositories.find(r => r.repositoryName === selectedRepository.name && r.repoTag === selectedRepository.repoTag);
                 if (currentRepoData?.parentGuid) {
                   const parentRepo = teamRepositories.find(r => r.repositoryGuid === currentRepoData.parentGuid);
                   if (parentRepo) {
@@ -2182,18 +2247,18 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         showMachineSelection={false}
         teamName={machine.teamName}
         hiddenParams={['repo', 'grand']}
-        defaultParams={{ 
+        defaultParams={{
           repo: (() => {
-            const repo = teamRepositories.find(r => r.repositoryName === selectedRepository?.name);
+            const repo = teamRepositories.find(r => r.repositoryName === selectedRepository?.name && r.repoTag === selectedRepository?.repoTag);
             return repo?.repositoryGuid || '';
           })(),
-          grand: teamRepositories.find(r => r.repositoryName === selectedRepository?.name)?.grandGuid || ''
+          grand: teamRepositories.find(r => r.repositoryName === selectedRepository?.name && r.repoTag === selectedRepository?.repoTag)?.grandGuid || ''
         }}
         initialParams={
           selectedFunction === 'push' && selectedRepository ? (() => {
             // Find the current repository data
-            const currentRepoData = teamRepositories.find(r => r.repositoryName === selectedRepository.name);
-            
+            const currentRepoData = teamRepositories.find(r => r.repositoryName === selectedRepository.name && r.repoTag === selectedRepository.repoTag);
+
             // Find the grand repository if it exists
             let baseRepoName = selectedRepository.name;
             if (currentRepoData?.grandGuid) {
@@ -2202,7 +2267,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 baseRepoName = grandRepo.repositoryName;
               }
             }
-            
+
             // Generate destination with the base name
             return {
               dest: `${baseRepoName}-${selectedRepository.mounted ? 'online' : 'offline'}-${new Date().toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '-')}`,
@@ -2216,7 +2281,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           selectedFunction === 'push' && selectedRepository ? {
             sourceRepository: selectedRepository.name,
             parentRepository: (() => {
-              const currentRepoData = teamRepositories.find(r => r.repositoryName === selectedRepository.name);
+              const currentRepoData = teamRepositories.find(r => r.repositoryName === selectedRepository.name && r.repoTag === selectedRepository.repoTag);
               if (currentRepoData?.parentGuid) {
                 const parentRepo = teamRepositories.find(r => r.repositoryGuid === currentRepoData.parentGuid);
                 return parentRepo?.repositoryName || null;
