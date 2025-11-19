@@ -93,9 +93,9 @@ export const RepositoryContainerList: React.FC<RepositoryContainerListProps> = (
   const { executeAction, isExecuting } = useQueueAction()
   const { data: teamRepositories = [] } = useRepositories(machine.teamName)
 
-  // Find repository data for credentials
+  // Find repository data for credentials - must match both name AND tag to distinguish forks
   const repositoryData = teamRepositories.find(r =>
-    r.repositoryName === repository.name ||
+    (r.repositoryName === repository.name && r.repoTag === repository.repoTag) ||
     r.repositoryGuid === repository.originalGuid ||
     r.repositoryGuid === repository.name
   )

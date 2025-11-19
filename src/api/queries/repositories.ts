@@ -21,18 +21,26 @@ export const useRepositories = createResourceQuery<Repository>({
   queryKey: 'repositories',
   dataExtractor: dataExtractors.primaryOrSecondary,
   filter: filters.hasName('repoName'),
-  mapper: createFieldMapper<Repository>({
-    repositoryName: 'repoName',
-    repositoryGuid: 'repoGuid',
-    teamName: 'teamName',
-    vaultVersion: 'vaultVersion',
-    vaultContent: 'vaultContent',
-    grandGuid: 'grandGuid',
-    parentGuid: 'parentGuid',
-    repoLoopbackIp: 'repoLoopbackIP',
-    repoNetworkMode: 'repoNetworkMode',
-    repoTag: 'repoTag'
-  }),
+  mapper: (item: any) => {
+    const mapped = createFieldMapper<Repository>({
+      repositoryName: 'repoName',
+      repositoryGuid: 'repoGuid',
+      teamName: 'teamName',
+      vaultVersion: 'vaultVersion',
+      vaultContent: 'vaultContent',
+      grandGuid: 'grandGuid',
+      parentGuid: 'parentGuid',
+      repoLoopbackIp: 'repoLoopbackIP',
+      repoNetworkMode: 'repoNetworkMode',
+      repoTag: 'repoTag'
+    })(item)
+
+    // Normalize repoTag: treat undefined/null as 'latest' to avoid fallback logic everywhere
+    return {
+      ...mapped,
+      repoTag: mapped.repoTag || 'latest'
+    }
+  },
   enabledCheck: (teamFilter) => !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0)
 })
 

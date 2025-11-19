@@ -206,14 +206,14 @@ const MachineRepositoriesPage: React.FC = () => {
       teamName: machine!.teamName,
       vaultVersion: 0,
       vaultContent: undefined,
-      grandGuid: undefined
+      grandGuid: undefined,
+      repoTag: repository.repoTag
     }
 
-    // Find the actual repository from the API data
+    // Find the actual repository from the API data - must match both name AND tag to distinguish forks
     const actualRepository = repositories.find(r =>
-      r.repositoryName === repository.name ||
-      r.repositoryGuid === repository.originalGuid ||
-      r.repositoryGuid === repository.name
+      r.repositoryName === repository.name &&
+      r.repoTag === repository.repoTag
     )
 
     setSelectedResource(actualRepository || mappedRepository)
