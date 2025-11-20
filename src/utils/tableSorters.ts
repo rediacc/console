@@ -33,9 +33,14 @@ function isDateString(value: unknown): value is string {
 function toTimestamp(value: unknown): number {
   if (value instanceof Date) return value.getTime()
   if (typeof value === 'string' || typeof value === 'number') {
-    return new Date(value).getTime()
+    const ts = new Date(value).getTime()
+    return isNaN(ts) ? Number.MAX_SAFE_INTEGER : ts
   }
-  return 0
+  return Number.MAX_SAFE_INTEGER
+}
+
+function isNumericString(value: string): boolean {
+  return !isNaN(Number(value)) && value.trim() !== ''
 }
 
 function compareValues(a: unknown, b: unknown): SortOrder {
@@ -44,7 +49,11 @@ function compareValues(a: unknown, b: unknown): SortOrder {
   if (a == null) return 1
   if (b == null) return -1
 
+  // Handle numeric strings - sort "10" after "2"
   if (typeof a === 'string' && typeof b === 'string') {
+    if (isNumericString(a) && isNumericString(b)) {
+      return Number(a) - Number(b)
+    }
     return a.localeCompare(b)
   }
 
@@ -102,15 +111,23 @@ export function createStringSorter<T>(field: NestedKeyOf<T>) {
 }
 
 /**
- * Creates a number sorter with optional default value for nullish fields.
+ * Creates a number sorter that handles numbers, numeric strings, and nullish values.
  */
-export function createNumberSorter<T>(field: NestedKeyOf<T>, defaultValue = 0) {
+export function createNumberSorter<T>(field: NestedKeyOf<T>) {
   return (a: T, b: T): SortOrder => {
     const valA = getNestedValue(a, field)
     const valB = getNestedValue(b, field)
 
-    const numA = typeof valA === 'number' ? valA : defaultValue
-    const numB = typeof valB === 'number' ? valB : defaultValue
+    if (valA == null && valB == null) return 0
+    if (valA == null) return 1
+    if (valB == null) return -1
+
+    const numA = Number(valA)
+    const numB = Number(valB)
+
+    if (isNaN(numA) && isNaN(numB)) return String(valA).localeCompare(String(valB))
+    if (isNaN(numA)) return 1
+    if (isNaN(numB)) return -1
 
     return numA - numB
   }

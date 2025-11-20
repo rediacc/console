@@ -303,20 +303,6 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
       ),
     },
     {
-      title: t('clones.guid'),
-      dataIndex: 'cloneName',
-      key: 'cloneName',
-      width: 300,
-      sorter: createSorter<DistributedStorageRbdClone>('cloneName'),
-      render: (text: string) => (
-        <Tooltip title={text}>
-          <span style={{ fontFamily: 'monospace', fontSize: '12px' }}>
-            {text.substring(0, 8)}...
-          </span>
-        </Tooltip>
-      ),
-    },
-    {
       title: t('machines:machines'),
       key: 'machines',
       width: 100,
