@@ -9,7 +9,6 @@ import { showMessage } from '@/utils/messages'
 import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'
 import { formatTimestampAsIs } from '@/utils/timeUtils'
-import { createSorter, createDateSorter } from '@/utils/tableSorters'
 import {
   PageWrapper,
   FiltersCard,
@@ -268,7 +267,7 @@ const QueuePage: React.FC = () => {
           </Tooltip>
         )
       },
-      sorter: createSorter('priority'),
+      sorter: (a: any, b: any) => (a.priority || 3) - (b.priority || 3),
     },
     {
       title: 'Age',
@@ -280,7 +279,7 @@ const QueuePage: React.FC = () => {
         if (minutes < 1440) return `${Math.floor(minutes / 60)}h ${minutes % 60}m`
         return `${Math.floor(minutes / 1440)}d ${Math.floor((minutes % 1440) / 60)}h`
       },
-      sorter: createSorter('ageInMinutes'),
+      sorter: (a: any, b: any) => a.ageInMinutes - b.ageInMinutes,
     },
     {
       title: 'Team',
@@ -357,7 +356,7 @@ const QueuePage: React.FC = () => {
           </Tooltip>
         )
       },
-      sorter: createSorter('retryCount'),
+      sorter: (a: any, b: any) => (a.retryCount || 0) - (b.retryCount || 0),
     },
     {
       title: 'Created By',
@@ -392,7 +391,7 @@ const QueuePage: React.FC = () => {
         
         return <Text style={{ color }}>{ageText}</Text>
       },
-      sorter: createSorter('ageInMinutes'),
+      sorter: (a: any, b: any) => a.ageInMinutes - b.ageInMinutes,
     },
     {
       title: 'Created',
@@ -400,13 +399,13 @@ const QueuePage: React.FC = () => {
       key: 'createdTime',
       width: 180,
       render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
-      sorter: createDateSorter('createdTime'),
+      sorter: (a: any, b: any) => new Date(a.createdTime).getTime() - new Date(b.createdTime).getTime(),
     },
     {
       title: 'Actions',
       key: 'actions',
       width: 180,
-      render: (_: unknown, record: Record<string, unknown>) => (
+      render: (_: any, record: any) => (
         <Space size="small">
           <Tooltip title="Trace">
             <IconButton
