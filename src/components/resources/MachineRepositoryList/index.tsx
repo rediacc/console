@@ -668,10 +668,18 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       return
     }
 
+    // Get the parent repository name for the confirmation message
+    const grandRepository = teamRepositories.find(r => r.repositoryGuid === repositoryData.grandGuid)
+    const parentName = grandRepository?.repositoryName || repository.name
+
     // Show confirmation modal
     modal.confirm({
       title: t('resources:repositories.deleteCloneConfirmTitle'),
-      content: t('resources:repositories.deleteCloneConfirmMessage', { name: repository.name }),
+      content: t('resources:repositories.deleteCloneConfirmMessage', {
+        name: repository.name,
+        tag: repository.repoTag || 'latest',
+        parentName
+      }),
       okText: t('common:delete'),
       okType: 'danger',
       cancelText: t('common:cancel'),
@@ -709,7 +717,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
           if (result.success) {
             if (result.taskId) {
-              showMessage('success', t('resources:repositories.deleteCloneQueued', { name: repository.name }))
+              showMessage('success', t('resources:repositories.deleteCloneQueued', { name: repository.name, tag: repository.repoTag || 'latest' }))
               if (onQueueItemCreated) {
                 onQueueItemCreated(result.taskId, machine.machineName)
               }

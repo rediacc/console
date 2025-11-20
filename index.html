@@ -21,9 +21,7 @@
     </script>
     <!-- Load runtime configuration before main app -->
     <script src="/config.js" data-vite-ignore></script>
-    <!-- Cloudflare Turnstile - Official Script (Explicit Rendering) -->
-    <!-- Note: Do not use async/defer when using turnstile.ready() in explicit mode -->
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>
+    <!-- Cloudflare Turnstile script is loaded dynamically by the Turnstile component -->
   </head>
   <body>
     <div id="root"></div>
