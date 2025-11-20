@@ -16,6 +16,62 @@ declare global {
   }
 }
 
+const TURNSTILE_SCRIPT_URL = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
+let scriptLoadPromise: Promise<void> | null = null
+
+/**
+ * Dynamically load the Turnstile script
+ * Uses a singleton promise to ensure the script is only loaded once
+ */
+const loadTurnstileScript = (): Promise<void> => {
+  if (scriptLoadPromise) {
+    return scriptLoadPromise
+  }
+
+  // Check if script is already loaded
+  if (window.turnstile) {
+    scriptLoadPromise = Promise.resolve()
+    return scriptLoadPromise
+  }
+
+  // Check if script tag already exists
+  const existingScript = document.querySelector(`script[src="${TURNSTILE_SCRIPT_URL}"]`)
+  if (existingScript) {
+    scriptLoadPromise = new Promise((resolve) => {
+      const checkInterval = setInterval(() => {
+        if (window.turnstile) {
+          clearInterval(checkInterval)
+          resolve()
+        }
+      }, 100)
+    })
+    return scriptLoadPromise
+  }
+
+  // Load the script dynamically
+  scriptLoadPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = TURNSTILE_SCRIPT_URL
+    script.async = true
+    script.onload = () => {
+      // Wait for turnstile to be available on window
+      const checkInterval = setInterval(() => {
+        if (window.turnstile) {
+          clearInterval(checkInterval)
+          resolve()
+        }
+      }, 100)
+    }
+    script.onerror = () => {
+      scriptLoadPromise = null
+      reject(new Error('Failed to load Turnstile script'))
+    }
+    document.head.appendChild(script)
+  })
+
+  return scriptLoadPromise
+}
+
 interface TurnstileRenderOptions {
   sitekey: string
   action?: string
@@ -179,27 +235,25 @@ export const Turnstile: React.FC<TurnstileProps> = ({
       }
     }
 
-    // Wait for script to load, then use turnstile.ready()
-    let attempts = 0
-    const maxAttempts = 100 // 10 seconds
-    const checkInterval = setInterval(() => {
-      attempts++
-      if (window.turnstile?.ready) {
-        clearInterval(checkInterval)
-        // Now safe to call ready() - script is loaded
-        window.turnstile.ready(() => {
+    // Dynamically load the script, then render the widget
+    loadTurnstileScript()
+      .then(() => {
+        if (!mountedRef.current) return
+
+        // Use turnstile.ready() to ensure it's fully initialized
+        window.turnstile?.ready(() => {
           renderTurnstile()
         })
-      } else if (attempts >= maxAttempts) {
-        clearInterval(checkInterval)
-        console.error('[Turnstile] Script failed to load after 10 seconds')
-        onError?.()
-      }
-    }, 100)
+      })
+      .catch((error) => {
+        console.error('[Turnstile] Failed to load script:', error)
+        if (mountedRef.current) {
+          onError?.()
+        }
+      })
 
     // Cleanup on unmount
     return () => {
-      clearInterval(checkInterval)
       mountedRef.current = false
       if (widgetIdRef.current && window.turnstile) {
         try {
