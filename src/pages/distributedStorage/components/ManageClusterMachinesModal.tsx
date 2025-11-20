@@ -12,6 +12,7 @@ import {
 import { AvailableMachinesSelector } from '@/components/resources/AvailableMachinesSelector'
 import { formatTimestampAsIs } from '@/utils/timeUtils'
 import { ModalSize } from '@/types/modal'
+import { createSorter, createDateSorter } from '@/utils/tableSorters'
 
 interface ManageClusterMachinesModalProps {
   open: boolean
@@ -143,11 +144,12 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
   }
   
   // Columns for assigned machines table
-  const assignedColumns: ColumnsType<any> = [
+  const assignedColumns: ColumnsType<Record<string, unknown>> = [
     {
       title: t('machines:machineName'),
       dataIndex: 'machineName',
       key: 'machineName',
+      sorter: createSorter<Record<string, unknown>>('machineName'),
       render: (name: string) => (
         <Space>
           <DesktopOutlined />
@@ -159,12 +161,14 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
       title: t('machines:bridge'),
       dataIndex: 'bridgeName',
       key: 'bridgeName',
+      sorter: createSorter<Record<string, unknown>>('bridgeName'),
       render: (name: string) => <Tag color="green">{name}</Tag>,
     },
     {
       title: t('machines:assignedDate'),
       dataIndex: 'assignedDate',
       key: 'assignedDate',
+      sorter: createDateSorter<Record<string, unknown>>('assignedDate'),
       render: (date: string) => date ? formatTimestampAsIs(date, 'datetime') : '-',
     },
   ]

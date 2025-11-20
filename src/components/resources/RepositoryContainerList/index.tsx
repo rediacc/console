@@ -12,6 +12,7 @@ import { LocalActionsMenu } from '../LocalActionsMenu'
 import { showMessage } from '@/utils/messages'
 import { useAppSelector } from '@/store/store'
 import { featureFlags } from '@/config/featureFlags'
+import { createSorter, createCustomSorter, createArrayLengthSorter } from '@/utils/tableSorters'
 
 const { Text } = Typography
 
@@ -241,11 +242,8 @@ export const RepositoryContainerList: React.FC<RepositoryContainerListProps> = (
       key: 'status',
       width: 80,
       align: 'center',
-      sorter: (a: Container, b: Container) => {
-        const getStatusValue = (container: Container) => container.state === 'running' ? 1 : 0
-        return getStatusValue(b) - getStatusValue(a)
-      },
-      render: (_: any, record: Container) => {
+      sorter: createCustomSorter<Container>((c) => c.state === 'running' ? 0 : 1),
+      render: (_: unknown, record: Container) => {
         const isOnline = record.state === 'running'
         const tooltipText = isOnline ? t('machines:connected') : t('machines:connectionFailed')
 
@@ -263,6 +261,7 @@ export const RepositoryContainerList: React.FC<RepositoryContainerListProps> = (
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
+      sorter: createSorter<Container>('name'),
       render: (name: string) => <strong>{name || 'N/A'}</strong>,
     },
     {
@@ -270,6 +269,7 @@ export const RepositoryContainerList: React.FC<RepositoryContainerListProps> = (
       dataIndex: 'state',
       key: 'state',
       width: 100,
+      sorter: createSorter<Container>('state'),
       render: (state: string) => {
         let color = 'default'
         if (state === 'running') color = 'green'
@@ -284,6 +284,7 @@ export const RepositoryContainerList: React.FC<RepositoryContainerListProps> = (
       dataIndex: 'image',
       key: 'image',
       ellipsis: true,
+      sorter: createSorter<Container>('image'),
       render: (image: string) => image || 'N/A',
     },
     {
@@ -291,7 +292,8 @@ export const RepositoryContainerList: React.FC<RepositoryContainerListProps> = (
       dataIndex: 'port_mappings',
       key: 'ports',
       width: 150,
-      render: (_: any, record: Container) => {
+      sorter: createArrayLengthSorter<Container>('port_mappings'),
+      render: (_: unknown, record: Container) => {
         if (!record.port_mappings || record.port_mappings.length === 0) {
           return <Text type="secondary">-</Text>
         }
@@ -317,7 +319,7 @@ export const RepositoryContainerList: React.FC<RepositoryContainerListProps> = (
       key: 'actions',
       fixed: 'right',
       width: 120,
-      render: (_: any, container: Container) => {
+      render: (_: unknown, container: Container) => {
         const menuItems = []
 
         if (container.state === 'running') {

@@ -7,6 +7,7 @@ import { useStorage } from '@/api/queries/storage'
 import type { UploadFile } from 'antd/es/upload'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing, createModalStyle } from '@/utils/styleConstants'
+import { createSorter } from '@/utils/tableSorters'
 
 const { Step } = Steps
 const { Text, Title, Paragraph } = Typography
@@ -312,7 +313,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       dataIndex: 'selected',
       key: 'selected',
       width: 50,
-      render: (_: any, record: ImportStatus, index: number) => (
+      render: (_: unknown, record: ImportStatus, index: number) => (
         <Checkbox
           checked={record.selected}
           onChange={() => toggleSelection(index)}
@@ -325,6 +326,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       title: t('resources:storage.storageName'),
       dataIndex: 'name',
       key: 'name',
+      sorter: createSorter<ImportStatus>('name'),
       render: (name: string, record: ImportStatus) => (
         <Space>
           <CloudOutlined />
@@ -343,7 +345,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
       title: t('resources:storage.provider'),
       key: 'provider',
       width: 120,
-      render: (_: any, record: ImportStatus) => {
+      render: (_: unknown, record: ImportStatus) => {
         const config = parsedConfigs.find(c => c.name === record.name)
         if (!config) return null
         

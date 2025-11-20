@@ -29,6 +29,7 @@ import {
 import { AvailableMachinesSelector } from '@/components/resources/AvailableMachinesSelector'
 import { MachineExclusivityWarning } from '@/components/distributedStorage/MachineExclusivityWarning'
 import { showMessage } from '@/utils/messages'
+import { createSorter } from '@/utils/tableSorters'
 
 const { Search } = Input
 const { Text, Title } = Typography
@@ -192,7 +193,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
           <Text strong style={{ color: 'var(--color-text-primary)' }}>{name}</Text>
         </Space>
       ),
-      sorter: (a, b) => a.machineName.localeCompare(b.machineName),
+      sorter: createSorter<CloneMachine>('machineName'),
     },
     {
       title: t('machines:bridge'),
@@ -203,7 +204,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
           {bridge}
         </Tag>
       ),
-      sorter: (a, b) => a.bridgeName.localeCompare(b.bridgeName),
+      sorter: createSorter<CloneMachine>('bridgeName'),
     },
     {
       title: t('machines:assignmentStatus.title'),

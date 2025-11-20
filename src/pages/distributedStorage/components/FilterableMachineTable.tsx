@@ -6,6 +6,7 @@ import { Machine } from '@/types'
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell'
 import { MachineRepositoryList } from '@/components/resources/MachineRepositoryList'
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
+import { createSorter } from '@/utils/tableSorters'
 
 interface FilterableMachineTableProps {
   machines: Machine[]
@@ -38,7 +39,7 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
       dataIndex: 'machineName',
       key: 'machineName',
       ellipsis: true,
-      sorter: (a: Machine, b: Machine) => a.machineName.localeCompare(b.machineName),
+      sorter: createSorter<Machine>('machineName'),
     },
     {
       title: t('machines:team'),
@@ -47,7 +48,7 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
       width: 150,
       ellipsis: true,
       render: (teamName: string) => <Tag color="green">{teamName}</Tag>,
-      sorter: (a: Machine, b: Machine) => a.teamName.localeCompare(b.teamName),
+      sorter: createSorter<Machine>('teamName'),
     },
     {
       title: t('machines:bridge'),
@@ -56,7 +57,7 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
       width: 150,
       ellipsis: true,
       render: (bridgeName: string) => <Tag color="green">{bridgeName}</Tag>,
-      sorter: (a: Machine, b: Machine) => a.bridgeName.localeCompare(b.bridgeName),
+      sorter: createSorter<Machine>('bridgeName'),
     },
     {
       title: t('distributedStorage:assignment.status'),
@@ -71,7 +72,7 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
       key: 'queueCount',
       width: 100,
       align: 'center' as const,
-      sorter: (a: Machine, b: Machine) => a.queueCount - b.queueCount,
+      sorter: createSorter<Machine>('queueCount'),
       render: (count: number) => (
         <Badge 
           count={count} 

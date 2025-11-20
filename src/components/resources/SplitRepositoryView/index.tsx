@@ -15,6 +15,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { UnifiedDetailPanel } from '../UnifiedDetailPanel'
 import type { ColumnsType } from 'antd/es/table'
+import { createSorter } from '@/utils/tableSorters'
 import {
   ActionsButton,
   EmptyState,
@@ -88,6 +89,7 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
       key: 'repositoryName',
       width: 300,
       ellipsis: true,
+      sorter: createSorter<Repository>('repositoryName'),
       render: (name: string, record: Repository) => (
         <Space>
           <IconWrapper $variant="success">
@@ -108,6 +110,7 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
       dataIndex: 'vaultVersion',
       key: 'vaultVersion',
       width: 120,
+      sorter: createSorter<Repository>('vaultVersion'),
       render: (version: number) => <Tag>{version}</Tag>,
     },
     {
@@ -116,6 +119,7 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
       key: 'repositoryGuid',
       width: 350,
       ellipsis: true,
+      sorter: createSorter<Repository>('repositoryGuid'),
       render: (guid: string) => <GuidText copyable>{guid}</GuidText>,
     },
     {

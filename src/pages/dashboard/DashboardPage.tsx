@@ -27,6 +27,7 @@ import {
 import { useDashboard, type QueueTeamIssue, type QueueMachineIssue } from '@/api/queries/dashboard'
 import { useRecentAuditLogs } from '@/api/queries/audit'
 import DistributedStorageDashboardWidget from '@/components/dashboard/DistributedStorageDashboardWidget'
+import { createSorter } from '@/utils/tableSorters'
 import {
   PageWrapper,
   ContentStack,
@@ -130,12 +131,14 @@ const DashboardPage: React.FC = () => {
       dataIndex: 'MachineName',
       key: 'MachineName',
       ellipsis: true,
+      sorter: createSorter<QueueMachineIssue>('MachineName'),
     },
     {
       title: 'Team',
       dataIndex: 'TeamName',
       key: 'TeamName',
       ellipsis: true,
+      sorter: createSorter<QueueMachineIssue>('TeamName'),
     },
     {
       title: 'Status',

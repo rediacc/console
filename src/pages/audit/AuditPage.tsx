@@ -29,6 +29,7 @@ import {
   TableCard,
 } from './styles';
 import type { ColumnsType } from 'antd/es/table';
+import { createDateSorter } from '@/utils/tableSorters';
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -94,7 +95,7 @@ const AuditPage = () => {
       key: 'timestamp',
       width: 180,
       render: (timestamp: string) => dayjs(timestamp).format('YYYY-MM-DD HH:mm:ss'),
-      sorter: (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+      sorter: createDateSorter<AuditLog>('timestamp'),
       defaultSortOrder: 'descend'
     },
     {

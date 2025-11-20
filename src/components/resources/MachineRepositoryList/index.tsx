@@ -13,10 +13,12 @@ import { useRepositories, useCreateRepository, useDeleteRepository, usePromoteRe
 import { useMachines } from '@/api/queries/machines'
 import { useStorage } from '@/api/queries/storage'
 import type { ColumnsType } from 'antd/es/table'
+import type { MenuInfo } from 'rc-menu/lib/interface'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 import { LocalActionsMenu } from '../LocalActionsMenu'
 import { showMessage } from '@/utils/messages'
 import { useAppSelector } from '@/store/store'
+import { createSorter, createCustomSorter, createArrayLengthSorter } from '@/utils/tableSorters'
 
 const { Text } = Typography
 
@@ -96,7 +98,7 @@ const groupRepositoriesByName = (repos: Repository[], teamRepos: any[]): Grouped
     }) || null
 
     // All other tags are forks - sort them by tag name (chronologically since tags include timestamps)
-    const forkTags = tags.filter(r => r !== grandTag).sort((a, b) => a.repoTag.localeCompare(b.repoTag))
+    const forkTags = tags.filter(r => r !== grandTag).sort((a, b) => (a.repoTag || '').localeCompare(b.repoTag || ''))
 
     return {
       name,
@@ -1338,6 +1340,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       key: 'status',
       width: 80,
       align: 'center',
+      sorter: createCustomSorter<Container>((c) => c.state === 'running' ? 0 : c.state === 'paused' ? 1 : 2),
       render: (_: unknown, record: Container) => {
         let icon: React.ReactNode
         let color: string
@@ -1376,6 +1379,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
+      sorter: createSorter<Container>('name'),
       render: (name: string) => (
         <Space>
           <CloudServerOutlined style={{ color: '#722ed1' }} />
@@ -1389,11 +1393,13 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       key: 'image',
       width: 250,
       ellipsis: true,
+      sorter: createSorter<Container>('image'),
     },
     {
       title: t('resources:repositories.containerStatus'),
       dataIndex: 'state',
       key: 'state',
+      sorter: createSorter<Container>('state'),
       render: (state: string, record: Container) => (
         <Space>
           <Tag color={state === 'running' ? 'success' : 'default'}>
@@ -1407,12 +1413,14 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       title: t('resources:repositories.containerCPU'),
       dataIndex: 'cpu_percent',
       key: 'cpu_percent',
+      sorter: createSorter<Container>('cpu_percent'),
       render: (cpu: string) => cpu || '-',
     },
     {
       title: t('resources:repositories.containerMemory'),
       dataIndex: 'memory_usage',
       key: 'memory_usage',
+      sorter: createSorter<Container>('memory_usage'),
       render: (memory: string) => memory || '-',
     },
     {
@@ -1420,6 +1428,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       dataIndex: 'port_mappings',
       key: 'port_mappings',
       ellipsis: true,
+      sorter: createArrayLengthSorter<Container>('port_mappings'),
       render: (portMappings: PortMapping[], record: Container) => {
         // If we have structured port mappings, use them
         if (portMappings && Array.isArray(portMappings) && portMappings.length > 0) {
@@ -1510,7 +1519,13 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       key: 'status',
       width: 80,
       align: 'center',
-      render: (_: any, record: RepositoryTableRow) => {
+      sorter: createCustomSorter<RepositoryTableRow>((r) => {
+        if (r._isGroupHeader) return -1;
+        if (r.mounted && r.docker_running) return 0;
+        if (r.mounted) return 1;
+        return 2;
+      }),
+      render: (_: unknown, record: RepositoryTableRow) => {
         // Don't show status for group headers
         if (record._isGroupHeader) {
           return null
@@ -1618,7 +1633,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       key: 'actions',
       width: 160,
       fixed: 'right',
-      render: (_: any, record: RepositoryTableRow) => {
+      render: (_: unknown, record: RepositoryTableRow) => {
         const isGroupHeader = record._isGroupHeader
         const groupData = record._groupData
 
@@ -1730,7 +1745,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           key: 'up',
           label: t('functions:functions.up.name'),
           icon: <PlayCircleOutlined style={componentStyles.icon.small} />,
-          onClick: (info) => {
+          onClick: (info: MenuInfo) => {
             info.domEvent.stopPropagation()
             handleQuickAction(record, 'up', 4, 'mount')
           }
@@ -1742,7 +1757,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             key: 'down',
             label: t('functions:functions.down.name'),
             icon: <PauseCircleOutlined style={componentStyles.icon.small} />,
-            onClick: (info) => {
+            onClick: (info: MenuInfo) => {
               info.domEvent.stopPropagation()
               handleQuickAction(record, 'down', 4, 'unmount')
             }
@@ -1755,7 +1770,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             key: 'validate',
             label: t('functions:functions.validate.name'),
             icon: <CheckCircleOutlined style={componentStyles.icon.small} />,
-            onClick: (info) => {
+            onClick: (info: MenuInfo) => {
               info.domEvent.stopPropagation()
               handleRunFunction(record, 'validate')
             }
@@ -1767,7 +1782,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           key: 'fork',
           label: t('functions:functions.fork.name'),
           icon: <CopyOutlined style={componentStyles.icon.small} />,
-          onClick: (info) => {
+          onClick: (info: MenuInfo) => {
             info.domEvent.stopPropagation()
             handleForkRepository(record)
           }
@@ -1778,7 +1793,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           key: 'deploy',
           label: t('functions:functions.deploy.name'),
           icon: <CloudUploadOutlined style={componentStyles.icon.small} />,
-          onClick: (info) => {
+          onClick: (info: MenuInfo) => {
             info.domEvent.stopPropagation()
             handleRunFunction(record, 'deploy')
           }
@@ -1790,7 +1805,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           key: 'backup',
           label: t('functions:functions.backup.name'),
           icon: <SaveOutlined style={componentStyles.icon.small} />,
-          onClick: (info) => {
+          onClick: (info: MenuInfo) => {
             info.domEvent.stopPropagation()
             handleRunFunction(record, 'backup')
           },
@@ -1803,7 +1818,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           key: 'apply_template',
           label: t('functions:functions.apply_template.name'),
           icon: <AppstoreOutlined style={componentStyles.icon.small} />,
-          onClick: (info) => {
+          onClick: (info: MenuInfo) => {
             info.domEvent.stopPropagation()
             handleRunFunction(record, 'apply_template')
           }
@@ -1818,7 +1833,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             key: 'mount',
             label: t('resources:repositories.mount'),
             icon: <DatabaseOutlined style={componentStyles.icon.small} />,
-            onClick: (info) => {
+            onClick: (info: MenuInfo) => {
               info.domEvent.stopPropagation()
               handleQuickAction(record, 'mount', 4)
             }
@@ -1828,7 +1843,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             key: 'unmount',
             label: t('resources:repositories.unmount'),
             icon: <DisconnectOutlined style={componentStyles.icon.small} />,
-            onClick: (info) => {
+            onClick: (info: MenuInfo) => {
               info.domEvent.stopPropagation()
               handleQuickAction(record, 'unmount', 4)
             }
@@ -1841,7 +1856,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             key: 'resize',
             label: t('functions:functions.resize.name'),
             icon: <ShrinkOutlined style={componentStyles.icon.small} />,
-            onClick: (info) => {
+            onClick: (info: MenuInfo) => {
               info.domEvent.stopPropagation()
               handleRunFunction(record, 'resize')
             }
@@ -1854,7 +1869,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             key: 'expand',
             label: t('functions:functions.expand.name'),
             icon: <ExpandOutlined style={componentStyles.icon.small} />,
-            onClick: (info) => {
+            onClick: (info: MenuInfo) => {
               info.domEvent.stopPropagation()
               handleRunFunction(record, 'expand')
             }
@@ -1872,7 +1887,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           key: 'experimental',
           label: t('machines:experimental'),
           icon: <FunctionOutlined style={componentStyles.icon.small} />,
-          onClick: (info) => {
+          onClick: (info: MenuInfo) => {
             info.domEvent.stopPropagation()
             handleRunFunction(record)
           }
@@ -1894,7 +1909,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             key: 'promote-to-grand',
             label: t('resources:repositories.promoteToGrand'),
             icon: <RiseOutlined style={componentStyles.icon.small} />,
-            onClick: (info) => {
+            onClick: (info: MenuInfo) => {
               info.domEvent.stopPropagation()
               handlePromoteToGrand(record)
             }
@@ -1903,7 +1918,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             key: 'delete-fork',
             label: t('resources:repositories.deleteFork'),
             icon: <DeleteOutlined style={componentStyles.icon.small} />,
-            onClick: (info) => {
+            onClick: (info: MenuInfo) => {
               info.domEvent.stopPropagation()
               handleDeleteFork(record)
             },
@@ -1923,7 +1938,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           key: 'rename',
           label: t('resources:repositories.rename'),
           icon: <EditOutlined style={componentStyles.icon.small} />,
-          onClick: (info) => {
+          onClick: (info: MenuInfo) => {
             info.domEvent.stopPropagation()
             handleRenameRepository(record)
           }
@@ -1935,7 +1950,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             key: 'delete-grand',
             label: t('resources:repositories.deleteGrand'),
             icon: <DeleteOutlined style={componentStyles.icon.small} />,
-            onClick: (info) => {
+            onClick: (info: MenuInfo) => {
               info.domEvent.stopPropagation()
               handleDeleteGrandRepository(record)
             },
