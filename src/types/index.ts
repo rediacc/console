@@ -73,6 +73,7 @@ export interface Repository {
   vaultVersion: number
   vaultContent?: string
   grandGuid?: string
+  repoTag?: string
 }
 
 export interface PluginContainer {
