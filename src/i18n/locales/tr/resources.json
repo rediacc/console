@@ -302,6 +302,8 @@
     "datastoreUsage": "Veri Deposu Kullanımı",
     "defaultGateway": "Varsayılan Ağ Geçidi",
     "defaultInterface": "Varsayılan Arayüz",
+    "deleteCloneConfirmMessage": "Bu, klonlanmış '{{name}}' deposunu kalıcı olarak silecektir. Orijinal depo etkilenmeyecektir. Bu eylem geri alınamaz.",
+    "deleteCloneConfirmTitle": "Klonlanmış Depo Silinsin mi?",
     "deleteError": "Depo silinemedi",
     "deleteFork": "çatalı sil",
     "deleteForkConfirmMessage": "Bu, çatallanmış '{{name}}' deposunu kalıcı olarak silecektir. Orijinal depo etkilenmeyecektir. Bu eylem geri alınamaz.",
