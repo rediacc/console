@@ -31,6 +31,7 @@ import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import { AssignMachinesToCloneModal } from '@/components/resources/AssignMachinesToCloneModal'
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
+import { createSorter } from '@/utils/tableSorters'
 
 const { Text } = Typography
 
@@ -94,6 +95,8 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
       const queueVault = await buildQueueVault({
         functionName: functionName,
         teamName: pool.teamName,
+        machineName: pool.clusterName,
+        bridgeName: 'default',
         params: {
           cluster_name: pool.clusterName,
           pool_name: pool.poolName,
@@ -286,6 +289,7 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
       title: t('clones.name'),
       dataIndex: 'cloneName',
       key: 'cloneName',
+      sorter: createSorter<DistributedStorageRbdClone>('cloneName'),
       render: (text: string, record: DistributedStorageRbdClone) => (
         <Space data-testid={`clone-list-item-${record.cloneName}`}>
           <CopyOutlined />
@@ -300,9 +304,10 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
     },
     {
       title: t('clones.guid'),
-      dataIndex: 'cloneGuid',
-      key: 'cloneGuid',
+      dataIndex: 'cloneName',
+      key: 'cloneName',
       width: 300,
+      sorter: createSorter<DistributedStorageRbdClone>('cloneName'),
       render: (text: string) => (
         <Tooltip title={text}>
           <span style={{ fontFamily: 'monospace', fontSize: '12px' }}>
@@ -316,13 +321,13 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
       key: 'machines',
       width: 100,
       align: 'center' as const,
-      render: (_: any, record: DistributedStorageRbdClone) => <MachineCountBadge clone={record} />
+      render: (_: unknown, record: DistributedStorageRbdClone) => <MachineCountBadge clone={record} />
     },
     {
       title: t('common.actions'),
       key: 'actions',
       width: 150,
-      render: (_: any, record: DistributedStorageRbdClone) => (
+      render: (_: unknown, record: DistributedStorageRbdClone) => (
         <Space>
           <Button
             size="small"

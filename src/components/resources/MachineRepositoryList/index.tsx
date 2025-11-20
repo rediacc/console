@@ -17,6 +17,7 @@ import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 import { LocalActionsMenu } from '../LocalActionsMenu'
 import { showMessage } from '@/utils/messages'
 import { useAppSelector } from '@/store/store'
+import { createSorter, createCustomSorter, createArrayLengthSorter } from '@/utils/tableSorters'
 
 const { Text } = Typography
 
@@ -1338,6 +1339,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       key: 'status',
       width: 80,
       align: 'center',
+      sorter: createCustomSorter<Container>((c) => c.state === 'running' ? 0 : c.state === 'paused' ? 1 : 2),
       render: (_: unknown, record: Container) => {
         let icon: React.ReactNode
         let color: string
@@ -1376,6 +1378,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
+      sorter: createSorter<Container>('name'),
       render: (name: string) => (
         <Space>
           <CloudServerOutlined style={{ color: '#722ed1' }} />
@@ -1389,11 +1392,13 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       key: 'image',
       width: 250,
       ellipsis: true,
+      sorter: createSorter<Container>('image'),
     },
     {
       title: t('resources:repositories.containerStatus'),
       dataIndex: 'state',
       key: 'state',
+      sorter: createSorter<Container>('state'),
       render: (state: string, record: Container) => (
         <Space>
           <Tag color={state === 'running' ? 'success' : 'default'}>
@@ -1407,12 +1412,14 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       title: t('resources:repositories.containerCPU'),
       dataIndex: 'cpu_percent',
       key: 'cpu_percent',
+      sorter: createSorter<Container>('cpu_percent'),
       render: (cpu: string) => cpu || '-',
     },
     {
       title: t('resources:repositories.containerMemory'),
       dataIndex: 'memory_usage',
       key: 'memory_usage',
+      sorter: createSorter<Container>('memory_usage'),
       render: (memory: string) => memory || '-',
     },
     {
@@ -1420,6 +1427,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       dataIndex: 'port_mappings',
       key: 'port_mappings',
       ellipsis: true,
+      sorter: createArrayLengthSorter<Container>('port_mappings'),
       render: (portMappings: PortMapping[], record: Container) => {
         // If we have structured port mappings, use them
         if (portMappings && Array.isArray(portMappings) && portMappings.length > 0) {
@@ -1510,7 +1518,13 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       key: 'status',
       width: 80,
       align: 'center',
-      render: (_: any, record: RepositoryTableRow) => {
+      sorter: createCustomSorter<RepositoryTableRow>((r) => {
+        if (r._isGroupHeader) return -1;
+        if (r.mounted && r.docker_running) return 0;
+        if (r.mounted) return 1;
+        return 2;
+      }),
+      render: (_: unknown, record: RepositoryTableRow) => {
         // Don't show status for group headers
         if (record._isGroupHeader) {
           return null
@@ -1618,7 +1632,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       key: 'actions',
       width: 160,
       fixed: 'right',
-      render: (_: any, record: RepositoryTableRow) => {
+      render: (_: unknown, record: RepositoryTableRow) => {
         const isGroupHeader = record._isGroupHeader
         const groupData = record._groupData
 

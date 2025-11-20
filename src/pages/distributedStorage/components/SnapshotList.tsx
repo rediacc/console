@@ -29,6 +29,7 @@ import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import CloneList from './CloneList'
+import { createSorter } from '@/utils/tableSorters'
 
 interface SnapshotListProps {
   image: DistributedStorageRbdImage
@@ -85,6 +86,8 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
       const queueVault = await buildQueueVault({
         functionName: functionName,
         teamName: pool.teamName,
+        machineName: pool.clusterName,
+        bridgeName: 'default',
         params: {
           cluster_name: pool.clusterName,
           pool_name: pool.poolName,
@@ -180,6 +183,7 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
       title: t('snapshots.name'),
       dataIndex: 'snapshotName',
       key: 'snapshotName',
+      sorter: createSorter<DistributedStorageRbdSnapshot>('snapshotName'),
       render: (text: string, record: DistributedStorageRbdSnapshot) => (
         <Space data-testid={`snapshot-list-item-${record.snapshotName}`}>
           <CameraOutlined style={{ ...tableStyles.icon.medium, color: 'var(--color-primary)' }} />
@@ -197,6 +201,7 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
       dataIndex: 'snapshotGuid',
       key: 'snapshotGuid',
       width: 300,
+      sorter: createSorter<DistributedStorageRbdSnapshot>('snapshotGuid'),
       render: (text: string) => (
         <Tooltip title={text}>
           <span style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
@@ -209,7 +214,7 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
       title: t('common.actions'),
       key: 'actions',
       width: 150,
-      render: (_: any, record: DistributedStorageRbdSnapshot) => (
+      render: (_: unknown, record: DistributedStorageRbdSnapshot) => (
         <Space>
           <Tooltip title={t('common.remote')}>
             <Button

@@ -307,6 +307,8 @@
     "deleteForkFailed": "Failed to delete fork",
     "deleteForkQueued": "Fork deletion queued: {{name}}",
     "deleteForkSuccess": "Fork deleted successfully",
+    "deleteCloneConfirmTitle": "Delete Cloned Repository?",
+    "deleteCloneConfirmMessage": "This will permanently delete the cloned repository '{{name}}'. The original repository will not be affected. This action cannot be undone.",
     "deleteError": "Failed to delete repository",
     "deleteGrand": "delete repository",
     "deleteGrandConfirmPrompt": "Type the repository name '{{name}}' to confirm deletion:",
