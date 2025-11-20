@@ -34,6 +34,7 @@ import {
   StatValue,
   IconWrapper
 } from './styles'
+import { createSorter, createDateSorter } from '@/utils/tableSorters'
 
 const { Text } = Typography
 
@@ -181,7 +182,8 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       title: t('audit.action'),
       key: 'action',
       width: 150,
-      render: (_: any, record: AuditTraceRecord, index: number) => (
+      sorter: createSorter<AuditTraceRecord>('actionType'),
+      render: (_: unknown, record: AuditTraceRecord, index: number) => (
         <Space data-testid={`audit-trace-action-${index}`}>
           {getIcon(record.iconHint)}
           <Tag color={getActionColor(record.actionType)} data-testid={`audit-trace-action-tag-${index}`}>
@@ -195,12 +197,14 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       dataIndex: 'details',
       key: 'details',
       ellipsis: true,
+      sorter: createSorter<AuditTraceRecord>('details'),
     },
     {
       title: t('audit.performedBy'),
       dataIndex: 'performedBy',
       key: 'performedBy',
       width: 200,
+      sorter: createSorter<AuditTraceRecord>('performedBy'),
       render: (user: string, _record: AuditTraceRecord, index: number) => (
         <span data-testid={`audit-trace-performed-by-${index}`}>
           {user || t('audit.system')}
@@ -212,6 +216,7 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
       dataIndex: 'timestamp',
       key: 'timestamp',
       width: 200,
+      sorter: createDateSorter<AuditTraceRecord>('timestamp'),
       render: (timestamp: string, record: AuditTraceRecord, index: number) => (
         <Space direction="vertical" size={0} data-testid={`audit-trace-timestamp-${index}`}>
           <Text>{formatTimestampAsIs(timestamp, 'datetime')}</Text>

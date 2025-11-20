@@ -35,6 +35,7 @@ import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { waitForQueueItemCompletion } from '@/services/helloService';
 import { showMessage } from '@/utils/messages';
+import { createSorter, createCustomSorter } from '@/utils/tableSorters';
 
 interface RemoteFile {
   name: string;
@@ -627,12 +628,10 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
 
         return content;
       },
-      sorter: (a, b) => {
-        // Directories first
-        if (a.isDirectory && !b.isDirectory) return -1;
-        if (!a.isDirectory && b.isDirectory) return 1;
-        return a.name.localeCompare(b.name);
-      },
+      sorter: createCustomSorter<RemoteFile>((file) => {
+        // Directories first (0), then files (1), then alphabetical
+        return `${file.isDirectory ? '0' : '1'}${file.name.toLowerCase()}`;
+      }),
     },
     {
       title: t('resources:remoteFiles.size'),
@@ -641,7 +640,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
       width: 120,
       render: (size: number, record: RemoteFile) =>
         record.isDirectory ? '-' : formatFileSize(size),
-      sorter: (a, b) => a.size - b.size,
+      sorter: createSorter<RemoteFile>('size'),
     },
   ];
 

@@ -52,6 +52,7 @@ import MachineAssignmentStatusCell from './MachineAssignmentStatusCell';
 import { useComponentStyles } from '@/hooks/useComponentStyles';
 import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { featureFlags } from '@/config/featureFlags';
+import { createSorter, createCustomSorter } from '@/utils/tableSorters';
 
 
 interface MachineTableProps {
@@ -243,7 +244,14 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         key: 'status',
         width: 100,
         align: 'center',
-        render: (_: any, record: Machine) => {
+        sorter: createCustomSorter<Machine>((m) => {
+          if (!m.vaultStatusTime) return Infinity;
+          const statusTime = new Date(m.vaultStatusTime + 'Z');
+          const now = new Date();
+          const diffMinutes = (now.getTime() - statusTime.getTime()) / 60000;
+          return diffMinutes <= 3 ? 0 : 1;
+        }),
+        render: (_: unknown, record: Machine) => {
           if (!record.vaultStatusTime) {
             return (
               <Tooltip title={t('machines:statusUnknown')}>
@@ -276,6 +284,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         dataIndex: 'machineName',
         key: 'machineName',
         ellipsis: true,
+        sorter: createSorter<Machine>('machineName'),
         render: (name: string) => {
           return (
             <Space>
@@ -295,6 +304,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         key: 'teamName',
         width: 150,
         ellipsis: true,
+        sorter: createSorter<Machine>('teamName'),
         render: (teamName: string) => <Tag color="#8FBC8F">{teamName}</Tag>,
       });
     }
@@ -310,6 +320,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             key: 'regionName',
             width: 150,
             ellipsis: true,
+            sorter: createSorter<Machine>('regionName'),
             render: (regionName: string) => regionName ? <Tag color="purple">{regionName}</Tag> : '-',
           },
           {
@@ -318,6 +329,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
             key: 'bridgeName',
             width: 150,
             ellipsis: true,
+            sorter: createSorter<Machine>('bridgeName'),
             render: (bridgeName: string) => <Tag color="green">{bridgeName}</Tag>,
           }
         );
@@ -329,6 +341,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
           key: 'bridgeName',
           width: 150,
           ellipsis: true,
+          sorter: createSorter<Machine>('bridgeName'),
           render: (bridge: string) => <Tag color="#8FBC8F">{bridge}</Tag>,
         });
       }
@@ -353,6 +366,7 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         key: 'queueCount',
         width: 100,
         align: 'center' as const,
+        sorter: createSorter<Machine>('queueCount'),
         render: (count: number) => (
           <Badge count={count} showZero style={{ backgroundColor: count > 0 ? '#52c41a' : '#d9d9d9' }} />
         ),

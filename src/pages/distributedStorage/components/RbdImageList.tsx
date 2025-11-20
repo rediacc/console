@@ -35,6 +35,7 @@ import { ImageMachineReassignmentModal } from '@/components/resources/ImageMachi
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import SnapshotList from './SnapshotList'
+import { createSorter } from '@/utils/tableSorters'
 
 interface RbdImageListProps {
   pool: DistributedStoragePool
@@ -100,6 +101,8 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
       const queueVault = await buildQueueVault({
         functionName: functionName,
         teamName: pool.teamName,
+        machineName: pool.clusterName,
+        bridgeName: 'default',
         params: {
           cluster_name: pool.clusterName,
           pool_name: pool.poolName,
@@ -232,6 +235,7 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
       title: t('images.name'),
       dataIndex: 'imageName',
       key: 'imageName',
+      sorter: createSorter<DistributedStorageRbdImage>('imageName'),
       render: (text: string, record: DistributedStorageRbdImage) => (
         <Space data-testid={`rbd-image-name-${record.imageName}`}>
           <FileImageOutlined style={{ ...tableStyles.icon.medium, color: 'var(--color-primary)' }} />
@@ -249,6 +253,7 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
       dataIndex: 'imageGuid',
       key: 'imageGuid',
       width: 300,
+      sorter: createSorter<DistributedStorageRbdImage>('imageGuid'),
       render: (text: string) => (
         <Tooltip title={text}>
           <span style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
@@ -262,6 +267,7 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
       dataIndex: 'machineName',
       key: 'machineName',
       width: 200,
+      sorter: createSorter<DistributedStorageRbdImage>('machineName'),
       render: (machineName: string, record: DistributedStorageRbdImage) => machineName ? (
         <Tag icon={<CloudServerOutlined />} color="blue" data-testid={`rbd-machine-tag-${record.imageName}`}>
           {machineName}
@@ -276,7 +282,7 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
       title: t('common.actions'),
       key: 'actions',
       width: 150,
-      render: (_: any, record: DistributedStorageRbdImage) => (
+      render: (_: unknown, record: DistributedStorageRbdImage) => (
         <Space data-testid={`rbd-image-actions-${record.imageName}`}>
           <Tooltip title={t('common.remote')}>
             <Button

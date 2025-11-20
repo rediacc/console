@@ -16,6 +16,7 @@ import { DistributedStoragePool, DistributedStorageCluster } from '@/api/queries
 import AuditTraceModal from '@/components/common/AuditTraceModal'
 import RbdImageList from './RbdImageList'
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
+import { createSorter } from '@/utils/tableSorters'
 
 interface PoolTableProps {
   pools: DistributedStoragePool[]
@@ -95,6 +96,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
       dataIndex: 'poolName',
       key: 'poolName',
       ellipsis: true,
+      sorter: createSorter<DistributedStoragePool>('poolName'),
       render: (name: string, record: DistributedStoragePool) => {
         const isExpanded = expandedRowKeys.includes(record.poolGuid || '')
         return (
@@ -119,6 +121,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
       key: 'vaultVersion',
       width: 100,
       align: 'center',
+      sorter: createSorter<DistributedStoragePool>('vaultVersion'),
       render: (version: number) => <Tag color="blue">{t('common:general.versionFormat', { version })}</Tag>,
     },
     {

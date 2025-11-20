@@ -20,6 +20,7 @@ import AuditTraceModal from '@/components/common/AuditTraceModal'
 import { ManageClusterMachinesModal } from './ManageClusterMachinesModal'
 import { formatTimestampAsIs } from '@/utils/timeUtils'
 import { useTableStyles } from '@/hooks/useComponentStyles'
+import { createSorter, createDateSorter } from '@/utils/tableSorters'
 
 interface ClusterTableProps {
   clusters: DistributedStorageCluster[]
@@ -111,6 +112,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
       dataIndex: 'clusterName',
       key: 'clusterName',
       ellipsis: true,
+      sorter: createSorter<DistributedStorageCluster>('clusterName'),
       render: (name: string, record: DistributedStorageCluster) => {
         const isExpanded = expandedRowKeys.includes(record.clusterName)
         return (
@@ -135,6 +137,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
       key: 'teamName',
       width: 150,
       ellipsis: true,
+      sorter: createSorter<DistributedStorageCluster>('teamName'),
       render: (teamName: string) => <Tag color="green">{teamName}</Tag>,
     },
     {
@@ -166,6 +169,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
       key: 'vaultVersion',
       width: 100,
       align: 'center',
+      sorter: createSorter<DistributedStorageCluster>('vaultVersion'),
       render: (version: number) => <Tag color="blue">{t('common:general.versionFormat', { version })}</Tag>,
     },
     {
@@ -356,11 +360,12 @@ const ClusterMachines: React.FC<{ cluster: DistributedStorageCluster }> = ({ clu
     true
   )
 
-  const machineColumns: ColumnsType<Record<string, any>> = [
+  const machineColumns: ColumnsType<Record<string, unknown>> = [
     {
       title: t('machines.machineName'),
       dataIndex: 'machineName',
       key: 'machineName',
+      sorter: createSorter<Record<string, unknown>>('machineName'),
       render: (name: string) => (
         <Space>
           <DesktopOutlined style={{ ...tableStyles.icon.medium, color: 'var(--color-primary)' }} />
@@ -372,12 +377,14 @@ const ClusterMachines: React.FC<{ cluster: DistributedStorageCluster }> = ({ clu
       title: t('machines.bridgeName'),
       dataIndex: 'bridgeName',
       key: 'bridgeName',
+      sorter: createSorter<Record<string, unknown>>('bridgeName'),
       render: (name: string) => <Tag color="green">{name}</Tag>,
     },
     {
       title: t('machines.assignedDate'),
       dataIndex: 'assignedDate',
       key: 'assignedDate',
+      sorter: createDateSorter<Record<string, unknown>>('assignedDate'),
       render: (date: string) => (
         <span style={{ color: 'var(--color-text-secondary)' }}>
           {date ? formatTimestampAsIs(date, 'datetime') : '-'}

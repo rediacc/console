@@ -9,6 +9,7 @@ import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { useComponentStyles, useTableStyles, useFormStyles } from '@/hooks/useComponentStyles'
+import { createDateSorter } from '@/utils/tableSorters'
 
 dayjs.extend(relativeTime)
 
@@ -160,7 +161,7 @@ const UserSessionsTab: React.FC = () => {
       key: 'createdAt',
       width: 180,
       render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
-      sorter: (a, b) => dayjs(a.createdAt).unix() - dayjs(b.createdAt).unix(),
+      sorter: createDateSorter<UserRequest>('createdAt'),
       defaultSortOrder: 'descend',
     },
     {

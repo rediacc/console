@@ -62,6 +62,7 @@ import {
 } from '@/pages/system/styles'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
+import { createSorter } from '@/utils/tableSorters'
 
 const InfrastructurePage: React.FC = () => {
   const { t } = useTranslation('resources')
@@ -238,6 +239,7 @@ const InfrastructurePage: React.FC = () => {
       title: t('regions.regionName'),
       dataIndex: 'regionName',
       key: 'regionName',
+      sorter: createSorter<Region>('regionName'),
       render: (text: string) => (
         <Space>
           <EnvironmentOutlined />
@@ -252,6 +254,7 @@ const InfrastructurePage: React.FC = () => {
             dataIndex: 'bridgeCount',
             key: 'bridgeCount',
             width: 120,
+            sorter: createSorter<Region>('bridgeCount'),
             render: (count: number) => (
               <Space>
                 <ApiOutlined />
@@ -268,6 +271,7 @@ const InfrastructurePage: React.FC = () => {
             dataIndex: 'vaultVersion',
             key: 'vaultVersion',
             width: 120,
+            sorter: createSorter<Region>('vaultVersion'),
             render: (version: number) => <Tag>{tCommon('general.versionFormat', { version })}</Tag>,
           },
         ]
@@ -276,7 +280,7 @@ const InfrastructurePage: React.FC = () => {
       title: t('general.actions'),
       key: 'actions',
       width: 300,
-      render: (_: any, record: Region) => (
+      render: (_: unknown, record: Region) => (
         <Space>
           <Tooltip title={t('general.edit')}>
             <Button
@@ -335,6 +339,7 @@ const InfrastructurePage: React.FC = () => {
       title: t('bridges.bridgeName'),
       dataIndex: 'bridgeName',
       key: 'bridgeName',
+      sorter: createSorter<Bridge>('bridgeName'),
       render: (text: string, record: Bridge) => (
         <Space>
           <ApiOutlined />
@@ -352,6 +357,7 @@ const InfrastructurePage: React.FC = () => {
       dataIndex: 'machineCount',
       key: 'machineCount',
       width: 120,
+      sorter: createSorter<Bridge>('machineCount'),
       render: (count: number) => (
         <Space>
           <DesktopOutlined />
@@ -364,6 +370,7 @@ const InfrastructurePage: React.FC = () => {
       dataIndex: 'isGlobalBridge',
       key: 'isGlobalBridge',
       width: 120,
+      sorter: createSorter<Bridge>('isGlobalBridge'),
       render: (isGlobal: boolean) =>
         isGlobal ? (
           <Tag color="purple" icon={<CloudServerOutlined />}>
@@ -380,6 +387,7 @@ const InfrastructurePage: React.FC = () => {
       dataIndex: 'managementMode',
       key: 'managementMode',
       width: 140,
+      sorter: createSorter<Bridge>('managementMode'),
       render: (mode: string) => {
         if (!mode) return <Tag>{t('bridges.local')}</Tag>
         const color = mode === 'Cloud' ? 'green' : 'default'
@@ -394,6 +402,7 @@ const InfrastructurePage: React.FC = () => {
             dataIndex: 'vaultVersion',
             key: 'vaultVersion',
             width: 120,
+            sorter: createSorter<Bridge>('vaultVersion'),
             render: (version: number) => <Tag>{tCommon('general.versionFormat', { version })}</Tag>,
           },
         ]
@@ -402,7 +411,7 @@ const InfrastructurePage: React.FC = () => {
       title: t('general.actions'),
       key: 'actions',
       width: ACTIONS_COLUMN_WIDTH,
-      render: (_: any, record: Bridge) => (
+      render: (_: unknown, record: Bridge) => (
         <Space>
           <Tooltip title={t('general.edit')}>
             <Button

@@ -437,6 +437,12 @@ class QueueDataService {
     // Add SYSTEM_API_URL from current environment for CLI configuration
     generalSettings.SYSTEM_API_URL = this.getSystemApiUrl()
 
+    // Add TEAM_NAME and MACHINE_NAME for environment exports
+    generalSettings.TEAM_NAME = context.teamName
+    if (context.machineName) {
+      generalSettings.MACHINE_NAME = context.machineName
+    }
+
     if (context.companyVault && typeof context.companyVault === 'object') {
       this.addCompanyVaultToGeneralSettings(generalSettings, context.companyVault)
     }
