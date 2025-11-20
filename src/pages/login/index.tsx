@@ -9,6 +9,7 @@ import { saveAuthData } from '@/utils/auth'
 import { hashPassword } from '@/utils/auth'
 import apiClient from '@/api/client'
 import { showMessage } from '@/utils/messages'
+import { apiConnectionService } from '@/services/apiConnectionService'
 import { useTheme } from '@/context/ThemeContext'
 import VersionSelector from '@/components/common/VersionSelector'
 import EndpointSelector from '@/components/common/EndpointSelector'
@@ -157,8 +158,7 @@ const LoginPage: React.FC = () => {
       if (registerParam === 'quick') {
         // Check if we're in CI/TEST mode
         try {
-          const response = await (apiClient as any).client.get('/health')
-          const ciMode = response.data?.ciMode === true
+          const ciMode = await apiConnectionService.isCiMode()
 
           if (ciMode) {
             // Generate random registration data for quick registration
