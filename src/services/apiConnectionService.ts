@@ -60,6 +60,21 @@ class ApiConnectionService {
   }
 
   /**
+   * Check if CI/Test mode is enabled
+   * Used to bypass CAPTCHA and email verification during testing
+   */
+  async isCiMode(): Promise<boolean> {
+    try {
+      const apiUrl = await this.getApiUrl()
+      const response = await axios.get(`${apiUrl}/Health`, { timeout: 3000 })
+      return response.data?.ciMode === true
+    } catch (error) {
+      console.debug('Could not fetch CI mode status:', error)
+      return false
+    }
+  }
+
+  /**
    * Perform initial connection test and select appropriate endpoint
    * This is called once at application startup
    */

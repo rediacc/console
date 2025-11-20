@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next'
 import { showMessage } from '@/utils/messages'
 import { hashPassword } from '@/utils/auth'
 import apiClient from '@/api/client'
+import { apiConnectionService } from '@/services/apiConnectionService'
 import { Turnstile } from '@/components/common/Turnstile'
 import { LanguageLink } from '@/components/common/LanguageLink'
 import {
@@ -88,15 +89,9 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   // Check if CI mode is enabled (for testing/e2e)
   React.useEffect(() => {
     const checkCiMode = async () => {
-      try {
-        const axiosClient = (apiClient as any).client
-        const response = await axiosClient.get('/health')
-        if (response.data?.ciMode === true) {
-          setCiMode(true)
-        }
-      } catch (error) {
-        // Silently fail - assume CI mode is off
-        console.debug('Could not fetch health status:', error)
+      const isCI = await apiConnectionService.isCiMode()
+      if (isCI) {
+        setCiMode(true)
       }
     }
     checkCiMode()
