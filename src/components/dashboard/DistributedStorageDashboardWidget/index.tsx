@@ -10,6 +10,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { useTheme as useStyledTheme } from 'styled-components'
 import { DistributedStorageDashboardWidgetProps } from './types'
+import type { DistributedStorageTeamBreakdown } from '@/api/queries/dashboard'
 import {
   WidgetCard,
   HeaderContent,
@@ -192,7 +193,7 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
               data-testid="ds-widget-team-list"
               size="small"
               dataSource={stats.team_breakdown}
-              renderItem={(team) => {
+              renderItem={(team: DistributedStorageTeamBreakdown) => {
                 const teamKey = team.TeamName.toLowerCase().replace(/\s+/g, '-')
                 return (
                   <TeamListItem

@@ -1,5 +1,6 @@
 import React from 'react'
 import { Upload, Button, Space, Tooltip } from 'antd'
+import type { UploadFile } from 'antd/es/upload/interface'
 import {
   UploadOutlined,
   DownloadOutlined,
@@ -18,22 +19,32 @@ export const ImportExportControls: React.FC<ImportExportControlsProps> = ({
   exportLabel,
   onImport,
   onExport,
-}) => (
-  <ImportExportRow>
-    <Space>
-      <Upload accept=".json" showUploadList={false} beforeUpload={onImport}>
-        <Tooltip title={importLabel}>
-          <Button size="small" icon={<UploadOutlined />} aria-label={importLabel} />
+}) => {
+  const handleBeforeUpload = (file: UploadFile) => {
+    const actualFile = (file as UploadFile<File>).originFileObj
+    if (actualFile) {
+      return onImport(actualFile)
+    }
+    return false
+  }
+
+  return (
+    <ImportExportRow>
+      <Space>
+        <Upload accept=".json" showUploadList={false} beforeUpload={handleBeforeUpload}>
+          <Tooltip title={importLabel}>
+            <Button size="small" icon={<UploadOutlined />} aria-label={importLabel} />
+          </Tooltip>
+        </Upload>
+        <Tooltip title={exportLabel}>
+          <Button
+            size="small"
+            icon={<DownloadOutlined />}
+            onClick={onExport}
+            aria-label={exportLabel}
+          />
         </Tooltip>
-      </Upload>
-      <Tooltip title={exportLabel}>
-        <Button
-          size="small"
-          icon={<DownloadOutlined />}
-          onClick={onExport}
-          aria-label={exportLabel}
-        />
-      </Tooltip>
-    </Space>
-  </ImportExportRow>
-)
+      </Space>
+    </ImportExportRow>
+  )
+}
