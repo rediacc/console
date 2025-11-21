@@ -13,7 +13,6 @@ import {
   type CloneMachine,
 } from '@/api/queries/distributedStorage'
 import { MachineExclusivityWarning } from '@/components/distributedStorage/MachineExclusivityWarning'
-import { showMessage } from '@/utils/messages'
 import { PlusOutlined } from '@/utils/optimizedIcons'
 import { buildCloneMachineColumns } from './columns'
 import {
@@ -113,7 +112,6 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
         machineNames: selectedNewMachines.join(','),
       })
 
-      showMessage('success', t('distributedStorage:clones.machinesAssignedSuccess'))
       setAddModalOpen(false)
       refetchMachines()
     } catch {
@@ -155,7 +153,6 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
             machineNames: selectedMachines.join(','),
           })
 
-          showMessage('success', t('distributedStorage:clones.machinesRemovedSuccess'))
           setSelectedMachines([])
           refetchMachines()
         } catch {
