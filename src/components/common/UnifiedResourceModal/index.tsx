@@ -1,7 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { Modal, Space, Typography, Upload, message } from 'antd'
-import type { UploadFile } from 'antd/es/upload/interface'
-
 // message.error is imported from antd
 import { AppstoreOutlined } from '@/utils/optimizedIcons'
 import { useForm, type Resolver } from 'react-hook-form'
@@ -9,7 +7,12 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
-import ResourceFormWithVault, { type FormFieldConfig, type ResourceFormWithVaultRef } from '@/components/forms/ResourceFormWithVault'
+import ResourceFormWithVault from '@/components/forms/ResourceFormWithVault'
+import type {
+  FormFieldConfig,
+  ImportExportHandlers,
+  ResourceFormWithVaultRef,
+} from '@/components/forms/ResourceFormWithVault'
 import VaultEditorModal from '@/components/common/VaultEditorModal'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 import TemplateSelector from '@/components/common/TemplateSelector'
@@ -84,11 +87,6 @@ type FunctionSubmitPayload = {
   priority: number
   description: string
   selectedMachine?: string
-}
-
-type ImportExportHandlers = {
-  handleImport: (file: UploadFile) => boolean
-  handleExport: () => void
 }
 
 type ClusterOption = { clusterName: string }
@@ -1179,10 +1177,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           hideImportExport={true}
           isEditMode={mode === 'edit'}
           onImportExportRef={(handlers) => {
-            importExportHandlers.current = {
-              handleImport: (file) => handlers.handleImport(file),
-              handleExport: handlers.handleExport,
-            }
+            importExportHandlers.current = handlers
           }}
           teamName={form.getValues('teamName') || (existingData?.teamName) || (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) || 'Private Team'}
           bridgeName={form.getValues('bridgeName') || 'Global Bridges'}

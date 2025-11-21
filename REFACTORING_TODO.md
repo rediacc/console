@@ -27,6 +27,26 @@
 - **Before**: 400+ lines with embedded table columns
 - **After**: Extracted table columns to data.tsx (173 lines)
 
+### SnapshotList (Nov 2025 - CLI Refactor)
+- **Before**: 340+ line flat file with inline table toolbar/container styles
+- **After**: SnapshotList/index.tsx, styles.ts, and columns.ts with theme-driven buttons, extracted menu definitions, and zero inline styles
+
+### ✅ CloneMachineManager (Dec 2025 - CLI Refactor)
+- **Before**: 438-line flat file with inline `style` props, embedded columns, and CSV/export logic mixed into the view
+- **After**: CloneMachineManager/index.tsx + styles.ts + columns.ts with dedicated components for the header stats, action toolbar, and assign-machines modal, plus fully themed styled-components
+
+### ✅ ClusterTable (Dec 2025 - CLI Refactor)
+- **Before**: 400+ lines with chevron rotation, hover states, and machine badges controlled via inline styles
+- **After**: ClusterTable/index.tsx backed by styles.ts, columns.ts, menus.ts, and components/ for MachineCountBadge + ClusterMachines so expandable rows, menus, and actions stay modular
+
+### ✅ PoolTable (Dec 2025 - CLI Refactor)
+- **Before**: 293-line monolith with inline card/table styling and duplicated dropdown definitions
+- **After**: PoolTable/index.tsx with styles.ts, columns.ts, menus.ts, and a ClusterPoolsCard subcomponent that renders themed cluster cards and tables without inline CSS
+
+### ✅ ResourceFormWithVault (Dec 2025 - CLI Refactor)
+- **Before**: 470+ line form with field rendering, import/export controls, and defaults banner defined inline alongside business logic
+- **After**: ResourceFormWithVault/index.tsx orchestrates helpers in components/ + types.ts while styles.ts exposes full-width selects, size inputs, and import/export rows for a purely styled-components implementation
+
 ---
 
 ## Remaining Components
@@ -137,17 +157,7 @@
 
 ## Priority 2: Medium Violation Count
 
-### 6. ResourceFormWithVault (472 lines)
-**Location:** `src/components/forms/ResourceFormWithVault.tsx`
-
-**Violations:**
-- ❌ **2 hex colors**
-- ❌ **12 inline styles**
-- ❌ No `styles.ts` file
-
----
-
-### 7. AuditPage (470 lines)
+### 6. AuditPage (470 lines)
 **Location:** `src/pages/audit/AuditPage.tsx`
 
 **Violations:**
@@ -161,7 +171,7 @@
 
 ---
 
-### 8. CloneList (445 lines)
+### 7. CloneList (445 lines)
 **Location:** `src/pages/distributedStorage/components/CloneList.tsx`
 
 **Violations:**
@@ -169,54 +179,30 @@
 - ❌ **9 inline styles**
 - ❌ No `styles.ts` file
 
----
-
-### 9. CloneMachineManager (438 lines)
-**Location:** `src/pages/distributedStorage/components/CloneMachineManager.tsx`
-
-**Violations:**
-- ❌ **10 inline styles**
-- ❌ No `styles.ts` file
+**Required Actions:**
+1. Create a `CloneList/` folder with `index.tsx`, `styles.ts`, and move `CloneMachineList`/`MachineCountBadge` into a `components/` subfolder
+2. Define styled containers for the empty state, machines section, action toolbar, and table wrapper to eliminate inline padding/margin/width styles
+3. Replace the `#4a4a4a`, `#d9d9d9`, and `#fafafa` literals with semantic theme tokens declared in `styles.ts`
+4. Extract the table column configuration and dropdown menu definitions into dedicated modules so `index.tsx` only handles data flow
 
 ---
 
-### 10. ClusterTable (408 lines)
-**Location:** `src/pages/distributedStorage/components/ClusterTable.tsx`
-
-**Violations:**
-- ❌ **11 inline styles**
-- ❌ No `styles.ts` file
-
----
-
-### 11. UserSessionsTab (372 lines)
+### 8. UserSessionsTab (372 lines)
 **Location:** `src/components/system/UserSessionsTab.tsx`
 
 **Violations:**
 - ❌ **14 inline styles**
 - ❌ No `styles.ts` file
 
----
-
-### 12. SnapshotList (341 lines)
-**Location:** `src/pages/distributedStorage/components/SnapshotList.tsx`
-
-**Violations:**
-- ❌ **6 inline styles**
-- ❌ No `styles.ts` file
+**Required Actions:**
+1. Adopt the folder structure (`UserSessionsTab/index.tsx`, `styles.ts`) so layout styles sit next to the component
+2. Replace the inline styles on summary cards, buttons, inputs, tags, and pagination text with styled components wired to the theme tokens
+3. Create styled tag variants for "current session", "fork", child-count, and status badges instead of passing raw `color` props and inline radius rules
+4. Extract the large table `columns` definition (and perhaps the summary-stat grid) into separate modules to shrink `index.tsx`
 
 ---
 
-### 13. PoolTable (293 lines)
-**Location:** `src/pages/distributedStorage/components/PoolTable.tsx`
-
-**Violations:**
-- ❌ **7 inline styles**
-- ❌ No `styles.ts` file
-
----
-
-### 14. DistributedStorageDashboardWidget (270 lines)
+### 9. DistributedStorageDashboardWidget (270 lines)
 **Location:** `src/components/dashboard/DistributedStorageDashboardWidget.tsx`
 
 **Violations:**
@@ -224,33 +210,57 @@
 - ❌ **12 inline styles**
 - ❌ No `styles.ts` file
 
+**Required Actions:**
+1. Restructure the widget into `DistributedStorageDashboardWidget/index.tsx` with a companion `styles.ts` (and subcomponents for assignment cards, summaries, and team list rows)
+2. Replace every inline style block (card borders, padding, typography, list item boxes) with styled components that read theme spacing and color tokens
+3. Swap the hard-coded `#fa8c16` clone color for a semantic token defined once inside `styles.ts`
+4. Extract repeated fragments (`AssignmentCard`, `SummaryPanel`, `TeamBreakdownItem`) into their own files to keep `index.tsx` lean
+
 ---
 
-### 15. VirtualFilterableMachineTable (231 lines)
+### 10. VirtualFilterableMachineTable (231 lines)
 **Location:** `src/features/distributed-storage/components/performance/VirtualFilterableMachineTable.tsx`
 
 **Violations:**
 - ❌ **12 inline styles**
 - ❌ No `styles.ts` file
 
+**Required Actions:**
+1. Create the folder structure and add `styles.ts` so the container, toolbar, and status bar styling is centralized
+2. Move inline styles for the wrapping `Space`, filter `Input`/`Select` widths, badge padding, and status copy into styled components that consume spacing tokens
+3. Extract a `FilterControls` subcomponent (with `FilterOption` helpers) so `index.tsx` only handles filtering logic and virtualization props
+4. Hoist the footer ("Showing X of Y machines") into a styled `StatusBar` component that can surface the "load more" hint without inline CSS
+
 ---
 
-### 16. ResourceForm (174 lines)
+### 11. ResourceForm (174 lines)
 **Location:** `src/components/forms/ResourceForm.tsx`
 
 **Violations:**
 - ❌ **3 inline styles**
 - ❌ No `styles.ts` file
 
+**Required Actions:**
+1. Split the component into `ResourceForm/index.tsx`, `styles.ts`, and optional `types.ts` so the generic form definition is modular
+2. Create styled components for the form wrapper, full-width selects, and button row to eliminate the inline styles on `Select`, `Form.Item`, and `Space`
+3. Replace the `spacing('PAGE_CONTAINER')` usage with theme spacing tokens defined in `styles.ts`
+4. Extract reusable field renderers (text/password/select) into helpers shared with `ResourceFormWithVault` to keep styling consistent
+
 ---
 
-### 17. MachineAvailabilitySummary (166 lines)
+### 12. MachineAvailabilitySummary (166 lines)
 **Location:** `src/pages/distributedStorage/components/MachineAvailabilitySummary.tsx`
 
 **Violations:**
 - ❌ **5 hex colors**
 - ❌ **13 inline styles**
 - ❌ No `styles.ts` file
+
+**Required Actions:**
+1. Add the folder structure with `MachineAvailabilitySummary/index.tsx`, `styles.ts`, and a small `types.ts` for the stats model
+2. Move all inline styles on the cards, statistics, loading placeholder, and refresh icon into styled components (`SummaryGrid`, `SummaryCard`, `RefreshButton`)
+3. Replace the hard-coded hex colors (#1890ff, #52c41a, #fa8c16, #722ed1, #666) with semantic theme tokens managed in `styles.ts`
+4. Create styled wrappers for the loading state and percentage suffix so typography no longer embeds inline CSS
 
 ---
 
@@ -320,20 +330,20 @@ export const Container = styled.div`
 
 ## Summary Statistics
 
-- **Completed:** 3 components (PR #163)
-- **Remaining:** 17 components
-- **Total lines remaining:** ~7,900 lines
-- **Total hex colors:** 72+
-- **Total inline styles:** 336+
+- **Completed:** 7 components (PR #163 + Dec 2025 CLI refactors)
+- **Remaining:** 12 components
+- **Total lines remaining:** ~6,300 lines
+- **Total hex colors:** ~70
+- **Total inline styles:** ~300
 
 ### By Category
 - **Components:** 10 files
-- **Pages:** 6 files
+- **Pages:** 1 file
 - **Features:** 1 file
 
 ### By Priority
 - **Priority 1 (Critical):** 5 files (2,700+ lines)
-- **Priority 2 (Medium):** 12 files (4,200+ lines)
+- **Priority 2 (Medium):** 7 files (3,600+ lines)
 
 ---
 
