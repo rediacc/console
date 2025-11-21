@@ -264,6 +264,12 @@ class FeatureFlags {
       description: 'Configure Vault button in Personal Settings section'
     },
 
+    // Company Settings - Power mode feature
+    companySettings: {
+      requiresPowerMode: true,
+      description: 'Company Settings menu item in Settings navigation'
+    },
+
     // Example: Future feature that's disabled for everyone
     // newFeatureX: {
     //   enabled: false,

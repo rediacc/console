@@ -64,6 +64,7 @@ export const getMenuItems = (t: TFunction): MenuConfig[] => [
         key: '/settings/company',
         label: t('navigation.settingsCompany'),
         showInSimple: false,
+        featureFlag: 'companySettings',
         'data-testid': 'sub-nav-settings-company',
       },
       {
