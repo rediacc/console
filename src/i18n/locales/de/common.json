@@ -13,6 +13,8 @@
     "editResource": "Bearbeiten Sie {{ressource}}",
     "editVault": "Tresor bearbeiten",
     "exitFullscreen": "Beenden Sie den Vollbildmodus",
+    "export": "Exportieren",
+    "exportSuccess": "Ausfuhr erfolgreich",
     "fullscreen": "Vollbild",
     "manage": "Verwalten",
     "refresh": "Aktualisieren",

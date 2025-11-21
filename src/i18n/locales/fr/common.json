@@ -13,6 +13,8 @@
     "editResource": "Modifier {{ressource}}",
     "editVault": "Modifier le coffre-fort",
     "exitFullscreen": "Quitter le plein écran",
+    "export": "Exportation",
+    "exportSuccess": "Exportation réussie",
     "fullscreen": "Plein écran",
     "manage": "Gérer",
     "refresh": "Rafraîchir",

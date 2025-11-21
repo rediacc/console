@@ -13,6 +13,8 @@
     "editResource": "Editar {{recurso}}",
     "editVault": "Editar bóveda",
     "exitFullscreen": "Salir de pantalla completa",
+    "export": "Exportar",
+    "exportSuccess": "Exportar con éxito",
     "fullscreen": "Pantalla completa",
     "manage": "Administrar",
     "refresh": "Refrescar",
