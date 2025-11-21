@@ -1,0 +1,17 @@
+import React from 'react'
+import type { ReactNode } from 'react'
+import { DefaultsWrapper, DefaultsAlert } from '../styles'
+
+interface DefaultsBannerProps {
+  title: string
+  content: ReactNode
+}
+
+export const DefaultsBanner: React.FC<DefaultsBannerProps> = ({
+  title,
+  content,
+}) => (
+  <DefaultsWrapper>
+    <DefaultsAlert message={title} description={content} type="info" showIcon />
+  </DefaultsWrapper>
+)
