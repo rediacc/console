@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Space, Typography, DatePicker, Select, Button, Table, Tag, Input, Row, Col, Empty, Dropdown, message, Alert, Tooltip, theme } from 'antd';
+import { Space, Typography, DatePicker, Select, Table, Tag, Input, Row, Col, Empty, Dropdown, message, Alert, Tooltip, theme } from 'antd';
 import {
   FilterOutlined,
   ReloadOutlined,
@@ -26,6 +26,7 @@ import {
   PlaceholderLabel,
   ActionButtonFull,
   CompactButton,
+  LinkButton,
   TableCard,
 } from './styles';
 import type { ColumnsType } from 'antd/es/table';
@@ -445,8 +446,7 @@ const AuditPage = () => {
                       }
                     </Text>
                     {!isError && (
-                      <Button
-                        type="link"
+                      <LinkButton
                         onClick={() => {
                           setSearchText('');
                           setEntityFilter(undefined);
@@ -454,7 +454,7 @@ const AuditPage = () => {
                         }}
                       >
                         {t('system:audit.empty.clearFilters')}
-                      </Button>
+                      </LinkButton>
                     )}
                   </Space>
                 }

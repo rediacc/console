@@ -165,9 +165,8 @@ class FeatureFlags {
       description: 'Assign machines to distributed storage clusters'
     },
 
-    // Architecture - Beta feature
+    // Architecture - Expert mode feature
     architecture: {
-      requiresLocalhost: true,  // Hide in production builds
       requiresExpertMode: true,
       description: 'System architecture visualization and dependency management'
     },
@@ -198,14 +197,12 @@ class FeatureFlags {
 
     // Queue Management - Expert mode feature
     queueManagement: {
-      requiresLocalhost: true,
       requiresExpertMode: true,
       description: 'Queue page for viewing and managing task queues'
     },
 
     // Audit Logs - Expert mode feature
     auditLogs: {
-      requiresLocalhost: true,
       requiresExpertMode: true,
       description: 'Audit logs page for viewing system activity and changes'
     },
