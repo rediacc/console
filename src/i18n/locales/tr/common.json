@@ -13,6 +13,8 @@
     "editResource": "Düzenle {{resource}}",
     "editVault": "Kasayı Düzenle",
     "exitFullscreen": "Tam Ekrandan Çık",
+    "export": "İhracat",
+    "exportSuccess": "İhracat başarılı",
     "fullscreen": "Tam Ekran",
     "manage": "Yönetmek",
     "refresh": "Yenile",
