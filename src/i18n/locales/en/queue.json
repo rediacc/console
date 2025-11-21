@@ -1,6 +1,11 @@
 {
   "dateRange": "Date Range",
-  "filters": "Filters",
+  "filters": {
+    "title": "Filters",
+    "onlyStale": "Only Stale Items",
+    "dateFrom": "From",
+    "dateTo": "To"
+  },
   "includeCancelled": "Include Cancelled",
   "includeCompleted": "Include Completed",
   "machine": "Machine",
@@ -20,7 +25,6 @@
     "stoppedMonitoring": "Stopped monitoring queue task {{taskId}}",
     "taskNotFound": "Queue task {{taskId}} no longer exists"
   },
-  "onlyStale": "Only Stale Items",
   "options": "Options",
   "priorityTooltipP1": "Timeout: 33 seconds (quick tasks only)",
   "priorityTooltipTier": "Timeout: 2-96 hours (depends on subscription tier)",

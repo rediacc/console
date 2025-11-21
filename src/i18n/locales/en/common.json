@@ -24,7 +24,9 @@
     "save": "Save",
     "search": "Search",
     "trace": "Trace",
-    "viewTrace": "View Trace"
+    "viewTrace": "View Trace",
+    "export": "Export",
+    "exportSuccess": "Export successful"
   },
   "viewDetails": "View Details",
   "close": "Close",

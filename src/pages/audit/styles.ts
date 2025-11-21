@@ -43,6 +43,11 @@ export const CompactButton = styled(Button)`
   min-height: ${({ theme }) => theme.spacing['5']}px;
 `
 
+export const LinkButton = styled(Button).attrs({ type: 'link' })`
+  padding: 0;
+  height: auto;
+`
+
 export const TableCard = styled(Card).attrs({ className: 'page-card' })``
 
 export const TableHeader = styled.div`

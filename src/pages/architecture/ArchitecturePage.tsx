@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Spin, Alert, Space, Typography, Radio, Button, Tooltip, Statistic, Row, Col, Select } from 'antd'
+import { Spin, Alert, Space, Typography, Radio, Tooltip, Statistic, Row, Col, Select } from 'antd'
 import { 
   FullscreenOutlined, 
   FullscreenExitOutlined, 
@@ -667,7 +667,7 @@ const ArchitecturePage: React.FC = () => {
           showIcon
           action={
             <Tooltip title={t('actions.retry', { ns: 'common' })}>
-              <Button
+              <CompactIconButton
                 size="small"
                 icon={<ReloadOutlined />}
                 onClick={() => refetch()}
