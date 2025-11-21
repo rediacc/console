@@ -1,7 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { Modal, Space, Typography, Upload, message } from 'antd'
-import type { UploadFile } from 'antd/es/upload/interface'
-
 // message.error is imported from antd
 import { AppstoreOutlined } from '@/utils/optimizedIcons'
 import { useForm, type Resolver } from 'react-hook-form'
@@ -1033,10 +1031,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                       showUploadList={false}
                       beforeUpload={(file) => {
                         if (importExportHandlers.current) {
-                          const actualFile = (file as UploadFile<File>).originFileObj
-                          if (actualFile) {
-                            return importExportHandlers.current.handleImport(actualFile)
-                          }
+                          return importExportHandlers.current.handleImport(file)
                         }
                         return false
                       }}

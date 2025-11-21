@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import type { UseFormReturn, RegisterOptions } from 'react-hook-form'
+import type { UseFormReturn, ControllerProps, FieldValues } from 'react-hook-form'
+import type { UploadFile } from 'antd/es/upload/interface'
 
 export interface ResourceFormWithVaultRef {
   submit: () => Promise<void>
@@ -21,7 +22,7 @@ export interface FormFieldConfig {
   placeholder?: string
   required?: boolean
   options?: FormFieldOption[]
-  rules?: RegisterOptions
+  rules?: ControllerProps<FieldValues>['rules']
   hidden?: boolean
   disabled?: boolean
   readOnly?: boolean
@@ -30,7 +31,7 @@ export interface FormFieldConfig {
 }
 
 export interface ImportExportHandlers {
-  handleImport: (file: File) => boolean
+  handleImport: (file: UploadFile) => boolean
   handleExport: () => void
 }
 

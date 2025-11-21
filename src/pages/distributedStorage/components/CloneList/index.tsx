@@ -337,7 +337,8 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
           vaultContent: modalState.data?.vaultContent || modalState.data?.cloneVault,
         }}
         teamFilter={pool.teamName}
-        onSubmit={async (data: CloneFormValues) => {
+        onSubmit={async (formValues) => {
+          const data = formValues as CloneFormValues
           if (modalState.mode === 'create') {
             await createCloneMutation.mutateAsync({
               snapshotName: snapshot.snapshotName,

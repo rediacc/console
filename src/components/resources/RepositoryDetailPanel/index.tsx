@@ -254,7 +254,7 @@ export const RepositoryDetailPanel: React.FC<RepositoryDetailPanelProps> = ({
         ) : (
           <>
             <RepositoryInfoSection repository={repository} panelData={repositoryData} t={t} />
-            <ExternalVolumeWarning repository={repository} panelData={repositoryData} />
+            <ExternalVolumeWarning repository={repository} panelData={repositoryData} t={t} />
             <StorageSection repository={repository} panelData={repositoryData} t={t} />
             <FilePathsSection repository={repository} panelData={repositoryData} t={t} />
             {repositoryData.repositoryData.mounted && (

@@ -6,6 +6,7 @@ import {
   forwardRef,
 } from 'react'
 import { message, Form, Row, Col } from 'antd'
+import type { UploadFile } from 'antd/es/upload/interface'
 import { useTranslation } from 'react-i18next'
 import { useTheme as useStyledTheme } from 'styled-components'
 import VaultEditor from '@/components/common/VaultEditor'
@@ -98,7 +99,7 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
       setIsVaultValid(valid)
     }
 
-    const handleImport = (file: File) => {
+    const handleImport = (file: UploadFile) => {
       if (importExportHandlers.current) {
         return importExportHandlers.current.handleImport(file)
       }

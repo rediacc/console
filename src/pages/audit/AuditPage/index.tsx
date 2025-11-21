@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { ElementType } from 'react';
-import { Space, Typography, DatePicker, Select, Table, Tag, Input, Row, Col, Empty, Dropdown, message, Alert, Tooltip } from 'antd';
+import { Space, Typography, DatePicker, Select, Table, Input, Row, Col, Empty, Dropdown, message, Alert, Tooltip } from 'antd';
 import {
   ReloadOutlined,
   SearchOutlined,
@@ -28,7 +28,6 @@ import {
   CompactButton,
   LinkButton,
   TableCard,
-  DescriptionText,
   ActionIcon,
 } from './styles';
 import { buildAuditColumns } from './columns';

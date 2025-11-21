@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Row, Col, Progress } from 'antd'
+import type { ListProps } from 'antd'
 import {
   DoubleRightOutlined,
   DesktopOutlined,
@@ -309,10 +310,10 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                 </>
               )}
 
-              {vaultData.network && <NetworkSection network={vaultData.network} t={t} />}
+              {vaultData.network && (<NetworkSection network={vaultData.network as VaultNetwork} t={t} />)}
 
               {vaultData.block_devices && vaultData.block_devices.length > 0 && (
-                <BlockDevicesSection devices={vaultData.block_devices} t={t} />
+                <BlockDevicesSection devices={vaultData.block_devices as BlockDevice[]} t={t} />
               )}
 
               {vaultData.system_containers && vaultData.system_containers.length > 0 && (
@@ -532,7 +533,9 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
       <StyledList
         dataSource={interfaces}
         data-testid="vault-status-network-list"
-        renderItem={(iface) => (
+        renderItem={((
+          iface: NetworkInterface,
+        ) => (
           <ListCard size="small" data-testid={`vault-status-network-${iface.name}`}>
             <CardHeader>
               <HeaderTitleGroup>
@@ -555,7 +558,7 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
                 <div>
                   <FieldLabel>{t('resources:repositories.ipAddresses')}:</FieldLabel>
                   <CardTagGroup>
-                    {iface.ipv4_addresses.map((ip) => (
+                    {iface.ipv4_addresses.map((ip: string) => (
                       <AddressTag key={ip} data-testid={`vault-status-ip-${ip}`}>
                         {ip}
                       </AddressTag>
@@ -577,7 +580,7 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
               )}
             </CardBodyStack>
           </ListCard>
-        )}
+        )) as ListProps<unknown>['renderItem']}
       />
     </SectionBlock>
   )
@@ -599,7 +602,7 @@ const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t })
     <StyledList
       dataSource={devices}
       data-testid="vault-status-block-devices-list"
-      renderItem={(device) => (
+      renderItem={((device: BlockDevice) => (
         <ListCard size="small" data-testid={`vault-status-block-device-${device.name}`}>
           <CardHeader>
             <HeaderTitleGroup>
@@ -630,7 +633,7 @@ const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t })
               <div>
                 <FieldLabel>{t('resources:repositories.partitions')}:</FieldLabel>
                 <IndentedBlock>
-                  {device.partitions.map((part) => (
+                  {device.partitions.map((part: BlockDevicePartition) => (
                     <PartitionRow key={`${device.name}-${part.name}`}>
                       <CodeOutlined />
                       <SecondaryText as="span">
@@ -645,7 +648,7 @@ const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t })
             )}
           </CardBodyStack>
         </ListCard>
-      )}
+      )) as ListProps<unknown>['renderItem']}
     />
   </SectionBlock>
 )
@@ -666,7 +669,7 @@ const SystemContainersSection: React.FC<SystemContainersSectionProps> = ({ conta
     <StyledList
       dataSource={containers}
       data-testid="vault-status-containers-list"
-      renderItem={(container) => (
+      renderItem={((container: Container) => (
         <ListCard size="small" data-testid={`vault-status-container-${container.id}`}>
           <CardHeader>
             <HeaderTitleGroup>
@@ -703,7 +706,7 @@ const SystemContainersSection: React.FC<SystemContainersSectionProps> = ({ conta
             )}
           </CardBodyStack>
         </ListCard>
-      )}
+      )) as ListProps<unknown>['renderItem']}
     />
   </SectionBlock>
 )

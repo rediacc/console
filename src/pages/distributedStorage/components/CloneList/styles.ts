@@ -170,7 +170,7 @@ export const EmptyState = styled.div`
 
 export const AssignButton = styled(Button)`
   && {
-    min-width: ${({ theme }) => theme.spacing['7']}px;
+    min-width: ${({ theme }) => theme.spacing['6']}px;
   }
 `
 

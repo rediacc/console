@@ -1,5 +1,5 @@
 import { Input } from 'antd'
-import { Controller, Control } from 'react-hook-form'
+import { Controller, Control, type ControllerProps } from 'react-hook-form'
 import type { FormFieldConfig } from '../types'
 import {
   SizeInputGroup,
@@ -23,7 +23,7 @@ export const FieldRenderer = <T extends Record<string, any>>({
         <Controller
           name={field.name as any}
           control={control}
-          rules={field.rules}
+          rules={field.rules as ControllerProps<T>['rules']}
           render={({ field: controllerField }) => (
             <FullWidthSelect
               {...controllerField}
@@ -43,7 +43,7 @@ export const FieldRenderer = <T extends Record<string, any>>({
         <Controller
           name={field.name as any}
           control={control}
-          rules={field.rules}
+          rules={field.rules as ControllerProps<T>['rules']}
           render={({ field: controllerField }) => (
             <Input.Password
               {...controllerField}
@@ -61,9 +61,15 @@ export const FieldRenderer = <T extends Record<string, any>>({
         <Controller
           name={field.name as any}
           control={control}
-          rules={field.rules}
+          rules={field.rules as ControllerProps<T>['rules']}
           render={({ field: controllerField }) => {
-            const currentValue = controllerField.value || ''
+            const rawValue = controllerField.value
+            const currentValue =
+              typeof rawValue === 'string'
+                ? rawValue
+                : rawValue !== undefined && rawValue !== null
+                ? String(rawValue)
+                : ''
             let parsedValue: number | undefined
             let parsedUnit = defaultUnit
 
@@ -149,7 +155,7 @@ export const FieldRenderer = <T extends Record<string, any>>({
         <Controller
           name={field.name as any}
           control={control}
-          rules={field.rules}
+          rules={field.rules as ControllerProps<T>['rules']}
           render={({ field: controllerField }) => (
             <Input
               {...controllerField}

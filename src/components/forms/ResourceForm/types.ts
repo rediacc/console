@@ -1,4 +1,4 @@
-import { FieldValues, UseFormReturn, RegisterOptions } from 'react-hook-form'
+import { FieldValues, UseFormReturn, type ControllerProps } from 'react-hook-form'
 
 export interface FormFieldConfig {
   name: string
@@ -7,7 +7,7 @@ export interface FormFieldConfig {
   placeholder?: string
   required?: boolean
   options?: Array<{ value: string; label: string }>
-  rules?: RegisterOptions
+  rules?: ControllerProps<FieldValues>['rules']
   hidden?: boolean
   disabled?: boolean
 }

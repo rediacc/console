@@ -137,7 +137,7 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
           <AssignmentSelect
             data-testid="filterable-machine-filter-assignment"
             value={assignmentFilter}
-            onChange={setAssignmentFilter}
+            onChange={(value) => setAssignmentFilter(value as MachineAssignmentType | 'ALL')}
             placeholder="Filter by assignment"
           >
             <Option value="ALL" data-testid="filterable-machine-filter-option-all">
@@ -170,7 +170,7 @@ export const VirtualFilterableMachineTable: React.FC<VirtualFilterableMachineTab
           <PageSizeSelect
             data-testid="filterable-machine-page-size"
             value={pageSize}
-            onChange={setPageSize}
+            onChange={(value) => setPageSize(Number(value))}
           >
             <Option value={50} data-testid="filterable-machine-page-size-50">
               50 per batch
