@@ -12,6 +12,7 @@ import { RootState } from '@/store/store'
 import ResourceFormWithVault from '@/components/forms/ResourceFormWithVault'
 import type {
   FormFieldConfig,
+  ImportExportHandlers,
   ResourceFormWithVaultRef,
 } from '@/components/forms/ResourceFormWithVault'
 import VaultEditorModal from '@/components/common/VaultEditorModal'
@@ -88,11 +89,6 @@ type FunctionSubmitPayload = {
   priority: number
   description: string
   selectedMachine?: string
-}
-
-type ImportExportHandlers = {
-  handleImport: (file: UploadFile) => boolean
-  handleExport: () => void
 }
 
 type ClusterOption = { clusterName: string }
@@ -1037,7 +1033,10 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                       showUploadList={false}
                       beforeUpload={(file) => {
                         if (importExportHandlers.current) {
-                          return importExportHandlers.current.handleImport(file)
+                          const actualFile = (file as UploadFile<File>).originFileObj
+                          if (actualFile) {
+                            return importExportHandlers.current.handleImport(actualFile)
+                          }
                         }
                         return false
                       }}
@@ -1183,10 +1182,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           hideImportExport={true}
           isEditMode={mode === 'edit'}
           onImportExportRef={(handlers) => {
-            importExportHandlers.current = {
-              handleImport: (file) => handlers.handleImport(file),
-              handleExport: handlers.handleExport,
-            }
+            importExportHandlers.current = handlers
           }}
           teamName={form.getValues('teamName') || (existingData?.teamName) || (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) || 'Private Team'}
           bridgeName={form.getValues('bridgeName') || 'Global Bridges'}

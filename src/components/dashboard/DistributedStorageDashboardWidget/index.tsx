@@ -193,7 +193,8 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
               data-testid="ds-widget-team-list"
               size="small"
               dataSource={stats.team_breakdown}
-              renderItem={(team: DistributedStorageTeamBreakdown) => {
+              renderItem={(item) => {
+                const team = item as DistributedStorageTeamBreakdown
                 const teamKey = team.TeamName.toLowerCase().replace(/\s+/g, '-')
                 return (
                   <TeamListItem

@@ -1,4 +1,3 @@
-import React from 'react'
 import { Input } from 'antd'
 import { Controller, Control } from 'react-hook-form'
 import type { FormFieldConfig } from '../types'
@@ -62,6 +61,7 @@ export const FieldRenderer = <T extends Record<string, any>>({
         <Controller
           name={field.name as any}
           control={control}
+          rules={field.rules}
           render={({ field: controllerField }) => {
             const currentValue = controllerField.value || ''
             let parsedValue: number | undefined
@@ -149,6 +149,7 @@ export const FieldRenderer = <T extends Record<string, any>>({
         <Controller
           name={field.name as any}
           control={control}
+          rules={field.rules}
           render={({ field: controllerField }) => (
             <Input
               {...controllerField}

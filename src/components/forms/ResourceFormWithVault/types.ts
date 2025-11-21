@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { UseFormReturn } from 'react-hook-form'
+import type { UseFormReturn, RegisterOptions } from 'react-hook-form'
 
 export interface ResourceFormWithVaultRef {
   submit: () => Promise<void>
@@ -21,7 +21,7 @@ export interface FormFieldConfig {
   placeholder?: string
   required?: boolean
   options?: FormFieldOption[]
-  rules?: any[]
+  rules?: RegisterOptions
   hidden?: boolean
   disabled?: boolean
   readOnly?: boolean
