@@ -709,7 +709,7 @@ export const useGetMachineAssignmentStatus = (machineName: string, teamName: str
         throw new Error(response.errors?.join(', ') || 'Failed to fetch machine assignment status')
       }
       
-      return (getFirstRow<MachineAssignmentStatus>(response, 0) as MachineAssignmentStatus | null) || null
+      return getFirstRow<MachineAssignmentStatus>(response, 0) ?? null
     },
     enabled: enabled && !!machineName && !!teamName,
   })
@@ -728,7 +728,7 @@ export const useGetAvailableMachinesForClone = (teamName: string, enabled = true
         throw new Error(response.errors?.join(', ') || 'Failed to fetch available machines')
       }
       
-      return extractTableData<AvailableMachine[]>(response, 0, []) as AvailableMachine[]
+      return extractTableData<AvailableMachine[]>(response, 0, [])
     },
     enabled: enabled && !!teamName,
   })
@@ -748,7 +748,7 @@ export const useGetCloneMachineAssignmentValidation = (teamName: string, machine
         throw new Error(response.errors?.join(', ') || 'Failed to validate machine assignments')
       }
       
-      return extractTableData<MachineAssignmentValidation[]>(response, 0, []) as any
+      return extractTableData<MachineAssignmentValidation[]>(response, 0, [])
     },
     enabled: enabled && !!teamName && !!machineNames,
   })

@@ -341,6 +341,9 @@ export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true
       if (!taskId) return null
       const response = await apiClient.get('/GetQueueItemTrace', { taskId })
       
+      // Using 'as any' here because QueueItemTraceModal expects flexible types
+      // for these API response fields. Proper typing would require defining
+      // specific interfaces for each response structure.
       const queueDetails = getFirstRow<Record<string, unknown>>(response, 1) as any
       const vaultContent = getFirstRow<Record<string, unknown>>(response, 2) as any
       const responseVaultContent = getFirstRow<Record<string, unknown>>(response, 3) as any

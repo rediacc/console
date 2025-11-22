@@ -8,6 +8,7 @@ import {
   type DistributedStorageRbdSnapshot,
   type DistributedStorageRbdImage,
   type DistributedStoragePool,
+  type CloneMachine,
 } from '@/api/queries/distributedStorage'
 import {
   AssignButton,
@@ -86,7 +87,7 @@ export const CloneMachineList: React.FC<CloneMachineListProps> = ({
         </MachineListHeader>
 
         <MachineTagGrid>
-          {machines.map((machine: any) => (
+          {machines.map((machine: CloneMachine) => (
             <MachineTag
               key={machine.machineName}
               icon={<CloudServerOutlined />}

@@ -144,10 +144,9 @@ export const LazyAssignmentStatus: React.FC<LazyAssignmentStatusProps> = ({
   }
   
   // Show assignment data
-  const assignmentInfo = assignmentData as unknown as { assignmentType?: MachineAssignmentType; resourceName?: string } | null
-  const finalAssignmentType = assignmentInfo?.assignmentType || immediateStatus
+  const finalAssignmentType = (assignmentData?.assignmentType as MachineAssignmentType) || immediateStatus
   const finalResourceName =
-    assignmentInfo?.resourceName || MachineAssignmentService.getAssignmentInfo(machine).resourceName
+    assignmentData?.assignmentDetails || MachineAssignmentService.getAssignmentInfo(machine).resourceName
   
   return (
     <div ref={containerRef} data-testid="lazy-status-final-container">

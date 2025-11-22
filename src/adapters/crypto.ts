@@ -97,7 +97,12 @@ class WebCryptoProvider implements ICryptoProvider {
   }
 
   private arrayToBase64(array: Uint8Array): string {
-    return btoa(String.fromCharCode(...array))
+    let str = ''
+    const chunkSize = 8192
+    for (let i = 0; i < array.length; i += chunkSize) {
+      str += String.fromCharCode.apply(null, Array.from(array.subarray(i, i + chunkSize)))
+    }
+    return btoa(str)
   }
 
   private base64ToArray(base64: string): Uint8Array {

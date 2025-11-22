@@ -183,6 +183,7 @@ export const SimpleMachineSelector: React.FC<{
 
   return (
     <AvailableMachinesSelector
+      // AvailableMachine has subset of Machine properties needed for display
       machines={machines as unknown as Machine[]}
       value={value}
       onChange={onChange}
