@@ -7,11 +7,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
-import ResourceFormWithVault from '@/components/forms/ResourceFormWithVault'
-import type {
-  FormFieldConfig,
-  ImportExportHandlers,
-  ResourceFormWithVaultRef,
+import ResourceFormWithVault, {
+  type FormFieldConfig,
+  type ImportExportHandlers,
+  type ResourceFormWithVaultRef,
 } from '@/components/forms/ResourceFormWithVault'
 import VaultEditorModal from '@/components/common/VaultEditorModal'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
