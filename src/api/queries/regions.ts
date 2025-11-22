@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import apiClient from '@/api/client'
-import { createResourceMutation, createVaultUpdateMutation, createMutation } from '@/api/utils/mutationFactory'
-import { extractResourceData, extractTableData } from '@/api/utils/responseHelpers'
+import { createResourceMutation, createVaultUpdateMutation, createMutation } from '@/hooks/api/mutationFactory'
+import { extractResourceData, extractTableData } from '@/core/api/response'
 
 export interface Region {
   regionName: string

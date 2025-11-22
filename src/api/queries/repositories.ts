@@ -1,5 +1,6 @@
-import { createResourceQuery, dataExtractors, filters, createFieldMapper } from '@/api/utils/queryFactory'
-import { createMutation } from '@/api/utils/mutationFactory'
+import { createResourceQuery } from '@/hooks/api/queryFactory'
+import { dataExtractors, filters, createFieldMapper } from '@/core/api/response'
+import { createMutation } from '@/hooks/api/mutationFactory'
 import { minifyJSON } from '@/utils/json'
 
 export interface Repository {
@@ -19,7 +20,7 @@ export interface Repository {
 export const useRepositories = createResourceQuery<Repository>({
   endpoint: '/GetTeamRepositories',
   queryKey: 'repositories',
-  dataExtractor: dataExtractors.primaryOrSecondary,
+  dataExtractor: (response) => dataExtractors.primaryOrSecondary(response),
   filter: filters.hasName('repoName'),
   mapper: (item: any) => {
     const mapped = createFieldMapper<Repository>({

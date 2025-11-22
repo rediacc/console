@@ -83,7 +83,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
   const filteredMachines = useMemo(
     () =>
       assignedMachines.filter(
-        (machine) =>
+        (machine: CloneMachine) =>
           machine.machineName.toLowerCase().includes(searchText.toLowerCase()) ||
           machine.bridgeName.toLowerCase().includes(searchText.toLowerCase()),
       ),
@@ -167,7 +167,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
   const handleExport = () => {
     const csvContent = [
       ['Machine Name', 'Bridge Name', 'Assignment ID'],
-      ...assignedMachines.map((machine) => [
+      ...assignedMachines.map((machine: CloneMachine) => [
         machine.machineName,
         machine.bridgeName,
         machine.assignmentId,

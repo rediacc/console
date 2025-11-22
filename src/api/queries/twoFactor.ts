@@ -4,6 +4,7 @@ import { RootState } from '@/store/store'
 import apiClient from '@/api/client'
 import { showMessage } from '@/utils/messages'
 import { hashPassword } from '@/utils/auth'
+import { getFirstRow } from '@/core/api/response'
 
 export interface TwoFactorStatus {
   isTFAEnabled: boolean
@@ -26,22 +27,11 @@ export const useGetTFAStatus = () => {
     queryKey: ['tfa-status', userEmail],
     queryFn: async () => {
       const response = await apiClient.get('/GetRequestAuthenticationStatus')
-      
-      // Try to find the data in all possible locations
-      let data = null
-      
-      // Check table 1 (expected location)
-      if (response.resultSets && response.resultSets[1] && response.resultSets[1].data && response.resultSets[1].data[0]) {
-        data = response.resultSets[1].data[0]
-      }
-      // Fallback to table 0
-      else if (response.resultSets && response.resultSets[0] && response.resultSets[0].data && response.resultSets[0].data[0]) {
-        data = response.resultSets[0].data[0]
-      }
-      // Check if data is directly in the response
-      else if (response.isTFAEnabled !== undefined) {
-        data = response
-      }
+
+      const data =
+        getFirstRow<Record<string, unknown>>(response, 1) ??
+        getFirstRow<Record<string, unknown>>(response, 0) ??
+        (response.isTFAEnabled !== undefined ? (response as unknown as Record<string, unknown>) : null)
       
       if (!data) {
         return {
@@ -91,23 +81,20 @@ export const useEnableTFA = () => {
         const response = await apiClient.post('/UpdateUserTFA', {
           enable: true,
           userHash: passwordHash,
-          generateOnly: true
+          generateOnly: true,
         })
-        
-        // The TFA secret is in the second table (index 1)
-        const responseData = response.resultSets[1]?.data[0]
-        
-        // Ensure we have the expected response structure
-        if (!response.resultSets[1]) {
+
+        const responseData = getFirstRow<EnableTwoFactorResponse>(response, 1)
+
+        if (!responseData) {
           throw new Error('Unexpected response format: missing TFA data table')
         }
-        
-        // Ensure we have a secret in the response
-        if (!responseData?.secret) {
+
+        if (!responseData.secret) {
           throw new Error('TFA secret not returned by server')
         }
-        
-        return responseData as EnableTwoFactorResponse
+
+        return responseData
       }
       
       // Confirm enable mode - verify code and save
@@ -116,10 +103,10 @@ export const useEnableTFA = () => {
           enable: true,
           verificationCode: data.verificationCode,
           secret: data.secret,
-          confirmEnable: true
+          confirmEnable: true,
         })
-        
-        return response.resultSets[0]?.data[0] as EnableTwoFactorResponse
+
+        return getFirstRow<EnableTwoFactorResponse>(response, 0)
       }
       
       throw new Error('Invalid parameters for TFA operation')
@@ -164,10 +151,10 @@ export const useDisableTFA = () => {
       const response = await apiClient.post('/UpdateUserTFA', {
         enable: false,
         userHash: passwordHash,
-        currentCode: data.currentCode
+        currentCode: data.currentCode,
       })
-      
-      return response.resultSets[0]?.data[0]
+
+      return getFirstRow<Record<string, unknown>>(response, 0)
     },
     onSuccess: () => {
       // Immediately update the cache with the new status
@@ -194,11 +181,11 @@ export const useVerifyTFA = () => {
   return useMutation({
     mutationFn: async (data: { code: string }) => {
       const response = await apiClient.post('/PrivilegeAuthenticationRequest', {
-        'TFACode': data.code
+        TFACode: data.code,
       })
-      
-      // Check both resultSets for the response data
-      const responseData = response.resultSets[1]?.data[0] || response.resultSets[0]?.data[0]
+
+      const responseData =
+        getFirstRow<Record<string, unknown>>(response, 1) ?? getFirstRow<Record<string, unknown>>(response, 0)
       return {
         isAuthorized: responseData?.isAuthorized || false,
         result: responseData?.result || '',

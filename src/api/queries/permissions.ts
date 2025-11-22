@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
+import { extractTableData } from '@/core/api/response'
 import { showMessage } from '@/utils/messages'
 
 export interface PermissionGroup {
@@ -19,15 +20,16 @@ export const usePermissionGroups = () => {
   return useQuery<PermissionGroup[]>({
     queryKey: ['permissionGroups'],
     queryFn: async () => {
-      const response = await apiClient.get<any[]>('/GetCompanyPermissionGroups')
-      const data = response.resultSets[1]?.data || []
-      
-      // Transform the data to match our interface
-      return data.map((group: any) => ({
-        permissionGroupName: group.PermissionGroupName || group.permissionGroupName,
-        userCount: group.UserCount || group.userCount || 0,
-        permissionCount: group.PermissionCount || group.permissionCount || 0,
-        permissions: group.Permissions ? group.Permissions.split(',').map((p: string) => p.trim()).filter((p: string) => p) : []
+      const response = await apiClient.get('/GetCompanyPermissionGroups')
+      const data = extractTableData<Record<string, unknown>[]>(response, 1, [])
+
+      return data.map((group) => ({
+        permissionGroupName: (group.PermissionGroupName ?? group.permissionGroupName) as string,
+        userCount: (group.UserCount ?? group.userCount ?? 0) as number,
+        permissionCount: (group.PermissionCount ?? group.permissionCount ?? 0) as number,
+        permissions: typeof group.Permissions === 'string'
+          ? group.Permissions.split(',').map((permission) => permission.trim()).filter(Boolean)
+          : [],
       }))
     },
   })
@@ -39,10 +41,10 @@ export const usePermissionGroupDetails = (groupName: string) => {
     queryKey: ['permissionGroup', groupName],
     queryFn: async () => {
       const response = await apiClient.get('/GetPermissionGroupDetails', { permissionGroupName: groupName })
-      const permissionRows = response.resultSets[1]?.data || []
-      
-      // Transform the rows into a single object with permissions array
-      const permissions = permissionRows.map((row: any) => row.PermissionName || row.permissionName)
+      const permissionRows = extractTableData<Record<string, unknown>[]>(response, 1, [])
+      const permissions = permissionRows
+        .map((row) => (row.PermissionName ?? row.permissionName) as string)
+        .filter(Boolean)
       
       return {
         permissionGroupName: groupName,

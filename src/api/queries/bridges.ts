@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import apiClient from '@/api/client'
-import { createResourceMutation, createVaultUpdateMutation, createMutation } from '@/api/utils/mutationFactory'
+import { extractTableData } from '@/core/api/response'
+import { createResourceMutation, createVaultUpdateMutation, createMutation } from '@/hooks/api/mutationFactory'
 
 export interface Bridge {
   bridgeName: string
@@ -23,10 +24,8 @@ export const useBridges = (regionName?: string) => {
     queryFn: async () => {
       if (!regionName) return []
       const response = await apiClient.get('/GetRegionBridges', { regionName })
-      const data = response.resultSets?.[1]?.data || []
-      if (!Array.isArray(data)) return []
-      // Filter out any empty or invalid bridge objects
-      return data.filter(bridge => bridge && bridge.bridgeName)
+      const data = extractTableData<Bridge[]>(response, 1, [])
+      return data.filter((bridge): bridge is Bridge => Boolean(bridge?.bridgeName))
     },
     enabled: !!regionName,
     staleTime: 30 * 1000, // 30 seconds

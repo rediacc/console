@@ -65,7 +65,7 @@ export const DistributedStorageSection: React.FC<DistributedStorageSectionProps>
 
   const assignmentType: MachineAssignmentType = hasClusterAssignment
     ? 'CLUSTER'
-    : assignmentData?.assignmentType ?? 'AVAILABLE'
+    : ((assignmentData?.assignmentType as MachineAssignmentType) ?? 'AVAILABLE')
 
   const assignmentDetails = hasClusterAssignment
     ? `Assigned to cluster: ${machine.distributedStorageClusterName}`

@@ -5,7 +5,8 @@ import {
   DistributedStorageCluster,
   useDistributedStorageClusterMachines,
 } from '@/api/queries/distributedStorage'
-import { createSorter, createDateSorter } from '@/utils/tableSorters'
+import type { Machine } from '@/types'
+import { createSorter } from '@/utils/tableSorters'
 import { formatTimestampAsIs } from '@/utils/timeUtils'
 import {
   ExpandedRowContainer,
@@ -37,7 +38,7 @@ export const ClusterMachines: React.FC<ClusterMachinesProps> = ({
         title: t('machines.machineName'),
         dataIndex: 'machineName',
         key: 'machineName',
-        sorter: createSorter<Record<string, unknown>>('machineName'),
+        sorter: createSorter<Machine>('machineName'),
         render: (name: string) => (
           <MachineNameCell>
             <MachineNameIcon />
@@ -49,14 +50,13 @@ export const ClusterMachines: React.FC<ClusterMachinesProps> = ({
         title: t('machines.bridgeName'),
         dataIndex: 'bridgeName',
         key: 'bridgeName',
-        sorter: createSorter<Record<string, unknown>>('bridgeName'),
+        sorter: createSorter<Machine>('bridgeName'),
         render: (name: string) => <MachineBridgeTag>{name}</MachineBridgeTag>,
       },
       {
         title: t('machines.assignedDate'),
         dataIndex: 'assignedDate',
         key: 'assignedDate',
-        sorter: createDateSorter<Record<string, unknown>>('assignedDate'),
         render: (date: string) => (
           <AssignedDateText>
             {date ? formatTimestampAsIs(date, 'datetime') : '-'}
