@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../client'
 import { showMessage } from '@/utils/messages'
 import { useTranslation } from 'react-i18next'
+import { extractTableData, getFirstRow } from '@/core/api/response'
+import type { Machine } from '@/types'
 
 // Types
 export interface DistributedStorageCluster {
@@ -111,8 +113,7 @@ export const useDistributedStorageClusters = (teamFilter?: string | string[], en
         throw new Error(response.errors?.join(', ') || 'Failed to fetch clusters')
       }
       
-      // Data is in the second result set (first is for credentials)
-      return response.resultSets?.[1]?.data || []
+      return extractTableData<DistributedStorageCluster[]>(response, 1, []) as DistributedStorageCluster[]
     },
     enabled: enabled,
   })
@@ -212,8 +213,7 @@ export const useDistributedStoragePools = (teamFilter?: string | string[], enabl
         throw new Error(response.errors?.join(', ') || 'Failed to fetch pools')
       }
       
-      // Data is in the second result set (first is for credentials)
-      return response.resultSets?.[1]?.data || []
+      return extractTableData<DistributedStoragePool[]>(response, 1, []) as DistributedStoragePool[]
     },
     enabled: enabled && !!teamFilter,
   })
@@ -320,8 +320,7 @@ export const useDistributedStorageRbdImages = (poolName?: string, teamName?: str
         throw new Error(response.errors?.join(', ') || 'Failed to fetch RBD images')
       }
       
-      // Data is in the second result set (first is for credentials)
-      return response.resultSets?.[1]?.data || []
+      return extractTableData<DistributedStorageRbdImage[]>(response, 1, []) as DistributedStorageRbdImage[]
     },
     enabled: enabled && !!poolName,
   })
@@ -433,8 +432,7 @@ export const useDistributedStorageRbdSnapshots = (imageName?: string, poolName?:
         throw new Error(response.errors?.join(', ') || 'Failed to fetch RBD snapshots')
       }
       
-      // Data is in the second result set (first is for credentials)
-      return response.resultSets?.[1]?.data || []
+      return extractTableData<DistributedStorageRbdSnapshot[]>(response, 1, []) as DistributedStorageRbdSnapshot[]
     },
     enabled: enabled && !!imageName,
   })
@@ -517,8 +515,7 @@ export const useDistributedStorageRbdClones = (snapshotName?: string, imageName?
         throw new Error(response.errors?.join(', ') || 'Failed to fetch RBD clones')
       }
       
-      // Data is in the second result set (first is for credentials)
-      return response.resultSets?.[1]?.data || []
+      return extractTableData<DistributedStorageRbdClone[]>(response, 1, []) as DistributedStorageRbdClone[]
     },
     enabled: enabled && !!snapshotName,
   })
@@ -587,7 +584,7 @@ export const useDeleteDistributedStorageRbdClone = () => {
 
 // Cluster Machines
 export const useDistributedStorageClusterMachines = (clusterName: string, enabled = true) => {
-  return useQuery({
+  return useQuery<Machine[]>({
     queryKey: QUERY_KEYS.clusterMachines(clusterName),
     queryFn: async () => {
       const response = await apiClient.post('/GetDistributedStorageClusterMachines', {
@@ -598,8 +595,7 @@ export const useDistributedStorageClusterMachines = (clusterName: string, enable
         throw new Error(response.errors?.join(', ') || 'Failed to fetch cluster machines')
       }
       
-      // Data is in the second result set (first is for credentials)
-      return response.resultSets?.[1]?.data || []
+      return extractTableData<Machine[]>(response, 1, []) as Machine[]
     },
     enabled: enabled && !!clusterName,
   })
@@ -701,7 +697,7 @@ export const useUpdateCloneMachineRemovals = () => {
 
 // Machine Assignment Status
 export const useGetMachineAssignmentStatus = (machineName: string, teamName: string, enabled = true) => {
-  return useQuery({
+  return useQuery<MachineAssignmentStatus | null>({
     queryKey: QUERY_KEYS.machineAssignmentStatus(machineName, teamName),
     queryFn: async () => {
       const response = await apiClient.post('/GetMachineAssignmentStatus', {
@@ -713,8 +709,7 @@ export const useGetMachineAssignmentStatus = (machineName: string, teamName: str
         throw new Error(response.errors?.join(', ') || 'Failed to fetch machine assignment status')
       }
       
-      // Data is in the first result set
-      return response.resultSets?.[0]?.data?.[0] || null
+      return (getFirstRow<MachineAssignmentStatus>(response, 0) as MachineAssignmentStatus | null) || null
     },
     enabled: enabled && !!machineName && !!teamName,
   })
@@ -722,7 +717,7 @@ export const useGetMachineAssignmentStatus = (machineName: string, teamName: str
 
 // Available Machines for Clone
 export const useGetAvailableMachinesForClone = (teamName: string, enabled = true) => {
-  return useQuery({
+  return useQuery<AvailableMachine[]>({
     queryKey: QUERY_KEYS.availableMachinesForClone(teamName),
     queryFn: async () => {
       const response = await apiClient.post('/GetAvailableMachinesForClone', {
@@ -733,8 +728,7 @@ export const useGetAvailableMachinesForClone = (teamName: string, enabled = true
         throw new Error(response.errors?.join(', ') || 'Failed to fetch available machines')
       }
       
-      // Data is in the first result set
-      return response.resultSets?.[0]?.data || []
+      return extractTableData<AvailableMachine[]>(response, 0, []) as AvailableMachine[]
     },
     enabled: enabled && !!teamName,
   })
@@ -754,8 +748,7 @@ export const useGetCloneMachineAssignmentValidation = (teamName: string, machine
         throw new Error(response.errors?.join(', ') || 'Failed to validate machine assignments')
       }
       
-      // Data is in the first result set
-      return response.resultSets?.[0]?.data || []
+      return extractTableData<MachineAssignmentValidation[]>(response, 0, []) as any
     },
     enabled: enabled && !!teamName && !!machineNames,
   })
@@ -820,8 +813,15 @@ export const useUpdateMachineClusterRemoval = () => {
 }
 
 // Get Clone Machines
-export const useGetCloneMachines = (cloneName: string, snapshotName: string, imageName: string, poolName: string, teamName: string, enabled = true) => {
-  return useQuery({
+export const useGetCloneMachines = (
+  cloneName: string,
+  snapshotName: string,
+  imageName: string,
+  poolName: string,
+  teamName: string,
+  enabled = true,
+) => {
+  return useQuery<CloneMachine[]>({
     queryKey: QUERY_KEYS.cloneMachines(cloneName, snapshotName, imageName, poolName, teamName),
     queryFn: async () => {
       const response = await apiClient.post('/GetCloneMachines', {
@@ -836,8 +836,7 @@ export const useGetCloneMachines = (cloneName: string, snapshotName: string, ima
         throw new Error(response.errors?.join(', ') || 'Failed to fetch clone machines')
       }
       
-      // Data is in the first result set
-      return response.resultSets?.[0]?.data || []
+      return extractTableData<CloneMachine[]>(response, 0, []) as CloneMachine[]
     },
     enabled: enabled && !!cloneName && !!snapshotName && !!imageName && !!poolName && !!teamName,
   })

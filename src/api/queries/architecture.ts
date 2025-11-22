@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import apiClient from '@/api/client'
-import { extractTableData, parseDoubleEncodedJson, fixTripleEncodedFields } from '@/api/utils/responseHelpers'
+import { extractTableData, parseDoubleEncodedJson, fixTripleEncodedFields } from '@/core/api/response'
 
 interface GraphNode {
   nodeType: string

@@ -1,6 +1,5 @@
 import { showTranslatedMessage } from '@/utils/messages'
 import apiClient from '@/api/client'
-import queueManagerService from '@/services/queueManagerService'
 
 // Declare chrome as optional global for extension context detection
 declare const chrome: any
@@ -21,6 +20,7 @@ class QueueMonitoringService {
   private static instance: QueueMonitoringService
   private monitoredTasks: Map<string, MonitoredTask> = new Map()
   private intervalId: NodeJS.Timeout | null = null
+  private statusHandler?: (taskId: string, status: 'completed' | 'failed' | 'cancelled') => void
   
   // Time constants
   private readonly CHECK_INTERVAL_MS = 5000 // 5 seconds for more responsive updates
@@ -58,6 +58,15 @@ class QueueMonitoringService {
     return QueueMonitoringService.instance
   }
 
+  registerStatusHandler(handler: (taskId: string, status: 'completed' | 'failed' | 'cancelled') => void) {
+    this.statusHandler = handler
+  }
+
+  handleStatusUpdate(taskId: string, status: 'completed' | 'failed' | 'cancelled') {
+    this.notifyQueue(taskId, status)
+    this.removeTask(taskId)
+  }
+
   private loadFromStorage() {
     try {
       const stored = localStorage.getItem(this.STORAGE_KEY)
@@ -73,6 +82,10 @@ class QueueMonitoringService {
     } catch (error) {
       // Failed to load monitored tasks from storage
     }
+  }
+
+  private notifyQueue(taskId: string, status: 'completed' | 'failed' | 'cancelled') {
+    this.statusHandler?.(taskId, status)
   }
 
   private saveToStorage() {
@@ -200,8 +213,7 @@ class QueueMonitoringService {
       
       // Check for permanent failure flag
       if (queueDetails.permanentlyFailed) {
-        // Update the queue manager service
-        queueManagerService.updateTaskStatus(task.taskId, 'failed')
+        this.notifyQueue(task.taskId, 'failed')
         
         const lastFailureReason = this.getLastFailureReason(queueDetails)
         if (lastFailureReason) {
@@ -230,9 +242,7 @@ class QueueMonitoringService {
 
         // Notify user of status change
         if (currentStatus === 'COMPLETED') {
-          // Task completed - calling updateTaskStatus
-          // Update the queue manager service
-          queueManagerService.updateTaskStatus(task.taskId, 'completed')
+          this.notifyQueue(task.taskId, 'completed')
           
           showTranslatedMessage('success', 'queue:monitoring.completed', { 
             taskId: task.taskId, 
@@ -242,8 +252,7 @@ class QueueMonitoringService {
           this.removeTask(task.taskId)
           return // Stop processing this task
         } else if (currentStatus === 'CANCELLED') {
-          // Update the queue manager service
-          queueManagerService.updateTaskStatus(task.taskId, 'cancelled')
+          this.notifyQueue(task.taskId, 'cancelled')
           
           showTranslatedMessage('warning', 'queue:monitoring.cancelled', { 
             taskId: task.taskId, 
@@ -269,8 +278,7 @@ class QueueMonitoringService {
           
           // Check for permanent failure messages
           if (this.isPermanentFailure(lastFailureReason)) {
-            // Update the queue manager service
-            queueManagerService.updateTaskStatus(task.taskId, 'failed')
+          this.notifyQueue(task.taskId, 'failed')
             
             showTranslatedMessage('error', 'queue:monitoring.permanentlyFailedWithReason', { 
               taskId: task.taskId,
@@ -283,8 +291,7 @@ class QueueMonitoringService {
           }
           
           if (retryCount >= this.MAX_RETRY_COUNT) {
-            // Update the queue manager service
-            queueManagerService.updateTaskStatus(task.taskId, 'failed')
+            this.notifyQueue(task.taskId, 'failed')
             
             showTranslatedMessage('error', 'queue:monitoring.permanentlyFailed', { 
               taskId: task.taskId,

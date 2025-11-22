@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import apiClient from '@/api/client'
-import { createResourceMutation, createVaultUpdateMutation, createMutation } from '@/api/utils/mutationFactory'
+import { extractTableData } from '@/core/api/response'
+import { createResourceMutation, createVaultUpdateMutation, createMutation } from '@/hooks/api/mutationFactory'
 
 export interface Storage {
   storageName: string
@@ -28,15 +29,14 @@ export const useStorage = (teamFilter?: string | string[]) => {
       }
       
       const response = await apiClient.get('/GetTeamStorages', params)
-      const data = response.resultSets?.[1]?.data || []
-      const storages = Array.isArray(data) ? data : []
+      const storages = extractTableData<Record<string, unknown>[]>(response, 1, [])
       return storages
-        .filter((storage: any) => storage && storage.storageName)
-        .map((storage: any) => ({
-          storageName: storage.storageName,
-          teamName: storage.teamName,
-          vaultVersion: storage.vaultVersion || 1,
-          vaultContent: storage.vaultContent || '{}',
+        .filter((storage) => storage && storage.storageName)
+        .map((storage) => ({
+          storageName: storage.storageName as string,
+          teamName: storage.teamName as string,
+          vaultVersion: (storage.vaultVersion as number) || 1,
+          vaultContent: (storage.vaultContent as string) || '{}',
         }))
     },
     enabled: !!teamFilter && (!Array.isArray(teamFilter) || teamFilter.length > 0),

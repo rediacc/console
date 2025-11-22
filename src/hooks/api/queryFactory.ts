@@ -5,15 +5,16 @@ import { telemetryService } from '@/services/telemetryService'
 export interface ResourceQueryConfig<T> {
   endpoint: string
   queryKey: string
-  dataExtractor: (response: any) => T[]
-  filter?: (item: any) => boolean
-  mapper: (item: any) => T
+  dataExtractor: (response: any) => unknown[]
+  filter?: (item: Record<string, unknown>) => boolean
+  mapper: (item: Record<string, unknown>) => T
   staleTime?: number
   enabledCheck?: (teamFilter?: string | string[]) => boolean
 }
 
-export const createResourceQuery = <T>(config: ResourceQueryConfig<T>) =>
-  (teamFilter?: string | string[], enabled: boolean = true) => {
+export const createResourceQuery =
+  <T>(config: ResourceQueryConfig<T>) =>
+  (teamFilter?: string | string[], enabled = true) => {
     return useQuery<T[]>({
       queryKey: [config.queryKey, teamFilter],
       queryFn: async () => {
@@ -47,9 +48,9 @@ export const createResourceQuery = <T>(config: ResourceQueryConfig<T>) =>
           const data = config.dataExtractor(response)
           const items = Array.isArray(data) ? data : []
 
-          const filteredItems = items
-            .filter(config.filter || (() => true))
-            .map(config.mapper)
+          const rows = items as Record<string, unknown>[]
+          const filterFn = config.filter || (() => true)
+          const filteredItems = rows.filter((item) => filterFn(item)).map((item) => config.mapper(item))
 
           const duration = performance.now() - startTime
 
@@ -80,7 +81,7 @@ export const createResourceQuery = <T>(config: ResourceQueryConfig<T>) =>
         }
       },
       enabled: enabled && (!config.enabledCheck || config.enabledCheck(teamFilter)),
-      staleTime: config.staleTime || 30 * 1000, // 30 seconds default
+      staleTime: config.staleTime || 30 * 1000,
       meta: {
         // Add telemetry meta for React Query devtools
         telemetry: {
@@ -89,30 +90,4 @@ export const createResourceQuery = <T>(config: ResourceQueryConfig<T>) =>
         }
       }
     })
-  }
-
-// Common data extractors
-export const dataExtractors = {
-  primaryOrSecondary: (response: any) => response.resultSets?.[1]?.data || [],
-  primary: (response: any) => response.resultSets?.[0]?.data || []
-}
-
-// Common filters
-export const filters = {
-  hasName: (nameField: string) => (item: any) => item && item[nameField],
-  isValid: (item: any) => !!item
-}
-
-// Field mappers
-export const createFieldMapper = <T>(fieldMap: Record<string, string | ((item: any) => any)>) => 
-  (item: any): T => {
-    const result = {} as T
-    Object.entries(fieldMap).forEach(([key, value]) => {
-      if (typeof value === 'function') {
-        result[key as keyof T] = value(item)
-      } else {
-        result[key as keyof T] = item[value] || (key.includes('vault') ? '{}' : key.includes('Version') ? 1 : key.includes('Count') ? 0 : undefined)
-      }
-    })
-    return result
   }

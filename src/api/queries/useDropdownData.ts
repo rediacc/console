@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import apiClient from '@/api/client'
+import { getFirstRow } from '@/core/api/response'
 
 export interface DropdownData {
   teams: Array<{ value: string; label: string }>
@@ -83,7 +84,7 @@ export const useDropdownData = (context?: string) => {
     queryKey: ['dropdown-data', context],
     queryFn: async () => {
       const response = await apiClient.get<any>('/GetLookupData', context ? { context } : {})
-      const rawData = response.resultSets[1]?.data[0] ?? response.resultSets[0]?.data[0]
+      const rawData = getFirstRow<Record<string, unknown>>(response, 1) ?? getFirstRow<Record<string, unknown>>(response, 0)
       
       if (rawData?.dropdownValues) {
         try {

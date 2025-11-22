@@ -5,6 +5,7 @@ import type { TFunction } from 'i18next'
 import { KeyOutlined, CheckCircleOutlined, WarningOutlined, CopyOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useGetTFAStatus, useEnableTFA, useDisableTFA } from '@/api/queries/twoFactor'
+import type { EnableTwoFactorResponse } from '@/api/queries/twoFactor'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 import QRCode from 'react-qr-code'
@@ -74,10 +75,10 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
 
   const handleEnableTFA = async (values: { password: string }) => {
     try {
-      const result = await enableTFAMutation.mutateAsync({
+      const result = (await enableTFAMutation.mutateAsync({
         password: values.password,
         generateOnly: true,
-      })
+      })) as EnableTwoFactorResponse
       setTwoFASecret(result.secret)
       setShowEnableModal(false)
       setShowVerification(true)

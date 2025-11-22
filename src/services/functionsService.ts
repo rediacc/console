@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import functionDefinitions from '@/data/functions.json';
+import functionDefinitions from '@/core/data/functions.json';
 
 // Base function definition without translatable content
 export interface FunctionDefinition {

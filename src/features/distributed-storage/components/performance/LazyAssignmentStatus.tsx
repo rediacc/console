@@ -4,7 +4,7 @@ import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignme
 import { MachineAssignmentService } from '../../services'
 import { useGetMachineAssignmentStatus } from '@/api/queries/distributedStorage'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
-import type { Machine } from '@/types'
+import type { Machine, MachineAssignmentType } from '@/types'
 
 interface LazyAssignmentStatusProps {
   machine: Machine
@@ -144,9 +144,10 @@ export const LazyAssignmentStatus: React.FC<LazyAssignmentStatusProps> = ({
   }
   
   // Show assignment data
-  const finalAssignmentType = assignmentData?.assignmentType || immediateStatus
-  const finalResourceName = assignmentData?.resourceName || 
-    MachineAssignmentService.getAssignmentInfo(machine).resourceName
+  const assignmentInfo = assignmentData as unknown as { assignmentType?: MachineAssignmentType; resourceName?: string } | null
+  const finalAssignmentType = assignmentInfo?.assignmentType || immediateStatus
+  const finalResourceName =
+    assignmentInfo?.resourceName || MachineAssignmentService.getAssignmentInfo(machine).resourceName
   
   return (
     <div ref={containerRef} data-testid="lazy-status-final-container">

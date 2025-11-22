@@ -86,7 +86,7 @@ export const CloneMachineList: React.FC<CloneMachineListProps> = ({
         </MachineListHeader>
 
         <MachineTagGrid>
-          {machines.map((machine) => (
+          {machines.map((machine: any) => (
             <MachineTag
               key={machine.machineName}
               icon={<CloudServerOutlined />}

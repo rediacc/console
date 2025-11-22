@@ -183,7 +183,7 @@ export const SimpleMachineSelector: React.FC<{
 
   return (
     <AvailableMachinesSelector
-      machines={machines}
+      machines={machines as unknown as Machine[]}
       value={value}
       onChange={onChange}
       loading={isLoading}

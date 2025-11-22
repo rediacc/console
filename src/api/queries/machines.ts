@@ -1,12 +1,13 @@
-import { createResourceQuery, dataExtractors, filters, createFieldMapper } from '@/api/utils/queryFactory'
-import { createResourceMutation, createVaultUpdateMutation, createMutation } from '@/api/utils/mutationFactory'
+import { createResourceQuery } from '@/hooks/api/queryFactory'
+import { createResourceMutation, createVaultUpdateMutation, createMutation } from '@/hooks/api/mutationFactory'
+import { dataExtractors, filters, createFieldMapper } from '@/core/api/response'
 import type { Machine } from '@/types'
 
 // Get machines for a team, multiple teams, or all machines
 export const useMachines = createResourceQuery<Machine>({
   endpoint: '/GetTeamMachines',
   queryKey: 'machines',
-  dataExtractor: dataExtractors.primaryOrSecondary,
+  dataExtractor: (response) => dataExtractors.primaryOrSecondary(response),
   filter: filters.hasName('machineName'),
   mapper: createFieldMapper<Machine>({
     machineName: 'machineName',

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
+import { extractTableData, getFirstRow, getResultSetByIndex } from '@/core/api/response'
 import { showMessage } from '@/utils/messages'
 import { minifyJSON } from '@/utils/json'
 
@@ -124,7 +125,7 @@ export const useNextQueueItems = (machineName: string, itemCount: number = 5) =>
     queryKey: ['queue-next', machineName, itemCount],
     queryFn: async () => {
       const response = await apiClient.get<QueueItem[]>('/GetQueueItemsNext', { machineName, itemCount })
-      return response.resultSets[1]?.data || []
+      return extractTableData<QueueItem[]>(response, 1, [])
     },
     enabled: !!machineName,
   })
@@ -162,7 +163,8 @@ export const useCreateQueueItem = () => {
       }
       const response = await apiClient.post('/CreateQueueItem', minifiedData)
       // Extract taskId from response and add it to the response object
-      const taskId = response.resultSets[1]?.data[0]?.taskId || response.resultSets[1]?.data[0]?.TaskId
+      const taskRow = getFirstRow<Record<string, unknown>>(response, 1)
+      const taskId = (taskRow?.taskId as string) || (taskRow?.TaskId as string)
       return { ...response, taskId }
     },
     onSuccess: (response, variables) => {
@@ -339,53 +341,22 @@ export const useQueueItemTrace = (taskId: string | null, enabled: boolean = true
       if (!taskId) return null
       const response = await apiClient.get('/GetQueueItemTrace', { taskId })
       
-      let queueDetails: any = null
-      let traceLogs: any[] = []
-      let vaultContent: any = null
-      let responseVaultContent: any = null
-      let queuePosition: any[] = []
-      let machineStats: any = null
-      let planInfo: any = null
-      
-      // Parse the response resultSets by index
-      response.resultSets?.forEach((table) => {
-        if (table.data && table.data.length > 0) {
-          const resultSetIndex = table.resultSetIndex
-          
-          switch (resultSetIndex) {
-            case 1: // Queue details
-              queueDetails = table.data[0]
-              break
-            case 2: // Vault content
-              vaultContent = table.data[0]
-              break
-            case 3: // Response vault content
-              responseVaultContent = table.data[0]
-              break
-            case 4: // Audit/trace logs
-              traceLogs = table.data
-              break
-            case 5: // Queue position
-              queuePosition = table.data
-              break
-            case 6: // Machine statistics
-              machineStats = table.data[0]
-              break
-            case 7: // Plan information
-              planInfo = table.data[0]
-              break
-          }
-        }
-      })
-      
-      return { 
-        queueDetails, 
-        traceLogs, 
-        vaultContent, 
+      const queueDetails = getFirstRow<Record<string, unknown>>(response, 1) as any
+      const vaultContent = getFirstRow<Record<string, unknown>>(response, 2) as any
+      const responseVaultContent = getFirstRow<Record<string, unknown>>(response, 3) as any
+      const traceLogs = getResultSetByIndex<Record<string, unknown>>(response, 4) as any[]
+      const queuePosition = getResultSetByIndex<Record<string, unknown>>(response, 5) as any[]
+      const machineStats = getFirstRow<Record<string, unknown>>(response, 6) as any
+      const planInfo = getFirstRow<Record<string, unknown>>(response, 7) as any
+
+      return {
+        queueDetails,
+        traceLogs,
+        vaultContent,
         responseVaultContent,
-        queuePosition, 
-        machineStats, 
-        planInfo 
+        queuePosition,
+        machineStats,
+        planInfo,
       }
     },
     enabled: enabled && !!taskId,
