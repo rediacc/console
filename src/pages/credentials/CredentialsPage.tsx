@@ -349,7 +349,7 @@ const CredentialsPage: React.FC = () => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setSelectedTeams([privateTeam?.teamName || teamsList[0].teamName])
       } else {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+         
         setSelectedTeams([teamsList[0].teamName])
       }
     }

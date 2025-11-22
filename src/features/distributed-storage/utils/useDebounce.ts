@@ -43,7 +43,7 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
   }, [])
 
   // Debounced function
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const debouncedCallback = useCallback(
     (...args: Parameters<T>) => {
       cancel()

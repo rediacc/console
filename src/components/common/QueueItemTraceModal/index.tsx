@@ -233,7 +233,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
   // Sync last fetch time when trace data or visibility changes
   useEffect(() => {
     if (traceData && visible) {
-      // eslint-disable-next-line
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLastTraceFetchTime(dayjs())
     }
   }, [traceData, visible])
@@ -269,11 +269,11 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   finalOutput += ` (exit code: ${result.exit_code})`
                 }
               }
-            } catch (e) {
+            } catch {
               finalOutput = vaultContent.result
             }
           }
-          // eslint-disable-next-line
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setAccumulatedOutput(finalOutput)
           setLastOutputStatus('completed')
         } else if (vaultContent.status === 'in_progress' && vaultContent.message) {
@@ -308,7 +308,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   initialOutput += ` (exit code: ${result.exit_code})`
                 }
               }
-            } catch (e) {
+            } catch {
               initialOutput = vaultContent.result
             }
           } else if (vaultContent.result && typeof vaultContent.result === 'object') {
@@ -326,23 +326,19 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
             setAccumulatedOutput(initialOutput)
           }
         }
-      } catch (error) {
+      } catch {
         // Error processing console output
       }
     }
   }, [traceData?.responseVaultContent, lastOutputStatus, accumulatedOutput])
 
   // Extract progress percentage and message from console output
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   useEffect(() => {
     const percentage = extractMostRecentProgress(accumulatedOutput)
     const message = extractProgressMessage(accumulatedOutput)
 
-    // Debug logging
-    if (percentage !== null || message !== null) {
-      console.log('[Progress Debug]', { percentage, message, outputLength: accumulatedOutput?.length })
-    }
-
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setConsoleProgress(percentage)
     setProgressMessage(message)
   }, [accumulatedOutput])
@@ -350,7 +346,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
   // Reset states when modal opens with new taskId
   useEffect(() => {
     if (visible && taskId) {
-      // eslint-disable-next-line
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLastTraceFetchTime(null)
       // Check if this task is already being monitored
       setIsMonitoring(queueMonitoringService.isTaskMonitored(taskId))
@@ -1291,7 +1287,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                               height="300px"
                             />
                           )
-                        } catch (error) {
+                        } catch {
                           // Failed to parse request vault content
                           return <Empty description="Invalid request vault content format" />
                         }
@@ -1455,7 +1451,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                                   </Space>
                                 )
                               }
-                            } catch (e) {
+                            } catch {
                               // Fall through to default JSON display
                             }
                           }
@@ -1468,7 +1464,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                               height="300px"
                             />
                           )
-                        } catch (error) {
+                        } catch {
                           // Failed to parse response vault content
                           return <Empty description="Invalid response vault content format" />
                         }

@@ -28,7 +28,7 @@ export const useGetTFAStatus = () => {
     queryFn: async () => {
       const response = await apiClient.get('/GetRequestAuthenticationStatus')
 
-      let data =
+      const data =
         getFirstRow<Record<string, unknown>>(response, 1) ??
         getFirstRow<Record<string, unknown>>(response, 0) ??
         (response.isTFAEnabled !== undefined ? (response as unknown as Record<string, unknown>) : null)

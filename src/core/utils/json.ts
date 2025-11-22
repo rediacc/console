@@ -1,7 +1,7 @@
 export function minifyJSON(json: string): string {
   try {
     return JSON.stringify(JSON.parse(json))
-  } catch (error) {
+  } catch {
     return json
   }
 }
@@ -9,7 +9,7 @@ export function minifyJSON(json: string): string {
 export function objectToMinifiedJSON(obj: any): string {
   try {
     return JSON.stringify(obj)
-  } catch (error) {
+  } catch {
     return '{}'
   }
 }
@@ -17,7 +17,7 @@ export function objectToMinifiedJSON(obj: any): string {
 export function prettifyJSON(json: string, indent = 2): string {
   try {
     return JSON.stringify(JSON.parse(json), null, indent)
-  } catch (error) {
+  } catch {
     return json
   }
 }

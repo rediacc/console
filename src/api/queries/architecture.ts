@@ -91,7 +91,7 @@ export const useCompanyArchitecture = () => {
         })
         
         return { metadata, nodes, relationships, summary }
-      } catch (e) {
+      } catch {
         throw new Error('Invalid JSON data returned from server')
       }
     },
