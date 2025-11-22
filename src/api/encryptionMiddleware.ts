@@ -1,4 +1,4 @@
-import { encryptVaultFields, decryptVaultFields } from '../utils/encryption'
+import { cryptoService } from '@/services/cryptoService'
 import { masterPasswordService } from '../services/masterPasswordService'
 import { showMessage } from '../utils/messages'
 
@@ -18,7 +18,7 @@ export async function encryptRequestData(data: any): Promise<any> {
   }
 
   try {
-    return await encryptVaultFields(data, masterPassword)
+    return await cryptoService.encryptVaultFields(data, masterPassword)
   } catch (error) {
     showMessage('error', 'Failed to encrypt secure data')
     throw error
@@ -36,7 +36,7 @@ export async function decryptResponseData(data: any): Promise<any> {
   }
 
   try {
-    return await decryptVaultFields(data, masterPassword)
+    return await cryptoService.decryptVaultFields(data, masterPassword)
   } catch {
     showMessage('error', 'Failed to decrypt secure data - check your master password')
     // Return original data instead of throwing to allow app to continue
@@ -47,24 +47,4 @@ export async function decryptResponseData(data: any): Promise<any> {
 /**
  * Checks if any vault fields exist in the object
  */
-export function hasVaultFields(data: any): boolean {
-  if (!data || typeof data !== 'object') return false
-
-  return checkObjectForVaultFields(data)
-}
-
-function checkObjectForVaultFields(object: any): boolean {
-  for (const key in object) {
-    if (key.toLowerCase().includes('vault')) {
-      return true
-    }
-    
-    const value = object[key]
-    if (typeof value === 'object' && value !== null) {
-      if (checkObjectForVaultFields(value)) {
-        return true
-      }
-    }
-  }
-  return false
-}
+export const hasVaultFields = (data: unknown): boolean => cryptoService.hasVaultFields(data)

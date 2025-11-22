@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../client';
+import { extractTableData, getFirstRow } from '@/core/api/response';
 
 export interface AuditLog {
   entity: string;
@@ -39,8 +40,7 @@ export const useAuditLogs = (params?: AuditLogsParams) => {
         }
 
         const response = await apiClient.post('/GetAuditLogs', requestBody);
-
-        return response.resultSets?.[1]?.data as AuditLog[] || [];
+        return extractTableData<AuditLog[]>(response, 1, []);
       } catch (error) {
         console.error('Failed to fetch audit logs:', error);
         throw new Error('Unable to load audit logs. Please check your date range and try again.');
@@ -63,10 +63,10 @@ export const useRecentAuditLogs = (maxRecords: number = 10) => {
     queryKey: ['recentAuditLogs', maxRecords],
     queryFn: async () => {
       const response = await apiClient.post('/GetAuditLogs', {
-        maxRecords
+        maxRecords,
       });
-      
-      return response.resultSets?.[1]?.data as AuditLog[] || [];
+
+      return extractTableData<AuditLog[]>(response, 1, []);
     }
   });
 };
@@ -110,15 +110,15 @@ export const getEntityAuditTrace = async (
 ): Promise<AuditTraceResponse> => {
   const response = await apiClient.post('/GetEntityAuditTrace', {
     entityType,
-    entityIdentifier
+    entityIdentifier,
   });
 
-  // The stored procedure returns three result sets:
-  // Table 0: Token rotation (nextRequestToken)
-  // Table 1: Audit records
-  // Table 2: Summary information
-  const records = response.resultSets?.[1]?.data || [];
-  const summary = response.resultSets?.[2]?.data?.[0] || null;
+  const records = extractTableData<AuditTraceRecord[]>(response, 1, []);
+  const summary = getFirstRow<AuditTraceSummary>(response, 2);
+
+  if (!summary) {
+    throw new Error('Missing audit trace summary');
+  }
 
   return {
     records,

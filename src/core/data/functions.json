@@ -23,7 +23,7 @@
           "format": "size",
           "units": ["percentage", "G", "T"]
         },
-        "source": {
+        "from": {
           "type": "string",
           "default": "apt-repo",
           "options": ["apt-repo", "tar-static", "deb-local"]
@@ -837,6 +837,81 @@
         "container": {
           "type": "string",
           "required": true
+        }
+      }
+    },
+    "container_exec": {
+      "name": "container_exec",
+      "category": "container",
+      "showInMenu": false,
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
+      "params": {
+        "repo": {
+          "type": "string",
+          "required": true
+        },
+        "container": {
+          "type": "string",
+          "required": true
+        },
+        "command": {
+          "type": "string",
+          "required": true,
+          "placeholder": "Command to run"
+        },
+        "user": {
+          "type": "string",
+          "required": false
+        },
+        "tty": {
+          "type": "string",
+          "default": "false",
+          "options": ["true", "false"],
+          "ui": "dropdown"
+        }
+      }
+    },
+    "container_kill": {
+      "name": "container_kill",
+      "category": "container",
+      "showInMenu": false,
+      "requirements": {
+        "machine": true,
+        "team": true,
+        "repository": true
+      },
+      "params": {
+        "repo": {
+          "type": "string",
+          "required": true
+        },
+        "container": {
+          "type": "string",
+          "required": true
+        },
+        "signal": {
+          "type": "string",
+          "default": "SIGTERM"
+        }
+      }
+    },
+    "nop": {
+      "name": "nop",
+      "category": "maintenance",
+      "showInMenu": false,
+      "requirements": {
+        "machine": true,
+        "team": true
+      },
+      "params": {
+        "message": {
+          "type": "string",
+          "required": false,
+          "placeholder": "Optional message"
         }
       }
     }

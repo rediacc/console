@@ -3,15 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
 import { showMessage } from '@/utils/messages'
 import { minifyJSON } from '@/utils/json'
-import queueManagerService, { QueuedItem } from '@/services/queueManagerService'
-
-interface CreateQueueItemData {
-  teamName: string
-  machineName: string
-  bridgeName: string
-  queueVault: string
-  priority?: number
-}
+import { queueService } from '@/services/queueService'
+import type { QueueItem, QueueItemData } from '@/core/types/queue'
 
 /**
  * A managed version of useCreateQueueItem that handles high-priority queue items
@@ -19,11 +12,11 @@ interface CreateQueueItemData {
  */
 export const useManagedQueueItem = () => {
   const queryClient = useQueryClient()
-  const [localQueue, setLocalQueue] = useState<QueuedItem[]>([])
+  const [localQueue, setLocalQueue] = useState<QueueItem[]>([])
 
   // Subscribe to queue changes
   useEffect(() => {
-    const unsubscribe = queueManagerService.subscribe((queue) => {
+    const unsubscribe = queueService.subscribe((queue) => {
       setLocalQueue(queue)
     })
     
@@ -33,7 +26,16 @@ export const useManagedQueueItem = () => {
   }, [])
 
   // The actual API call function
-  const submitQueueItem = async (data: CreateQueueItemData) => {
+  const submitQueueItem = async (data: QueueItemData) => {
+    if (!data.machineName) {
+      throw new Error('Machine name is required to submit a queue item')
+    }
+    if (!data.bridgeName) {
+      throw new Error('Bridge name is required to submit a queue item')
+    }
+    if (!data.queueVault) {
+      throw new Error('Queue vault payload is required')
+    }
     // Ensure priority is within valid range
     const priority = data.priority && data.priority >= 1 && data.priority <= 5 ? data.priority : 3
     
@@ -53,9 +55,9 @@ export const useManagedQueueItem = () => {
   }
 
   const mutation = useMutation({
-    mutationFn: async (data: CreateQueueItemData) => {
+    mutationFn: async (data: QueueItemData) => {
       // Use queue manager for submission
-      const queueId = await queueManagerService.addToQueue(data, submitQueueItem)
+      const queueId = await queueService.addToQueue(data, submitQueueItem)
       
       // For highest priority items (priority 1), return the queue ID instead of task ID
       const isHighestPriority = data.priority === 1
@@ -84,13 +86,13 @@ export const useManagedQueueItem = () => {
   return {
     ...mutation,
     localQueue,
-    queueStats: queueManagerService.getQueueStats(),
-    retryQueueItem: (id: string) => queueManagerService.retryItem(id),
-    removeFromQueue: (id: string) => queueManagerService.removeFromQueue(id),
-    clearCompleted: () => queueManagerService.clearCompleted(),
-    getQueuePosition: (id: string) => queueManagerService.getQueuePosition(id),
-    getQueueItem: (queueId: string) => queueManagerService.getQueueItem(queueId),
+    queueStats: queueService.getQueueStats(),
+    retryQueueItem: (id: string) => queueService.retryItem(id),
+    removeFromQueue: (id: string) => queueService.removeFromQueue(id),
+    clearCompleted: () => queueService.clearCompleted(),
+    getQueuePosition: (id: string) => queueService.getQueuePosition(id),
+    getQueueItem: (queueId: string) => queueService.getQueueItem(queueId),
     subscribeToQueueItem: (queueId: string, callback: (item: any) => void) => 
-      queueManagerService.subscribeToQueueItem(queueId, callback)
+      queueService.subscribeToQueueItem(queueId, callback)
   }
 }

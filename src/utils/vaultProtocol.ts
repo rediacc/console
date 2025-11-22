@@ -58,7 +58,7 @@ export async function validateMasterPassword(
       // If it's not valid JSON after decryption, the password is wrong
       return false
     }
-  } catch (error) {
+  } catch {
     // Decryption failed - wrong password
     return false
   }

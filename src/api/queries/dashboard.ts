@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../client';
+import { getFirstRow, getResultSet } from '@/core/api/response';
 
 interface CompanyInfo {
   CompanyName: string;
@@ -148,17 +149,17 @@ export const useCompanyInfo = () => {
     queryKey: ['company-info'],
     queryFn: async () => {
       const response = await apiClient.post('/GetCompanyDashboardJson', {});
-      
+
       if (response.failure !== 0) {
         throw new Error(response.errors?.join(', ') || 'Failed to fetch company info');
       }
-      
-      // Look for the data in the second result set
-      if (!response.resultSets?.[1]?.data?.[0]?.subscriptionAndResourcesJson) {
+
+      const subscriptionRow = getFirstRow<Record<string, unknown>>(response, 1);
+      const jsonData = subscriptionRow?.subscriptionAndResourcesJson;
+
+      if (!jsonData) {
         throw new Error('Invalid dashboard data format');
       }
-      
-      const jsonData = response.resultSets[1].data[0].subscriptionAndResourcesJson;
       
       // Parse the main JSON string
       const parsedData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
@@ -187,17 +188,17 @@ export const useDashboard = () => {
     queryKey: ['dashboard'],
     queryFn: async () => {
       const response = await apiClient.post('/GetCompanyDashboardJson', {});
-      
+
       if (response.failure !== 0) {
         throw new Error(response.errors?.join(', ') || 'Failed to fetch dashboard data');
       }
-      
-      // Look for the data in the second result set
-      if (!response.resultSets?.[1]?.data?.[0]?.subscriptionAndResourcesJson) {
+
+      const subscriptionRow = getFirstRow<Record<string, unknown>>(response, 1);
+      const jsonData = subscriptionRow?.subscriptionAndResourcesJson;
+
+      if (!jsonData) {
         throw new Error('Invalid dashboard data format');
       }
-      
-      const jsonData = response.resultSets[1].data[0].subscriptionAndResourcesJson;
       
       // Parse the main JSON string
       const parsedData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
@@ -243,8 +244,9 @@ export const useDashboard = () => {
       }
       
       // Check if there's a second result set with all active subscriptions
-      if (response.resultSets?.[2]?.data) {
-        parsedData.allActiveSubscriptions = response.resultSets[2].data;
+      const activeSubscriptions = getResultSet<SubscriptionDetail>(response, 2);
+      if (activeSubscriptions.length) {
+        parsedData.allActiveSubscriptions = activeSubscriptions;
       }
       
       return parsedData as DashboardData;

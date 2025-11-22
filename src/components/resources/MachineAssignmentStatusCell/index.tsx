@@ -62,15 +62,16 @@ const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = 
     )
   }
 
+  const legacyData = data as unknown as Record<string, unknown>
   const assignmentType = normalizeAssignmentType(
     data.assignmentType ||
-    (data as Record<string, unknown>)?.assignment_type as string ||
-    (data as Record<string, unknown>)?.AssignmentType as string
+    (legacyData.assignment_type as string) ||
+    (legacyData.AssignmentType as string)
   )
   const assignmentDetails = getAssignmentDetails(
     data.assignmentDetails ||
-    (data as Record<string, unknown>)?.assignment_details as string ||
-    (data as Record<string, unknown>)?.AssignmentDetails as string
+    (legacyData.assignment_details as string) ||
+    (legacyData.AssignmentDetails as string)
   )
 
   return (

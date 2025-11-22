@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { queueDataService, QueueRequestContext } from '@/services/queueDataService'
+import { queueService, type QueueRequestContext } from '@/services/queueService'
 import apiClient from '@/api/client'
 import { minifyJSON } from '@/utils/json'
 
@@ -80,7 +80,7 @@ export function useQueueVaultBuilder() {
     }
 
     // Use the service to build the vault
-    return queueDataService.buildQueueVault(fullContext)
+    return queueService.buildQueueVault(fullContext)
   }, [])
 
   return { buildQueueVault }

@@ -12,7 +12,8 @@ import {
 import { AvailableMachinesSelector } from '@/components/resources/AvailableMachinesSelector'
 import { formatTimestampAsIs } from '@/utils/timeUtils'
 import { ModalSize } from '@/types/modal'
-import { createSorter, createDateSorter } from '@/utils/tableSorters'
+import type { Machine } from '@/types'
+import { createSorter } from '@/utils/tableSorters'
 
 interface ManageClusterMachinesModalProps {
   open: boolean
@@ -41,8 +42,9 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     useDistributedStorageClusterMachines(clusterName, open)
   
   // Fetch available machines
-  const { data: availableMachines = [], isLoading: loadingAvailable } = 
+  const { data: availableMachines = [], isLoading: loadingAvailable } =
     useGetAvailableMachinesForClone(teamName, open && activeTab === 'assign')
+  const normalizedAvailableMachines = availableMachines as unknown as Machine[]
   
   // Mutations
   const assignMachine = useUpdateMachineClusterAssignment()
@@ -144,12 +146,12 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
   }
   
   // Columns for assigned machines table
-  const assignedColumns: ColumnsType<Record<string, unknown>> = [
+  const assignedColumns: ColumnsType<Machine> = [
     {
       title: t('machines:machineName'),
       dataIndex: 'machineName',
       key: 'machineName',
-      sorter: createSorter<Record<string, unknown>>('machineName'),
+      sorter: createSorter<Machine>('machineName'),
       render: (name: string) => (
         <Space>
           <DesktopOutlined />
@@ -161,15 +163,14 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
       title: t('machines:bridge'),
       dataIndex: 'bridgeName',
       key: 'bridgeName',
-      sorter: createSorter<Record<string, unknown>>('bridgeName'),
+      sorter: createSorter<Machine>('bridgeName'),
       render: (name: string) => <Tag color="green">{name}</Tag>,
     },
     {
       title: t('machines:assignedDate'),
       dataIndex: 'assignedDate',
       key: 'assignedDate',
-      sorter: createDateSorter<Record<string, unknown>>('assignedDate'),
-      render: (date: string) => date ? formatTimestampAsIs(date, 'datetime') : '-',
+      render: (date: string) => (date ? formatTimestampAsIs(date, 'datetime') : '-'),
     },
   ]
   
@@ -183,7 +184,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
         <div>
           <p>{t('machines:selectMachines')}</p>
           <AvailableMachinesSelector
-            machines={availableMachines}
+            machines={normalizedAvailableMachines}
             value={selectedMachines}
             onChange={setSelectedMachines}
           />

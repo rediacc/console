@@ -74,7 +74,7 @@ export const fetchPricingConfig = async (): Promise<PricingConfig | null> => {
     cacheTimestamps.set(cacheKey, Date.now());
 
     return data;
-  } catch (error) {
+  } catch {
     // If fetch fails, return the cached data if available
     if (cachedData) {
       return cachedData;

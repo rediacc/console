@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
-import { createMutation } from '@/api/utils/mutationFactory'
+import { extractTableData, getFirstRow } from '@/core/api/response'
+import { createMutation } from '@/hooks/api/mutationFactory'
 import { hashPassword } from '@/utils/auth'
 import { showMessage } from '@/utils/messages'
 import i18n from '@/i18n/config'
@@ -39,16 +40,15 @@ export const useUsers = () => {
     queryKey: ['users'],
     queryFn: async () => {
       const response = await apiClient.get('/GetCompanyUsers')
-      const users = response.resultSets[1]?.data || []
-      
-      // Map PermissionsName to permissionGroupName to match our interface
-      return users.map((user: any) => ({
+      const users = extractTableData<Record<string, unknown>[]>(response, 1, [])
+
+      return users.map((user) => ({
         ...user,
-        userEmail: user.UserEmail || user.userEmail,
-        companyName: user.CompanyName || user.companyName,
-        activated: user.Activated !== undefined ? user.Activated : user.activated,
-        permissionGroupName: user.PermissionsName || user.permissionsName || user.permissionGroupName,
-        lastActive: user.lastActive
+        userEmail: (user.UserEmail ?? user.userEmail) as string,
+        companyName: (user.CompanyName ?? user.companyName) as string,
+        activated: Boolean(user.Activated ?? user.activated),
+        permissionGroupName: (user.PermissionsName ?? user.permissionsName ?? user.permissionGroupName) as string | undefined,
+        lastActive: user.lastActive as string | undefined,
       }))
     },
   })
@@ -125,7 +125,7 @@ export const usePermissionGroups = () => {
     queryKey: ['permission-groups'],
     queryFn: async () => {
       const response = await apiClient.get('/GetCompanyPermissionGroups')
-      return response.resultSets[1]?.data || []
+      return extractTableData<Record<string, unknown>[]>(response, 1, [])
     },
   })
 }
@@ -170,7 +170,7 @@ export const useUserRequests = () => {
     queryKey: ['user-requests'],
     queryFn: async () => {
       const response = await apiClient.get('/GetUserRequests')
-      return response.resultSets[1]?.data as UserRequest[] || []
+      return extractTableData<UserRequest[]>(response, 1, [])
     },
     staleTime: 10 * 1000,
     refetchInterval: 30 * 1000,
@@ -190,18 +190,30 @@ export const useDeleteUserRequest = createMutation<{ requestId: number }>({
 })
 
 // Get current user's vault data
+interface UserVaultResult {
+  vault: string
+  vaultVersion: number
+  userCredential: string | null
+}
+
+interface UserVaultRow {
+  vaultContent?: string
+  vaultVersion?: number
+  userCredential?: string | null
+}
+
 export const useUserVault = () => {
-  return useQuery({
+  return useQuery<UserVaultResult>({
     queryKey: ['user-vault'],
     queryFn: async () => {
       const response = await apiClient.get('/GetUserVault')
-      const vaultData = response.resultSets[1]?.data[0]
+      const vaultData = getFirstRow<UserVaultRow>(response, 1)
 
       if (vaultData) {
         return {
           vault: vaultData.vaultContent || '{}',
           vaultVersion: vaultData.vaultVersion || 1,
-          userCredential: vaultData.userCredential
+          userCredential: vaultData.userCredential ?? null,
         }
       }
 

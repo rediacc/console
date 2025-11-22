@@ -258,9 +258,9 @@ const CompanyPage: React.FC = () => {
       for (const vault of vaultsResult.data.allVaults) {
         if (vault.decryptedVault && vault.credential && vault.vaultName) {
           try {
-            let vaultContent = vault.decryptedVault
+            let vaultContent = vault.decryptedVault as string
 
-            if (currentMasterPassword && masterPasswordOperation !== 'create') {
+            if (typeof vaultContent === 'string' && currentMasterPassword && masterPasswordOperation !== 'create') {
               try {
                 if (vaultContent.match(/^[A-Za-z0-9+/]+=*$/)) {
                   vaultContent = await decryptString(vaultContent, currentMasterPassword)
@@ -271,7 +271,7 @@ const CompanyPage: React.FC = () => {
             }
 
             let finalContent = vaultContent
-            if (masterPasswordOperation !== 'remove') {
+            if (typeof vaultContent === 'string' && masterPasswordOperation !== 'remove') {
               finalContent = await encryptString(vaultContent, newPassword)
             }
 
