@@ -1,5 +1,9 @@
 import type { ReactNode } from 'react'
-import type { UseFormReturn, ControllerProps, FieldValues } from 'react-hook-form'
+import type {
+  ControllerProps,
+  FieldValues,
+  UseFormReturn,
+} from 'react-hook-form'
 import type { UploadFile } from 'antd/es/upload/interface'
 
 export interface ResourceFormWithVaultRef {
@@ -15,14 +19,14 @@ export interface FormFieldOption {
   label: string
 }
 
-export interface FormFieldConfig {
+export type FormFieldConfig<TFieldValues extends FieldValues = FieldValues> = {
   name: string
   label: string
   type?: 'text' | 'select' | 'password' | 'email' | 'number' | 'size'
   placeholder?: string
   required?: boolean
   options?: FormFieldOption[]
-  rules?: ControllerProps<FieldValues>['rules']
+  rules?: ControllerProps<TFieldValues>['rules']
   hidden?: boolean
   disabled?: boolean
   readOnly?: boolean
@@ -35,9 +39,9 @@ export interface ImportExportHandlers {
   handleExport: () => void
 }
 
-export interface ResourceFormWithVaultProps<T extends Record<string, any> = any> {
+export interface ResourceFormWithVaultProps<T extends FieldValues = FieldValues> {
   form: UseFormReturn<T>
-  fields: FormFieldConfig[]
+  fields: Array<FormFieldConfig<T>>
   onSubmit: (data: T) => void | Promise<void>
   entityType: string
   vaultFieldName: string

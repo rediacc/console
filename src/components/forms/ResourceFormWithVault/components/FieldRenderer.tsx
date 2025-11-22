@@ -1,5 +1,6 @@
 import { Input } from 'antd'
-import { Controller, Control, type ControllerProps } from 'react-hook-form'
+import { Controller, Control } from 'react-hook-form'
+import type { ControllerProps, FieldValues } from 'react-hook-form'
 import type { FormFieldConfig } from '../types'
 import {
   SizeInputGroup,
@@ -8,12 +9,12 @@ import {
   FullWidthSelect,
 } from '../styles'
 
-interface FieldRendererProps<T extends Record<string, any>> {
-  field: FormFieldConfig
+interface FieldRendererProps<T extends FieldValues> {
+  field: FormFieldConfig<T>
   control: Control<T>
 }
 
-export const FieldRenderer = <T extends Record<string, any>>({
+export const FieldRenderer = <T extends FieldValues>({
   field,
   control,
 }: FieldRendererProps<T>) => {

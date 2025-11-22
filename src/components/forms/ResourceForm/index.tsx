@@ -27,11 +27,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
     formState: { errors },
   } = form
 
-  const handleFormFinish = useCallback(() => {
-    void handleSubmit(onSubmit)()
-  }, [handleSubmit, onSubmit])
-
-  const renderField = (field: FormFieldConfig) => {
+  const renderField = (field: FormFieldConfig<T>) => {
     switch (field.type) {
       case 'select':
         return (
@@ -96,10 +92,14 @@ function ResourceForm<T extends FieldValues = FieldValues>({
   const labelCol = { span: 6 }
   const wrapperCol = { span: 18 }
 
+  const onFormFinish = useCallback(() => {
+    void handleSubmit(onSubmit)()
+  }, [handleSubmit, onSubmit])
+
   return (
     <StyledForm
       layout={formLayout}
-      onFinish={handleFormFinish}
+      onFinish={onFormFinish}
       labelCol={labelCol}
       wrapperCol={wrapperCol}
       labelAlign="right"

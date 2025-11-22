@@ -210,9 +210,10 @@ const ResourceFormWithVault = forwardRef<ResourceFormWithVaultRef, ResourceFormW
 )
 
 export default ResourceFormWithVault
+
 export type {
   ResourceFormWithVaultRef,
   ResourceFormWithVaultProps,
-  ImportExportHandlers,
   FormFieldConfig,
+  ImportExportHandlers,
 } from './types'
