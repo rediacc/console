@@ -497,6 +497,18 @@ class QueueVaultBuilder {
         }
       }
 
+      // For ssh_test with bridge-only tasks (no machine name), include SSH details directly in vault data
+      if (context.functionName === 'ssh_test' && context.machineVault && !context.machineName) {
+        const machineData = this.extractMachineData(context.machineVault)
+        const parsedVault =
+          typeof context.machineVault === 'string' ? JSON.parse(context.machineVault) : context.machineVault
+        if ((parsedVault as Record<string, unknown>).ssh_password) {
+          ;(machineData as Record<string, unknown>).ssh_password = (parsedVault as Record<string, unknown>).ssh_password
+        }
+        // Include the SSH connection info directly in the root vault data for bridge-only tasks
+        Object.assign(queueVaultData, machineData)
+      }
+
       if (context.functionName === 'backup') {
         const targets = this.getParamArray(context.params as Record<string, unknown>, 'storages')
         if (!targets.length) {
@@ -535,6 +547,84 @@ class QueueVaultBuilder {
         }
       }
 
+      // Handle pull function with other machines (via additionalMachineData)
+      if (
+        context.functionName === 'pull' &&
+        (context.params as Record<string, string>).sourceType === 'machine' &&
+        (context.params as Record<string, string>).from
+      ) {
+        const fromName = (context.params as Record<string, string>).from
+        if (context.additionalMachineData?.[fromName]) {
+          queueVaultData.contextData.MACHINES = queueVaultData.contextData.MACHINES || {}
+          queueVaultData.contextData.MACHINES[fromName] = this.extractMachineData(
+            context.additionalMachineData[fromName],
+          )
+        }
+      }
+
+      // Handle pull function with storage systems (via additionalStorageData)
+      if (
+        context.functionName === 'pull' &&
+        (context.params as Record<string, string>).sourceType === 'storage' &&
+        (context.params as Record<string, string>).from
+      ) {
+        const fromName = (context.params as Record<string, string>).from
+        if (context.additionalStorageData?.[fromName]) {
+          queueVaultData.contextData.STORAGE_SYSTEMS = queueVaultData.contextData.STORAGE_SYSTEMS || {}
+          queueVaultData.contextData.STORAGE_SYSTEMS[fromName] = this.buildStorageConfig(
+            context.additionalStorageData[fromName],
+          )
+        }
+      }
+
+      // Add REPO_CREDENTIALS after MACHINES if repository is required
+      if (requirements.repository && context.repositoryGuid && context.repositoryVault) {
+        try {
+          const repoVault =
+            typeof context.repositoryVault === 'string'
+              ? JSON.parse(context.repositoryVault)
+              : context.repositoryVault
+
+          if (repoVault.credential) {
+            queueVaultData.contextData.REPO_CREDENTIALS = {
+              [context.repositoryGuid]: repoVault.credential,
+            }
+          }
+        } catch {
+          // Ignore vault parsing errors - repository vault is optional
+        }
+      }
+
+      // Add REPO_LOOPBACK_IP if repository loopback IP is provided
+      if (requirements.repository && context.repositoryLoopbackIp) {
+        queueVaultData.contextData.REPO_LOOPBACK_IP = context.repositoryLoopbackIp
+      }
+
+      // Add REPO_NETWORK_MODE if repository network mode is provided
+      if (requirements.repository && context.repositoryNetworkMode) {
+        queueVaultData.contextData.REPO_NETWORK_MODE = context.repositoryNetworkMode
+      }
+
+      // Add REPO_TAG if repository tag is provided
+      if (requirements.repository && context.repositoryTag !== undefined) {
+        queueVaultData.contextData.REPO_TAG = context.repositoryTag
+      }
+
+      // For functions like 'list' that need all REPO_CREDENTIALS
+      // Repository credentials are passed separately, not from company vault
+      if (context.functionName === 'list' && context.allRepositoryCredentials) {
+        queueVaultData.contextData.REPO_CREDENTIALS = context.allRepositoryCredentials
+      }
+
+      // For 'mount', 'unmount', 'new', and 'up' functions that need PLUGINS
+      if (
+        ['mount', 'unmount', 'new', 'up'].includes(context.functionName) &&
+        context.companyVault &&
+        (context.companyVault as VaultData).PLUGINS
+      ) {
+        queueVaultData.contextData.PLUGINS = (context.companyVault as VaultData).PLUGINS as VaultData
+      }
+
       const dataExtractors: Array<[boolean | undefined, keyof VaultContextData, () => VaultData]> = [
         [requirements.company, 'company', () => this.extractCompanyData(context.companyVault)],
         [
@@ -542,8 +632,16 @@ class QueueVaultBuilder {
           'repository',
           () => this.extractRepositoryData(context.repositoryVault, context.repositoryGuid ?? '', context.companyVault),
         ],
-        [requirements.storage && Boolean(context.storageName), 'storage', () => this.extractStorageData(context.storageVault)],
-        [requirements.bridge && Boolean(context.bridgeName), 'bridge', () => this.extractBridgeData(context.bridgeVault)],
+        [
+          requirements.storage && Boolean(context.storageName),
+          'storage',
+          () => this.extractStorageData(context.storageVault, context.storageName!),
+        ],
+        [
+          requirements.bridge && Boolean(context.bridgeName),
+          'bridge',
+          () => this.extractBridgeData(context.bridgeVault, context.bridgeName!),
+        ],
         [requirements.plugin, 'plugins', () => this.extractPluginData(context.companyVault)],
       ]
 
@@ -607,20 +705,20 @@ class QueueVaultBuilder {
     }
   }
 
-  private extractStorageData(storageVault: VaultData | string | null | undefined): VaultData {
-    if (!storageVault) return {}
+  private extractStorageData(storageVault: VaultData | string | null | undefined, storageName: string): VaultData {
+    if (!storageVault) return { name: storageName }
     if (typeof storageVault === 'string') {
-      return JSON.parse(storageVault)
+      return { name: storageName, ...JSON.parse(storageVault) }
     }
-    return storageVault
+    return { name: storageName, ...storageVault }
   }
 
-  private extractBridgeData(bridgeVault: VaultData | string | null | undefined): VaultData {
-    if (!bridgeVault) return {}
+  private extractBridgeData(bridgeVault: VaultData | string | null | undefined, bridgeName: string): VaultData {
+    if (!bridgeVault) return { name: bridgeName }
     if (typeof bridgeVault === 'string') {
-      return JSON.parse(bridgeVault)
+      return { name: bridgeName, ...JSON.parse(bridgeVault) }
     }
-    return bridgeVault
+    return { name: bridgeName, ...bridgeVault }
   }
 
   private extractPluginData(companyVault: VaultData | string | null | undefined): VaultData {
@@ -701,23 +799,52 @@ class QueueVaultBuilder {
   }
 
   private addCompanyVaultToGeneralSettings(generalSettings: VaultData, companyVault: VaultData) {
-    const { SSH_PRIVATE_KEY, SSH_PUBLIC_KEY, LICENSES, MACHINE_TYPE, REGION } = companyVault as Record<string, unknown>
-    if (SSH_PRIVATE_KEY) generalSettings.SSH_PRIVATE_KEY = SSH_PRIVATE_KEY
-    if (SSH_PUBLIC_KEY) generalSettings.SSH_PUBLIC_KEY = SSH_PUBLIC_KEY
-    if (LICENSES) generalSettings.LICENSES = LICENSES
-    if (MACHINE_TYPE) generalSettings.MACHINE_TYPE = MACHINE_TYPE
-    if (REGION) generalSettings.REGION = REGION
+    const { UNIVERSAL_USER_ID, UNIVERSAL_USER_NAME, DOCKER_JSON_CONF, PLUGINS } = companyVault as Record<string, unknown>
+    if (UNIVERSAL_USER_ID) generalSettings.UNIVERSAL_USER_ID = UNIVERSAL_USER_ID
+    if (UNIVERSAL_USER_NAME) generalSettings.UNIVERSAL_USER_NAME = UNIVERSAL_USER_NAME
+    if (DOCKER_JSON_CONF) generalSettings.DOCKER_JSON_CONF = DOCKER_JSON_CONF
+    if (PLUGINS) generalSettings.PLUGINS = PLUGINS
   }
 
   private addTeamVaultToGeneralSettings(generalSettings: VaultData, teamVault: VaultData) {
-    Object.assign(generalSettings, teamVault)
+    const sshKeyFields = ['SSH_PRIVATE_KEY', 'SSH_PUBLIC_KEY']
+    sshKeyFields.forEach((field) => {
+      const value = (teamVault as Record<string, unknown>)[field]
+      if (value && typeof value === 'string') {
+        generalSettings[field] = this.ensureBase64(value)
+      }
+    })
   }
 
   private getSystemApiUrl(): string {
     if (typeof window !== 'undefined') {
       const baseUrl = window.location.origin
-      return `${baseUrl}/StoredProcedure`
+      return `${baseUrl}/api`
     }
     return ''
+  }
+
+  private ensureBase64(value: string): string {
+    if (!value) return value
+    return this.isBase64(value) ? value : this.encodeToBase64(value)
+  }
+
+  private isBase64(value: string): boolean {
+    const base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/
+    const valueWithoutWhitespace = value.replace(/\s/g, '')
+    return base64Pattern.test(valueWithoutWhitespace) && valueWithoutWhitespace.length % 4 === 0
+  }
+
+  private encodeToBase64(value: string): string {
+    try {
+      return btoa(value)
+    } catch {
+      // Handle non-Latin1 characters by encoding to UTF-8 first
+      const utf8Bytes = new TextEncoder().encode(value)
+      const binaryString = Array.from(utf8Bytes)
+        .map((byte) => String.fromCharCode(byte))
+        .join('')
+      return btoa(binaryString)
+    }
   }
 }
