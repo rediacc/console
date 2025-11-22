@@ -47,19 +47,39 @@ interface CloneListProps {
   teamFilter: string | string[]
 }
 
+type CloneModalMode = 'create' | 'edit' | 'vault'
+
+type CloneModalData = DistributedStorageRbdClone & {
+  vaultContent?: string
+  cloneVault?: string
+  vaultVersion?: number
+}
+
+interface CloneModalState {
+  open: boolean
+  mode: CloneModalMode
+  data?: CloneModalData
+}
+
+interface MachineModalState {
+  open: boolean
+  clone: DistributedStorageRbdClone | null
+}
+
+interface CloneFormValues {
+  cloneName: string
+  cloneVault: string
+}
+
 const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
   const { t } = useTranslation('distributedStorage')
-  const [modalState, setModalState] = useState<{
-    open: boolean
-    mode: 'create' | 'edit' | 'vault'
-    data?: Record<string, any>
-  }>({ open: false, mode: 'create' })
+  const [modalState, setModalState] = useState<CloneModalState>({ open: false, mode: 'create' })
   const [queueModalVisible, setQueueModalVisible] = useState(false)
   const [queueModalTaskId, setQueueModalTaskId] = useState<string>('')
-  const [machineModalState, setMachineModalState] = useState<{
-    open: boolean
-    clone: DistributedStorageRbdClone | null
-  }>({ open: false, clone: null })
+  const [machineModalState, setMachineModalState] = useState<MachineModalState>({
+    open: false,
+    clone: null,
+  })
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
 
   const managedQueueMutation = useManagedQueueItem()
@@ -142,7 +162,7 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
         if (response.taskId) {
           handleQueueItemCreated(response.taskId)
         }
-      } catch (error) {
+      } catch {
         message.error(t('queue.createError'))
       }
     },
@@ -306,7 +326,7 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
         resourceType="clone"
         mode={modalState.mode}
         existingData={{
-          ...modalState.data,
+          ...(modalState.data ?? {}),
           teamName: pool.teamName,
           poolName: pool.poolName,
           imageName: image.imageName,
@@ -317,7 +337,8 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
           vaultContent: modalState.data?.vaultContent || modalState.data?.cloneVault,
         }}
         teamFilter={pool.teamName}
-        onSubmit={async (data: any) => {
+        onSubmit={async (formValues) => {
+          const data = formValues as CloneFormValues
           if (modalState.mode === 'create') {
             await createCloneMutation.mutateAsync({
               snapshotName: snapshot.snapshotName,

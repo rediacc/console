@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Row, Col, Progress } from 'antd'
+import type { ListProps } from 'antd'
 import {
   DoubleRightOutlined,
   DesktopOutlined,
@@ -309,10 +310,10 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                 </>
               )}
 
-              {vaultData.network && <NetworkSection network={vaultData.network} t={t} />}
+              {vaultData.network && (<NetworkSection network={vaultData.network as VaultNetwork} t={t} />)}
 
               {vaultData.block_devices && vaultData.block_devices.length > 0 && (
-                <BlockDevicesSection devices={vaultData.block_devices} t={t} />
+                <BlockDevicesSection devices={vaultData.block_devices as BlockDevice[]} t={t} />
               )}
 
               {vaultData.system_containers && vaultData.system_containers.length > 0 && (
@@ -532,32 +533,32 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
       <StyledList
         dataSource={interfaces}
         data-testid="vault-status-network-list"
-        renderItem={(iface) => {
-          const networkInterface = iface as NetworkInterface
-          return (
-          <ListCard size="small" data-testid={`vault-status-network-${networkInterface.name}`}>
+        renderItem={((
+          iface: NetworkInterface,
+        ) => (
+          <ListCard size="small" data-testid={`vault-status-network-${iface.name}`}>
             <CardHeader>
               <HeaderTitleGroup>
                 <IconWrapper $color="var(--color-info)">
                   <CompassOutlined />
                 </IconWrapper>
-                <FieldValueStrong data-testid={`vault-status-network-name-${networkInterface.name}`}>
-                  {networkInterface.name}
+                <FieldValueStrong data-testid={`vault-status-network-name-${iface.name}`}>
+                  {iface.name}
                 </FieldValueStrong>
               </HeaderTitleGroup>
               <StatusTag
-                $tone={networkInterface.state === 'UP' ? 'success' : 'default'}
-                data-testid={`vault-status-network-state-${networkInterface.name}`}
+                $tone={iface.state === 'UP' ? 'success' : 'default'}
+                data-testid={`vault-status-network-state-${iface.name}`}
               >
-                {networkInterface.state}
+                {iface.state}
               </StatusTag>
             </CardHeader>
             <CardBodyStack>
-              {networkInterface.ipv4_addresses.length > 0 && (
+              {iface.ipv4_addresses.length > 0 && (
                 <div>
                   <FieldLabel>{t('resources:repositories.ipAddresses')}:</FieldLabel>
                   <CardTagGroup>
-                    {networkInterface.ipv4_addresses.map((ip) => (
+                    {iface.ipv4_addresses.map((ip: string) => (
                       <AddressTag key={ip} data-testid={`vault-status-ip-${ip}`}>
                         {ip}
                       </AddressTag>
@@ -565,21 +566,21 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
                   </CardTagGroup>
                 </div>
               )}
-              {networkInterface.mac_address && networkInterface.mac_address !== 'unknown' && (
+              {iface.mac_address && iface.mac_address !== 'unknown' && (
                 <KeyValueRow>
                   <FieldLabel>{t('resources:repositories.macAddress')}:</FieldLabel>
-                  <FieldValue>{networkInterface.mac_address}</FieldValue>
+                  <FieldValue>{iface.mac_address}</FieldValue>
                 </KeyValueRow>
               )}
-              {networkInterface.mtu > 0 && (
+              {iface.mtu > 0 && (
                 <KeyValueRow>
                   <FieldLabel>MTU:</FieldLabel>
-                  <FieldValue>{networkInterface.mtu}</FieldValue>
+                  <FieldValue>{iface.mtu}</FieldValue>
                 </KeyValueRow>
               )}
             </CardBodyStack>
           </ListCard>
-        )}}
+        )) as ListProps<unknown>['renderItem']}
       />
     </SectionBlock>
   )
@@ -601,41 +602,39 @@ const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t })
     <StyledList
       dataSource={devices}
       data-testid="vault-status-block-devices-list"
-      renderItem={(device) => {
-        const blockDevice = device as BlockDevice
-        return (
-        <ListCard size="small" data-testid={`vault-status-block-device-${blockDevice.name}`}>
+      renderItem={((device: BlockDevice) => (
+        <ListCard size="small" data-testid={`vault-status-block-device-${device.name}`}>
           <CardHeader>
             <HeaderTitleGroup>
               <IconWrapper $color="var(--color-warning)">
                 <HddOutlined />
               </IconWrapper>
-              <FieldValueStrong data-testid={`vault-status-device-path-${blockDevice.name}`}>
-                {blockDevice.path}
+              <FieldValueStrong data-testid={`vault-status-device-path-${device.name}`}>
+                {device.path}
               </FieldValueStrong>
             </HeaderTitleGroup>
             <CardTagGroup>
-              <StatusTag data-testid={`vault-status-device-type-${blockDevice.name}`}>{blockDevice.type}</StatusTag>
-              <StatusTag $tone="info" data-testid={`vault-status-device-size-${blockDevice.name}`}>
-                {blockDevice.size_human}
+              <StatusTag data-testid={`vault-status-device-type-${device.name}`}>{device.type}</StatusTag>
+              <StatusTag $tone="info" data-testid={`vault-status-device-size-${device.name}`}>
+                {device.size_human}
               </StatusTag>
             </CardTagGroup>
           </CardHeader>
 
           <CardBodyStack>
-            {blockDevice.model && blockDevice.model !== 'Unknown' && (
+            {device.model && device.model !== 'Unknown' && (
               <KeyValueRow>
                 <FieldLabel>{t('resources:repositories.model')}:</FieldLabel>
-                <FieldValue>{blockDevice.model}</FieldValue>
+                <FieldValue>{device.model}</FieldValue>
               </KeyValueRow>
             )}
 
-            {blockDevice.partitions.length > 0 && (
+            {device.partitions.length > 0 && (
               <div>
                 <FieldLabel>{t('resources:repositories.partitions')}:</FieldLabel>
                 <IndentedBlock>
-                  {blockDevice.partitions.map((part) => (
-                    <PartitionRow key={`${blockDevice.name}-${part.name}`}>
+                  {device.partitions.map((part: BlockDevicePartition) => (
+                    <PartitionRow key={`${device.name}-${part.name}`}>
                       <CodeOutlined />
                       <SecondaryText as="span">
                         {part.name}: {part.size_human}
@@ -649,7 +648,7 @@ const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t })
             )}
           </CardBodyStack>
         </ListCard>
-      )}}
+      )) as ListProps<unknown>['renderItem']}
     />
   </SectionBlock>
 )
@@ -670,46 +669,44 @@ const SystemContainersSection: React.FC<SystemContainersSectionProps> = ({ conta
     <StyledList
       dataSource={containers}
       data-testid="vault-status-containers-list"
-      renderItem={(container) => {
-        const containerData = container as Container
-        return (
-        <ListCard size="small" data-testid={`vault-status-container-${containerData.id}`}>
+      renderItem={((container: Container) => (
+        <ListCard size="small" data-testid={`vault-status-container-${container.id}`}>
           <CardHeader>
             <HeaderTitleGroup>
               <IconWrapper $color="var(--color-secondary)">
                 <ContainerOutlined />
               </IconWrapper>
-              <FieldValueStrong data-testid={`vault-status-container-name-${containerData.id}`}>
-                {containerData.name}
+              <FieldValueStrong data-testid={`vault-status-container-name-${container.id}`}>
+                {container.name}
               </FieldValueStrong>
             </HeaderTitleGroup>
             <StatusTag
-              $tone={containerData.state === 'running' ? 'success' : 'default'}
-              data-testid={`vault-status-container-state-${containerData.id}`}
+              $tone={container.state === 'running' ? 'success' : 'default'}
+              data-testid={`vault-status-container-state-${container.id}`}
             >
-              {containerData.state}
+              {container.state}
             </StatusTag>
           </CardHeader>
 
           <CardBodyStack>
-            {containerData.image && (
-              <SecondaryText ellipsis>{containerData.image}</SecondaryText>
+            {container.image && (
+              <SecondaryText ellipsis>{container.image}</SecondaryText>
             )}
-            {containerData.cpu_percent && (
+            {container.cpu_percent && (
               <KeyValueRow>
                 <FieldLabel>CPU:</FieldLabel>
-                <FieldValue>{containerData.cpu_percent}</FieldValue>
+                <FieldValue>{container.cpu_percent}</FieldValue>
               </KeyValueRow>
             )}
-            {containerData.memory_usage && (
+            {container.memory_usage && (
               <KeyValueRow>
                 <FieldLabel>{t('resources:repositories.memory')}:</FieldLabel>
-                <FieldValue>{containerData.memory_usage}</FieldValue>
+                <FieldValue>{container.memory_usage}</FieldValue>
               </KeyValueRow>
             )}
           </CardBodyStack>
         </ListCard>
-      )}}
+      )) as ListProps<unknown>['renderItem']}
     />
   </SectionBlock>
 )

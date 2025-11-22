@@ -13,6 +13,8 @@
     "editResource": "编辑{{资源}}",
     "editVault": "编辑保管库",
     "exitFullscreen": "退出全屏",
+    "export": "出口",
+    "exportSuccess": "出口成功",
     "fullscreen": "全屏",
     "manage": "管理",
     "refresh": "刷新",

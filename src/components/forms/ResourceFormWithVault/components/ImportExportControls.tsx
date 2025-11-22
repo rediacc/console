@@ -1,4 +1,3 @@
-import React from 'react'
 import { Upload, Button, Space, Tooltip } from 'antd'
 import type { UploadFile } from 'antd/es/upload/interface'
 import {

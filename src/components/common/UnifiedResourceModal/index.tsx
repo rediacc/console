@@ -1,6 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { Modal, Space, Typography, Upload, message } from 'antd'
-
 // message.error is imported from antd
 import { AppstoreOutlined } from '@/utils/optimizedIcons'
 import { useForm, type Resolver } from 'react-hook-form'
@@ -10,8 +9,8 @@ import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
 import ResourceFormWithVault, {
   type FormFieldConfig,
-  type ResourceFormWithVaultRef,
   type ImportExportHandlers,
+  type ResourceFormWithVaultRef,
 } from '@/components/forms/ResourceFormWithVault'
 import VaultEditorModal from '@/components/common/VaultEditorModal'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
@@ -1177,10 +1176,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           hideImportExport={true}
           isEditMode={mode === 'edit'}
           onImportExportRef={(handlers) => {
-            importExportHandlers.current = {
-              handleImport: (file) => handlers.handleImport(file),
-              handleExport: handlers.handleExport,
-            }
+            importExportHandlers.current = handlers
           }}
           teamName={form.getValues('teamName') || (existingData?.teamName) || (Array.isArray(teamFilter) ? teamFilter[0] : teamFilter) || 'Private Team'}
           bridgeName={form.getValues('bridgeName') || 'Global Bridges'}

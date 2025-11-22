@@ -31,25 +31,25 @@
 - **Before**: 340+ line flat file with inline table toolbar/container styles
 - **After**: SnapshotList/index.tsx, styles.ts, and columns.ts with theme-driven buttons, extracted menu definitions, and zero inline styles
 
-### Γ£à CloneMachineManager (Dec 2025 - CLI Refactor)
+### ✅ CloneMachineManager (Dec 2025 - CLI Refactor)
 - **Before**: 438-line flat file with inline `style` props, embedded columns, and CSV/export logic mixed into the view
 - **After**: CloneMachineManager/index.tsx + styles.ts + columns.ts with dedicated components for the header stats, action toolbar, and assign-machines modal, plus fully themed styled-components
 
-### Γ£à ClusterTable (Dec 2025 - CLI Refactor)
+### ✅ ClusterTable (Dec 2025 - CLI Refactor)
 - **Before**: 400+ lines with chevron rotation, hover states, and machine badges controlled via inline styles
 - **After**: ClusterTable/index.tsx backed by styles.ts, columns.ts, menus.ts, and components/ for MachineCountBadge + ClusterMachines so expandable rows, menus, and actions stay modular
 
-### Γ£à PoolTable (Dec 2025 - CLI Refactor)
+### ✅ PoolTable (Dec 2025 - CLI Refactor)
 - **Before**: 293-line monolith with inline card/table styling and duplicated dropdown definitions
 - **After**: PoolTable/index.tsx with styles.ts, columns.ts, menus.ts, and a ClusterPoolsCard subcomponent that renders themed cluster cards and tables without inline CSS
 
-### Γ£à ResourceFormWithVault (Dec 2025 - CLI Refactor)
+### ✅ ResourceFormWithVault (Dec 2025 - CLI Refactor)
 - **Before**: 470+ line form with field rendering, import/export controls, and defaults banner defined inline alongside business logic
 - **After**: ResourceFormWithVault/index.tsx orchestrates helpers in components/ + types.ts while styles.ts exposes full-width selects, size inputs, and import/export rows for a purely styled-components implementation
 
 ### ✅ FilterableMachineTable (Dec 2025 - CLI Refactor)
-- **Before**: ~200-line FilterableMachineTable.tsx with inline badge/tag styling, embedded column definitions, and ad-hoc expanded-row padding
-- **After**: FilterableMachineTable/index.tsx coordinates extracted columns.tsx + styles.ts so themed tags, badges, and the expandable row container share styled-components with zero inline CSS
+- **Before**: ~200-line `FilterableMachineTable.tsx` with inline badge/tag styling, embedded column definitions, and ad-hoc expanded-row padding
+- **After**: `FilterableMachineTable/index.tsx` coordinates extracted `columns.tsx` + `styles.ts` so themed tags, badges, and the expandable row container share styled-components with zero inline CSS
 
 ---
 
@@ -63,7 +63,7 @@
 > - Γ¥î Not using styled-components
 > - Γ¥î File size > 300 lines
 
-> **Update (Dec 2025):** FilterableMachineTable (src/pages/distributedStorage/components/) has been refactored and moved to the Recently Completed list above, so it no longer appears in the backlog below.
+> **Update (Dec 2025):** `FilterableMachineTable` (`src/pages/distributedStorage/components/`) has been refactored and moved to the Recently Completed list above, so it no longer appears in the backlog below.
 
 ## Priority 1: High Violation Count (Critical)
 

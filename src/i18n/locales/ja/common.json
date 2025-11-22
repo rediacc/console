@@ -13,6 +13,8 @@
     "editResource": "{{リソース}}を編集",
     "editVault": "ボールトの編集",
     "exitFullscreen": "全画面表示を終了する",
+    "export": "輸出",
+    "exportSuccess": "輸出成功",
     "fullscreen": "全画面表示",
     "manage": "管理",
     "refresh": "リフレッシュ",
