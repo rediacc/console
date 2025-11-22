@@ -302,9 +302,11 @@ const UserSessionsTab: React.FC = () => {
               ),
             }}
             scroll={{ x: 1500 }}
-            onRow={(record) => ({
-              'data-testid': `sessions-row-${record.requestId}`,
-            })}
+            onRow={(record) =>
+              ({
+                'data-testid': `sessions-row-${record.requestId}`,
+              } as React.HTMLAttributes<HTMLTableRowElement>)
+            }
           />
         </TableWrapper>
       </TableCard>

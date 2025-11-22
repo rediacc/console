@@ -532,30 +532,32 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
       <StyledList
         dataSource={interfaces}
         data-testid="vault-status-network-list"
-        renderItem={(iface) => (
-          <ListCard size="small" data-testid={`vault-status-network-${iface.name}`}>
+        renderItem={(iface) => {
+          const networkInterface = iface as NetworkInterface
+          return (
+          <ListCard size="small" data-testid={`vault-status-network-${networkInterface.name}`}>
             <CardHeader>
               <HeaderTitleGroup>
                 <IconWrapper $color="var(--color-info)">
                   <CompassOutlined />
                 </IconWrapper>
-                <FieldValueStrong data-testid={`vault-status-network-name-${iface.name}`}>
-                  {iface.name}
+                <FieldValueStrong data-testid={`vault-status-network-name-${networkInterface.name}`}>
+                  {networkInterface.name}
                 </FieldValueStrong>
               </HeaderTitleGroup>
               <StatusTag
-                $tone={iface.state === 'UP' ? 'success' : 'default'}
-                data-testid={`vault-status-network-state-${iface.name}`}
+                $tone={networkInterface.state === 'UP' ? 'success' : 'default'}
+                data-testid={`vault-status-network-state-${networkInterface.name}`}
               >
-                {iface.state}
+                {networkInterface.state}
               </StatusTag>
             </CardHeader>
             <CardBodyStack>
-              {iface.ipv4_addresses.length > 0 && (
+              {networkInterface.ipv4_addresses.length > 0 && (
                 <div>
                   <FieldLabel>{t('resources:repositories.ipAddresses')}:</FieldLabel>
                   <CardTagGroup>
-                    {iface.ipv4_addresses.map((ip) => (
+                    {networkInterface.ipv4_addresses.map((ip) => (
                       <AddressTag key={ip} data-testid={`vault-status-ip-${ip}`}>
                         {ip}
                       </AddressTag>
@@ -563,21 +565,21 @@ const NetworkSection: React.FC<NetworkSectionProps> = ({ network, t }) => {
                   </CardTagGroup>
                 </div>
               )}
-              {iface.mac_address && iface.mac_address !== 'unknown' && (
+              {networkInterface.mac_address && networkInterface.mac_address !== 'unknown' && (
                 <KeyValueRow>
                   <FieldLabel>{t('resources:repositories.macAddress')}:</FieldLabel>
-                  <FieldValue>{iface.mac_address}</FieldValue>
+                  <FieldValue>{networkInterface.mac_address}</FieldValue>
                 </KeyValueRow>
               )}
-              {iface.mtu > 0 && (
+              {networkInterface.mtu > 0 && (
                 <KeyValueRow>
                   <FieldLabel>MTU:</FieldLabel>
-                  <FieldValue>{iface.mtu}</FieldValue>
+                  <FieldValue>{networkInterface.mtu}</FieldValue>
                 </KeyValueRow>
               )}
             </CardBodyStack>
           </ListCard>
-        )}
+        )}}
       />
     </SectionBlock>
   )
@@ -599,39 +601,41 @@ const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t })
     <StyledList
       dataSource={devices}
       data-testid="vault-status-block-devices-list"
-      renderItem={(device) => (
-        <ListCard size="small" data-testid={`vault-status-block-device-${device.name}`}>
+      renderItem={(device) => {
+        const blockDevice = device as BlockDevice
+        return (
+        <ListCard size="small" data-testid={`vault-status-block-device-${blockDevice.name}`}>
           <CardHeader>
             <HeaderTitleGroup>
               <IconWrapper $color="var(--color-warning)">
                 <HddOutlined />
               </IconWrapper>
-              <FieldValueStrong data-testid={`vault-status-device-path-${device.name}`}>
-                {device.path}
+              <FieldValueStrong data-testid={`vault-status-device-path-${blockDevice.name}`}>
+                {blockDevice.path}
               </FieldValueStrong>
             </HeaderTitleGroup>
             <CardTagGroup>
-              <StatusTag data-testid={`vault-status-device-type-${device.name}`}>{device.type}</StatusTag>
-              <StatusTag $tone="info" data-testid={`vault-status-device-size-${device.name}`}>
-                {device.size_human}
+              <StatusTag data-testid={`vault-status-device-type-${blockDevice.name}`}>{blockDevice.type}</StatusTag>
+              <StatusTag $tone="info" data-testid={`vault-status-device-size-${blockDevice.name}`}>
+                {blockDevice.size_human}
               </StatusTag>
             </CardTagGroup>
           </CardHeader>
 
           <CardBodyStack>
-            {device.model && device.model !== 'Unknown' && (
+            {blockDevice.model && blockDevice.model !== 'Unknown' && (
               <KeyValueRow>
                 <FieldLabel>{t('resources:repositories.model')}:</FieldLabel>
-                <FieldValue>{device.model}</FieldValue>
+                <FieldValue>{blockDevice.model}</FieldValue>
               </KeyValueRow>
             )}
 
-            {device.partitions.length > 0 && (
+            {blockDevice.partitions.length > 0 && (
               <div>
                 <FieldLabel>{t('resources:repositories.partitions')}:</FieldLabel>
                 <IndentedBlock>
-                  {device.partitions.map((part) => (
-                    <PartitionRow key={`${device.name}-${part.name}`}>
+                  {blockDevice.partitions.map((part) => (
+                    <PartitionRow key={`${blockDevice.name}-${part.name}`}>
                       <CodeOutlined />
                       <SecondaryText as="span">
                         {part.name}: {part.size_human}
@@ -645,7 +649,7 @@ const BlockDevicesSection: React.FC<BlockDevicesSectionProps> = ({ devices, t })
             )}
           </CardBodyStack>
         </ListCard>
-      )}
+      )}}
     />
   </SectionBlock>
 )
@@ -666,44 +670,46 @@ const SystemContainersSection: React.FC<SystemContainersSectionProps> = ({ conta
     <StyledList
       dataSource={containers}
       data-testid="vault-status-containers-list"
-      renderItem={(container) => (
-        <ListCard size="small" data-testid={`vault-status-container-${container.id}`}>
+      renderItem={(container) => {
+        const containerData = container as Container
+        return (
+        <ListCard size="small" data-testid={`vault-status-container-${containerData.id}`}>
           <CardHeader>
             <HeaderTitleGroup>
               <IconWrapper $color="var(--color-secondary)">
                 <ContainerOutlined />
               </IconWrapper>
-              <FieldValueStrong data-testid={`vault-status-container-name-${container.id}`}>
-                {container.name}
+              <FieldValueStrong data-testid={`vault-status-container-name-${containerData.id}`}>
+                {containerData.name}
               </FieldValueStrong>
             </HeaderTitleGroup>
             <StatusTag
-              $tone={container.state === 'running' ? 'success' : 'default'}
-              data-testid={`vault-status-container-state-${container.id}`}
+              $tone={containerData.state === 'running' ? 'success' : 'default'}
+              data-testid={`vault-status-container-state-${containerData.id}`}
             >
-              {container.state}
+              {containerData.state}
             </StatusTag>
           </CardHeader>
 
           <CardBodyStack>
-            {container.image && (
-              <SecondaryText ellipsis>{container.image}</SecondaryText>
+            {containerData.image && (
+              <SecondaryText ellipsis>{containerData.image}</SecondaryText>
             )}
-            {container.cpu_percent && (
+            {containerData.cpu_percent && (
               <KeyValueRow>
                 <FieldLabel>CPU:</FieldLabel>
-                <FieldValue>{container.cpu_percent}</FieldValue>
+                <FieldValue>{containerData.cpu_percent}</FieldValue>
               </KeyValueRow>
             )}
-            {container.memory_usage && (
+            {containerData.memory_usage && (
               <KeyValueRow>
                 <FieldLabel>{t('resources:repositories.memory')}:</FieldLabel>
-                <FieldValue>{container.memory_usage}</FieldValue>
+                <FieldValue>{containerData.memory_usage}</FieldValue>
               </KeyValueRow>
             )}
           </CardBodyStack>
         </ListCard>
-      )}
+      )}}
     />
   </SectionBlock>
 )

@@ -1,6 +1,6 @@
 import type { ColumnsType } from 'antd/es/table'
 import type { TFunction } from 'i18next'
-import { Dropdown, Tooltip } from 'antd'
+import { Dropdown } from 'antd'
 import {
   EditOutlined,
   FunctionOutlined,

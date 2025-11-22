@@ -1,5 +1,6 @@
 import React from 'react'
 import { Upload, Button, Space, Tooltip } from 'antd'
+import type { UploadFile } from 'antd/es/upload/interface'
 import {
   UploadOutlined,
   DownloadOutlined,
@@ -9,7 +10,7 @@ import { ImportExportRow } from '../styles'
 interface ImportExportControlsProps {
   importLabel: string
   exportLabel: string
-  onImport: (file: File) => boolean
+  onImport: (file: UploadFile) => boolean
   onExport: () => void
 }
 

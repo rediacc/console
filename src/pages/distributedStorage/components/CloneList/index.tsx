@@ -9,6 +9,7 @@ import {
   TeamOutlined,
   SyncOutlined,
   ScissorOutlined,
+  CopyOutlined,
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import { useTranslation } from 'react-i18next'

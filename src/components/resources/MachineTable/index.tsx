@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import {
   Table,
   Button,
-  Dropdown,
   Space,
   Tooltip,
 } from 'antd';
@@ -26,7 +25,6 @@ import { RootState } from '@/store/store';
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
 import { usePingFunction } from '@/services/pingService';
-import { LocalActionsMenu } from '../LocalActionsMenu';
 import { useLocalizedFunctions } from '@/services/functionsService';
 import { useRepositories } from '@/api/queries/repositories';
 import { RemoteFileBrowserModal } from '../RemoteFileBrowserModal';
@@ -61,6 +59,7 @@ import {
   GroupHeaderTag,
   StyledTag,
 } from './styles';
+import type { TagVariant } from './styles';
 
 
 type GroupByMode = 'machine' | 'bridge' | 'team' | 'region' | 'repository' | 'status' | 'grand';
@@ -74,7 +73,6 @@ interface MachineTableProps {
   onVaultMachine?: (machine: Machine) => void;
   onFunctionsMachine?: (machine: Machine, functionName?: string) => void;
   onDeleteMachine?: (machine: Machine) => void;
-  onCreateRepository?: (machine: Machine, repositoryGuid?: string) => void;
   enabled?: boolean;
   onQueueItemCreated?: (taskId: string, machineName: string) => void;
   onRowClick?: (machine: Machine) => void;
@@ -88,7 +86,6 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   onEditMachine,
   onFunctionsMachine,
   onDeleteMachine,
-  onCreateRepository,
   enabled = true,
   onQueueItemCreated,
   onRowClick,

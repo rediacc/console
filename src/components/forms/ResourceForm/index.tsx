@@ -1,3 +1,4 @@
+import { useCallback } from 'react'
 import { Form, Button } from 'antd'
 import { Controller, FieldValues } from 'react-hook-form'
 import {
@@ -26,7 +27,7 @@ function ResourceForm<T extends FieldValues = FieldValues>({
     formState: { errors },
   } = form
 
-  const renderField = (field: FormFieldConfig) => {
+  const renderField = (field: FormFieldConfig<T>) => {
     switch (field.type) {
       case 'select':
         return (
@@ -91,10 +92,14 @@ function ResourceForm<T extends FieldValues = FieldValues>({
   const labelCol = { span: 6 }
   const wrapperCol = { span: 18 }
 
+  const onFormFinish = useCallback(() => {
+    void handleSubmit(onSubmit)()
+  }, [handleSubmit, onSubmit])
+
   return (
     <StyledForm
       layout={formLayout}
-      onFinish={handleSubmit(onSubmit)}
+      onFinish={onFormFinish}
       labelCol={labelCol}
       wrapperCol={wrapperCol}
       labelAlign="right"

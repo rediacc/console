@@ -9,6 +9,7 @@ import {
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useTheme as useStyledTheme } from 'styled-components'
+import type { DistributedStorageTeamBreakdown } from '@/api/queries/dashboard'
 import { DistributedStorageDashboardWidgetProps } from './types'
 import {
   WidgetCard,
@@ -90,6 +91,57 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
   const utilizationPercent = Math.round(
     ((stats.total_machines - stats.truly_available_machines) / stats.total_machines) * 100,
   )
+
+  const renderTeamItem = (item: unknown) => {
+    const team = item as DistributedStorageTeamBreakdown
+    if (!team) {
+      return null
+    }
+
+    const teamKey = team.TeamName.toLowerCase().replace(/\s+/g, '-')
+
+    return (
+      <TeamListItem
+        key={teamKey}
+        data-testid={`ds-widget-team-item-${teamKey}`}
+      >
+        <TeamListContent>
+          <TeamListHeader>
+            <TeamName>{team.TeamName}</TeamName>
+            <TeamMeta>{team.TotalMachines} machines</TeamMeta>
+          </TeamListHeader>
+          <TeamTagGroup>
+            <Tooltip title={t('distributedStorage:assignmentStatus.available')}>
+              <Tag data-testid={`ds-widget-team-tag-available-${teamKey}`} color="success">
+                {team.AvailableMachines} available
+              </Tag>
+            </Tooltip>
+            {team.ClusterMachines > 0 && (
+              <Tooltip title={t('distributedStorage:assignmentStatus.cluster')}>
+                <Tag data-testid={`ds-widget-team-tag-cluster-${teamKey}`} color="blue">
+                  {team.ClusterMachines} cluster
+                </Tag>
+              </Tooltip>
+            )}
+            {team.ImageMachines > 0 && (
+              <Tooltip title={t('distributedStorage:assignmentStatus.image')}>
+                <Tag data-testid={`ds-widget-team-tag-image-${teamKey}`} color="purple">
+                  {team.ImageMachines} image
+                </Tag>
+              </Tooltip>
+            )}
+            {team.CloneMachines > 0 && (
+              <Tooltip title={t('distributedStorage:assignmentStatus.clone')}>
+                <Tag data-testid={`ds-widget-team-tag-clone-${teamKey}`} color="orange">
+                  {team.CloneMachines} clone
+                </Tag>
+              </Tooltip>
+            )}
+          </TeamTagGroup>
+        </TeamListContent>
+      </TeamListItem>
+    )
+  }
 
   return (
     <WidgetCard
@@ -192,50 +244,7 @@ const DistributedStorageDashboardWidget: React.FC<DistributedStorageDashboardWid
               data-testid="ds-widget-team-list"
               size="small"
               dataSource={stats.team_breakdown}
-              renderItem={(team) => {
-                const teamKey = team.TeamName.toLowerCase().replace(/\s+/g, '-')
-                return (
-                  <TeamListItem
-                    key={teamKey}
-                    data-testid={`ds-widget-team-item-${teamKey}`}
-                  >
-                    <TeamListContent>
-                      <TeamListHeader>
-                        <TeamName>{team.TeamName}</TeamName>
-                        <TeamMeta>{team.TotalMachines} machines</TeamMeta>
-                      </TeamListHeader>
-                      <TeamTagGroup>
-                        <Tooltip title={t('distributedStorage:assignmentStatus.available')}>
-                          <Tag data-testid={`ds-widget-team-tag-available-${teamKey}`} color="success">
-                            {team.AvailableMachines} available
-                          </Tag>
-                        </Tooltip>
-                        {team.ClusterMachines > 0 && (
-                          <Tooltip title={t('distributedStorage:assignmentStatus.cluster')}>
-                            <Tag data-testid={`ds-widget-team-tag-cluster-${teamKey}`} color="blue">
-                              {team.ClusterMachines} cluster
-                            </Tag>
-                          </Tooltip>
-                        )}
-                        {team.ImageMachines > 0 && (
-                          <Tooltip title={t('distributedStorage:assignmentStatus.image')}>
-                            <Tag data-testid={`ds-widget-team-tag-image-${teamKey}`} color="purple">
-                              {team.ImageMachines} image
-                            </Tag>
-                          </Tooltip>
-                        )}
-                        {team.CloneMachines > 0 && (
-                          <Tooltip title={t('distributedStorage:assignmentStatus.clone')}>
-                            <Tag data-testid={`ds-widget-team-tag-clone-${teamKey}`} color="orange">
-                              {team.CloneMachines} clone
-                            </Tag>
-                          </Tooltip>
-                        )}
-                      </TeamTagGroup>
-                    </TeamListContent>
-                  </TeamListItem>
-                )
-              }}
+              renderItem={renderTeamItem}
             />
           </TeamSection>
         )}

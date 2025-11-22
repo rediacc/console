@@ -1,6 +1,6 @@
-# Console Components - Refactoring TODO
+﻿# Console Components - Refactoring TODO
 
-> **📚 Reference Documents:**
+> **≡ƒôÜ Reference Documents:**
 > - **[REFACTORING.md](./REFACTORING.md)** - Complete guide on how to refactor components
 > - **[STYLE.md](./STYLE.md)** - Styling conventions with styled-components
 >
@@ -12,18 +12,18 @@
 
 ---
 
-## Recently Completed ✅
+## Recently Completed Γ£à
 
-### ✅ MainLayout (Nov 2025 - PR #163)
+### Γ£à MainLayout (Nov 2025 - PR #163)
 - **Before**: 886 lines in single file
 - **After**: Split into 9 modular files
 - **Files created**: MainLayout/, Sidebar/, UserMenu/, with types, helpers, styles
 
-### ✅ AuthLayout (Nov 2025 - PR #163)
+### Γ£à AuthLayout (Nov 2025 - PR #163)
 - **Before**: 51 lines flat file
 - **After**: Modular folder structure with index.tsx and styles.ts
 
-### ✅ TeamsPage Data (Nov 2025 - PR #163)
+### Γ£à TeamsPage Data (Nov 2025 - PR #163)
 - **Before**: 400+ lines with embedded table columns
 - **After**: Extracted table columns to data.tsx (173 lines)
 
@@ -31,33 +31,39 @@
 - **Before**: 340+ line flat file with inline table toolbar/container styles
 - **After**: SnapshotList/index.tsx, styles.ts, and columns.ts with theme-driven buttons, extracted menu definitions, and zero inline styles
 
-### ✅ CloneMachineManager (Dec 2025 - CLI Refactor)
+### Γ£à CloneMachineManager (Dec 2025 - CLI Refactor)
 - **Before**: 438-line flat file with inline `style` props, embedded columns, and CSV/export logic mixed into the view
 - **After**: CloneMachineManager/index.tsx + styles.ts + columns.ts with dedicated components for the header stats, action toolbar, and assign-machines modal, plus fully themed styled-components
 
-### ✅ ClusterTable (Dec 2025 - CLI Refactor)
+### Γ£à ClusterTable (Dec 2025 - CLI Refactor)
 - **Before**: 400+ lines with chevron rotation, hover states, and machine badges controlled via inline styles
 - **After**: ClusterTable/index.tsx backed by styles.ts, columns.ts, menus.ts, and components/ for MachineCountBadge + ClusterMachines so expandable rows, menus, and actions stay modular
 
-### ✅ PoolTable (Dec 2025 - CLI Refactor)
+### Γ£à PoolTable (Dec 2025 - CLI Refactor)
 - **Before**: 293-line monolith with inline card/table styling and duplicated dropdown definitions
 - **After**: PoolTable/index.tsx with styles.ts, columns.ts, menus.ts, and a ClusterPoolsCard subcomponent that renders themed cluster cards and tables without inline CSS
 
-### ✅ ResourceFormWithVault (Dec 2025 - CLI Refactor)
+### Γ£à ResourceFormWithVault (Dec 2025 - CLI Refactor)
 - **Before**: 470+ line form with field rendering, import/export controls, and defaults banner defined inline alongside business logic
 - **After**: ResourceFormWithVault/index.tsx orchestrates helpers in components/ + types.ts while styles.ts exposes full-width selects, size inputs, and import/export rows for a purely styled-components implementation
+
+### ✅ FilterableMachineTable (Dec 2025 - CLI Refactor)
+- **Before**: ~200-line FilterableMachineTable.tsx with inline badge/tag styling, embedded column definitions, and ad-hoc expanded-row padding
+- **After**: FilterableMachineTable/index.tsx coordinates extracted columns.tsx + styles.ts so themed tags, badges, and the expandable row container share styled-components with zero inline CSS
 
 ---
 
 ## Remaining Components
 
 > **Identification criteria for components needing refactoring:**
-> - ❌ Not using folder structure with `index.tsx`
-> - ❌ Missing co-located `styles.ts` file
-> - ❌ Contains hard-coded hex colors
-> - ❌ Contains inline `style={{}}` attributes
-> - ❌ Not using styled-components
-> - ❌ File size > 300 lines
+> - Γ¥î Not using folder structure with `index.tsx`
+> - Γ¥î Missing co-located `styles.ts` file
+> - Γ¥î Contains hard-coded hex colors
+> - Γ¥î Contains inline `style={{}}` attributes
+> - Γ¥î Not using styled-components
+> - Γ¥î File size > 300 lines
+
+> **Update (Dec 2025):** FilterableMachineTable (src/pages/distributedStorage/components/) has been refactored and moved to the Recently Completed list above, so it no longer appears in the backlog below.
 
 ## Priority 1: High Violation Count (Critical)
 
@@ -65,10 +71,10 @@
 **Location:** `src/components/resources/MachineTable.tsx`
 
 **Violations:**
-- ❌ **16 hard-coded hex colors**
-- ❌ **21 inline styles**
-- ❌ No styled-components usage
-- ❌ No `styles.ts` file
+- Γ¥î **16 hard-coded hex colors**
+- Γ¥î **21 inline styles**
+- Γ¥î No styled-components usage
+- Γ¥î No `styles.ts` file
 
 **Required Actions:**
 1. Create folder structure: `MachineTable/index.tsx` and `MachineTable/styles.ts`
@@ -83,9 +89,9 @@
 **Location:** `src/components/resources/MachineVaultStatusPanel.tsx`
 
 **Violations:**
-- ❌ **15 hard-coded hex colors**
-- ❌ **60 inline styles** (highest count!)
-- ❌ No `styles.ts` file
+- Γ¥î **15 hard-coded hex colors**
+- Γ¥î **60 inline styles** (highest count!)
+- Γ¥î No `styles.ts` file
 
 **Required Actions:**
 1. Create folder structure: `MachineVaultStatusPanel/index.tsx` and `MachineVaultStatusPanel/styles.ts`
@@ -95,12 +101,12 @@
 
 **Example violations:**
 ```tsx
-// ❌ Current
+// Γ¥î Current
 <CloudServerOutlined style={{ fontSize: 24, color: '#556b2f' }} />
 <Tag color="#8FBC8F" icon={<AppstoreOutlined />}>
 <Badge count={machine.queueCount} style={{ backgroundColor: '#52c41a' }} />
 
-// ✅ Should be
+// Γ£à Should be
 <StyledCloudServerIcon />
 <StyledTeamTag icon={<AppstoreOutlined />}>
 <StyledQueueBadge count={machine.queueCount} />
@@ -112,9 +118,9 @@
 **Location:** `src/components/resources/RcloneImportWizard.tsx`
 
 **Violations:**
-- ❌ **9 inline styles**
-- ❌ No styled-components usage
-- ❌ No `styles.ts` file
+- Γ¥î **9 inline styles**
+- Γ¥î No styled-components usage
+- Γ¥î No `styles.ts` file
 
 **Required Actions:**
 1. Create folder structure
@@ -127,9 +133,9 @@
 **Location:** `src/components/settings/TwoFactorSettings.tsx`
 
 **Violations:**
-- ❌ **32 inline styles**
-- ❌ No styled-components usage
-- ❌ No `styles.ts` file
+- Γ¥î **32 inline styles**
+- Γ¥î No styled-components usage
+- Γ¥î No `styles.ts` file
 
 **Required Actions:**
 1. Create folder structure
@@ -143,9 +149,9 @@
 **Location:** `src/components/resources/RepositoryDetailPanel.tsx`
 
 **Violations:**
-- ❌ **9 hard-coded hex colors**
-- ❌ **42 inline styles**
-- ✅ Already imports from styles (partial refactor)
+- Γ¥î **9 hard-coded hex colors**
+- Γ¥î **42 inline styles**
+- Γ£à Already imports from styles (partial refactor)
 
 **Required Actions:**
 1. Complete migration to folder structure
@@ -161,9 +167,9 @@
 **Location:** `src/pages/audit/AuditPage.tsx`
 
 **Violations:**
-- ❌ **3 hex colors**
-- ❌ **13 inline styles**
-- ✅ Already imports from styles (partial refactor)
+- Γ¥î **3 hex colors**
+- Γ¥î **13 inline styles**
+- Γ£à Already imports from styles (partial refactor)
 
 **Required Actions:**
 - Complete styled-components migration
@@ -175,9 +181,9 @@
 **Location:** `src/pages/distributedStorage/components/CloneList.tsx`
 
 **Violations:**
-- ❌ **3 hex colors**
-- ❌ **9 inline styles**
-- ❌ No `styles.ts` file
+- Γ¥î **3 hex colors**
+- Γ¥î **9 inline styles**
+- Γ¥î No `styles.ts` file
 
 **Required Actions:**
 1. Create a `CloneList/` folder with `index.tsx`, `styles.ts`, and move `CloneMachineList`/`MachineCountBadge` into a `components/` subfolder
@@ -191,8 +197,8 @@
 **Location:** `src/components/system/UserSessionsTab.tsx`
 
 **Violations:**
-- ❌ **14 inline styles**
-- ❌ No `styles.ts` file
+- Γ¥î **14 inline styles**
+- Γ¥î No `styles.ts` file
 
 **Required Actions:**
 1. Adopt the folder structure (`UserSessionsTab/index.tsx`, `styles.ts`) so layout styles sit next to the component
@@ -206,9 +212,9 @@
 **Location:** `src/components/dashboard/DistributedStorageDashboardWidget.tsx`
 
 **Violations:**
-- ❌ **1 hex color**
-- ❌ **12 inline styles**
-- ❌ No `styles.ts` file
+- Γ¥î **1 hex color**
+- Γ¥î **12 inline styles**
+- Γ¥î No `styles.ts` file
 
 **Required Actions:**
 1. Restructure the widget into `DistributedStorageDashboardWidget/index.tsx` with a companion `styles.ts` (and subcomponents for assignment cards, summaries, and team list rows)
@@ -222,8 +228,8 @@
 **Location:** `src/features/distributed-storage/components/performance/VirtualFilterableMachineTable.tsx`
 
 **Violations:**
-- ❌ **12 inline styles**
-- ❌ No `styles.ts` file
+- Γ¥î **12 inline styles**
+- Γ¥î No `styles.ts` file
 
 **Required Actions:**
 1. Create the folder structure and add `styles.ts` so the container, toolbar, and status bar styling is centralized
@@ -237,8 +243,8 @@
 **Location:** `src/components/forms/ResourceForm.tsx`
 
 **Violations:**
-- ❌ **3 inline styles**
-- ❌ No `styles.ts` file
+- Γ¥î **3 inline styles**
+- Γ¥î No `styles.ts` file
 
 **Required Actions:**
 1. Split the component into `ResourceForm/index.tsx`, `styles.ts`, and optional `types.ts` so the generic form definition is modular
@@ -252,9 +258,9 @@
 **Location:** `src/pages/distributedStorage/components/MachineAvailabilitySummary.tsx`
 
 **Violations:**
-- ❌ **5 hex colors**
-- ❌ **13 inline styles**
-- ❌ No `styles.ts` file
+- Γ¥î **5 hex colors**
+- Γ¥î **13 inline styles**
+- Γ¥î No `styles.ts` file
 
 **Required Actions:**
 1. Add the folder structure with `MachineAvailabilitySummary/index.tsx`, `styles.ts`, and a small `types.ts` for the stats model
@@ -273,9 +279,9 @@
 ### Folder Structure Pattern
 ```
 ComponentName/
-├── index.tsx          # Main component file
-├── styles.ts          # Styled-components
-└── types.ts           # (optional) Type definitions
+Γö£ΓöÇΓöÇ index.tsx          # Main component file
+Γö£ΓöÇΓöÇ styles.ts          # Styled-components
+ΓööΓöÇΓöÇ types.ts           # (optional) Type definitions
 ```
 
 ### styles.ts Template
@@ -299,12 +305,12 @@ export const StyledAntComponent = styled(ComponentName)`
 
 ### Color Replacement Guide
 ```typescript
-// ❌ Hard-coded
+// Γ¥î Hard-coded
 color: '#556b2f'
 backgroundColor: '#52c41a'
 borderColor: '#8FBC8F'
 
-// ✅ Theme tokens
+// Γ£à Theme tokens
 color: var(--color-primary)
 backgroundColor: var(--color-success)
 borderColor: var(--color-border-primary)
@@ -312,10 +318,10 @@ borderColor: var(--color-border-primary)
 
 ### Inline Style Replacement
 ```tsx
-// ❌ Before
+// Γ¥î Before
 <div style={{ display: 'flex', gap: '16px', padding: '12px' }}>
 
-// ✅ After (styles.ts)
+// Γ£à After (styles.ts)
 export const Container = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.MD}px;
@@ -330,11 +336,11 @@ export const Container = styled.div`
 
 ## Summary Statistics
 
-- **Completed:** 7 components (PR #163 + Dec 2025 CLI refactors)
+- **Completed:** 8 components (PR #163 + Dec 2025 CLI refactors)
 - **Remaining:** 12 components
-- **Total lines remaining:** ~6,300 lines
-- **Total hex colors:** ~70
-- **Total inline styles:** ~300
+- **Total lines remaining:** ~6,100 lines
+- **Total hex colors:** ~68
+- **Total inline styles:** ~285
 
 ### By Category
 - **Components:** 10 files
@@ -361,10 +367,10 @@ export const Container = styled.div`
 
 ## Success Criteria per Component
 
-- ✅ Folder structure created (`ComponentName/index.tsx`, `styles.ts`)
-- ✅ All styled-components imported from `./styles`
-- ✅ Zero hard-coded hex colors (except in fallbacks with `||`)
-- ✅ Zero inline `style={{}}` attributes
-- ✅ All colors use theme tokens or CSS variables
-- ✅ Build passes without TypeScript errors
-- ✅ Component renders correctly in both light and dark themes
+- Γ£à Folder structure created (`ComponentName/index.tsx`, `styles.ts`)
+- Γ£à All styled-components imported from `./styles`
+- Γ£à Zero hard-coded hex colors (except in fallbacks with `||`)
+- Γ£à Zero inline `style={{}}` attributes
+- Γ£à All colors use theme tokens or CSS variables
+- Γ£à Build passes without TypeScript errors
+- Γ£à Component renders correctly in both light and dark themes

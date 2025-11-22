@@ -2,6 +2,7 @@ import React from 'react'
 import { Modal, Alert, Spin, Empty } from 'antd'
 import type { TFunction } from 'i18next'
 import type { AvailableMachine } from '@/api/queries/distributedStorage'
+import type { Machine } from '@/types'
 import { ModalSize } from '@/types/modal'
 import { AvailableMachinesSelector } from '@/components/resources/AvailableMachinesSelector'
 import {
@@ -76,7 +77,7 @@ export const AssignMachinesModal: React.FC<AssignMachinesModalProps> = ({
         />
       ) : (
         <AvailableMachinesSelector
-          machines={availableMachines}
+          machines={availableMachines as unknown as Machine[]}
           value={selectedMachines}
           onChange={onSelectionChange}
           data-testid="clone-manager-modal-selector"

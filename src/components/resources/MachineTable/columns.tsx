@@ -1,4 +1,3 @@
-import React from 'react'
 import { Button, Dropdown, Space, Tooltip } from 'antd'
 import type { ColumnsType } from 'antd/es/table/interface'
 import { TFunction } from 'i18next'

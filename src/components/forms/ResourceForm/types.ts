@@ -1,20 +1,24 @@
-import { FieldValues, UseFormReturn } from 'react-hook-form'
+import type {
+  ControllerProps,
+  FieldValues,
+  UseFormReturn,
+} from 'react-hook-form'
 
-export interface FormFieldConfig {
+export type FormFieldConfig<TFieldValues extends FieldValues = FieldValues> = {
   name: string
   label: string
   type?: 'text' | 'select' | 'password' | 'email' | 'number'
   placeholder?: string
   required?: boolean
   options?: Array<{ value: string; label: string }>
-  rules?: any[]
+  rules?: ControllerProps<TFieldValues>['rules']
   hidden?: boolean
   disabled?: boolean
 }
 
 export interface ResourceFormProps<T extends FieldValues = FieldValues> {
   form: UseFormReturn<T>
-  fields: FormFieldConfig[]
+  fields: Array<FormFieldConfig<T>>
   onSubmit: (data: T) => void | Promise<void>
   submitText?: string
   cancelText?: string

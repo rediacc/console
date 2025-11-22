@@ -202,7 +202,7 @@ export const GroupRowName = styled.span`
 
 export const GroupRowActionButton = styled(Button)`
   && {
-    ${'' /* Maintain compact pill styling to mirror historical control surface */ ''}
+    ${'' /* Maintain compact pill styling to mirror historical control surface */}
     height: ${DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT_SM}px;
     border-radius: ${({ theme }) => theme.borderRadius.SM}px;
     display: inline-flex;

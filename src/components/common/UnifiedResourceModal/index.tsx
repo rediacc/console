@@ -1,6 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { Modal, Space, Typography, Upload, message } from 'antd'
-import type { UploadFile } from 'antd/es/upload/interface'
 
 // message.error is imported from antd
 import { AppstoreOutlined } from '@/utils/optimizedIcons'
@@ -9,7 +8,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
-import ResourceFormWithVault, { type FormFieldConfig, type ResourceFormWithVaultRef } from '@/components/forms/ResourceFormWithVault'
+import ResourceFormWithVault, {
+  type FormFieldConfig,
+  type ResourceFormWithVaultRef,
+  type ImportExportHandlers,
+} from '@/components/forms/ResourceFormWithVault'
 import VaultEditorModal from '@/components/common/VaultEditorModal'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 import TemplateSelector from '@/components/common/TemplateSelector'
@@ -84,11 +87,6 @@ type FunctionSubmitPayload = {
   priority: number
   description: string
   selectedMachine?: string
-}
-
-type ImportExportHandlers = {
-  handleImport: (file: UploadFile) => boolean
-  handleExport: () => void
 }
 
 type ClusterOption = { clusterName: string }
