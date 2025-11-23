@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rediacc Console</title>
+    <!-- Google tag (gtag.js) - Only enabled for non-local environments -->
+    <script>
+      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        var script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://www.googletagmanager.com/gtag/js?id=G-T6K87YHC4B';
+        document.head.appendChild(script);
+
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-T6K87YHC4B');
+      }
+    </script>
+    <!-- Load runtime configuration before main app -->
+    <script src="./config.js" data-vite-ignore></script>
+    <!-- Cloudflare Turnstile script is loaded dynamically by the Turnstile component -->
+    <script type="module" crossorigin src="./assets/index-DyTMMCCu.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/js/chunk-DaihG_v-.js">
+    <link rel="modulepreload" crossorigin href="./assets/js/chunk-jIVxg-O4.js">
+    <link rel="modulepreload" crossorigin href="./assets/js/chunk-CsUqxJyM.js">
+    <link rel="modulepreload" crossorigin href="./assets/js/chunk-BaNBjVcO.js">
+    <link rel="modulepreload" crossorigin href="./assets/js/chunk-DfOmacDz.js">
+    <link rel="modulepreload" crossorigin href="./assets/js/chunk-BKxIVqYm.js">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
