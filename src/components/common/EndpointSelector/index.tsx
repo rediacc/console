@@ -56,7 +56,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
    */
   const checkEndpointHealth = async (endpoint: Endpoint): Promise<EndpointHealth> => {
     try {
-      const response = await axios.get(`${endpoint.url}/Health`, {
+      const response = await axios.get(`${endpoint.url}/health`, {
         timeout: HEALTH_CHECK_TIMEOUT,
         validateStatus: (status) => status < 500
       });

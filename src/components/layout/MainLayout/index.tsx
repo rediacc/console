@@ -262,6 +262,7 @@ const MainLayout: React.FC = () => {
                   size='large'
                   aria-label={t('navigation.userMenu', { defaultValue: 'Open user menu' })}
                   icon={<UserOutlined />}
+                  data-testid="user-menu-button"
                 />
               </Dropdown>
             </HeaderRight>
