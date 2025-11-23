@@ -851,8 +851,11 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
                   />
                 </Steps>
 
-                {/* Progress Message - Shows current operation being performed */}
-                {progressMessage && (
+                {/* Progress Message - Shows current operation being performed (hidden when completed) */}
+                {progressMessage &&
+                 normalizeProperty(traceData?.queueDetails, 'status', 'Status') !== 'COMPLETED' &&
+                 normalizeProperty(traceData?.queueDetails, 'status', 'Status') !== 'FAILED' &&
+                 normalizeProperty(traceData?.queueDetails, 'status', 'Status') !== 'CANCELLED' && (
                   <div style={{ marginTop: spacing('SM'), marginBottom: spacing('XS') }}>
                     <Text
                       type="secondary"

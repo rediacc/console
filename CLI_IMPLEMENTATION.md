@@ -125,6 +125,256 @@ import functionsData from '../core/data/functions.json'
 
 ---
 
+## Business Logic Extraction Plan
+
+To maximize code reuse between the console and CLI, business logic currently embedded in React components must be extracted into framework-agnostic services in `src/core/`.
+
+### Extraction Priorities
+
+| Priority | Service | Current Location | Benefit |
+|----------|---------|-----------------|---------|
+| High | `RepositoryRelationshipService` | `MachineRepositoryList`, `CredentialsPage` | Grand/fork detection, affected resources finder |
+| High | `VaultStatusParserService` | 6+ components with duplicated parsing | Consistent deployment info extraction |
+| High | `ResourceValidationService` | Scattered in components | Delete/promote/assign business rules |
+| Medium | `MachineValidationService` | `features/distributed-storage/` | Move to core for CLI access |
+| Medium | `ResourceResolutionService` | Various pages | Cross-reference teams/machines/repos |
+| Low | `QueueItemAnalysisService` | `QueueItemTraceModal` | Status interpretation, progress calculation |
+
+### Proposed Core Services Structure
+
+```
+src/core/
+├── services/
+│   ├── queue.ts                    # Existing QueueService
+│   ├── repository/
+│   │   ├── relationship.ts         # Grand/fork logic, affected resources
+│   │   ├── validation.ts           # Delete/promote business rules
+│   │   └── index.ts
+│   ├── machine/
+│   │   ├── validation.ts           # Assignment, cluster rules
+│   │   ├── vault-status.ts         # Parse deployment info from vaultStatus
+│   │   └── index.ts
+│   └── resource/
+│       ├── resolution.ts           # Cross-reference lookup utilities
+│       └── index.ts
+├── types/
+│   └── ...                         # Existing types
+└── index.ts                        # Export all services
+```
+
+### Service Design Patterns
+
+All extracted services must follow these patterns:
+
+1. **Pure Functions** - No React hooks, no UI dependencies, no side effects
+2. **Type-Safe** - Full TypeScript with exported interfaces for all inputs/outputs
+3. **Testable** - Easily mockable dependencies, deterministic outputs
+4. **Framework Agnostic** - Must work in both browser (React) and Node.js (CLI)
+5. **No External State** - Receive all required data as parameters
+
+**Example Pattern:**
+
+```typescript
+// src/core/services/repository/relationship.ts
+
+export interface AffectedResourcesResult {
+  isCredential: boolean
+  forks: Repository[]
+  affectedMachines: AffectedMachine[]
+}
+
+export interface AffectedMachine {
+  machineName: string
+  repoNames: string[]
+}
+
+export function getAffectedResources(
+  repository: Repository,
+  allRepositories: Repository[],
+  machines: Machine[]
+): AffectedResourcesResult {
+  // Pure business logic - no React, no API calls
+  // Returns computed result based on inputs
+}
+
+export function isCredential(repository: Repository): boolean {
+  return !repository.grandGuid || repository.grandGuid === repository.repositoryGuid
+}
+
+export function findForksOfCredential(
+  credentialGuid: string,
+  repositories: Repository[]
+): Repository[] {
+  return repositories.filter(
+    repo => repo.grandGuid === credentialGuid && repo.repositoryGuid !== credentialGuid
+  )
+}
+```
+
+### Key Extraction Candidates
+
+#### Repository Logic
+
+| Function | Source File | Target Service |
+|----------|-------------|----------------|
+| `getAffectedResources()` | `CredentialsPage.tsx` | `repository/relationship.ts` |
+| `groupRepositoriesByName()` | `MachineRepositoryList/index.tsx` | `repository/relationship.ts` |
+| Fork detection logic | `MachineRepositoryList/index.tsx` | `repository/validation.ts` |
+| Grand/credential identification | Multiple files | `repository/relationship.ts` |
+| Promotion eligibility check | `MachineRepositoryList/index.tsx` | `repository/validation.ts` |
+
+#### Machine Logic
+
+| Function | Source File | Target Service |
+|----------|-------------|----------------|
+| VaultStatus JSON parsing | `MachineRepositoryList`, `MachineTable`, `RepositoryContainerList`, etc. | `machine/vault-status.ts` |
+| Machine assignment validation | `features/distributed-storage/services/` | `machine/validation.ts` |
+| Cluster exclusivity rules | `features/distributed-storage/hooks/` | `machine/validation.ts` |
+
+#### Resource Resolution
+
+| Function | Source File | Target Service |
+|----------|-------------|----------------|
+| Team vault lookup | Various pages | `resource/resolution.ts` |
+| Machine-to-team mapping | Various pages | `resource/resolution.ts` |
+| Bridge-to-region mapping | Various pages | `resource/resolution.ts` |
+
+### VaultStatus Parser Service
+
+This is a high-priority extraction due to code duplication across 6+ files. The parser handles:
+
+```typescript
+// src/core/services/machine/vault-status.ts
+
+export interface ParsedVaultStatus {
+  status: 'completed' | 'pending' | 'failed' | 'unknown'
+  repositories: DeployedRepository[]
+  rawResult?: string
+  error?: string
+}
+
+export interface DeployedRepository {
+  name: string  // This is the repository GUID
+  size?: number
+  size_human?: string
+  mounted?: boolean
+  accessible?: boolean
+  docker_running?: boolean
+  container_count?: number
+  // ... other fields from vaultStatus result
+}
+
+export function parseVaultStatus(vaultStatusJson: string | undefined): ParsedVaultStatus {
+  if (!vaultStatusJson) {
+    return { status: 'unknown', repositories: [] }
+  }
+
+  try {
+    const data = JSON.parse(vaultStatusJson)
+
+    if (data.status !== 'completed' || !data.result) {
+      return { status: data.status || 'unknown', repositories: [] }
+    }
+
+    // Clean result string (handle jq errors, trailing content)
+    const cleanedResult = cleanResultString(data.result)
+    const result = JSON.parse(cleanedResult)
+
+    return {
+      status: 'completed',
+      repositories: result.repositories || [],
+      rawResult: cleanedResult
+    }
+  } catch (error) {
+    return { status: 'unknown', repositories: [], error: String(error) }
+  }
+}
+
+export function findDeployedRepositories(
+  machines: Machine[],
+  repositoryGuids: string[]
+): Map<string, DeployedRepository[]> {
+  // Returns map of machineName -> deployed repos matching the GUIDs
+}
+```
+
+### Migration Strategy
+
+#### Phase 1: Extract Without Breaking (Week 1-2)
+
+1. Create new service files in `src/core/services/`
+2. Copy and adapt logic from components (don't modify components yet)
+3. Add comprehensive unit tests for extracted services
+4. Export services from `src/core/index.ts`
+
+#### Phase 2: Update Console (Week 3-4)
+
+1. Update React components to import from `src/core/`
+2. Replace inline logic with service calls
+3. Remove duplicated code from components
+4. Verify all existing functionality works
+
+#### Phase 3: CLI Integration (Ongoing)
+
+1. CLI imports services directly from `src/core/`
+2. Services work identically in both environments
+3. Bug fixes and improvements benefit both platforms
+
+### Usage in CLI
+
+Once extracted, the CLI can use these services directly:
+
+```typescript
+// cli/src/commands/repo.ts
+import {
+  getAffectedResources,
+  isCredential,
+  findForksOfCredential
+} from '../../core/services/repository/relationship'
+import { parseVaultStatus } from '../../core/services/machine/vault-status'
+
+async function handleDeleteRepository(repoName: string, options: Options) {
+  const repositories = await fetchRepositories(options.team)
+  const machines = await fetchMachines(options.team)
+  const repo = repositories.find(r => r.repositoryName === repoName)
+
+  const { isCredential, forks, affectedMachines } = getAffectedResources(
+    repo,
+    repositories,
+    machines
+  )
+
+  if (isCredential && affectedMachines.length > 0) {
+    console.error('Cannot delete credential with active deployments')
+    console.error('Affected machines:', affectedMachines.map(m => m.machineName))
+    process.exit(1)
+  }
+
+  // Proceed with deletion...
+}
+```
+
+### Testing Requirements
+
+All extracted services must have:
+
+1. **Unit tests** covering all functions
+2. **Edge case tests** (empty arrays, null values, malformed JSON)
+3. **Integration tests** verifying behavior matches original component logic
+4. **Cross-platform tests** ensuring Node.js compatibility
+
+### Success Criteria
+
+- [ ] VaultStatus parsing consolidated into single service (eliminates 6+ duplications)
+- [ ] Repository relationship logic extracted and tested
+- [ ] All extracted services have >90% test coverage
+- [ ] Console components updated to use extracted services
+- [ ] CLI successfully uses all extracted services
+- [ ] No TypeScript errors in either console or CLI
+- [ ] Performance maintained (no regression in console)
+
+---
+
 ## Node Adapters
 
 ### Storage Adapter

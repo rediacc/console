@@ -275,7 +275,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     return finalDefaults
   }
 
-  const schema = useMemo(() => getSchema(), [resourceType, mode, uiMode])
+  const schema = useMemo(() => getSchema(), [resourceType, mode, uiMode, creationContext])
 
   const form = useForm<ResourceFormValues>({
     resolver: zodResolver(schema) as unknown as Resolver<ResourceFormValues, any, ResourceFormValues>,
@@ -1184,7 +1184,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
           isModalOpen={open}
           beforeVaultContent={undefined}
           afterVaultContent={
-            resourceType === 'repository' && mode === 'create'
+            resourceType === 'repository' && mode === 'create' && creationContext !== 'credentials-only'
               ? (
                 <TemplateCollapse
                   data-testid="resource-modal-template-collapse"
