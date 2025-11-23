@@ -145,7 +145,13 @@ To maximize code reuse between the console and CLI, business logic currently emb
 ```
 src/core/
 ├── services/
-│   ├── queue.ts                    # Existing QueueService
+│   ├── queue/
+│   │   ├── index.ts                # Export QueueService
+│   │   ├── service.ts              # Existing QueueService
+│   │   ├── status.ts               # Terminal status, status config
+│   │   ├── retry.ts                # Retry eligibility, permanent failures
+│   │   ├── health.ts               # Stale detection, health checks
+│   │   └── filters.ts              # Active/completed filtering
 │   ├── repository/
 │   │   ├── relationship.ts         # Grand/fork logic, affected resources
 │   │   ├── validation.ts           # Delete/promote business rules
@@ -154,12 +160,32 @@ src/core/
 │   │   ├── validation.ts           # Assignment, cluster rules
 │   │   ├── vault-status.ts         # Parse deployment info from vaultStatus
 │   │   └── index.ts
-│   └── resource/
-│       ├── resolution.ts           # Cross-reference lookup utilities
+│   ├── resource/
+│   │   ├── resolution.ts           # Cross-reference lookup utilities
+│   │   └── index.ts
+│   ├── vault/
+│   │   ├── extraction.ts           # Extract typed data from vaults
+│   │   └── index.ts
+│   ├── functions/
+│   │   ├── requirements.ts         # Function requirements checking
+│   │   ├── validation.ts           # Parameter validation
+│   │   └── index.ts
+│   └── bulk/
+│       ├── validation.ts           # Bulk operation validation
 │       └── index.ts
+├── utils/
+│   ├── time.ts                     # Relative time, duration, formatting
+│   ├── size.ts                     # Parse/format bytes, percentages
+│   ├── validation.ts               # GUID, SSH key, priority validation
+│   ├── progress-parser.ts          # Extract progress from console output
+│   ├── status.ts                   # Progress thresholds, status mapping
+│   ├── sorting.ts                  # Type-safe sorter factories
+│   ├── batch.ts                    # Batch creation utilities
+│   ├── api.ts                      # Property normalization, response helpers
+│   └── crypto.ts                   # Vault field detection
 ├── types/
 │   └── ...                         # Existing types
-└── index.ts                        # Export all services
+└── index.ts                        # Export all services and utils
 ```
 
 ### Service Design Patterns
@@ -238,6 +264,102 @@ export function findForksOfCredential(
 | Team vault lookup | Various pages | `resource/resolution.ts` |
 | Machine-to-team mapping | Various pages | `resource/resolution.ts` |
 | Bridge-to-region mapping | Various pages | `resource/resolution.ts` |
+
+#### Queue Status & Lifecycle
+
+| Function | Source File | Target Service |
+|----------|-------------|----------------|
+| `isTerminalStatus()` | `core/services/queue.ts` | `queue/status.ts` |
+| Status config mapping | `QueuePage.tsx` | `queue/status.ts` |
+| Retry eligibility check | `queueMonitoringService.ts` | `queue/retry.ts` |
+| `isPermanentFailure()` | `queueMonitoringService.ts` | `queue/retry.ts` |
+| Stale task detection | `queueMonitoringService.ts` | `queue/health.ts` |
+| Active/completed filtering | `QueuePage.tsx` | `queue/filters.ts` |
+| Priority validation (1-5) | `useManagedQueueItem.ts` | `utils/validation.ts` |
+
+#### Progress Parsing
+
+| Function | Source File | Target Service |
+|----------|-------------|----------------|
+| `extractMostRecentProgress()` | `QueueItemTraceModal/index.tsx` | `utils/progress-parser.ts` |
+| `extractProgressMessage()` | `QueueItemTraceModal/index.tsx` | `utils/progress-parser.ts` |
+| Progress thresholds | `DashboardPage.tsx` | `utils/status.ts` |
+
+#### Time & Duration Utilities
+
+| Function | Source File | Target Service |
+|----------|-------------|----------------|
+| `getRelativeTimeFromUTC()` | `utils/timeUtils.ts` | `utils/time.ts` |
+| `formatTimestampAsIs()` | `utils/timeUtils.ts` | `utils/time.ts` |
+| Elapsed time calculation | `QueueItemTraceModal/index.tsx` | `utils/time.ts` |
+| Duration formatting | Various | `utils/time.ts` |
+
+#### Size & Resource Utilities
+
+| Function | Source File | Target Service |
+|----------|-------------|----------------|
+| `parseMemorySize()` | `utils/sizeUtils.ts` | `utils/size.ts` |
+| `formatBytes()` | `utils/sizeUtils.ts` | `utils/size.ts` |
+| `calculateResourcePercent()` | `utils/sizeUtils.ts` | `utils/size.ts` |
+
+#### Validation Utilities
+
+| Function | Source File | Target Service |
+|----------|-------------|----------------|
+| `isValidGuid()` | `QueuePage.tsx` | `utils/validation.ts` |
+| `isValidSSHPublicKey()` | `utils/cryptoGenerators.ts` | `utils/validation.ts` |
+| `normalizeProperty()` | `QueueItemTraceModal/index.tsx` | `utils/api.ts` |
+
+#### Vault & Encryption
+
+| Function | Source File | Target Service |
+|----------|-------------|----------------|
+| `extractMachineData()` | `core/services/queue.ts` | `vault/extraction.ts` |
+| `extractCompanyData()` | `core/services/queue.ts` | `vault/extraction.ts` |
+| `extractRepositoryData()` | `core/services/queue.ts` | `vault/extraction.ts` |
+| `hasVaultFields()` | `api/encryptionMiddleware.ts` | `utils/crypto.ts` |
+
+#### Batch Operations
+
+| Function | Source File | Target Service |
+|----------|-------------|----------------|
+| `createBatches()` | `bulk-operations.controller.ts` | `utils/batch.ts` |
+| `performBulkValidation()` | `bulk-operations.controller.ts` | `bulk/validation.ts` |
+
+#### Sorting & Filtering
+
+| Function | Source File | Target Service |
+|----------|-------------|----------------|
+| `createSorter()` | `utils/tableSorters.ts` | `utils/sorting.ts` |
+| `createStringSorter()` | `utils/tableSorters.ts` | `utils/sorting.ts` |
+| `createNumberSorter()` | `utils/tableSorters.ts` | `utils/sorting.ts` |
+| `createDateSorter()` | `utils/tableSorters.ts` | `utils/sorting.ts` |
+
+#### Function & Template Logic
+
+| Function | Source File | Target Service |
+|----------|-------------|----------------|
+| `getFunctionRequirements()` | `services/functionsService.ts` | `functions/requirements.ts` |
+| Function parameter validation | Various | `functions/validation.ts` |
+
+### Extraction Summary
+
+| Category | Count | Priority |
+|----------|-------|----------|
+| Queue Status/Lifecycle | 7 | High |
+| Time/Duration Formatting | 4 | High |
+| Size Formatting | 3 | High |
+| Progress Parsing | 3 | High |
+| Validation Utilities | 3 | Medium |
+| Vault/Data Extraction | 4 | Medium |
+| Batch Operations | 2 | Medium |
+| Sorting/Filtering | 4 | Low |
+| Function/Template | 2 | Low |
+| Repository Logic | 5 | High |
+| Machine Logic | 3 | High |
+| Resource Resolution | 3 | Medium |
+
+**Total: 43 extraction candidates**
 
 ### VaultStatus Parser Service
 

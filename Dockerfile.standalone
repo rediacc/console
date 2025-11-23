@@ -67,7 +67,7 @@ window.REDIACC_CONFIG = {
   instanceName: '${INSTANCE_NAME}',
   apiUrl: '${API_URL}',
   domain: window.location.hostname,
-  httpPort: '7322',
+  httpPort: '${HTTP_PORT:-80}',
   buildType: '${BUILD_TYPE}',
   enableDebug: '${ENABLE_DEBUG}',
   enableSandboxFallback: '${BUILD_TYPE}' === 'DEBUG' ? 'true' : 'false',
