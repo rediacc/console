@@ -1,5 +1,5 @@
 import React from 'react'
-import { Table, Tag, Typography, Space, Alert, Spin, Button, Dropdown, message } from 'antd'
+import { Table, Tag, Typography, Space, Alert, Button, Dropdown, message } from 'antd'
 import {
   PlusCircleOutlined,
   EditOutlined,
@@ -35,6 +35,7 @@ import {
   IconWrapper
 } from './styles'
 import { createSorter, createDateSorter } from '@/core'
+import LoadingWrapper from '@/components/common/LoadingWrapper'
 
 const { Text } = Typography
 
@@ -276,7 +277,9 @@ const AuditTraceModal: React.FC<AuditTraceModalProps> = ({
     >
       {isLoading ? (
         <LoadingContainer data-testid="audit-trace-loading">
-          <Spin size="large" />
+          <LoadingWrapper loading centered minHeight={160}>
+            <div />
+          </LoadingWrapper>
           <LoadingText>
             {t('common:general.loading')}
           </LoadingText>

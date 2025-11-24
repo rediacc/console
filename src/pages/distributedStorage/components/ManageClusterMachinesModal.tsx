@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Modal, Tabs, Table, Button, Space, Tag, Empty, Spin, message } from 'antd'
+import { Modal, Tabs, Table, Button, Space, Tag, Empty, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { CloudServerOutlined, DesktopOutlined, PlusOutlined, DeleteOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
@@ -17,6 +17,8 @@ import { ModalSize } from '@/types/modal'
 import type { Machine } from '@/types'
 import { createSorter } from '@/core'
 import { confirmAction } from '@/utils/confirmations'
+import LoadingWrapper from '@/components/common/LoadingWrapper'
+import { createDateColumn, createTruncatedColumn } from '@/components/common/columns'
 
 interface ManageClusterMachinesModalProps {
   open: boolean
@@ -151,37 +153,48 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
   }
   
   // Columns for assigned machines table
-  const assignedColumns: ColumnsType<Machine> = [
-    {
-      title: t('machines:machineName'),
-      dataIndex: 'machineName',
-      key: 'machineName',
-      sorter: createSorter<Machine>('machineName'),
-      render: (name: string) => (
-        <Space>
-          <DesktopOutlined />
-          <strong>{name}</strong>
-        </Space>
-      ),
+  const machineColumn = createTruncatedColumn<Machine>({
+    title: t('machines:machineName'),
+    dataIndex: 'machineName',
+    key: 'machineName',
+    sorter: createSorter<Machine>('machineName'),
+    renderWrapper: (content) => (
+      <Space>
+        <DesktopOutlined />
+        <strong>{content}</strong>
+      </Space>
+    ),
+  })
+
+  const bridgeColumn = createTruncatedColumn<Machine>({
+    title: t('machines:bridge'),
+    dataIndex: 'bridgeName',
+    key: 'bridgeName',
+    sorter: createSorter<Machine>('bridgeName'),
+    renderWrapper: (content) => <Tag color="green">{content}</Tag>,
+  })
+
+  const assignedDateColumn = createDateColumn<Machine>({
+    title: t('machines:assignedDate'),
+    dataIndex: 'assignedDate',
+    key: 'assignedDate',
+    sorter: false,
+    render: (date: string | Date | null | undefined) => {
+      if (!date) return '-'
+      const resolved = typeof date === 'string' ? date : date.toString()
+      return formatTimestampAsIs(resolved, 'datetime')
     },
-    {
-      title: t('machines:bridge'),
-      dataIndex: 'bridgeName',
-      key: 'bridgeName',
-      sorter: createSorter<Machine>('bridgeName'),
-      render: (name: string) => <Tag color="green">{name}</Tag>,
-    },
-    {
-      title: t('machines:assignedDate'),
-      dataIndex: 'assignedDate',
-      key: 'assignedDate',
-      render: (date: string) => (date ? formatTimestampAsIs(date, 'datetime') : '-'),
-    },
-  ]
+  })
+
+  const assignedColumns: ColumnsType<Machine> = [machineColumn, bridgeColumn, assignedDateColumn]
   
   const renderAssignTab = () => {
     if (loadingAvailable) {
-      return <Spin />
+      return (
+        <LoadingWrapper loading centered minHeight={160}>
+          <div />
+        </LoadingWrapper>
+      )
     }
     
     return (
@@ -208,7 +221,11 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
   
   const renderManageTab = () => {
     if (loadingClusterMachines) {
-      return <Spin />
+      return (
+        <LoadingWrapper loading centered minHeight={160}>
+          <div />
+        </LoadingWrapper>
+      )
     }
     
     if (clusterMachines.length === 0) {

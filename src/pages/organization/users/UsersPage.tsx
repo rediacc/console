@@ -11,7 +11,7 @@ import {
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import ResourceListView from '@/components/common/ResourceListView'
-import ResourceForm from '@/components/forms/ResourceForm'
+import ResourceForm from '@/pages/organization/users/components/ResourceForm'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'

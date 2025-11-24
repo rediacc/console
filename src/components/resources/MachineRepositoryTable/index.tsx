@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Spin, Alert, Tag, Space, Typography, Button, Dropdown, Tooltip, Modal, Input } from 'antd'
+import { Alert, Tag, Space, Typography, Button, Dropdown, Tooltip, Modal, Input } from 'antd'
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
 import { CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, SaveOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, DisconnectOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined, CopyOutlined, RiseOutlined, StarOutlined, EditOutlined, ShrinkOutlined, ControlOutlined, CaretDownOutlined, CaretRightOutlined, FolderOutlined, EyeOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
@@ -16,11 +16,13 @@ import { useStorage } from '@/api/queries/storage'
 import type { ColumnsType } from 'antd/es/table'
 import type { MenuInfo } from 'rc-menu/lib/interface'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
-import { LocalActionsMenu } from '../LocalActionsMenu'
+import { LocalActionsMenu } from '../internal/LocalActionsMenu'
 import { showMessage } from '@/utils/messages'
 import { useAppSelector } from '@/store/store'
 import { createSorter, createCustomSorter, createArrayLengthSorter } from '@/core'
 import { parseVaultStatus } from '@/core/services/machine'
+import LoadingWrapper from '@/components/common/LoadingWrapper'
+import { createActionColumn, createStatusColumn, createTruncatedColumn } from '@/components/common/columns'
 import { isValidGuid } from '@/core/utils/validation'
 import {
   canBackupToStorage,
@@ -1290,79 +1292,82 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
 
     
 
+  const systemStatusColumn = createStatusColumn<Container>({
+    title: t('resources:containers.status'),
+    dataIndex: 'state',
+    key: 'status',
+    width: 80,
+    statusMap: {
+      running: { color: 'success', label: t('resources:containers.containerStatusRunning'), icon: <PlayCircleOutlined /> },
+      paused: { color: 'warning', label: t('resources:containers.containerStatusPaused'), icon: <PauseCircleOutlined /> },
+      restarting: { color: 'blue', label: t('resources:containers.containerStatusRestarting'), icon: <ReloadOutlined /> },
+      stopped: { color: 'default', label: t('resources:containers.containerStatusStopped'), icon: <StopOutlined /> },
+    },
+    defaultConfig: { color: 'default', label: t('resources:containers.containerStatusStopped'), icon: <StopOutlined /> },
+  })
+
+  const systemStateColumn = createStatusColumn<Container>({
+    title: t('resources:repositories.containerStatus'),
+    dataIndex: 'state',
+    key: 'state',
+    statusMap: {
+      running: { color: 'success', label: t('resources:containers.containerStatusRunning') },
+      paused: { color: 'warning', label: t('resources:containers.containerStatusPaused') },
+      restarting: { color: 'blue', label: t('resources:containers.containerStatusRestarting') },
+      stopped: { color: 'default', label: t('resources:containers.containerStatusStopped') },
+    },
+    defaultConfig: { color: 'default', label: t('resources:containers.containerStatusStopped') },
+  })
+
+  const systemNameColumn = createTruncatedColumn<Container>({
+    title: t('resources:repositories.containerName'),
+    dataIndex: 'name',
+    key: 'name',
+    sorter: createSorter<Container>('name'),
+  })
+
+  const systemImageColumn = createTruncatedColumn<Container>({
+    title: t('resources:repositories.containerImage'),
+    dataIndex: 'image',
+    key: 'image',
+    width: 250,
+    sorter: createSorter<Container>('image'),
+  })
+
   // System container columns
   const systemContainerColumns: ColumnsType<Container> = [
     {
-      title: t('resources:containers.status'),
-      dataIndex: 'state',
-      key: 'status',
-      width: 80,
+      ...systemStatusColumn,
       align: 'center',
-      sorter: createCustomSorter<Container>((c) => c.state === 'running' ? 0 : c.state === 'paused' ? 1 : 2),
-      render: (_: unknown, record: Container) => {
-        let icon: React.ReactNode
-        let color: string
-        let tooltipText: string
-
-        if (record.state === 'running') {
-          icon = <PlayCircleOutlined />
-          color = '#52c41a' // green
-          tooltipText = t('resources:containers.containerStatusRunning')
-        } else if (record.state === 'paused') {
-          icon = <PauseCircleOutlined />
-          color = '#faad14' // orange/yellow
-          tooltipText = t('resources:containers.containerStatusPaused')
-        } else if (record.state === 'restarting') {
-          icon = <ReloadOutlined />
-          color = '#1890ff' // blue
-          tooltipText = t('resources:containers.containerStatusRestarting')
-        } else {
-          // Stopped/exited or other states
-          icon = <StopOutlined />
-          color = '#d9d9d9' // gray
-          tooltipText = t('resources:containers.containerStatusStopped')
-        }
-
-        return (
-          <Tooltip title={tooltipText}>
-            <span style={{ fontSize: 18, color }}>
-              {icon}
-            </span>
-          </Tooltip>
-        )
-      },
+      sorter: createCustomSorter<Container>((c) =>
+        c.state === 'running' ? 0 : c.state === 'paused' ? 1 : 2
+      ),
+      render: (state: string, record: Container, index) =>
+        systemStatusColumn.render?.(
+          state === 'exited' ? 'stopped' : state,
+          record,
+          index
+        ) as React.ReactNode,
     },
     {
-      title: t('resources:repositories.containerName'),
-      dataIndex: 'name',
-      key: 'name',
-      ellipsis: true,
-      sorter: createSorter<Container>('name'),
-      render: (name: string) => (
+      ...systemNameColumn,
+      render: (name: string, record: Container, index) => (
         <Space>
           <CloudServerOutlined style={{ color: '#722ed1' }} />
-          <strong>{name}</strong>
+          <strong>{systemNameColumn.render?.(name, record, index) as React.ReactNode}</strong>
         </Space>
       ),
     },
+    systemImageColumn,
     {
-      title: t('resources:repositories.containerImage'),
-      dataIndex: 'image',
-      key: 'image',
-      width: 250,
-      ellipsis: true,
-      sorter: createSorter<Container>('image'),
-    },
-    {
-      title: t('resources:repositories.containerStatus'),
-      dataIndex: 'state',
-      key: 'state',
-      sorter: createSorter<Container>('state'),
-      render: (state: string, record: Container) => (
+      ...systemStateColumn,
+      render: (state: string, record: Container, index) => (
         <Space>
-          <Tag color={state === 'running' ? 'success' : 'default'}>
-            {state}
-          </Tag>
+          {systemStateColumn.render?.(
+            state === 'exited' ? 'stopped' : state,
+            record,
+            index
+          ) as React.ReactNode}
           {record.status && <Text type="secondary" style={{ fontSize: 12 }}>{record.status}</Text>}
         </Space>
       ),
@@ -1470,54 +1475,39 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
     return tableData
   }
 
+  const repositoryStatusColumn = createStatusColumn<RepositoryTableRow>({
+    title: t('resources:repositories.status'),
+    dataIndex: 'status',
+    key: 'status',
+    width: 80,
+    statusMap: {
+      'mounted-running': { color: 'success', label: t('resources:repositories.statusMountedRunning'), icon: <CheckCircleOutlined /> },
+      mounted: { color: 'warning', label: t('resources:repositories.statusMountedNotRunning'), icon: <ClockCircleOutlined /> },
+      unmounted: { color: 'default', label: t('resources:repositories.statusUnmounted'), icon: <DisconnectOutlined /> },
+    },
+    defaultConfig: { color: 'default', label: t('resources:repositories.statusUnmounted'), icon: <DisconnectOutlined /> },
+  })
+
   const columns: ColumnsType<RepositoryTableRow> = [
     {
-      title: t('resources:repositories.status'),
-      dataIndex: 'status',
-      key: 'status',
-      width: 80,
+      ...repositoryStatusColumn,
       align: 'center',
       sorter: createCustomSorter<RepositoryTableRow>((r) => {
-        if (r._isGroupHeader) return -1;
-        if (r.mounted && r.docker_running) return 0;
-        if (r.mounted) return 1;
-        return 2;
+        if (r._isGroupHeader) return -1
+        if (r.mounted && r.docker_running) return 0
+        if (r.mounted) return 1
+        return 2
       }),
-      render: (_: unknown, record: RepositoryTableRow) => {
-        // Don't show status for group headers
+      render: (_: unknown, record: RepositoryTableRow, index) => {
         if (record._isGroupHeader) {
           return null
         }
-
-        // Determine status based on mounted and docker_running
-        let icon: React.ReactNode
-        let color: string
-        let tooltipText: string
-
-        if (record.mounted && record.docker_running) {
-          // Mounted & Running - Optimal
-          icon = <CheckCircleOutlined />
-          color = '#52c41a' // green
-          tooltipText = t('resources:repositories.statusMountedRunning')
-        } else if (record.mounted && !record.docker_running) {
-          // Mounted but not running - Partial
-          icon = <ClockCircleOutlined />
-          color = '#faad14' // orange/yellow
-          tooltipText = t('resources:repositories.statusMountedNotRunning')
-        } else {
-          // Unmounted - Offline
-          icon = <DisconnectOutlined />
-          color = '#d9d9d9' // gray
-          tooltipText = t('resources:repositories.statusUnmounted')
-        }
-
-        return (
-          <Tooltip title={tooltipText}>
-            <span style={{ fontSize: 18, color }}>
-              {icon}
-            </span>
-          </Tooltip>
-        )
+        const statusKey = record.mounted && record.docker_running
+          ? 'mounted-running'
+          : record.mounted
+            ? 'mounted'
+            : 'unmounted'
+        return repositoryStatusColumn.render?.(statusKey, record, index) as React.ReactNode
       },
     },
     {
@@ -1586,12 +1576,11 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
         }
       },
     },
-    {
+    createActionColumn<RepositoryTableRow>({
       title: t('common:table.actions'),
-      key: 'actions',
       width: 160,
       fixed: 'right',
-      render: (_: unknown, record: RepositoryTableRow) => {
+      renderActions: (record) => {
         const isGroupHeader = record._isGroupHeader
         const groupData = record._groupData
 
@@ -1973,16 +1962,20 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
           </Space>
         )
       },
-    },
+    }),
   ]
 
   if (loading) {
     return (
-      <div style={{ padding: '20px', textAlign: 'center' }} data-testid="machine-repo-list-loading">
-        <Spin />
-        <div style={{ marginTop: 16, color: 'var(--ant-color-text-secondary)' }}>
-          {t('resources:repositories.fetchingRepositories')}
-        </div>
+      <div style={{ padding: '20px' }} data-testid="machine-repo-list-loading">
+        <LoadingWrapper
+          loading
+          centered
+          minHeight={200}
+          tip={t('resources:repositories.fetchingRepositories') as string}
+        >
+          <div />
+        </LoadingWrapper>
       </div>
     )
   }
@@ -2015,10 +2008,14 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
       {/* Loading Overlay */}
       {isLoading && (
         <S.LoadingOverlay>
-          <Space direction="vertical" align="center">
-            <Spin size="large" />
-            <Text type="secondary">{t('common:general.refreshing')}</Text>
-          </Space>
+          <LoadingWrapper
+            loading
+            centered
+            minHeight={120}
+            tip={t('common:general.refreshing') as string}
+          >
+            <div />
+          </LoadingWrapper>
         </S.LoadingOverlay>
       )}
       

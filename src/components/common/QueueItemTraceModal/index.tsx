@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Spin, Row, Col, Tabs, Collapse, Steps, Progress, Statistic, Alert, Divider, Badge, Tooltip, Segmented } from 'antd'
+import { Modal, Button, Space, Typography, Card, Descriptions, Tag, Timeline, Empty, Row, Col, Tabs, Collapse, Steps, Progress, Statistic, Alert, Divider, Badge, Tooltip, Segmented } from 'antd'
 import { ReloadOutlined, HistoryOutlined, FileTextOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, RightOutlined, UserOutlined, RetweetOutlined, WarningOutlined, RocketOutlined, TeamOutlined, DashboardOutlined, ThunderboltOutlined, HourglassOutlined, ExclamationCircleOutlined, CodeOutlined, QuestionCircleOutlined } from '@/utils/optimizedIcons'
 import { useQueueItemTrace, useRetryFailedQueueItem, useCancelQueueItem } from '@/api/queries/queue'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
-import { SimpleJsonEditor } from '../SimpleJsonEditor'
+import { SimpleJsonEditor } from '@/components/common/VaultEditor/components/SimpleJsonEditor'
+import LoadingWrapper from '@/components/common/LoadingWrapper'
 import { queueMonitoringService } from '@/services/queueMonitoringService'
 import { showMessage } from '@/utils/messages'
 import { useTheme } from '@/context/ThemeContext'
@@ -522,7 +523,9 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open,
     >
       {isTraceLoading ? (
         <div className="queue-trace-loading">
-          <Spin size="large" />
+          <LoadingWrapper loading centered minHeight={160}>
+            <div />
+          </LoadingWrapper>
         </div>
       ) : traceData ? (
         <div>

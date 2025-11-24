@@ -1,5 +1,5 @@
 import React from 'react'
-import { Empty, Spin, Typography } from 'antd'
+import { Empty, Typography } from 'antd'
 import { TeamOutlined, CloudServerOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import {
@@ -21,6 +21,7 @@ import {
   MachineTag,
   MachineTagGrid,
 } from '../styles'
+import LoadingWrapper from '@/components/common/LoadingWrapper'
 
 const { Text } = Typography
 
@@ -52,7 +53,9 @@ export const CloneMachineTable: React.FC<CloneMachineTableProps> = ({
   if (isLoading) {
     return (
       <MachineListWrapper data-testid={`clone-list-machines-loading-${clone.cloneName}`}>
-        <Spin />
+        <LoadingWrapper loading centered minHeight={120}>
+          <div />
+        </LoadingWrapper>
       </MachineListWrapper>
     )
   }

@@ -4,7 +4,7 @@ import { Provider } from 'react-redux'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { store } from './store/store'
 import App from './App'
-import { AppProviders } from './components/common/AppProviders'
+import { AppProviders } from './components/app/AppProviders'
 import i18n from './i18n/config'
 
 const queryClient = new QueryClient({

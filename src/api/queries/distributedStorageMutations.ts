@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient, QueryKey } from '@tanstack/react-query'
 import { apiClient } from '../client'
 import { showMessage } from '@/utils/messages'
-import { useTranslation } from 'react-i18next'
 import { DS_QUERY_KEYS } from './distributedStorage'
+import i18n from '@/i18n/config'
+import { createErrorHandler } from '@/utils/mutationUtils'
 
 // Response validation helper
 function validateResponse(response: any, errorMessage: string): void {
@@ -16,7 +17,7 @@ type Operation = 'create' | 'update' | 'delete' | 'assign' | 'remove'
 interface MutationFactoryConfig<TData> {
   endpoint: string
   operation: Operation
-  resourceType: string
+  resourceKey: string
   translationKey: string
   getInvalidateKeys: (variables: TData) => QueryKey[]
   additionalInvalidateKeys?: (variables: TData) => QueryKey[]
@@ -31,12 +32,18 @@ export function createDistributedStorageMutation<TData extends Record<string, an
 ) {
   return () => {
     const queryClient = useQueryClient()
-    const { t } = useTranslation('distributedStorage')
+    const operationLabel = i18n.t(`distributedStorage:mutations.operations.${config.operation}`)
+    const resourceLabel = i18n.t(`distributedStorage:mutations.resources.${config.resourceKey}`)
+    const fallbackError = i18n.t('distributedStorage:errors.operationFailed', {
+      operation: operationLabel,
+      resource: resourceLabel
+    })
+    const handleError = createErrorHandler(fallbackError)
 
     return useMutation({
       mutationFn: async (data: TData) => {
         const response = await apiClient.post(config.endpoint, data)
-        validateResponse(response, `Failed to ${config.operation} ${config.resourceType}`)
+        validateResponse(response, fallbackError)
         return response
       },
       onSuccess: (_: any, variables: TData) => {
@@ -50,11 +57,9 @@ export function createDistributedStorageMutation<TData extends Record<string, an
           additionalKeys.forEach(key => queryClient.invalidateQueries({ queryKey: key }))
         }
 
-        showMessage('success', t(config.translationKey))
+        showMessage('success', i18n.t(`distributedStorage:${config.translationKey}`))
       },
-      onError: (error: Error) => {
-        showMessage('error', error.message)
-      },
+      onError: handleError,
     })
   }
 }
@@ -71,7 +76,7 @@ interface CreateClusterData {
 export const useCreateDistributedStorageCluster = createDistributedStorageMutation<CreateClusterData>({
   endpoint: '/CreateDistributedStorageCluster',
   operation: 'create',
-  resourceType: 'cluster',
+  resourceKey: 'cluster',
   translationKey: 'clusters.createSuccess',
   getInvalidateKeys: () => [DS_QUERY_KEYS.clusters()]
 })
@@ -85,7 +90,7 @@ interface UpdateClusterVaultData {
 export const useUpdateDistributedStorageClusterVault = createDistributedStorageMutation<UpdateClusterVaultData>({
   endpoint: '/UpdateDistributedStorageClusterVault',
   operation: 'update',
-  resourceType: 'cluster vault',
+  resourceKey: 'clusterVault',
   translationKey: 'clusters.updateSuccess',
   getInvalidateKeys: () => [DS_QUERY_KEYS.clusters()]
 })
@@ -97,7 +102,7 @@ interface DeleteClusterData {
 export const useDeleteDistributedStorageCluster = createDistributedStorageMutation<DeleteClusterData>({
   endpoint: '/DeleteDistributedStorageCluster',
   operation: 'delete',
-  resourceType: 'cluster',
+  resourceKey: 'cluster',
   translationKey: 'clusters.deleteSuccess',
   getInvalidateKeys: () => [DS_QUERY_KEYS.clusters()]
 })
@@ -116,7 +121,7 @@ interface CreatePoolData {
 export const useCreateDistributedStoragePool = createDistributedStorageMutation<CreatePoolData>({
   endpoint: '/CreateDistributedStoragePool',
   operation: 'create',
-  resourceType: 'pool',
+  resourceKey: 'pool',
   translationKey: 'pools.createSuccess',
   getInvalidateKeys: () => [DS_QUERY_KEYS.pools()]
 })
@@ -131,7 +136,7 @@ interface UpdatePoolVaultData {
 export const useUpdateDistributedStoragePoolVault = createDistributedStorageMutation<UpdatePoolVaultData>({
   endpoint: '/UpdateDistributedStoragePoolVault',
   operation: 'update',
-  resourceType: 'pool vault',
+  resourceKey: 'poolVault',
   translationKey: 'pools.updateSuccess',
   getInvalidateKeys: () => [DS_QUERY_KEYS.pools()]
 })
@@ -144,7 +149,7 @@ interface DeletePoolData {
 export const useDeleteDistributedStoragePool = createDistributedStorageMutation<DeletePoolData>({
   endpoint: '/DeleteDistributedStoragePool',
   operation: 'delete',
-  resourceType: 'pool',
+  resourceKey: 'pool',
   translationKey: 'pools.deleteSuccess',
   getInvalidateKeys: () => [DS_QUERY_KEYS.pools()]
 })
@@ -164,7 +169,7 @@ interface CreateImageData {
 export const useCreateDistributedStorageRbdImage = createDistributedStorageMutation<CreateImageData>({
   endpoint: '/CreateDistributedStorageRbdImage',
   operation: 'create',
-  resourceType: 'RBD image',
+  resourceKey: 'rbdImage',
   translationKey: 'images.createSuccess',
   getInvalidateKeys: () => [DS_QUERY_KEYS.images()],
   additionalInvalidateKeys: () => [['distributed-storage-cluster-machines']]
@@ -179,7 +184,7 @@ interface DeleteImageData {
 export const useDeleteDistributedStorageRbdImage = createDistributedStorageMutation<DeleteImageData>({
   endpoint: '/DeleteDistributedStorageRbdImage',
   operation: 'delete',
-  resourceType: 'RBD image',
+  resourceKey: 'rbdImage',
   translationKey: 'images.deleteSuccess',
   getInvalidateKeys: () => [DS_QUERY_KEYS.images()]
 })
@@ -194,7 +199,7 @@ interface UpdateImageMachineData {
 export const useUpdateImageMachineAssignment = createDistributedStorageMutation<UpdateImageMachineData>({
   endpoint: '/UpdateImageMachineAssignment',
   operation: 'assign',
-  resourceType: 'image machine',
+  resourceKey: 'imageMachine',
   translationKey: 'images.reassignmentSuccess',
   getInvalidateKeys: () => [DS_QUERY_KEYS.images()]
 })
@@ -214,7 +219,7 @@ interface CreateSnapshotData {
 export const useCreateDistributedStorageRbdSnapshot = createDistributedStorageMutation<CreateSnapshotData>({
   endpoint: '/CreateDistributedStorageRbdSnapshot',
   operation: 'create',
-  resourceType: 'RBD snapshot',
+  resourceKey: 'rbdSnapshot',
   translationKey: 'snapshots.createSuccess',
   getInvalidateKeys: () => [DS_QUERY_KEYS.snapshots()]
 })
@@ -229,7 +234,7 @@ interface DeleteSnapshotData {
 export const useDeleteDistributedStorageRbdSnapshot = createDistributedStorageMutation<DeleteSnapshotData>({
   endpoint: '/DeleteDistributedStorageRbdSnapshot',
   operation: 'delete',
-  resourceType: 'RBD snapshot',
+  resourceKey: 'rbdSnapshot',
   translationKey: 'snapshots.deleteSuccess',
   getInvalidateKeys: () => [DS_QUERY_KEYS.snapshots()]
 })
@@ -250,7 +255,7 @@ interface CreateCloneData {
 export const useCreateDistributedStorageRbdClone = createDistributedStorageMutation<CreateCloneData>({
   endpoint: '/CreateDistributedStorageRbdClone',
   operation: 'create',
-  resourceType: 'RBD clone',
+  resourceKey: 'rbdClone',
   translationKey: 'clones.createSuccess',
   getInvalidateKeys: () => [DS_QUERY_KEYS.clones()]
 })
@@ -266,7 +271,7 @@ interface DeleteCloneData {
 export const useDeleteDistributedStorageRbdClone = createDistributedStorageMutation<DeleteCloneData>({
   endpoint: '/DeleteDistributedStorageRbdClone',
   operation: 'delete',
-  resourceType: 'RBD clone',
+  resourceKey: 'rbdClone',
   translationKey: 'clones.deleteSuccess',
   getInvalidateKeys: () => [DS_QUERY_KEYS.clones()]
 })
@@ -284,7 +289,7 @@ interface UpdateMachineStorageData {
 export const useUpdateMachineDistributedStorage = createDistributedStorageMutation<UpdateMachineStorageData>({
   endpoint: '/UpdateMachineDistributedStorage',
   operation: 'update',
-  resourceType: 'machine cluster assignment',
+  resourceKey: 'machineClusterAssignment',
   translationKey: 'machines.updateSuccess',
   getInvalidateKeys: (variables) => [DS_QUERY_KEYS.clusterMachines(variables.clusterName || '')]
 })
@@ -301,7 +306,7 @@ interface CloneMachineAssignmentData {
 export const useUpdateCloneMachineAssignments = createDistributedStorageMutation<CloneMachineAssignmentData>({
   endpoint: '/UpdateCloneMachineAssignments',
   operation: 'assign',
-  resourceType: 'clone machines',
+  resourceKey: 'cloneMachines',
   translationKey: 'clones.machinesAssignedSuccess',
   getInvalidateKeys: (variables) => [
     DS_QUERY_KEYS.cloneMachines(variables.cloneName, variables.snapshotName, variables.imageName, variables.poolName, variables.teamName),
@@ -312,7 +317,7 @@ export const useUpdateCloneMachineAssignments = createDistributedStorageMutation
 export const useUpdateCloneMachineRemovals = createDistributedStorageMutation<CloneMachineAssignmentData>({
   endpoint: '/UpdateCloneMachineRemovals',
   operation: 'remove',
-  resourceType: 'clone machines',
+  resourceKey: 'cloneMachines',
   translationKey: 'clones.machinesRemovedSuccess',
   getInvalidateKeys: (variables) => [
     DS_QUERY_KEYS.cloneMachines(variables.cloneName, variables.snapshotName, variables.imageName, variables.poolName, variables.teamName),
@@ -329,7 +334,7 @@ interface MachineClusterData {
 export const useUpdateMachineClusterAssignment = createDistributedStorageMutation<MachineClusterData>({
   endpoint: '/UpdateMachineClusterAssignment',
   operation: 'assign',
-  resourceType: 'machine cluster',
+  resourceKey: 'machineCluster',
   translationKey: 'machines.clusterAssignedSuccess',
   getInvalidateKeys: (variables) => [
     DS_QUERY_KEYS.clusterMachines(variables.clusterName),
@@ -345,7 +350,7 @@ interface MachineClusterRemovalData {
 export const useUpdateMachineClusterRemoval = createDistributedStorageMutation<MachineClusterRemovalData>({
   endpoint: '/UpdateMachineClusterRemoval',
   operation: 'remove',
-  resourceType: 'machine cluster',
+  resourceKey: 'machineCluster',
   translationKey: 'machines.clusterRemovedSuccess',
   getInvalidateKeys: (variables) => [
     ['distributed-storage-cluster-machines'],

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import type { ComponentPropsWithoutRef } from 'react'
-import { Tag, Spin, Row, Col, List } from 'antd'
+import { Tag, Row, Col, List } from 'antd'
 import { ModalSize } from '@/types/modal'
 import {
   RocketOutlined,
@@ -18,6 +18,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import type { SyntaxHighlighterProps } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { templateService } from '@/services/templateService'
+import LoadingWrapper from '@/components/common/LoadingWrapper'
 import {
   StyledModal,
   TitleStack,
@@ -317,7 +318,9 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
 
   const filesContent = loading ? (
     <LoadingContainer data-testid={context === 'marketplace' ? undefined : 'template-details-loading'}>
-      <Spin size="large" />
+      <LoadingWrapper loading centered minHeight={160}>
+        <div />
+      </LoadingWrapper>
       <LoadingText>
         {context === 'marketplace' ? t('marketplace:loadingFiles') : t('resources:templates.loadingDetails')}
       </LoadingText>

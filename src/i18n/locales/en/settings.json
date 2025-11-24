@@ -100,6 +100,24 @@
       "benefit3": "Works with popular authenticator apps like Google Authenticator, Authy, or Microsoft Authenticator",
       "description": "Two-Factor Authentication (TFA) adds an extra layer of security to your account by requiring a time-based code from your phone in addition to your password.",
       "title": "What is Two-Factor Authentication?"
+    },
+    "statusMessages": {
+      "unknown": "Unable to determine TFA status",
+      "none": "No TFA configured",
+      "enabled": "TFA enabled"
+    },
+    "success": {
+      "enabled": "Two-factor authentication enabled and verified successfully.",
+      "disabled": "Two-factor authentication has been disabled.",
+      "verified": "TFA verification successful."
+    },
+    "errors": {
+      "enableFailed": "Failed to enable two-factor authentication.",
+      "disableFailed": "Failed to disable two-factor authentication.",
+      "verificationFailed": "Invalid TFA code.",
+      "missingData": "Unexpected response format: missing TFA data table.",
+      "missingSecret": "Two-factor authentication secret not returned by the server.",
+      "invalidParameters": "Invalid parameters for TFA operation."
     }
   }
 }

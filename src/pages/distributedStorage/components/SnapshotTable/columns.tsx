@@ -6,13 +6,8 @@ import { TFunction } from 'i18next'
 import { createSorter } from '@/core'
 import type { DistributedStorageRbdSnapshot } from '@/api/queries/distributedStorage'
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup'
-import {
-  GuidText,
-  NameCell,
-  NameIcon,
-  NameText,
-  VaultTag,
-} from './styles'
+import { createActionColumn, createTruncatedColumn } from '@/components/common/columns'
+import { NameCell, NameIcon, NameText, VaultTag } from './styles'
 
 interface ColumnBuilderParams {
   t: TFunction<'distributedStorage'>
@@ -47,23 +42,18 @@ export const buildSnapshotColumns = ({
       </NameCell>
     ),
   },
-  {
+  createTruncatedColumn<DistributedStorageRbdSnapshot>({
     title: t('snapshots.guid'),
     dataIndex: 'snapshotGuid',
     key: 'snapshotGuid',
     width: 300,
+    maxLength: 8,
     sorter: createSorter<DistributedStorageRbdSnapshot>('snapshotGuid'),
-    render: (text: string) => (
-      <Tooltip title={text}>
-        <GuidText>{text.substring(0, 8)}...</GuidText>
-      </Tooltip>
-    ),
-  },
-  {
-    title: t('common.actions'),
-    key: 'actions',
+    renderText: (value) => value || '',
+  }),
+  createActionColumn<DistributedStorageRbdSnapshot>({
     width: 150,
-    render: (_: unknown, record: DistributedStorageRbdSnapshot) => (
+    renderActions: (record) => (
       <ActionButtonGroup
         buttons={[
           {
@@ -88,5 +78,5 @@ export const buildSnapshotColumns = ({
         t={t}
       />
     ),
-  },
+  }),
 ]

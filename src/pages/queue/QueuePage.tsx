@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback } from 'react'
 import { Typography, Space, Modal, Tag, Tabs, Tooltip, Dropdown } from 'antd'
-import FilterTagDisplay, { FilterTagConfig } from '@/components/common/FilterTagDisplay'
+import FilterTagDisplay, { FilterTagConfig } from '@/pages/queue/components/FilterTagDisplay'
 import { renderTimestamp, renderBoolean } from '@/components/common/columns'
 import { ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, WarningOutlined, GlobalOutlined, ClockCircleOutlined, ReloadOutlined, ExportOutlined, HistoryOutlined, SearchOutlined } from '@/utils/optimizedIcons'
 import { useQueueItems, useCancelQueueItem, QueueFilters, type QueueStatistics } from '@/api/queries/queue'

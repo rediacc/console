@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Button, Tooltip, Space, Tag, Card, Row, Col, Table, Modal, Alert, Spin, Typography, Popconfirm, Result, Empty, Form, Checkbox } from 'antd'
+import { Button, Tooltip, Space, Tag, Card, Row, Col, Table, Modal, Alert, Typography, Popconfirm, Result, Empty, Form, Checkbox } from 'antd'
 import {
   EnvironmentOutlined,
   ApiOutlined,
@@ -49,12 +49,11 @@ import {
   CardTitle,
   SecondaryText,
   PaddedEmpty,
-  CenteredState,
-  LoadingHint,
   ModalStack,
   ModalStackLarge,
   ErrorWrapper,
 } from '@/components/ui'
+import LoadingWrapper from '@/components/common/LoadingWrapper'
 import {
   ModalAlert,
   TokenCopyRow,
@@ -583,25 +582,27 @@ const InfrastructurePage: React.FC = () => {
 
                 {!selectedRegion ? (
                   <PaddedEmpty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('regions.selectRegionPrompt')} />
-                ) : bridgesLoading ? (
-                  <CenteredState>
-                    <Spin size="large" />
-                    <LoadingHint>{tCommon('general.loading')}</LoadingHint>
-                  </CenteredState>
                 ) : (
-                  <Table
-                    columns={bridgeColumns}
-                    dataSource={bridgesList}
-                    rowKey="bridgeName"
-                    pagination={{
-                      total: bridgesList.length || 0,
-                      pageSize: 10,
-                      showSizeChanger: true,
-                      showTotal: (total) => t('bridges.totalBridges', { total }),
-                    }}
-                    locale={{ emptyText: t('bridges.noBridges') }}
-                    data-testid="system-bridge-table"
-                  />
+                  <LoadingWrapper
+                    loading={bridgesLoading}
+                    centered
+                    minHeight={200}
+                    tip={tCommon('general.loading')}
+                  >
+                    <Table
+                      columns={bridgeColumns}
+                      dataSource={bridgesList}
+                      rowKey="bridgeName"
+                      pagination={{
+                        total: bridgesList.length || 0,
+                        pageSize: 10,
+                        showSizeChanger: true,
+                        showTotal: (total) => t('bridges.totalBridges', { total }),
+                      }}
+                      locale={{ emptyText: t('bridges.noBridges') }}
+                      data-testid="system-bridge-table"
+                    />
+                  </LoadingWrapper>
                 )}
               </Card>
             </Col>

@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Tooltip } from 'antd'
 import { DoubleLeftOutlined, DesktopOutlined, InboxOutlined, ContainerOutlined } from '@/utils/optimizedIcons'
-import { MachineVaultStatusPanel } from '../MachineVaultStatusPanel'
-import { RepositoryDetailPanel } from '../RepositoryDetailPanel'
-import { ContainerDetailPanel } from '../ContainerDetailPanel'
+import { MachineVaultStatusPanel } from '../internal/MachineVaultStatusPanel'
+import { RepositoryDetailPanel } from '../internal/RepositoryDetailPanel'
+import { ContainerDetailPanel } from '../internal/ContainerDetailPanel'
 import type { Machine, Repository } from '@/types'
 import {
   CollapsedIcon,

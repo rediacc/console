@@ -1,5 +1,5 @@
 import React from 'react'
-import { Row, Col, Spin } from 'antd'
+import { Row, Col } from 'antd'
 import {
   DesktopOutlined,
   CheckCircleOutlined,
@@ -24,6 +24,7 @@ import {
   SummaryStatistic,
   PercentageSuffix,
 } from './styles'
+import LoadingWrapper from '@/components/common/LoadingWrapper'
 
 export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProps> = ({
   teamFilter,
@@ -64,9 +65,9 @@ export const MachineAvailabilitySummary: React.FC<MachineAvailabilitySummaryProp
   if (isLoading) {
     return (
       <LoadingCard>
-        <LoadingContent>
-          <Spin />
-        </LoadingContent>
+        <LoadingWrapper loading centered minHeight={160}>
+          <LoadingContent />
+        </LoadingWrapper>
       </LoadingCard>
     )
   }

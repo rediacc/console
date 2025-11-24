@@ -1,5 +1,5 @@
 import React from 'react'
-import { Modal, Alert, Spin, Empty } from 'antd'
+import { Modal, Alert, Empty } from 'antd'
 import type { TFunction } from 'i18next'
 import type { AvailableMachine } from '@/api/queries/distributedStorage'
 import type { Machine } from '@/types'
@@ -7,11 +7,11 @@ import { ModalSize } from '@/types/modal'
 import { AvailableMachinesSelector } from '@/components/resources/AvailableMachinesSelector'
 import {
   ModalStack,
-  ModalPlaceholder,
   SelectedCountTag,
   ModalTitle,
   ModalTitleIcon,
 } from '../styles'
+import LoadingWrapper from '@/components/common/LoadingWrapper'
 
 interface AssignMachinesModalProps {
   open: boolean
@@ -66,23 +66,21 @@ export const AssignMachinesModal: React.FC<AssignMachinesModalProps> = ({
         showIcon
         data-testid="clone-manager-modal-alert"
       />
-      {isLoading ? (
-        <ModalPlaceholder data-testid="clone-manager-modal-loading">
-          <Spin />
-        </ModalPlaceholder>
-      ) : availableMachines.length === 0 ? (
-        <Empty
-          description={t('machines:noAvailableMachinesForClone')}
-          data-testid="clone-manager-modal-empty"
-        />
-      ) : (
-        <AvailableMachinesSelector
-          machines={availableMachines as unknown as Machine[]}
-          value={selectedMachines}
-          onChange={onSelectionChange}
-          data-testid="clone-manager-modal-selector"
-        />
-      )}
+      <LoadingWrapper loading={isLoading} centered minHeight={160}>
+        {availableMachines.length === 0 ? (
+          <Empty
+            description={t('machines:noAvailableMachinesForClone')}
+            data-testid="clone-manager-modal-empty"
+          />
+        ) : (
+          <AvailableMachinesSelector
+            machines={availableMachines as unknown as Machine[]}
+            value={selectedMachines}
+            onChange={onSelectionChange}
+            data-testid="clone-manager-modal-selector"
+          />
+        )}
+      </LoadingWrapper>
       {selectedMachines.length > 0 && (
         <SelectedCountTag data-testid="clone-manager-modal-selected-count">
           {t('machines:bulkOperations.selectedCount', {

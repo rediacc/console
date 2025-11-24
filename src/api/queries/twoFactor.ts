@@ -5,6 +5,8 @@ import apiClient from '@/api/client'
 import { showMessage } from '@/utils/messages'
 import { hashPassword } from '@/utils/auth'
 import { getFirstRow } from '@/core/api/response'
+import i18n from '@/i18n/config'
+import { createErrorHandler, extractErrorMessage } from '@/utils/mutationUtils'
 
 export interface TwoFactorStatus {
   isTFAEnabled: boolean
@@ -37,7 +39,7 @@ export const useTFAStatus = () => {
         return {
           isTFAEnabled: false,
           isAuthorized: false,
-          authenticationStatus: 'Unable to determine TFA status'
+          authenticationStatus: i18n.t('settings:twoFactorAuth.statusMessages.unknown')
         } as TwoFactorStatus
       }
       
@@ -55,7 +57,7 @@ export const useTFAStatus = () => {
       return {
         isTFAEnabled: isTFAEnabled,
         isAuthorized: isAuthorized,
-        authenticationStatus: data.authenticationStatus || 'No TFA configured'
+        authenticationStatus: data.authenticationStatus || i18n.t('settings:twoFactorAuth.statusMessages.none')
       } as TwoFactorStatus
     },
     enabled: !!userEmail
@@ -87,11 +89,11 @@ export const useEnableTFA = () => {
         const responseData = getFirstRow<EnableTwoFactorResponse>(response, 1)
 
         if (!responseData) {
-          throw new Error('Unexpected response format: missing TFA data table')
+          throw new Error(i18n.t('settings:twoFactorAuth.errors.missingData'))
         }
 
         if (!responseData.secret) {
-          throw new Error('TFA secret not returned by server')
+          throw new Error(i18n.t('settings:twoFactorAuth.errors.missingSecret'))
         }
 
         return responseData
@@ -109,7 +111,7 @@ export const useEnableTFA = () => {
         return getFirstRow<EnableTwoFactorResponse>(response, 0)
       }
       
-      throw new Error('Invalid parameters for TFA operation')
+      throw new Error(i18n.t('settings:twoFactorAuth.errors.invalidParameters'))
     },
     onSuccess: (_data, variables) => {
       // Only update cache and show success if we're confirming enable
@@ -118,24 +120,24 @@ export const useEnableTFA = () => {
         queryClient.setQueryData(['tfa-status', userEmail], {
           isTFAEnabled: true,
           isAuthorized: true,
-          authenticationStatus: 'TFA enabled'
+          authenticationStatus: i18n.t('settings:twoFactorAuth.statusMessages.enabled')
         } as TwoFactorStatus)
         
         // Then invalidate to ensure fresh data on next fetch
         queryClient.invalidateQueries({ queryKey: ['tfa-status'] })
-        showMessage('success', 'TFA has been successfully enabled and verified.')
+        showMessage('success', i18n.t('settings:twoFactorAuth.success.enabled'))
       }
     },
-    onError: (error: any) => {
-      // The error message will come from the API's error array or the extracted error message
-      const errorMessage = error.message || 'Failed to enable TFA'
+    onError: (error: unknown) => {
+      const fallbackMessage = i18n.t('settings:twoFactorAuth.errors.enableFailed')
+      const errorMessage = extractErrorMessage(error, fallbackMessage)
       
       // If it's a 409 conflict error (TFA already enabled), refresh the status
       if (errorMessage.includes('already enabled')) {
         queryClient.invalidateQueries({ queryKey: ['tfa-status'] })
       }
-      
-      showMessage('error', errorMessage)
+
+      createErrorHandler(fallbackMessage)(error)
     },
   })
 }
@@ -161,16 +163,14 @@ export const useDisableTFA = () => {
       queryClient.setQueryData(['tfa-status', userEmail], {
         isTFAEnabled: false,
         isAuthorized: true,
-        authenticationStatus: 'No TFA configured'
+        authenticationStatus: i18n.t('settings:twoFactorAuth.statusMessages.none')
       } as TwoFactorStatus)
       
       // Then invalidate to ensure fresh data on next fetch
       queryClient.invalidateQueries({ queryKey: ['tfa-status'] })
-      showMessage('success', 'TFA has been disabled successfully')
+      showMessage('success', i18n.t('settings:twoFactorAuth.success.disabled'))
     },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to disable TFA')
-    },
+    onError: createErrorHandler(i18n.t('settings:twoFactorAuth.errors.disableFailed')),
   })
 }
 
@@ -195,11 +195,9 @@ export const useVerifyTFA = () => {
     onSuccess: (data) => {
       if (data.isAuthorized) {
         queryClient.invalidateQueries({ queryKey: ['tfa-status'] })
-        showMessage('success', 'TFA verification successful')
+        showMessage('success', i18n.t('settings:twoFactorAuth.success.verified'))
       }
     },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Invalid TFA code')
-    },
+    onError: createErrorHandler(i18n.t('settings:twoFactorAuth.errors.verificationFailed')),
   })
 }

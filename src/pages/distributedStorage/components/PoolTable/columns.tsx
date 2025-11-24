@@ -9,7 +9,7 @@ import {
 import type { DistributedStoragePool } from '@/api/queries/distributedStorage'
 import { createSorter } from '@/core'
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup'
-import { VersionTag } from '@/components/common/columns'
+import { VersionTag, createActionColumn } from '@/components/common/columns'
 import { getPoolFunctionMenuItems } from './menus'
 import {
   PoolNameCell,
@@ -67,11 +67,9 @@ export const buildPoolColumns = ({
       </VersionTag>
     ),
   },
-  {
-    title: t('common:table.actions'),
-    key: 'actions',
+  createActionColumn<DistributedStoragePool>({
     width: 320,
-    render: (_: unknown, record: DistributedStoragePool) => (
+    renderActions: (record) => (
       <ActionButtonGroup
         buttons={[
           {
@@ -118,5 +116,5 @@ export const buildPoolColumns = ({
         t={t}
       />
     ),
-  },
+  }),
 ]

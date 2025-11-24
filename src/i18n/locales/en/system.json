@@ -295,5 +295,34 @@
     "totalCount": "Total: {{count}} sessions",
     "totalSessions": "Total Sessions",
     "uniqueUsers": "Unique Users"
+  },
+  "company": {
+    "success": {
+      "vaultUpdated": "Vault configuration updated successfully",
+      "requestsBlocked": "User requests blocked successfully",
+      "requestsBlockedWithTerminations": "User requests blocked. {{count}} active sessions were terminated.",
+      "requestsUnblocked": "User requests unblocked successfully",
+      "importComplete": "Import completed: {{summary}}",
+      "importedCount": "{{count}} items imported",
+      "skippedCount": "{{count}} items skipped",
+      "errorCount": "{{count}} errors"
+    },
+    "errors": {
+      "vaultUpdateFailed": "Failed to update vault configuration",
+      "blockRequestsFailed": "Failed to update user request blocking status",
+      "importFailed": "Failed to import company data",
+      "noExportData": "No export data returned"
+    }
+  },
+  "vaultProtocol": {
+    "success": {
+      "enabled": "Vault encryption enabled successfully. All users must now use this master password.",
+      "disabled": "Vault encryption disabled. Master passwords are no longer required."
+    },
+    "errors": {
+      "enableFailed": "Failed to enable vault encryption",
+      "disableFailed": "Failed to disable vault encryption",
+      "noCompanySelected": "No company selected. Please choose a company before updating encryption."
+    }
   }
 }

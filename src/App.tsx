@@ -1,17 +1,16 @@
 import React, { useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { Spin } from 'antd'
 import { selectIsAuthenticated } from '@/store/auth/authSelectors'
 import { RootState } from '@/store/store'
 import { loginSuccess } from '@/store/auth/authSlice'
 import { getAuthData, migrateFromLocalStorage } from '@/utils/auth'
-import { AppProviders } from '@/components/common/AppProviders'
-import { ThemedToaster } from '@/components/common/ThemedToaster'
-import { SessionExpiredDialog } from '@/components/auth/SessionExpiredDialog'
+import { AppProviders } from '@/components/app/AppProviders'
+import { ThemedToaster } from '@/components/app/ThemedToaster'
+import { SessionExpiredDialog } from '@/components/app/SessionExpiredDialog'
 import { TelemetryProvider } from '@/components/common/TelemetryProvider'
-import { InteractionTracker } from '@/components/common/InteractionTracker'
-import { ErrorBoundary } from '@/components/common/ErrorBoundary'
+import { InteractionTracker } from '@/components/app/InteractionTracker'
+import { ErrorBoundary } from '@/components/app/ErrorBoundary'
 import { initializeApiClient } from '@/api/init'
 import AuthLayout from '@/components/layout/AuthLayout'
 import MainLayout from '@/components/layout/MainLayout'
@@ -20,6 +19,7 @@ import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { getBasePath } from '@/utils/basePath'
 import { featureFlags } from '@/config/featureFlags'
 import { GlobalStyles } from '@/styles/GlobalStyles'
+import LoadingWrapper from '@/components/common/LoadingWrapper'
 
 // Lazy load heavy pages
 const DashboardPage = lazy(() => import('@/pages/dashboard'))
@@ -51,7 +51,9 @@ const PageLoader: React.FC = () => {
         minHeight: '400px'
       }}
     >
-      <Spin size="large" />
+      <LoadingWrapper loading centered minHeight={400}>
+        <div />
+      </LoadingWrapper>
     </div>
   )
 }

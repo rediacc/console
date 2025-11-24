@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { Button, Space, Tag, Typography, Spin, Alert, Tooltip } from 'antd'
+import { Button, Space, Tag, Typography, Alert, Tooltip } from 'antd'
 import { DoubleLeftOutlined, ReloadOutlined, DesktopOutlined, PlusOutlined, CloudDownloadOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { usePanelWidth } from '@/hooks/usePanelWidth'
@@ -10,11 +10,12 @@ import { MachineRepositoryTable } from '@/components/resources/MachineRepository
 import { Machine, Repository } from '@/types'
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
-import { RemoteFileBrowserModal } from '@/components/resources/RemoteFileBrowserModal'
+import { RemoteFileBrowserModal } from '@/pages/resources/components/RemoteFileBrowserModal'
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import { useRepositoryCreation } from '@/hooks/useRepositoryCreation'
 import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState'
 import { IconButton } from '@/styles/primitives'
+import LoadingWrapper from '@/components/common/LoadingWrapper'
 import {
   PageWrapper,
   FullHeightCard,
@@ -251,7 +252,9 @@ const MachineRepositoriesPage: React.FC = () => {
       <PageWrapper>
         <FullHeightCard>
           <CenteredState>
-            <Spin size="large" />
+            <LoadingWrapper loading centered minHeight={160}>
+              <div />
+            </LoadingWrapper>
             <Text type="secondary">{t('common:general.loading')}</Text>
           </CenteredState>
         </FullHeightCard>

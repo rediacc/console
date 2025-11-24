@@ -29,7 +29,7 @@ import {
 } from '@/api/queries/distributedStorageMutations'
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
-import { AssignMachinesToCloneModal } from '@/components/resources/AssignMachinesToCloneModal'
+import { AssignMachinesToCloneModal } from '@/pages/distributedStorage/components/AssignMachinesToCloneModal'
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import { buildCloneColumns } from './columns'

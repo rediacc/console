@@ -7,6 +7,7 @@ import { selectCompany } from '@/store/auth/authSelectors'
 import { minifyJSON } from '@/utils/json'
 import i18n from '@/i18n/config'
 import { getFirstRow, getResultSet } from '@/core/api/response'
+import { createErrorHandler } from '@/utils/mutationUtils'
 
 interface CompanyVaultRow {
   vaultContent?: string
@@ -64,8 +65,8 @@ export const useUpdateCompanyVault = createMutation<{ companyVault: string; vaul
   endpoint: '/UpdateCompanyVault',
   method: 'post',
   invalidateKeys: ['company-vault'],
-  successMessage: () => 'Vault configuration updated successfully',
-  errorMessage: 'Failed to update vault configuration',
+  successMessage: () => i18n.t('system:company.success.vaultUpdated'),
+  errorMessage: i18n.t('system:company.errors.vaultUpdateFailed'),
   transformData: (data) => ({
     ...data,
     companyVault: minifyJSON(data.companyVault)
@@ -75,6 +76,7 @@ export const useUpdateCompanyVault = createMutation<{ companyVault: string; vaul
 // Block or unblock user requests - Special case with dynamic success message
 export const useUpdateCompanyBlockUserRequests = () => {
   const queryClient = useQueryClient()
+  const blockStatusErrorHandler = createErrorHandler(i18n.t('system:company.errors.blockRequestsFailed'))
   
   return useMutation({
     mutationFn: async (blockUserRequests: boolean) => {
@@ -84,22 +86,24 @@ export const useUpdateCompanyBlockUserRequests = () => {
       return getFirstRow<BlockUserRequestsResponse>(response, 0)
     },
     onSuccess: (data, variables) => {
-      const action = variables ? 'blocked' : 'unblocked'
       const deactivatedCount = data?.DeactivatedCount ?? 0
-      
-      if (variables && deactivatedCount > 0) {
-        showMessage('success', `User requests ${action}. ${deactivatedCount} active sessions were terminated.`)
+      let message: string
+
+      if (variables) {
+        message = deactivatedCount > 0
+          ? i18n.t('system:company.success.requestsBlockedWithTerminations', { count: deactivatedCount })
+          : i18n.t('system:company.success.requestsBlocked')
       } else {
-        showMessage('success', `User requests ${action} successfully`)
+        message = i18n.t('system:company.success.requestsUnblocked')
       }
+
+      showMessage('success', message)
       
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ['company'] })
       queryClient.invalidateQueries({ queryKey: ['users'] })
     },
-    onError: () => {
-      showMessage('error', 'Failed to update user request blocking status')
-    }
+    onError: blockStatusErrorHandler
   })
 }
 
@@ -184,7 +188,7 @@ export const useExportCompanyData = () => {
       const exportData = getFirstRow<ExportDataRow>(response, 1)
       
       if (!exportData) {
-        throw new Error('No export data returned')
+        throw new Error(i18n.t('system:company.errors.noExportData'))
       }
       
       return exportData
@@ -196,6 +200,7 @@ export const useExportCompanyData = () => {
 // Import company data
 export const useImportCompanyData = () => {
   const queryClient = useQueryClient()
+  const importErrorHandler = createErrorHandler(i18n.t('system:company.errors.importFailed'))
   
   return useMutation({
     mutationFn: async (params: { companyDataJson: string; importMode?: 'skip' | 'override' }) => {
@@ -209,23 +214,18 @@ export const useImportCompanyData = () => {
       const importedCount = data?.ImportedCount ?? 0
       const skippedCount = data?.SkippedCount ?? 0
       const errorCount = data?.ErrorCount ?? 0
-      
-      let message = `Import completed: ${importedCount} items imported`
-      if (skippedCount > 0) {
-        message += `, ${skippedCount} items skipped`
-      }
-      if (errorCount > 0) {
-        message += `, ${errorCount} errors`
-      }
-      
-      showMessage('success', message)
+
+      const parts = [
+        i18n.t('system:company.success.importedCount', { count: importedCount }),
+        skippedCount > 0 ? i18n.t('system:company.success.skippedCount', { count: skippedCount }) : null,
+        errorCount > 0 ? i18n.t('system:company.success.errorCount', { count: errorCount }) : null
+      ].filter(Boolean)
+
+      showMessage('success', i18n.t('system:company.success.importComplete', { summary: parts.join(', ') }))
       
       // Invalidate all queries to refresh data
       queryClient.invalidateQueries()
     },
-    onError: (error: any) => {
-      const errorMessage = error?.message || 'Failed to import company data'
-      showMessage('error', errorMessage)
-    }
+    onError: importErrorHandler
   })
 }
