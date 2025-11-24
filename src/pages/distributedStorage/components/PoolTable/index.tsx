@@ -132,7 +132,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
         return [...filtered, ...keys]
       })
     },
-    [],
+    [setExpandedRowKeys],
   )
 
   if (pools.length === 0 && !loading) {
