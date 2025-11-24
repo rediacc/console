@@ -11,149 +11,24 @@ import { useTheme } from '@/context/ThemeContext'
 import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
-import { formatTimestampAsIs } from '@/utils/timeUtils'
+import { formatTimestampAsIs } from '@/core'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS, spacing } from '@/utils/styleConstants'
 import { ModalSize } from '@/types/modal'
 import { ModalTitleContainer, ModalTitleLeft, ModalTitleRight, LastFetchedText, ConsoleOutputContainer } from './styles'
+import {
+  normalizeProperty,
+  extractMostRecentProgress,
+  extractProgressMessage,
+  formatDuration,
+  formatDurationFull
+} from '@/core'
 
 dayjs.extend(relativeTime)
 
 const { Text, Title } = Typography
 const { Panel } = Collapse
 const { Step } = Steps
-
-// Helper function to normalize property names from API responses
-const normalizeProperty = <T extends Record<string, any>>(obj: T, ...propertyNames: string[]): any => {
-  if (!obj) return null
-  for (const prop of propertyNames) {
-    if (obj[prop] !== undefined && obj[prop] !== null) {
-      return obj[prop]
-    }
-  }
-  return null
-}
-
-// Helper function to format duration in seconds to human readable format
-const formatDuration = (seconds: number): string => {
-  if (seconds < 60) {
-    return `${seconds}s`
-  }
-  return `${Math.floor(seconds / 60)}m`
-}
-
-// Helper function to format duration for display with full text
-const formatDurationFull = (seconds: number): string => {
-  if (seconds < 60) {
-    return `${seconds} seconds`
-  }
-  const minutes = Math.floor(seconds / 60)
-  return `${minutes} minute${minutes !== 1 ? 's' : ''}`
-}
-
-// Helper function to extract the most recent (last) progress percentage from console output
-// Supports multiple formats: bash msg_progress "- N%" and rsync/rclone "N%"
-const extractMostRecentProgress = (output: string): number | null => {
-  if (!output) return null
-
-  let lastPercentage: number | null = null
-  let lastIndex = -1
-
-  // Pattern 1: msg_progress format "- N%" (bash scripts)
-  const msgProgressPattern = /-\s+(\d+(?:\.\d+)?)%/g
-  const msgProgressMatches = [...output.matchAll(msgProgressPattern)]
-
-  if (msgProgressMatches.length > 0) {
-    const lastMatch = msgProgressMatches[msgProgressMatches.length - 1]
-    lastPercentage = parseFloat(lastMatch[1])
-    lastIndex = lastMatch.index || -1
-  }
-
-  // Pattern 2: rsync/rclone format "N% speed" (transfer tools)
-  // Matches both byte format and human-readable format (K/M/G)
-  // Examples: "199,884,800  18%  190.59MB/s" or "1.5G  18%  190.59MB/s"
-  const transferPattern = /\s+(\d+)%\s+[\d.,]+[KMG]?B\/s/g
-  const transferMatches = [...output.matchAll(transferPattern)]
-
-  if (transferMatches.length > 0) {
-    const lastMatch = transferMatches[transferMatches.length - 1]
-    const matchIndex = lastMatch.index || -1
-    // Use this percentage if it appears after the msg_progress percentage
-    if (matchIndex > lastIndex) {
-      lastPercentage = parseFloat(lastMatch[1])
-      lastIndex = matchIndex
-    }
-  }
-
-  if (lastPercentage === null) return null
-
-  // Clamp to valid range (0-100)
-  return Math.min(100, Math.max(0, lastPercentage))
-}
-
-// Helper function to extract the most recent progress message (text before "- N%")
-const extractProgressMessage = (output: string): string | null => {
-  if (!output) return null
-
-  const lines = output.split('\n')
-  let lastMessage: string | null = null
-  let lastIndex = -1
-
-  // Pattern 1: msg_progress format "message - N%"
-  const msgProgressLinePattern = /^(.+)\s+-\s+\d+(?:\.\d+)?%\s*$/
-
-  // Search from end to find the most recent msg_progress message
-  for (let i = lines.length - 1; i >= 0; i--) {
-    const line = lines[i].trim()
-    if (!line) continue
-
-    const match = line.match(msgProgressLinePattern)
-    if (match && match[1]) {
-      // Clean up the message - remove any ANSI color codes and trim
-      const message = match[1]
-        // eslint-disable-next-line no-control-regex
-        .replace(/\x1b\[[0-9;]*m/g, '')  // Remove ANSI color codes
-        .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')  // Remove any emojis (just in case)
-        .trim()
-
-      if (message) {
-        lastMessage = message
-        lastIndex = i
-        break
-      }
-    }
-  }
-
-  // Pattern 2: rsync transfer line with human-readable format
-  // Example: "      1.50G  18%  190.59MB/s    0:00:04"
-  // Match the full line and show it as-is (cleaner than reformatting)
-  const rsyncPattern = /([\d.]+[KMG]?)\s+(\d+)%\s+([\d.]+[KMG]?B\/s)\s+(\d+:\d+:\d+)/
-
-  // Pattern 3: rclone transfer line
-  // Example: "Transferred: 486.181G / 926.373 GBytes, 52%, 13.589 MBytes/s, ETA 9h12m49s"
-  const rclonePattern = /Transferred:\s+([\d.]+[KMG]?)\s+\/\s+([\d.]+\s*[KMG]?Bytes?),\s+(\d+)%,\s+([\d.]+\s*[KMG]?Bytes?\/s)/i
-
-  for (let i = lines.length - 1; i >= 0; i--) {
-    const line = lines[i].trim()
-    if (!line) continue
-
-    // Try rsync format first - show the matched portion directly
-    const rsyncMatch = line.match(rsyncPattern)
-    if (rsyncMatch && i > lastIndex) {
-      // Return the actual matched rsync output line (cleaner than reformatting)
-      return rsyncMatch[0]
-    }
-
-    // Try rclone format - show the matched portion directly
-    const rcloneMatch = line.match(rclonePattern)
-    if (rcloneMatch && i > lastIndex) {
-      // Return the actual matched rclone output line
-      return rcloneMatch[0]
-    }
-  }
-
-  return lastMessage
-}
 
 // Helper function to extract timestamp from trace logs for specific action
 const getTimelineTimestamp = (traceLogs: any[], action: string, fallbackAction?: string): string | null => {

@@ -18,7 +18,18 @@ import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 import { LocalActionsMenu } from '../LocalActionsMenu'
 import { showMessage } from '@/utils/messages'
 import { useAppSelector } from '@/store/store'
-import { createSorter, createCustomSorter, createArrayLengthSorter } from '@/utils/tableSorters'
+import { createSorter, createCustomSorter, createArrayLengthSorter } from '@/core'
+import { parseVaultStatus } from '@/core/services/machine'
+import { isValidGuid } from '@/core/utils/validation'
+import {
+  canBackupToStorage,
+  isFork as coreIsFork,
+  isCredential as coreIsCredential,
+  prepareForkDeletion,
+  prepareGrandDeletion,
+  preparePromotion,
+  getGrandVaultForOperation
+} from '@/core'
 
 const { Text } = Typography
 
@@ -218,43 +229,17 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
     // Use cached vaultStatus data from the machine object
     if (!repositoriesLoading && machine) {
       if (machine.vaultStatus) {
-        // Check if vaultStatus is just an error message (not JSON)
-        if (machine.vaultStatus.trim().startsWith('jq:') || 
-            machine.vaultStatus.trim().startsWith('error:') ||
-            !machine.vaultStatus.trim().startsWith('{')) {
-          // Invalid vaultStatus data
+        // Parse vaultStatus using core utility
+        const parsed = parseVaultStatus(machine.vaultStatus)
+
+        if (parsed.error) {
+          // Invalid vaultStatus data format (e.g., jq errors)
           setError('Invalid repository data')
           setLoading(false)
-        } else {
+        } else if (parsed.status === 'completed' && parsed.rawResult) {
           // Use existing vaultStatus data
           try {
-            const vaultStatusData = JSON.parse(machine.vaultStatus)
-            
-            if (vaultStatusData.status === 'completed' && vaultStatusData.result) {
-            
-            // Clean the result string - remove trailing newlines and any jq errors
-            let cleanedResult = vaultStatusData.result;
-            
-            // First, try to find where the JSON ends by looking for the last valid JSON closing
-            const jsonEndMatch = cleanedResult.match(/(\}[\s\n]*$)/);
-            if (jsonEndMatch) {
-              const lastBraceIndex = cleanedResult.lastIndexOf('}');
-              // Check if there's content after the last closing brace that looks like an error
-              if (lastBraceIndex < cleanedResult.length - 10) { // Allow some whitespace
-                cleanedResult = cleanedResult.substring(0, lastBraceIndex + 1);
-              }
-            }
-            
-            // Also handle the case where there might be a newline followed by jq errors
-            const newlineIndex = cleanedResult.indexOf('\njq:');
-            if (newlineIndex > 0) {
-              cleanedResult = cleanedResult.substring(0, newlineIndex);
-            }
-            
-            // Trim any trailing whitespace/newlines
-            cleanedResult = cleanedResult.trim();
-            
-            const result = JSON.parse(cleanedResult)
+            const result = JSON.parse(parsed.rawResult)
             if (result) {
               // Process system information if available
               if (result.system) {
@@ -265,8 +250,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
                 // Map repository GUIDs back to names if needed
                 const mappedRepositories = result.repositories.map((repo: Repository) => {
                   // Check if the name looks like a GUID
-                  const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(repo.name);
-                  
+                  const isGuid = isValidGuid(repo.name);
+
                   if (isGuid) {
                     // Find the matching repository by GUID
                     const matchingRepo = teamRepositories.find(r => r.repositoryGuid === repo.name);
@@ -437,7 +422,6 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               
               setLoading(false)
             }
-          }
           } catch (err) {
             setError('Failed to parse repository data')
             setLoading(false)
@@ -487,14 +471,12 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       return
     }
 
-    // Find the grand repository vault if grandGuid exists
-    let grandRepositoryVault = repositoryData.vaultContent
-    if (repositoryData.grandGuid) {
-      const grandRepository = teamRepositories.find(r => r.repositoryGuid === repositoryData.grandGuid)
-      if (grandRepository && grandRepository.vaultContent) {
-        grandRepositoryVault = grandRepository.vaultContent
-      }
-    }
+    // Get grand repository vault using core orchestration
+    const grandRepositoryVault = getGrandVaultForOperation(
+      repositoryData.repositoryGuid,
+      repositoryData.grandGuid,
+      teamRepositories
+    ) || repositoryData.vaultContent
 
     // Build params with option if provided
     const params: Record<string, any> = {
@@ -651,26 +633,18 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   }
 
   const handleDeleteFork = async (repository: Repository) => {
-    // Find the repository data - must match both name AND tag to distinguish forks from grand repos
-    const repositoryData = teamRepositories.find(r =>
-      r.repositoryName === repository.name &&
-      r.repoTag === repository.repoTag
-    )
+    // Use orchestration to prepare fork deletion context
+    const context = prepareForkDeletion(repository.name, repository.repoTag, teamRepositories)
 
-    if (!repositoryData) {
-      showMessage('error', t('resources:repositories.repositoryNotFound'))
+    if (context.status === 'error') {
+      const errorKey = context.errorCode === 'NOT_FOUND'
+        ? 'resources:repositories.repositoryNotFound'
+        : 'resources:repositories.cannotDeleteGrandRepository'
+      showMessage('error', t(errorKey))
       return
     }
 
-    // Safety check: only allow deletion of clones (repositories with a parent)
-    if (!repositoryData.grandGuid || repositoryData.grandGuid === repositoryData.repositoryGuid) {
-      showMessage('error', t('resources:repositories.cannotDeleteGrandRepository'))
-      return
-    }
-
-    // Get the parent repository name for the confirmation message
-    const grandRepository = teamRepositories.find(r => r.repositoryGuid === repositoryData.grandGuid)
-    const parentName = grandRepository?.repositoryName || repository.name
+    const parentName = context.parentName || repository.name
 
     // Show confirmation modal
     modal.confirm({
@@ -685,19 +659,17 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       cancelText: t('common:cancel'),
       onOk: async () => {
         try {
-          // Find the grand repository vault
-          let grandRepositoryVault = repositoryData.vaultContent
-          if (repositoryData.grandGuid) {
-            const grandRepository = teamRepositories.find(r => r.repositoryGuid === repositoryData.grandGuid)
-            if (grandRepository && grandRepository.vaultContent) {
-              grandRepositoryVault = grandRepository.vaultContent
-            }
-          }
+          // Get the grand repository vault using orchestration helper
+          const grandRepositoryVault = getGrandVaultForOperation(
+            context.repositoryGuid!,
+            context.grandGuid,
+            teamRepositories
+          ) || '{}'
 
           // Step 1: Queue the physical deletion via repo_rm
           const params: Record<string, any> = {
-            repo: repositoryData.repositoryGuid,
-            grand: repositoryData.grandGuid
+            repo: context.repositoryGuid,
+            grand: context.grandGuid
           }
 
           const result = await executeAction({
@@ -710,9 +682,9 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             description: `Delete clone ${repository.name}`,
             addedVia: 'machine-repository-list-delete-clone',
             machineVault: machine.vaultContent || '{}',
-            repositoryGuid: repositoryData.repositoryGuid,
+            repositoryGuid: context.repositoryGuid,
             repositoryVault: grandRepositoryVault,
-            repositoryLoopbackIp: repositoryData.repoLoopbackIp
+            repositoryLoopbackIp: context.repoLoopbackIp
           })
 
           if (result.success) {
@@ -748,33 +720,18 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   }
 
   const handlePromoteToGrand = async (repository: Repository) => {
-    // Find the repository data - must match both name AND tag to distinguish forks from grand repos
-    const repositoryData = teamRepositories.find(r =>
-      r.repositoryName === repository.name &&
-      r.repoTag === repository.repoTag
-    )
+    // Use orchestration to prepare promotion context
+    const context = preparePromotion(repository.name, repository.repoTag, teamRepositories)
 
-    if (!repositoryData) {
-      showMessage('error', t('resources:repositories.repositoryNotFound'))
+    if (context.status === 'error') {
+      const errorKey = context.errorCode === 'NOT_FOUND'
+        ? 'resources:repositories.repositoryNotFound'
+        : 'resources:repositories.alreadyOriginalRepository'
+      showMessage('error', t(errorKey))
       return
     }
 
-    // Safety check: only allow promotion of clones (repositories with a parent)
-    if (!repositoryData.grandGuid || repositoryData.grandGuid === repositoryData.repositoryGuid) {
-      showMessage('error', t('resources:repositories.alreadyOriginalRepository'))
-      return
-    }
-
-    // Find the current grand repository
-    const currentGrand = teamRepositories.find(r => r.repositoryGuid === repositoryData.grandGuid)
-    const currentGrandName = currentGrand?.repositoryName || 'original'
-
-    // Find sibling clones (exclude the original repository itself)
-    const siblingClones = teamRepositories.filter(r =>
-      r.grandGuid === repositoryData.grandGuid &&
-      r.repositoryGuid !== repositoryData.repositoryGuid &&
-      r.grandGuid !== r.repositoryGuid  // Exclude original repositories
-    )
+    const { siblingClones, currentGrandName } = context
 
     // Show confirmation modal
     modal.confirm({
@@ -892,30 +849,19 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   }
 
   const handleDeleteGrandRepository = async (repository: Repository) => {
-    // Find the repository data - must match both name AND tag to distinguish forks from grand repos
-    const repositoryData = teamRepositories.find(r =>
-      r.repositoryName === repository.name &&
-      r.repoTag === repository.repoTag
-    )
+    // Use orchestration to prepare grand deletion context
+    const context = prepareGrandDeletion(repository.name, repository.repoTag, teamRepositories)
 
-    if (!repositoryData) {
-      showMessage('error', t('resources:repositories.repositoryNotFound'))
-      return
-    }
-
-    // Safety check: only allow deletion of grand repositories (no parent)
-    if (repositoryData.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid) {
-      showMessage('error', t('resources:repositories.notAGrandRepository'))
+    if (context.status === 'error') {
+      const errorKey = context.errorCode === 'NOT_FOUND'
+        ? 'resources:repositories.repositoryNotFound'
+        : 'resources:repositories.notAGrandRepository'
+      showMessage('error', t(errorKey))
       return
     }
 
     // Check for child repositories (clones) before deletion
-    const childClones = teamRepositories.filter(r =>
-      r.grandGuid === repositoryData.repositoryGuid &&
-      r.repositoryGuid !== repositoryData.repositoryGuid
-    )
-
-    if (childClones.length > 0) {
+    if (context.status === 'blocked') {
       // Show error modal with clone list
       modal.error({
         title: t('resources:repositories.cannotDeleteHasClones'),
@@ -924,14 +870,14 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             <Typography.Paragraph>
               {t('resources:repositories.hasActiveClonesMessage', {
                 name: repository.name,
-                count: childClones.length
+                count: context.childClones.length
               })}
             </Typography.Paragraph>
             <Typography.Paragraph strong>
               {t('resources:repositories.clonesList')}
             </Typography.Paragraph>
             <ul>
-              {childClones.map(clone => (
+              {context.childClones.map(clone => (
                 <li key={clone.repositoryGuid}>{clone.repositoryName}</li>
               ))}
             </ul>
@@ -991,12 +937,16 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
         try {
           // For grand repositories, use its own vault
-          const grandRepositoryVault = repositoryData.vaultContent
+          const grandRepositoryVault = getGrandVaultForOperation(
+            context.repositoryGuid!,
+            context.repositoryGuid, // Grand points to itself
+            teamRepositories
+          ) || '{}'
 
           // Step 1: Queue the physical deletion via repo_rm
           const params: Record<string, any> = {
-            repo: repositoryData.repositoryGuid,
-            grand: repositoryData.repositoryGuid // Grand points to itself
+            repo: context.repositoryGuid,
+            grand: context.repositoryGuid // Grand points to itself
           }
 
           const result = await executeAction({
@@ -1009,9 +959,9 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             description: `Delete repository ${repository.name}`,
             addedVia: 'machine-repository-list-delete-grand',
             machineVault: machine.vaultContent || '{}',
-            repositoryGuid: repositoryData.repositoryGuid,
+            repositoryGuid: context.repositoryGuid,
             repositoryVault: grandRepositoryVault,
-            repositoryLoopbackIp: repositoryData.repoLoopbackIp
+            repositoryLoopbackIp: context.repoLoopbackIp
           })
 
           if (result.success) {
@@ -1204,10 +1154,9 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
       // Handle backup function (multiple storages)
       if (functionData.function.name === 'backup' && functionData.params.storages) {
-        // Validate: Only allow grand repositories to backup to storage
-        if (repositoryData && repositoryData.grandGuid &&
-            repositoryData.grandGuid !== repositoryData.repositoryGuid) {
-          // This is a fork - cannot backup to storage
+        // Use core validation to check if backup to storage is allowed
+        const backupValidation = canBackupToStorage(repositoryData)
+        if (!backupValidation.canBackup) {
           showMessage('error', t('resources:repositories.cannotBackupForkToStorage'))
           setFunctionModalOpen(false)
           setSelectedRepository(null)
@@ -1605,7 +1554,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             r.repositoryName === record.name &&
             r.repoTag === record.repoTag
           )
-          const isGrand = tagData && (!tagData.parentGuid || tagData.parentGuid === tagData.repositoryGuid)
+          const isGrand = tagData && coreIsCredential(tagData)
           const treeConnector = record._isLastInGroup ? '└─' : '├─'
 
           return (
@@ -1625,7 +1574,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             r.repositoryName === record.name &&
             r.repoTag === record.repoTag
           )
-          const isOriginal = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid === repositoryData.repositoryGuid
+          const isOriginal = repositoryData && coreIsCredential(repositoryData)
 
           return (
             <Space>
@@ -1808,7 +1757,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         })
 
         // Backup - only available for grand repositories (not forks)
-        const isFork = !!(repositoryData?.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid)
+        const repoIsFork = repositoryData ? coreIsFork(repositoryData) : false
         menuItems.push({
           key: 'backup',
           label: t('functions:functions.backup.name'),
@@ -1817,8 +1766,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             info.domEvent.stopPropagation()
             handleRunFunction(record, 'backup')
           },
-          disabled: isFork,
-          title: isFork ? t('resources:repositories.backupForkDisabledTooltip') : undefined
+          disabled: repoIsFork,
+          title: repoIsFork ? t('resources:repositories.backupForkDisabledTooltip') : undefined
         })
 
         // Apply Template - always available
@@ -1912,7 +1861,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         }
 
         // Promote to Original and Delete - only for forks (repositories with a parent)
-        if (repositoryData && repositoryData.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid) {
+        if (repositoryData && coreIsFork(repositoryData)) {
           menuItems.push({
             key: 'promote-to-grand',
             label: t('resources:repositories.promoteToGrand'),
@@ -1953,7 +1902,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         })
 
         // Delete Grand Repository - only for grand repositories (no parent)
-        if (repositoryData && repositoryData.grandGuid && repositoryData.grandGuid === repositoryData.repositoryGuid) {
+        if (repositoryData && coreIsCredential(repositoryData)) {
           menuItems.push({
             key: 'delete-grand',
             label: t('resources:repositories.deleteGrand'),
@@ -2138,8 +2087,8 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
               r.repositoryName === record.name &&
               r.repoTag === record.repoTag
             )
-            const isFork = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid
-            return isFork ? 'repository-fork-row' : 'repository-grand-row'
+            const isForkRow = repositoryData && coreIsFork(repositoryData)
+            return isForkRow ? 'repository-fork-row' : 'repository-grand-row'
           }
 
           // Regular single repository rows
@@ -2147,7 +2096,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
             r.repositoryName === record.name &&
             r.repoTag === record.repoTag
           )
-          const isClone = repositoryData && repositoryData.grandGuid && repositoryData.grandGuid !== repositoryData.repositoryGuid
+          const isClone = repositoryData && coreIsFork(repositoryData)
           return isClone ? 'repository-clone-row' : ''
         }}
         locale={{

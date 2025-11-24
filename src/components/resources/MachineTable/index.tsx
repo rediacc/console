@@ -33,6 +33,7 @@ import { AssignToClusterModal } from '../AssignToClusterModal';
 import { RemoveFromClusterModal } from '../RemoveFromClusterModal';
 import { ViewAssignmentStatusModal } from '../ViewAssignmentStatusModal';
 import { featureFlags } from '@/config/featureFlags';
+import { getMachineRepositories as coreGetMachineRepositories } from '@/core';
 import { buildMachineTableColumns } from './columns';
 import type { MachineFunctionAction } from './columns';
 import {
@@ -150,53 +151,13 @@ export const MachineTable: React.FC<MachineTableProps> = ({
   const filteredMachines = machines;
 
   // Parse machine vault status to get repository information
+  // Uses core vault-status parser with repository name resolution
   const getMachineRepositories = (machine: Machine) => {
-    try {
-      if (!machine.vaultStatus || machine.vaultStatus.trim().startsWith('jq:') || 
-          machine.vaultStatus.trim().startsWith('error:') ||
-          !machine.vaultStatus.trim().startsWith('{')) {
-        return [];
-      }
-      
-      const vaultStatusData = JSON.parse(machine.vaultStatus);
-      if (vaultStatusData.status === 'completed' && vaultStatusData.result) {
-        let cleanedResult = vaultStatusData.result;
-        const jsonEndMatch = cleanedResult.match(/(\}[\s\n]*$)/);
-        if (jsonEndMatch) {
-          const lastBraceIndex = cleanedResult.lastIndexOf('}');
-          if (lastBraceIndex < cleanedResult.length - 10) {
-            cleanedResult = cleanedResult.substring(0, lastBraceIndex + 1);
-          }
-        }
-        const newlineIndex = cleanedResult.indexOf('\njq:');
-        if (newlineIndex > 0) {
-          cleanedResult = cleanedResult.substring(0, newlineIndex);
-        }
-        cleanedResult = cleanedResult.trim();
-        
-        const result = JSON.parse(cleanedResult);
-        if (result?.repositories && Array.isArray(result.repositories)) {
-          return result.repositories.map((repo: any) => {
-            const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(repo.name);
-            if (isGuid) {
-              const matchingRepo = repositories.find(r => r.repositoryGuid === repo.name);
-              if (matchingRepo) {
-                return {
-                  ...repo,
-                  name: matchingRepo.repositoryName,
-                  repositoryGuid: matchingRepo.repositoryGuid,
-                  grandGuid: matchingRepo.grandGuid
-                };
-              }
-            }
-            return repo;
-          });
-        }
-      }
-    } catch (err) {
-      // Error parsing, return empty array
-    }
-    return [];
+    return coreGetMachineRepositories(machine, repositories.map(r => ({
+      repositoryGuid: r.repositoryGuid,
+      repositoryName: r.repositoryName,
+      grandGuid: r.grandGuid
+    })));
   };
 
   const handleDelete = useCallback((machine: Machine) => {

@@ -20,7 +20,7 @@ import {
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useEntityAuditTrace, AuditTraceRecord } from '@/api/queries/audit'
-import { formatTimestampAsIs } from '@/utils/timeUtils'
+import { formatTimestampAsIs } from '@/core'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import { DESIGN_TOKENS } from '@/utils/styleConstants'
 import {
@@ -34,7 +34,7 @@ import {
   StatValue,
   IconWrapper
 } from './styles'
-import { createSorter, createDateSorter } from '@/utils/tableSorters'
+import { createSorter, createDateSorter } from '@/core'
 
 const { Text } = Typography
 

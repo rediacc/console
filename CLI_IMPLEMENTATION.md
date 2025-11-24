@@ -153,9 +153,19 @@ src/core/
 │   │   ├── health.ts               # Stale detection, health checks
 │   │   └── filters.ts              # Active/completed filtering
 │   ├── repository/
-│   │   ├── relationship.ts         # Grand/fork logic, affected resources
-│   │   ├── validation.ts           # Delete/promote business rules
-│   │   └── index.ts
+│   │   ├── index.ts                # Barrel exports
+│   │   ├── repository.ts           # Core relationship functions (isCredential, isFork, etc.)
+│   │   ├── promotion.ts            # Promotion validation
+│   │   ├── grand-deletion.ts       # Grand deletion validation
+│   │   ├── fork-operations.ts      # Fork operations validation
+│   │   ├── backup-validation.ts    # Backup validation
+│   │   └── orchestration.ts        # HIGH-LEVEL ORCHESTRATORS
+│   │       ├── prepareForkDeletion()
+│   │       ├── prepareGrandDeletion()
+│   │       ├── preparePromotion()
+│   │       ├── prepareBackup()
+│   │       ├── prepareForkCreation()
+│   │       └── getGrandVaultForOperation()
 │   ├── machine/
 │   │   ├── validation.ts           # Assignment, cluster rules
 │   │   ├── vault-status.ts         # Parse deployment info from vaultStatus
@@ -236,6 +246,122 @@ export function findForksOfCredential(
   )
 }
 ```
+
+### Orchestration Functions Pattern
+
+Beyond simple validation functions, the codebase uses **orchestration functions** that prepare complete operation contexts. These functions return everything the UI/CLI needs to execute operations, separating business logic from presentation.
+
+**Anti-Pattern (Mixed Concerns):**
+```typescript
+// Component has mixed validation + data lookup + UI logic
+const handleDeleteFork = async (repository) => {
+  const repoData = teamRepositories.find(...)
+  if (!repoData) { showMessage('error', ...) }
+
+  if (!repoData.grandGuid || repoData.grandGuid === repoData.repositoryGuid) {
+    showMessage('error', ...)
+  }
+
+  const parent = teamRepositories.find(...)
+  modal.confirm({ ... })
+  await executeAction(...)
+}
+```
+
+**Consolidation Pattern (Orchestration):**
+```typescript
+// Core service - returns complete context
+export function prepareForkDeletion(
+  repositoryName: string,
+  repositoryTag: string,
+  allRepositories: Repository[]
+): ForkDeletionContext {
+  const repoData = allRepositories.find(...)
+  if (!repoData) return { status: 'error', errorCode: 'NOT_FOUND' }
+
+  const validation = canDeleteFork(repoData)
+  if (!validation.canDelete) return { status: 'error', errorCode: 'NOT_A_FORK' }
+
+  const parent = findForkParent(repoData, allRepositories)
+
+  return {
+    status: 'ready',
+    repositoryGuid: repoData.repositoryGuid,
+    grandGuid: repoData.grandGuid,
+    parentName: parent?.repositoryName,
+    repoLoopbackIp: repoData.repoLoopbackIp
+  }
+}
+
+// Component - only UI logic
+const handleDeleteFork = async (repository) => {
+  const context = prepareForkDeletion(repository.name, repository.repoTag, teamRepositories)
+
+  if (context.status === 'error') {
+    showMessage('error', t(`repositories.${context.errorCode}`))
+    return
+  }
+
+  modal.confirm({
+    content: t('confirmDelete', { parentName: context.parentName }),
+    onOk: () => executeAction({ repo: context.repositoryGuid, grand: context.grandGuid })
+  })
+}
+```
+
+### Orchestration Context Types
+
+```typescript
+// Base context type
+interface OperationContext {
+  status: 'ready' | 'error' | 'blocked' | 'warning'
+  errorCode?: string
+}
+
+// Fork deletion context
+interface ForkDeletionContext extends OperationContext {
+  repositoryGuid?: string
+  grandGuid?: string
+  parentName?: string
+  repoLoopbackIp?: string
+  repoTag?: string
+}
+
+// Grand deletion context
+interface GrandDeletionContext extends OperationContext {
+  repositoryGuid?: string
+  childClones: ChildClone[]
+  repoLoopbackIp?: string
+  repoTag?: string
+}
+
+// Promotion context
+interface PromotionContext extends OperationContext {
+  repositoryGuid?: string
+  currentGrandName: string
+  siblingClones: SiblingClone[]
+}
+
+// Backup context
+interface BackupContext extends OperationContext {
+  repositoryGuid?: string
+  grandGuid?: string
+  canBackupToStorage: boolean
+  canBackupToMachine: boolean
+  storageBlockReason?: string
+}
+```
+
+### Implemented Orchestration Functions
+
+| Function | Location | Purpose |
+|----------|----------|---------|
+| `prepareForkDeletion()` | `repository/orchestration.ts` | Prepare fork deletion with parent info |
+| `prepareGrandDeletion()` | `repository/orchestration.ts` | Prepare grand deletion, check for children |
+| `preparePromotion()` | `repository/orchestration.ts` | Prepare promotion with sibling info |
+| `prepareBackup()` | `repository/orchestration.ts` | Prepare backup with storage/machine options |
+| `prepareForkCreation()` | `repository/orchestration.ts` | Prepare fork creation with grand info |
+| `getGrandVaultForOperation()` | `repository/orchestration.ts` | Get correct vault for any operation |
 
 ### Key Extraction Candidates
 
@@ -444,37 +570,62 @@ export function findDeployedRepositories(
 
 ### Usage in CLI
 
-Once extracted, the CLI can use these services directly:
+Once extracted, the CLI can use these orchestration functions directly:
 
 ```typescript
 // cli/src/commands/repo.ts
 import {
-  getAffectedResources,
-  isCredential,
-  findForksOfCredential
-} from '../../core/services/repository/relationship'
-import { parseVaultStatus } from '../../core/services/machine/vault-status'
+  prepareForkDeletion,
+  prepareGrandDeletion,
+  getGrandVaultForOperation
+} from '../../core/services/repository/orchestration'
 
-async function handleDeleteRepository(repoName: string, options: Options) {
+async function handleDeleteRepository(repoName: string, tag: string, options: Options) {
   const repositories = await fetchRepositories(options.team)
-  const machines = await fetchMachines(options.team)
-  const repo = repositories.find(r => r.repositoryName === repoName)
 
-  const { isCredential, forks, affectedMachines } = getAffectedResources(
-    repo,
-    repositories,
-    machines
-  )
+  // Try fork deletion first
+  const forkContext = prepareForkDeletion(repoName, tag, repositories)
 
-  if (isCredential && affectedMachines.length > 0) {
-    console.error('Cannot delete credential with active deployments')
-    console.error('Affected machines:', affectedMachines.map(m => m.machineName))
+  if (forkContext.status === 'ready') {
+    if (!options.force) {
+      const confirm = await prompt(`Delete fork ${repoName}:${tag}? (parent: ${forkContext.parentName})`)
+      if (!confirm) return
+    }
+
+    const vault = getGrandVaultForOperation(forkContext.repositoryGuid!, forkContext.grandGuid, repositories)
+    await callApi('rm', {
+      repo: forkContext.repositoryGuid,
+      grand: forkContext.grandGuid
+    })
+    console.log(`Fork ${repoName}:${tag} deleted`)
+    return
+  }
+
+  // Try grand deletion
+  const grandContext = prepareGrandDeletion(repoName, tag, repositories)
+
+  if (grandContext.status === 'error') {
+    console.error(`Error: ${grandContext.errorCode}`)
     process.exit(1)
   }
 
-  // Proceed with deletion...
+  if (grandContext.status === 'blocked') {
+    console.error(`Cannot delete: ${grandContext.childClones.length} active clones`)
+    grandContext.childClones.forEach(c => console.error(`  - ${c.repositoryName}`))
+    process.exit(1)
+  }
+
+  // Proceed with grand deletion
+  const vault = getGrandVaultForOperation(grandContext.repositoryGuid!, grandContext.repositoryGuid, repositories)
+  await callApi('rm', {
+    repo: grandContext.repositoryGuid,
+    grand: grandContext.repositoryGuid
+  })
+  console.log(`Repository ${repoName} deleted`)
 }
 ```
+
+The same orchestration functions work identically in CLI and React components, ensuring consistent business logic across both platforms.
 
 ### Testing Requirements
 
@@ -487,13 +638,28 @@ All extracted services must have:
 
 ### Success Criteria
 
-- [ ] VaultStatus parsing consolidated into single service (eliminates 6+ duplications)
-- [ ] Repository relationship logic extracted and tested
+- [x] VaultStatus parsing consolidated into single service (`parseVaultStatus` in `core/services/machine.ts`)
+- [x] Repository relationship logic extracted and tested (`core/services/repository/`)
 - [ ] All extracted services have >90% test coverage
-- [ ] Console components updated to use extracted services
+- [x] Console components updated to use extracted services
 - [ ] CLI successfully uses all extracted services
-- [ ] No TypeScript errors in either console or CLI
-- [ ] Performance maintained (no regression in console)
+- [x] No TypeScript errors in either console or CLI
+- [x] Performance maintained (no regression in console)
+
+### Consolidation Metrics
+
+- [x] Orchestration functions created (`prepareForkDeletion`, `prepareGrandDeletion`, `preparePromotion`, etc.)
+- [x] No inline `grandGuid === repositoryGuid` checks in component handlers
+- [x] Repository operations use orchestration functions for complete context preparation
+- [x] Components only contain UI logic (modal building, message display)
+- [x] Same orchestration functions work for CLI (returns same contexts)
+- [x] All grand vault lookups use `getGrandVaultForOperation` (MachineRepositoryList, RepositoryContainerList)
+- [x] Queue status utilities in core (`isTerminalStatus`, `isPermanentFailure`, `isRetryEligible`, `isStaleTask`, filters)
+- [x] Time utilities in core (`getRelativeTimeFromUTC`, `formatTimestampAsIs`, `formatDuration`, `calculateDuration`)
+- [x] Size utilities in core (`parseMemorySize`, `formatBytes`, `calculateResourcePercent`, `formatPercent`)
+- [x] Progress parsing in core (`extractMostRecentProgress`, `extractProgressMessage`, `parseProgress`, `calculateETA`)
+- [x] All components import utilities from `@/core` (QueuePage, QueueItemTraceModal, queueMonitoringService, etc.)
+- [ ] Handler functions reduced by 30%+ lines of code (target: 50%)
 
 ---
 

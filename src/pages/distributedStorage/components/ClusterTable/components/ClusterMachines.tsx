@@ -6,8 +6,8 @@ import {
   useDistributedStorageClusterMachines,
 } from '@/api/queries/distributedStorage'
 import type { Machine } from '@/types'
-import { createSorter } from '@/utils/tableSorters'
-import { formatTimestampAsIs } from '@/utils/timeUtils'
+import { createSorter } from '@/core'
+import { formatTimestampAsIs } from '@/core'
 import {
   ExpandedRowContainer,
   ExpandedRowTitle,

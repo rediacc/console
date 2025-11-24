@@ -8,7 +8,7 @@ import {
   DeleteOutlined,
 } from '@/utils/optimizedIcons'
 import type { DistributedStoragePool } from '@/api/queries/distributedStorage'
-import { createSorter } from '@/utils/tableSorters'
+import { createSorter } from '@/core'
 import { getPoolFunctionMenuItems } from './menus'
 import {
   PoolNameCell,

@@ -2,7 +2,7 @@ import type { ColumnsType } from 'antd/es/table'
 import type { TFunction } from 'i18next'
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge'
 import type { CloneMachine } from '@/api/queries/distributedStorage'
-import { createSorter } from '@/utils/tableSorters'
+import { createSorter } from '@/core'
 import {
   MachineNameCell,
   MachineNameIcon,

@@ -100,6 +100,16 @@ export const useDeactivateUser = createMutation<string>({
   transformData: (userEmail) => ({ userEmail })
 })
 
+// Reactivate user
+export const useReactivateUser = createMutation<string>({
+  endpoint: '/UpdateUserToActivated',
+  method: 'put',
+  invalidateKeys: ['users'],
+  successMessage: (userEmail) => `User "${userEmail}" activated`,
+  errorMessage: 'Failed to activate user',
+  transformData: (userEmail) => ({ userEmail })
+})
+
 // Update user email
 export const useUpdateUserEmail = createMutation<{ currentUserEmail: string; newUserEmail: string }>({
   endpoint: '/UpdateUserEmail',

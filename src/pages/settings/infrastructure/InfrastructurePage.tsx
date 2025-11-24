@@ -62,7 +62,7 @@ import {
 } from '@/pages/system/styles'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
-import { createSorter } from '@/utils/tableSorters'
+import { createSorter } from '@/core'
 
 const InfrastructurePage: React.FC = () => {
   const { t } = useTranslation('resources')

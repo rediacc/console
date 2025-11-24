@@ -3,7 +3,7 @@ import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import { TFunction } from 'i18next'
 import { AuditLog } from '@/api/queries/audit'
-import { createDateSorter } from '@/utils/tableSorters'
+import { createDateSorter } from '@/core'
 import { FilterHintIcon, ColumnFilterIcon, DescriptionText } from './styles'
 
 interface ColumnBuilderParams {

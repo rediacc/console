@@ -15,7 +15,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { UnifiedDetailPanel } from '../UnifiedDetailPanel'
 import type { ColumnsType } from 'antd/es/table'
-import { createSorter } from '@/utils/tableSorters'
+import { createSorter } from '@/core'
 import {
   ActionsButton,
   EmptyState,
