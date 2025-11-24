@@ -18,8 +18,9 @@ import {
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import type { Machine } from '@/types'
-import { getLocalizedRelativeTime, formatTimestampAsIs } from '@/utils/timeUtils'
-import { calculateResourcePercent } from '@/utils/sizeUtils'
+import { getLocalizedRelativeTime, formatTimestampAsIs } from '@/core'
+import { calculateResourcePercent } from '@/core'
+import { parseVaultStatus } from '@/core/services/machine'
 import { abbreviatePath } from '@/utils/pathUtils'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
 import { DistributedStorageSection } from '../DistributedStorageSection'
@@ -189,36 +190,18 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
   const vaultData = useMemo<VaultData | null>(() => {
     if (!machine?.vaultStatus) return null
 
-    try {
-      const trimmed = machine.vaultStatus.trim()
-      if (trimmed.startsWith('jq:') || trimmed.startsWith('error:') || !trimmed.startsWith('{')) {
-        return null
-      }
+    const parsed = parseVaultStatus(machine.vaultStatus)
 
-      const vaultStatusData = JSON.parse(trimmed)
-      if (vaultStatusData.status === 'completed' && vaultStatusData.result) {
-        let cleanedResult = vaultStatusData.result
-        const jsonEndMatch = cleanedResult.match(/(\}[\s\n]*$)/)
-        if (jsonEndMatch) {
-          const lastBraceIndex = cleanedResult.lastIndexOf('}')
-          if (lastBraceIndex < cleanedResult.length - 10) {
-            cleanedResult = cleanedResult.substring(0, lastBraceIndex + 1)
-          }
-        }
-
-        const newlineIndex = cleanedResult.indexOf('\njq:')
-        if (newlineIndex > 0) {
-          cleanedResult = cleanedResult.substring(0, newlineIndex)
-        }
-
-        cleanedResult = cleanedResult.trim()
-        return JSON.parse(cleanedResult)
-      }
-    } catch (err) {
-      console.error('Error parsing vault status:', err)
+    if (parsed.status !== 'completed' || !parsed.rawResult) {
+      return null
     }
 
-    return null
+    try {
+      return JSON.parse(parsed.rawResult)
+    } catch (err) {
+      console.error('Error parsing vault status result:', err)
+      return null
+    }
   }, [machine])
 
   useEffect(() => {

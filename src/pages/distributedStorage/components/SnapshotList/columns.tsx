@@ -3,7 +3,7 @@ import type { ColumnsType } from 'antd/es/table'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined, CloudUploadOutlined } from '@ant-design/icons'
 import { TFunction } from 'i18next'
-import { createSorter } from '@/utils/tableSorters'
+import { createSorter } from '@/core'
 import type { DistributedStorageRbdSnapshot } from '@/api/queries/distributedStorage'
 import {
   ActionButton,

@@ -14,7 +14,7 @@ import { selectUser } from '@/store/auth/authSelectors'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
-import { createDateSorter } from '@/utils/tableSorters'
+import { createDateSorter } from '@/core'
 import {
   TabContainer,
   StatCard,

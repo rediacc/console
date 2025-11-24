@@ -49,6 +49,7 @@ import {
   DataTable
 } from './styles'
 import { featureFlags } from '@/config/featureFlags'
+import { getAffectedResources as coreGetAffectedResources } from '@/core'
 
 interface CredentialsLocationState {
   createRepository?: boolean
@@ -125,78 +126,9 @@ const CredentialsPage: React.FC = () => {
   )
 
   // Helper function to find affected resources when deleting a repository
+  // Uses core repository relationship service
   const getAffectedResources = useCallback((repository: Repository) => {
-    const isCredential = !repository.grandGuid || repository.grandGuid === repository.repositoryGuid
-    const credentialGuid = isCredential ? repository.repositoryGuid : repository.grandGuid
-
-    // Find all repositories that use this credential (including the credential itself and all forks)
-    const affectedRepos = isCredential
-      ? repositories.filter(repo => repo.grandGuid === credentialGuid || repo.repositoryGuid === credentialGuid)
-      : [repository] // For forks, only the fork itself is affected
-
-    const affectedRepoGuids = affectedRepos.map(repo => repo.repositoryGuid)
-
-    // Find machines that have any of these repositories deployed
-    const affectedMachines: { machineName: string; repoNames: string[] }[] = []
-
-    machines.forEach(machine => {
-      if (!machine.vaultStatus) return
-
-      try {
-        const vaultStatusData = JSON.parse(machine.vaultStatus)
-
-        if (vaultStatusData.status === 'completed' && vaultStatusData.result) {
-          // Clean the result string
-          let cleanedResult = vaultStatusData.result
-          const jsonEndMatch = cleanedResult.match(/(\}[\s\n]*$)/)
-          if (jsonEndMatch) {
-            const lastBraceIndex = cleanedResult.lastIndexOf('}')
-            if (lastBraceIndex < cleanedResult.length - 10) {
-              cleanedResult = cleanedResult.substring(0, lastBraceIndex + 1)
-            }
-          }
-          const newlineIndex = cleanedResult.indexOf('\njq:')
-          if (newlineIndex > 0) {
-            cleanedResult = cleanedResult.substring(0, newlineIndex)
-          }
-
-          const result = JSON.parse(cleanedResult)
-
-          if (result?.repositories && Array.isArray(result.repositories)) {
-            // Find deployed repos that match our affected GUIDs
-            const deployedAffected = result.repositories.filter((deployedRepo: { name: string }) =>
-              affectedRepoGuids.includes(deployedRepo.name)
-            )
-
-            if (deployedAffected.length > 0) {
-              // Map GUIDs back to repo names for display
-              const repoNames = deployedAffected.map((deployed: { name: string }) => {
-                const repo = affectedRepos.find(r => r.repositoryGuid === deployed.name)
-                return repo ? `${repo.repositoryName}${repo.repoTag ? `:${repo.repoTag}` : ''}` : deployed.name
-              })
-
-              affectedMachines.push({
-                machineName: machine.machineName,
-                repoNames
-              })
-            }
-          }
-        }
-      } catch {
-        // Skip machines with invalid vaultStatus
-      }
-    })
-
-    // Get forks (repos that use this as their grand, excluding the credential itself)
-    const forks = isCredential
-      ? repositories.filter(repo => repo.grandGuid === credentialGuid && repo.repositoryGuid !== credentialGuid)
-      : []
-
-    return {
-      isCredential,
-      forks,
-      affectedMachines
-    }
+    return coreGetAffectedResources(repository, repositories, machines)
   }, [repositories, machines])
 
   const openUnifiedModal = useCallback(

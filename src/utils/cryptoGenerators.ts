@@ -122,18 +122,6 @@ export async function generateSSHKeyPair(options: GenerationOptions = {}): Promi
   }
 }
 
-// Validate SSH public key format
-export function isValidSSHPublicKey(key: string): boolean {
-  const pattern = /^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/=]+ .*/
-  return pattern.test(key)
-}
-
-// Validate repository credential format
-export function isValidRepositoryCredential(credential: string): boolean {
-  const pattern = /^[A-Za-z0-9!@#$%^&*()_+{}|:<>,.?/]{32}$/
-  return pattern.test(credential)
-}
-
 // Generate random email for sandbox quick registration
 export function generateRandomEmail(): string {
   const timestamp = Date.now()

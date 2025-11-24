@@ -8,7 +8,14 @@ import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import { showMessage } from '@/utils/messages'
 import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'
-import { formatTimestampAsIs } from '@/utils/timeUtils'
+import {
+  formatTimestampAsIs,
+  isValidGuid,
+  filterActiveItems,
+  filterCompletedItems,
+  filterCancelledItems,
+  filterFailedItems
+} from '@/core'
 import {
   PageWrapper,
   FiltersCard,
@@ -58,12 +65,6 @@ const QueuePage: React.FC = () => {
   const [failedPageSize, setFailedPageSize] = useState(20)
   const [failedPage, setFailedPage] = useState(1)
 
-  // GUID validation regex
-  const isValidGuid = (value: string) => {
-    const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    return guidRegex.test(value)
-  }
-
   // Combine team selection with filters
   // Dynamically adjust filters based on active tab
   const queryFilters = useMemo(() => ({
@@ -92,10 +93,10 @@ const QueuePage: React.FC = () => {
   const cancelledCount = statistics.cancelledCount ?? 0
 
   const items = queueData?.items || []
-  const activeItems = items.filter((item: any) => !['COMPLETED', 'CANCELLED', 'FAILED'].includes(item.healthStatus))
-  const completedItems = items.filter((item: any) => item.healthStatus === 'COMPLETED')
-  const cancelledItems = items.filter((item: any) => item.healthStatus === 'CANCELLED')
-  const failedItems = items.filter((item: any) => item.healthStatus === 'FAILED')
+  const activeItems = filterActiveItems(items)
+  const completedItems = filterCompletedItems(items)
+  const cancelledItems = filterCancelledItems(items)
+  const failedItems = filterFailedItems(items)
 
   const hasActiveFilters =
     Boolean(viewTeam) ||

@@ -1,5 +1,6 @@
 import { showTranslatedMessage } from '@/utils/messages'
 import apiClient from '@/api/client'
+import { isPermanentFailure, STALE_TASK_CONSTANTS } from '@/core/utils/queue-status'
 
 // Declare chrome as optional global for extension context detection
 declare const chrome: any
@@ -21,13 +22,13 @@ class QueueMonitoringService {
   private monitoredTasks: Map<string, MonitoredTask> = new Map()
   private intervalId: NodeJS.Timeout | null = null
   private statusHandler?: (taskId: string, status: 'completed' | 'failed' | 'cancelled') => void
-  
-  // Time constants
-  private readonly CHECK_INTERVAL_MS = 5000 // 5 seconds for more responsive updates
-  private readonly STALE_TASK_THRESHOLD_MS = 24 * 60 * 60 * 1000 // 24 hours
-  private readonly STALE_PROCESSING_MINUTES = 5 // 5 minutes without progress
-  private readonly MAX_RETRY_COUNT = 3 // Maximum retry attempts (aligned with API polling)
-  
+
+  // Time constants from core
+  private readonly CHECK_INTERVAL_MS = STALE_TASK_CONSTANTS.CHECK_INTERVAL_MS
+  private readonly STALE_TASK_THRESHOLD_MS = STALE_TASK_CONSTANTS.STALE_TASK_THRESHOLD_MS
+  private readonly STALE_PROCESSING_MINUTES = STALE_TASK_CONSTANTS.STALE_PROCESSING_MINUTES
+  private readonly MAX_RETRY_COUNT = STALE_TASK_CONSTANTS.MAX_RETRY_COUNT
+
   private readonly STORAGE_KEY = 'queue_monitored_tasks'
 
   private constructor() {
@@ -277,7 +278,7 @@ class QueueMonitoringService {
           const lastFailureReason = this.getLastFailureReason(queueDetails)
           
           // Check for permanent failure messages
-          if (this.isPermanentFailure(lastFailureReason)) {
+          if (isPermanentFailure(lastFailureReason)) {
           this.notifyQueue(task.taskId, 'failed')
             
             showTranslatedMessage('error', 'queue:monitoring.permanentlyFailedWithReason', { 
@@ -338,7 +339,7 @@ class QueueMonitoringService {
           const lastFailureReason = this.getLastFailureReason(queueDetails)
           
           // Check for permanent failure messages
-          if (this.isPermanentFailure(lastFailureReason)) {
+          if (isPermanentFailure(lastFailureReason)) {
             showTranslatedMessage('error', 'queue:monitoring.permanentlyFailedWithReason', { 
               taskId: task.taskId,
               reason: lastFailureReason || '',
@@ -376,7 +377,7 @@ class QueueMonitoringService {
           const lastFailureReason = this.getLastFailureReason(queueDetails)
           
           // Check for permanent failure messages
-          if (this.isPermanentFailure(lastFailureReason)) {
+          if (isPermanentFailure(lastFailureReason)) {
             showTranslatedMessage('error', 'queue:monitoring.permanentlyFailedWithReason', { 
               taskId: task.taskId,
               reason: lastFailureReason || '',
@@ -447,18 +448,6 @@ class QueueMonitoringService {
 
   private getLastFailureReason(queueDetails: any): string | undefined {
     return queueDetails.lastFailureReason || queueDetails.LastFailureReason
-  }
-
-  private isPermanentFailure(failureReason: string | undefined): boolean {
-    if (!failureReason) return false
-    
-    const permanentFailureMessages = [
-      'Bridge reported failure',
-      'Task permanently failed',
-      'Fatal error'
-    ]
-    
-    return permanentFailureMessages.some(msg => failureReason.includes(msg))
   }
 
   // Clear old tasks (older than 24 hours)

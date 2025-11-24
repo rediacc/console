@@ -151,3 +151,111 @@ export type EditBridgeForm = z.infer<typeof editBridgeSchema>
 export type EditMachineForm = z.infer<typeof editMachineSchema>
 export type EditRepositoryForm = z.infer<typeof editRepositorySchema>
 export type EditStorageForm = z.infer<typeof editStorageSchema>
+
+// ============================================
+// Validation Utility Functions
+// ============================================
+
+/**
+ * Validate SSH public key format
+ * Supports RSA, Ed25519, and ECDSA key types
+ * @param key - SSH public key string to validate
+ * @returns True if the key is in valid SSH public key format
+ */
+export function isValidSSHPublicKey(key: string): boolean {
+  const pattern = /^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/=]+ .*/
+  return pattern.test(key)
+}
+
+/**
+ * Validate repository credential format
+ * Repository credentials must be exactly 32 characters with alphanumeric and special characters
+ * @param credential - Repository credential string to validate
+ * @returns True if the credential is in valid format
+ */
+export function isValidRepositoryCredential(credential: string): boolean {
+  const pattern = /^[A-Za-z0-9!@#$%^&*()_+{}|:<>,.?/]{32}$/
+  return pattern.test(credential)
+}
+
+/**
+ * Validate GUID/UUID format
+ * @param value - String to validate
+ * @returns True if the string is a valid GUID
+ */
+export function isValidGuid(value: string): boolean {
+  const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  return guidRegex.test(value)
+}
+
+/**
+ * Validate priority value (1-5)
+ * @param priority - Priority value to validate
+ * @returns True if the priority is valid (1-5)
+ */
+export function isValidPriority(priority: number): boolean {
+  return Number.isInteger(priority) && priority >= 1 && priority <= 5
+}
+
+/**
+ * Validate JSON string
+ * @param jsonString - String to validate as JSON
+ * @returns True if the string is valid JSON
+ */
+export function isValidJson(jsonString: string): boolean {
+  try {
+    JSON.parse(jsonString)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Validate email format
+ * @param email - Email string to validate
+ * @returns True if the email is in valid format
+ */
+export function isValidEmail(email: string): boolean {
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailPattern.test(email)
+}
+
+/**
+ * Validate size format (e.g., "10G", "100G", "1T")
+ * @param size - Size string to validate
+ * @returns True if the size is in valid format
+ */
+export function isValidSizeFormat(size: string): boolean {
+  if (!size || size.trim() === '') return false
+
+  const match = size.match(/^(\d+)([GT])$/)
+  if (!match) return false
+
+  const num = parseInt(match[1])
+  return num > 0
+}
+
+/**
+ * Validate resource name (1-100 characters)
+ * @param name - Resource name to validate
+ * @returns True if the name is valid
+ */
+export function isValidResourceName(name: string): boolean {
+  return name.length >= 1 && name.length <= 100
+}
+
+/**
+ * Validate password requirements
+ * @param password - Password to validate
+ * @returns Object with isValid and optional error message
+ */
+export function validatePassword(password: string): { isValid: boolean; error?: string } {
+  if (password.length < 8) {
+    return { isValid: false, error: 'Password must be at least 8 characters' }
+  }
+  if (password.length > 100) {
+    return { isValid: false, error: 'Password must be less than 100 characters' }
+  }
+  return { isValid: true }
+}
