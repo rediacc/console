@@ -4,10 +4,12 @@ import { useTranslation } from 'react-i18next'
 import type { Machine } from '@/types'
 import {
   useDistributedStorageClusters,
-  useUpdateMachineDistributedStorage,
-  useUpdateMachineClusterAssignment,
   type DistributedStorageCluster,
 } from '@/api/queries/distributedStorage'
+import {
+  useUpdateMachineDistributedStorage,
+  useUpdateMachineClusterAssignment,
+} from '@/api/queries/distributedStorageMutations'
 import { showMessage } from '@/utils/messages'
 import { Select, Spin } from 'antd'
 import type { ColumnsType } from 'antd/es/table'

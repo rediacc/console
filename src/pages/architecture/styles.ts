@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { Card, Space, Button, Typography } from 'antd'
+import { Space, Typography } from 'antd'
 import { PageContainer } from '@/styles/primitives'
 
 export const PageWrapper = PageContainer
@@ -7,8 +7,6 @@ export const PageWrapper = PageContainer
 export const ContentStack = styled(Space).attrs({ direction: 'vertical', size: 'large' })`
   width: 100%;
 `
-
-export const SectionCard = styled(Card).attrs({ className: 'page-card' })``
 
 export const HeaderStack = styled(Space).attrs({ direction: 'vertical', size: 'middle' })`
   width: 100%;
@@ -29,16 +27,6 @@ export const ActionGroup = styled.div`
   align-items: center;
 `
 
-export const IconButton = styled(Button)`
-  min-width: ${({ theme }) => theme.spacing['6']}px;
-  min-height: ${({ theme }) => theme.spacing['6']}px;
-  border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-`
-
-export const CompactIconButton = styled(IconButton)`
-  min-width: ${({ theme }) => theme.spacing['5']}px;
-  min-height: ${({ theme }) => theme.spacing['5']}px;
-`
 
 export const FiltersRow = styled.div`
   display: flex;

@@ -4,6 +4,7 @@
     "expertOnlyTitle": "エキスパートモードが必要です"
   },
   "actions": {
+    "activate": "活性化",
     "addMember": "メンバーを追加",
     "addPermission": "権限の追加",
     "assignUser": "ユーザーの割り当て",
@@ -284,5 +285,15 @@
     "totalCount": "合計: {{count}} セッション",
     "totalSessions": "合計セッション数",
     "uniqueUsers": "ユニークユーザー"
+  },
+  "users": {
+    "activate": {
+      "confirmDescription": "「{{email}}」を有効にしてもよろしいですか?",
+      "confirmTitle": "ユーザーをアクティブ化する"
+    },
+    "deactivate": {
+      "confirmDescription": "「{{email}}」を無効にしてもよろしいですか?",
+      "confirmTitle": "ユーザーを非アクティブ化する"
+    }
   }
 }

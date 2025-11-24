@@ -55,6 +55,12 @@ export const PageContainer = styled.div.attrs({ className: 'page-container' })`
 
 export const PageCard = styled(Card).attrs({ className: 'page-card' })``
 
+export const FilterCard = styled(Card).attrs({ className: 'page-card' })``
+
+export const TableCard = styled(Card).attrs({ className: 'page-card' })``
+
+export const SectionCard = styled(Card).attrs({ className: 'page-card' })``
+
 export const SectionStack = styled.div`
   display: flex;
   flex-direction: column;
@@ -240,6 +246,45 @@ export const IconButton = styled(Button)`
   .anticon {
     font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
   }
+`
+
+export const CompactIconButton = styled(IconButton)`
+  width: ${({ theme }) => theme.spacing['5']}px;
+  height: ${({ theme }) => theme.spacing['5']}px;
+  min-width: ${({ theme }) => theme.spacing['5']}px;
+  min-height: ${({ theme }) => theme.spacing['5']}px;
+`
+
+export const PrimaryIconButton = styled(Button)`
+  min-width: ${({ theme }) => theme.spacing['6']}px;
+  min-height: ${({ theme }) => theme.spacing['6']}px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: ${({ theme }) => theme.colors.primary};
+  border-color: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.bgPrimary};
+
+  &:hover,
+  &:focus {
+    background-color: ${({ theme }) => theme.colors.primaryHover};
+    border-color: ${({ theme }) => theme.colors.primaryHover};
+    color: ${({ theme }) => theme.colors.bgPrimary};
+  }
+`
+
+export const SecondaryIconButton = styled(Button)`
+  min-width: ${({ theme }) => theme.spacing['6']}px;
+  min-height: ${({ theme }) => theme.spacing['6']}px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`
+
+export const CompactButton = styled(Button)`
+  min-width: ${({ theme }) => theme.spacing['5']}px;
+  min-height: ${({ theme }) => theme.spacing['5']}px;
 `
 
 export const InlineStack = styled.div<{ $align?: 'flex-start' | 'center' | 'flex-end' }>`

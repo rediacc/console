@@ -1,9 +1,9 @@
 import { Space, Tag, Tooltip } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import dayjs from 'dayjs'
 import { TFunction } from 'i18next'
 import { AuditLog } from '@/api/queries/audit'
 import { createDateSorter } from '@/core'
+import { renderTimestamp } from '@/components/common/columns'
 import { FilterHintIcon, ColumnFilterIcon, DescriptionText } from './styles'
 
 interface ColumnBuilderParams {
@@ -24,7 +24,7 @@ export const buildAuditColumns = ({
     dataIndex: 'timestamp',
     key: 'timestamp',
     width: 180,
-    render: (timestamp: string) => dayjs(timestamp).format('YYYY-MM-DD HH:mm:ss'),
+    render: (timestamp: string) => renderTimestamp(timestamp),
     sorter: createDateSorter<AuditLog>('timestamp'),
     defaultSortOrder: 'descend',
   },

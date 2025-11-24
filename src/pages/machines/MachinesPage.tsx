@@ -1,15 +1,12 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { Empty, Modal, Tooltip } from 'antd'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useSelector } from 'react-redux'
 import { PlusOutlined, WifiOutlined, ReloadOutlined } from '@/utils/optimizedIcons'
-import { RootState } from '@/store/store'
-import UnifiedResourceModal, { ResourceType } from '@/components/common/UnifiedResourceModal'
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import ConnectivityTestModal from '@/components/common/ConnectivityTestModal'
 import { showMessage } from '@/utils/messages'
-import { useTeams, Team } from '@/api/queries/teams'
 import { SplitResourceView } from '@/components/resources/SplitResourceView'
 import {
   useCreateMachine,
@@ -22,6 +19,8 @@ import {
 import { useRepositories, Repository } from '@/api/queries/repositories'
 import { useStorage } from '@/api/queries/storage'
 import { useQueueAction } from '@/hooks/useQueueAction'
+import { useUnifiedModal, useTeamSelection, useQueueTraceModal, useDialogState } from '@/hooks'
+import { confirmDelete } from '@/utils/confirmations'
 import TeamSelector from '@/components/common/TeamSelector'
 import { type Machine } from '@/types'
 import { QueueFunction } from '@/api/queries/queue'
@@ -38,45 +37,31 @@ import {
   ContentSection
 } from './styles'
 
-interface UnifiedState {
-  open: boolean
-  resourceType: ResourceType
-  mode: 'create' | 'edit' | 'vault'
-  data?: Machine | null
-  preselectedFunction?: string
-  creationContext?: 'credentials-only' | 'normal'
-}
-
 const MachinesPage: React.FC = () => {
   const { t } = useTranslation(['resources', 'machines', 'common'])
   const [modal, contextHolder] = Modal.useModal()
   const location = useLocation()
   const navigate = useNavigate()
-  const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const theme = useTheme()
 
-  const [selectedTeams, setSelectedTeams] = useState<string[]>([])
+  // Use custom hooks for common patterns
+  const { teams, selectedTeams, setSelectedTeams, isLoading: teamsLoading } = useTeamSelection()
+  const {
+    modalState: unifiedModalState,
+    currentResource,
+    openModal: openUnifiedModal,
+    closeModal: closeUnifiedModal
+  } = useUnifiedModal<Machine>('machine')
+
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null)
   const [selectedRepositoryFromMachine, setSelectedRepositoryFromMachine] = useState<Repository | null>(null)
   const [selectedContainerFromMachine, setSelectedContainerFromMachine] = useState<any | null>(null)
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(true)
-  const [currentResource, setCurrentResource] = useState<Machine | null>(null)
   const [refreshKeys, setRefreshKeys] = useState<Record<string, number>>({})
-  const [queueTraceModal, setQueueTraceModal] = useState<{ visible: boolean; taskId: string | null; machineName?: string | null }>({
-    visible: false,
-    taskId: null,
-    machineName: null
-  })
-  const [connectivityTestModal, setConnectivityTestModal] = useState(false)
 
-  const [unifiedModalState, setUnifiedModalState] = useState<UnifiedState>({
-    open: false,
-    resourceType: 'machine',
-    mode: 'create'
-  })
-
-  const { data: teams, isLoading: teamsLoading } = useTeams()
-  const teamsList: Team[] = teams || []
+  // Modal state management with new hooks
+  const { state: queueTraceState, open: openQueueTrace, close: closeQueueTrace } = useQueueTraceModal()
+  const connectivityTest = useDialogState()
 
   const { data: machines = [], refetch: refetchMachines } = useMachines(
     selectedTeams.length > 0 ? selectedTeams : undefined,
@@ -92,53 +77,12 @@ const MachinesPage: React.FC = () => {
   const updateMachineVaultMutation = useUpdateMachineVault()
   const { executeAction, isExecuting } = useQueueAction()
 
-  const hasInitializedTeam = useRef(false)
-
-  useEffect(() => {
-    if (!teamsLoading && !hasInitializedTeam.current && teamsList.length > 0) {
-      hasInitializedTeam.current = true
-      if (uiMode === 'simple') {
-        const privateTeam = teamsList.find((team) => team.teamName === 'Private Team')
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setSelectedTeams([privateTeam?.teamName || teamsList[0].teamName])
-      } else {
-         
-        setSelectedTeams([teamsList[0].teamName])
-      }
-    }
-  }, [teamsLoading, teamsList, uiMode])
-
   useEffect(() => {
     const state = location.state as any
     if (state?.createRepository) {
       navigate('/credentials', { state, replace: true })
     }
   }, [location, navigate])
-
-  const openUnifiedModal = useCallback(
-    (mode: 'create' | 'edit' | 'vault', data?: Machine | null, preselectedFunction?: string) => {
-      setUnifiedModalState({
-        open: true,
-        resourceType: 'machine',
-        mode,
-        data,
-        preselectedFunction
-      })
-      if (data) {
-        setCurrentResource(data)
-      }
-    },
-    []
-  )
-
-  const closeUnifiedModal = useCallback(() => {
-    setUnifiedModalState({
-      open: false,
-      resourceType: 'machine',
-      mode: 'create'
-    })
-    setCurrentResource(null)
-  }, [])
 
   const handleMachineSelect = (machine: Machine | null) => {
     setSelectedMachine(machine)
@@ -155,25 +99,17 @@ const MachinesPage: React.FC = () => {
 
   const handleDeleteMachine = useCallback(
     (machine: Machine) => {
-      const machineName = machine.machineName
-      modal.confirm({
-        title: t('machines:confirmDelete') as string,
-        content: t('machines:deleteWarning', { name: machineName, machineName }) as string,
-        okText: t('common:actions.delete'),
-        okType: 'danger',
-        cancelText: t('common:actions.cancel'),
-        onOk: async () => {
-          try {
-            await deleteMachineMutation.mutateAsync({
-              teamName: machine.teamName,
-              machineName
-            } as any)
-            refetchMachines()
-            showMessage('success', t('machines:deleteSuccess'))
-          } catch (error) {
-            showMessage('error', t('machines:deleteError'))
-          }
-        }
+      confirmDelete({
+        modal,
+        t,
+        resourceType: 'machine',
+        resourceName: machine.machineName,
+        translationNamespace: 'machines',
+        onConfirm: () => deleteMachineMutation.mutateAsync({
+          teamName: machine.teamName,
+          machineName: machine.machineName
+        } as any),
+        onSuccess: () => refetchMachines()
       })
     },
     [deleteMachineMutation, modal, refetchMachines, t]
@@ -212,7 +148,7 @@ const MachinesPage: React.FC = () => {
               if (result.success) {
                 if (result.taskId) {
                   showMessage('info', t('machines:setupQueued'))
-                  setQueueTraceModal({ visible: true, taskId: result.taskId, machineName: formData.machineName })
+                  openQueueTrace(result.taskId, formData.machineName)
                 } else if (result.isQueued) {
                   showMessage('info', t('machines:setupQueuedForSubmission'))
                 }
@@ -266,6 +202,7 @@ const MachinesPage: React.FC = () => {
       createMachineMutation,
       currentResource,
       executeAction,
+      openQueueTrace,
       refetchMachines,
       t,
       unifiedModalState.mode,
@@ -306,7 +243,7 @@ const MachinesPage: React.FC = () => {
       try {
         const machineName = currentResource.machineName
         const bridgeName = currentResource.bridgeName
-        const teamData = teamsList.find((team) => team.teamName === currentResource.teamName)
+        const teamData = teams.find((team) => team.teamName === currentResource.teamName)
 
         const queuePayload: any = {
           teamName: currentResource.teamName,
@@ -351,7 +288,7 @@ const MachinesPage: React.FC = () => {
         if (result.success) {
           if (result.taskId) {
             showMessage('success', t('machines:queueItemCreated'))
-            setQueueTraceModal({ visible: true, taskId: result.taskId, machineName })
+            openQueueTrace(result.taskId, machineName)
           } else if (result.isQueued) {
             showMessage('info', t('resources:messages.highestPriorityQueued', { resourceType: 'machine' }))
           }
@@ -362,7 +299,7 @@ const MachinesPage: React.FC = () => {
         showMessage('error', t('resources:errors.failedToCreateQueueItem'))
       }
     },
-    [closeUnifiedModal, currentResource, executeAction, machines, repositories, storages, t, teamsList]
+    [closeUnifiedModal, currentResource, executeAction, machines, openQueueTrace, repositories, storages, t, teams]
   )
 
   const handleResourceSelection = (resource: Machine | Repository | any | null) => {
@@ -411,7 +348,7 @@ const MachinesPage: React.FC = () => {
                 <TeamSelectorWrapper>
                   <TeamSelector
                     data-testid="machines-team-selector"
-                    teams={teamsList}
+                    teams={teams}
                     selectedTeams={selectedTeams}
                     onChange={setSelectedTeams}
                     loading={teamsLoading}
@@ -435,7 +372,7 @@ const MachinesPage: React.FC = () => {
                     <ActionButton
                       icon={<WifiOutlined />}
                       data-testid="machines-connectivity-test-button"
-                      onClick={() => setConnectivityTestModal(true)}
+                      onClick={() => connectivityTest.open()}
                       disabled={machines.length === 0}
                       aria-label={t('machines:connectivityTest')}
                     />
@@ -480,7 +417,7 @@ const MachinesPage: React.FC = () => {
                 enabled={selectedTeams.length > 0}
                 refreshKeys={refreshKeys}
                 onQueueItemCreated={(taskId, machineName) => {
-                  setQueueTraceModal({ visible: true, taskId, machineName })
+                  openQueueTrace(taskId, machineName)
                 }}
                 selectedResource={selectedMachine || selectedRepositoryFromMachine || selectedContainerFromMachine}
                 onResourceSelect={handleResourceSelection}
@@ -513,14 +450,15 @@ const MachinesPage: React.FC = () => {
 
       <QueueItemTraceModal
         data-testid="machines-queue-trace-modal"
-        taskId={queueTraceModal.taskId}
-        visible={queueTraceModal.visible}
+        taskId={queueTraceState.taskId}
+        visible={queueTraceState.visible}
         onClose={() => {
-          setQueueTraceModal({ visible: false, taskId: null, machineName: null })
-          if (queueTraceModal.machineName) {
+          const machineName = queueTraceState.machineName
+          closeQueueTrace()
+          if (machineName) {
             setRefreshKeys((prev) => ({
               ...prev,
-              [queueTraceModal.machineName as string]: Date.now()
+              [machineName]: Date.now()
             }))
           }
           refetchMachines()
@@ -529,8 +467,8 @@ const MachinesPage: React.FC = () => {
 
       <ConnectivityTestModal
         data-testid="machines-connectivity-test-modal"
-        open={connectivityTestModal}
-        onClose={() => setConnectivityTestModal(false)}
+        open={connectivityTest.isOpen}
+        onClose={connectivityTest.close}
         machines={machines}
         teamFilter={selectedTeams}
       />

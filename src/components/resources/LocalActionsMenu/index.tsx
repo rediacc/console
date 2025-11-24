@@ -15,6 +15,7 @@ import { PipInstallationModal } from '../PipInstallationModal'
 import { LocalCommandModal } from '../LocalCommandModal'
 import type { RootState } from '@/store/store'
 import type { PluginContainer } from '@/types'
+import { useDialogState } from '@/hooks/useDialogState'
 import { IconWrapper, MenuLabel, TriggerButton } from './styles'
 
 type ContainerMenuAction = 'terminal' | 'logs' | 'stats'
@@ -55,12 +56,9 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
   isMachineOnlyMenu = false,
 }) => {
   const { t } = useTranslation()
-  const [showInstallModal, setShowInstallModal] = useState(false)
-  const [installModalErrorType, setInstallModalErrorType] = useState<
-    'not-installed' | 'protocol-not-registered' | 'permission-denied'
-  >('not-installed')
+  const installModal = useDialogState<'not-installed' | 'protocol-not-registered' | 'permission-denied'>()
   const [isCheckingProtocol, setIsCheckingProtocol] = useState(false)
-  const [showCommandModal, setShowCommandModal] = useState(false)
+  const commandModal = useDialogState<void>()
 
   const currentUserEmail = useSelector((state: RootState) => state.auth.user?.email)
 
@@ -121,27 +119,28 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       setIsCheckingProtocol(false)
 
       if (!result.success) {
+        let errorType: 'not-installed' | 'protocol-not-registered' | 'permission-denied' = 'not-installed'
         try {
           const protocolStatus = await protocolUrlService.checkProtocolStatus()
 
           if (protocolStatus.available) {
-            setInstallModalErrorType('permission-denied')
+            errorType = 'permission-denied'
           } else if (protocolStatus.errorReason?.includes('not registered')) {
-            setInstallModalErrorType('protocol-not-registered')
+            errorType = 'protocol-not-registered'
           } else {
-            setInstallModalErrorType('not-installed')
+            errorType = 'not-installed'
           }
         } catch {
           if (result.error?.type === 'timeout') {
-            setInstallModalErrorType('not-installed')
+            errorType = 'not-installed'
           } else if (result.error?.message.includes('permission')) {
-            setInstallModalErrorType('permission-denied')
+            errorType = 'permission-denied'
           } else {
-            setInstallModalErrorType('protocol-not-registered')
+            errorType = 'protocol-not-registered'
           }
         }
 
-        setShowInstallModal(true)
+        installModal.open(errorType)
       }
     },
     [teamName, machine, repository, isContainerMenu, containerId, containerName, isMachineOnlyMenu]
@@ -213,7 +212,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       key: 'cli-commands',
       icon: createMenuIcon(BuildOutlined),
       label: <MenuLabel>{t('resources:localActions.showCLICommands')}</MenuLabel>,
-      onClick: () => setShowCommandModal(true),
+      onClick: () => commandModal.open(),
       'data-testid': `local-actions-cli-commands-${repository}`,
     },
   ]
@@ -249,15 +248,15 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       </Dropdown>
 
       <PipInstallationModal
-        visible={showInstallModal}
-        onClose={() => setShowInstallModal(false)}
-        errorType={installModalErrorType}
+        visible={installModal.isOpen}
+        onClose={installModal.close}
+        errorType={installModal.state.data ?? 'not-installed'}
       />
 
       {!isContainerMenu && (
         <LocalCommandModal
-          visible={showCommandModal}
-          onClose={() => setShowCommandModal(false)}
+          visible={commandModal.isOpen}
+          onClose={commandModal.close}
           machine={machine}
           repository={repository}
           userEmail={userEmail ?? currentUserEmail ?? ''}

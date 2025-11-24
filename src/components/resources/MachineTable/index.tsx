@@ -24,6 +24,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { useDynamicPageSize } from '@/hooks/useDynamicPageSize';
 import AuditTraceModal from '@/components/common/AuditTraceModal';
+import { useDialogState, useTraceModal } from '@/hooks/useDialogState';
 import { usePingFunction } from '@/services/pingService';
 import { useLocalizedFunctions } from '@/services/functionsService';
 import { useRepositories } from '@/api/queries/repositories';
@@ -105,23 +106,10 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
   // Bulk selection state
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
-  const [auditTraceModal, setAuditTraceModal] = useState<{
-    open: boolean
-    entityType: string | null
-    entityIdentifier: string | null
-    entityName?: string
-  }>({ open: false, entityType: null, entityIdentifier: null });
-  
-  const [remoteFileBrowserModal, setRemoteFileBrowserModal] = useState<{
-    open: boolean;
-    machine: Machine | null;
-  }>({ open: false, machine: null });
-  
-  const [assignClusterModal, setAssignClusterModal] = useState<{
-    open: boolean;
-    machine: Machine | null;
-  }>({ open: false, machine: null });
-  
+  const auditTrace = useTraceModal();
+  const remoteFileBrowserModal = useDialogState<Machine>();
+  const assignClusterModal = useDialogState<Machine>();
+
   const [bulkAssignClusterModal, setBulkAssignClusterModal] = useState(false);
   const [removeFromClusterModal, setRemoveFromClusterModal] = useState(false);
   const [viewAssignmentStatusModal, setViewAssignmentStatusModal] = useState(false);
@@ -199,6 +187,27 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
   const canAssignToCluster = isExpertMode && featureFlags.isEnabled('assignToCluster');
 
+  // Wrapper functions for column builder compatibility
+  const openAssignClusterModal = useCallback((state: { open: boolean; machine: Machine | null }) => {
+    if (state.open && state.machine) {
+      assignClusterModal.open(state.machine);
+    } else {
+      assignClusterModal.close();
+    }
+  }, [assignClusterModal]);
+
+  const openAuditTraceModal = useCallback((state: { open: boolean; entityType: string | null; entityIdentifier: string | null; entityName?: string }) => {
+    if (state.open && state.entityType && state.entityIdentifier) {
+      auditTrace.open({
+        entityType: state.entityType,
+        entityIdentifier: state.entityIdentifier,
+        entityName: state.entityName,
+      });
+    } else {
+      auditTrace.close();
+    }
+  }, [auditTrace]);
+
   const columns = React.useMemo(
     () =>
       buildMachineTableColumns({
@@ -213,8 +222,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
         handleDelete,
         handleRowClick,
         executePingForMachineAndWait,
-        setAssignClusterModal,
-        setAuditTraceModal,
+        setAssignClusterModal: openAssignClusterModal,
+        setAuditTraceModal: openAuditTraceModal,
         machineFunctions,
       }),
     [
@@ -229,8 +238,8 @@ export const MachineTable: React.FC<MachineTableProps> = ({
       handleDelete,
       handleRowClick,
       executePingForMachineAndWait,
-      setAssignClusterModal,
-      setAuditTraceModal,
+      openAssignClusterModal,
+      openAuditTraceModal,
       machineFunctions,
     ],
   );
@@ -628,32 +637,32 @@ export const MachineTable: React.FC<MachineTableProps> = ({
 
       {/* Modals */}
       <AuditTraceModal
-        open={auditTraceModal.open}
-        onCancel={() => setAuditTraceModal({ open: false, entityType: null, entityIdentifier: null })}
-        entityType={auditTraceModal.entityType}
-        entityIdentifier={auditTraceModal.entityIdentifier}
-        entityName={auditTraceModal.entityName}
+        open={auditTrace.isOpen}
+        onCancel={auditTrace.close}
+        entityType={auditTrace.entityType}
+        entityIdentifier={auditTrace.entityIdentifier}
+        entityName={auditTrace.entityName}
       />
-      
-      {remoteFileBrowserModal.machine && (
+
+      {remoteFileBrowserModal.state.data && (
         <RemoteFileBrowserModal
-          open={remoteFileBrowserModal.open}
-          onCancel={() => setRemoteFileBrowserModal({ open: false, machine: null })}
-          machineName={remoteFileBrowserModal.machine.machineName}
-          teamName={remoteFileBrowserModal.machine.teamName}
-          bridgeName={remoteFileBrowserModal.machine.bridgeName}
+          open={remoteFileBrowserModal.isOpen}
+          onCancel={remoteFileBrowserModal.close}
+          machineName={remoteFileBrowserModal.state.data.machineName}
+          teamName={remoteFileBrowserModal.state.data.teamName}
+          bridgeName={remoteFileBrowserModal.state.data.bridgeName}
           onQueueItemCreated={onQueueItemCreated}
         />
       )}
-      
+
       {/* Assign to Cluster Modal */}
-      {assignClusterModal.machine && (
+      {assignClusterModal.state.data && (
         <AssignToClusterModal
-          open={assignClusterModal.open}
-          machine={assignClusterModal.machine}
-          onCancel={() => setAssignClusterModal({ open: false, machine: null })}
+          open={assignClusterModal.isOpen}
+          machine={assignClusterModal.state.data}
+          onCancel={assignClusterModal.close}
           onSuccess={() => {
-            setAssignClusterModal({ open: false, machine: null });
+            assignClusterModal.close();
             refetch();
           }}
         />

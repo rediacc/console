@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { Row, Col, Progress } from 'antd'
 import type { ListProps } from 'antd'
 import {
@@ -25,6 +25,7 @@ import { abbreviatePath } from '@/utils/pathUtils'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
 import { DistributedStorageSection } from '../DistributedStorageSection'
 import { featureFlags } from '@/config/featureFlags'
+import { useTraceModal } from '@/hooks/useDialogState'
 import {
   PanelWrapper,
   StickyHeader,
@@ -167,13 +168,6 @@ interface VaultData {
   system_containers?: Container[]
 }
 
-interface AuditTraceState {
-  open: boolean
-  entityType: string | null
-  entityIdentifier: string | null
-  entityName?: string
-}
-
 export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = ({
   machine,
   visible,
@@ -181,11 +175,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
   splitView = false,
 }) => {
   const { t } = useTranslation(['machines', 'resources', 'common', 'distributedStorage'])
-  const [auditTraceModal, setAuditTraceModal] = useState<AuditTraceState>({
-    open: false,
-    entityType: null,
-    entityIdentifier: null,
-  })
+  const auditTrace = useTraceModal()
 
   const vaultData = useMemo<VaultData | null>(() => {
     if (!machine?.vaultStatus) return null
@@ -225,7 +215,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
   }
 
   const handleClose = () => {
-    setAuditTraceModal({ open: false, entityType: null, entityIdentifier: null })
+    auditTrace.close()
     onClose()
   }
 
@@ -308,8 +298,7 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
                   <DistributedStorageSection
                     machine={machine}
                     onViewDetails={() =>
-                      setAuditTraceModal({
-                        open: true,
+                      auditTrace.open({
                         entityType: 'Machine',
                         entityIdentifier: machine.machineName,
                         entityName: machine.machineName,
@@ -324,11 +313,11 @@ export const MachineVaultStatusPanel: React.FC<MachineVaultStatusPanelProps> = (
       </PanelWrapper>
 
       <AuditTraceModal
-        open={auditTraceModal.open}
-        onCancel={() => setAuditTraceModal({ open: false, entityType: null, entityIdentifier: null })}
-        entityType={auditTraceModal.entityType}
-        entityIdentifier={auditTraceModal.entityIdentifier}
-        entityName={auditTraceModal.entityName}
+        open={auditTrace.isOpen}
+        onCancel={auditTrace.close}
+        entityType={auditTrace.entityType}
+        entityIdentifier={auditTrace.entityIdentifier}
+        entityName={auditTrace.entityName}
       />
     </>
   )

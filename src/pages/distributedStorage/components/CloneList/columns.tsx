@@ -1,11 +1,12 @@
 import React from 'react'
-import { Dropdown, Space, Tooltip } from 'antd'
+import { Tooltip } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined, CloudUploadOutlined } from '@ant-design/icons'
 import { TFunction } from 'i18next'
 import type { DistributedStorageRbdClone } from '@/api/queries/distributedStorage'
-import { CloneIcon, CloneName, NameCell, VaultTag, RemoteButton, DropdownButton } from './styles'
+import { ActionButtonGroup } from '@/components/common/ActionButtonGroup'
+import { CloneIcon, CloneName, NameCell, VaultTag } from './styles'
 
 interface ColumnBuilderParams {
   t: TFunction<'distributedStorage' | 'common'>
@@ -50,25 +51,30 @@ export const buildCloneColumns = ({
     key: 'actions',
     width: 180,
     render: (_: unknown, record: DistributedStorageRbdClone) => (
-      <Space>
-        <Tooltip title={t('common.remote')}>
-          <RemoteButton
-            size="small"
-            icon={<CloudUploadOutlined />}
-            onClick={() => handleRunFunction('distributed_storage_rbd_info', record)}
-            data-testid={`clone-list-remote-${record.cloneName}`}
-          >
-            {t('common.remote')}
-          </RemoteButton>
-        </Tooltip>
-        <Dropdown menu={{ items: getCloneMenuItems(record) }} trigger={['click']}>
-          <DropdownButton
-            size="small"
-            icon={<EllipsisOutlined />}
-            data-testid={`clone-list-actions-${record.cloneName}`}
-          />
-        </Dropdown>
-      </Space>
+      <ActionButtonGroup
+        buttons={[
+          {
+            type: 'remote',
+            icon: <CloudUploadOutlined />,
+            tooltip: 'distributedStorage:common.remote',
+            label: 'distributedStorage:common.remote',
+            onClick: () => handleRunFunction('distributed_storage_rbd_info', record),
+            testIdSuffix: 'remote',
+          },
+          {
+            type: 'actions',
+            icon: <EllipsisOutlined />,
+            tooltip: 'distributedStorage:common.moreActions',
+            dropdownItems: getCloneMenuItems(record),
+            variant: 'default',
+            testIdSuffix: 'actions',
+          },
+        ]}
+        record={record}
+        idField="cloneName"
+        testIdPrefix="clone-list"
+        t={t}
+      />
     ),
   },
 ]

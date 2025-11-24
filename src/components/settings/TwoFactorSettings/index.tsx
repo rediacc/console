@@ -12,6 +12,7 @@ import QRCode from 'react-qr-code'
 import { message } from 'antd'
 import { DESIGN_TOKENS } from '@/utils/styleConstants'
 import { ModalSize } from '@/types/modal'
+import { useDialogState } from '@/hooks/useDialogState'
 import {
   LoadingContainer,
   FullWidthStack,
@@ -50,8 +51,8 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
   const enableTFAMutation = useEnableTFA()
   const disableTFAMutation = useDisableTFA()
 
-  const [showEnableModal, setShowEnableModal] = useState(false)
-  const [showDisableModal, setShowDisableModal] = useState(false)
+  const enableModal = useDialogState<void>()
+  const disableModal = useDialogState<void>()
   const [twoFASecret, setTwoFASecret] = useState('')
   const [showSuccess, setShowSuccess] = useState(false)
   const [showVerification, setShowVerification] = useState(false)
@@ -80,12 +81,12 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
         generateOnly: true,
       })) as EnableTwoFactorResponse
       setTwoFASecret(result.secret)
-      setShowEnableModal(false)
+      enableModal.close()
       setShowVerification(true)
       passwordForm.resetFields()
     } catch (error: any) {
       if (error.message?.includes('already enabled')) {
-        setShowEnableModal(false)
+        enableModal.close()
         passwordForm.resetFields()
       }
     }
@@ -113,7 +114,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
         password: values.password,
         currentCode: values.code,
       })
-      setShowDisableModal(false)
+      disableModal.close()
       disableForm.resetFields()
     } catch (_error) {
       // handled via mutation notifications
@@ -174,8 +175,8 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
       <StatusOverview
         t={t}
         isEnabled={Boolean(twoFAStatus?.isTFAEnabled)}
-        onEnable={() => setShowEnableModal(true)}
-        onDisable={() => setShowDisableModal(true)}
+        onEnable={() => enableModal.open()}
+        onDisable={() => disableModal.open()}
       />
     )
   })()
@@ -199,9 +200,9 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
       </Modal>
 
       <EnableTwoFactorModal
-        open={showEnableModal}
+        open={enableModal.isOpen}
         onCancel={() => {
-          setShowEnableModal(false)
+          enableModal.close()
           passwordForm.resetFields()
         }}
         form={passwordForm}
@@ -211,9 +212,9 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
       />
 
       <DisableTwoFactorModal
-        open={showDisableModal}
+        open={disableModal.isOpen}
         onCancel={() => {
-          setShowDisableModal(false)
+          disableModal.close()
           disableForm.resetFields()
         }}
         form={disableForm}
