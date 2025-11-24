@@ -132,10 +132,9 @@ export function useTraceModal(): UseTraceModalReturn {
 
 /**
  * Specialized dialog state for queue trace modals
- * Uses 'visible' property for backwards compatibility with QueueItemTraceModal
  */
 export interface QueueTraceModalState {
-  visible: boolean
+  open: boolean
   taskId: string | null
   machineName?: string | null
 }
@@ -160,21 +159,21 @@ export interface UseQueueTraceModalReturn {
  *
  * // In component
  * <QueueItemTraceModal
- *   visible={queueTrace.state.visible}
+ *   open={queueTrace.state.open}
  *   taskId={queueTrace.state.taskId}
- *   onClose={queueTrace.close}
+ *   onCancel={queueTrace.close}
  * />
  */
 export function useQueueTraceModal(): UseQueueTraceModalReturn {
   const [state, setState] = useState<QueueTraceModalState>({
-    visible: false,
+    open: false,
     taskId: null,
     machineName: null,
   })
 
-  const open = useCallback((taskId: string, machineName?: string) => {
+  const openModal = useCallback((taskId: string, machineName?: string) => {
     setState({
-      visible: true,
+      open: true,
       taskId,
       machineName: machineName ?? null,
     })
@@ -182,7 +181,7 @@ export function useQueueTraceModal(): UseQueueTraceModalReturn {
 
   const close = useCallback(() => {
     setState({
-      visible: false,
+      open: false,
       taskId: null,
       machineName: null,
     })
@@ -190,8 +189,8 @@ export function useQueueTraceModal(): UseQueueTraceModalReturn {
 
   return {
     state,
-    open,
+    open: openModal,
     close,
-    isOpen: state.visible,
+    isOpen: state.open,
   }
 }

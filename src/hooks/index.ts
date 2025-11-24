@@ -28,6 +28,13 @@ export type {
   UseExtendedFormModalReturn,
 } from './useFormModal'
 
+// Modal form hook (combines Form.useForm with dialog state)
+export { useModalForm } from './useModalForm'
+export type {
+  UseModalFormOptions,
+  UseModalFormReturn,
+} from './useModalForm'
+
 // Filter state management
 export { useFilters } from './useFilters'
 export type { UseFiltersOptions, UseFiltersReturn, FilterValue } from './useFilters'

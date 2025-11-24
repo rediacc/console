@@ -3,7 +3,7 @@ import { Empty, Spin, Typography } from 'antd'
 import { TeamOutlined, CloudServerOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import {
-  useGetCloneMachines,
+  useCloneMachines,
   type DistributedStorageRbdClone,
   type DistributedStorageRbdSnapshot,
   type DistributedStorageRbdImage,
@@ -24,7 +24,7 @@ import {
 
 const { Text } = Typography
 
-interface CloneMachineListProps {
+interface CloneMachineTableProps {
   clone: DistributedStorageRbdClone
   snapshot: DistributedStorageRbdSnapshot
   image: DistributedStorageRbdImage
@@ -32,7 +32,7 @@ interface CloneMachineListProps {
   onManageMachines: (clone: DistributedStorageRbdClone) => void
 }
 
-export const CloneMachineList: React.FC<CloneMachineListProps> = ({
+export const CloneMachineTable: React.FC<CloneMachineTableProps> = ({
   clone,
   snapshot,
   image,
@@ -40,7 +40,7 @@ export const CloneMachineList: React.FC<CloneMachineListProps> = ({
   onManageMachines,
 }) => {
   const { t } = useTranslation(['distributedStorage', 'machines'])
-  const { data: machines = [], isLoading } = useGetCloneMachines(
+  const { data: machines = [], isLoading } = useCloneMachines(
     clone.cloneName,
     snapshot.snapshotName,
     image.imageName,

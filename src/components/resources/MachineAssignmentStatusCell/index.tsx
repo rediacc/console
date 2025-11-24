@@ -1,6 +1,6 @@
 import React from 'react'
 import { Spin } from 'antd'
-import { useGetMachineAssignmentStatus } from '@/api/queries/distributedStorage'
+import { useMachineAssignmentStatus } from '@/api/queries/distributedStorage'
 import MachineAssignmentStatusBadge from '../MachineAssignmentStatusBadge'
 import type { Machine, MachineAssignmentType } from '@/types'
 import { StatusCellWrapper } from './styles'
@@ -24,7 +24,7 @@ const getAssignmentDetails = (value?: string | null) => {
 
 const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = ({ machine }) => {
   // Always call hooks at the top level
-  const { data, isLoading } = useGetMachineAssignmentStatus(
+  const { data, isLoading } = useMachineAssignmentStatus(
     machine.machineName,
     machine.teamName,
     !machine.distributedStorageClusterName // Only fetch if not already assigned to cluster

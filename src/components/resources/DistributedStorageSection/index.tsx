@@ -10,7 +10,7 @@ import {
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import type { Machine, MachineAssignmentType } from '@/types'
-import { useGetMachineAssignmentStatus } from '@/api/queries/distributedStorage'
+import { useMachineAssignmentStatus } from '@/api/queries/distributedStorage'
 import MachineAssignmentStatusBadge from '../MachineAssignmentStatusBadge'
 import {
   LoadingState,
@@ -57,7 +57,7 @@ export const DistributedStorageSection: React.FC<DistributedStorageSectionProps>
 
   const hasClusterAssignment = Boolean(machine.distributedStorageClusterName)
 
-  const { data: assignmentData, isLoading } = useGetMachineAssignmentStatus(
+  const { data: assignmentData, isLoading } = useMachineAssignmentStatus(
     machine.machineName,
     machine.teamName,
     !hasClusterAssignment

@@ -1,14 +1,84 @@
-# DRY Refactoring Continuation Prompt - Phase 8
+# DRY Refactoring Continuation Prompt - Phase 11
 
 ## Overview
 
-This prompt continues the DRY (Don't Repeat Yourself) consolidation effort for the Rediacc console codebase. Phases 1-7 (Tasks 1-3) are complete. Phase 8 focuses on Filter UI components and Column renderer utilities.
+This prompt continues the DRY (Don't Repeat Yourself) consolidation effort for the Rediacc console codebase. **Phases 1-10 (Priorities 1-3) are complete.** This document serves as a reference for the current codebase state and remaining refactoring opportunities.
+
+---
+
+## Current Codebase State (After Phase 10)
+
+### Established Conventions
+
+#### 1. Modal Props
+All modals now use consistent prop names:
+- **Visibility**: `open` (not `visible`)
+- **Close callback**: `onCancel` (not `onClose`)
+- **Example**: `<Modal open={isOpen} onCancel={handleClose} />`
+
+#### 2. Hook State
+All modal hooks use consistent internal state:
+- **State property**: `open` (not `visible`)
+- **Helper**: All hooks expose `isOpen` boolean
+- **File**: `/src/hooks/useDialogState.ts`
+
+#### 3. Query Hook Naming
+All query hooks follow `use*` pattern (no `Get` prefix):
+- `useTFAStatus` (was `useGetTFAStatus`)
+- `useCompanyVaults` (was `useGetCompanyVaults`)
+- `useMachineAssignmentStatus` (was `useGetMachineAssignmentStatus`)
+- `useAvailableMachinesForClone` (was `useGetAvailableMachinesForClone`)
+- `useCloneMachineAssignmentValidation` (was `useGetCloneMachineAssignmentValidation`)
+- `useCloneMachines` (was `useGetCloneMachines`)
+
+#### 4. Mutation Hook Naming (Semantic Distinction)
+- `useDelete*` - Permanently removes an entity from the system
+- `useRemove*` - Removes a relationship/membership (entity still exists)
+
+#### 5. Component Naming
+All data table components use `*Table` suffix:
+- `CloneTable` (was `CloneList`)
+- `SnapshotTable` (was `SnapshotList`)
+- `RbdImageTable` (was `RbdImageList`)
+- `CloneMachineTable` (was `CloneMachineList`)
+- `MachineRepositoryTable` (was `MachineRepositoryList`)
+- `RepositoryContainerTable` (was `RepositoryContainerList`)
+
+#### 6. State Variable Convention (Documented Standard)
+For modal state variables, use `is*Open` pattern:
+- `const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)`
+- `const [assignModalOpen, setAssignModalOpen] = useState(false)`
+- `const [showTFAModal, setShowTFAModal] = useState(false)`
+
+#### 7. Form Field Components (NEW in Phase 10)
+Use reusable form field components from `/src/components/forms/FormFields/`:
+- `PasswordField` - Password input with validation
+- `PasswordConfirmField` - Confirmation with match validation
+- `OTPCodeField` - 6-digit code input
+
+#### 8. Mutation Error Handling (NEW in Phase 10)
+Use utilities from `/src/utils/mutationUtils.ts`:
+- `createErrorHandler(fallbackMessage)` - Standard error handler
+- `handleMutationError(error, fallback)` - Direct error handling
+- Always use `i18n.t()` for messages, never hardcoded strings
+
+#### 9. i18n for Mutations (NEW in Phase 10)
+All mutation messages must use translation keys:
+```typescript
+// Correct
+onError: createErrorHandler(i18n.t('queue:errors.createFailed'))
+showMessage('success', i18n.t('queue:success.created', { taskId }))
+
+// Incorrect
+onError: createErrorHandler('Failed to create queue item')
+showMessage('success', `Queue item ${taskId} created`)
+```
 
 ---
 
 ## Completed Work Summary
 
-### Phases 1-6 - Modal Hook Migrations (Complete)
+### Phases 1-6 - Modal Hook Migrations
 
 **Hooks Created** (exported from `/src/hooks/index.ts`):
 - `useDialogState<T>()` - Generic dialog/modal state
@@ -24,204 +94,223 @@ This prompt continues the DRY (Don't Repeat Yourself) consolidation effort for t
 - `ActionButtonGroup<T>` - `/src/components/common/ActionButtonGroup/index.tsx`
 - Shared styled components - `/src/components/common/styled/index.ts`
 
-### Phase 7 Tasks 1-3 (Complete)
+### Phase 7 - Styled Components & Utilities
 
-#### Task 1: Styled Component Consolidation ✅
+- Styled component consolidation in `/src/styles/primitives.ts`
+- Modal.confirm utility adoption via `confirmAction`
+- `useExpandableTable` hook created
 
-**Added to `/src/styles/primitives.ts`:**
-- Card variants: `FilterCard`, `TableCard`, `SectionCard`
-- Button variants: `CompactIconButton`, `PrimaryIconButton`, `SecondaryIconButton`, `CompactButton`
+### Phase 8 - Filter UI & Column Utilities
 
-**Files updated to import directly from primitives (clean imports, no re-exports):**
-- `ArchitecturePage.tsx` → imports `SectionCard`, `IconButton`, `CompactIconButton`
-- `AuditPage/index.tsx` → imports `FilterCard`, `TableCard`, `CompactButton`
-- `DistributedStoragePage.tsx` → imports `PageCard`, `PrimaryIconButton`, `SecondaryIconButton`
-- `QueuePage.tsx` → imports `IconButton`
-- `RepositoryContainersPage.tsx` → imports `IconButton`
-- `MachineRepositoriesPage.tsx` → imports `IconButton`
+- `FilterTagDisplay` component at `/src/components/common/FilterTagDisplay/index.tsx`
+- Column renderer utilities at `/src/components/common/columns/`
 
-**Style files cleaned (removed all backward-compatibility re-exports):**
-- `architecture/styles.ts`
-- `audit/AuditPage/styles.ts`
-- `distributedStorage/styles.ts`
-- `resources/styles.ts`
-- `queue/styles.ts`
+### Phase 9 - Naming Consistency
 
-#### Task 2: Modal.confirm Utility Adoption ✅
+- Task 6: Modal props standardized (open/onCancel)
+- Task 7: Hook state standardized (open internally)
+- Task 8: Query hooks renamed (removed Get prefix)
+- Task 9: Delete/Remove naming documented
+- Task 10: List→Table component renaming
+- Task 11: State variable convention documented
 
-**Files migrated to use `confirmAction` from `@/utils/confirmations`:**
-- `PoolTable/index.tsx` - Added `Modal.useModal()`, replaced inline Modal.confirm
-- `ClusterTable/index.tsx` - Added `Modal.useModal()`, replaced inline Modal.confirm
-- `ManageClusterMachinesModal.tsx` - Added `Modal.useModal()`, replaced inline Modal.confirm
-- `QueuePage.tsx` - Added `Modal.useModal()`, replaced inline Modal.confirm, added i18n keys
+### Phase 10 - Form Patterns, Error Handling & i18n
 
-**Translation keys added to `/src/i18n/locales/en/queue.json`:**
-- `cancelConfirm.title`
-- `cancelConfirm.content`
-- `cancelConfirm.okText`
+#### Priority 1: Form Patterns Consolidation
 
-**Note:** `CloneMachineManager/index.tsx` was skipped - it has custom `okButtonProps`/`cancelButtonProps` with data-testid for testing that `confirmAction` doesn't support.
+**Components Created:**
+- `/src/components/forms/FormFields/PasswordField.tsx` - Password with validation
+- `/src/components/forms/FormFields/PasswordConfirmField.tsx` - Match validation
+- `/src/components/forms/FormFields/OTPCodeField.tsx` - 6-digit code input
+- `/src/components/forms/FormFields/index.ts` - Clean exports with `export *`
 
-#### Task 3: useExpandableTable Hook ✅
+**Hooks Created:**
+- `/src/hooks/useModalForm.ts` - Combines Form.useForm with dialog state
 
-**Created `/src/hooks/useExpandableTable.ts`:**
-- Returns: `{ expandedRowKeys, toggleRow, expandAll, collapseAll, isExpanded, setExpandedRowKeys }`
-- Exported from `/src/hooks/index.ts`
+**Files Updated:**
+- `ProfilePage.tsx` - Uses PasswordField, PasswordConfirmField, useModalForm
+- `CompanyPage.tsx` - Uses PasswordField, PasswordConfirmField
+- `TwoFactorSettings/index.tsx` - Uses OTPCodeField
 
-**Files migrated:**
-- `PoolTable/index.tsx`
-- `ClusterTable/index.tsx`
-- `RbdImageList.tsx`
-- `SnapshotList/index.tsx`
+#### Priority 2: Error Handling Standardization
 
-**Final Status:**
-- TypeScript: 0 errors
-- Build: Success
-- Estimated lines reduced: ~300+
+**Utilities Created:**
+- `/src/utils/mutationUtils.ts`
+  - `extractErrorMessage(error, fallback)` - Extract message from error
+  - `handleMutationError(error, fallback)` - Show error message
+  - `createErrorHandler(fallback)` - Create onError callback
+  - `createSuccessHandler(message)` - Create onSuccess callback
+  - `createMutationCallbacks(options)` - Full callback factory
 
----
+**Files Updated:**
+- `queue.ts` - 8 mutations use createErrorHandler
+- `permissions.ts` - 5 mutations use createErrorHandler
 
-## Phase 8: Filter UI & Column Utilities
+#### Priority 3: Loading State Patterns
 
-### Goal
-Create reusable components for filter tag display and column renderers to eliminate remaining duplication.
+**Component Created:**
+- `/src/components/common/LoadingWrapper/index.tsx`
+  - Consistent loading/empty state handling
+  - Configurable size, centering, tips
+  - Empty state support
 
----
+#### i18n Consolidation
 
-## Task 4: Filter UI Component (MEDIUM PRIORITY)
+**Translation Keys Added:**
 
-### Problem
-Filter tag rendering is duplicated across QueuePage, AuditPage, and other list pages.
-
-### Current Repeated Pattern
-Each page renders filter tags similarly with this pattern repeated 7+ times per page:
-```tsx
-{filters.teamName && (
-  <Tag closable onClose={() => setFilter('teamName', '')} color="blue">
-    {label}
-  </Tag>
-)}
+`/src/i18n/locales/en/queue.json`:
+```json
+"errors": {
+  "createFailed": "Failed to create queue item",
+  "updateFailed": "Failed to update queue item",
+  "updatePriorityFailed": "Failed to update queue item priority",
+  "updateProtectionFailed": "Failed to update queue item protection",
+  "cancelFailed": "Failed to cancel queue item",
+  "deleteFailed": "Failed to delete queue item",
+  "retryFailed": "Failed to retry queue item"
+},
+"success": {
+  "created": "Queue item created",
+  "createdWithId": "Queue item created with ID: {{taskId}}",
+  "responseUpdated": "Queue item {{taskId}} response updated",
+  "completed": "Queue item {{taskId}} completed",
+  "markedFailed": "Queue item {{taskId}} marked as failed",
+  "priorityUpdated": "Queue item {{taskId}} priority updated to {{priority}}",
+  "protectionEnabled": "Queue item {{taskId}} protection enabled",
+  "protectionDisabled": "Queue item {{taskId}} protection disabled",
+  "cancellationInitiated": "Queue item {{taskId}} cancellation initiated",
+  "deleted": "Queue item {{taskId}} deleted",
+  "queuedForRetry": "Queue item {{taskId}} queued for retry"
+}
 ```
 
-### Files to Analyze
+`/src/i18n/locales/en/organization.json` (under `access`):
+```json
+"errors": {
+  "createGroupFailed": "Failed to create permission group",
+  "deleteGroupFailed": "Failed to delete permission group",
+  "addPermissionFailed": "Failed to add permission to group",
+  "removePermissionFailed": "Failed to remove permission from group",
+  "assignUserFailed": "Failed to assign user to permission group"
+},
+"success": {
+  "groupCreated": "Permission group \"{{group}}\" created successfully",
+  "groupDeleted": "Permission group \"{{group}}\" deleted successfully",
+  "permissionAdded": "Permission \"{{permission}}\" added to group",
+  "permissionRemoved": "Permission \"{{permission}}\" removed from group",
+  "userAssigned": "User assigned to permission group \"{{group}}\""
+}
+```
 
-**QueuePage.tsx** - Search for filter tag rendering patterns:
-- Location: `/src/pages/queue/QueuePage.tsx`
-- Look for: `<Tag closable` patterns in JSX
-- Note how filters are structured and cleared
-
-**AuditPage/index.tsx** - Similar patterns:
-- Location: `/src/pages/audit/AuditPage/index.tsx`
-- Compare filter rendering approach
-
-### Solution Approach
-
-1. **Create component** at `/src/components/common/FilterTagDisplay/index.tsx`
-
-2. **Define interface** for filter config:
-   ```tsx
-   interface FilterTagConfig {
-     key: string
-     value: string | string[]
-     label: string
-     color?: string
-   }
-
-   interface FilterTagDisplayProps {
-     filters: FilterTagConfig[]
-     onClear: (key: string) => void
-     onClearAll?: () => void
-     showClearAll?: boolean
-   }
-   ```
-
-3. **Component should handle:**
-   - Rendering tags for active filters only (non-empty values)
-   - Close button that calls `onClear(key)`
-   - Optional "Clear All" button
-   - Array values (multiple selections)
-   - Color variants
-
-4. **Migrate pages** to use the new component:
-   - `QueuePage.tsx`
-   - `AuditPage/index.tsx`
-   - Any other pages with similar patterns
-
-### Estimated Impact
-- 200-300 lines reduced
-- Consistent filter tag UX
-- Easier to add filters to new pages
+**Files Migrated to i18n:**
+- `queue.ts` - 8 mutations with full i18n
+- `permissions.ts` - 5 mutations with full i18n
 
 ---
 
-## Task 5: Column Renderer Utilities (LOW PRIORITY)
+## Phase 11: Remaining Refactoring Opportunities
 
-### Problem
-Column files repeat similar renderers for status tags, timestamps, and action buttons.
+### Priority 1: Table Column Patterns
 
-### Files to Analyze
+#### Problem
+While column renderers were created in Phase 8, many tables still define columns inline with duplicated patterns.
 
-**AuditPage columns:**
-- Location: `/src/pages/audit/AuditPage/columns.tsx`
-- Look for: status tag rendering, timestamp formatting
+#### Patterns to Consolidate
+1. **Action columns** - Dropdown menus with edit/delete/view
+2. **Status columns** - Tag rendering with color mapping
+3. **Date columns** - Timestamp formatting
+4. **Truncated text** - Ellipsis with tooltip
 
-**DistributedStorage columns:**
-- Location: `/src/pages/distributedStorage/components/*/columns.tsx`
-- Multiple files: ClusterTable, PoolTable, SnapshotList, CloneList, etc.
-
-**QueuePage:**
-- Location: `/src/pages/queue/QueuePage.tsx`
-- Inline column definitions
-
-### Common Patterns to Extract
-
-1. **Status Tag Renderer:**
-   - Maps status values to colors and labels
-   - Uses `<Tag>` with appropriate styling
-
-2. **Timestamp Renderer:**
-   - Formats dates consistently (e.g., `formatTimestampAsIs`)
-   - Handles null/undefined gracefully
-
-3. **Action Column Renderer:**
-   - Dropdown menus with edit/delete/view actions
-   - Uses `ActionButtonGroup` or similar
-
-### Solution Approach
-
-1. **Create directory** at `/src/components/common/columns/`
-
-2. **Create utilities:**
-   - `StatusColumnRenderer.tsx` - Reusable status tag column
-   - `TimestampColumnRenderer.tsx` - Date formatting column
-   - `ActionColumnRenderer.tsx` - Action button/dropdown column
-   - `index.ts` - Export all renderers
-
-3. **Define interfaces** for each renderer's props
-
-4. **Migrate column files** to use shared renderers
-
-### Estimated Impact
-- 100-150 lines reduced
-- Consistent column styling across all tables
+#### Files to Analyze
+- `/src/pages/*/columns.tsx` or inline column definitions
+- `/src/pages/audit/AuditPage/columns.tsx`
+- `/src/pages/distributedStorage/components/*/columns.tsx`
 
 ---
 
-## Implementation Guidelines
+### Priority 2: API Response Handling
 
-### Best Practices
+#### Problem
+API response extraction patterns vary across the codebase.
 
-1. **Clean Imports** - Import directly from source, no re-exports for backward compatibility
-2. **Type Safety** - Always use proper TypeScript generics
-3. **Null Guards** - Use proper checks instead of `|| ''` fallbacks
-4. **Translation Keys** - Use i18n for all user-facing strings
+#### Current Patterns
+```typescript
+// Pattern 1
+const results = extractTableData<T[]>(response, 0, [])
 
-### Verification Steps
+// Pattern 2
+const data = getFirstRow<T>(response, 1) ?? getFirstRow<T>(response, 0)
 
-After each task:
-1. Run TypeScript check: `npx tsc --noEmit`
-2. Run build: `npm run build`
-3. Verify 0 errors
+// Pattern 3
+const allVaults = getResultSet<Record<string, unknown>>(response, 1)
+```
+
+#### Files to Analyze
+- `/src/api/queries/*.ts`
+- `/src/core/api/response.ts`
+
+#### Potential Solutions
+1. Standardize response extraction patterns
+2. Create typed response extractors for common patterns
+3. Document when to use each pattern
+
+---
+
+### Priority 3: Continue i18n Migration
+
+#### Problem
+Many mutation files still have hardcoded English strings.
+
+#### Files to Migrate
+- `/src/api/queries/company.ts` - Some mutations still hardcoded
+- `/src/api/queries/users.ts` - Needs i18n
+- `/src/api/queries/twoFactor.ts` - Needs i18n
+- `/src/api/queries/vaultProtocol.ts` - Needs i18n
+- `/src/api/queries/distributedStorageMutations.ts` - Needs i18n
+- All other mutation files in `/src/api/queries/`
+
+#### Pattern to Follow
+```typescript
+import i18n from '@/i18n/config'
+import { createErrorHandler } from '@/utils/mutationUtils'
+
+// In mutation:
+onSuccess: () => {
+  showMessage('success', i18n.t('namespace:success.key', { param: value }))
+},
+onError: createErrorHandler(i18n.t('namespace:errors.key'))
+```
+
+---
+
+### Priority 4: Test Coverage Improvements
+
+#### Problem
+Test coverage may be inconsistent after refactoring.
+
+#### Areas to Review
+1. New form field components (`PasswordField`, `PasswordConfirmField`, `OTPCodeField`)
+2. New hooks (`useModalForm`)
+3. New utilities (`mutationUtils.ts`)
+4. `LoadingWrapper` component
+
+#### Action Items
+1. Add unit tests for new components and hooks
+2. Update E2E tests if form interactions changed
+3. Verify all tests pass
+
+---
+
+### Priority 5: LoadingWrapper Adoption
+
+#### Problem
+`LoadingWrapper` component was created but not yet adopted across the codebase.
+
+#### Files to Update
+There are 29 files using `<Spin>` that could potentially use `LoadingWrapper`:
+- Modal components with loading states
+- Pages with data fetching
+- Tables with loading indicators
 
 ---
 
@@ -230,391 +319,220 @@ After each task:
 ### Hooks
 - `/src/hooks/useDialogState.ts` - Dialog state hooks
 - `/src/hooks/useFormModal.ts` - Form modal hooks
+- `/src/hooks/useModalForm.ts` - Modal form hook (NEW)
 - `/src/hooks/useExpandableTable.ts` - Table expansion hook
 - `/src/hooks/useFilters.ts` - Filter state management
 - `/src/hooks/index.ts` - All hook exports
 
+### Form Components (NEW)
+- `/src/components/forms/FormFields/PasswordField.tsx`
+- `/src/components/forms/FormFields/PasswordConfirmField.tsx`
+- `/src/components/forms/FormFields/OTPCodeField.tsx`
+- `/src/components/forms/FormFields/index.ts`
+
 ### Utilities
-- `/src/utils/confirmations.ts` - `confirmDelete`, `confirmAction`
-- `/src/styles/primitives.ts` - Shared styled components (IconButton, cards, etc.)
-- `/src/core/index.ts` - Core utilities like `formatTimestampAsIs`, `createSorter`
-
-### Existing Patterns to Follow
-- `ActionButtonGroup` - `/src/components/common/ActionButtonGroup/index.tsx`
-- Shared styled components - `/src/components/common/styled/index.ts`
-
----
-
-## Remaining Consolidation Potential
-
-| Task | Lines Saved | Complexity | Status |
-|------|-------------|------------|--------|
-| Styled Components | ~150 | MEDIUM | ✅ Complete |
-| Modal.confirm | ~50 | LOW | ✅ Complete |
-| Table Hooks | ~100 | MEDIUM | ✅ Complete |
-| Filter UI | 200-300 | MEDIUM | 📋 Pending |
-| Column Utilities | 100-150 | MEDIUM | 📋 Pending |
-| **TOTAL REMAINING** | **300-450** | | |
-
----
-
-## Phase 8 Status: COMPLETE
-
-Tasks 4-5 have been completed:
-- `FilterTagDisplay` component created at `/src/components/common/FilterTagDisplay/index.tsx`
-- Column renderer utilities created at `/src/components/common/columns/`
-- Migrated: QueuePage, AuditPage/columns, ClusterTable/columns, PoolTable/columns, RbdImageList
-- TypeScript: 0 errors
-- Build: Success
-
----
-
-## Phase 9: Naming Consistency Standardization
-
-### Goal
-Standardize naming conventions across the codebase to improve consistency, discoverability, and maintainability.
-
----
-
-## Task 6: Modal Props Standardization (HIGH PRIORITY)
-
-### Problem
-Modal components use inconsistent prop names for visibility and close callbacks.
-
-### Current Inconsistencies
-
-**Visibility prop:**
-- `open={...}` - Used by newer components (FunctionSelectionModal, UnifiedResourceModal, AuditTraceModal)
-- `visible={...}` - Used by older components (QueueItemTraceModal, RegistrationModal)
-
-**Close callback:**
-- `onCancel` - 31 occurrences
-- `onClose` - 22 occurrences
-
-### Files to Update
-
-**Components using `visible` prop (change to `open`):**
-- `/src/components/common/QueueItemTraceModal/index.tsx`
-- `/src/components/auth/RegistrationModal/index.tsx`
-- `/src/components/common/FunctionSelectionModal/index.tsx` (internal `showTemplateDetails`)
-
-**Usage sites to update:**
-- All pages that use QueueItemTraceModal: `visible={...}` → `open={...}`
-  - QueuePage.tsx, MachinesPage.tsx, CredentialsPage.tsx, etc.
-
-### Solution Approach
-
-1. **Standardize on `open` for visibility** (matches Ant Design Modal API)
-2. **Standardize on `onCancel` for close callback** (matches Ant Design Modal API)
-
-3. **Update QueueItemTraceModal:**
-   ```tsx
-   // Change interface
-   interface QueueItemTraceModalProps {
-     open: boolean      // was: visible
-     onCancel: () => void  // was: onClose
-     taskId: string | null
-   }
-   ```
-
-4. **Update all usage sites** to use new prop names
-
-5. **Update hooks for consistency:**
-   - `useQueueTraceModal` should return `isOpen` instead of `state.visible`
-   - Align with `useDialogState` and `useTraceModal` patterns
-
-### Estimated Impact
-- ~50 prop name changes across files
-- Consistent API across all modals
-
----
-
-## Task 7: Hook State Standardization (MEDIUM PRIORITY)
-
-### Problem
-Modal-related hooks return different property names for the same concept.
-
-### Current Inconsistencies
-
-```typescript
-// useDialogState returns:
-{ isOpen: boolean, state: { open: boolean } }
-
-// useTraceModal returns:
-{ isOpen: boolean, state: { visible: boolean } }  // Internal uses 'visible'
-
-// useQueueTraceModal returns:
-{ state: { visible: boolean } }  // No isOpen helper
-```
-
-### Files to Analyze
-
-- `/src/hooks/useDialogState.ts` - Reference implementation (good)
-- `/src/hooks/useDialogState.ts` (useTraceModal) - Lines ~100-130
-- `/src/hooks/useDialogState.ts` (useQueueTraceModal) - Lines ~150-180
-
-### Solution Approach
-
-1. **Standardize internal state to use `open`:**
-   ```typescript
-   // All hooks should use:
-   state: { open: boolean, ... }
-   ```
-
-2. **All hooks should expose `isOpen` helper**
-
-3. **Update useQueueTraceModal to match useTraceModal pattern**
-
-### Estimated Impact
-- ~20 lines changed in hooks
-- Consistent mental model for developers
-
----
-
-## Task 8: Query Hook Naming Standardization (MEDIUM PRIORITY)
-
-### Problem
-Some query hooks use `useGet*` prefix while others don't.
-
-### Current Inconsistencies
-
-| With `Get` prefix | Without prefix |
-|-------------------|----------------|
-| `useGetAvailableMachinesForClone` | `useMachines` |
-| `useGetCloneMachines` | `useTeams` |
-| `useGetCloneMachineAssignmentValidation` | `useBridges` |
-| `useGetTFAStatus` | `useRegions` |
-| `useGetMachineAssignmentStatus` | `useUsers` |
-| `useGetCompanyVaults` | `useCompanyVault` |
-
-### Files to Analyze
-
-- `/src/api/queries/distributedStorage.ts` - Has `useGet*` hooks
-- `/src/api/queries/machines.ts` - Has `useGet*` hooks
-- `/src/api/queries/twoFactor.ts` - Has `useGet*` hooks
-- Other query files use plain `use*` pattern
-
-### Solution Approach
-
-**Option A: Remove `Get` prefix (Recommended)**
-- Simpler, shorter names
-- Consistent with majority of codebase
-- `useGetAvailableMachinesForClone` → `useAvailableMachinesForClone`
-
-**Option B: Add `Get` prefix everywhere**
-- More explicit about operation type
-- Would require many more changes
-
-### Migration Steps
-
-1. For each `useGet*` hook:
-   - Rename the hook function
-   - Update the export
-   - Search and replace all usages across codebase
-
-2. **Hooks to rename (if Option A):**
-   - `useGetAvailableMachinesForClone` → `useAvailableMachinesForClone`
-   - `useGetCloneMachines` → `useCloneMachines`
-   - `useGetCloneMachineAssignmentValidation` → `useCloneMachineAssignmentValidation`
-   - `useGetTFAStatus` → `useTFAStatus`
-   - `useGetMachineAssignmentStatus` → `useMachineAssignmentStatus`
-   - `useGetCompanyVaults` → `useCompanyVaults`
-
-### Estimated Impact
-- 6 hook renames
-- ~30-50 import/usage updates
-
----
-
-## Task 9: Mutation Hook Naming (Delete vs Remove) (LOW PRIORITY)
-
-### Problem
-Mutation hooks use both `Delete` and `Remove` for similar operations.
-
-### Current Pattern
-
-| Delete (for entities) | Remove (for relationships) |
-|-----------------------|---------------------------|
-| `useDeleteBridge` | `useRemovePermissionFromGroup` |
-| `useDeleteMachine` | `useRemoveTeamMember` |
-| `useDeleteTeam` | |
-| `useDeleteRepository` | |
-
-### Analysis
-This may actually be intentional semantic distinction:
-- **Delete**: Permanently removes an entity from the system
-- **Remove**: Removes a relationship/membership (entity still exists)
-
-### Recommendation
-**Keep current pattern** - the distinction is meaningful:
-- Deleting a machine removes it entirely
-- Removing a team member just removes the membership
-
-Document this convention in a coding standards guide.
-
----
-
-## Task 10: List vs Table Component Naming (LOW PRIORITY)
-
-### Problem
-Data grid components use inconsistent suffixes.
-
-### Current State
-
-**Using `Table`:**
-- `ClusterTable`
-- `PoolTable`
-- `FilterableMachineTable`
-- `MachineTable`
-- `VirtualMachineTable`
-
-**Using `List`:**
-- `CloneList`
-- `SnapshotList`
-- `RbdImageList`
-- `MachineRepositoryList`
-- `RepositoryContainerList`
-- `CloneMachineList`
-
-### Analysis
-All these components render `<Table>` from Ant Design, so `Table` suffix is more accurate.
-
-### Solution Approach
-
-1. **Standardize on `*Table` suffix** for components that render data tables
-
-2. **Renames needed:**
-   - `CloneList` → `CloneTable`
-   - `SnapshotList` → `SnapshotTable`
-   - `RbdImageList` → `RbdImageTable`
-   - `MachineRepositoryList` → `MachineRepositoryTable`
-   - `RepositoryContainerList` → `RepositoryContainerTable`
-   - `CloneMachineList` → `CloneMachineTable`
-
-3. **For each rename:**
-   - Rename directory/file
-   - Update component name
-   - Update all imports
-   - Update any test files
-
-### Estimated Impact
-- 6 component renames
-- High number of import updates
-- Consider doing this as a separate PR due to scope
-
----
-
-## Task 11: State Variable Naming Convention (LOW PRIORITY)
-
-### Problem
-Modal state variables use various naming patterns.
-
-### Current Patterns
-
-```typescript
-// Pattern 1: *Modal
-const [assignModalOpen, setAssignModalOpen] = useState(false)
-
-// Pattern 2: *Visible
-const [versionSelectorVisible, setVersionSelectorVisible] = useState(false)
-
-// Pattern 3: show*
-const [showTFAModal, setShowTFAModal] = useState(false)
-
-// Pattern 4: is*Open
-const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false)
-```
-
-### Recommendation
-
-**Standardize on Pattern 4: `is*Open`**
-- Clear boolean naming with `is` prefix
-- Explicit about what it controls
-- Example: `isAssignModalOpen`, `isTFAModalOpen`
-
-This is lower priority as it's internal implementation detail.
+- `/src/utils/confirmations.ts` - confirmDelete, confirmAction
+- `/src/utils/mutationUtils.ts` - Error handling utilities (NEW)
+- `/src/styles/primitives.ts` - Shared styled components
+- `/src/core/index.ts` - Core utilities
+
+### Common Components (NEW)
+- `/src/components/common/LoadingWrapper/index.tsx`
+
+### Query Files
+- `/src/api/queries/queue.ts` - Queue queries (i18n complete)
+- `/src/api/queries/permissions.ts` - Permission queries (i18n complete)
+- `/src/api/queries/distributedStorage.ts` - DS queries
+- `/src/api/queries/machines.ts` - Machine queries
+- `/src/api/queries/twoFactor.ts` - TFA queries
+- `/src/api/queries/company.ts` - Company queries
+
+### Table Components
+- `/src/pages/distributedStorage/components/CloneTable/`
+- `/src/pages/distributedStorage/components/SnapshotTable/`
+- `/src/pages/distributedStorage/components/RbdImageTable.tsx`
+- `/src/components/resources/MachineRepositoryTable/`
+- `/src/components/resources/RepositoryContainerTable/`
 
 ---
 
 ## Implementation Guidelines
 
-### Migration Order (Recommended)
+### Best Practices
 
-1. **Task 6: Modal Props** - High impact, improves API consistency
-2. **Task 7: Hook State** - Required for Task 6 to be complete
-3. **Task 8: Query Hooks** - Medium impact, improves discoverability
-4. **Task 10: List→Table** - Can be done as separate PR
-5. **Task 9 & 11** - Document conventions, opportunistic fixes
+1. **Clean Exports** - Use `export *` pattern, no verbose aliasing
+2. **Named Exports** - Prefer named exports over default exports
+3. **Type Safety** - Always use proper TypeScript generics
+4. **Translation Keys** - Use i18n.t() for ALL user-facing strings
+5. **Component Naming** - Use `*Table` for data grids, `*Modal` for dialogs
+6. **Error Handling** - Use `createErrorHandler()` from mutationUtils
 
-### Testing Strategy
+### Verification Steps
 
-After each task:
+After any refactoring task:
 1. Run TypeScript check: `npx tsc --noEmit`
 2. Run build: `npm run build`
-3. Run existing tests if available
-4. Manual smoke test of affected pages
+3. Verify 0 errors
+4. Test affected pages manually if needed
 
-### Search Patterns for Migration
+---
+
+## Search Patterns for Common Issues
 
 ```bash
-# Find all visible prop usages
-grep -r "visible={" src --include="*.tsx"
+# Find hardcoded error messages in mutations
+grep -r "showMessage('error'" src/api/queries --include="*.ts"
 
-# Find all onClose prop usages
-grep -r "onClose={" src --include="*.tsx"
+# Find mutations without i18n
+grep -r "onError:" src/api/queries --include="*.ts" | grep -v "i18n.t"
 
-# Find useGet* hooks
-grep -r "useGet[A-Z]" src --include="*.ts"
+# Find remaining Spin components (candidates for LoadingWrapper)
+grep -r "<Spin" src --include="*.tsx"
 
-# Find *List components
-find src -name "*List.tsx" -o -name "*List" -type d
+# Find inline column definitions
+grep -r "columns:" src/pages --include="*.tsx"
 ```
 
 ---
 
-## Reference: Key File Locations
+## Session Prompt
 
-### Hooks
-- `/src/hooks/useDialogState.ts` - Contains useDialogState, useTraceModal, useQueueTraceModal
-- `/src/hooks/index.ts` - All hook exports
+Use this prompt to complete all remaining Phase 11 work:
 
-### Modal Components
-- `/src/components/common/QueueItemTraceModal/index.tsx`
-- `/src/components/common/AuditTraceModal/index.tsx`
-- `/src/components/auth/RegistrationModal/index.tsx`
+```
+Please continue the DRY refactoring effort for the Rediacc console codebase.
 
-### Query Files
-- `/src/api/queries/distributedStorage.ts`
-- `/src/api/queries/machines.ts`
+Reference: @console/REFACTORING_CONTINUATION.md
+
+Current Status: Phases 1-10 are complete.
+
+Complete ALL remaining Phase 11 priorities in this session.
+
+---
+
+## Phase 11 Priorities (Complete All)
+
+### Priority 1: Continue i18n Migration
+
+**Files to migrate:**
 - `/src/api/queries/twoFactor.ts`
+- `/src/api/queries/users.ts`
+- `/src/api/queries/company.ts`
+- `/src/api/queries/vaultProtocol.ts`
+- `/src/api/queries/distributedStorageMutations.ts`
 
-### Table Components (to rename)
-- `/src/pages/distributedStorage/components/CloneList/`
-- `/src/pages/distributedStorage/components/SnapshotList/`
-- `/src/pages/distributedStorage/components/RbdImageList.tsx`
+**Pattern:**
+import i18n from '@/i18n/config'
+import { createErrorHandler } from '@/utils/mutationUtils'
+
+onSuccess: () => {
+  showMessage('success', i18n.t('namespace:success.key', { param: value }))
+},
+onError: createErrorHandler(i18n.t('namespace:errors.key'))
+
+**Add translation keys to `/src/i18n/locales/en/` files:**
+- twoFactor.ts → settings.json (under twoFactorAuth.errors/success)
+- users.ts → organization.json (under users.errors/success)
+- company.ts → system.json
+- vaultProtocol.ts → system.json
+- distributedStorageMutations.ts → distributedStorage.json
 
 ---
 
-## Remaining Consolidation Potential
+### Priority 2: Table Column Patterns
 
-| Task | Impact | Complexity | Status |
-|------|--------|------------|--------|
-| Modal Props (open/onCancel) | HIGH | MEDIUM | Pending |
-| Hook State Consistency | MEDIUM | LOW | Pending |
-| Query Hook Names | MEDIUM | MEDIUM | Pending |
-| List→Table Naming | LOW | HIGH | Pending |
-| Delete vs Remove | - | - | Keep as-is |
-| State Variable Names | LOW | LOW | Document only |
+**Analyze and consolidate column definitions:**
+- `/src/pages/distributedStorage/components/CloneTable/`
+- `/src/pages/distributedStorage/components/SnapshotTable/`
+- `/src/pages/audit/AuditPage/`
+
+**Create column factories in `/src/components/common/columns/`:**
+- `createActionColumn<T>()` - Dropdown with edit/delete/view
+- `createStatusColumn()` - Tag with color mapping
+- `createDateColumn()` - Timestamp formatting
+- `createTruncatedColumn()` - Ellipsis with tooltip
+
+**Update 2-3 tables to use the new factories as proof of concept.**
 
 ---
 
-## Session Goal
+### Priority 3: LoadingWrapper Adoption
 
-Complete Tasks 6-8 for immediate consistency wins. Tasks 9-11 can be addressed opportunistically or in future sessions.
+**Replace `<Spin>` with `<LoadingWrapper>` in key files:**
+- Modal components with loading states
+- Pages with centered loading spinners
+- Components with empty state handling
 
-### Expected Outcome
-- All modals use `open` prop and `onCancel` callback
-- All modal hooks return consistent `isOpen` state
-- Query hooks follow `use*` pattern (no `Get` prefix)
-- TypeScript: 0 errors
-- Build: Success
+**Target 5-10 high-impact replacements.**
+
+---
+
+### Priority 4: API Response Handling (If Time Permits)
+
+**Document patterns in `/src/core/api/response.ts`:**
+- When to use `extractTableData` vs `getFirstRow` vs `getResultSet`
+- Add JSDoc comments explaining each function's use case
+
+---
+
+## Execution Order
+
+1. i18n migration (highest priority - affects most files)
+2. Table column patterns (high code reduction)
+3. LoadingWrapper adoption (quick wins)
+4. API response documentation (if time permits)
+
+---
+
+## Verification
+
+After each priority:
+- `npx tsc --noEmit`
+
+Final verification:
+- `npm run build`
+
+---
+
+## Important Guidelines
+
+- Use `export *` pattern for clean exports
+- ALL user-facing strings must use i18n.t()
+- Only add translations to en locale
+- Maintain type safety with generics
+- No breaking changes to existing functionality
+
+Please ultrathink before making changes. Work through priorities in order, completing each fully before moving to the next.
+```
+
+---
+
+## Consolidation Progress
+
+| Phase | Tasks | Status |
+|-------|-------|--------|
+| Phases 1-6 | Modal Hook Migrations | Complete |
+| Phase 7 | Styled Components & Utilities | Complete |
+| Phase 8 | Filter UI & Column Utilities | Complete |
+| Phase 9 | Naming Consistency | Complete |
+| Phase 10 P1 | Form Patterns Consolidation | Complete |
+| Phase 10 P2 | Error Handling Standardization | Complete |
+| Phase 10 P3 | Loading State Patterns | Complete |
+| Phase 10 i18n | Queue & Permissions | Complete |
+| Phase 11 P1 | Table Column Patterns | Pending |
+| Phase 11 P2 | API Response Handling | Pending |
+| Phase 11 P3 | Continue i18n Migration | Pending |
+| Phase 11 P4 | Test Coverage | Pending |
+| Phase 11 P5 | LoadingWrapper Adoption | Pending |
+
+**Total Estimated Lines Reduced: 850+**
+
+---
+
+## Notes for Next Session
+
+1. **i18n migration** is highest priority - many mutations still have hardcoded strings
+2. **Table column patterns** can reduce significant duplication
+3. **LoadingWrapper** adoption should be done opportunistically
+4. Consider creating a **coding standards document** to formalize all conventions
+5. **Test coverage** should be improved for all new components/hooks

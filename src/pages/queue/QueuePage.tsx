@@ -822,8 +822,8 @@ const QueuePage: React.FC = () => {
 
       <QueueItemTraceModal
         taskId={queueTrace.state.taskId}
-        visible={queueTrace.state.visible}
-        onClose={queueTrace.close}
+        open={queueTrace.state.open}
+        onCancel={queueTrace.close}
       />
     </PageWrapper>
   )

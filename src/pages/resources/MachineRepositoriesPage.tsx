@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { usePanelWidth } from '@/hooks/usePanelWidth'
 import { useMachines } from '@/api/queries/machines'
 import { useRepositories } from '@/api/queries/repositories'
-import { MachineRepositoryList } from '@/components/resources/MachineRepositoryList'
+import { MachineRepositoryTable } from '@/components/resources/MachineRepositoryTable'
 import { Machine, Repository } from '@/types'
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
@@ -85,7 +85,7 @@ const MachineRepositoriesPage: React.FC = () => {
   const [backdropVisible, setBackdropVisible] = useState(false)
   const [shouldRenderBackdrop, setShouldRenderBackdrop] = useState(false)
 
-  // Refresh key for forcing MachineRepositoryList updates
+  // Refresh key for forcing MachineRepositoryTable updates
   const [refreshKey, setRefreshKey] = useState(0)
 
   // Queue trace modal state
@@ -114,7 +114,7 @@ const MachineRepositoriesPage: React.FC = () => {
   // Repository creation hook (handles credentials + queue item)
   const { createRepository } = useRepositoryCreation(machines)
 
-  // Fetch repositories (needed for MachineRepositoryList)
+  // Fetch repositories (needed for MachineRepositoryTable)
   const { data: repositories = [], refetch: refetchRepositories } = useRepositories(
     machine?.teamName ? [machine.teamName] : undefined
   )
@@ -360,7 +360,7 @@ const MachineRepositoriesPage: React.FC = () => {
         <SplitLayout>
           <ListPanel $showDetail={Boolean(selectedResource)} $detailWidth={actualPanelWidth}>
             {machine && (
-              <MachineRepositoryList
+              <MachineRepositoryTable
                 machine={machine}
                 key={`${machine.machineName}-${refreshKey}`}
                 refreshKey={refreshKey}
@@ -401,8 +401,8 @@ const MachineRepositoriesPage: React.FC = () => {
 
       <QueueItemTraceModal
         taskId={queueTrace.state.taskId}
-        visible={queueTrace.state.visible}
-        onClose={() => {
+        open={queueTrace.state.open}
+        onCancel={() => {
           queueTrace.close()
           handleRefresh()
         }}

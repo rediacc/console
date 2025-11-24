@@ -56,8 +56,8 @@ const getTimelineTimestamp = (traceLogs: any[], action: string, fallbackAction?:
 
 interface QueueItemTraceModalProps {
   taskId: string | null
-  visible: boolean
-  onClose: () => void
+  open: boolean
+  onCancel: () => void
   onTaskStatusChange?: (status: string, taskId: string) => void
 }
 
@@ -85,7 +85,7 @@ const ConsoleOutput: React.FC<ConsoleOutputProps> = ({ content, theme, consoleOu
   )
 }
 
-const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visible, onClose, onTaskStatusChange }) => {
+const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, open, onCancel, onTaskStatusChange }) => {
   const { t } = useTranslation(['queue', 'common'])
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const styles = useComponentStyles()
@@ -99,7 +99,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
   const [progressMessage, setProgressMessage] = useState<string | null>(null) // Current progress message text
   const [isSimpleConsoleExpanded, setIsSimpleConsoleExpanded] = useState(false) // Console collapse state for simple mode
   const [isDetailedConsoleExpanded, setIsDetailedConsoleExpanded] = useState(false) // Console collapse state for detailed mode
-  const { data: traceData, isLoading: isTraceLoading, refetch: refetchTrace } = useQueueItemTrace(taskId, visible)
+  const { data: traceData, isLoading: isTraceLoading, refetch: refetchTrace } = useQueueItemTrace(taskId, open)
   const { mutate: retryFailedItem, isPending: isRetrying } = useRetryFailedQueueItem()
   const { mutate: cancelQueueItem, isPending: isCancelling } = useCancelQueueItem()
   const { theme } = useTheme()
@@ -107,11 +107,11 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
 
   // Sync last fetch time when trace data or visibility changes
   useEffect(() => {
-    if (traceData && visible) {
+    if (traceData && open) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLastTraceFetchTime(dayjs())
     }
-  }, [traceData, visible])
+  }, [traceData, open])
 
   // Auto-scroll console output to bottom when output updates
   useEffect(() => {
@@ -220,7 +220,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
 
   // Reset states when modal opens with new taskId
   useEffect(() => {
-    if (visible && taskId) {
+    if (open && taskId) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLastTraceFetchTime(null)
       // Check if this task is already being monitored
@@ -237,7 +237,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
       setIsSimpleConsoleExpanded(false)
       setIsDetailedConsoleExpanded(false)
     }
-  }, [taskId, visible, uiMode])
+  }, [taskId, open, uiMode])
   
   // Monitor status changes and notify parent component
   useEffect(() => {
@@ -281,17 +281,17 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
       const status = normalizeProperty(traceData.queueDetails, 'status', 'Status')
       const retryCount = normalizeProperty(traceData.queueDetails, 'retryCount', 'RetryCount') || 0
       const permanentlyFailed = normalizeProperty(traceData.queueDetails, 'permanentlyFailed', 'PermanentlyFailed')
-      
+
       const lastFailureReason = normalizeProperty(traceData.queueDetails, 'lastFailureReason', 'LastFailureReason')
-      
+
       // Check if task is not in a terminal state
-      if (status !== 'COMPLETED' && status !== 'CANCELLED' && 
+      if (status !== 'COMPLETED' && status !== 'CANCELLED' &&
           !(status === 'FAILED' && (permanentlyFailed || retryCount >= 2)) &&
           !(status === 'PENDING' && retryCount >= 2 && lastFailureReason)) {
         showMessage('info', `Task ${taskId} will continue to be monitored in the background`)
       }
     }
-    onClose()
+    onCancel()
   }
 
   // Helper function to get simplified status
@@ -452,7 +452,7 @@ const QueueItemTraceModal: React.FC<QueueItemTraceModalProps> = ({ taskId, visib
           </ModalTitleRight>
         </ModalTitleContainer>
       }
-      open={visible}
+      open={open}
       onCancel={handleClose}
       destroyOnHidden
       footer={[
