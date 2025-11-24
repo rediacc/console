@@ -5,9 +5,9 @@ import { useTranslation } from 'react-i18next'
 import { PlusOutlined, WifiOutlined, ReloadOutlined } from '@/utils/optimizedIcons'
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
-import ConnectivityTestModal from '@/components/common/ConnectivityTestModal'
+import ConnectivityTestModal from '@/pages/machines/components/ConnectivityTestModal'
 import { showMessage } from '@/utils/messages'
-import { SplitResourceView } from '@/components/resources/SplitResourceView'
+import { SplitResourceView } from '@/pages/machines/components/SplitResourceView'
 import {
   useCreateMachine,
   useUpdateMachineName,

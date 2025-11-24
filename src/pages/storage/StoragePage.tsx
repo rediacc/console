@@ -11,9 +11,10 @@ import {
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
-import RcloneImportWizard from '@/components/resources/RcloneImportWizard'
+import RcloneImportWizard from '@/pages/storage/components/RcloneImportWizard'
 import TeamSelector from '@/components/common/TeamSelector'
 import { ActionButtonGroup, ActionButtonConfig } from '@/components/common/ActionButtonGroup'
+import { createActionColumn } from '@/components/common/columns'
 import { FunctionOutlined, EditOutlined, DeleteOutlined, HistoryOutlined } from '@/utils/optimizedIcons'
 import {
   useStorage,
@@ -314,11 +315,9 @@ const StoragePage: React.FC = () => {
             },
           ]
         : []),
-      {
-        title: t('common:table.actions'),
-        key: 'actions',
+      createActionColumn<Storage>({
         width: 200,
-        render: (_: unknown, record: Storage) => {
+        renderActions: (record) => {
           const buttons: ActionButtonConfig<Storage>[] = [
             {
               type: 'edit',
@@ -369,7 +368,7 @@ const StoragePage: React.FC = () => {
             />
           )
         },
-      },
+      }),
     ],
     [auditTrace, handleDeleteStorage, openUnifiedModal, setCurrentResource, t, theme.colors.primary, theme.colors.secondary]
   )

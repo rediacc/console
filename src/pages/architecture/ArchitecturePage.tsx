@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Spin, Alert, Space, Typography, Radio, Tooltip, Statistic, Row, Col, Select } from 'antd'
+import { Alert, Space, Typography, Radio, Tooltip, Statistic, Row, Col, Select } from 'antd'
 import { 
   FullscreenOutlined, 
   FullscreenExitOutlined, 
@@ -19,6 +19,7 @@ import { useCompanyArchitecture } from '@/api/queries/architecture'
 import { useTheme } from '@/context/ThemeContext'
 import * as d3 from 'd3'
 import { SectionCard, IconButton, CompactIconButton } from '@/styles/primitives'
+import LoadingWrapper from '@/components/common/LoadingWrapper'
 import {
   PageWrapper,
   ContentStack,
@@ -649,7 +650,9 @@ const ArchitecturePage: React.FC = () => {
   if (isLoading) {
     return (
       <CenteredState>
-        <Spin size="large" />
+        <LoadingWrapper loading centered minHeight={160}>
+          <div />
+        </LoadingWrapper>
         <CenteredMessage>{t('messages.loading', { ns: 'common' })}</CenteredMessage>
       </CenteredState>
     )
@@ -846,7 +849,9 @@ const ArchitecturePage: React.FC = () => {
           <VisualizationContainer ref={containerRef} data-testid="architecture-visualization-container">
             {isVisualizationLoading && (
               <LoadingOverlay>
-                <Spin size="large" />
+                <LoadingWrapper loading centered minHeight={160}>
+                  <div />
+                </LoadingWrapper>
                 <LoadingMessage>{t('messages.loading', { ns: 'common' })}</LoadingMessage>
               </LoadingOverlay>
             )}

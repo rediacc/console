@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Col, Spin, Empty, message } from 'antd'
+import { Col, Empty, message } from 'antd'
 import {
   DatabaseOutlined,
   GlobalOutlined,
@@ -33,6 +33,7 @@ import {
   LoadingText,
   ErrorState,
 } from './styles'
+import LoadingWrapper from '@/components/common/LoadingWrapper'
 
 interface Template {
   id?: string
@@ -132,7 +133,9 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   if (loading) {
     return (
       <LoadingState>
-        <Spin />
+        <LoadingWrapper loading centered minHeight={160}>
+          <div />
+        </LoadingWrapper>
         <LoadingText>
           {t('resources:templates.loading')}
         </LoadingText>

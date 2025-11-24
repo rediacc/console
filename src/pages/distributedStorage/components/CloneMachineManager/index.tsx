@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Table, Spin, Modal, message } from 'antd'
+import { Table, Modal, message } from 'antd'
 import { useTranslation } from 'react-i18next'
 import {
   useCloneMachines,
@@ -14,14 +14,13 @@ import {
   useUpdateCloneMachineAssignments,
   useUpdateCloneMachineRemovals,
 } from '@/api/queries/distributedStorageMutations'
-import { MachineExclusivityWarning } from '@/components/distributedStorage/MachineExclusivityWarning'
+import { MachineExclusivityWarning } from '@/pages/distributedStorage/components/MachineExclusivityWarning'
 import { PlusOutlined } from '@/utils/optimizedIcons'
 import { buildCloneMachineColumns } from './columns'
 import { useDialogState } from '@/hooks/useDialogState'
 import {
   ManagerCard,
   TableContainer,
-  LoadingState,
   EmptyStateWrapper,
   EmptyActionButton,
   WarningWrapper,
@@ -29,6 +28,7 @@ import {
 import { HeaderSummary } from './components/HeaderSummary'
 import { MachineControls } from './components/MachineControls'
 import { AssignMachinesModal } from './components/AssignMachinesModal'
+import LoadingWrapper from '@/components/common/LoadingWrapper'
 
 interface CloneMachineManagerProps {
   clone: DistributedStorageRbdClone
@@ -228,45 +228,42 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
         <MachineExclusivityWarning type="clone" />
       </WarningWrapper>
 
-      {loadingMachines ? (
-        <LoadingState data-testid="clone-manager-loading">
-          <Spin size="large" />
-        </LoadingState>
-      ) : assignedMachines.length === 0 ? (
-        <EmptyStateWrapper
-          description={t('distributedStorage:clones.noMachinesAssigned')}
-          data-testid="clone-manager-empty-state"
-        >
-          <EmptyActionButton
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleAddMachines}
-            data-testid="clone-manager-button-add-empty"
+      <LoadingWrapper loading={loadingMachines} centered minHeight={240}>
+        {assignedMachines.length === 0 ? (
+          <EmptyStateWrapper
+            description={t('distributedStorage:clones.noMachinesAssigned')}
+            data-testid="clone-manager-empty-state"
           >
-            {t('distributedStorage:clones.assignMachines')}
-          </EmptyActionButton>
-        </EmptyStateWrapper>
-      ) : (
-        <TableContainer>
-          <Table<CloneMachine>
-            rowSelection={rowSelection}
-            columns={columns}
-            dataSource={filteredMachines}
-            rowKey="machineName"
-            loading={loadingMachines}
-            data-testid="clone-manager-table"
-            pagination={{
-              showSizeChanger: true,
-              showTotal: (total, range) =>
-                t('common:table.showingRecords', {
-                  start: range[0],
-                  end: range[1],
-                  total,
-                }),
-            }}
-          />
-        </TableContainer>
-      )}
+            <EmptyActionButton
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleAddMachines}
+              data-testid="clone-manager-button-add-empty"
+            >
+              {t('distributedStorage:clones.assignMachines')}
+            </EmptyActionButton>
+          </EmptyStateWrapper>
+        ) : (
+          <TableContainer>
+            <Table<CloneMachine>
+              rowSelection={rowSelection}
+              columns={columns}
+              dataSource={filteredMachines}
+              rowKey="machineName"
+              data-testid="clone-manager-table"
+              pagination={{
+                showSizeChanger: true,
+                showTotal: (total, range) =>
+                  t('common:table.showingRecords', {
+                    start: range[0],
+                    end: range[1],
+                    total,
+                  }),
+              }}
+            />
+          </TableContainer>
+        )}
+      </LoadingWrapper>
 
       <AssignMachinesModal
         open={addModal.isOpen}

@@ -11,7 +11,7 @@ import ResourceFormWithVault, {
   type FormFieldConfig,
   type ImportExportHandlers,
   type ResourceFormWithVaultRef,
-} from '@/components/forms/ResourceFormWithVault'
+} from '@/components/common/UnifiedResourceModal/components/ResourceFormWithVault'
 import VaultEditorModal from '@/components/common/VaultEditorModal'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
 import TemplateSelector from '@/components/common/TemplateSelector'

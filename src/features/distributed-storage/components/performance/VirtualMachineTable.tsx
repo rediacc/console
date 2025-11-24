@@ -1,11 +1,12 @@
 import React, { useCallback, useMemo, useRef, useEffect } from 'react'
 import { List as ReactWindowList } from 'react-window'
 import * as InfiniteLoaderModule from 'react-window-infinite-loader'
-import { Checkbox, Space, Spin } from 'antd'
+import { Checkbox, Space } from 'antd'
 import { Machine } from '@/types'
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell'
 import { useMachineSelection } from '@/store/distributedStorage/hooks'
 import { useTableStyles } from '@/hooks/useComponentStyles'
+import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator'
 import styles from './VirtualMachineTable.module.css'
 
 // Cast to any to support both react-window v1.x and v2.x APIs
@@ -158,7 +159,11 @@ const RowComponent = useCallback(({
           className={styles.loadingRow}
           data-testid="virtual-machine-row-loading"
         >
-          <Spin size="small" />
+          <InlineLoadingIndicator 
+            width="90%" 
+            height={24} 
+            data-testid="virtual-machine-row-loading-indicator" 
+          />
         </div>
       )
     }

@@ -6,6 +6,7 @@ import { EllipsisOutlined, CloudUploadOutlined } from '@ant-design/icons'
 import { TFunction } from 'i18next'
 import type { DistributedStorageRbdClone } from '@/api/queries/distributedStorage'
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup'
+import { createActionColumn } from '@/components/common/columns'
 import { CloneIcon, CloneName, NameCell, VaultTag } from './styles'
 
 interface ColumnBuilderParams {
@@ -46,11 +47,9 @@ export const buildCloneColumns = ({
     align: 'center' as const,
     render: (_: unknown, record: DistributedStorageRbdClone) => renderMachineCount(record),
   },
-  {
-    title: t('common.actions'),
-    key: 'actions',
+  createActionColumn<DistributedStorageRbdClone>({
     width: 180,
-    render: (_: unknown, record: DistributedStorageRbdClone) => (
+    renderActions: (record) => (
       <ActionButtonGroup
         buttons={[
           {
@@ -76,5 +75,5 @@ export const buildCloneColumns = ({
         t={t}
       />
     ),
-  },
+  }),
 ]

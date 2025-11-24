@@ -28,6 +28,9 @@
     "export": "Export",
     "exportSuccess": "Export successful"
   },
+  "actionsColumn": "Actions",
+  "statusColumn": "Status",
+  "dateColumn": "Date",
   "viewDetails": "View Details",
   "close": "Close",
   "copiedToClipboard": "Copied to clipboard",

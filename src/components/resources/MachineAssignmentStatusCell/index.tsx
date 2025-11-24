@@ -1,5 +1,5 @@
 import React from 'react'
-import { Spin } from 'antd'
+import InlineLoadingIndicator from '@/components/common/InlineLoadingIndicator'
 import { useMachineAssignmentStatus } from '@/api/queries/distributedStorage'
 import MachineAssignmentStatusBadge from '../MachineAssignmentStatusBadge'
 import type { Machine, MachineAssignmentType } from '@/types'
@@ -46,7 +46,11 @@ const MachineAssignmentStatusCell: React.FC<MachineAssignmentStatusCellProps> = 
   if (isLoading) {
     return (
       <StatusCellWrapper $align="center">
-        <Spin size="small" data-testid="machine-status-cell-loading" />
+        <InlineLoadingIndicator 
+          width={140} 
+          height={22} 
+          data-testid="machine-status-cell-loading" 
+        />
       </StatusCellWrapper>
     )
   }
