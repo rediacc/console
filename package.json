@@ -56,13 +56,13 @@
   },
   "devDependencies": {
     "@types/d3": "^7.4.3",
-    "@types/lodash": "^4.17.13",
-    "@types/react": "^19.2.2",
-    "@types/react-dom": "^19.2.2",
+    "@types/lodash": "^4.17.21",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
     "@types/react-window": "^2.0.0",
-    "@types/styled-components": "^5.1.35",
-    "@typescript-eslint/eslint-plugin": "^8.46.2",
-    "@typescript-eslint/parser": "^8.46.0",
+    "@types/styled-components": "^5.1.36",
+    "@typescript-eslint/eslint-plugin": "^8.47.0",
+    "@typescript-eslint/parser": "^8.47.0",
     "@vitejs/plugin-react": "^5.1.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react": "^7.37.2",
@@ -70,7 +70,7 @@
     "globals": "^16.5.0",
     "terser": "^5.44.0",
     "typescript-eslint": "^8.46.3",
-    "vite": "^7.2.2"
+    "vite": "^7.2.4"
   },
   "overrides": {
     "glob": "^10.3.10",
