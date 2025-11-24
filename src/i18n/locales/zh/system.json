@@ -4,6 +4,7 @@
     "expertOnlyTitle": "需要专家模式"
   },
   "actions": {
+    "activate": "激活",
     "addMember": "添加会员",
     "addPermission": "添加权限",
     "assignUser": "分配用户",
@@ -284,5 +285,15 @@
     "totalCount": "总计：{{count}} 场次",
     "totalSessions": "总会话数",
     "uniqueUsers": "独特用户"
+  },
+  "users": {
+    "activate": {
+      "confirmDescription": "您确定要激活“{{email}}”吗？",
+      "confirmTitle": "激活用户"
+    },
+    "deactivate": {
+      "confirmDescription": "您确定要停用“{{email}}”吗？",
+      "confirmTitle": "停用用户"
+    }
   }
 }

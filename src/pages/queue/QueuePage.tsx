@@ -1,12 +1,30 @@
-import React, { useState, useMemo } from 'react'
+import React, { useMemo, useCallback } from 'react'
 import { Typography, Space, Modal, Tag, Tabs, Tooltip, Dropdown } from 'antd'
+import FilterTagDisplay, { FilterTagConfig } from '@/components/common/FilterTagDisplay'
+import { renderTimestamp, renderBoolean } from '@/components/common/columns'
 import { ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, WarningOutlined, GlobalOutlined, ClockCircleOutlined, ReloadOutlined, ExportOutlined, HistoryOutlined, SearchOutlined } from '@/utils/optimizedIcons'
 import { useQueueItems, useCancelQueueItem, QueueFilters, type QueueStatistics } from '@/api/queries/queue'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import ResourceListView from '@/components/common/ResourceListView'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import { showMessage } from '@/utils/messages'
-import dayjs from 'dayjs'
+import { useFilters, useMultiPagination, useQueueTraceModal } from '@/hooks'
+import dayjs, { Dayjs } from 'dayjs'
+import { confirmAction } from '@/utils/confirmations'
+
+// Page-level filter state type
+type QueuePageFilters = {
+  teamName: string
+  machineName: string
+  regionName: string
+  bridgeName: string
+  statusFilter: string[]
+  dateRange: [Dayjs | null, Dayjs | null] | null
+  taskIdFilter: string
+  onlyStale: boolean
+  includeCompleted: boolean
+  includeCancelled: boolean
+}
 import { useTranslation } from 'react-i18next'
 import {
   formatTimestampAsIs,
@@ -16,6 +34,7 @@ import {
   filterCancelledItems,
   filterFailedItems
 } from '@/core'
+import { IconButton } from '@/styles/primitives'
 import {
   PageWrapper,
   FiltersCard,
@@ -23,15 +42,12 @@ import {
   FilterSelect,
   FilterRangePicker,
   FilterInput,
-  FilterTagBar,
-  ClearFiltersButton,
   StatsBar,
   StatItem,
   StatLabel,
   StatValue,
   StatDivider,
   StatIcon,
-  IconButton,
   TabLabel,
   TabCount,
   FilterCheckbox,
@@ -40,45 +56,49 @@ import {
 const { Text } = Typography
 const QueuePage: React.FC = () => {
   const { t } = useTranslation(['queue', 'common'])
-  const [viewTeam, setViewTeam] = useState<string>('') // Team for viewing queue items
-  const [activeTab, setActiveTab] = useState<string>('active') // Track which tab is active
-  const [filters, setFilters] = useState<QueueFilters>({
+  const [modal, contextHolder] = Modal.useModal()
+
+  // Filter state management with useFilters hook
+  const { filters, setFilter, clearAllFilters, hasActiveFilters: checkHasActiveFilters } = useFilters<QueuePageFilters>({
     teamName: '',
+    machineName: '',
+    regionName: '',
+    bridgeName: '',
+    statusFilter: [],
+    dateRange: null,
+    taskIdFilter: '',
+    onlyStale: false,
     includeCompleted: true,
-    includeCancelled: true,  // Always include for proper tab filtering
-    staleThresholdMinutes: 10,
-    maxRecords: 1000
+    includeCancelled: true,
   })
-  const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null] | null>(null)
-  const [statusFilter, setStatusFilter] = useState<string[]>([])
-  const [taskIdFilter, setTaskIdFilter] = useState<string>('')
-  const [traceModalVisible, setTraceModalVisible] = useState(false)
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
 
-  // Pagination state for each tab
-  const [activePageSize, setActivePageSize] = useState(20)
-  const [activePage, setActivePage] = useState(1)
-  const [completedPageSize, setCompletedPageSize] = useState(20)
-  const [completedPage, setCompletedPage] = useState(1)
-  const [cancelledPageSize, setCancelledPageSize] = useState(20)
-  const [cancelledPage, setCancelledPage] = useState(1)
-  const [failedPageSize, setFailedPageSize] = useState(20)
-  const [failedPage, setFailedPage] = useState(1)
+  // Active tab state
+  const [activeTab, setActiveTab] = React.useState<string>('active')
 
-  // Combine team selection with filters
-  // Dynamically adjust filters based on active tab
-  const queryFilters = useMemo(() => ({
-    ...filters,
-    teamName: viewTeam,
+  // Pagination state for each tab using multi-pagination hook
+  const pagination = useMultiPagination(['active', 'completed', 'cancelled', 'failed'])
+
+  // Queue trace modal
+  const queueTrace = useQueueTraceModal()
+
+  // Combine filter state into API query format
+  const queryFilters = useMemo((): QueueFilters => ({
+    teamName: filters.teamName,
+    machineName: filters.machineName,
+    regionName: filters.regionName,
+    bridgeName: filters.bridgeName,
+    onlyStale: filters.onlyStale,
+    staleThresholdMinutes: 10,
+    maxRecords: 1000,
     // Auto-enable includeCancelled when on cancelled tab
     includeCancelled: activeTab === 'cancelled' ? true : filters.includeCancelled,
     // Auto-enable includeCompleted when on completed tab
     includeCompleted: activeTab === 'completed' ? true : filters.includeCompleted,
-    dateFrom: dateRange?.[0]?.startOf('day').format('YYYY-MM-DD HH:mm:ss'),
-    dateTo: dateRange?.[1]?.endOf('day').format('YYYY-MM-DD HH:mm:ss'),
-    status: statusFilter.join(','),
-    ...(taskIdFilter.trim() && isValidGuid(taskIdFilter.trim()) ? { taskId: taskIdFilter.trim() } : {})
-  }), [filters, viewTeam, dateRange, statusFilter, taskIdFilter, activeTab])
+    dateFrom: filters.dateRange?.[0]?.startOf('day').format('YYYY-MM-DD HH:mm:ss'),
+    dateTo: filters.dateRange?.[1]?.endOf('day').format('YYYY-MM-DD HH:mm:ss'),
+    status: filters.statusFilter.join(','),
+    ...(filters.taskIdFilter.trim() && isValidGuid(filters.taskIdFilter.trim()) ? { taskId: filters.taskIdFilter.trim() } : {})
+  }), [filters, activeTab])
   
   const { data: queueData, isLoading, refetch, isRefetching } = useQueueItems(queryFilters)
   const { data: dropdownData } = useDropdownData()
@@ -98,15 +118,93 @@ const QueuePage: React.FC = () => {
   const cancelledItems = filterCancelledItems(items)
   const failedItems = filterFailedItems(items)
 
-  const hasActiveFilters =
-    Boolean(viewTeam) ||
-    Boolean(filters.machineName) ||
-    Boolean(filters.regionName) ||
-    Boolean(filters.bridgeName) ||
-    Boolean(filters.onlyStale) ||
-    statusFilter.length > 0 ||
-    Boolean(dateRange) ||
-    (taskIdFilter && isValidGuid(taskIdFilter))
+  // Use hook's hasActiveFilters but ignore the includeCompleted/includeCancelled flags
+  const hasActiveFilters = checkHasActiveFilters(['includeCompleted', 'includeCancelled']) ||
+    (filters.taskIdFilter && isValidGuid(filters.taskIdFilter))
+
+  // Build filter tag configuration for FilterTagDisplay
+  const filterTagConfig = useMemo((): FilterTagConfig[] => [
+    {
+      key: 'teamName',
+      value: filters.teamName,
+      label: dropdownData?.teams?.find(team => team.value === filters.teamName)?.label || filters.teamName,
+      color: 'blue',
+    },
+    {
+      key: 'machineName',
+      value: filters.machineName,
+      label: filters.machineName,
+      color: 'blue',
+    },
+    {
+      key: 'regionName',
+      value: filters.regionName,
+      label: filters.regionName,
+      color: 'blue',
+    },
+    {
+      key: 'bridgeName',
+      value: filters.bridgeName,
+      label: filters.bridgeName,
+      color: 'blue',
+    },
+    {
+      key: 'dateRange',
+      value: filters.dateRange,
+      label: filters.dateRange ? `${filters.dateRange[0]?.format('MM/DD')}\u2192${filters.dateRange[1]?.format('MM/DD')}` : '',
+      color: 'blue',
+    },
+    {
+      key: 'statusFilter',
+      value: filters.statusFilter,
+      label: '', // Array items display themselves
+      color: 'blue',
+    },
+    {
+      key: 'taskIdFilter',
+      value: filters.taskIdFilter && isValidGuid(filters.taskIdFilter) ? filters.taskIdFilter : '',
+      label: filters.taskIdFilter ? `${filters.taskIdFilter.substring(0, 8)}...` : '',
+      color: 'blue',
+    },
+    {
+      key: 'onlyStale',
+      value: filters.onlyStale,
+      label: 'Stale',
+      color: 'orange',
+    },
+  ], [filters, dropdownData?.teams])
+
+  // Handle clearing individual filter tags
+  const handleClearFilter = useCallback((key: string, arrayValue?: string) => {
+    switch (key) {
+      case 'teamName':
+        setFilter('teamName', '')
+        break
+      case 'machineName':
+        setFilter('machineName', '')
+        break
+      case 'regionName':
+        setFilter('regionName', '')
+        break
+      case 'bridgeName':
+        setFilter('bridgeName', '')
+        break
+      case 'dateRange':
+        setFilter('dateRange', null)
+        break
+      case 'statusFilter':
+        if (arrayValue) {
+          setFilter('statusFilter', filters.statusFilter.filter(s => s !== arrayValue))
+        }
+        break
+      case 'taskIdFilter':
+        setFilter('taskIdFilter', '')
+        break
+      case 'onlyStale':
+        setFilter('onlyStale', false)
+        break
+    }
+  }, [setFilter, filters.statusFilter])
 
   const isFetching = isLoading || isRefetching
 
@@ -160,26 +258,22 @@ const QueuePage: React.FC = () => {
   
   // Handle cancel queue item
   const handleCancelQueueItem = async (taskId: string) => {
-    Modal.confirm({
-      title: 'Cancel Queue Item',
-      content: 'Are you sure you want to cancel this queue item? This action cannot be undone.',
-      okText: 'Yes, Cancel',
+    confirmAction({
+      modal,
+      title: t('queue:cancelConfirm.title') as string,
+      content: t('queue:cancelConfirm.content') as string,
+      okText: t('queue:cancelConfirm.okText') as string,
       okType: 'danger',
-      cancelText: 'No',
-      onOk: async () => {
-        try {
-          await cancelQueueItemMutation.mutateAsync(taskId)
-        } catch (error) {
-          // Error handled by mutation
-        }
-      }
+      cancelText: t('common:actions.cancel') as string,
+      onConfirm: async () => {
+        await cancelQueueItemMutation.mutateAsync(taskId)
+      },
     })
   }
 
   // Handle trace view
   const handleViewTrace = (taskId: string) => {
-    setSelectedTaskId(taskId)
-    setTraceModalVisible(true)
+    queueTrace.open(taskId)
   }
 
 
@@ -325,9 +419,7 @@ const QueuePage: React.FC = () => {
       dataIndex: 'hasResponse',
       key: 'hasResponse',
       width: 80,
-      render: (hasResponse: boolean) => hasResponse ? 
-        <Tag color="success">Yes</Tag> : 
-        <Tag>No</Tag>
+      render: (hasResponse: boolean) => renderBoolean(hasResponse),
     },
     {
       title: 'Retries',
@@ -399,7 +491,7 @@ const QueuePage: React.FC = () => {
       dataIndex: 'createdTime',
       key: 'createdTime',
       width: 180,
-      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss'),
+      render: (date: string) => renderTimestamp(date),
       sorter: (a: any, b: any) => new Date(a.createdTime).getTime() - new Date(b.createdTime).getTime(),
     },
     {
@@ -439,6 +531,7 @@ const QueuePage: React.FC = () => {
 
   return (
     <PageWrapper data-testid="queue-page-container">
+      {contextHolder}
       <FiltersCard size="small" data-testid="queue-filters-card">
         <FiltersGrid direction="vertical">
           <Space size={8} wrap>
@@ -446,11 +539,11 @@ const QueuePage: React.FC = () => {
               size="small"
               $minWidth={150}
               placeholder="Team"
-              value={viewTeam || undefined}
+              value={filters.teamName || undefined}
               onChange={(value) => {
                 const nextValue = typeof value === 'string' ? value : ''
-                setViewTeam(nextValue)
-                setFilters({ ...filters, machineName: '' })
+                setFilter('teamName', nextValue)
+                setFilter('machineName', '')
               }}
               allowClear
               options={dropdownData?.teams || []}
@@ -461,9 +554,7 @@ const QueuePage: React.FC = () => {
               $minWidth={150}
               placeholder="Machine"
               value={filters.machineName || undefined}
-              onChange={(value) =>
-                setFilters({ ...filters, machineName: (value as string) || '' })
-              }
+              onChange={(value) => setFilter('machineName', (value as string) || '')}
               allowClear
               options={(dropdownData?.machines || []).map((machine: string) => ({ label: machine, value: machine }))}
               data-testid="queue-filter-machine"
@@ -473,9 +564,7 @@ const QueuePage: React.FC = () => {
               $minWidth={130}
               placeholder="Region"
               value={filters.regionName || undefined}
-              onChange={(value) =>
-                setFilters({ ...filters, regionName: (value as string) || '' })
-              }
+              onChange={(value) => setFilter('regionName', (value as string) || '')}
               allowClear
               options={dropdownData?.regions || []}
               data-testid="queue-filter-region"
@@ -485,17 +574,15 @@ const QueuePage: React.FC = () => {
               $minWidth={130}
               placeholder="Bridge"
               value={filters.bridgeName || undefined}
-              onChange={(value) =>
-                setFilters({ ...filters, bridgeName: (value as string) || '' })
-              }
+              onChange={(value) => setFilter('bridgeName', (value as string) || '')}
               allowClear
               options={dropdownData?.bridges || []}
               data-testid="queue-filter-bridge"
             />
             <FilterRangePicker
               size="small"
-              value={dateRange as any}
-              onChange={(dates) => setDateRange(dates as any)}
+              value={filters.dateRange as any}
+              onChange={(dates) => setFilter('dateRange', dates as [Dayjs | null, Dayjs | null] | null)}
               allowClear
               placeholder={[t('queue:filters.dateFrom'), t('queue:filters.dateTo')]}
               data-testid="queue-filter-date"
@@ -505,8 +592,8 @@ const QueuePage: React.FC = () => {
               mode="multiple"
               $minWidth={160}
               placeholder="Status"
-              value={statusFilter}
-              onChange={(values) => setStatusFilter(values as string[])}
+              value={filters.statusFilter}
+              onChange={(values) => setFilter('statusFilter', values as string[])}
               options={[
                 { label: t('queue:statusPending'), value: 'PENDING' },
                 { label: t('queue:statusActive'), value: 'ACTIVE' },
@@ -521,14 +608,14 @@ const QueuePage: React.FC = () => {
               size="small"
               placeholder="Task ID (GUID)"
               prefix={<SearchOutlined />}
-              value={taskIdFilter}
-              onChange={(e) => setTaskIdFilter(e.target.value)}
+              value={filters.taskIdFilter}
+              onChange={(e) => setFilter('taskIdFilter', e.target.value)}
               allowClear
               data-testid="queue-filter-task"
             />
             <FilterCheckbox
               checked={filters.onlyStale}
-              onChange={(e) => setFilters({ ...filters, onlyStale: e.target.checked })}
+              onChange={(e) => setFilter('onlyStale', e.target.checked)}
               data-testid="queue-checkbox-only-stale"
             >
               {t('queue:filters.onlyStale')}
@@ -536,61 +623,11 @@ const QueuePage: React.FC = () => {
           </Space>
 
           {hasActiveFilters && (
-            <FilterTagBar>
-              {viewTeam && (
-                <Tag closable onClose={() => setViewTeam('')} color="blue">
-                  {dropdownData?.teams?.find(t => t.value === viewTeam)?.label || viewTeam}
-                </Tag>
-              )}
-              {filters.machineName && (
-                <Tag closable onClose={() => setFilters({ ...filters, machineName: '' })} color="blue">
-                  {filters.machineName}
-                </Tag>
-              )}
-              {filters.regionName && (
-                <Tag closable onClose={() => setFilters({ ...filters, regionName: '' })} color="blue">
-                  {filters.regionName}
-                </Tag>
-              )}
-              {filters.bridgeName && (
-                <Tag closable onClose={() => setFilters({ ...filters, bridgeName: '' })} color="blue">
-                  {filters.bridgeName}
-                </Tag>
-              )}
-              {dateRange && (
-                <Tag closable onClose={() => setDateRange(null)} color="blue">
-                  {dateRange[0]?.format('MM/DD')}→{dateRange[1]?.format('MM/DD')}
-                </Tag>
-              )}
-              {statusFilter.map(status => (
-                <Tag key={status} closable onClose={() => setStatusFilter(statusFilter.filter(s => s !== status))} color="blue">
-                  {status}
-                </Tag>
-              ))}
-              {taskIdFilter && isValidGuid(taskIdFilter) && (
-                <Tag closable onClose={() => setTaskIdFilter('')} color="blue">
-                  {taskIdFilter.substring(0, 8)}...
-                </Tag>
-              )}
-              {filters.onlyStale && (
-                <Tag closable onClose={() => setFilters({ ...filters, onlyStale: false })} color="orange">
-                  Stale
-                </Tag>
-              )}
-              <ClearFiltersButton
-                type="link"
-                size="small"
-                onClick={() => {
-                  setViewTeam('')
-                  setDateRange(null)
-                  setStatusFilter([])
-                  setTaskIdFilter('')
-                  setFilters({ ...filters, onlyStale: false, machineName: '', regionName: '', bridgeName: '' })
-                }}
-              >
-                Clear
-              </ClearFiltersButton>
-            </FilterTagBar>
+            <FilterTagDisplay
+              filters={filterTagConfig}
+              onClear={handleClearFilter}
+              onClearAll={clearAllFilters}
+            />
           )}
 
           <StatsBar>
@@ -681,18 +718,12 @@ const QueuePage: React.FC = () => {
                 rowKey="taskId"
                 searchPlaceholder="Search queue items..."
                 pagination={{
-                  current: activePage,
-                  pageSize: activePageSize,
+                  current: pagination.active.page,
+                  pageSize: pagination.active.pageSize,
                   showSizeChanger: true,
                   pageSizeOptions: ['10', '20', '50', '100'],
                   showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
-                  onChange: (page, size) => {
-                    setActivePage(page);
-                    if (size !== activePageSize) {
-                      setActivePageSize(size);
-                      setActivePage(1);
-                    }
-                  },
+                  onChange: pagination.active.onPageChange,
                   position: ['bottomRight'],
                 }}
               />
@@ -717,18 +748,12 @@ const QueuePage: React.FC = () => {
                 rowKey="taskId"
                 searchPlaceholder="Search completed items..."
                 pagination={{
-                  current: completedPage,
-                  pageSize: completedPageSize,
+                  current: pagination.completed.page,
+                  pageSize: pagination.completed.pageSize,
                   showSizeChanger: true,
                   pageSizeOptions: ['10', '20', '50', '100'],
                   showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
-                  onChange: (page, size) => {
-                    setCompletedPage(page);
-                    if (size !== completedPageSize) {
-                      setCompletedPageSize(size);
-                      setCompletedPage(1);
-                    }
-                  },
+                  onChange: pagination.completed.onPageChange,
                   position: ['bottomRight'],
                 }}
               />
@@ -753,18 +778,12 @@ const QueuePage: React.FC = () => {
                 rowKey="taskId"
                 searchPlaceholder="Search cancelled items..."
                 pagination={{
-                  current: cancelledPage,
-                  pageSize: cancelledPageSize,
+                  current: pagination.cancelled.page,
+                  pageSize: pagination.cancelled.pageSize,
                   showSizeChanger: true,
                   pageSizeOptions: ['10', '20', '50', '100'],
                   showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
-                  onChange: (page, size) => {
-                    setCancelledPage(page);
-                    if (size !== cancelledPageSize) {
-                      setCancelledPageSize(size);
-                      setCancelledPage(1);
-                    }
-                  },
+                  onChange: pagination.cancelled.onPageChange,
                   position: ['bottomRight'],
                 }}
               />
@@ -789,18 +808,12 @@ const QueuePage: React.FC = () => {
                 rowKey="taskId"
                 searchPlaceholder="Search failed items..."
                 pagination={{
-                  current: failedPage,
-                  pageSize: failedPageSize,
+                  current: pagination.failed.page,
+                  pageSize: pagination.failed.pageSize,
                   showSizeChanger: true,
                   pageSizeOptions: ['10', '20', '50', '100'],
                   showTotal: (total, range) => `Showing records ${range[0]}-${range[1]} of ${total}`,
-                  onChange: (page, size) => {
-                    setFailedPage(page);
-                    if (size !== failedPageSize) {
-                      setFailedPageSize(size);
-                      setFailedPage(1);
-                    }
-                  },
+                  onChange: pagination.failed.onPageChange,
                   position: ['bottomRight'],
                 }}
               />
@@ -808,12 +821,9 @@ const QueuePage: React.FC = () => {
       </Tabs>
 
       <QueueItemTraceModal
-        taskId={selectedTaskId}
-        visible={traceModalVisible}
-        onClose={() => {
-          setTraceModalVisible(false)
-          setSelectedTaskId(null)
-        }}
+        taskId={queueTrace.state.taskId}
+        visible={queueTrace.state.visible}
+        onClose={queueTrace.close}
       />
     </PageWrapper>
   )

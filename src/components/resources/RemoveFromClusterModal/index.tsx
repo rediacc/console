@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { CloudServerOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import type { Machine } from '@/types'
-import { useUpdateMachineClusterAssignment } from '@/api/queries/distributedStorage'
+import { useUpdateMachineClusterAssignment } from '@/api/queries/distributedStorageMutations'
 import { showMessage } from '@/utils/messages'
 import type { ColumnsType } from 'antd/es/table'
 import {

@@ -4,6 +4,7 @@
     "expertOnlyTitle": "Требуется экспертный режим"
   },
   "actions": {
+    "activate": "Активировать",
     "addMember": "Добавить участника",
     "addPermission": "Добавить разрешение",
     "assignUser": "Назначить пользователя",
@@ -284,5 +285,15 @@
     "totalCount": "Всего: сеансов: {{count}}",
     "totalSessions": "Всего сеансов",
     "uniqueUsers": "Уникальные пользователи"
+  },
+  "users": {
+    "activate": {
+      "confirmDescription": "Вы уверены, что хотите активировать «{{email}}»?",
+      "confirmTitle": "Активировать пользователя"
+    },
+    "deactivate": {
+      "confirmDescription": "Вы уверены, что хотите деактивировать «{{email}}»?",
+      "confirmTitle": "Деактивировать пользователя"
+    }
   }
 }

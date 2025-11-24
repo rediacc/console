@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
-import { 
-  Space, 
-  Select, 
-  Input, 
-  Button, 
+import {
+  Space,
+  Select,
+  Input,
+  Button,
   Card,
   Row,
   Col
@@ -27,6 +27,7 @@ import { AssignToClusterModal } from '@/components/resources/AssignToClusterModa
 import { RemoveFromClusterModal } from '@/components/resources/RemoveFromClusterModal'
 import { ViewAssignmentStatusModal } from '@/components/resources/ViewAssignmentStatusModal'
 import { showMessage } from '@/utils/messages'
+import { useDialogState } from '@/hooks/useDialogState'
 
 const { Search } = Input
 
@@ -52,11 +53,8 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
   const [refreshKeys, setRefreshKeys] = useState<Record<string, number>>({})
   
   // Modal states
-  const [assignClusterModal, setAssignClusterModal] = useState<{
-    open: boolean
-    machine: Machine | null
-  }>({ open: false, machine: null })
-  
+  const assignClusterModal = useDialogState<Machine>()
+
   const [bulkAssignClusterModal, setBulkAssignClusterModal] = useState(false)
   const [removeFromClusterModal, setRemoveFromClusterModal] = useState(false)
   const [viewAssignmentStatusModal, setViewAssignmentStatusModal] = useState(false)
@@ -266,24 +264,24 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
       
       {/* Modals */}
       <AssignToClusterModal
-        open={assignClusterModal.open || bulkAssignClusterModal}
+        open={assignClusterModal.isOpen || bulkAssignClusterModal}
         onCancel={() => {
-          setAssignClusterModal({ open: false, machine: null })
+          assignClusterModal.close()
           setBulkAssignClusterModal(false)
         }}
-        machine={assignClusterModal.machine}
-        machines={bulkAssignClusterModal && allMachines && Array.isArray(allMachines) ? 
-          allMachines.filter(m => selectedMachines.includes(m.machineName)) : 
+        machine={assignClusterModal.state.data}
+        machines={bulkAssignClusterModal && allMachines && Array.isArray(allMachines) ?
+          allMachines.filter(m => selectedMachines.includes(m.machineName)) :
           undefined
         }
         onSuccess={() => {
-          setAssignClusterModal({ open: false, machine: null })
+          assignClusterModal.close()
           setBulkAssignClusterModal(false)
           setSelectedMachines([])
           refetch()
         }}
       />
-      
+
       <RemoveFromClusterModal
         open={removeFromClusterModal}
         onCancel={() => setRemoveFromClusterModal(false)}
@@ -295,7 +293,7 @@ export const DistributedStorageMachinesTab: React.FC<DistributedStorageMachinesT
           refetch()
         }}
       />
-      
+
       <ViewAssignmentStatusModal
         open={viewAssignmentStatusModal}
         onCancel={() => setViewAssignmentStatusModal(false)}

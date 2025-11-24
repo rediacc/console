@@ -13,16 +13,20 @@ import {
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState'
+import { useFormModal } from '@/hooks/useFormModal'
 import {
   useDistributedStorageRbdClones,
-  useDeleteDistributedStorageRbdClone,
-  useCreateDistributedStorageRbdClone,
-  useUpdateDistributedStoragePoolVault,
   type DistributedStorageRbdClone,
   type DistributedStorageRbdSnapshot,
   type DistributedStorageRbdImage,
   type DistributedStoragePool,
 } from '@/api/queries/distributedStorage'
+import {
+  useDeleteDistributedStorageRbdClone,
+  useCreateDistributedStorageRbdClone,
+  useUpdateDistributedStoragePoolVault,
+} from '@/api/queries/distributedStorageMutations'
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import { AssignMachinesToCloneModal } from '@/components/resources/AssignMachinesToCloneModal'
@@ -47,39 +51,17 @@ interface CloneListProps {
   teamFilter: string | string[]
 }
 
-type CloneModalMode = 'create' | 'edit' | 'vault'
-
 type CloneModalData = DistributedStorageRbdClone & {
   vaultContent?: string
   cloneVault?: string
   vaultVersion?: number
 }
 
-interface CloneModalState {
-  open: boolean
-  mode: CloneModalMode
-  data?: CloneModalData
-}
-
-interface MachineModalState {
-  open: boolean
-  clone: DistributedStorageRbdClone | null
-}
-
-interface CloneFormValues {
-  cloneName: string
-  cloneVault: string
-}
-
 const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
   const { t } = useTranslation('distributedStorage')
-  const [modalState, setModalState] = useState<CloneModalState>({ open: false, mode: 'create' })
-  const [queueModalVisible, setQueueModalVisible] = useState(false)
-  const [queueModalTaskId, setQueueModalTaskId] = useState<string>('')
-  const [machineModalState, setMachineModalState] = useState<MachineModalState>({
-    open: false,
-    clone: null,
-  })
+  const cloneModal = useFormModal<CloneModalData>()
+  const queueTrace = useQueueTraceModal()
+  const machineModal = useDialogState<DistributedStorageRbdClone>()
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
 
   const managedQueueMutation = useManagedQueueItem()
@@ -91,19 +73,15 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
   const updateVaultMutation = useUpdateDistributedStoragePoolVault()
 
   const handleCreate = useCallback(() => {
-    setModalState({ open: true, mode: 'create' })
-  }, [])
+    cloneModal.openCreate()
+  }, [cloneModal])
 
   const handleEdit = useCallback((clone: DistributedStorageRbdClone) => {
-    setModalState({
-      open: true,
-      mode: 'edit',
-      data: {
-        ...clone,
-        vaultContent: clone.vaultContent || clone.cloneVault,
-      },
+    cloneModal.openEdit({
+      ...clone,
+      vaultContent: clone.vaultContent || clone.cloneVault,
     })
-  }, [])
+  }, [cloneModal])
 
   const handleDelete = useCallback(
     (clone: DistributedStorageRbdClone) => {
@@ -120,16 +98,15 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
 
   const handleQueueItemCreated = useCallback(
     (taskId: string) => {
-      setQueueModalTaskId(taskId)
-      setQueueModalVisible(true)
+      queueTrace.open(taskId)
       message.success(t('queue.itemCreated'))
     },
-    [t],
+    [t, queueTrace],
   )
 
   const handleManageMachines = useCallback((clone: DistributedStorageRbdClone) => {
-    setMachineModalState({ open: true, clone })
-  }, [])
+    machineModal.open(clone)
+  }, [machineModal])
 
   const handleRunFunction = useCallback(
     async (functionName: string, clone?: DistributedStorageRbdClone) => {
@@ -321,12 +298,12 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
       </Container>
 
       <UnifiedResourceModal
-        open={modalState.open}
-        onCancel={() => setModalState({ open: false, mode: 'create' })}
+        open={cloneModal.isOpen}
+        onCancel={cloneModal.close}
         resourceType="clone"
-        mode={modalState.mode}
+        mode={cloneModal.mode}
         existingData={{
-          ...(modalState.data ?? {}),
+          ...(cloneModal.state.data ?? {}),
           teamName: pool.teamName,
           poolName: pool.poolName,
           imageName: image.imageName,
@@ -334,12 +311,12 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
           pools: [pool],
           images: [image],
           snapshots: [snapshot],
-          vaultContent: modalState.data?.vaultContent || modalState.data?.cloneVault,
+          vaultContent: cloneModal.state.data?.vaultContent || cloneModal.state.data?.cloneVault,
         }}
         teamFilter={pool.teamName}
         onSubmit={async (formValues) => {
-          const data = formValues as CloneFormValues
-          if (modalState.mode === 'create') {
+          const data = formValues as { cloneName: string; cloneVault: string }
+          if (cloneModal.mode === 'create') {
             await createCloneMutation.mutateAsync({
               snapshotName: snapshot.snapshotName,
               imageName: image.imageName,
@@ -348,35 +325,33 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
               cloneName: data.cloneName,
               cloneVault: data.cloneVault,
             })
-          } else if (modalState.mode === 'edit') {
+          } else if (cloneModal.mode === 'edit') {
             await updateVaultMutation.mutateAsync({
               poolName: pool.poolName,
               teamName: pool.teamName,
               poolVault: data.cloneVault,
-              vaultVersion: modalState.data?.vaultVersion || 0,
+              vaultVersion: cloneModal.state.data?.vaultVersion || 0,
             })
           }
-          setModalState({ open: false, mode: 'create' })
+          cloneModal.close()
         }}
         isSubmitting={createCloneMutation.isPending || updateVaultMutation.isPending}
       />
       <QueueItemTraceModal
-        visible={queueModalVisible}
-        onClose={() => setQueueModalVisible(false)}
-        taskId={queueModalTaskId}
+        visible={queueTrace.state.visible}
+        onClose={queueTrace.close}
+        taskId={queueTrace.state.taskId}
       />
 
       <AssignMachinesToCloneModal
-        open={machineModalState.open}
-        clone={machineModalState.clone}
+        open={machineModal.isOpen}
+        clone={machineModal.state.data}
         poolName={pool.poolName}
         imageName={image.imageName}
         snapshotName={snapshot.snapshotName}
         teamName={pool.teamName}
-        onCancel={() => setMachineModalState({ open: false, clone: null })}
-        onSuccess={() => {
-          setMachineModalState({ open: false, clone: null })
-        }}
+        onCancel={machineModal.close}
+        onSuccess={machineModal.close}
       />
     </>
   )

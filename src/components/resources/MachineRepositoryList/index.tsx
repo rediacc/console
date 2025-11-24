@@ -4,6 +4,7 @@ import { Spin, Alert, Tag, Space, Typography, Button, Dropdown, Tooltip, Modal, 
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
 import { CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, SaveOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, DisconnectOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined, CopyOutlined, RiseOutlined, StarOutlined, EditOutlined, ShrinkOutlined, ControlOutlined, CaretDownOutlined, CaretRightOutlined, FolderOutlined, EyeOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
+import { useDialogState } from '@/hooks/useDialogState'
 import * as S from './styles'
 import { type QueueFunction } from '@/api/queries/queue'
 import { useQueueAction } from '@/hooks/useQueueAction'
@@ -199,7 +200,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedRepository, setSelectedRepository] = useState<Repository | null>(null)
-  const [functionModalOpen, setFunctionModalOpen] = useState(false)
+  const functionModal = useDialogState<void>()
   const [selectedFunction, setSelectedFunction] = useState<string | null>(null)
   const [_servicesData, setServicesData] = useState<Record<string, any>>({})
   const [containersData, setContainersData] = useState<Record<string, any>>({})
@@ -456,7 +457,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
   const handleRunFunction = (repository: Repository, functionName?: string) => {
     setSelectedRepository(repository)
     setSelectedFunction(functionName || null)
-    setFunctionModalOpen(true)
+    functionModal.open()
   }
 
   const handleQuickAction = async (repository: Repository, functionName: string, priority: number = 4, option?: string) => {
@@ -1016,7 +1017,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
       if (!repositoryData || !repositoryData.vaultContent) {
         showMessage('error', t('resources:repositories.noCredentialsFound', { name: selectedRepository.name }))
-        setFunctionModalOpen(false)
+        functionModal.close()
         setSelectedRepository(null)
         return
       }
@@ -1045,7 +1046,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
 
         if (!destFilename) {
           showMessage('error', 'Destination filename is required')
-          setFunctionModalOpen(false)
+          functionModal.close()
           setSelectedRepository(null)
           return
         }
@@ -1075,7 +1076,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           }
         } catch (createError) {
           showMessage('error', t('resources:repositories.failedToCreateRepository'))
-          setFunctionModalOpen(false)
+          functionModal.close()
           setSelectedRepository(null)
           return
         }
@@ -1127,7 +1128,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           }
         }
 
-        setFunctionModalOpen(false)
+        functionModal.close()
         setSelectedRepository(null)
 
         if (createdTaskIds.length > 0) {
@@ -1158,7 +1159,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         const backupValidation = canBackupToStorage(repositoryData)
         if (!backupValidation.canBackup) {
           showMessage('error', t('resources:repositories.cannotBackupForkToStorage'))
-          setFunctionModalOpen(false)
+          functionModal.close()
           setSelectedRepository(null)
           return
         }
@@ -1214,7 +1215,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
           }
         }
 
-        setFunctionModalOpen(false)
+        functionModal.close()
         setSelectedRepository(null)
 
         if (createdTaskIds.length > 0) {
@@ -1245,7 +1246,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         finalParams.repo = repositoryData.repositoryGuid
         finalParams.grand = repositoryData.grandGuid || repositoryData.repositoryGuid || ''
       }
-      
+
       // Build queue vault
       const result = await executeAction({
         teamName: machine.teamName,
@@ -1264,7 +1265,7 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
         repositoryTag: repositoryData.repoTag
       })
 
-      setFunctionModalOpen(false)
+      functionModal.close()
       setSelectedRepository(null)
 
       if (result.success) {
@@ -2174,9 +2175,9 @@ export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ ma
       
       {/* Function Selection Modal */}
       <FunctionSelectionModal
-        open={functionModalOpen}
+        open={functionModal.isOpen}
         onCancel={() => {
-          setFunctionModalOpen(false)
+          functionModal.close()
           setSelectedRepository(null)
           setSelectedFunction(null)
         }}

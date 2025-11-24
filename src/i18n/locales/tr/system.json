@@ -4,6 +4,7 @@
     "expertOnlyTitle": "Uzman Modu Gerekli"
   },
   "actions": {
+    "activate": "Etkinleştir",
     "addMember": "Üye Ekle",
     "addPermission": "İzin Ekle",
     "assignUser": "Kullanıcı Ata",
@@ -284,5 +285,15 @@
     "totalCount": "Toplam: {{count}} oturum",
     "totalSessions": "Toplam Oturum Sayısı",
     "uniqueUsers": "Benzersiz Kullanıcılar"
+  },
+  "users": {
+    "activate": {
+      "confirmDescription": "\"{{email}}\" adresini etkinleştirmek istediğinizden emin misiniz?",
+      "confirmTitle": "Kullanıcıyı Etkinleştir"
+    },
+    "deactivate": {
+      "confirmDescription": "\"{{email}}\" adresini devre dışı bırakmak istediğinizden emin misiniz?",
+      "confirmTitle": "Kullanıcıyı Devre Dışı Bırak"
+    }
   }
 }

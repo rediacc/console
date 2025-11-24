@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { Card, Button, Space, Select, DatePicker, Input, Typography, Checkbox, Badge } from 'antd'
+import { Card, Space, Select, DatePicker, Input, Typography, Checkbox, Badge } from 'antd'
 import { PageContainer } from '@/styles/primitives'
 
 const { Text } = Typography
@@ -31,15 +31,6 @@ export const FilterInput = styled(Input)`
 
 export const FilterCheckbox = styled(Checkbox)`
   margin-left: ${({ theme }) => theme.spacing.XS}px;
-`
-
-export const FilterTagBar = styled(Space).attrs({ size: 8, wrap: true })`
-  width: 100%;
-`
-
-export const ClearFiltersButton = styled(Button)`
-  padding: 0 ${({ theme }) => theme.spacing.XS}px;
-  height: auto;
 `
 
 export const StatsBar = styled(Space).attrs({ size: 12 })`
@@ -80,13 +71,6 @@ export const StatIcon = styled.span<{ $color?: string }>`
   color: ${({ $color, theme }) => $color || theme.colors.textSecondary};
 `
 
-export const IconButton = styled(Button)`
-  min-width: ${({ theme }) => theme.spacing['5']}px;
-  min-height: ${({ theme }) => theme.spacing['5']}px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-`
 
 export const TabLabel = styled.span`
   display: inline-flex;

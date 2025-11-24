@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Button, Tooltip, Modal, Form, Input } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useDispatch, useSelector } from 'react-redux'
@@ -16,6 +16,7 @@ import { useUserVault, useUpdateUserVault, useUpdateUserPassword } from '@/api/q
 import VaultEditorModal from '@/components/common/VaultEditorModal'
 import TwoFactorSettings from '@/components/settings/TwoFactorSettings'
 import { ModalSize } from '@/types/modal'
+import { useDialogState } from '@/hooks/useDialogState'
 import {
   ProfilePageWrapper,
   ProfileSectionStack,
@@ -45,9 +46,9 @@ const ProfilePage: React.FC = () => {
   const navigate = useNavigate()
   const currentUser = useSelector((state: RootState) => state.auth.user)
 
-  const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false)
-  const [twoFactorModalOpen, setTwoFactorModalOpen] = useState(false)
-  const [userVaultModalOpen, setUserVaultModalOpen] = useState(false)
+  const changePasswordModal = useDialogState<void>()
+  const twoFactorModal = useDialogState<void>()
+  const userVaultModal = useDialogState<void>()
   const [changePasswordForm] = Form.useForm()
 
   const { data: userVault, refetch: refetchUserVault } = useUserVault()
@@ -59,7 +60,7 @@ const ProfilePage: React.FC = () => {
       userVault: vault,
       vaultVersion: version,
     })
-    setUserVaultModalOpen(false)
+    userVaultModal.close()
   }
 
   const handleChangePassword = async (values: { newPassword: string; confirmPassword: string }) => {
@@ -71,7 +72,7 @@ const ProfilePage: React.FC = () => {
         newPassword: values.newPassword,
       })
 
-      setChangePasswordModalOpen(false)
+      changePasswordModal.close()
       changePasswordForm.resetFields()
 
       let countdown = 3
@@ -133,7 +134,7 @@ const ProfilePage: React.FC = () => {
                     icon={<SettingOutlined />}
                     onClick={() => {
                       refetchUserVault()
-                      setUserVaultModalOpen(true)
+                      userVaultModal.open()
                     }}
                     size="large"
                     data-testid="system-user-vault-button"
@@ -145,7 +146,7 @@ const ProfilePage: React.FC = () => {
                 <Button
                   type="primary"
                   icon={<KeyOutlined />}
-                  onClick={() => setChangePasswordModalOpen(true)}
+                  onClick={() => changePasswordModal.open()}
                   size="large"
                   data-testid="system-change-password-button"
                   aria-label={tSystem('actions.changePassword')}
@@ -155,7 +156,7 @@ const ProfilePage: React.FC = () => {
                 <Button
                   type="primary"
                   icon={<SafetyCertificateOutlined />}
-                  onClick={() => setTwoFactorModalOpen(true)}
+                  onClick={() => twoFactorModal.open()}
                   size="large"
                   data-testid="system-two-factor-button"
                   aria-label={tSystem('actions.twoFactorAuth')}
@@ -167,8 +168,8 @@ const ProfilePage: React.FC = () => {
       </ProfileSectionStack>
 
       <VaultEditorModal
-        open={userVaultModalOpen}
-        onCancel={() => setUserVaultModalOpen(false)}
+        open={userVaultModal.isOpen}
+        onCancel={userVaultModal.close}
         onSave={handleUpdateUserVault}
         entityType="USER"
         title={t('personal.modalTitle')}
@@ -179,9 +180,9 @@ const ProfilePage: React.FC = () => {
 
       <Modal
         title={t('personal.changePassword.title', { defaultValue: 'Change Password' })}
-        open={changePasswordModalOpen}
+        open={changePasswordModal.isOpen}
         onCancel={() => {
-          setChangePasswordModalOpen(false)
+          changePasswordModal.close()
           changePasswordForm.resetFields()
         }}
         footer={null}
@@ -244,7 +245,7 @@ const ProfilePage: React.FC = () => {
             <ModalActions>
               <Button
                 onClick={() => {
-                  setChangePasswordModalOpen(false)
+                  changePasswordModal.close()
                   changePasswordForm.resetFields()
                 }}
               >
@@ -258,7 +259,7 @@ const ProfilePage: React.FC = () => {
         </Form>
       </Modal>
 
-      <TwoFactorSettings open={twoFactorModalOpen} onCancel={() => setTwoFactorModalOpen(false)} />
+      <TwoFactorSettings open={twoFactorModal.isOpen} onCancel={twoFactorModal.close} />
     </ProfilePageWrapper>
   )
 }

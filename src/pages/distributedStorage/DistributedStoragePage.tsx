@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react'
+import React, { useState } from 'react'
 import { Tabs, Empty, Alert, Tooltip } from 'antd'
-import { 
-  PlusOutlined, 
+import {
+  PlusOutlined,
   DatabaseOutlined,
   CloudServerOutlined,
   ReloadOutlined,
@@ -10,7 +10,7 @@ import {
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useCompanyInfo } from '@/api/queries/dashboard'
-import { useTeams } from '@/api/queries/teams'
+import { useTeamSelection, useQueueTraceModal } from '@/hooks'
 import TeamSelector from '@/components/common/TeamSelector'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import { ClusterTable } from './components/ClusterTable'
@@ -20,33 +20,36 @@ import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import { showMessage } from '@/utils/messages'
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
-import { 
-  useDistributedStorageClusters, 
+import {
+  useDistributedStorageClusters,
   useDistributedStoragePools,
+} from '@/api/queries/distributedStorage'
+import {
   useCreateDistributedStorageCluster,
   useCreateDistributedStoragePool,
   useUpdateDistributedStorageClusterVault,
   useUpdateDistributedStoragePoolVault,
   useDeleteDistributedStorageCluster,
-  useDeleteDistributedStoragePool
-} from '@/api/queries/distributedStorage'
+  useDeleteDistributedStoragePool,
+} from '@/api/queries/distributedStorageMutations'
+import { PageCard, PrimaryIconButton, SecondaryIconButton } from '@/styles/primitives'
 import {
   PageWrapper,
-  PageCard,
   HeaderSection,
   HeaderRow,
   TitleGroup,
   HeaderTitle,
   TeamSelectorWrapper,
   ActionGroup,
-  PrimaryIconButton,
-  SecondaryIconButton,
   EmptyState,
 } from './styles'
 
 const DistributedStoragePage: React.FC = () => {
   const { t } = useTranslation(['distributedStorage', 'common'])
-  const [selectedTeams, setSelectedTeams] = useState<string[]>([])
+
+  // Use custom hooks for common patterns
+  const { teams, selectedTeams, setSelectedTeams, isLoading: teamsLoading } = useTeamSelection()
+
   const [activeTab, setActiveTab] = useState('clusters')
   const [modalState, setModalState] = useState<{
     open: boolean
@@ -54,14 +57,9 @@ const DistributedStoragePage: React.FC = () => {
     mode: 'create' | 'edit' | 'vault'
     data?: Record<string, any>
   }>({ open: false, type: 'cluster', mode: 'create' })
-  const [queueTraceModal, setQueueTraceModal] = useState<{
-    visible: boolean
-    taskId: string | null
-  }>({ visible: false, taskId: null })
 
-  // Team state
-  const { data: teams, isLoading: teamsLoading } = useTeams()
-  const teamsList = teams || []
+  // Queue trace modal with hook
+  const queueTrace = useQueueTraceModal()
   
   // Company info for subscription check
   const { data: companyData } = useCompanyInfo()
@@ -101,15 +99,6 @@ const DistributedStoragePage: React.FC = () => {
   // Queue management - must be called unconditionally (hooks must be called unconditionally)
   useManagedQueueItem()
   useQueueVaultBuilder()
-
-  // Set default selected team on startup
-  const hasInitializedTeam = useRef(false)
-  React.useEffect(() => {
-    if (!teamsLoading && !hasInitializedTeam.current && teamsList && teamsList.length > 0) {
-      hasInitializedTeam.current = true
-      setSelectedTeams([teamsList[0].teamName])
-    }
-  }, [teamsList, teamsLoading])
 
   // Show debug info in UI temporarily
   if (!companyData) {
@@ -304,7 +293,7 @@ const DistributedStoragePage: React.FC = () => {
               <HeaderTitle level={4}>{t('title')}</HeaderTitle>
               <TeamSelectorWrapper>
                 <TeamSelector
-                  teams={teamsList}
+                  teams={teams}
                   selectedTeams={selectedTeams}
                   onChange={setSelectedTeams}
                   loading={teamsLoading}
@@ -422,11 +411,11 @@ const DistributedStoragePage: React.FC = () => {
       
       {/* Queue Item Trace Modal */}
       <QueueItemTraceModal
-        taskId={queueTraceModal.taskId}
-        visible={queueTraceModal.visible}
+        taskId={queueTrace.state.taskId}
+        visible={queueTrace.state.visible}
         data-testid="ds-queue-trace-modal"
         onClose={() => {
-          setQueueTraceModal({ visible: false, taskId: null })
+          queueTrace.close()
           // Refresh data when modal closes
           if (activeTab === 'clusters') {
             refetchClusters()

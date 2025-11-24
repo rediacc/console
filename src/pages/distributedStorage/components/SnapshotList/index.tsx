@@ -13,17 +13,20 @@ import { useTranslation } from 'react-i18next'
 import type { MenuProps } from 'antd'
 import {
   useDistributedStorageRbdSnapshots,
-  useDeleteDistributedStorageRbdSnapshot,
-  useCreateDistributedStorageRbdSnapshot,
-  useUpdateDistributedStoragePoolVault,
   type DistributedStorageRbdSnapshot,
   type DistributedStorageRbdImage,
   type DistributedStoragePool,
 } from '@/api/queries/distributedStorage'
+import {
+  useDeleteDistributedStorageRbdSnapshot,
+  useCreateDistributedStorageRbdSnapshot,
+  useUpdateDistributedStoragePoolVault,
+} from '@/api/queries/distributedStorageMutations'
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
+import { useQueueTraceModal, useExpandableTable } from '@/hooks'
 import CloneList from '../CloneList'
 import { buildSnapshotColumns } from './columns'
 import { ActionsRow, Container, CreateButton, ExpandButton, TableWrapper, Title } from './styles'
@@ -36,14 +39,13 @@ interface SnapshotListProps {
 
 const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) => {
   const { t } = useTranslation('distributedStorage')
-  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
+  const { expandedRowKeys, setExpandedRowKeys } = useExpandableTable()
   const [modalState, setModalState] = useState<{
     open: boolean
     mode: 'create' | 'edit' | 'vault'
     data?: Record<string, any>
   }>({ open: false, mode: 'create' })
-  const [queueModalVisible, setQueueModalVisible] = useState(false)
-  const [queueModalTaskId, setQueueModalTaskId] = useState<string>('')
+  const queueTrace = useQueueTraceModal()
   const managedQueueMutation = useManagedQueueItem()
   const { buildQueueVault } = useQueueVaultBuilder()
 
@@ -81,11 +83,10 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
 
   const handleQueueItemCreated = useCallback(
     (taskId: string) => {
-      setQueueModalTaskId(taskId)
-      setQueueModalVisible(true)
+      queueTrace.open(taskId)
       message.success(t('queue.itemCreated'))
     },
-    [t],
+    [queueTrace, t],
   )
 
   const handleRunFunction = useCallback(
@@ -311,9 +312,9 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
       />
 
       <QueueItemTraceModal
-        visible={queueModalVisible}
-        onClose={() => setQueueModalVisible(false)}
-        taskId={queueModalTaskId}
+        visible={queueTrace.state.visible}
+        onClose={queueTrace.close}
+        taskId={queueTrace.state.taskId}
         data-testid="snapshot-list-queue-modal"
       />
     </>

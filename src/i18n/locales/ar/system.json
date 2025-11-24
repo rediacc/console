@@ -4,6 +4,7 @@
     "expertOnlyTitle": "مطلوب وضع الخبراء"
   },
   "actions": {
+    "activate": "فعل",
     "addMember": "إضافة عضو",
     "addPermission": "إضافة إذن",
     "assignUser": "تعيين المستخدم",
@@ -284,5 +285,15 @@
     "totalCount": "الإجمالي: {{count}} جلسة",
     "totalSessions": "إجمالي الجلسات",
     "uniqueUsers": "المستخدمون الفريدون"
+  },
+  "users": {
+    "activate": {
+      "confirmDescription": "هل أنت متأكد أنك تريد تفعيل \"{{email}}\"؟",
+      "confirmTitle": "تفعيل المستخدم"
+    },
+    "deactivate": {
+      "confirmDescription": "هل أنت متأكد أنك تريد إلغاء تفعيل \"{{email}}\"؟",
+      "confirmTitle": "إلغاء تنشيط المستخدم"
+    }
   }
 }

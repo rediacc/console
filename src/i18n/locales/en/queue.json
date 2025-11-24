@@ -52,6 +52,11 @@
     "total": "Total",
     "totalDuration": "Total Duration"
   },
+  "cancelConfirm": {
+    "title": "Cancel Queue Item",
+    "content": "Are you sure you want to cancel this queue item? This action cannot be undone.",
+    "okText": "Yes, Cancel"
+  },
   "status": "Status",
   "statusActive": "Active",
   "statusAssigned": "Assigned",

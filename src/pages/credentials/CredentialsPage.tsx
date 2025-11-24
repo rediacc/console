@@ -1,7 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo } from 'react'
 import { Alert, Empty, Modal, Space, Tag, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { useSelector } from 'react-redux'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTheme } from 'styled-components'
 import {
@@ -15,12 +14,11 @@ import {
 } from '@/utils/optimizedIcons'
 
 const { Text } = Typography
-import { RootState } from '@/store/store'
-import UnifiedResourceModal, { ResourceType } from '@/components/common/UnifiedResourceModal'
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
 import TeamSelector from '@/components/common/TeamSelector'
-import { useTeams, Team } from '@/api/queries/teams'
+import { ActionButtonGroup, ActionButtonConfig } from '@/components/common/ActionButtonGroup'
 import {
   useRepositories,
   useCreateRepository,
@@ -34,6 +32,14 @@ import { useStorage } from '@/api/queries/storage'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import { useRepositoryCreation } from '@/hooks/useRepositoryCreation'
 import { useQueueAction } from '@/hooks/useQueueAction'
+import {
+  useUnifiedModal,
+  useTeamSelection,
+  usePagination,
+  useTraceModal,
+  useQueueTraceModal,
+  useAsyncAction,
+} from '@/hooks'
 import { showMessage } from '@/utils/messages'
 import { QueueFunction } from '@/api/queries/queue'
 import {
@@ -62,41 +68,25 @@ const CredentialsPage: React.FC = () => {
   const { t } = useTranslation(['resources', 'machines', 'common'])
   const theme = useTheme()
   const [modal, contextHolder] = Modal.useModal()
-  const uiMode = useSelector((state: RootState) => state.ui.uiMode)
   const location = useLocation()
   const navigate = useNavigate()
 
-  const [selectedTeams, setSelectedTeams] = useState<string[]>([])
-  const [currentResource, setCurrentResource] = useState<Repository | null>(null)
-  const [repositoryPageSize, setRepositoryPageSize] = useState(15)
-  const [repositoryPage, setRepositoryPage] = useState(1)
-  const [queueTraceModal, setQueueTraceModal] = useState<{ visible: boolean; taskId: string | null; machineName?: string | null }>({
-    visible: false,
-    taskId: null,
-    machineName: null
-  })
-  const [auditTraceModal, setAuditTraceModal] = useState<{ open: boolean; entityType: string | null; entityIdentifier: string | null; entityName?: string }>({
-    open: false,
-    entityType: null,
-    entityIdentifier: null
-  })
+  // Use custom hooks for common patterns
+  const { teams, selectedTeams, setSelectedTeams, isLoading: teamsLoading } = useTeamSelection()
+  const {
+    modalState: unifiedModalState,
+    currentResource,
+    openModal: openUnifiedModal,
+    closeModal: closeUnifiedModal
+  } = useUnifiedModal<Repository>('repository')
+  const { page: repositoryPage, pageSize: repositoryPageSize, setPage: setRepositoryPage, setPageSize: setRepositoryPageSize } = usePagination({ defaultPageSize: 15 })
 
-  const [unifiedModalState, setUnifiedModalState] = useState<{
-    open: boolean
-    resourceType: ResourceType
-    mode: 'create' | 'edit' | 'vault'
-    data?: Repository | null
-    creationContext?: 'credentials-only' | 'normal'
-  }>({
-    open: false,
-    resourceType: 'repository',
-    mode: 'create'
-  })
+  // Modal state management with new hooks
+  const queueTrace = useQueueTraceModal()
+  const auditTrace = useTraceModal()
 
-  const hasInitializedTeam = useRef(false)
-
-  const { data: teams, isLoading: teamsLoading } = useTeams()
-  const teamsList: Team[] = teams || []
+  // Async action handler
+  const { execute } = useAsyncAction()
 
   const { data: dropdownData } = useDropdownData()
 
@@ -131,30 +121,6 @@ const CredentialsPage: React.FC = () => {
     return coreGetAffectedResources(repository, repositories, machines)
   }, [repositories, machines])
 
-  const openUnifiedModal = useCallback(
-    (mode: 'create' | 'edit' | 'vault', data?: Repository | null, creationContext?: 'credentials-only' | 'normal') => {
-      setUnifiedModalState({
-        open: true,
-        resourceType: 'repository',
-        mode,
-        data,
-        creationContext
-      })
-      if (data) {
-        setCurrentResource(data)
-      }
-    },
-    []
-  )
-
-  const closeUnifiedModal = useCallback(() => {
-    setUnifiedModalState({
-      open: false,
-      resourceType: 'repository',
-      mode: 'create'
-    })
-    setCurrentResource(null)
-  }, [])
 
   const handleDeleteRepository = useCallback(
     (repository: Repository) => {
@@ -292,58 +258,57 @@ const CredentialsPage: React.FC = () => {
 
   const handleUnifiedModalSubmit = useCallback(
     async (data: any) => {
-      try {
-        if (unifiedModalState.mode === 'create') {
-          const result = await createRepositoryWithQueue(data)
+      await execute(
+        async () => {
+          if (unifiedModalState.mode === 'create') {
+            const result = await createRepositoryWithQueue(data)
 
-          if (result.success) {
-            closeUnifiedModal()
+            if (result.success) {
+              closeUnifiedModal()
 
-            if (result.taskId) {
-              setQueueTraceModal({
-                visible: true,
-                taskId: result.taskId,
-                machineName: result.machineName
-              })
+              if (result.taskId) {
+                queueTrace.open(result.taskId, result.machineName)
+              } else {
+                refetchRepositories()
+              }
             } else {
-              refetchRepositories()
+              showMessage('error', result.error || t('repositories.failedToCreateRepository'))
             }
-          } else {
-            showMessage('error', result.error || t('repositories.failedToCreateRepository'))
-          }
-        } else if (currentResource) {
-          const currentName = currentResource.repositoryName
-          const newName = data.repositoryName
+          } else if (currentResource) {
+            const currentName = currentResource.repositoryName
+            const newName = data.repositoryName
 
-          if (newName && newName !== currentName) {
-            await updateRepositoryNameMutation.mutateAsync({
-              teamName: currentResource.teamName,
-              currentRepositoryName: currentName,
-              newRepositoryName: newName
-            } as any)
-          }
+            if (newName && newName !== currentName) {
+              await updateRepositoryNameMutation.mutateAsync({
+                teamName: currentResource.teamName,
+                currentRepositoryName: currentName,
+                newRepositoryName: newName
+              } as any)
+            }
 
-          const vaultData = data.repositoryVault
-          if (vaultData && vaultData !== currentResource.vaultContent) {
-            await updateRepositoryVaultMutation.mutateAsync({
-              teamName: currentResource.teamName,
-              repositoryName: newName || currentName,
-              repositoryVault: vaultData,
-              vaultVersion: currentResource.vaultVersion + 1
-            } as any)
-          }
+            const vaultData = data.repositoryVault
+            if (vaultData && vaultData !== currentResource.vaultContent) {
+              await updateRepositoryVaultMutation.mutateAsync({
+                teamName: currentResource.teamName,
+                repositoryName: newName || currentName,
+                repositoryVault: vaultData,
+                vaultVersion: currentResource.vaultVersion + 1
+              } as any)
+            }
 
-          closeUnifiedModal()
-          refetchRepositories()
-        }
-      } catch (error) {
-        showMessage('error', t('repositories.failedToCreateRepository'))
-      }
+            closeUnifiedModal()
+            refetchRepositories()
+          }
+        },
+        { skipSuccessMessage: true }
+      )
     },
     [
       closeUnifiedModal,
       createRepositoryWithQueue,
       currentResource,
+      execute,
+      queueTrace,
       refetchRepositories,
       t,
       unifiedModalState.mode,
@@ -355,20 +320,21 @@ const CredentialsPage: React.FC = () => {
   const handleUnifiedVaultUpdate = useCallback(
     async (vault: string, version: number) => {
       if (!currentResource) return
-      try {
-        await updateRepositoryVaultMutation.mutateAsync({
-          teamName: currentResource.teamName,
-          repositoryName: currentResource.repositoryName,
-          repositoryVault: vault,
-          vaultVersion: version
-        } as any)
-        refetchRepositories()
-        closeUnifiedModal()
-      } catch (error) {
-        // Error handled by mutation toast
-      }
+      await execute(
+        async () => {
+          await updateRepositoryVaultMutation.mutateAsync({
+            teamName: currentResource.teamName,
+            repositoryName: currentResource.repositoryName,
+            repositoryVault: vault,
+            vaultVersion: version
+          } as any)
+          refetchRepositories()
+          closeUnifiedModal()
+        },
+        { skipSuccessMessage: true }
+      )
     },
-    [closeUnifiedModal, currentResource, refetchRepositories, t, updateRepositoryVaultMutation]
+    [closeUnifiedModal, currentResource, execute, refetchRepositories, updateRepositoryVaultMutation]
   )
 
   const handleRepositoryFunctionSelected = useCallback(
@@ -407,7 +373,7 @@ const CredentialsPage: React.FC = () => {
           priority: functionData.priority,
           description: functionData.description,
           addedVia: 'repository-table',
-          teamVault: teamsList.find((team) => team.teamName === currentResource.teamName)?.vaultContent || '{}',
+          teamVault: teams.find((team) => team.teamName === currentResource.teamName)?.vaultContent || '{}',
           repositoryGuid: currentResource.repositoryGuid,
           repositoryVault: currentResource.vaultContent || '{}',
           repositoryLoopbackIp: currentResource.repoLoopbackIp,
@@ -438,7 +404,7 @@ const CredentialsPage: React.FC = () => {
         if (result.success) {
           if (result.taskId) {
             showMessage('success', t('repositories.queueItemCreated'))
-            setQueueTraceModal({ visible: true, taskId: result.taskId, machineName: machineEntry.value })
+            queueTrace.open(result.taskId, machineEntry.value)
           } else if (result.isQueued) {
             showMessage('info', t('resources:messages.highestPriorityQueued', { resourceType: 'repository' }))
           }
@@ -449,7 +415,7 @@ const CredentialsPage: React.FC = () => {
         showMessage('error', t('resources:errors.failedToCreateQueueItem'))
       }
     },
-    [closeUnifiedModal, currentResource, dropdownData, executeAction, machines, storages, t, teamsList]
+    [closeUnifiedModal, currentResource, dropdownData, executeAction, machines, queueTrace, storages, t, teams]
   )
 
   const isSubmitting =
@@ -459,20 +425,6 @@ const CredentialsPage: React.FC = () => {
     isExecuting
 
   const isUpdatingVault = updateRepositoryVaultMutation.isPending
-
-  useEffect(() => {
-    if (!teamsLoading && !hasInitializedTeam.current && teamsList.length > 0) {
-      hasInitializedTeam.current = true
-      if (uiMode === 'simple') {
-        const privateTeam = teamsList.find((team) => team.teamName === 'Private Team')
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setSelectedTeams([privateTeam?.teamName || teamsList[0].teamName])
-      } else {
-         
-        setSelectedTeams([teamsList[0].teamName])
-      }
-    }
-  }, [teamsLoading, teamsList, uiMode])
 
   useEffect(() => {
     const state = location.state as CredentialsLocationState | null
@@ -531,52 +483,51 @@ const CredentialsPage: React.FC = () => {
       {
         title: t('common:table.actions'),
         key: 'actions',
-        width: 280,
-        render: (_: any, record: Repository) => (
-          <Space size="small">
-            <Tooltip title={t('common:actions.edit')}>
-              <ActionButton
-                type="primary"
-                size="small"
-                icon={<EditOutlined />}
-                data-testid={`resources-repository-edit-${record.repositoryName}`}
-                onClick={() => openUnifiedModal('edit', record)}
-                aria-label={t('common:actions.edit')}
-              />
-            </Tooltip>
-            <Tooltip title={t('machines:trace')}>
-              <ActionButton
-                type="primary"
-                size="small"
-                icon={<HistoryOutlined />}
-                data-testid={`resources-repository-trace-${record.repositoryName}`}
-                onClick={() =>
-                  setAuditTraceModal({
-                    open: true,
-                    entityType: 'Repo',
-                    entityIdentifier: record.repositoryName,
-                    entityName: record.repositoryName
-                  })
-                }
-                aria-label={t('machines:trace')}
-              />
-            </Tooltip>
-            <Tooltip title={t('common:actions.delete')}>
-              <ActionButton
-                type="primary"
-                danger
-                size="small"
-                icon={<DeleteOutlined />}
-                data-testid={`resources-repository-delete-${record.repositoryName}`}
-                onClick={() => handleDeleteRepository(record)}
-                aria-label={t('common:actions.delete')}
-              />
-            </Tooltip>
-          </Space>
-        )
+        width: 200,
+        render: (_: unknown, record: Repository) => {
+          const buttons: ActionButtonConfig<Repository>[] = [
+            {
+              type: 'edit',
+              icon: <EditOutlined />,
+              tooltip: 'common:actions.edit',
+              onClick: (r: Repository) => openUnifiedModal('edit', r),
+              variant: 'primary',
+            },
+            {
+              type: 'trace',
+              icon: <HistoryOutlined />,
+              tooltip: 'machines:trace',
+              onClick: (r: Repository) =>
+                auditTrace.open({
+                  entityType: 'Repo',
+                  entityIdentifier: r.repositoryName,
+                  entityName: r.repositoryName,
+                }),
+              variant: 'default',
+            },
+            {
+              type: 'delete',
+              icon: <DeleteOutlined />,
+              tooltip: 'common:actions.delete',
+              onClick: handleDeleteRepository,
+              variant: 'primary',
+              danger: true,
+            },
+          ]
+
+          return (
+            <ActionButtonGroup<Repository>
+              buttons={buttons}
+              record={record}
+              idField="repositoryName"
+              testIdPrefix="resources-repository"
+              t={t}
+            />
+          )
+        },
       }
     ],
-    [handleDeleteRepository, openUnifiedModal, setAuditTraceModal, t, theme.colors.primary, theme.colors.secondary]
+    [auditTrace, handleDeleteRepository, openUnifiedModal, t, theme.colors.primary, theme.colors.secondary]
   )
 
   return (
@@ -589,7 +540,7 @@ const CredentialsPage: React.FC = () => {
                 <TeamSelectorWrapper>
                   <TeamSelector
                     data-testid="resources-team-selector"
-                    teams={teamsList}
+                    teams={teams}
                     selectedTeams={selectedTeams}
                     onChange={setSelectedTeams}
                     loading={teamsLoading}
@@ -686,21 +637,21 @@ const CredentialsPage: React.FC = () => {
 
       <QueueItemTraceModal
         data-testid="resources-queue-trace-modal"
-        taskId={queueTraceModal.taskId}
-        visible={queueTraceModal.visible}
+        taskId={queueTrace.state.taskId}
+        visible={queueTrace.state.visible}
         onClose={() => {
-          setQueueTraceModal({ visible: false, taskId: null, machineName: null })
+          queueTrace.close()
           refetchRepositories()
         }}
       />
 
       <AuditTraceModal
         data-testid="resources-audit-trace-modal"
-        open={auditTraceModal.open}
-        onCancel={() => setAuditTraceModal({ open: false, entityType: null, entityIdentifier: null })}
-        entityType={auditTraceModal.entityType}
-        entityIdentifier={auditTraceModal.entityIdentifier}
-        entityName={auditTraceModal.entityName}
+        open={auditTrace.isOpen}
+        onCancel={auditTrace.close}
+        entityType={auditTrace.entityType}
+        entityIdentifier={auditTrace.entityIdentifier}
+        entityName={auditTrace.entityName}
       />
 
       {contextHolder}

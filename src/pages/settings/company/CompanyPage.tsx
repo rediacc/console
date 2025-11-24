@@ -37,6 +37,7 @@ import { featureFlags } from '@/config/featureFlags'
 import { masterPasswordService } from '@/services/masterPasswordService'
 import { encryptString, decryptString } from '@/utils/encryption'
 import { showMessage } from '@/utils/messages'
+import { useDialogState } from '@/hooks/useDialogState'
 import {
   useCompanyVault,
   useUpdateCompanyVault,
@@ -91,16 +92,16 @@ const CompanyPage: React.FC = () => {
   const navigate = useNavigate()
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
 
-  const [companyVaultModalOpen, setCompanyVaultModalOpen] = useState(false)
-  const [masterPasswordModalOpen, setMasterPasswordModalOpen] = useState(false)
+  const companyVaultModal = useDialogState<void>()
+  const masterPasswordModal = useDialogState<void>()
   const [masterPasswordForm] = Form.useForm()
   const [importForm] = Form.useForm()
   const [masterPasswordOperation, setMasterPasswordOperation] = useState<'create' | 'update' | 'remove'>('create')
   const [completedOperation, setCompletedOperation] = useState<'create' | 'update' | 'remove'>('update')
-  const [successModalOpen, setSuccessModalOpen] = useState(false)
+  const successModal = useDialogState<void>()
   const [countdown, setCountdown] = useState(60)
   const countdownInterval = useRef<NodeJS.Timeout | null>(null)
-  const [importModalOpen, setImportModalOpen] = useState(false)
+  const importModal = useDialogState<void>()
   const [importFile, setImportFile] = useState<File | null>(null)
   const [importMode, setImportMode] = useState<'skip' | 'override'>('skip')
   const [currentMasterPassword, setCurrentMasterPassword] = useState<string | null>(null)
@@ -123,14 +124,14 @@ const CompanyPage: React.FC = () => {
   }, [])
 
   useEffect(() => {
-    if (masterPasswordModalOpen) {
+    if (masterPasswordModal.isOpen) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setMasterPasswordOperation(currentMasterPassword ? 'update' : 'create')
     }
-  }, [masterPasswordModalOpen, currentMasterPassword])
+  }, [masterPasswordModal.isOpen, currentMasterPassword])
 
   useEffect(() => {
-    if (successModalOpen && countdown > 0) {
+    if (successModal.isOpen && countdown > 0) {
       countdownInterval.current = setInterval(() => {
         setCountdown((prev) => prev - 1)
       }, 1000)
@@ -144,14 +145,14 @@ const CompanyPage: React.FC = () => {
         clearInterval(countdownInterval.current)
       }
     }
-  }, [successModalOpen, countdown, dispatch, navigate])
+  }, [successModal.isOpen, countdown, dispatch, navigate])
 
   const handleUpdateCompanyVault = async (vault: string, version: number) => {
     await updateCompanyVaultMutation.mutateAsync({
       companyVault: vault,
       vaultVersion: version,
     })
-    setCompanyVaultModalOpen(false)
+    companyVaultModal.close()
   }
 
   const handleExportVaults = async () => {
@@ -232,7 +233,7 @@ const CompanyPage: React.FC = () => {
         importMode,
       })
 
-      setImportModalOpen(false)
+      importModal.close()
       setImportFile(null)
       importForm.resetFields()
     } catch {
@@ -298,12 +299,12 @@ const CompanyPage: React.FC = () => {
       await masterPasswordService.setMasterPassword(masterPasswordOperation === 'remove' ? null : newPassword)
       setCurrentMasterPassword(masterPasswordOperation === 'remove' ? null : newPassword)
 
-      setMasterPasswordModalOpen(false)
+      masterPasswordModal.close()
       masterPasswordForm.resetFields()
       setCompletedOperation(masterPasswordOperation)
       setMasterPasswordOperation(currentMasterPassword ? 'update' : 'create')
       setCountdown(60)
-      setSuccessModalOpen(true)
+      successModal.open()
     } catch {
       // handled by mutation
     }
@@ -343,7 +344,7 @@ const CompanyPage: React.FC = () => {
                   <Button
                     type="primary"
                     icon={<SettingOutlined />}
-                    onClick={() => setCompanyVaultModalOpen(true)}
+                    onClick={() => companyVaultModal.open()}
                     size="large"
                     data-testid="system-company-vault-button"
                     aria-label={t('company.configureVault')}
@@ -485,7 +486,7 @@ const CompanyPage: React.FC = () => {
                           type="primary"
                           danger
                           icon={<ImportOutlined />}
-                          onClick={() => setImportModalOpen(true)}
+                          onClick={() => importModal.open()}
                           data-testid="system-import-data-button"
                           aria-label={tSystem('dangerZone.importData.button')}
                         />
@@ -518,7 +519,7 @@ const CompanyPage: React.FC = () => {
                           type="primary"
                           danger
                           icon={<KeyOutlined />}
-                          onClick={() => setMasterPasswordModalOpen(true)}
+                          onClick={() => masterPasswordModal.open()}
                           data-testid="system-update-master-password-button"
                           aria-label={tSystem('dangerZone.updateMasterPassword.button')}
                         />
@@ -533,8 +534,8 @@ const CompanyPage: React.FC = () => {
       </CompanySectionStack>
 
       <VaultEditorModal
-        open={companyVaultModalOpen}
-        onCancel={() => setCompanyVaultModalOpen(false)}
+        open={companyVaultModal.isOpen}
+        onCancel={companyVaultModal.close}
         onSave={handleUpdateCompanyVault}
         entityType="COMPANY"
         title={t('company.modalTitle')}
@@ -549,9 +550,9 @@ const CompanyPage: React.FC = () => {
             ? tSystem('dangerZone.updateMasterPassword.modal.title')
             : tSystem('dangerZone.updateMasterPassword.modal.operationCreate')
         }
-        open={masterPasswordModalOpen}
+        open={masterPasswordModal.isOpen}
         onCancel={() => {
-          setMasterPasswordModalOpen(false)
+          masterPasswordModal.close()
           masterPasswordForm.resetFields()
           setMasterPasswordOperation(currentMasterPassword ? 'update' : 'create')
         }}
@@ -689,7 +690,7 @@ const CompanyPage: React.FC = () => {
             <ModalActions>
               <Button
                 onClick={() => {
-                  setMasterPasswordModalOpen(false)
+                  masterPasswordModal.close()
                   masterPasswordForm.resetFields()
                   setMasterPasswordOperation(currentMasterPassword ? 'update' : 'create')
                 }}
@@ -717,7 +718,7 @@ const CompanyPage: React.FC = () => {
       </Modal>
 
       <Modal
-        open={successModalOpen}
+        open={successModal.isOpen}
         closable={false}
         footer={null}
         className={ModalSize.Medium}
@@ -791,9 +792,9 @@ const CompanyPage: React.FC = () => {
 
       <Modal
         title={tSystem('dangerZone.importData.modal.title')}
-        open={importModalOpen}
+        open={importModal.isOpen}
         onCancel={() => {
-          setImportModalOpen(false)
+          importModal.close()
           setImportFile(null)
           importForm.resetFields()
           setImportMode('skip')
@@ -852,7 +853,7 @@ const CompanyPage: React.FC = () => {
             <ModalActions>
               <Button
                 onClick={() => {
-                  setImportModalOpen(false)
+                  importModal.close()
                   setImportFile(null)
                   importForm.resetFields()
                   setImportMode('skip')

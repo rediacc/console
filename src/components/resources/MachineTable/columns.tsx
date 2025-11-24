@@ -1,13 +1,13 @@
-import { Button, Dropdown, Space, Tooltip } from 'antd'
+import { Space, Tooltip } from 'antd'
 import type { ColumnsType } from 'antd/es/table/interface'
 import { TFunction } from 'i18next'
-import type { Dispatch, SetStateAction } from 'react'
 import { createSorter, createCustomSorter } from '@/core'
 import type { Machine } from '@/types'
 import MachineAssignmentStatusCell from '../MachineAssignmentStatusCell'
 import { LocalActionsMenu } from '../LocalActionsMenu'
 import { showMessage } from '@/utils/messages'
 import { DESIGN_TOKENS } from '@/utils/styleConstants'
+import { ActionButtonGroup } from '@/components/common/ActionButtonGroup'
 import {
   EditOutlined,
   FunctionOutlined,
@@ -42,16 +42,16 @@ interface MachineColumnsParams {
   handleDelete: (machine: Machine) => void
   handleRowClick: (machine: Machine) => void
   executePingForMachineAndWait: ExecutePingForMachineAndWait
-  setAssignClusterModal: Dispatch<SetStateAction<{
+  setAssignClusterModal: (state: {
     open: boolean
     machine: Machine | null
-  }>>
-  setAuditTraceModal: Dispatch<SetStateAction<{
+  }) => void
+  setAuditTraceModal: (state: {
     open: boolean
     entityType: string | null
     entityIdentifier: string | null
     entityName?: string
-  }>>
+  }) => void
   machineFunctions: MachineFunctionAction[]
 }
 
@@ -205,67 +205,45 @@ export const buildMachineTableColumns = ({
       key: 'actions',
       width: DESIGN_TOKENS.DIMENSIONS.CARD_WIDTH,
       render: (_: unknown, record: Machine) => (
-        <Space>
-          <Tooltip title={t('common:viewDetails')}>
-            <Button
-              type="default"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={(e) => {
-                e.stopPropagation()
-                handleRowClick(record)
-              }}
-              data-testid={`machine-view-details-${record.machineName}`}
-              aria-label={t('common:viewDetails')}
-            />
-          </Tooltip>
-
-          <Tooltip title={t('common:actions.edit')}>
-            <Button
-              type="primary"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => onEditMachine && onEditMachine(record)}
-              data-testid={`machine-edit-${record.machineName}`}
-              aria-label={t('common:actions.edit')}
-            />
-          </Tooltip>
-
-          <Dropdown
-            data-testid={`machine-dropdown-${record.machineName}`}
-            menu={{
-              items: [
+        <ActionButtonGroup
+          buttons={[
+            {
+              type: 'view',
+              icon: <EyeOutlined />,
+              tooltip: 'common:viewDetails',
+              onClick: () => handleRowClick(record),
+              variant: 'default',
+              testIdSuffix: 'view-details',
+            },
+            {
+              type: 'edit',
+              icon: <EditOutlined />,
+              tooltip: 'common:actions.edit',
+              onClick: () => onEditMachine?.(record),
+            },
+            {
+              type: 'remote',
+              icon: <FunctionOutlined />,
+              tooltip: 'machines:remote',
+              dropdownItems: [
                 {
                   key: 'functions',
                   label: t('machines:runAction'),
                   icon: <FunctionOutlined />,
-                  'data-testid': `machine-functions-${record.machineName}`,
                   children: [
                     ...machineFunctions
                       .filter((func) => func?.showInMenu !== false)
                       .map((func) => ({
                         key: `function-${func?.name || 'unknown'}`,
                         label: <span title={func?.description || ''}>{func?.name || 'Unknown'}</span>,
-                        onClick: () => {
-                          if (onFunctionsMachine && func?.name) {
-                            onFunctionsMachine(record, func.name)
-                          }
-                        },
-                        'data-testid': `machine-function-${func?.name || 'unknown'}-${record.machineName}`,
+                        onClick: () => onFunctionsMachine?.(record, func?.name),
                       })),
-                    {
-                      type: 'divider',
-                    },
+                    { type: 'divider' as const },
                     {
                       key: 'advanced',
                       label: t('machines:advanced'),
                       icon: <FunctionOutlined />,
-                      onClick: () => {
-                        if (onFunctionsMachine) {
-                          onFunctionsMachine(record)
-                        }
-                      },
-                      'data-testid': `machine-advanced-${record.machineName}`,
+                      onClick: () => onFunctionsMachine?.(record),
                     },
                   ],
                 },
@@ -287,7 +265,6 @@ export const buildMachineTableColumns = ({
                       showMessage('error', result.error || t('machines:connectionFailed'))
                     }
                   },
-                  'data-testid': `machine-test-${record.machineName}`,
                 },
                 ...(canAssignToCluster
                   ? [
@@ -297,63 +274,41 @@ export const buildMachineTableColumns = ({
                           ? t('machines:changeClusterAssignment')
                           : t('machines:assignToCluster'),
                         icon: <CloudServerOutlined />,
-                        onClick: () => {
-                          setAssignClusterModal({
-                            open: true,
-                            machine: record,
-                          })
-                        },
-                        'data-testid': `machine-assign-cluster-${record.machineName}`,
+                        onClick: () => setAssignClusterModal({ open: true, machine: record }),
                       },
                     ]
                   : []),
               ],
-            }}
-            trigger={['click']}
-          >
-            <Tooltip title={t('machines:remote')}>
-              <Button
-                type="primary"
-                size="small"
-                icon={<FunctionOutlined />}
-                data-testid={`machine-remote-${record.machineName}`}
-                aria-label={t('machines:remote')}
-              />
-            </Tooltip>
-          </Dropdown>
-
-          <Tooltip title={t('machines:trace')}>
-            <Button
-              type="primary"
-              size="small"
-              icon={<HistoryOutlined />}
-              onClick={() => {
+            },
+            {
+              type: 'trace',
+              icon: <HistoryOutlined />,
+              tooltip: 'machines:trace',
+              onClick: () =>
                 setAuditTraceModal({
                   open: true,
                   entityType: 'Machine',
                   entityIdentifier: record.machineName,
                   entityName: record.machineName,
-                })
-              }}
-              data-testid={`machine-trace-${record.machineName}`}
-              aria-label={t('machines:trace')}
-            />
-          </Tooltip>
-
-          <Tooltip title={t('common:actions.delete')}>
-            <Button
-              type="primary"
-              danger
-              size="small"
-              icon={<DeleteOutlined />}
-              onClick={() => handleDelete(record)}
-              data-testid={`machine-delete-${record.machineName}`}
-              aria-label={t('common:actions.delete')}
-            />
-          </Tooltip>
-
-          <LocalActionsMenu machine={record.machineName} teamName={record.teamName} />
-        </Space>
+                }),
+            },
+            {
+              type: 'delete',
+              icon: <DeleteOutlined />,
+              tooltip: 'common:actions.delete',
+              onClick: () => handleDelete(record),
+              danger: true,
+            },
+            {
+              type: 'custom',
+              render: (r: Machine) => <LocalActionsMenu machine={r.machineName} teamName={r.teamName} />,
+            },
+          ]}
+          record={record}
+          idField="machineName"
+          testIdPrefix="machine"
+          t={t}
+        />
       ),
     })
   }

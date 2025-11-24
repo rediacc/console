@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next'
 import { useSelector } from 'react-redux'
 import ResourceListView from '@/components/common/ResourceListView'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
+import { useDialogState, useTraceModal } from '@/hooks/useDialogState'
 import UserSessionsTab from '@/components/system/UserSessionsTab'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import {
@@ -45,24 +46,18 @@ const AccessPage: React.FC = () => {
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
 
   const [activeTab, setActiveTab] = useState<'permissions' | 'sessions'>('permissions')
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [isManageModalOpen, setIsManageModalOpen] = useState(false)
-  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
-  const [selectedGroup, setSelectedGroup] = useState<PermissionGroup | null>(null)
+  const createModal = useDialogState()
+  const manageModal = useDialogState<PermissionGroup>()
+  const assignModal = useDialogState<PermissionGroup>()
   const [newGroupName, setNewGroupName] = useState('')
   const [selectedPermission, setSelectedPermission] = useState('')
   const [selectedUser, setSelectedUser] = useState('')
-  const [auditTraceModal, setAuditTraceModal] = useState<{
-    open: boolean
-    entityType: string | null
-    entityIdentifier: string | null
-    entityName?: string
-  }>({ open: false, entityType: null, entityIdentifier: null })
+  const auditTrace = useTraceModal()
 
   const { data: dropdownData } = useDropdownData()
   const availablePermissions = dropdownData?.permissions || []
   const { data: permissionGroups = [], isLoading: permissionsLoading } = usePermissionGroupsQuery()
-  const { data: groupDetails } = usePermissionGroupDetails(selectedGroup?.permissionGroupName || '')
+  const { data: groupDetails } = usePermissionGroupDetails(manageModal.state.data?.permissionGroupName || '')
   const createGroupMutation = useCreatePermissionGroup()
   const deleteGroupMutation = useDeletePermissionGroup()
   const addPermissionMutation = useAddPermissionToGroup()
@@ -77,7 +72,7 @@ const AccessPage: React.FC = () => {
 
     try {
       await createGroupMutation.mutateAsync({ permissionGroupName: newGroupName.trim() })
-      setIsCreateModalOpen(false)
+      createModal.close()
       setNewGroupName('')
     } catch {
       // handled by mutation
@@ -93,11 +88,11 @@ const AccessPage: React.FC = () => {
   }
 
   const handleAddPermission = async () => {
-    if (!selectedGroup || !selectedPermission) return
+    if (!manageModal.state.data || !selectedPermission) return
 
     try {
       await addPermissionMutation.mutateAsync({
-        permissionGroupName: selectedGroup.permissionGroupName,
+        permissionGroupName: manageModal.state.data.permissionGroupName,
         permissionName: selectedPermission,
       })
       setSelectedPermission('')
@@ -107,11 +102,11 @@ const AccessPage: React.FC = () => {
   }
 
   const handleRemovePermission = async (permission: string) => {
-    if (!selectedGroup) return
+    if (!manageModal.state.data) return
 
     try {
       await removePermissionMutation.mutateAsync({
-        permissionGroupName: selectedGroup.permissionGroupName,
+        permissionGroupName: manageModal.state.data.permissionGroupName,
         permissionName: permission,
       })
     } catch {
@@ -120,14 +115,14 @@ const AccessPage: React.FC = () => {
   }
 
   const handleAssignUser = async () => {
-    if (!selectedGroup || !selectedUser) return
+    if (!assignModal.state.data || !selectedUser) return
 
     try {
       await assignUserMutation.mutateAsync({
         userEmail: selectedUser,
-        permissionGroupName: selectedGroup.permissionGroupName,
+        permissionGroupName: assignModal.state.data.permissionGroupName,
       })
-      setIsAssignModalOpen(false)
+      assignModal.close()
       setSelectedUser('')
     } catch {
       // handled by mutation
@@ -181,10 +176,7 @@ const AccessPage: React.FC = () => {
               type="primary"
               size="small"
               icon={<KeyOutlined />}
-              onClick={() => {
-                setSelectedGroup(record)
-                setIsManageModalOpen(true)
-              }}
+              onClick={() => manageModal.open(record)}
               data-testid={`system-permission-group-manage-button-${record.permissionGroupName}`}
               aria-label={tSystem('actions.permissions')}
             />
@@ -194,10 +186,7 @@ const AccessPage: React.FC = () => {
               type="primary"
               size="small"
               icon={<UserOutlined />}
-              onClick={() => {
-                setSelectedGroup(record)
-                setIsAssignModalOpen(true)
-              }}
+              onClick={() => assignModal.open(record)}
               data-testid={`system-permission-group-assign-user-button-${record.permissionGroupName}`}
               aria-label={tSystem('actions.assignUser')}
             />
@@ -208,8 +197,7 @@ const AccessPage: React.FC = () => {
               size="small"
               icon={<HistoryOutlined />}
               onClick={() =>
-                setAuditTraceModal({
-                  open: true,
+                auditTrace.open({
                   entityType: 'Permissions',
                   entityIdentifier: record.permissionGroupName,
                   entityName: record.permissionGroupName,
@@ -268,7 +256,7 @@ const AccessPage: React.FC = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => setIsCreateModalOpen(true)}
+            onClick={() => createModal.open()}
             data-testid="system-create-permission-group-button"
             aria-label={tSystem('actions.createGroup')}
           />
@@ -321,9 +309,9 @@ const AccessPage: React.FC = () => {
 
       <Modal
         title={t('access.modals.createGroupTitle', { defaultValue: 'Create Permission Group' })}
-        open={isCreateModalOpen}
+        open={createModal.isOpen}
         onCancel={() => {
-          setIsCreateModalOpen(false)
+          createModal.close()
           setNewGroupName('')
         }}
         onOk={handleCreateGroup}
@@ -343,12 +331,11 @@ const AccessPage: React.FC = () => {
 
       <Modal
         title={`${t('access.modals.managePermissionsTitle', { defaultValue: 'Manage Permissions' })} - ${
-          selectedGroup?.permissionGroupName || ''
+          manageModal.state.data?.permissionGroupName || ''
         }`}
-        open={isManageModalOpen}
+        open={manageModal.isOpen}
         onCancel={() => {
-          setIsManageModalOpen(false)
-          setSelectedGroup(null)
+          manageModal.close()
           setSelectedPermission('')
         }}
         footer={null}
@@ -436,12 +423,11 @@ const AccessPage: React.FC = () => {
 
       <Modal
         title={`${t('access.modals.assignUserTitle', { defaultValue: 'Assign User' })} ${
-          selectedGroup ? t('access.modals.assignUserTo', { defaultValue: 'to {{group}}', group: selectedGroup.permissionGroupName }) : ''
+          assignModal.state.data ? t('access.modals.assignUserTo', { defaultValue: 'to {{group}}', group: assignModal.state.data.permissionGroupName }) : ''
         }`}
-        open={isAssignModalOpen}
+        open={assignModal.isOpen}
         onCancel={() => {
-          setIsAssignModalOpen(false)
-          setSelectedGroup(null)
+          assignModal.close()
           setSelectedUser('')
         }}
         onOk={handleAssignUser}
@@ -467,11 +453,11 @@ const AccessPage: React.FC = () => {
       </Modal>
 
       <AuditTraceModal
-        open={auditTraceModal.open}
-        onCancel={() => setAuditTraceModal({ open: false, entityType: null, entityIdentifier: null })}
-        entityType={auditTraceModal.entityType}
-        entityIdentifier={auditTraceModal.entityIdentifier}
-        entityName={auditTraceModal.entityName}
+        open={auditTrace.isOpen}
+        onCancel={auditTrace.close}
+        entityType={auditTrace.entityType}
+        entityIdentifier={auditTrace.entityIdentifier}
+        entityName={auditTrace.entityName}
       />
     </AccessPageWrapper>
   )

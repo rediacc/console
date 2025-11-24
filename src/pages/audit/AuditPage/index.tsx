@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Space, Typography, DatePicker, Select, Table, Input, Row, Col, Empty, Dropdown, message, Alert, Tooltip } from 'antd';
 import {
   ReloadOutlined,
@@ -9,7 +9,15 @@ import {
 } from '@/utils/optimizedIcons';
 import { useAuditLogs } from '@/api/queries/audit';
 import { useTranslation } from 'react-i18next';
-import dayjs from 'dayjs';
+import dayjs, { Dayjs } from 'dayjs';
+import { useFilters, usePagination } from '@/hooks';
+
+// Audit page filter state type
+type AuditPageFilters = {
+  dateRange: [Dayjs | null, Dayjs | null]
+  entityFilter: string | undefined
+  searchText: string
+}
 import {
   findActionConfig,
   getActionTagColor,
@@ -20,17 +28,15 @@ import {
   downloadJSON,
   generateTimestampedFilename
 } from '@/core';
+import { FilterCard, TableCard, CompactButton } from '@/styles/primitives';
 import {
   PageWrapper,
   ContentStack,
-  FilterCard,
   FilterField,
   FilterLabel,
   PlaceholderLabel,
   ActionButtonFull,
-  CompactButton,
   LinkButton,
-  TableCard,
   ActionIcon,
 } from './styles';
 import { buildAuditColumns } from './columns';
@@ -40,24 +46,26 @@ const { RangePicker } = DatePicker;
 
 const AuditPage = () => {
   const { t } = useTranslation(['system', 'common']);
-  const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([
-    dayjs().subtract(7, 'days'),
-    dayjs()
-  ]);
-  const [entityFilter, setEntityFilter] = useState<string | undefined>();
-  const [searchText, setSearchText] = useState('');
-  const [pageSize, setPageSize] = useState(25);
-  const [currentPage, setCurrentPage] = useState(1);
+
+  // Filter state with useFilters hook
+  const { filters, setFilter, clearAllFilters } = useFilters<AuditPageFilters>({
+    dateRange: [dayjs().subtract(7, 'days'), dayjs()],
+    entityFilter: undefined,
+    searchText: '',
+  });
+
+  // Pagination with usePagination hook
+  const { page: currentPage, pageSize, onPageChange } = usePagination({ defaultPageSize: 25 });
 
   // Ensure dates are always defined before passing to the hook
   // Use ISO 8601 format (with 'T' separator) for proper JSON datetime parsing
-  const startDate = dateRange[0]?.startOf('day').format('YYYY-MM-DDTHH:mm:ss');
-  const endDate = dateRange[1]?.endOf('day').format('YYYY-MM-DDTHH:mm:ss');
+  const startDate = filters.dateRange[0]?.startOf('day').format('YYYY-MM-DDTHH:mm:ss');
+  const endDate = filters.dateRange[1]?.endOf('day').format('YYYY-MM-DDTHH:mm:ss');
 
   const { data: auditLogs, isLoading, refetch, error, isError } = useAuditLogs({
     startDate,
     endDate,
-    entityFilter,
+    entityFilter: filters.entityFilter,
     maxRecords: 1000
   });
 
@@ -77,7 +85,7 @@ const AuditPage = () => {
   }, []);
 
   const filteredLogs = auditLogs?.filter(log =>
-    searchInFields(log, searchText, ['entityName', 'action', 'details', 'actionByUser'])
+    searchInFields(log, filters.searchText, ['entityName', 'action', 'details', 'actionByUser'])
   );
 
   const columns = useMemo(
@@ -128,12 +136,12 @@ const AuditPage = () => {
     const exportData = {
       exportDate: dayjs().format('YYYY-MM-DD HH:mm:ss'),
       dateRange: {
-        from: dateRange[0]?.format('YYYY-MM-DD HH:mm:ss'),
-        to: dateRange[1]?.format('YYYY-MM-DD HH:mm:ss')
+        from: filters.dateRange[0]?.format('YYYY-MM-DD HH:mm:ss'),
+        to: filters.dateRange[1]?.format('YYYY-MM-DD HH:mm:ss')
       },
       filters: {
-        entityType: entityFilter || 'All',
-        searchText: searchText || 'None'
+        entityType: filters.entityFilter || 'All',
+        searchText: filters.searchText || 'None'
       },
       totalRecords: filteredLogs.length,
       logs: filteredLogs
@@ -170,8 +178,8 @@ const AuditPage = () => {
                 <FilterLabel>{t('system:audit.filters.dateRange')}</FilterLabel>
                 <RangePicker
                   data-testid="audit-filter-date"
-                  value={dateRange}
-                  onChange={(dates) => setDateRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null])}
+                  value={filters.dateRange}
+                  onChange={(dates) => setFilter('dateRange', dates as [Dayjs | null, Dayjs | null])}
                   allowClear={false}
                   showTime={{
                     format: 'HH:mm:ss',
@@ -196,8 +204,8 @@ const AuditPage = () => {
                   data-testid="audit-filter-entity"
                   placeholder={t('system:audit.filters.allEntities')}
                   allowClear
-                  value={entityFilter}
-                  onChange={setEntityFilter}
+                  value={filters.entityFilter}
+                  onChange={(value) => setFilter('entityFilter', value)}
                   options={[
                     { label: t('system:audit.filters.allEntities'), value: undefined },
                     ...entityTypes.map(entity => ({ label: entity, value: entity }))
@@ -212,8 +220,8 @@ const AuditPage = () => {
                   data-testid="audit-filter-search"
                   placeholder={t('system:audit.filters.searchPlaceholder')}
                   prefix={<SearchOutlined />}
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
+                  value={filters.searchText}
+                  onChange={(e) => setFilter('searchText', e.target.value)}
                   allowClear
                   autoComplete="off"
                 />
@@ -295,13 +303,7 @@ const AuditPage = () => {
             showSizeChanger: true,
             pageSizeOptions: ['10', '25', '50', '100'],
             showTotal: (total, range) => t('system:audit.pagination.showing', { start: range[0], end: range[1], total }),
-            onChange: (page, size) => {
-              setCurrentPage(page);
-              if (size !== pageSize) {
-                setPageSize(size);
-                setCurrentPage(1); // Reset to first page when page size changes
-              }
-            },
+            onChange: onPageChange,
             position: ['bottomRight'],
             className: 'audit-table-pagination'
           }}
@@ -321,11 +323,7 @@ const AuditPage = () => {
                     </Text>
                     {!isError && (
                       <LinkButton
-                        onClick={() => {
-                          setSearchText('');
-                          setEntityFilter(undefined);
-                          setDateRange([dayjs().subtract(30, 'days'), dayjs()]);
-                        }}
+                        onClick={clearAllFilters}
                       >
                         {t('system:audit.empty.clearFilters')}
                       </LinkButton>

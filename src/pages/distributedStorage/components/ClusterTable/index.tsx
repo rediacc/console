@@ -7,11 +7,13 @@ import AuditTraceModal from '@/components/common/AuditTraceModal'
 import { ManageClusterMachinesModal } from '../ManageClusterMachinesModal'
 import { buildClusterColumns } from './columns'
 import { ClusterMachines } from './components/ClusterMachines'
+import { useTraceModal, useExpandableTable } from '@/hooks'
 import {
   TableContainer,
   EmptyStateWrapper,
   CreateClusterButton,
 } from './styles'
+import { confirmAction } from '@/utils/confirmations'
 
 interface ClusterTableProps {
   clusters: DistributedStorageCluster[]
@@ -31,16 +33,12 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
   onRunFunction,
 }) => {
   const { t } = useTranslation(['distributedStorage', 'common', 'machines'])
-  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
+  const [modal, contextHolder] = Modal.useModal()
+  const { expandedRowKeys, toggleRow, setExpandedRowKeys } = useExpandableTable()
   const [selectedCluster, setSelectedCluster] =
     useState<DistributedStorageCluster | null>(null)
   const [assignModalOpen, setAssignModalOpen] = useState(false)
-  const [auditTraceModal, setAuditTraceModal] = useState<{
-    open: boolean
-    entityType: string | null
-    entityIdentifier: string | null
-    entityName?: string
-  }>({ open: false, entityType: null, entityIdentifier: null })
+  const auditTrace = useTraceModal()
 
   const handleManageMachines = useCallback((cluster: DistributedStorageCluster) => {
     setSelectedCluster(cluster)
@@ -48,26 +46,28 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
   }, [])
 
   const handleAuditTrace = useCallback((cluster: DistributedStorageCluster) => {
-    setAuditTraceModal({
-      open: true,
+    auditTrace.open({
       entityType: 'DistributedStorageCluster',
       entityIdentifier: cluster.clusterName,
       entityName: cluster.clusterName,
     })
-  }, [])
+  }, [auditTrace])
 
   const handleDelete = useCallback(
     (cluster: DistributedStorageCluster) => {
-      Modal.confirm({
-        title: t('clusters.confirmDelete'),
-        content: t('clusters.deleteWarning', { name: cluster.clusterName }),
-        okText: t('common:actions.delete'),
+      confirmAction({
+        modal,
+        title: t('clusters.confirmDelete') as string,
+        content: t('clusters.deleteWarning', { name: cluster.clusterName }) as string,
+        okText: t('common:actions.delete') as string,
         okType: 'danger',
-        cancelText: t('common:actions.cancel'),
-        onOk: () => onDeleteCluster(cluster),
+        cancelText: t('common:actions.cancel') as string,
+        onConfirm: async () => {
+          onDeleteCluster(cluster)
+        },
       })
     },
-    [onDeleteCluster, t],
+    [modal, onDeleteCluster, t],
   )
 
   const handleFunctionRun = useCallback(
@@ -99,15 +99,11 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
     ],
   )
 
-  const toggleRow = useCallback(
+  const handleToggleRow = useCallback(
     (clusterName: string) => {
-      setExpandedRowKeys((prev) =>
-        prev.includes(clusterName)
-          ? prev.filter((key) => key !== clusterName)
-          : [...prev, clusterName],
-      )
+      toggleRow(clusterName)
     },
-    [],
+    [toggleRow],
   )
 
   const expandedRowRender = useCallback(
@@ -131,6 +127,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
 
   return (
     <>
+      {contextHolder}
       <TableContainer>
         <Table<DistributedStorageCluster>
           data-testid="ds-cluster-table"
@@ -166,7 +163,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
               ) {
                 return
               }
-              toggleRow(record.clusterName)
+              handleToggleRow(record.clusterName)
             },
           })}
           rowClassName={() => 'cluster-row'}
@@ -174,17 +171,11 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
       </TableContainer>
 
       <AuditTraceModal
-        open={auditTraceModal.open}
-        onCancel={() =>
-          setAuditTraceModal({
-            open: false,
-            entityType: null,
-            entityIdentifier: null,
-          })
-        }
-        entityType={auditTraceModal.entityType}
-        entityIdentifier={auditTraceModal.entityIdentifier}
-        entityName={auditTraceModal.entityName}
+        open={auditTrace.isOpen}
+        onCancel={auditTrace.close}
+        entityType={auditTrace.entityType}
+        entityIdentifier={auditTrace.entityIdentifier}
+        entityName={auditTrace.entityName}
       />
 
       {selectedCluster && (

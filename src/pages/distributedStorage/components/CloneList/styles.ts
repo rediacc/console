@@ -42,14 +42,6 @@ export const TableWrapper = styled.div`
   background: ${({ theme }) => theme.colors.bgPrimary};
 `
 
-export const ActionButton = styled(Button)`
-  && {
-    display: inline-flex;
-    align-items: center;
-    gap: ${({ theme }) => theme.spacing.XS}px;
-  }
-`
-
 export const IconActionButton = styled(Button)`
   && {
     display: inline-flex;
@@ -68,14 +60,6 @@ export const IconActionButton = styled(Button)`
     }
   }
 `
-
-export const RemoteButton = styled(ActionButton)`
-  && {
-    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
-  }
-`
-
-export const DropdownButton = styled(IconActionButton)``
 
 export const ExpandButton = styled(IconActionButton)`
   margin-right: ${({ theme }) => theme.spacing.SM}px;

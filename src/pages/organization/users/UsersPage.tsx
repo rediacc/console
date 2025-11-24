@@ -16,6 +16,7 @@ import AuditTraceModal from '@/components/common/AuditTraceModal'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createUserSchema, CreateUserForm } from '@/utils/validation'
+import { useDialogState, useTraceModal } from '@/hooks/useDialogState'
 import {
   useUsers,
   useCreateUser,
@@ -43,17 +44,9 @@ const UsersPage: React.FC = () => {
   const { t: tCommon } = useTranslation('common')
 
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false)
-  const [assignPermissionModal, setAssignPermissionModal] = useState<{
-    open: boolean
-    user?: User
-  }>({ open: false })
+  const assignPermissionModal = useDialogState<User>()
   const [selectedUserGroup, setSelectedUserGroup] = useState('')
-  const [auditTraceModal, setAuditTraceModal] = useState<{
-    open: boolean
-    entityType: string | null
-    entityIdentifier: string | null
-    entityName?: string
-  }>({ open: false, entityType: null, entityIdentifier: null })
+  const auditTrace = useTraceModal()
 
   const userForm = useForm<CreateUserForm>({
     resolver: zodResolver(createUserSchema),
@@ -117,14 +110,14 @@ const UsersPage: React.FC = () => {
   }
 
   const handleAssignUserPermissions = async () => {
-    if (!assignPermissionModal.user || !selectedUserGroup) return
+    if (!assignPermissionModal.state.data || !selectedUserGroup) return
 
     try {
       await assignUserPermissionsMutation.mutateAsync({
-        userEmail: assignPermissionModal.user.userEmail,
+        userEmail: assignPermissionModal.state.data.userEmail,
         permissionGroupName: selectedUserGroup,
       })
-      setAssignPermissionModal({ open: false })
+      assignPermissionModal.close()
       setSelectedUserGroup('')
     } catch {
       // handled by mutation
@@ -190,7 +183,7 @@ const UsersPage: React.FC = () => {
               size="small"
               icon={<SafetyOutlined />}
               onClick={() => {
-                setAssignPermissionModal({ open: true, user: record })
+                assignPermissionModal.open(record)
                 setSelectedUserGroup(record.permissionGroupName || '')
               }}
               data-testid={`system-user-permissions-button-${record.userEmail}`}
@@ -203,8 +196,7 @@ const UsersPage: React.FC = () => {
               size="small"
               icon={<HistoryOutlined />}
               onClick={() =>
-                setAuditTraceModal({
-                  open: true,
+                auditTrace.open({
                   entityType: 'User',
                   entityIdentifier: record.userEmail,
                   entityName: record.userEmail,
@@ -322,10 +314,10 @@ const UsersPage: React.FC = () => {
       </Modal>
 
       <Modal
-        title={`${t('users.modals.assignTitle', { defaultValue: 'Assign Permissions' })} - ${assignPermissionModal.user?.userEmail || ''}`}
-        open={assignPermissionModal.open}
+        title={`${t('users.modals.assignTitle', { defaultValue: 'Assign Permissions' })} - ${assignPermissionModal.state.data?.userEmail || ''}`}
+        open={assignPermissionModal.isOpen}
         onCancel={() => {
-          setAssignPermissionModal({ open: false })
+          assignPermissionModal.close()
           setSelectedUserGroup('')
         }}
         onOk={handleAssignUserPermissions}
@@ -352,11 +344,11 @@ const UsersPage: React.FC = () => {
       </Modal>
 
       <AuditTraceModal
-        open={auditTraceModal.open}
-        onCancel={() => setAuditTraceModal({ open: false, entityType: null, entityIdentifier: null })}
-        entityType={auditTraceModal.entityType}
-        entityIdentifier={auditTraceModal.entityIdentifier}
-        entityName={auditTraceModal.entityName}
+        open={auditTrace.isOpen}
+        onCancel={auditTrace.close}
+        entityType={auditTrace.entityType}
+        entityIdentifier={auditTrace.entityIdentifier}
+        entityName={auditTrace.entityName}
       />
     </UsersPageWrapper>
   )

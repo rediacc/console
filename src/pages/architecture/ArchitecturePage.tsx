@@ -18,15 +18,13 @@ import { useTranslation } from 'react-i18next'
 import { useCompanyArchitecture } from '@/api/queries/architecture'
 import { useTheme } from '@/context/ThemeContext'
 import * as d3 from 'd3'
+import { SectionCard, IconButton, CompactIconButton } from '@/styles/primitives'
 import {
   PageWrapper,
   ContentStack,
-  SectionCard,
   HeaderStack,
   HeaderRow,
   ActionGroup,
-  IconButton,
-  CompactIconButton,
   FiltersRow,
   FilterLabel,
   FilterSelectWrapper,

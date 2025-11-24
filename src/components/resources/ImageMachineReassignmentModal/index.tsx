@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import { Select, Spin } from 'antd'
 import { useTranslation } from 'react-i18next'
-import type { DistributedStorageRbdImage } from '@/api/queries/distributedStorage'
 import {
   useGetAvailableMachinesForClone,
-  useUpdateImageMachineAssignment,
+  type DistributedStorageRbdImage,
   type AvailableMachine,
 } from '@/api/queries/distributedStorage'
+import {
+  useUpdateImageMachineAssignment,
+} from '@/api/queries/distributedStorageMutations'
 import {
   StyledModal,
   TitleStack,

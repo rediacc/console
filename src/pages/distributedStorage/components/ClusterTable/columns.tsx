@@ -1,6 +1,5 @@
 import type { ColumnsType } from 'antd/es/table'
 import type { TFunction } from 'i18next'
-import { Dropdown, Tooltip } from 'antd'
 import {
   EditOutlined,
   DeleteOutlined,
@@ -9,6 +8,8 @@ import {
 } from '@/utils/optimizedIcons'
 import type { DistributedStorageCluster } from '@/api/queries/distributedStorage'
 import { createSorter } from '@/core'
+import { ActionButtonGroup } from '@/components/common/ActionButtonGroup'
+import { VersionTag } from '@/components/common/columns'
 import { MachineCountBadge } from './components/MachineCountBadge'
 import { getClusterFunctionMenuItems } from './menus'
 import {
@@ -17,10 +18,7 @@ import {
   ClusterIcon,
   ClusterNameText,
   TeamTag,
-  VersionTag,
-  ActionButton,
   ManageMachinesButton,
-  ActionsContainer,
   MachineManageCell,
 } from './styles'
 
@@ -109,65 +107,47 @@ export const buildClusterColumns = ({
     key: 'actions',
     width: 260,
     render: (_: unknown, record: DistributedStorageCluster) => (
-      <ActionsContainer>
-        <Tooltip title={t('common:actions.edit')}>
-          <ActionButton
-            type="primary"
-            size="small"
-            icon={<EditOutlined />}
-            data-testid={`ds-cluster-edit-${record.clusterName}`}
-            onClick={() => onEditCluster(record)}
-            aria-label={t('common:actions.edit')}
-          />
-        </Tooltip>
-        <Dropdown
-          menu={{
-            items: getClusterFunctionMenuItems(t),
-            onClick: ({ key }) => {
+      <ActionButtonGroup
+        buttons={[
+          {
+            type: 'edit',
+            icon: <EditOutlined />,
+            tooltip: 'common:actions.edit',
+            onClick: () => onEditCluster(record),
+          },
+          {
+            type: 'function-dropdown',
+            icon: <FunctionOutlined />,
+            tooltip: 'common:actions.remote',
+            dropdownItems: getClusterFunctionMenuItems(t),
+            onDropdownClick: (key) => {
               if (key === 'advanced') {
                 onRunFunction(record)
               } else {
-                onRunFunction({
-                  ...record,
-                  preselectedFunction: key,
-                })
+                onRunFunction({ ...record, preselectedFunction: key })
               }
             },
-          }}
-          trigger={['click']}
-        >
-          <Tooltip title={t('common:actions.remote')}>
-            <ActionButton
-              type="primary"
-              size="small"
-              icon={<FunctionOutlined />}
-              data-testid={`ds-cluster-function-dropdown-${record.clusterName}`}
-              aria-label={t('common:actions.remote')}
-            />
-          </Tooltip>
-        </Dropdown>
-        <Tooltip title={t('common:actions.trace')}>
-          <ActionButton
-            type="default"
-            size="small"
-            icon={<HistoryOutlined />}
-            data-testid={`ds-cluster-trace-${record.clusterName}`}
-            onClick={() => onShowAuditTrace(record)}
-            aria-label={t('common:actions.trace')}
-          />
-        </Tooltip>
-        <Tooltip title={t('common:actions.delete')}>
-          <ActionButton
-            type="primary"
-            danger
-            size="small"
-            icon={<DeleteOutlined />}
-            data-testid={`ds-cluster-delete-${record.clusterName}`}
-            onClick={() => onDeleteCluster(record)}
-            aria-label={t('common:actions.delete')}
-          />
-        </Tooltip>
-      </ActionsContainer>
+          },
+          {
+            type: 'trace',
+            icon: <HistoryOutlined />,
+            tooltip: 'common:actions.trace',
+            onClick: () => onShowAuditTrace(record),
+            variant: 'default',
+          },
+          {
+            type: 'delete',
+            icon: <DeleteOutlined />,
+            tooltip: 'common:actions.delete',
+            onClick: () => onDeleteCluster(record),
+            danger: true,
+          },
+        ]}
+        record={record}
+        idField="clusterName"
+        testIdPrefix="ds-cluster"
+        t={t}
+      />
     ),
   },
 ]

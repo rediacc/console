@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { Card, Space, Typography, Button } from 'antd'
+import { Space, Typography, Button } from 'antd'
 import { FilterOutlined } from '@/utils/optimizedIcons'
 import { PageContainer } from '@/styles/primitives'
 
@@ -10,8 +10,6 @@ export const PageWrapper = PageContainer
 export const ContentStack = styled(Space).attrs({ direction: 'vertical', size: 'large' })`
   width: 100%;
 `
-
-export const FilterCard = styled(Card).attrs({ className: 'page-card' })``
 
 export const FilterField = styled(Space).attrs({ direction: 'vertical', size: 'small' })`
   width: 100%;
@@ -39,17 +37,10 @@ export const ActionButtonFull = styled(Button)`
   justify-content: center;
 `
 
-export const CompactButton = styled(Button)`
-  min-width: ${({ theme }) => theme.spacing['5']}px;
-  min-height: ${({ theme }) => theme.spacing['5']}px;
-`
-
 export const LinkButton = styled(Button).attrs({ type: 'link' })`
   padding: 0;
   height: auto;
 `
-
-export const TableCard = styled(Card).attrs({ className: 'page-card' })``
 
 export const TableHeader = styled.div`
   display: flex;

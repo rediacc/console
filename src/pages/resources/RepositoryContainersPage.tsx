@@ -9,6 +9,8 @@ import { RepositoryContainerList } from '@/components/resources/RepositoryContai
 import { Machine } from '@/types'
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
+import { useQueueTraceModal } from '@/hooks/useDialogState'
+import { IconButton } from '@/styles/primitives'
 import {
   PageWrapper,
   FullHeightCard,
@@ -19,7 +21,6 @@ import {
   TitleRow,
   TagRow,
   ActionsRow,
-  IconButton,
   SplitLayout,
   ListPanel,
   DetailBackdrop,
@@ -93,11 +94,7 @@ const RepositoryContainersPage: React.FC = () => {
 
   const [selectedContainer, setSelectedContainer] = useState<ContainerData | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
-  const [queueTraceModal, setQueueTraceModal] = useState<{
-    visible: boolean
-    taskId: string
-    machineName: string
-  }>({ visible: false, taskId: '', machineName: '' })
+  const queueTrace = useQueueTraceModal()
 
   // Fetch machine data if not provided via state
   const { data: machines, isLoading: machinesLoading, refetch: refetchMachines } = useMachines()
@@ -311,7 +308,7 @@ const RepositoryContainersPage: React.FC = () => {
               onContainerClick={handleContainerClick}
               highlightedContainer={selectedContainer as any}
               onQueueItemCreated={(taskId, machineName) => {
-                setQueueTraceModal({ visible: true, taskId, machineName })
+                queueTrace.open(taskId, machineName)
               }}
             />
           </ListPanel>
@@ -346,12 +343,12 @@ const RepositoryContainersPage: React.FC = () => {
         </SplitLayout>
       </FullHeightCard>
 
-      {queueTraceModal.visible && (
+      {queueTrace.state.visible && (
         <QueueItemTraceModal
-          taskId={queueTraceModal.taskId}
-          visible={queueTraceModal.visible}
+          taskId={queueTrace.state.taskId}
+          visible={queueTrace.state.visible}
           onClose={() => {
-            setQueueTraceModal({ visible: false, taskId: '', machineName: '' })
+            queueTrace.close()
             handleRefresh()
           }}
         />

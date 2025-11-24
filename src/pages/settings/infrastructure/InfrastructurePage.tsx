@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next'
 import ResourceListView from '@/components/common/ResourceListView'
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
+import { useDialogState, useTraceModal } from '@/hooks/useDialogState'
 import { ModalSize } from '@/types/modal'
 import { featureFlags } from '@/config/featureFlags'
 import {
@@ -71,21 +72,9 @@ const InfrastructurePage: React.FC = () => {
   const uiMode = useSelector((state: RootState) => state.ui.uiMode)
 
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
-  const [bridgeCredentialsModal, setBridgeCredentialsModal] = useState<{
-    open: boolean
-    bridge?: Bridge
-  }>({ open: false })
-  const [resetAuthModal, setResetAuthModal] = useState<{
-    open: boolean
-    bridgeName: string
-    isCloudManaged: boolean
-  }>({ open: false, bridgeName: '', isCloudManaged: false })
-  const [auditTraceModal, setAuditTraceModal] = useState<{
-    open: boolean
-    entityType: string | null
-    entityIdentifier: string | null
-    entityName?: string
-  }>({ open: false, entityType: null, entityIdentifier: null })
+  const bridgeCredentialsModal = useDialogState<Bridge>()
+  const resetAuthModal = useDialogState<{ bridgeName: string; isCloudManaged: boolean }>()
+  const auditTrace = useTraceModal()
   const [unifiedModalState, setUnifiedModalState] = useState<{
     open: boolean
     resourceType: 'region' | 'bridge'
@@ -223,12 +212,15 @@ const InfrastructurePage: React.FC = () => {
   }
 
   const handleResetBridgeAuth = async () => {
+    const data = resetAuthModal.state.data
+    if (!data) return
+
     try {
       await resetBridgeAuthMutation.mutateAsync({
-        bridgeName: resetAuthModal.bridgeName,
-        isCloudManaged: resetAuthModal.isCloudManaged,
+        bridgeName: data.bridgeName,
+        isCloudManaged: data.isCloudManaged,
       })
-      setResetAuthModal({ open: false, bridgeName: '', isCloudManaged: false })
+      resetAuthModal.close()
     } catch {
       // handled by mutation
     }
@@ -298,8 +290,7 @@ const InfrastructurePage: React.FC = () => {
               size="small"
               icon={<HistoryOutlined />}
               onClick={() =>
-                setAuditTraceModal({
-                  open: true,
+                auditTrace.open({
                   entityType: 'Region',
                   entityIdentifier: record.regionName,
                   entityName: record.regionName,
@@ -428,7 +419,7 @@ const InfrastructurePage: React.FC = () => {
               type="primary"
               size="small"
               icon={<KeyOutlined />}
-              onClick={() => setBridgeCredentialsModal({ open: true, bridge: record })}
+              onClick={() => bridgeCredentialsModal.open(record)}
               data-testid={`system-bridge-token-button-${record.bridgeName}`}
               aria-label={tSystem('actions.token')}
             />
@@ -439,8 +430,7 @@ const InfrastructurePage: React.FC = () => {
               size="small"
               icon={<SyncOutlined />}
               onClick={() =>
-                setResetAuthModal({
-                  open: true,
+                resetAuthModal.open({
                   bridgeName: record.bridgeName,
                   isCloudManaged: false,
                 })
@@ -455,8 +445,7 @@ const InfrastructurePage: React.FC = () => {
               size="small"
               icon={<HistoryOutlined />}
               onClick={() =>
-                setAuditTraceModal({
-                  open: true,
+                auditTrace.open({
                   entityType: 'Bridge',
                   entityIdentifier: record.bridgeName,
                   entityName: record.bridgeName,
@@ -622,18 +611,18 @@ const InfrastructurePage: React.FC = () => {
 
       {!featureFlags.isEnabled('disableBridge') && (
         <Modal
-          title={`${t('bridges.bridgeToken')} - ${bridgeCredentialsModal.bridge?.bridgeName || ''}`}
-          open={bridgeCredentialsModal.open}
-          onCancel={() => setBridgeCredentialsModal({ open: false })}
+          title={`${t('bridges.bridgeToken')} - ${bridgeCredentialsModal.state.data?.bridgeName || ''}`}
+          open={bridgeCredentialsModal.isOpen}
+          onCancel={() => bridgeCredentialsModal.close()}
           footer={[
-            <Button key="close" onClick={() => setBridgeCredentialsModal({ open: false })}>
+            <Button key="close" onClick={() => bridgeCredentialsModal.close()}>
               {tCommon('actions.close')}
             </Button>,
           ]}
           className={ModalSize.Medium}
         >
           {(() => {
-            const bridge = bridgeCredentialsModal.bridge
+            const bridge = bridgeCredentialsModal.state.data
             if (!bridge) return null
 
             const token = bridge.bridgeCredentials
@@ -701,11 +690,11 @@ const InfrastructurePage: React.FC = () => {
       )}
 
       <AuditTraceModal
-        open={auditTraceModal.open}
-        onCancel={() => setAuditTraceModal({ open: false, entityType: null, entityIdentifier: null })}
-        entityType={auditTraceModal.entityType}
-        entityIdentifier={auditTraceModal.entityIdentifier}
-        entityName={auditTraceModal.entityName}
+        open={auditTrace.isOpen}
+        onCancel={auditTrace.close}
+        entityType={auditTrace.entityType}
+        entityIdentifier={auditTrace.entityIdentifier}
+        entityName={auditTrace.entityName}
       />
 
       <UnifiedResourceModal
@@ -731,12 +720,12 @@ const InfrastructurePage: React.FC = () => {
       {!featureFlags.isEnabled('disableBridge') && (
         <Modal
           title={t('bridges.resetAuth')}
-          open={resetAuthModal.open}
-          onCancel={() => setResetAuthModal({ open: false, bridgeName: '', isCloudManaged: false })}
+          open={resetAuthModal.isOpen}
+          onCancel={() => resetAuthModal.close()}
           footer={[
             <Button
               key="cancel"
-              onClick={() => setResetAuthModal({ open: false, bridgeName: '', isCloudManaged: false })}
+              onClick={() => resetAuthModal.close()}
             >
               {tCommon('actions.cancel')}
             </Button>,
@@ -751,33 +740,35 @@ const InfrastructurePage: React.FC = () => {
             </Button>,
           ]}
         >
-          <ModalStack>
-            <ModalAlert
-              message={tCommon('general.warning')}
-              description={t('bridges.resetAuthWarning', { bridge: resetAuthModal.bridgeName })}
-              type="warning"
-              showIcon
-            />
+          {resetAuthModal.state.data && (
+            <ModalStack>
+              <ModalAlert
+                message={tCommon('general.warning')}
+                description={t('bridges.resetAuthWarning', { bridge: resetAuthModal.state.data.bridgeName })}
+                type="warning"
+                showIcon
+              />
 
-            <Form layout="vertical">
-              <Form.Item
-                label={t('bridges.cloudManagement')}
-                help={t('bridges.cloudManagementHelp')}
-              >
-                <Checkbox
-                  checked={resetAuthModal.isCloudManaged}
-                  onChange={(e) =>
-                    setResetAuthModal((prev) => ({
-                      ...prev,
-                      isCloudManaged: e.target.checked,
-                    }))
-                  }
+              <Form layout="vertical">
+                <Form.Item
+                  label={t('bridges.cloudManagement')}
+                  help={t('bridges.cloudManagementHelp')}
                 >
-                  {t('bridges.enableCloudManagement')}
-                </Checkbox>
-              </Form.Item>
-            </Form>
-          </ModalStack>
+                  <Checkbox
+                    checked={resetAuthModal.state.data.isCloudManaged}
+                    onChange={(e) =>
+                      resetAuthModal.setData({
+                        bridgeName: resetAuthModal.state.data!.bridgeName,
+                        isCloudManaged: e.target.checked,
+                      })
+                    }
+                  >
+                    {t('bridges.enableCloudManagement')}
+                  </Checkbox>
+                </Form.Item>
+              </Form>
+            </ModalStack>
+          )}
         </Modal>
       )}
     </PageWrapper>

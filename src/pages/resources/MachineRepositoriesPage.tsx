@@ -13,6 +13,8 @@ import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import { RemoteFileBrowserModal } from '@/components/resources/RemoteFileBrowserModal'
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import { useRepositoryCreation } from '@/hooks/useRepositoryCreation'
+import { useDialogState, useQueueTraceModal } from '@/hooks/useDialogState'
+import { IconButton } from '@/styles/primitives'
 import {
   PageWrapper,
   FullHeightCard,
@@ -23,7 +25,6 @@ import {
   TitleRow,
   TagRow,
   ActionsRow,
-  IconButton,
   HeaderTitleText,
   SplitLayout,
   ListPanel,
@@ -88,27 +89,16 @@ const MachineRepositoriesPage: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0)
 
   // Queue trace modal state
-  const [queueTraceModal, setQueueTraceModal] = useState<{
-    visible: boolean
-    taskId: string | null
-    machineName: string | null
-  }>({
-    visible: false,
-    taskId: null,
-    machineName: null
-  })
+  const queueTrace = useQueueTraceModal()
 
   // Remote file browser modal state
-  const [remoteFileBrowserModal, setRemoteFileBrowserModal] = useState<{
-    open: boolean
-    machine: Machine | null
-  }>({ open: false, machine: null })
+  const fileBrowserModal = useDialogState<Machine>()
 
-  // Unified resource modal state
+  // Unified resource modal state (kept as useState due to complex prefilled data needs)
   const [unifiedModalState, setUnifiedModalState] = useState<{
     open: boolean
     mode: 'create' | 'edit' | 'vault'
-    data?: any
+    data?: Record<string, unknown>
     creationContext?: 'credentials-only' | 'normal'
   }>({
     open: false,
@@ -172,12 +162,10 @@ const MachineRepositoriesPage: React.FC = () => {
   const handlePull = () => {
     if (!machine) return
 
-    setRemoteFileBrowserModal({
-      open: true,
-      machine: machine
-    })
+    fileBrowserModal.open(machine)
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleUnifiedModalSubmit = async (data: any) => {
     const result = await createRepository(data)
 
@@ -186,11 +174,7 @@ const MachineRepositoriesPage: React.FC = () => {
 
       // If we have a taskId, open the queue trace modal
       if (result.taskId) {
-        setQueueTraceModal({
-          visible: true,
-          taskId: result.taskId,
-          machineName: result.machineName || null
-        })
+        queueTrace.open(result.taskId, result.machineName || undefined)
       } else {
         // No queue item (credentials-only mode), just refresh
         await handleRefresh()
@@ -384,7 +368,7 @@ const MachineRepositoriesPage: React.FC = () => {
                 onRepositoryClick={handleRepositoryClick}
                 onContainerClick={handleContainerClick}
                 onQueueItemCreated={(taskId, machineName) => {
-                  setQueueTraceModal({ visible: true, taskId, machineName })
+                  queueTrace.open(taskId, machineName || undefined)
                 }}
               />
             )}
@@ -416,28 +400,24 @@ const MachineRepositoriesPage: React.FC = () => {
       </FullHeightCard>
 
       <QueueItemTraceModal
-        taskId={queueTraceModal.taskId}
-        visible={queueTraceModal.visible}
+        taskId={queueTrace.state.taskId}
+        visible={queueTrace.state.visible}
         onClose={() => {
-          setQueueTraceModal({ visible: false, taskId: null, machineName: null })
+          queueTrace.close()
           handleRefresh()
         }}
       />
 
-      {remoteFileBrowserModal.machine && (
+      {fileBrowserModal.state.data && (
         <RemoteFileBrowserModal
-          open={remoteFileBrowserModal.open}
-          onCancel={() => setRemoteFileBrowserModal({ open: false, machine: null })}
-          machineName={remoteFileBrowserModal.machine.machineName}
-          teamName={remoteFileBrowserModal.machine.teamName}
-          bridgeName={remoteFileBrowserModal.machine.bridgeName}
+          open={fileBrowserModal.isOpen}
+          onCancel={fileBrowserModal.close}
+          machineName={fileBrowserModal.state.data.machineName}
+          teamName={fileBrowserModal.state.data.teamName}
+          bridgeName={fileBrowserModal.state.data.bridgeName}
           onQueueItemCreated={(taskId: string) => {
-            setQueueTraceModal({
-              visible: true,
-              taskId,
-              machineName: remoteFileBrowserModal.machine?.machineName || null
-            })
-            setRemoteFileBrowserModal({ open: false, machine: null })
+            queueTrace.open(taskId, fileBrowserModal.state.data?.machineName || undefined)
+            fileBrowserModal.close()
           }}
         />
       )}

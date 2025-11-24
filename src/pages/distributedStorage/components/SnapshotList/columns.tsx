@@ -1,12 +1,12 @@
-import { Dropdown, Space, Tooltip } from 'antd'
+import { Tooltip } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined, CloudUploadOutlined } from '@ant-design/icons'
 import { TFunction } from 'i18next'
 import { createSorter } from '@/core'
 import type { DistributedStorageRbdSnapshot } from '@/api/queries/distributedStorage'
+import { ActionButtonGroup } from '@/components/common/ActionButtonGroup'
 import {
-  ActionButton,
   GuidText,
   NameCell,
   NameIcon,
@@ -64,24 +64,29 @@ export const buildSnapshotColumns = ({
     key: 'actions',
     width: 150,
     render: (_: unknown, record: DistributedStorageRbdSnapshot) => (
-      <Space>
-        <Tooltip title={t('common.remote')}>
-          <ActionButton
-            size="small"
-            icon={<CloudUploadOutlined />}
-            onClick={() => handleRunFunction('distributed_storage_rbd_snapshot_list', record)}
-            data-testid={`snapshot-list-remote-${record.snapshotName}`}
-            aria-label={t('common.remote')}
-          />
-        </Tooltip>
-        <Dropdown menu={{ items: getSnapshotMenuItems(record) }} trigger={['click']}>
-          <ActionButton
-            size="small"
-            icon={<EllipsisOutlined />}
-            data-testid={`snapshot-list-menu-${record.snapshotName}`}
-          />
-        </Dropdown>
-      </Space>
+      <ActionButtonGroup
+        buttons={[
+          {
+            type: 'remote',
+            icon: <CloudUploadOutlined />,
+            tooltip: 'distributedStorage:common.remote',
+            onClick: () => handleRunFunction('distributed_storage_rbd_snapshot_list', record),
+            testIdSuffix: 'remote',
+          },
+          {
+            type: 'menu',
+            icon: <EllipsisOutlined />,
+            tooltip: 'distributedStorage:common.moreActions',
+            dropdownItems: getSnapshotMenuItems(record),
+            variant: 'default',
+            testIdSuffix: 'menu',
+          },
+        ]}
+        record={record}
+        idField="snapshotName"
+        testIdPrefix="snapshot-list"
+        t={t}
+      />
     ),
   },
 ]

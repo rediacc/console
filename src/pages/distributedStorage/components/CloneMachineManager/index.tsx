@@ -4,17 +4,20 @@ import { useTranslation } from 'react-i18next'
 import {
   useGetCloneMachines,
   useGetAvailableMachinesForClone,
-  useUpdateCloneMachineAssignments,
-  useUpdateCloneMachineRemovals,
   type DistributedStorageRbdClone,
   type DistributedStorageRbdSnapshot,
   type DistributedStorageRbdImage,
   type DistributedStoragePool,
   type CloneMachine,
 } from '@/api/queries/distributedStorage'
+import {
+  useUpdateCloneMachineAssignments,
+  useUpdateCloneMachineRemovals,
+} from '@/api/queries/distributedStorageMutations'
 import { MachineExclusivityWarning } from '@/components/distributedStorage/MachineExclusivityWarning'
 import { PlusOutlined } from '@/utils/optimizedIcons'
 import { buildCloneMachineColumns } from './columns'
+import { useDialogState } from '@/hooks/useDialogState'
 import {
   ManagerCard,
   TableContainer,
@@ -45,7 +48,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
   const { t } = useTranslation(['distributedStorage', 'machines', 'common'])
   const [searchText, setSearchText] = useState('')
   const [selectedMachines, setSelectedMachines] = useState<string[]>([])
-  const [addModalOpen, setAddModalOpen] = useState(false)
+  const addModal = useDialogState<void>()
   const [selectedNewMachines, setSelectedNewMachines] = useState<string[]>([])
   const [isAdding, setIsAdding] = useState(false)
   const [isRemoving, setIsRemoving] = useState(false)
@@ -66,7 +69,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
   const {
     data: availableMachines = [],
     isLoading: loadingAvailable,
-  } = useGetAvailableMachinesForClone(teamName, addModalOpen)
+  } = useGetAvailableMachinesForClone(teamName, addModal.isOpen)
 
   const assignMutation = useUpdateCloneMachineAssignments()
   const removeMutation = useUpdateCloneMachineRemovals()
@@ -91,7 +94,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
   )
 
   const handleAddMachines = () => {
-    setAddModalOpen(true)
+    addModal.open()
     setSelectedNewMachines([])
   }
 
@@ -112,7 +115,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
         machineNames: selectedNewMachines.join(','),
       })
 
-      setAddModalOpen(false)
+      addModal.close()
       refetchMachines()
     } catch {
       // handled via showMessage in mutation
@@ -266,14 +269,14 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
       )}
 
       <AssignMachinesModal
-        open={addModalOpen}
+        open={addModal.isOpen}
         availableMachines={availableMachines}
         selectedMachines={selectedNewMachines}
         isLoading={loadingAvailable}
         isSubmitting={isAdding}
         onSelectionChange={setSelectedNewMachines}
         onAssign={handleAssignMachines}
-        onCancel={() => setAddModalOpen(false)}
+        onCancel={addModal.close}
         t={t}
       />
     </ManagerCard>

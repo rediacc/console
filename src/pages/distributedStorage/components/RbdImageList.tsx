@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Table, Button, Space, Dropdown, Tag, Tooltip, message } from 'antd'
-import { 
-  PlusOutlined, 
-  SettingOutlined, 
-  DeleteOutlined, 
+import { Table, Button, Space, Tag, Tooltip, message } from 'antd'
+import { ActionButtonGroup } from '@/components/common/ActionButtonGroup'
+import {
+  PlusOutlined,
+  SettingOutlined,
+  DeleteOutlined,
   EllipsisOutlined,
   FileImageOutlined,
   CameraOutlined,
@@ -20,20 +21,24 @@ import {
 import { useTranslation } from 'react-i18next'
 import type { MenuProps } from 'antd'
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
-import { 
-  useDistributedStorageRbdImages, 
-  useDeleteDistributedStorageRbdImage,
-  useCreateDistributedStorageRbdImage,
-  useUpdateDistributedStoragePoolVault,
+import {
+  useDistributedStorageRbdImages,
   useGetAvailableMachinesForClone,
   type DistributedStorageRbdImage,
   type DistributedStoragePool
 } from '@/api/queries/distributedStorage'
+import {
+  useDeleteDistributedStorageRbdImage,
+  useCreateDistributedStorageRbdImage,
+  useUpdateDistributedStoragePoolVault,
+} from '@/api/queries/distributedStorageMutations'
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import { ImageMachineReassignmentModal } from '@/components/resources/ImageMachineReassignmentModal'
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
+import { useDialogState, useQueueTraceModal, useExpandableTable } from '@/hooks'
+import { renderTruncatedId } from '@/components/common/columns'
 import SnapshotList from './SnapshotList'
 import { createSorter } from '@/core'
 
@@ -46,18 +51,14 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
   const { t } = useTranslation('distributedStorage')
   const tableStyles = useTableStyles()
   const componentStyles = useComponentStyles()
-  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
+  const { expandedRowKeys, setExpandedRowKeys } = useExpandableTable()
   const [modalState, setModalState] = useState<{
     open: boolean
     mode: 'create' | 'edit' | 'vault'
     data?: Record<string, any>
   }>({ open: false, mode: 'create' })
-  const [queueModalVisible, setQueueModalVisible] = useState(false)
-  const [queueModalTaskId, setQueueModalTaskId] = useState<string>('')
-  const [reassignMachineModal, setReassignMachineModal] = useState<{
-    open: boolean
-    image: DistributedStorageRbdImage | null
-  }>({ open: false, image: null })
+  const queueTrace = useQueueTraceModal()
+  const reassignMachineModal = useDialogState<DistributedStorageRbdImage>()
   const managedQueueMutation = useManagedQueueItem()
   const { buildQueueVault } = useQueueVaultBuilder()
   
@@ -93,7 +94,7 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
   }
   
   const handleReassignMachine = (image: DistributedStorageRbdImage) => {
-    setReassignMachineModal({ open: true, image })
+    reassignMachineModal.open(image)
   }
   
   const handleRunFunction = async (functionName: string, image?: DistributedStorageRbdImage) => {
@@ -131,8 +132,7 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
   }
   
   const handleQueueItemCreated = (taskId: string) => {
-    setQueueModalTaskId(taskId)
-    setQueueModalVisible(true)
+    queueTrace.open(taskId)
     message.success(t('queue.itemCreated'))
   }
   
@@ -254,13 +254,7 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
       key: 'imageGuid',
       width: 300,
       sorter: createSorter<DistributedStorageRbdImage>('imageGuid'),
-      render: (text: string) => (
-        <Tooltip title={text}>
-          <span style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-            {text.substring(0, 8)}...
-          </span>
-        </Tooltip>
-      ),
+      render: (text: string) => renderTruncatedId(text),
     },
     {
       title: t('images.assignedMachine'),
@@ -283,29 +277,29 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
       key: 'actions',
       width: 150,
       render: (_: unknown, record: DistributedStorageRbdImage) => (
-        <Space data-testid={`rbd-image-actions-${record.imageName}`}>
-          <Tooltip title={t('common.remote')}>
-            <Button
-              size="small"
-              icon={<CloudUploadOutlined />}
-              onClick={() => handleRunFunction('distributed_storage_rbd_info', record)}
-              data-testid={`rbd-remote-button-${record.imageName}`}
-              style={tableStyles.tableActionButton}
-              aria-label={t('common.remote')}
-            />
-          </Tooltip>
-          <Dropdown
-            menu={{ items: getImageMenuItems(record) }}
-            trigger={['click']}
-          >
-            <Button 
-              size="small" 
-              icon={<EllipsisOutlined />} 
-              data-testid={`rbd-actions-dropdown-${record.imageName}`}
-              style={tableStyles.tableActionButton}
-            />
-          </Dropdown>
-        </Space>
+        <ActionButtonGroup
+          buttons={[
+            {
+              type: 'remote',
+              icon: <CloudUploadOutlined />,
+              tooltip: 'distributedStorage:common.remote',
+              onClick: () => handleRunFunction('distributed_storage_rbd_info', record),
+              testIdSuffix: 'remote-button',
+            },
+            {
+              type: 'actions',
+              icon: <EllipsisOutlined />,
+              tooltip: 'distributedStorage:common.moreActions',
+              dropdownItems: getImageMenuItems(record),
+              variant: 'default',
+              testIdSuffix: 'actions-dropdown',
+            },
+          ]}
+          record={record}
+          idField="imageName"
+          testIdPrefix="rbd"
+          t={t}
+        />
       ),
     },
   ]
@@ -400,22 +394,24 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
       />
       
       <QueueItemTraceModal
-        visible={queueModalVisible}
-        onClose={() => setQueueModalVisible(false)}
-        taskId={queueModalTaskId}
+        visible={queueTrace.state.visible}
+        onClose={queueTrace.close}
+        taskId={queueTrace.state.taskId}
       />
-      
-      <ImageMachineReassignmentModal
-        open={reassignMachineModal.open}
-        image={reassignMachineModal.image}
-        teamName={pool.teamName}
-        poolName={pool.poolName}
-        onCancel={() => setReassignMachineModal({ open: false, image: null })}
-        onSuccess={() => {
-          setReassignMachineModal({ open: false, image: null })
-          // The query will automatically refresh due to invalidation in the mutation
-        }}
-      />
+
+      {reassignMachineModal.state.data && (
+        <ImageMachineReassignmentModal
+          open={reassignMachineModal.isOpen}
+          image={reassignMachineModal.state.data}
+          teamName={pool.teamName}
+          poolName={pool.poolName}
+          onCancel={reassignMachineModal.close}
+          onSuccess={() => {
+            reassignMachineModal.close()
+            // The query will automatically refresh due to invalidation in the mutation
+          }}
+        />
+      )}
     </>
   )
 }

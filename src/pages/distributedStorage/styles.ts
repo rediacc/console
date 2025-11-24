@@ -1,12 +1,10 @@
 import styled from 'styled-components'
-import { Card, Button, Typography } from 'antd'
+import { Typography } from 'antd'
 import { PageContainer } from '@/styles/primitives'
 
 const { Title } = Typography
 
 export const PageWrapper = PageContainer
-
-export const PageCard = styled(Card).attrs({ className: 'page-card' })``
 
 export const HeaderSection = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
@@ -50,30 +48,6 @@ export const ActionGroup = styled.div`
   flex-shrink: 0;
 `
 
-const iconButtonBase = styled(Button)`
-  min-width: ${({ theme }) => theme.spacing['6']}px;
-  min-height: ${({ theme }) => theme.spacing['6']}px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-`
-
-export const PrimaryIconButton = styled(iconButtonBase)`
-  background-color: ${({ theme }) => theme.colors.primary};
-  border-color: ${({ theme }) => theme.colors.primary};
-  color: ${({ theme }) => theme.colors.bgPrimary};
-
-  &:hover,
-  &:focus {
-    background-color: ${({ theme }) => theme.colors.primaryHover};
-    border-color: ${({ theme }) => theme.colors.primaryHover};
-    color: ${({ theme }) => theme.colors.bgPrimary};
-  }
-`
-
-export const SecondaryIconButton = styled(iconButtonBase)`
-  color: ${({ theme }) => theme.colors.textPrimary};
-`
 
 export const EmptyState = styled.div`
   padding: ${({ theme }) => theme.spacing['5']}px 0;
