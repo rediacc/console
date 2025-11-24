@@ -5,6 +5,8 @@ import { useAppSelector, useAppDispatch } from '@/store/store'
 import { selectCompany } from '@/store/auth/authSelectors'
 import { setVaultCompany } from '@/store/auth/authSlice'
 import { createVaultCompanySentinel } from '@/utils/vaultProtocol'
+import i18n from '@/i18n/config'
+import { createErrorHandler } from '@/utils/mutationUtils'
 
 /**
  * Enable vault encryption for a company by setting VaultCompany
@@ -14,11 +16,12 @@ export const useEnableCompanyEncryption = () => {
   const queryClient = useQueryClient()
   const dispatch = useAppDispatch()
   const company = useAppSelector(selectCompany)
+  const enableErrorHandler = createErrorHandler(i18n.t('system:vaultProtocol.errors.enableFailed'))
   
   return useMutation({
     mutationFn: async (masterPassword: string) => {
       if (!company) {
-        throw new Error('No company selected')
+        throw new Error(i18n.t('system:vaultProtocol.errors.noCompanySelected'))
       }
       
       // Create the encrypted sentinel value
@@ -30,7 +33,7 @@ export const useEnableCompanyEncryption = () => {
       })
       
       if (response.failure !== 0) {
-        throw new Error(response.errors?.join('; ') || 'Failed to enable encryption')
+        throw new Error(response.errors?.join('; ') || i18n.t('system:vaultProtocol.errors.enableFailed'))
       }
       
       return { encryptedSentinel, company }
@@ -46,11 +49,9 @@ export const useEnableCompanyEncryption = () => {
       queryClient.invalidateQueries({ queryKey: ['company-vault'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       
-      showMessage('success', 'Vault encryption enabled successfully. All users must now use this master password.')
+      showMessage('success', i18n.t('system:vaultProtocol.success.enabled'))
     },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to enable vault encryption')
-    }
+    onError: enableErrorHandler
   })
 }
 
@@ -61,6 +62,7 @@ export const useEnableCompanyEncryption = () => {
 export const useDisableCompanyEncryption = () => {
   const queryClient = useQueryClient()
   const dispatch = useAppDispatch()
+  const disableErrorHandler = createErrorHandler(i18n.t('system:vaultProtocol.errors.disableFailed'))
   
   return useMutation({
     mutationFn: async () => {
@@ -70,7 +72,7 @@ export const useDisableCompanyEncryption = () => {
       })
       
       if (response.failure !== 0) {
-        throw new Error(response.errors?.join('; ') || 'Failed to disable encryption')
+        throw new Error(response.errors?.join('; ') || i18n.t('system:vaultProtocol.errors.disableFailed'))
       }
       
       return true
@@ -86,11 +88,9 @@ export const useDisableCompanyEncryption = () => {
       queryClient.invalidateQueries({ queryKey: ['company-vault'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       
-      showMessage('success', 'Vault encryption disabled. Master passwords are no longer required.')
+      showMessage('success', i18n.t('system:vaultProtocol.success.disabled'))
     },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to disable vault encryption')
-    }
+    onError: disableErrorHandler
   })
 }
 

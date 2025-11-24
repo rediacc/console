@@ -25,15 +25,15 @@ import {
   CheckCircleOutlined,
   WifiOutlined,
 } from '@/utils/optimizedIcons'
-import { SimpleJsonEditor } from '../SimpleJsonEditor'
-import { NestedObjectEditor } from '../NestedObjectEditor'
+import { SimpleJsonEditor } from './components/SimpleJsonEditor'
+import { NestedObjectEditor } from './components/NestedObjectEditor'
 import type { UploadFile } from 'antd/es/upload/interface'
 import type { Rule } from 'antd/es/form'
 import type { ValidateErrorEntity } from 'rc-field-form/lib/interface'
 import { useTranslation } from 'react-i18next'
 import vaultDefinitions from '@/data/vaults.json'
 import storageProviders from '@/data/storageProviders.json'
-import FieldGenerator from '../FieldGenerator'
+import FieldGenerator from './components/FieldGenerator'
 import { useCreateQueueItem, useQueueItemTrace } from '@/api/queries/queue'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import { useTeams } from '@/api/queries/teams'

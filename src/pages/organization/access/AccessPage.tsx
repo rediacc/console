@@ -13,7 +13,7 @@ import { useSelector } from 'react-redux'
 import ResourceListView from '@/components/common/ResourceListView'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
 import { useDialogState, useTraceModal } from '@/hooks/useDialogState'
-import UserSessionsTab from '@/components/system/UserSessionsTab'
+import UserSessionsTab from '@/pages/organization/access/components/UserSessionsTab'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import {
   usePermissionGroups as usePermissionGroupsQuery,

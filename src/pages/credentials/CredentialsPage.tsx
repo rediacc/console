@@ -19,6 +19,7 @@ import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
 import TeamSelector from '@/components/common/TeamSelector'
 import { ActionButtonGroup, ActionButtonConfig } from '@/components/common/ActionButtonGroup'
+import { createActionColumn } from '@/components/common/columns'
 import {
   useRepositories,
   useCreateRepository,
@@ -480,11 +481,9 @@ const CredentialsPage: React.FC = () => {
             }
           ]
         : []),
-      {
-        title: t('common:table.actions'),
-        key: 'actions',
+      createActionColumn<Repository>({
         width: 200,
-        render: (_: unknown, record: Repository) => {
+        renderActions: (record) => {
           const buttons: ActionButtonConfig<Repository>[] = [
             {
               type: 'edit',
@@ -525,7 +524,7 @@ const CredentialsPage: React.FC = () => {
             />
           )
         },
-      }
+      })
     ],
     [auditTrace, handleDeleteRepository, openUnifiedModal, t, theme.colors.primary, theme.colors.secondary]
   )

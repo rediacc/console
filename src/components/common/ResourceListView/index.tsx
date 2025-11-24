@@ -1,5 +1,5 @@
 import type { Key, ReactNode } from 'react'
-import { Table, Spin, Empty, type TableProps, Tooltip } from 'antd'
+import { Table, Empty, type TableProps, Tooltip } from 'antd'
 import { SearchOutlined, PlusOutlined, ReloadOutlined } from '@/utils/optimizedIcons'
 import {
   ContainerCard,
@@ -9,7 +9,6 @@ import {
   FiltersSlot,
   ActionsGroup,
   SearchInput,
-  LoadingState,
   EmptyDescriptionStack,
   EmptyTitle,
   EmptySubtitle,
@@ -18,6 +17,7 @@ import {
   RefreshButton,
   TableWrapper,
 } from './styles'
+import LoadingWrapper from '@/components/common/LoadingWrapper'
 
 interface ResourceListViewProps<T extends Record<string, unknown> = Record<string, unknown>> {
   title?: ReactNode
@@ -113,67 +113,65 @@ function ResourceListView<T extends Record<string, unknown> = Record<string, unk
         </HeaderSection>
       )}
 
-      {loading ? (
-        <LoadingState data-testid="resource-list-loading">
-          <Spin size="large" />
-        </LoadingState>
-      ) : data.length === 0 ? (
-        <Empty
-          description={
-            <EmptyDescriptionStack>
-              <EmptyTitle>{resolvedEmptyDescription}</EmptyTitle>
-              <EmptySubtitle>
-                {onCreateNew
-                  ? `Get started by creating your first ${singularResourceType}`
-                  : `No ${resourceType} found. Try adjusting your search criteria.`}
-              </EmptySubtitle>
-              {(onCreateNew || onRefresh) && (
-                <EmptyActions>
-                  {onCreateNew && (
-                    <Tooltip title={createButtonText}>
-                      <CreateButton
-                        type="primary"
-                        icon={<PlusOutlined />}
-                        onClick={onCreateNew}
-                        data-testid="resource-list-create-new"
-                        aria-label={createButtonText}
-                      />
-                    </Tooltip>
-                  )}
-                  {onRefresh && (
-                    <Tooltip title="Refresh">
-                      <RefreshButton
-                        icon={<ReloadOutlined />}
-                        onClick={onRefresh}
-                        data-testid="resource-list-refresh"
-                        aria-label="Refresh"
-                      />
-                    </Tooltip>
-                  )}
-                </EmptyActions>
-              )}
-            </EmptyDescriptionStack>
-          }
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          data-testid="resource-list-empty"
-        />
-      ) : (
-        <TableWrapper>
-          <Table<T>
-            columns={columns}
-            dataSource={data}
-            rowKey={rowKey}
-            pagination={resolvedPagination}
-            onRow={(record, index) => ({
-              ...onRow?.(record, index),
-              'data-testid': getRowDataTestId(record),
-            })}
-            rowSelection={rowSelection}
-            scroll={{ x: true }}
-            data-testid="resource-list-table"
+      <LoadingWrapper loading={loading} centered minHeight={240}>
+        {data.length === 0 ? (
+          <Empty
+            description={
+              <EmptyDescriptionStack>
+                <EmptyTitle>{resolvedEmptyDescription}</EmptyTitle>
+                <EmptySubtitle>
+                  {onCreateNew
+                    ? `Get started by creating your first ${singularResourceType}`
+                    : `No ${resourceType} found. Try adjusting your search criteria.`}
+                </EmptySubtitle>
+                {(onCreateNew || onRefresh) && (
+                  <EmptyActions>
+                    {onCreateNew && (
+                      <Tooltip title={createButtonText}>
+                        <CreateButton
+                          type="primary"
+                          icon={<PlusOutlined />}
+                          onClick={onCreateNew}
+                          data-testid="resource-list-create-new"
+                          aria-label={createButtonText}
+                        />
+                      </Tooltip>
+                    )}
+                    {onRefresh && (
+                      <Tooltip title="Refresh">
+                        <RefreshButton
+                          icon={<ReloadOutlined />}
+                          onClick={onRefresh}
+                          data-testid="resource-list-refresh"
+                          aria-label="Refresh"
+                        />
+                      </Tooltip>
+                    )}
+                  </EmptyActions>
+                )}
+              </EmptyDescriptionStack>
+            }
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            data-testid="resource-list-empty"
           />
-        </TableWrapper>
-      )}
+        ) : (
+          <TableWrapper>
+            <Table<T>
+              columns={columns}
+              dataSource={data}
+              rowKey={rowKey}
+              pagination={resolvedPagination}
+              onRow={(record, index) => ({
+                ...onRow?.(record, index),
+                'data-testid': getRowDataTestId(record),
+              })}
+              rowSelection={rowSelection}
+              scroll={{ x: true }}
+              data-testid="resource-list-table"
+            />
+          </TableWrapper>
+        )}
+      </LoadingWrapper>
     </ContainerCard>
   )
 }

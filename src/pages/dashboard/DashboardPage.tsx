@@ -1,5 +1,5 @@
 import React from 'react'
-import { Col, Row, Alert, Tag, Typography, Statistic, Spin, Empty, Tooltip, Table } from 'antd'
+import { Col, Row, Alert, Tag, Typography, Statistic, Empty, Tooltip, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useTheme as useStyledTheme } from 'styled-components'
 import {
@@ -26,8 +26,10 @@ import {
 } from '@/utils/optimizedIcons'
 import { useDashboard, type QueueTeamIssue, type QueueMachineIssue } from '@/api/queries/dashboard'
 import { useRecentAuditLogs } from '@/api/queries/audit'
-import DistributedStorageDashboardWidget from '@/components/dashboard/DistributedStorageDashboardWidget'
+import DistributedStorageDashboardWidget from '@/pages/dashboard/components/DistributedStorageDashboardWidget'
 import { createSorter } from '@/core'
+import { createTruncatedColumn } from '@/components/common/columns'
+import LoadingWrapper from '@/components/common/LoadingWrapper'
 import {
   PageWrapper,
   ContentStack,
@@ -125,21 +127,23 @@ const DashboardPage: React.FC = () => {
     return date.toLocaleDateString()
   }
 
+  const machineNameColumn = createTruncatedColumn<QueueMachineIssue>({
+    title: 'Machine',
+    dataIndex: 'MachineName',
+    key: 'MachineName',
+    sorter: createSorter<QueueMachineIssue>('MachineName'),
+  })
+
+  const teamColumn = createTruncatedColumn<QueueMachineIssue>({
+    title: 'Team',
+    dataIndex: 'TeamName',
+    key: 'TeamName',
+    sorter: createSorter<QueueMachineIssue>('TeamName'),
+  })
+
   const machineIssueColumns: ColumnsType<QueueMachineIssue> = [
-    {
-      title: 'Machine',
-      dataIndex: 'MachineName',
-      key: 'MachineName',
-      ellipsis: true,
-      sorter: createSorter<QueueMachineIssue>('MachineName'),
-    },
-    {
-      title: 'Team',
-      dataIndex: 'TeamName',
-      key: 'TeamName',
-      ellipsis: true,
-      sorter: createSorter<QueueMachineIssue>('TeamName'),
-    },
+    machineNameColumn,
+    teamColumn,
     {
       title: 'Status',
       key: 'status',
@@ -158,7 +162,9 @@ const DashboardPage: React.FC = () => {
     return (
       <PageWrapper>
         <CenteredState>
-          <Spin size="large" />
+          <LoadingWrapper loading centered minHeight={200}>
+            <div />
+          </LoadingWrapper>
         </CenteredState>
       </PageWrapper>
     )
@@ -686,7 +692,9 @@ const DashboardPage: React.FC = () => {
         >
           {auditLoading ? (
             <EmptyState>
-              <Spin />
+              <LoadingWrapper loading centered minHeight={120}>
+                <div />
+              </LoadingWrapper>
             </EmptyState>
           ) : auditLogs && auditLogs.length > 0 ? (
             <TimelineWrapper

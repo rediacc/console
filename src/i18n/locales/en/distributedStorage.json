@@ -37,7 +37,11 @@
     "searchMachines": "Search machines...",
     "statistics": "Statistics",
     "title": "Clones",
-    "totalMachines": "Total Machines"
+    "totalMachines": "Total Machines",
+    "createSuccess": "Clone created successfully",
+    "deleteSuccess": "Clone deleted successfully",
+    "machinesAssignedSuccess": "Machines assigned to clone successfully",
+    "machinesRemovedSuccess": "Machines removed from clone successfully"
   },
   "clusters": {
     "assignMachines": "Assign Machines",
@@ -55,7 +59,10 @@
     "noMachinesAssigned": "No machines assigned to this cluster",
     "removeFromCluster": "Remove from Cluster",
     "secretKey": "Secret Key",
-    "title": "Clusters"
+    "title": "Clusters",
+    "createSuccess": "Cluster created successfully",
+    "updateSuccess": "Cluster updated successfully",
+    "deleteSuccess": "Cluster deleted successfully"
   },
   "common": {
     "actions": "Actions",
@@ -94,7 +101,10 @@
       "warning": "Warning: Reassigning an image to a different machine will make it unavailable on the current machine until data is migrated."
     },
     "reassignmentSuccess": "Image machine assignment updated successfully",
-    "title": "Images"
+    "title": "Images",
+    "createSuccess": "Image created successfully",
+    "updateSuccess": "Image updated successfully",
+    "deleteSuccess": "Image deleted successfully"
   },
   "machineSection": {
     "manageAssignment": "Manage Assignment",
@@ -120,7 +130,35 @@
       "available": "Available",
       "title": "Machine Availability",
       "total": "Total Machines"
+    },
+    "updateSuccess": "Machine cluster assignment updated successfully",
+    "clusterAssignedSuccess": "Machine assigned to cluster successfully",
+    "clusterRemovedSuccess": "Machine removed from cluster successfully"
+  },
+  "mutations": {
+    "operations": {
+      "create": "create",
+      "update": "update",
+      "delete": "delete",
+      "assign": "assign",
+      "remove": "remove"
+    },
+    "resources": {
+      "cluster": "cluster",
+      "clusterVault": "cluster vault",
+      "pool": "pool",
+      "poolVault": "pool vault",
+      "rbdImage": "RBD image",
+      "imageMachine": "image machine",
+      "rbdSnapshot": "RBD snapshot",
+      "rbdClone": "RBD clone",
+      "machineClusterAssignment": "machine cluster assignment",
+      "cloneMachines": "clone machines",
+      "machineCluster": "machine cluster"
     }
+  },
+  "errors": {
+    "operationFailed": "Failed to {{operation}} {{resource}}"
   },
   "pools": {
     "configureVault": "Configure Vault",
@@ -137,10 +175,15 @@
     "poolDetails": "Pool Details",
     "poolId": "Pool ID",
     "size": "Size",
-    "title": "Pools"
+    "title": "Pools",
+    "createSuccess": "Pool created successfully",
+    "updateSuccess": "Pool updated successfully",
+    "deleteSuccess": "Pool deleted successfully"
   },
   "snapshots": {
-    "title": "Snapshots"
+    "title": "Snapshots",
+    "createSuccess": "Snapshot created successfully",
+    "deleteSuccess": "Snapshot deleted successfully"
   },
   "tabs": {
     "clusters": "Clusters",

@@ -9,7 +9,7 @@ import {
 import type { DistributedStorageCluster } from '@/api/queries/distributedStorage'
 import { createSorter } from '@/core'
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup'
-import { VersionTag } from '@/components/common/columns'
+import { VersionTag, createActionColumn, createTruncatedColumn } from '@/components/common/columns'
 import { MachineCountBadge } from './components/MachineCountBadge'
 import { getClusterFunctionMenuItems } from './menus'
 import {
@@ -42,33 +42,44 @@ export const buildClusterColumns = ({
   onDeleteCluster,
   onRunFunction,
   onShowAuditTrace,
-}: BuildClusterColumnsParams): ColumnsType<DistributedStorageCluster> => [
-  {
+}: BuildClusterColumnsParams): ColumnsType<DistributedStorageCluster> => {
+  const clusterNameColumn = createTruncatedColumn<DistributedStorageCluster>({
     title: t('clusters.clusterName'),
     dataIndex: 'clusterName',
     key: 'clusterName',
-    ellipsis: true,
     sorter: createSorter<DistributedStorageCluster>('clusterName'),
-    render: (name: string, record: DistributedStorageCluster) => {
-      const isExpanded = expandedRowKeys.includes(record.clusterName)
-      return (
-        <ClusterNameCell>
-          <ExpandIcon $expanded={isExpanded} />
-          <ClusterIcon />
-          <ClusterNameText>{name}</ClusterNameText>
-        </ClusterNameCell>
-      )
-    },
-  },
-  {
+  })
+
+  const teamColumn = createTruncatedColumn<DistributedStorageCluster>({
     title: t('common:general.team'),
     dataIndex: 'teamName',
     key: 'teamName',
     width: 150,
-    ellipsis: true,
     sorter: createSorter<DistributedStorageCluster>('teamName'),
-    render: (teamName: string) => <TeamTag>{teamName}</TeamTag>,
-  },
+  })
+
+  return [
+    {
+      ...clusterNameColumn,
+      render: (name: string, record: DistributedStorageCluster, index) => {
+        const isExpanded = expandedRowKeys.includes(record.clusterName)
+        return (
+          <ClusterNameCell>
+            <ExpandIcon $expanded={isExpanded} />
+            <ClusterIcon />
+            <ClusterNameText>
+              {clusterNameColumn.render?.(name, record, index) as React.ReactNode}
+            </ClusterNameText>
+          </ClusterNameCell>
+        )
+      },
+    },
+    {
+      ...teamColumn,
+      render: (teamName: string, record: DistributedStorageCluster, index) => (
+        <TeamTag>{teamColumn.render?.(teamName, record, index) as React.ReactNode}</TeamTag>
+      ),
+    },
   {
     title: t('machines:title'),
     key: 'machineCount',
@@ -102,11 +113,9 @@ export const buildClusterColumns = ({
       <VersionTag>{t('common:general.versionFormat', { version })}</VersionTag>
     ),
   },
-  {
-    title: t('common:table.actions'),
-    key: 'actions',
+  createActionColumn<DistributedStorageCluster>({
     width: 260,
-    render: (_: unknown, record: DistributedStorageCluster) => (
+    renderActions: (record) => (
       <ActionButtonGroup
         buttons={[
           {
@@ -149,5 +158,6 @@ export const buildClusterColumns = ({
         t={t}
       />
     ),
-  },
+  }),
 ]
+}

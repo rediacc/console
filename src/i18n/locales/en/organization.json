@@ -26,6 +26,30 @@
       "permissionGroupPlaceholder": "Select permission group",
       "usersLabel": "users",
       "permissionsLabel": "permissions"
+    },
+    "success": {
+      "created": "User \"{{email}}\" created successfully",
+      "activated": "User \"{{email}}\" activated",
+      "deactivated": "User \"{{email}}\" deactivated",
+      "emailUpdated": "Email updated to \"{{email}}\"",
+      "languageSaved": "Language preference saved",
+      "permissionGroupCreated": "Permission group \"{{groupName}}\" created",
+      "permissionsAssigned": "User \"{{email}}\" assigned to group \"{{group}}\"",
+      "passwordUpdated": "Password updated successfully. Please login with your new password.",
+      "sessionTerminated": "Session terminated successfully",
+      "userVaultUpdated": "User vault updated successfully"
+    },
+    "errors": {
+      "createFailed": "Failed to create user",
+      "activateFailed": "Failed to activate user",
+      "deactivateFailed": "Failed to deactivate user",
+      "emailUpdateFailed": "Failed to update email",
+      "languageUpdateFailed": "Failed to save language preference",
+      "permissionGroupCreateFailed": "Failed to create permission group",
+      "assignPermissionsFailed": "Failed to assign permissions",
+      "passwordUpdateFailed": "Failed to update password",
+      "sessionTerminateFailed": "Failed to terminate session",
+      "userVaultUpdateFailed": "Failed to update user vault"
     }
   },
   "teams": {

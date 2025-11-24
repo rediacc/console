@@ -5,6 +5,7 @@ import { createMutation } from '@/hooks/api/mutationFactory'
 import { hashPassword } from '@/utils/auth'
 import { showMessage } from '@/utils/messages'
 import i18n from '@/i18n/config'
+import { createErrorHandler } from '@/utils/mutationUtils'
 
 export interface User {
   userEmail: string
@@ -59,8 +60,8 @@ export const useCreateUser = createMutation<{ email: string; password: string }>
   endpoint: '/CreateNewUser',
   method: 'post',
   invalidateKeys: ['users', 'dropdown-data'],
-  successMessage: (vars) => `User "${vars.email}" created successfully`,
-  errorMessage: 'Failed to create user',
+  successMessage: (vars) => i18n.t('organization:users.success.created', { email: vars.email }),
+  errorMessage: i18n.t('organization:users.errors.createFailed'),
   transformData: async (data) => {
     const passwordHash = await hashPassword(data.password)
     return {
@@ -74,6 +75,7 @@ export const useCreateUser = createMutation<{ email: string; password: string }>
 // Activate user - Special case that uses custom apiClient method
 export const useActivateUser = () => {
   const queryClient = useQueryClient()
+  const activationErrorHandler = createErrorHandler(i18n.t('organization:users.errors.activateFailed'))
 
   return useMutation({
     mutationFn: async (data: { userEmail: string; activationCode: string; passwordHash: string }) => {
@@ -82,11 +84,9 @@ export const useActivateUser = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
-      showMessage('success', `User "${variables.userEmail}" activated`)
+      showMessage('success', i18n.t('organization:users.success.activated', { email: variables.userEmail }))
     },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to activate user')
-    },
+    onError: activationErrorHandler,
   })
 }
 
@@ -95,8 +95,8 @@ export const useDeactivateUser = createMutation<string>({
   endpoint: '/UpdateUserToDeactivated',
   method: 'put',
   invalidateKeys: ['users'],
-  successMessage: (userEmail) => `User "${userEmail}" deactivated`,
-  errorMessage: 'Failed to deactivate user',
+  successMessage: (userEmail) => i18n.t('organization:users.success.deactivated', { email: userEmail }),
+  errorMessage: i18n.t('organization:users.errors.deactivateFailed'),
   transformData: (userEmail) => ({ userEmail })
 })
 
@@ -105,8 +105,8 @@ export const useReactivateUser = createMutation<string>({
   endpoint: '/UpdateUserToActivated',
   method: 'put',
   invalidateKeys: ['users'],
-  successMessage: (userEmail) => `User "${userEmail}" activated`,
-  errorMessage: 'Failed to activate user',
+  successMessage: (userEmail) => i18n.t('organization:users.success.activated', { email: userEmail }),
+  errorMessage: i18n.t('organization:users.errors.activateFailed'),
   transformData: (userEmail) => ({ userEmail })
 })
 
@@ -115,8 +115,8 @@ export const useUpdateUserEmail = createMutation<{ currentUserEmail: string; new
   endpoint: '/UpdateUserEmail',
   method: 'put',
   invalidateKeys: ['users'],
-  successMessage: (vars) => `Email updated to "${vars.newUserEmail}"`,
-  errorMessage: 'Failed to update email'
+  successMessage: (vars) => i18n.t('organization:users.success.emailUpdated', { email: vars.newUserEmail }),
+  errorMessage: i18n.t('organization:users.errors.emailUpdateFailed')
 })
 
 // Update user language preference
@@ -124,8 +124,8 @@ export const useUpdateUserLanguage = createMutation<string>({
   endpoint: '/UpdateUserLanguage',
   method: 'put',
   invalidateKeys: [],
-  successMessage: () => 'Language preference saved',
-  errorMessage: 'Failed to save language preference',
+  successMessage: () => i18n.t('organization:users.success.languageSaved'),
+  errorMessage: i18n.t('organization:users.errors.languageUpdateFailed'),
   transformData: (preferredLanguage) => ({ preferredLanguage })
 })
 
@@ -145,8 +145,8 @@ export const useCreatePermissionGroup = createMutation<string>({
   endpoint: '/CreatePermissionGroup',
   method: 'post',
   invalidateKeys: ['permission-groups'],
-  successMessage: (groupName) => `Permission group "${groupName}" created`,
-  errorMessage: 'Failed to create permission group',
+  successMessage: (groupName) => i18n.t('organization:users.success.permissionGroupCreated', { groupName }),
+  errorMessage: i18n.t('organization:users.errors.permissionGroupCreateFailed'),
   transformData: (permissionGroupName) => ({ permissionGroupName })
 })
 
@@ -155,8 +155,11 @@ export const useAssignUserPermissions = createMutation<{ userEmail: string; perm
   endpoint: '/UpdateUserAssignedPermissions',
   method: 'put',
   invalidateKeys: ['users'],
-  successMessage: (vars) => `User "${vars.userEmail}" assigned to group "${vars.permissionGroupName}"`,
-  errorMessage: 'Failed to assign permissions'
+  successMessage: (vars) => i18n.t('organization:users.success.permissionsAssigned', {
+    email: vars.userEmail,
+    group: vars.permissionGroupName
+  }),
+  errorMessage: i18n.t('organization:users.errors.assignPermissionsFailed')
 })
 
 // Update user password
@@ -164,8 +167,8 @@ export const useUpdateUserPassword = createMutation<{ userEmail: string; newPass
   endpoint: '/UpdateUserPassword',
   method: 'put',
   invalidateKeys: [],
-  successMessage: () => 'Password updated successfully. Please login with your new password.',
-  errorMessage: 'Failed to update password',
+  successMessage: () => i18n.t('organization:users.success.passwordUpdated'),
+  errorMessage: i18n.t('organization:users.errors.passwordUpdateFailed'),
   transformData: async (data) => {
     const passwordHash = await hashPassword(data.newPassword)
     return {
@@ -192,8 +195,8 @@ export const useDeleteUserRequest = createMutation<{ requestId: number }>({
   endpoint: '/DeleteUserRequest',
   method: 'delete',
   invalidateKeys: ['user-requests'],
-  successMessage: () => 'Session terminated successfully',
-  errorMessage: 'Failed to terminate session',
+  successMessage: () => i18n.t('organization:users.success.sessionTerminated'),
+  errorMessage: i18n.t('organization:users.errors.sessionTerminateFailed'),
   transformData: (data) => ({
     targetRequestId: data.requestId
   })
@@ -241,8 +244,8 @@ export const useUpdateUserVault = createMutation<{ userVault: string; vaultVersi
   endpoint: '/UpdateUserVault',
   method: 'post',
   invalidateKeys: ['user-vault'],
-  successMessage: () => 'User vault updated successfully',
-  errorMessage: 'Failed to update user vault',
+  successMessage: () => i18n.t('organization:users.success.userVaultUpdated'),
+  errorMessage: i18n.t('organization:users.errors.userVaultUpdateFailed'),
   transformData: (data) => ({
     userVault: data.userVault,
     vaultVersion: data.vaultVersion

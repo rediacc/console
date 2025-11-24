@@ -1,5 +1,5 @@
 import React from 'react'
-import { Select, Spin, Empty } from 'antd'
+import { Select, Empty } from 'antd'
 import type { DefaultOptionType } from 'antd/es/select'
 import { CloudServerOutlined, CheckCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
@@ -18,7 +18,6 @@ import {
   StatusTag,
   StatusIcon,
   StatusText,
-  SpinnerWrapper,
   EmptyDescription,
 } from './styles'
 
@@ -133,14 +132,6 @@ export const AvailableMachinesSelector: React.FC<AvailableMachinesSelectorProps>
           )}
         </OptionContent>
       </Option>
-    )
-  }
-
-  if (loading) {
-    return (
-      <SpinnerWrapper>
-        <Spin />
-      </SpinnerWrapper>
     )
   }
 

@@ -3,38 +3,34 @@ import type { TFunction } from 'i18next'
 import type { Machine } from '@/types'
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell'
 import { createSorter } from '@/core'
+import { createTruncatedColumn } from '@/components/common/columns'
 import { AssignmentTag, QueueBadge } from './styles'
 
 export const buildMachineTableColumns = (
   t: TFunction<'machines' | 'distributedStorage'>,
 ): ColumnsType<Machine> => [
-  {
+  createTruncatedColumn<Machine>({
     title: t('machines:machineName'),
     dataIndex: 'machineName',
     key: 'machineName',
-    ellipsis: true,
     sorter: createSorter<Machine>('machineName'),
-  },
-  {
+  }),
+  createTruncatedColumn<Machine>({
     title: t('machines:team'),
     dataIndex: 'teamName',
     key: 'teamName',
     width: 150,
-    ellipsis: true,
     sorter: createSorter<Machine>('teamName'),
-    render: (teamName: string) =>
-      teamName ? <AssignmentTag>{teamName}</AssignmentTag> : null,
-  },
-  {
+    renderWrapper: (content) => (content ? <AssignmentTag>{content}</AssignmentTag> : null),
+  }),
+  createTruncatedColumn<Machine>({
     title: t('machines:bridge'),
     dataIndex: 'bridgeName',
     key: 'bridgeName',
     width: 150,
-    ellipsis: true,
     sorter: createSorter<Machine>('bridgeName'),
-    render: (bridgeName: string) =>
-      bridgeName ? <AssignmentTag>{bridgeName}</AssignmentTag> : null,
-  },
+    renderWrapper: (content) => (content ? <AssignmentTag>{content}</AssignmentTag> : null),
+  }),
   {
     title: t('distributedStorage:assignment.status'),
     key: 'assignmentStatus',

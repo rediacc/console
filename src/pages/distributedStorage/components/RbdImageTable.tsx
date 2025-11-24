@@ -34,11 +34,11 @@ import {
 } from '@/api/queries/distributedStorageMutations'
 import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
-import { ImageMachineReassignmentModal } from '@/components/resources/ImageMachineReassignmentModal'
+import { ImageMachineReassignmentModal } from '@/pages/distributedStorage/components/ImageMachineReassignmentModal'
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import { useDialogState, useQueueTraceModal, useExpandableTable } from '@/hooks'
-import { renderTruncatedId } from '@/components/common/columns'
+import { createActionColumn, createTruncatedColumn } from '@/components/common/columns'
 import SnapshotTable from './SnapshotTable'
 import { createSorter } from '@/core'
 
@@ -248,14 +248,15 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
         </Space>
       ),
     },
-    {
+    createTruncatedColumn<DistributedStorageRbdImage>({
       title: t('images.guid'),
       dataIndex: 'imageGuid',
       key: 'imageGuid',
       width: 300,
+      maxLength: 8,
       sorter: createSorter<DistributedStorageRbdImage>('imageGuid'),
-      render: (text: string) => renderTruncatedId(text),
-    },
+      renderText: (value) => value || '',
+    }),
     {
       title: t('images.assignedMachine'),
       dataIndex: 'machineName',
@@ -272,11 +273,9 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
         </Tag>
       ),
     },
-    {
-      title: t('common.actions'),
-      key: 'actions',
+    createActionColumn<DistributedStorageRbdImage>({
       width: 150,
-      render: (_: unknown, record: DistributedStorageRbdImage) => (
+      renderActions: (record) => (
         <ActionButtonGroup
           buttons={[
             {
@@ -301,7 +300,7 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
           t={t}
         />
       ),
-    },
+    }),
   ]
   
   const expandedRowRender = (record: DistributedStorageRbdImage) => (

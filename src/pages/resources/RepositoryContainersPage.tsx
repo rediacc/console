@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { Button, Space, Tag, Typography, Spin, Alert, Tooltip } from 'antd'
+import { Button, Space, Tag, Typography, Alert, Tooltip } from 'antd'
 import { DoubleLeftOutlined, ReloadOutlined, InboxOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { usePanelWidth } from '@/hooks/usePanelWidth'
 import { useMachines } from '@/api/queries/machines'
-import { RepositoryContainerTable } from '@/components/resources/RepositoryContainerTable'
+import { RepositoryContainerTable } from '@/pages/resources/components/RepositoryContainerTable'
 import { Machine } from '@/types'
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import { useQueueTraceModal } from '@/hooks/useDialogState'
 import { IconButton } from '@/styles/primitives'
+import LoadingWrapper from '@/components/common/LoadingWrapper'
 import {
   PageWrapper,
   FullHeightCard,
@@ -174,7 +175,9 @@ const RepositoryContainersPage: React.FC = () => {
       <PageWrapper>
         <FullHeightCard>
           <CenteredState>
-            <Spin size="large" />
+            <LoadingWrapper loading centered minHeight={160}>
+              <div />
+            </LoadingWrapper>
             <Text type="secondary">{t('common:general.loading')}</Text>
           </CenteredState>
         </FullHeightCard>
