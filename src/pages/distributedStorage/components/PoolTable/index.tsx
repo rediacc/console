@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { Modal } from 'antd'
 import { useTranslation } from 'react-i18next'
 import {
@@ -9,7 +9,9 @@ import AuditTraceModal from '@/components/common/AuditTraceModal'
 import RbdImageList from '../RbdImageList'
 import { buildPoolColumns } from './columns'
 import { ClusterPoolsCard } from './components/ClusterPoolsCard'
+import { useTraceModal, useExpandableTable } from '@/hooks'
 import { EmptyStateWrapper, CreatePoolButton } from './styles'
+import { confirmAction } from '@/utils/confirmations'
 
 interface PoolTableProps {
   pools: DistributedStoragePool[]
@@ -31,13 +33,9 @@ export const PoolTable: React.FC<PoolTableProps> = ({
   onRunFunction,
 }) => {
   const { t } = useTranslation(['distributedStorage', 'common'])
-  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
-  const [auditTraceModal, setAuditTraceModal] = useState<{
-    open: boolean
-    entityType: string | null
-    entityIdentifier: string | null
-    entityName?: string
-  }>({ open: false, entityType: null, entityIdentifier: null })
+  const [modal, contextHolder] = Modal.useModal()
+  const { expandedRowKeys, toggleRow, setExpandedRowKeys } = useExpandableTable()
+  const auditTrace = useTraceModal()
 
   const poolsByCluster = useMemo(() => {
     return pools.reduce<Record<string, DistributedStoragePool[]>>(
@@ -62,26 +60,28 @@ export const PoolTable: React.FC<PoolTableProps> = ({
 
   const handleDelete = useCallback(
     (pool: DistributedStoragePool) => {
-      Modal.confirm({
-        title: t('pools.confirmDelete'),
-        content: t('pools.deleteWarning', { name: pool.poolName }),
-        okText: t('common:actions.delete'),
+      confirmAction({
+        modal,
+        title: t('pools.confirmDelete') as string,
+        content: t('pools.deleteWarning', { name: pool.poolName }) as string,
+        okText: t('common:actions.delete') as string,
         okType: 'danger',
-        cancelText: t('common:actions.cancel'),
-        onOk: () => onDeletePool(pool),
+        cancelText: t('common:actions.cancel') as string,
+        onConfirm: async () => {
+          onDeletePool(pool)
+        },
       })
     },
-    [onDeletePool, t],
+    [modal, onDeletePool, t],
   )
 
   const handleAuditTrace = useCallback((pool: DistributedStoragePool) => {
-    setAuditTraceModal({
-      open: true,
+    auditTrace.open({
       entityType: 'DistributedStoragePool',
-      entityIdentifier: pool.poolName || '',
+      entityIdentifier: pool.poolName,
       entityName: pool.poolName,
     })
-  }, [])
+  }, [auditTrace])
 
   const handleRunFunction = useCallback(
     (pool: DistributedStoragePool & { preselectedFunction?: string }) => {
@@ -122,12 +122,8 @@ export const PoolTable: React.FC<PoolTableProps> = ({
     if (!poolGuid) {
       return
     }
-    setExpandedRowKeys((prev) =>
-      prev.includes(poolGuid)
-        ? prev.filter((key) => key !== poolGuid)
-        : [...prev, poolGuid],
-    )
-  }, [])
+    toggleRow(poolGuid)
+  }, [toggleRow])
 
   const handleExpandedRowsChange = useCallback(
     (clusterKeys: string[], keys: string[]) => {
@@ -136,7 +132,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
         return [...filtered, ...keys]
       })
     },
-    [],
+    [setExpandedRowKeys],
   )
 
   if (pools.length === 0 && !loading) {
@@ -155,6 +151,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
 
   return (
     <>
+      {contextHolder}
       {Object.entries(poolsByCluster).map(([clusterName, clusterPools]) => {
         const cluster = clusterMap.get(clusterName)
         return (
@@ -175,17 +172,11 @@ export const PoolTable: React.FC<PoolTableProps> = ({
       })}
 
       <AuditTraceModal
-        open={auditTraceModal.open}
-        onCancel={() =>
-          setAuditTraceModal({
-            open: false,
-            entityType: null,
-            entityIdentifier: null,
-          })
-        }
-        entityType={auditTraceModal.entityType || ''}
-        entityIdentifier={auditTraceModal.entityIdentifier || ''}
-        entityName={auditTraceModal.entityName}
+        open={auditTrace.isOpen}
+        onCancel={auditTrace.close}
+        entityType={auditTrace.entityType}
+        entityIdentifier={auditTrace.entityIdentifier}
+        entityName={auditTrace.entityName}
       />
     </>
   )

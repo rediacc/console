@@ -5,7 +5,7 @@ import {
   useUpdateCloneMachineAssignments,
   useUpdateCloneMachineRemovals,
   useUpdateImageMachineAssignment
-} from '@/api/queries/distributedStorage'
+} from '@/api/queries/distributedStorageMutations'
 import { MachineAssignmentService } from '../services'
 import { useTranslation } from 'react-i18next'
 import type { Machine } from '@/types'

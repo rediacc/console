@@ -42,32 +42,6 @@ export const TableWrapper = styled.div`
   background: ${({ theme }) => theme.colors.bgPrimary};
 `
 
-export const ActionButton = styled(Button)`
-  && {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
-    height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
-    padding: 0;
-    border: none;
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-    background: transparent;
-    box-shadow: none;
-    color: ${({ theme }) => theme.colors.textPrimary};
-    transition: background ${({ theme }) => theme.transitions.FAST};
-  }
-
-  &&:hover,
-  &&:focus {
-    background: var(--color-fill-tertiary);
-  }
-`
-
-export const ExpandButton = styled(ActionButton)`
-  margin-right: ${({ theme }) => theme.spacing.SM}px;
-`
-
 export const NameCell = styled(Space)`
   display: inline-flex;
   align-items: center;
@@ -94,4 +68,30 @@ export const GuidText = styled.span`
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
   color: ${({ theme }) => theme.colors.textSecondary};
+`
+
+const IconButton = styled(Button)`
+  && {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
+    height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
+    padding: 0;
+    border: none;
+    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
+    background: transparent;
+    box-shadow: none;
+    color: ${({ theme }) => theme.colors.textPrimary};
+    transition: background ${({ theme }) => theme.transitions.FAST};
+  }
+
+  &&:hover,
+  &&:focus {
+    background: var(--color-fill-tertiary);
+  }
+`
+
+export const ExpandButton = styled(IconButton)`
+  margin-right: ${({ theme }) => theme.spacing.SM}px;
 `

@@ -67,15 +67,6 @@ export const TeamTag = styled(Tag)`
   }
 `
 
-export const VersionTag = styled(Tag)`
-  && {
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-    border-color: ${({ theme }) => theme.colors.info};
-    color: ${({ theme }) => theme.colors.info};
-    background: ${({ theme }) => theme.colors.bgPrimary};
-  }
-`
-
 export const MachineCountBadgeWrapper = styled(Badge)<{ $hasMachines: boolean }>`
   .ant-badge-count {
     background: ${({ theme, $hasMachines }) =>
@@ -97,23 +88,6 @@ export const ManageMachinesButton = styled(Button)`
 `
 
 export const MachineManageCell = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`
-
-export const ActionButton = styled(Button)`
-  && {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
-    height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-  }
-`
-
-export const ActionsContainer = styled.div`
   display: inline-flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.SM}px;

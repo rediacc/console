@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { Card, Button, Breadcrumb, Typography } from 'antd'
+import { Card, Breadcrumb, Typography } from 'antd'
 import { PageContainer } from '@/styles/primitives'
 
 export const PageWrapper = styled(PageContainer)`
@@ -64,14 +64,6 @@ export const ActionsRow = styled.div`
   justify-content: flex-end;
 `
 
-export const IconButton = styled(Button)`
-  min-width: ${({ theme }) => theme.spacing['6']}px;
-  min-height: ${({ theme }) => theme.spacing['6']}px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-`
 
 export const SplitLayout = styled.div`
   display: flex;

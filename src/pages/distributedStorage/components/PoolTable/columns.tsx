@@ -1,6 +1,5 @@
 import type { ColumnsType } from 'antd/es/table'
 import type { TFunction } from 'i18next'
-import { Dropdown } from 'antd'
 import {
   EditOutlined,
   FunctionOutlined,
@@ -9,15 +8,14 @@ import {
 } from '@/utils/optimizedIcons'
 import type { DistributedStoragePool } from '@/api/queries/distributedStorage'
 import { createSorter } from '@/core'
+import { ActionButtonGroup } from '@/components/common/ActionButtonGroup'
+import { VersionTag } from '@/components/common/columns'
 import { getPoolFunctionMenuItems } from './menus'
 import {
   PoolNameCell,
   ExpandIcon,
   PoolIcon,
   PoolNameText,
-  VersionTag,
-  ActionButton,
-  ActionsContainer,
 } from './styles'
 
 interface BuildPoolColumnsParams {
@@ -74,61 +72,51 @@ export const buildPoolColumns = ({
     key: 'actions',
     width: 320,
     render: (_: unknown, record: DistributedStoragePool) => (
-      <ActionsContainer>
-        <ActionButton
-          type="primary"
-          size="small"
-          icon={<EditOutlined />}
-          onClick={() => onEditPool(record)}
-          data-testid={`ds-pool-edit-${record.poolName}`}
-        >
-          {t('common:actions.edit')}
-        </ActionButton>
-        <Dropdown
-          menu={{
-            items: getPoolFunctionMenuItems(t),
-            onClick: ({ key }) => {
+      <ActionButtonGroup
+        buttons={[
+          {
+            type: 'edit',
+            icon: <EditOutlined />,
+            tooltip: 'common:actions.edit',
+            label: 'common:actions.edit',
+            onClick: () => onEditPool(record),
+          },
+          {
+            type: 'function-dropdown',
+            icon: <FunctionOutlined />,
+            tooltip: 'common:actions.remote',
+            label: 'common:actions.remote',
+            dropdownItems: getPoolFunctionMenuItems(t),
+            onDropdownClick: (key) => {
               if (key === 'advanced') {
                 onRunFunction(record)
               } else {
-                onRunFunction({
-                  ...record,
-                  preselectedFunction: key,
-                })
+                onRunFunction({ ...record, preselectedFunction: key })
               }
             },
-          }}
-          trigger={['click']}
-        >
-          <ActionButton
-            type="primary"
-            size="small"
-            icon={<FunctionOutlined />}
-            data-testid={`ds-pool-function-dropdown-${record.poolName}`}
-          >
-            {t('common:actions.remote')}
-          </ActionButton>
-        </Dropdown>
-        <ActionButton
-          type="default"
-          size="small"
-          icon={<HistoryOutlined />}
-          onClick={() => onShowAuditTrace(record)}
-          data-testid={`ds-pool-trace-${record.poolName}`}
-        >
-          {t('common:actions.trace')}
-        </ActionButton>
-        <ActionButton
-          type="primary"
-          danger
-          size="small"
-          icon={<DeleteOutlined />}
-          onClick={() => onDeletePool(record)}
-          data-testid={`ds-pool-delete-${record.poolName}`}
-        >
-          {t('common:actions.delete')}
-        </ActionButton>
-      </ActionsContainer>
+          },
+          {
+            type: 'trace',
+            icon: <HistoryOutlined />,
+            tooltip: 'common:actions.trace',
+            label: 'common:actions.trace',
+            onClick: () => onShowAuditTrace(record),
+            variant: 'default',
+          },
+          {
+            type: 'delete',
+            icon: <DeleteOutlined />,
+            tooltip: 'common:actions.delete',
+            label: 'common:actions.delete',
+            onClick: () => onDeletePool(record),
+            danger: true,
+          },
+        ]}
+        record={record}
+        idField="poolName"
+        testIdPrefix="ds-pool"
+        t={t}
+      />
     ),
   },
 ]

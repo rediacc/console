@@ -4,6 +4,7 @@
     "expertOnlyTitle": "Modo experto requerido"
   },
   "actions": {
+    "activate": "Activar",
     "addMember": "Agregar miembro",
     "addPermission": "Agregar permiso",
     "assignUser": "Asignar usuario",
@@ -284,5 +285,15 @@
     "totalCount": "Total: {{count}} sesiones",
     "totalSessions": "Sesiones totales",
     "uniqueUsers": "Usuarios únicas"
+  },
+  "users": {
+    "activate": {
+      "confirmDescription": "¿Estás segura de que quieres activar \"{{email}}\"?",
+      "confirmTitle": "Activar usuario"
+    },
+    "deactivate": {
+      "confirmDescription": "¿Estás segura de que quieres desactivar \"{{email}}\"?",
+      "confirmTitle": "Desactivar usuario"
+    }
   }
 }

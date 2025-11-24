@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { Card, Empty, Button, Tag } from 'antd'
+import { Button, Card, Empty, Tag } from 'antd'
 import {
   CloudServerOutlined,
   DatabaseOutlined,
@@ -91,28 +91,4 @@ export const PoolIcon = styled(DatabaseOutlined)`
 export const PoolNameText = styled.span`
   font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   color: ${({ theme }) => theme.colors.textPrimary};
-`
-
-export const VersionTag = styled(Tag)`
-  && {
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-    border-color: ${({ theme }) => theme.colors.info};
-    color: ${({ theme }) => theme.colors.info};
-    background: ${({ theme }) => theme.colors.bgPrimary};
-  }
-`
-
-export const ActionButton = styled(Button)`
-  && {
-    display: inline-flex;
-    align-items: center;
-    gap: ${({ theme }) => theme.spacing.XS}px;
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-  }
-`
-
-export const ActionsContainer = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
 `

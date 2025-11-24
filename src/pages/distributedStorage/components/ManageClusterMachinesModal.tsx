@@ -3,17 +3,20 @@ import { Modal, Tabs, Table, Button, Space, Tag, Empty, Spin, message } from 'an
 import type { ColumnsType } from 'antd/es/table'
 import { CloudServerOutlined, DesktopOutlined, PlusOutlined, DeleteOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
-import { 
+import {
   useDistributedStorageClusterMachines,
   useGetAvailableMachinesForClone,
-  useUpdateMachineClusterAssignment,
-  useUpdateMachineClusterRemoval
 } from '@/api/queries/distributedStorage'
+import {
+  useUpdateMachineClusterAssignment,
+  useUpdateMachineClusterRemoval,
+} from '@/api/queries/distributedStorageMutations'
 import { AvailableMachinesSelector } from '@/components/resources/AvailableMachinesSelector'
 import { formatTimestampAsIs } from '@/core'
 import { ModalSize } from '@/types/modal'
 import type { Machine } from '@/types'
 import { createSorter } from '@/core'
+import { confirmAction } from '@/utils/confirmations'
 
 interface ManageClusterMachinesModalProps {
   open: boolean
@@ -31,6 +34,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
   onSuccess
 }) => {
   const { t } = useTranslation(['distributedStorage', 'machines', 'common'])
+  const [confirmModal, confirmContextHolder] = Modal.useModal()
   const [activeTab, setActiveTab] = useState<'assign' | 'manage'>('assign')
   const [selectedMachines, setSelectedMachines] = useState<string[]>([])
   const [selectedRemoveMachines, setSelectedRemoveMachines] = useState<string[]>([])
@@ -104,16 +108,17 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
       message.warning(t('machines:validation.noMachinesSelected'))
       return
     }
-    
-    Modal.confirm({
-      title: t('machines:removeFromCluster'),
-      content: t('machines:removeFromClusterWarning', { count: selectedRemoveMachines.length }),
-      okText: t('common:actions.remove'),
+
+    confirmAction({
+      modal: confirmModal,
+      title: t('machines:removeFromCluster') as string,
+      content: t('machines:removeFromClusterWarning', { count: selectedRemoveMachines.length }) as string,
+      okText: t('common:actions.remove') as string,
       okType: 'danger',
-      cancelText: t('common:actions.cancel'),
-      onOk: async () => {
+      cancelText: t('common:actions.cancel') as string,
+      onConfirm: async () => {
         setRemovingMachines(true)
-        
+
         try {
           const results = await Promise.allSettled(
             selectedRemoveMachines.map(machineName =>
@@ -123,18 +128,18 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
               })
             )
           )
-          
+
           const successCount = results.filter(r => r.status === 'fulfilled').length
-          
+
           if (successCount === selectedRemoveMachines.length) {
             message.success(t('machines:bulkOperations.removalSuccess', { count: successCount }))
             setSelectedRemoveMachines([])
             refetchClusterMachines()
             if (onSuccess) onSuccess()
           } else {
-            message.warning(t('machines:bulkOperations.assignmentPartial', { 
-              success: successCount, 
-              total: results.length 
+            message.warning(t('machines:bulkOperations.assignmentPartial', {
+              success: successCount,
+              total: results.length
             }))
             refetchClusterMachines()
           }
@@ -282,6 +287,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
         )
       ].filter(Boolean)}
     >
+      {confirmContextHolder}
       <Tabs
         activeKey={activeTab}
         onChange={(key) => setActiveTab(key as 'assign' | 'manage')}

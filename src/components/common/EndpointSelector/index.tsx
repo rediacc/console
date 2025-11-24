@@ -7,6 +7,7 @@ import { DESIGN_TOKENS } from '@/utils/styleConstants';
 import { showMessage } from '@/utils/messages';
 import apiClient from '@/api/client';
 import axios from 'axios';
+import { useDialogState } from '@/hooks/useDialogState';
 import {
   StyledSelect,
   LoadingText,
@@ -43,7 +44,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
   const [endpoints, setEndpoints] = useState<Endpoint[]>([]);
   const [selectedEndpoint, setSelectedEndpoint] = useState<Endpoint | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showCustomModal, setShowCustomModal] = useState(false);
+  const customModal = useDialogState<void>();
   const [customForm] = Form.useForm();
   const [healthStatus, setHealthStatus] = useState<Record<string, EndpointHealth>>({});
   const [isCheckingHealth, setIsCheckingHealth] = useState(false);
@@ -210,7 +211,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
   const handleEndpointChange = async (value: unknown) => {
     const endpointValue = value as string;
     if (endpointValue === '__add_custom__') {
-      setShowCustomModal(true);
+      customModal.open();
       return;
     }
 
@@ -243,7 +244,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
       apiClient.updateApiUrl(newEndpoint.url);
 
       showMessage('success', `Added and selected ${newEndpoint.name}`);
-      setShowCustomModal(false);
+      customModal.close();
       customForm.resetFields();
     } catch (error: any) {
       showMessage('error', error.message || 'Failed to add custom endpoint');
@@ -401,9 +402,9 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
       {/* Add Custom Endpoint Modal */}
       <Modal
         title="Add Custom Endpoint"
-        open={showCustomModal}
+        open={customModal.isOpen}
         onCancel={() => {
-          setShowCustomModal(false);
+          customModal.close();
           customForm.resetFields();
         }}
         footer={null}
@@ -448,7 +449,7 @@ const EndpointSelector: React.FC<EndpointSelectorProps> = ({
           <Form.Item style={{ marginBottom: 0 }}>
             <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
               <Button onClick={() => {
-                setShowCustomModal(false);
+                customModal.close();
                 customForm.resetFields();
               }}>
                 Cancel

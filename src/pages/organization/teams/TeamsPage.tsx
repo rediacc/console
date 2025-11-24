@@ -11,6 +11,8 @@ import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
 import { ModalSize } from '@/types/modal'
 import { useDropdownData } from '@/api/queries/useDropdownData'
+import { useDialogState, useTraceModal } from '@/hooks/useDialogState'
+import { useFormModal } from '@/hooks/useFormModal'
 import {
   useTeams,
   useTeamMembers,
@@ -44,19 +46,10 @@ const TeamsPage: React.FC = () => {
   const { data: dropdownData } = useDropdownData()
   const { data: teams = [], isLoading: teamsLoading } = useTeams()
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
-  const [isManageTeamModalOpen, setIsManageTeamModalOpen] = useState(false)
+  const manageTeamModal = useDialogState()
   const [selectedMemberEmail, setSelectedMemberEmail] = useState('')
-  const [auditTraceModal, setAuditTraceModal] = useState<{
-    open: boolean
-    entityType: string | null
-    entityIdentifier: string | null
-    entityName?: string
-  }>({ open: false, entityType: null, entityIdentifier: null })
-  const [unifiedModalState, setUnifiedModalState] = useState<{
-    open: boolean
-    mode: 'create' | 'edit'
-    data?: Team | null
-  }>({ open: false, mode: 'create' })
+  const auditTrace = useTraceModal()
+  const unifiedModal = useFormModal<Team>()
 
   const { data: teamMembers = [], isLoading: membersLoading } = useTeamMembers(selectedTeam?.teamName || '')
   const createTeamMutation = useCreateTeam()
@@ -66,49 +59,41 @@ const TeamsPage: React.FC = () => {
   const addTeamMemberMutation = useAddTeamMember()
   const removeTeamMemberMutation = useRemoveTeamMember()
 
-  const openUnifiedModal = (mode: 'create' | 'edit', data?: Team) => {
-    setUnifiedModalState({ open: true, mode, data })
-  }
-
-  const closeUnifiedModal = () => {
-    setUnifiedModalState({ open: false, mode: 'create', data: null })
-  }
-
   const handleUnifiedModalSubmit = async (data: Partial<Team> & { teamVault?: string }) => {
     try {
-      if (unifiedModalState.mode === 'create') {
+      if (unifiedModal.mode === 'create') {
         if (!data.teamName) {
           throw new Error('Team name is required')
         }
         await createTeamMutation.mutateAsync({ teamName: data.teamName, teamVault: data.teamVault })
-      } else if (unifiedModalState.data) {
-        if (data.teamName && data.teamName !== unifiedModalState.data.teamName) {
+      } else if (unifiedModal.state.data) {
+        if (data.teamName && data.teamName !== unifiedModal.state.data.teamName) {
           await updateTeamNameMutation.mutateAsync({
-            currentTeamName: unifiedModalState.data.teamName,
+            currentTeamName: unifiedModal.state.data.teamName,
             newTeamName: data.teamName,
           })
         }
 
-        if (data.teamVault && data.teamVault !== unifiedModalState.data.vaultContent) {
+        if (data.teamVault && data.teamVault !== unifiedModal.state.data.vaultContent) {
           await updateTeamVaultMutation.mutateAsync({
-            teamName: data.teamName || unifiedModalState.data.teamName,
+            teamName: data.teamName || unifiedModal.state.data.teamName,
             teamVault: data.teamVault,
-            vaultVersion: unifiedModalState.data.vaultVersion + 1,
+            vaultVersion: unifiedModal.state.data.vaultVersion + 1,
           })
         }
       }
-      closeUnifiedModal()
+      unifiedModal.close()
     } catch {
       // handled by mutation
     }
   }
 
   const handleUnifiedVaultUpdate = async (vault: string, version: number) => {
-    if (!unifiedModalState.data) return
+    if (!unifiedModal.state.data) return
 
     try {
       await updateTeamVaultMutation.mutateAsync({
-        teamName: unifiedModalState.data.teamName,
+        teamName: unifiedModal.state.data.teamName,
         teamVault: vault,
         vaultVersion: version,
       })
@@ -155,14 +140,13 @@ const TeamsPage: React.FC = () => {
   const teamColumns = getTeamColumns({
     tSystem,
     tCommon,
-    onEdit: (team) => openUnifiedModal('edit', team),
+    onEdit: (team) => unifiedModal.openEdit(team),
     onManageMembers: (team) => {
       setSelectedTeam(team)
-      setIsManageTeamModalOpen(true)
+      manageTeamModal.open()
     },
     onTrace: (team) =>
-      setAuditTraceModal({
-        open: true,
+      auditTrace.open({
         entityType: 'Team',
         entityIdentifier: team.teamName,
         entityName: team.teamName,
@@ -193,7 +177,7 @@ const TeamsPage: React.FC = () => {
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
-                onClick={() => openUnifiedModal('create')}
+                onClick={() => unifiedModal.openCreate()}
                 data-testid="system-create-team-button"
                 aria-label={tSystem('actions.createTeam')}
               />
@@ -207,9 +191,9 @@ const TeamsPage: React.FC = () => {
           defaultValue: `Manage Team Members${selectedTeam ? ` - ${selectedTeam.teamName}` : ''}`,
           teamName: selectedTeam?.teamName,
         })}
-        open={isManageTeamModalOpen}
+        open={manageTeamModal.isOpen}
         onCancel={() => {
-          setIsManageTeamModalOpen(false)
+          manageTeamModal.close()
           setSelectedTeam(null)
           setSelectedMemberEmail('')
         }}
@@ -314,23 +298,23 @@ const TeamsPage: React.FC = () => {
       </Modal>
 
       <UnifiedResourceModal
-        open={unifiedModalState.open}
-        onCancel={closeUnifiedModal}
+        open={unifiedModal.isOpen}
+        onCancel={unifiedModal.close}
         resourceType="team"
-        mode={unifiedModalState.mode}
-        existingData={unifiedModalState.data ?? undefined}
+        mode={unifiedModal.mode}
+        existingData={unifiedModal.state.data ?? undefined}
         onSubmit={handleUnifiedModalSubmit}
-        onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
+        onUpdateVault={unifiedModal.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
         isSubmitting={createTeamMutation.isPending || updateTeamNameMutation.isPending}
         isUpdatingVault={updateTeamVaultMutation.isPending}
       />
 
       <AuditTraceModal
-        open={auditTraceModal.open}
-        onCancel={() => setAuditTraceModal({ open: false, entityType: null, entityIdentifier: null })}
-        entityType={auditTraceModal.entityType}
-        entityIdentifier={auditTraceModal.entityIdentifier}
-        entityName={auditTraceModal.entityName}
+        open={auditTrace.isOpen}
+        onCancel={auditTrace.close}
+        entityType={auditTrace.entityType}
+        entityIdentifier={auditTrace.entityIdentifier}
+        entityName={auditTrace.entityName}
       />
     </PageWrapper>
   )

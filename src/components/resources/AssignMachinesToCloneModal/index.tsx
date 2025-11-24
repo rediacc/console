@@ -2,15 +2,17 @@ import React, { useEffect, useState } from 'react'
 import { Spin, Tabs } from 'antd'
 import { CloudServerOutlined, CopyOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
-import { 
+import {
   useGetAvailableMachinesForClone,
   useGetCloneMachines,
-  useUpdateCloneMachineAssignments,
-  useUpdateCloneMachineRemovals,
   type DistributedStorageRbdClone,
   type AvailableMachine,
   type CloneMachine,
 } from '@/api/queries/distributedStorage'
+import {
+  useUpdateCloneMachineAssignments,
+  useUpdateCloneMachineRemovals,
+} from '@/api/queries/distributedStorageMutations'
 import { showMessage } from '@/utils/messages'
 import type { ColumnsType } from 'antd/es/table'
 import type { TableRowSelection } from 'antd/es/table/interface'

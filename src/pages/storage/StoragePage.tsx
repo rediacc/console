@@ -1,36 +1,41 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import { Empty, Modal, Space, Tag, Tooltip } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { useSelector } from 'react-redux'
 import { useTheme } from 'styled-components'
 import {
   PlusOutlined,
   ReloadOutlined,
   ImportOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  HistoryOutlined,
-  FunctionOutlined,
-  CloudOutlined
+  CloudOutlined,
 } from '@/utils/optimizedIcons'
-import { RootState } from '@/store/store'
-import UnifiedResourceModal, { ResourceType } from '@/components/common/UnifiedResourceModal'
+import UnifiedResourceModal from '@/components/common/UnifiedResourceModal'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
 import RcloneImportWizard from '@/components/resources/RcloneImportWizard'
 import TeamSelector from '@/components/common/TeamSelector'
-import { useTeams, Team } from '@/api/queries/teams'
+import { ActionButtonGroup, ActionButtonConfig } from '@/components/common/ActionButtonGroup'
+import { FunctionOutlined, EditOutlined, DeleteOutlined, HistoryOutlined } from '@/utils/optimizedIcons'
 import {
   useStorage,
   useCreateStorage,
   useUpdateStorageName,
   useDeleteStorage,
   useUpdateStorageVault,
-  Storage
+  Storage,
 } from '@/api/queries/storage'
 import { useMachines } from '@/api/queries/machines'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import { useQueueAction } from '@/hooks/useQueueAction'
+import {
+  useUnifiedModal,
+  useTeamSelection,
+  usePagination,
+  useTraceModal,
+  useQueueTraceModal,
+  useDialogState,
+  useAsyncAction,
+} from '@/hooks'
+import { confirmDelete } from '@/utils/confirmations'
 import { showMessage } from '@/utils/messages'
 import { QueueFunction } from '@/api/queries/queue'
 import {
@@ -43,7 +48,7 @@ import {
   ButtonGroup,
   ActionButton,
   ContentSection,
-  DataTable
+  DataTable,
 } from './styles'
 import { featureFlags } from '@/config/featureFlags'
 
@@ -51,44 +56,37 @@ const StoragePage: React.FC = () => {
   const { t } = useTranslation(['resources', 'common'])
   const theme = useTheme()
   const [modal, contextHolder] = Modal.useModal()
-  const uiMode = useSelector((state: RootState) => state.ui.uiMode)
 
-  const [selectedTeams, setSelectedTeams] = useState<string[]>([])
-  const [currentResource, setCurrentResource] = useState<Storage | null>(null)
-  const [storagePageSize, setStoragePageSize] = useState(15)
-  const [storagePage, setStoragePage] = useState(1)
-  const [rcloneImportWizardOpen, setRcloneImportWizardOpen] = useState(false)
+  // Custom hooks for common patterns
+  const { teams, selectedTeams, setSelectedTeams, isLoading: teamsLoading } = useTeamSelection()
+  const {
+    modalState: unifiedModalState,
+    currentResource,
+    openModal: openUnifiedModal,
+    closeModal: closeUnifiedModal,
+    setCurrentResource,
+  } = useUnifiedModal<Storage>('storage')
+  const {
+    page: storagePage,
+    pageSize: storagePageSize,
+    setPage: setStoragePage,
+    setPageSize: setStoragePageSize,
+  } = usePagination({ defaultPageSize: 15 })
 
-  const [queueTraceModal, setQueueTraceModal] = useState<{ visible: boolean; taskId: string | null; machineName?: string | null }>({
-    visible: false,
-    taskId: null,
-    machineName: null
-  })
-  const [auditTraceModal, setAuditTraceModal] = useState<{ open: boolean; entityType: string | null; entityIdentifier: string | null; entityName?: string }>({
-    open: false,
-    entityType: null,
-    entityIdentifier: null
-  })
+  // Modal state management with new hooks
+  const rcloneImportWizard = useDialogState()
+  const queueTrace = useQueueTraceModal()
+  const auditTrace = useTraceModal()
 
-  const [unifiedModalState, setUnifiedModalState] = useState<{
-    open: boolean
-    resourceType: ResourceType
-    mode: 'create' | 'edit' | 'vault'
-    data?: Storage | null
-  }>({
-    open: false,
-    resourceType: 'storage',
-    mode: 'create'
-  })
+  // Async action handler
+  const { execute } = useAsyncAction()
 
-  const hasInitializedTeam = useRef(false)
-
-  const { data: teams, isLoading: teamsLoading } = useTeams()
-  const teamsList: Team[] = teams || []
-
-  const { data: storages = [], isLoading: storagesLoading, refetch: refetchStorage } = useStorage(
-    selectedTeams.length > 0 ? selectedTeams : undefined
-  )
+  // Data fetching
+  const {
+    data: storages = [],
+    isLoading: storagesLoading,
+    refetch: refetchStorage,
+  } = useStorage(selectedTeams.length > 0 ? selectedTeams : undefined)
 
   const { data: machines = [] } = useMachines(
     selectedTeams.length > 0 ? selectedTeams : undefined,
@@ -98,55 +96,26 @@ const StoragePage: React.FC = () => {
   const { data: dropdownData } = useDropdownData()
   const { executeAction, isExecuting } = useQueueAction()
 
+  // Mutations
   const createStorageMutation = useCreateStorage()
   const updateStorageNameMutation = useUpdateStorageName()
   const deleteStorageMutation = useDeleteStorage()
   const updateStorageVaultMutation = useUpdateStorageVault()
 
-  const openUnifiedModal = useCallback(
-    (mode: 'create' | 'edit' | 'vault', data?: Storage | null) => {
-      setUnifiedModalState({
-        open: true,
-        resourceType: 'storage',
-        mode,
-        data
-      })
-      if (data) {
-        setCurrentResource(data)
-      }
-    },
-    []
-  )
-
-  const closeUnifiedModal = useCallback(() => {
-    setUnifiedModalState({
-      open: false,
-      resourceType: 'storage',
-      mode: 'create'
-    })
-    setCurrentResource(null)
-  }, [])
-
   const handleDeleteStorage = useCallback(
     (storage: Storage) => {
-      modal.confirm({
-        title: t('storage.deleteStorage'),
-        content: t('storage.confirmDelete', { storageName: storage.storageName }),
-        okText: t('common:actions.delete'),
-        okType: 'danger',
-        cancelText: t('common:actions.cancel'),
-        onOk: async () => {
-          try {
-            await deleteStorageMutation.mutateAsync({
-              teamName: storage.teamName,
-              storageName: storage.storageName
-            } as any)
-            showMessage('success', t('storage.deleteSuccess'))
-            refetchStorage()
-          } catch (error) {
-            showMessage('error', t('storage.deleteError'))
-          }
-        }
+      confirmDelete({
+        modal,
+        t,
+        resourceType: 'storage',
+        resourceName: storage.storageName,
+        translationNamespace: 'storage',
+        onConfirm: () =>
+          deleteStorageMutation.mutateAsync({
+            teamName: storage.teamName,
+            storageName: storage.storageName,
+          } as any),
+        onSuccess: () => refetchStorage(),
       })
     },
     [deleteStorageMutation, modal, refetchStorage, t]
@@ -154,69 +123,68 @@ const StoragePage: React.FC = () => {
 
   const handleUnifiedModalSubmit = useCallback(
     async (data: any) => {
-      try {
-        if (unifiedModalState.mode === 'create') {
-          await createStorageMutation.mutateAsync(data)
+      await execute(
+        async () => {
+          if (unifiedModalState.mode === 'create') {
+            await createStorageMutation.mutateAsync(data)
+          } else if (currentResource) {
+            const currentName = currentResource.storageName
+            const newName = data.storageName
+
+            if (newName && newName !== currentName) {
+              await updateStorageNameMutation.mutateAsync({
+                teamName: currentResource.teamName,
+                currentStorageName: currentName,
+                newStorageName: newName,
+              } as any)
+            }
+
+            const vaultData = data.storageVault
+            if (vaultData && vaultData !== currentResource.vaultContent) {
+              await updateStorageVaultMutation.mutateAsync({
+                teamName: currentResource.teamName,
+                storageName: newName || currentName,
+                storageVault: vaultData,
+                vaultVersion: currentResource.vaultVersion + 1,
+              } as any)
+            }
+          }
           closeUnifiedModal()
           refetchStorage()
-        } else if (currentResource) {
-          const currentName = currentResource.storageName
-          const newName = data.storageName
-
-          if (newName && newName !== currentName) {
-            await updateStorageNameMutation.mutateAsync({
-              teamName: currentResource.teamName,
-              currentStorageName: currentName,
-              newStorageName: newName
-            } as any)
-          }
-
-          const vaultData = data.storageVault
-          if (vaultData && vaultData !== currentResource.vaultContent) {
-            await updateStorageVaultMutation.mutateAsync({
-              teamName: currentResource.teamName,
-              storageName: newName || currentName,
-              storageVault: vaultData,
-              vaultVersion: currentResource.vaultVersion + 1
-            } as any)
-          }
-
-          closeUnifiedModal()
-          refetchStorage()
-        }
-      } catch (error) {
-        // Error handled by mutation toast
-      }
+        },
+        { skipSuccessMessage: true }
+      )
     },
     [
       closeUnifiedModal,
       createStorageMutation,
       currentResource,
+      execute,
       refetchStorage,
-      t,
       unifiedModalState.mode,
       updateStorageNameMutation,
-      updateStorageVaultMutation
+      updateStorageVaultMutation,
     ]
   )
 
   const handleUnifiedVaultUpdate = useCallback(
     async (vault: string, version: number) => {
       if (!currentResource) return
-      try {
-        await updateStorageVaultMutation.mutateAsync({
-          teamName: currentResource.teamName,
-          storageName: currentResource.storageName,
-          storageVault: vault,
-          vaultVersion: version
-        } as any)
-        refetchStorage()
-        closeUnifiedModal()
-      } catch (error) {
-        // Error handled via mutation toast
-      }
+      await execute(
+        async () => {
+          await updateStorageVaultMutation.mutateAsync({
+            teamName: currentResource.teamName,
+            storageName: currentResource.storageName,
+            storageVault: vault,
+            vaultVersion: version,
+          } as any)
+          refetchStorage()
+          closeUnifiedModal()
+        },
+        { skipSuccessMessage: true }
+      )
     },
-    [closeUnifiedModal, currentResource, refetchStorage, updateStorageVaultMutation]
+    [closeUnifiedModal, currentResource, execute, refetchStorage, updateStorageVaultMutation]
   )
 
   const handleStorageFunctionSelected = useCallback(
@@ -228,95 +196,87 @@ const StoragePage: React.FC = () => {
       selectedMachine?: string
     }) => {
       if (!currentResource) return
-      try {
-        if (!functionData.selectedMachine) {
-          showMessage('error', t('resources:errors.machineNotFound'))
-          return
-        }
 
-        const teamEntry = dropdownData?.machinesByTeam?.find((team) => team.teamName === currentResource.teamName)
-        const machineEntry = teamEntry?.machines?.find((machine) => machine.value === functionData.selectedMachine)
+      if (!functionData.selectedMachine) {
+        showMessage('error', t('resources:errors.machineNotFound'))
+        return
+      }
 
-        if (!machineEntry) {
-          showMessage('error', t('resources:errors.machineNotFound'))
-          return
-        }
+      const teamEntry = dropdownData?.machinesByTeam?.find(
+        (team) => team.teamName === currentResource.teamName
+      )
+      const machineEntry = teamEntry?.machines?.find(
+        (machine) => machine.value === functionData.selectedMachine
+      )
 
-        const selectedMachine = machines.find(
-          (machine) => machine.machineName === machineEntry.value && machine.teamName === currentResource.teamName
-        )
+      if (!machineEntry) {
+        showMessage('error', t('resources:errors.machineNotFound'))
+        return
+      }
 
-        const queuePayload: any = {
-          teamName: currentResource.teamName,
-          machineName: machineEntry.value,
-          bridgeName: machineEntry.bridgeName,
-          functionName: functionData.function.name,
-          params: functionData.params,
-          priority: functionData.priority,
-          description: functionData.description,
-          addedVia: 'storage-table',
-          teamVault: teamsList.find((team) => team.teamName === currentResource.teamName)?.vaultContent || '{}',
-          storageName: currentResource.storageName,
-          storageVault: currentResource.vaultContent || '{}',
-          machineVault: selectedMachine?.vaultContent || '{}'
-        }
+      const selectedMachine = machines.find(
+        (machine) =>
+          machine.machineName === machineEntry.value && machine.teamName === currentResource.teamName
+      )
 
-        if (functionData.function.name === 'pull') {
-          if (functionData.params.sourceType === 'machine' && functionData.params.from) {
-            const sourceMachine = machines.find((machine) => machine.machineName === functionData.params.from)
-            if (sourceMachine?.vaultContent) {
-              queuePayload.sourceMachineVault = sourceMachine.vaultContent
-            }
+      const queuePayload: any = {
+        teamName: currentResource.teamName,
+        machineName: machineEntry.value,
+        bridgeName: machineEntry.bridgeName,
+        functionName: functionData.function.name,
+        params: functionData.params,
+        priority: functionData.priority,
+        description: functionData.description,
+        addedVia: 'storage-table',
+        teamVault:
+          teams.find((team) => team.teamName === currentResource.teamName)?.vaultContent || '{}',
+        storageName: currentResource.storageName,
+        storageVault: currentResource.vaultContent || '{}',
+        machineVault: selectedMachine?.vaultContent || '{}',
+      }
+
+      // Handle pull function source vaults
+      if (functionData.function.name === 'pull') {
+        if (functionData.params.sourceType === 'machine' && functionData.params.from) {
+          const sourceMachine = machines.find(
+            (machine) => machine.machineName === functionData.params.from
+          )
+          if (sourceMachine?.vaultContent) {
+            queuePayload.sourceMachineVault = sourceMachine.vaultContent
           }
-
-          if (functionData.params.sourceType === 'storage' && functionData.params.from) {
-            const sourceStorage = storages.find((storage) => storage.storageName === functionData.params.from)
-            if (sourceStorage?.vaultContent) {
-              queuePayload.sourceStorageVault = sourceStorage.vaultContent
-            }
-          }
         }
 
-        const result = await executeAction(queuePayload)
-        closeUnifiedModal()
-
-        if (result.success) {
-          if (result.taskId) {
-            showMessage('success', t('storage.queueItemCreated'))
-            setQueueTraceModal({ visible: true, taskId: result.taskId, machineName: machineEntry.value })
-          } else if (result.isQueued) {
-            showMessage('info', t('resources:messages.highestPriorityQueued', { resourceType: 'storage' }))
+        if (functionData.params.sourceType === 'storage' && functionData.params.from) {
+          const sourceStorage = storages.find(
+            (storage) => storage.storageName === functionData.params.from
+          )
+          if (sourceStorage?.vaultContent) {
+            queuePayload.sourceStorageVault = sourceStorage.vaultContent
           }
-        } else {
-          showMessage('error', result.error || t('resources:errors.failedToCreateQueueItem'))
         }
-      } catch (error) {
-        showMessage('error', t('resources:errors.failedToCreateQueueItem'))
+      }
+
+      const result = await executeAction(queuePayload)
+      closeUnifiedModal()
+
+      if (result.success) {
+        if (result.taskId) {
+          showMessage('success', t('storage.queueItemCreated'))
+          queueTrace.open(result.taskId, machineEntry.value)
+        } else if (result.isQueued) {
+          showMessage('info', t('resources:messages.highestPriorityQueued', { resourceType: 'storage' }))
+        }
+      } else {
+        showMessage('error', result.error || t('resources:errors.failedToCreateQueueItem'))
       }
     },
-    [closeUnifiedModal, currentResource, dropdownData, executeAction, machines, storages, t, teamsList]
+    [closeUnifiedModal, currentResource, dropdownData, executeAction, machines, queueTrace, storages, t, teams]
   )
 
   const isSubmitting =
-    createStorageMutation.isPending ||
-    updateStorageNameMutation.isPending ||
-    isExecuting
+    createStorageMutation.isPending || updateStorageNameMutation.isPending || isExecuting
 
   const isUpdatingVault = updateStorageVaultMutation.isPending
-
-  useEffect(() => {
-    if (!teamsLoading && !hasInitializedTeam.current && teamsList.length > 0) {
-      hasInitializedTeam.current = true
-      if (uiMode === 'simple') {
-        const privateTeam = teamsList.find((team) => team.teamName === 'Private Team')
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setSelectedTeams([privateTeam?.teamName || teamsList[0].teamName])
-      } else {
-         
-        setSelectedTeams([teamsList[0].teamName])
-      }
-    }
-  }, [teamsLoading, teamsList, uiMode])
 
   const storageColumns = useMemo(
     () => [
@@ -330,7 +290,7 @@ const StoragePage: React.FC = () => {
             <CloudOutlined style={{ color: theme.colors.primary }} />
             <strong>{text}</strong>
           </Space>
-        )
+        ),
       },
       {
         title: t('general.team'),
@@ -338,7 +298,7 @@ const StoragePage: React.FC = () => {
         key: 'teamName',
         width: 150,
         ellipsis: true,
-        render: (teamName: string) => <Tag color={theme.colors.secondary}>{teamName}</Tag>
+        render: (teamName: string) => <Tag color={theme.colors.secondary}>{teamName}</Tag>,
       },
       ...(featureFlags.isEnabled('vaultVersionColumns')
         ? [
@@ -348,77 +308,70 @@ const StoragePage: React.FC = () => {
               key: 'vaultVersion',
               width: 120,
               align: 'center' as const,
-              render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>
-            }
+              render: (version: number) => (
+                <Tag>{t('common:general.versionFormat', { version })}</Tag>
+              ),
+            },
           ]
         : []),
       {
         title: t('common:table.actions'),
         key: 'actions',
-        width: 360,
-        render: (_: any, record: Storage) => (
-          <Space size="small">
-            <Tooltip title={t('common:actions.edit')}>
-              <ActionButton
-                type="primary"
-                size="small"
-                icon={<EditOutlined />}
-                data-testid={`resources-storage-edit-${record.storageName}`}
-                onClick={() => openUnifiedModal('edit', record)}
-                aria-label={t('common:actions.edit')}
-              />
-            </Tooltip>
-            <Tooltip title={t('common:actions.runFunction')}>
-              <ActionButton
-                type="primary"
-                size="small"
-                icon={<FunctionOutlined />}
-                data-testid={`resources-storage-run-${record.storageName}`}
-                onClick={() => {
-                  setCurrentResource(record)
-                  setUnifiedModalState({
-                    open: true,
-                    resourceType: 'storage',
-                    mode: 'create',
-                    data: record
-                  })
-                }}
-                aria-label={t('common:actions.run')}
-              />
-            </Tooltip>
-            <Tooltip title={t('machines:trace')}>
-              <ActionButton
-                type="primary"
-                size="small"
-                icon={<HistoryOutlined />}
-                data-testid={`resources-storage-trace-${record.storageName}`}
-                onClick={() =>
-                  setAuditTraceModal({
-                    open: true,
-                    entityType: 'Storage',
-                    entityIdentifier: record.storageName,
-                    entityName: record.storageName
-                  })
-                }
-                aria-label={t('machines:trace')}
-              />
-            </Tooltip>
-            <Tooltip title={t('common:actions.delete')}>
-              <ActionButton
-                type="primary"
-                danger
-                size="small"
-                icon={<DeleteOutlined />}
-                data-testid={`resources-storage-delete-${record.storageName}`}
-                onClick={() => handleDeleteStorage(record)}
-                aria-label={t('common:actions.delete')}
-              />
-            </Tooltip>
-          </Space>
-        )
-      }
+        width: 200,
+        render: (_: unknown, record: Storage) => {
+          const buttons: ActionButtonConfig<Storage>[] = [
+            {
+              type: 'edit',
+              icon: <EditOutlined />,
+              tooltip: 'common:actions.edit',
+              onClick: (r: Storage) => openUnifiedModal('edit', r),
+              variant: 'primary',
+            },
+            {
+              type: 'run',
+              icon: <FunctionOutlined />,
+              tooltip: 'common:actions.runFunction',
+              onClick: (r: Storage) => {
+                setCurrentResource(r)
+                openUnifiedModal('create', r)
+              },
+              variant: 'primary',
+            },
+            {
+              type: 'trace',
+              icon: <HistoryOutlined />,
+              tooltip: 'machines:trace',
+              onClick: (r: Storage) =>
+                auditTrace.open({
+                  entityType: 'Storage',
+                  entityIdentifier: r.storageName,
+                  entityName: r.storageName,
+                }),
+              variant: 'default',
+            },
+            {
+              type: 'delete',
+              icon: <DeleteOutlined />,
+              tooltip: 'common:actions.delete',
+              onClick: handleDeleteStorage,
+              variant: 'primary',
+              danger: true,
+            },
+          ]
+
+          return (
+            <ActionButtonGroup<Storage>
+              buttons={buttons}
+              record={record}
+              idField="storageName"
+              testIdPrefix="resources-storage"
+              t={t}
+            />
+          )
+        },
+      },
     ],
-    [handleDeleteStorage, openUnifiedModal, t, theme.colors.primary, theme.colors.secondary]
+    [auditTrace, handleDeleteStorage, openUnifiedModal, setCurrentResource, t, theme.colors.primary, theme.colors.secondary]
   )
 
   return (
@@ -431,7 +384,7 @@ const StoragePage: React.FC = () => {
                 <TeamSelectorWrapper>
                   <TeamSelector
                     data-testid="resources-team-selector"
-                    teams={teamsList}
+                    teams={teams}
                     selectedTeams={selectedTeams}
                     onChange={setSelectedTeams}
                     loading={teamsLoading}
@@ -446,7 +399,7 @@ const StoragePage: React.FC = () => {
                     <ActionButton
                       type="primary"
                       icon={<PlusOutlined />}
-                      data-testid="resources-create-storag-button"
+                      data-testid="resources-create-storage-button"
                       onClick={() => openUnifiedModal('create')}
                       aria-label={t('storage.createStorage')}
                     />
@@ -455,7 +408,7 @@ const StoragePage: React.FC = () => {
                     <ActionButton
                       icon={<ImportOutlined />}
                       data-testid="resources-import-button"
-                      onClick={() => setRcloneImportWizardOpen(true)}
+                      onClick={() => rcloneImportWizard.open()}
                       aria-label={t('resources:storage.import.button')}
                     />
                   </Tooltip>
@@ -503,7 +456,7 @@ const StoragePage: React.FC = () => {
                       setStoragePage(1)
                     }
                   },
-                  position: ['bottomRight']
+                  position: ['bottomRight'],
                 }}
               />
             )}
@@ -521,7 +474,9 @@ const StoragePage: React.FC = () => {
         teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
         onSubmit={handleUnifiedModalSubmit}
         onUpdateVault={unifiedModalState.mode === 'edit' ? handleUnifiedVaultUpdate : undefined}
-        onFunctionSubmit={unifiedModalState.mode === 'create' ? undefined : handleStorageFunctionSelected}
+        onFunctionSubmit={
+          unifiedModalState.mode === 'create' ? undefined : handleStorageFunctionSelected
+        }
         isSubmitting={isSubmitting}
         isUpdatingVault={isUpdatingVault}
         functionCategories={['backup']}
@@ -531,27 +486,27 @@ const StoragePage: React.FC = () => {
 
       <QueueItemTraceModal
         data-testid="resources-queue-trace-modal"
-        taskId={queueTraceModal.taskId}
-        visible={queueTraceModal.visible}
+        taskId={queueTrace.state.taskId}
+        visible={queueTrace.state.visible}
         onClose={() => {
-          setQueueTraceModal({ visible: false, taskId: null, machineName: null })
+          queueTrace.close()
           refetchStorage()
         }}
       />
 
       <AuditTraceModal
         data-testid="resources-audit-trace-modal"
-        open={auditTraceModal.open}
-        onCancel={() => setAuditTraceModal({ open: false, entityType: null, entityIdentifier: null })}
-        entityType={auditTraceModal.entityType}
-        entityIdentifier={auditTraceModal.entityIdentifier}
-        entityName={auditTraceModal.entityName}
+        open={auditTrace.isOpen}
+        onCancel={auditTrace.close}
+        entityType={auditTrace.entityType}
+        entityIdentifier={auditTrace.entityIdentifier}
+        entityName={auditTrace.entityName}
       />
 
       <RcloneImportWizard
         data-testid="resources-rclone-import-wizard"
-        open={rcloneImportWizardOpen}
-        onClose={() => setRcloneImportWizardOpen(false)}
+        open={rcloneImportWizard.isOpen}
+        onClose={rcloneImportWizard.close}
         teamName={selectedTeams[0] || ''}
         onImportComplete={() => {
           refetchStorage()

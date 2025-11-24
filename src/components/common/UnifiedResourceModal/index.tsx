@@ -20,6 +20,7 @@ import { useDropdownData } from '@/api/queries/useDropdownData'
 import type { Machine, Repository } from '@/types'
 import type { QueueFunction } from '@/api/queries/queue'
 import { templateService } from '@/services/templateService'
+import { useDialogState } from '@/hooks/useDialogState'
 import {
   createMachineSchema,
   createRepositorySchema,
@@ -119,8 +120,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   const formRef = useRef<ResourceFormWithVaultRef | null>(null)
 
   // State for sub-modals
-  const [showVaultModal, setShowVaultModal] = useState(false)
-  const [showFunctionModal, setShowFunctionModal] = useState(false)
+  const vaultModal = useDialogState<void>()
+  const functionModal = useDialogState<void>()
   
   // State for test connection (for machines)
   const [testConnectionSuccess, setTestConnectionSuccess] = useState(false)
@@ -957,9 +958,9 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   useEffect(() => {
     if (open && mode === 'create' && existingData && showFunctions) {
       // Open modal immediately (no delay)
-      setShowFunctionModal(true)
+      functionModal.open()
     }
-  }, [open, mode, existingData, showFunctions])
+  }, [open, mode, existingData, showFunctions, functionModal])
 
   // If we're in vault mode, show the vault editor directly
   if (mode === 'vault' && existingData && onUpdateVault) {
@@ -981,19 +982,19 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
   }
 
   // If we're showing functions directly, don't show the main modal
-  if (mode === 'create' && existingData && showFunctions && showFunctionModal && !existingData.prefilledMachine) {
+  if (mode === 'create' && existingData && showFunctions && functionModal.isOpen && !existingData.prefilledMachine) {
     return (
       <>
         {/* Function Selection Modal */}
         <FunctionSelectionModal
-          open={showFunctionModal}
+          open={functionModal.isOpen}
           onCancel={() => {
-            setShowFunctionModal(false)
+            functionModal.close()
             onCancel()
           }}
           onSubmit={async (functionData) => {
             await onFunctionSubmit(functionData)
-            setShowFunctionModal(false)
+            functionModal.close()
             onCancel()
           }}
           title={getFunctionTitle()}
@@ -1078,7 +1079,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                 <ActionButton
                   key="vault"
                   data-testid="resource-modal-vault-button"
-                  onClick={() => setShowVaultModal(true)}
+                  onClick={() => vaultModal.open()}
                 >
                   {t('general.vault')}
                 </ActionButton>,
@@ -1089,7 +1090,7 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
                 <ActionButton
                   key="functions"
                   data-testid="resource-modal-functions-button"
-                  onClick={() => setShowFunctionModal(true)}
+                  onClick={() => functionModal.open()}
                 >
                   {t(`${resourceType}s.${resourceType}Functions`)}
                 </ActionButton>,
@@ -1241,11 +1242,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       {/* Vault Editor Modal */}
       {existingData && onUpdateVault && (
         <VaultEditorModal
-          open={showVaultModal}
-          onCancel={() => setShowVaultModal(false)}
+          open={vaultModal.isOpen}
+          onCancel={vaultModal.close}
           onSave={async (vault, version) => {
             await onUpdateVault(vault, version)
-            setShowVaultModal(false)
+            vaultModal.close()
           }}
           entityType={getEntityType()}
           title={t('general.configureVault', { name: existingData[`${resourceType}Name`] || '' })}
@@ -1258,11 +1259,11 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
       {/* Function Selection Modal */}
       {showFunctions && existingData && (
         <FunctionSelectionModal
-          open={showFunctionModal}
-          onCancel={() => setShowFunctionModal(false)}
+          open={functionModal.isOpen}
+          onCancel={functionModal.close}
           onSubmit={async (functionData) => {
             await onFunctionSubmit(functionData)
-            setShowFunctionModal(false)
+            functionModal.close()
           }}
           title={getFunctionTitle()}
           subtitle={createFunctionSubtitle()}
