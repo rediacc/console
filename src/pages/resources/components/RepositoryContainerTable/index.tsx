@@ -263,7 +263,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
     dataIndex: 'name',
     key: 'name',
     sorter: createSorter<Container>('name'),
-    renderText: (name?: string) => name || 'N/A',
+    renderText: (name: string | null | undefined) => name ?? 'N/A',
     renderWrapper: (content) => <strong>{content}</strong>,
   })
 
@@ -272,7 +272,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
     dataIndex: 'image',
     key: 'image',
     sorter: createSorter<Container>('image'),
-    renderText: (image?: string) => image || 'N/A',
+    renderText: (image: string | null | undefined) => image ?? 'N/A',
   })
 
   const containerColumns: ColumnsType<Container> = [
@@ -280,14 +280,15 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
       ...connectionStatusColumn,
       align: 'center',
       sorter: createCustomSorter<Container>((c) => (c.state === 'running' ? 0 : 1)),
-      render: (state: string) => connectionStatusColumn.render?.(state),
+      render: (state: string, record: Container, index) =>
+        connectionStatusColumn.render?.(state, record, index) as React.ReactNode,
     },
     containerNameColumn,
     {
       ...stateColumn,
-      render: (state: string, record: Container) => (
+      render: (state: string, record: Container, index) => (
         <Space>
-          {stateColumn.render?.(state)}
+          {stateColumn.render?.(state, record, index) as React.ReactNode}
           {record.status && <Text type="secondary" style={{ fontSize: 12 }}>{record.status}</Text>}
         </Space>
       ),

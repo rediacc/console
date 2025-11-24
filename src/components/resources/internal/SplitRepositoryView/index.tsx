@@ -103,7 +103,7 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
     {
       ...repositoryNameColumn,
       render: (name: string, record: Repository) => {
-        const truncated = repositoryNameColumn.render?.(name, record)
+        const truncated = repositoryNameColumn.render?.(name, record, 0) as React.ReactNode
         return (
           <Space>
             <IconWrapper $variant="success">
@@ -131,7 +131,7 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
     {
       ...repositoryGuidColumn,
       render: (guid: string, record: Repository) => {
-        const truncated = repositoryGuidColumn.render?.(guid, record)
+        const truncated = repositoryGuidColumn.render?.(guid, record, 0) as React.ReactNode
         return (
           <GuidText copyable={{ text: guid }}>
             {truncated}
