@@ -451,8 +451,8 @@ const MachinesPage: React.FC = () => {
       <QueueItemTraceModal
         data-testid="machines-queue-trace-modal"
         taskId={queueTraceState.taskId}
-        visible={queueTraceState.visible}
-        onClose={() => {
+        open={queueTraceState.open}
+        onCancel={() => {
           const machineName = queueTraceState.machineName
           closeQueueTrace()
           if (machineName) {

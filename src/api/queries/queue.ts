@@ -3,6 +3,8 @@ import apiClient from '@/api/client'
 import { extractTableData, getFirstRow, getResultSetByIndex } from '@/core/api/response'
 import { showMessage } from '@/utils/messages'
 import { minifyJSON } from '@/utils/json'
+import { createErrorHandler } from '@/utils/mutationUtils'
+import i18n from '@/i18n/config'
 
 export interface QueueItem {
   taskId: string
@@ -170,11 +172,12 @@ export const useCreateQueueItem = () => {
     onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ['queue-items'] })
       queryClient.invalidateQueries({ queryKey: ['queue-items-bridge', variables.bridgeName] })
-      showMessage('success', `Queue item created${response.taskId ? ` with ID: ${response.taskId}` : ''}`)
+      const message = response.taskId
+        ? i18n.t('queue:success.createdWithId', { taskId: response.taskId })
+        : i18n.t('queue:success.created')
+      showMessage('success', message)
     },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to create queue item')
-    },
+    onError: createErrorHandler(i18n.t('queue:errors.createFailed')),
   })
 }
 
@@ -194,11 +197,9 @@ export const useUpdateQueueItemResponse = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['queue-items'] })
-      showMessage('success', `Queue item ${variables.taskId} response updated`)
+      showMessage('success', i18n.t('queue:success.responseUpdated', { taskId: variables.taskId }))
     },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to update queue item')
-    },
+    onError: createErrorHandler(i18n.t('queue:errors.updateFailed')),
   })
 }
 
@@ -220,14 +221,12 @@ export const useCompleteQueueItem = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['queue-items'] })
       const status = variables.finalStatus || 'COMPLETED'
-      const message = status === 'FAILED' ? 
-        `Queue item ${variables.taskId} marked as failed` : 
-        `Queue item ${variables.taskId} completed`
+      const message = status === 'FAILED'
+        ? i18n.t('queue:success.markedFailed', { taskId: variables.taskId })
+        : i18n.t('queue:success.completed', { taskId: variables.taskId })
       showMessage('success', message)
     },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to update queue item')
-    },
+    onError: createErrorHandler(i18n.t('queue:errors.updateFailed')),
   })
 }
 
@@ -245,11 +244,9 @@ export const useUpdateQueueItemPriority = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['queue-items'] })
       queryClient.invalidateQueries({ queryKey: ['queue-items-bridge'] })
-      showMessage('success', `Queue item ${variables.taskId} priority updated to ${variables.priority}`)
+      showMessage('success', i18n.t('queue:success.priorityUpdated', { taskId: variables.taskId, priority: variables.priority }))
     },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to update queue item priority')
-    },
+    onError: createErrorHandler(i18n.t('queue:errors.updatePriorityFailed')),
   })
 }
 
@@ -265,11 +262,12 @@ export const useUpdateQueueItemProtection = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['queue-items'] })
       queryClient.invalidateQueries({ queryKey: ['queue-items-bridge'] })
-      showMessage('success', `Queue item ${variables.taskId} protection ${variables.protection ? 'enabled' : 'disabled'}`)
+      const message = variables.protection
+        ? i18n.t('queue:success.protectionEnabled', { taskId: variables.taskId })
+        : i18n.t('queue:success.protectionDisabled', { taskId: variables.taskId })
+      showMessage('success', message)
     },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to update queue item protection')
-    },
+    onError: createErrorHandler(i18n.t('queue:errors.updateProtectionFailed')),
   })
 }
 
@@ -285,11 +283,9 @@ export const useCancelQueueItem = () => {
     onSuccess: (_, taskId) => {
       queryClient.invalidateQueries({ queryKey: ['queue-items'] })
       queryClient.invalidateQueries({ queryKey: ['queue-items-bridge'] })
-      showMessage('success', `Queue item ${taskId} cancellation initiated`)
+      showMessage('success', i18n.t('queue:success.cancellationInitiated', { taskId }))
     },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to cancel queue item')
-    },
+    onError: createErrorHandler(i18n.t('queue:errors.cancelFailed')),
   })
 }
 
@@ -305,11 +301,9 @@ export const useDeleteQueueItem = () => {
     onSuccess: (_, taskId) => {
       queryClient.invalidateQueries({ queryKey: ['queue-items'] })
       queryClient.invalidateQueries({ queryKey: ['queue-items-bridge'] })
-      showMessage('success', `Queue item ${taskId} deleted`)
+      showMessage('success', i18n.t('queue:success.deleted', { taskId }))
     },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to delete queue item')
-    },
+    onError: createErrorHandler(i18n.t('queue:errors.deleteFailed')),
   })
 }
 
@@ -325,11 +319,9 @@ export const useRetryFailedQueueItem = () => {
     onSuccess: (_, taskId) => {
       queryClient.invalidateQueries({ queryKey: ['queue-items'] })
       queryClient.invalidateQueries({ queryKey: ['queue-item-trace', taskId] })
-      showMessage('success', `Queue item ${taskId} queued for retry`)
+      showMessage('success', i18n.t('queue:success.queuedForRetry', { taskId }))
     },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to retry queue item')
-    },
+    onError: createErrorHandler(i18n.t('queue:errors.retryFailed')),
   })
 }
 

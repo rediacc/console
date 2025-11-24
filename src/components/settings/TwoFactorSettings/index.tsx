@@ -4,7 +4,7 @@ import type { FormInstance } from 'antd/es/form'
 import type { TFunction } from 'i18next'
 import { KeyOutlined, CheckCircleOutlined, WarningOutlined, CopyOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
-import { useGetTFAStatus, useEnableTFA, useDisableTFA } from '@/api/queries/twoFactor'
+import { useTFAStatus, useEnableTFA, useDisableTFA } from '@/api/queries/twoFactor'
 import type { EnableTwoFactorResponse } from '@/api/queries/twoFactor'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
@@ -13,6 +13,7 @@ import { message } from 'antd'
 import { DESIGN_TOKENS } from '@/utils/styleConstants'
 import { ModalSize } from '@/types/modal'
 import { useDialogState } from '@/hooks/useDialogState'
+import { OTPCodeField } from '@/components/forms/FormFields'
 import {
   LoadingContainer,
   FullWidthStack,
@@ -23,7 +24,6 @@ import {
   ManualSetupAlert,
   SecretInputRow,
   SecretInput,
-  CenteredCodeInput,
   FormActionRow,
   PrimaryButton,
   AlertSpacer,
@@ -47,7 +47,7 @@ const TwoFactorSettings: React.FC<TwoFactorSettingsProps> = ({ open, onCancel })
   const [verificationForm] = Form.useForm()
   const userEmail = useSelector((state: RootState) => state.auth.user?.email) || ''
 
-  const { data: twoFAStatus, isLoading: statusLoading, refetch: refetchTFAStatus } = useGetTFAStatus()
+  const { data: twoFAStatus, isLoading: statusLoading, refetch: refetchTFAStatus } = useTFAStatus()
   const enableTFAMutation = useEnableTFA()
   const disableTFAMutation = useDisableTFA()
 
@@ -309,23 +309,15 @@ const VerificationContent: React.FC<VerificationContentProps> = ({
       <Tabs data-testid="tfa-settings-setup-tabs" items={tabItems} />
 
       <Form form={verificationForm} layout="vertical" onFinish={onSubmit}>
-        <Form.Item
+        <OTPCodeField
           name="code"
           label={t('twoFactorAuth.verification.codeLabel')}
-          rules={[
-            { required: true, message: t('twoFactorAuth.verification.codeRequired') },
-            { len: 6, message: t('twoFactorAuth.verification.codeLength') },
-            { pattern: /^\d{6}$/, message: t('twoFactorAuth.verification.codeFormat') },
-          ]}
-        >
-          <CenteredCodeInput
-            size="large"
-            placeholder={t('twoFactorAuth.verification.codePlaceholder')}
-            maxLength={6}
-            autoComplete="off"
-            data-testid="tfa-settings-verification-input"
-          />
-        </Form.Item>
+          placeholder={t('twoFactorAuth.verification.codePlaceholder')}
+          requiredMessage={t('twoFactorAuth.verification.codeRequired')}
+          lengthMessage={t('twoFactorAuth.verification.codeLength')}
+          formatMessage={t('twoFactorAuth.verification.codeFormat')}
+          data-testid="tfa-settings-verification-input"
+        />
 
         <FormItemNoMargin>
           <FormActionRow $align="space-between">
@@ -549,23 +541,15 @@ const DisableTwoFactorModal: React.FC<DisableModalProps> = ({
         />
       </Form.Item>
 
-      <Form.Item
+      <OTPCodeField
         name="code"
         label={t('twoFactorAuth.disableModal.codeLabel')}
-        rules={[
-          { required: true, message: t('twoFactorAuth.disableModal.codeRequired') },
-          { len: 6, message: t('twoFactorAuth.disableModal.codeLength') },
-          { pattern: /^\d{6}$/, message: t('twoFactorAuth.disableModal.codeFormat') },
-        ]}
-      >
-        <CenteredCodeInput
-          size="large"
-          placeholder={t('twoFactorAuth.disableModal.codePlaceholder')}
-          maxLength={6}
-          autoComplete="off"
-          data-testid="tfa-settings-disable-code-input"
-        />
-      </Form.Item>
+        placeholder={t('twoFactorAuth.disableModal.codePlaceholder')}
+        requiredMessage={t('twoFactorAuth.disableModal.codeRequired')}
+        lengthMessage={t('twoFactorAuth.disableModal.codeLength')}
+        formatMessage={t('twoFactorAuth.disableModal.codeFormat')}
+        data-testid="tfa-settings-disable-code-input"
+      />
 
       <FormItemNoMargin>
         <FormActionRow>

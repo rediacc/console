@@ -223,7 +223,7 @@ export const useDistributedStorageClusterMachines = (clusterName: string, enable
 }
 
 // Machine Assignment Status
-export const useGetMachineAssignmentStatus = (machineName: string, teamName: string, enabled = true) => {
+export const useMachineAssignmentStatus = (machineName: string, teamName: string, enabled = true) => {
   return useQuery({
     queryKey: DS_QUERY_KEYS.machineAssignmentStatus(machineName, teamName),
     queryFn: async () => {
@@ -245,7 +245,7 @@ export const useGetMachineAssignmentStatus = (machineName: string, teamName: str
 }
 
 // Available Machines for Clone
-export const useGetAvailableMachinesForClone = (teamName: string, enabled = true) => {
+export const useAvailableMachinesForClone = (teamName: string, enabled = true) => {
   return useQuery({
     queryKey: DS_QUERY_KEYS.availableMachinesForClone(teamName),
     queryFn: async () => {
@@ -264,7 +264,7 @@ export const useGetAvailableMachinesForClone = (teamName: string, enabled = true
 }
 
 // Clone Machine Assignment Validation
-export const useGetCloneMachineAssignmentValidation = (teamName: string, machineNames: string, enabled = true) => {
+export const useCloneMachineAssignmentValidation = (teamName: string, machineNames: string, enabled = true) => {
   return useQuery({
     queryKey: DS_QUERY_KEYS.machineAssignmentValidation(teamName, machineNames),
     queryFn: async () => {
@@ -284,7 +284,7 @@ export const useGetCloneMachineAssignmentValidation = (teamName: string, machine
 }
 
 // Clone Machines
-export const useGetCloneMachines = (
+export const useCloneMachines = (
   cloneName: string,
   snapshotName: string,
   imageName: string,

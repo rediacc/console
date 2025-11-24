@@ -73,6 +73,20 @@
       "userPlaceholder": "Select user",
       "deleteGroupTitle": "Delete Permission Group",
       "deleteGroupDescription": "Are you sure you want to delete group \"{{group}}\"?"
+    },
+    "errors": {
+      "createGroupFailed": "Failed to create permission group",
+      "deleteGroupFailed": "Failed to delete permission group",
+      "addPermissionFailed": "Failed to add permission to group",
+      "removePermissionFailed": "Failed to remove permission from group",
+      "assignUserFailed": "Failed to assign user to permission group"
+    },
+    "success": {
+      "groupCreated": "Permission group \"{{group}}\" created successfully",
+      "groupDeleted": "Permission group \"{{group}}\" deleted successfully",
+      "permissionAdded": "Permission \"{{permission}}\" added to group",
+      "permissionRemoved": "Permission \"{{permission}}\" removed from group",
+      "userAssigned": "User assigned to permission group \"{{group}}\""
     }
   }
 }

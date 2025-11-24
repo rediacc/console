@@ -66,7 +66,7 @@ interface Repository {
   originalGuid?: string
 }
 
-interface RepositoryContainerListProps {
+interface RepositoryContainerTableProps {
   machine: Machine
   repository: Repository
   onContainerClick?: (container: Container) => void
@@ -75,7 +75,7 @@ interface RepositoryContainerListProps {
   refreshKey?: number
 }
 
-export const RepositoryContainerList: React.FC<RepositoryContainerListProps> = ({
+export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> = ({
   machine,
   repository,
   onContainerClick,

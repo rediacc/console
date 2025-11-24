@@ -5,7 +5,7 @@ import { DoubleLeftOutlined, ReloadOutlined, InboxOutlined } from '@/utils/optim
 import { useTranslation } from 'react-i18next'
 import { usePanelWidth } from '@/hooks/usePanelWidth'
 import { useMachines } from '@/api/queries/machines'
-import { RepositoryContainerList } from '@/components/resources/RepositoryContainerList'
+import { RepositoryContainerTable } from '@/components/resources/RepositoryContainerTable'
 import { Machine } from '@/types'
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel'
 import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
@@ -300,7 +300,7 @@ const RepositoryContainersPage: React.FC = () => {
 
         <SplitLayout>
           <ListPanel $showDetail={Boolean(selectedResource)} $detailWidth={actualPanelWidth}>
-            <RepositoryContainerList
+            <RepositoryContainerTable
               machine={actualMachine}
               repository={actualRepository}
               key={`${actualMachine.machineName}-${actualRepositoryName}-${refreshKey}`}
@@ -343,11 +343,11 @@ const RepositoryContainersPage: React.FC = () => {
         </SplitLayout>
       </FullHeightCard>
 
-      {queueTrace.state.visible && (
+      {queueTrace.state.open && (
         <QueueItemTraceModal
           taskId={queueTrace.state.taskId}
-          visible={queueTrace.state.visible}
-          onClose={() => {
+          open={queueTrace.state.open}
+          onCancel={() => {
             queueTrace.close()
             handleRefresh()
           }}

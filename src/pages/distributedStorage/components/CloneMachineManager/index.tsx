@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react'
 import { Table, Spin, Modal, message } from 'antd'
 import { useTranslation } from 'react-i18next'
 import {
-  useGetCloneMachines,
-  useGetAvailableMachinesForClone,
+  useCloneMachines,
+  useAvailableMachinesForClone,
   type DistributedStorageRbdClone,
   type DistributedStorageRbdSnapshot,
   type DistributedStorageRbdImage,
@@ -57,7 +57,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
     data: assignedMachines = [],
     isLoading: loadingMachines,
     refetch: refetchMachines,
-  } = useGetCloneMachines(
+  } = useCloneMachines(
     clone.cloneName,
     snapshot.snapshotName,
     image.imageName,
@@ -69,7 +69,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
   const {
     data: availableMachines = [],
     isLoading: loadingAvailable,
-  } = useGetAvailableMachinesForClone(teamName, addModal.isOpen)
+  } = useAvailableMachinesForClone(teamName, addModal.isOpen)
 
   const assignMutation = useUpdateCloneMachineAssignments()
   const removeMutation = useUpdateCloneMachineRemovals()

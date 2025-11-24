@@ -171,7 +171,7 @@ interface SystemInfo {
   }
 }
 
-interface MachineRepositoryListProps {
+interface MachineRepositoryTableProps {
   machine: Machine
   onActionComplete?: () => void
   hideSystemInfo?: boolean
@@ -187,7 +187,7 @@ interface MachineRepositoryListProps {
 }
 
 
-export const MachineRepositoryList: React.FC<MachineRepositoryListProps> = ({ machine, onActionComplete, hideSystemInfo = false, onCreateRepository, onRepositoryClick, highlightedRepository, onContainerClick: _onContainerClick, highlightedContainer: _highlightedContainer, isLoading, onRefreshMachines: _onRefreshMachines, refreshKey, onQueueItemCreated }) => {
+export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ machine, onActionComplete, hideSystemInfo = false, onCreateRepository, onRepositoryClick, highlightedRepository, onContainerClick: _onContainerClick, highlightedContainer: _highlightedContainer, isLoading, onRefreshMachines: _onRefreshMachines, refreshKey, onQueueItemCreated }) => {
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
   const navigate = useNavigate()
   const [modal, contextHolder] = Modal.useModal()

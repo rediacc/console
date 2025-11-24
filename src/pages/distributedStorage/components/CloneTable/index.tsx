@@ -41,10 +41,10 @@ import {
   TableWrapper,
   Title,
 } from './styles'
-import { CloneMachineList } from './components/CloneMachineList'
+import { CloneMachineTable } from './components/CloneMachineTable'
 import { MachineCountBadge } from './components/MachineCountBadge'
 
-interface CloneListProps {
+interface CloneTableProps {
   snapshot: DistributedStorageRbdSnapshot
   image: DistributedStorageRbdImage
   pool: DistributedStoragePool
@@ -57,7 +57,7 @@ type CloneModalData = DistributedStorageRbdClone & {
   vaultVersion?: number
 }
 
-const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
+const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
   const { t } = useTranslation('distributedStorage')
   const cloneModal = useFormModal<CloneModalData>()
   const queueTrace = useQueueTraceModal()
@@ -241,7 +241,7 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
 
   const expandedRowRender = useCallback(
     (record: DistributedStorageRbdClone) => (
-      <CloneMachineList
+      <CloneMachineTable
         clone={record}
         snapshot={snapshot}
         image={image}
@@ -338,8 +338,8 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
         isSubmitting={createCloneMutation.isPending || updateVaultMutation.isPending}
       />
       <QueueItemTraceModal
-        visible={queueTrace.state.visible}
-        onClose={queueTrace.close}
+        open={queueTrace.state.open}
+        onCancel={queueTrace.close}
         taskId={queueTrace.state.taskId}
       />
 
@@ -357,4 +357,4 @@ const CloneList: React.FC<CloneListProps> = ({ snapshot, image, pool }) => {
   )
 }
 
-export default CloneList
+export default CloneTable

@@ -6,7 +6,7 @@ import {
   DistributedStorageCluster,
 } from '@/api/queries/distributedStorage'
 import AuditTraceModal from '@/components/common/AuditTraceModal'
-import RbdImageList from '../RbdImageList'
+import RbdImageTable from '../RbdImageTable'
 import { buildPoolColumns } from './columns'
 import { ClusterPoolsCard } from './components/ClusterPoolsCard'
 import { useTraceModal, useExpandableTable } from '@/hooks'
@@ -113,7 +113,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
   const expandedRowRender = useCallback(
     (record: DistributedStoragePool) => {
       const teamFilter = record.teamName
-      return <RbdImageList pool={record} teamFilter={teamFilter} />
+      return <RbdImageTable pool={record} teamFilter={teamFilter} />
     },
     [],
   )

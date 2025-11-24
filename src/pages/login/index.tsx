@@ -719,8 +719,8 @@ const LoginPage: React.FC = () => {
 
       {/* Registration Modal */}
       <RegistrationModal
-        visible={showRegistration}
-        onClose={() => {
+        open={showRegistration}
+        onCancel={() => {
           setShowRegistration(false)
           setIsQuickRegistration(false)
           setQuickRegistrationData(undefined)

@@ -214,7 +214,7 @@ export const useMachineAssignment = (teamName?: string) => {
   }, [imageReassignMutation, t])
   
   // Note: getAssignmentStatus removed as it violated hooks rules
-  // Users should call useGetMachineAssignmentStatus directly in their components
+  // Users should call useMachineAssignmentStatus directly in their components
   
   // Helper to check if machines can be assigned
   const canAssignMachines = useCallback((
