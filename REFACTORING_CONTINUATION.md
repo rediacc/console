@@ -45,8 +45,12 @@ All data table components use `*Table` suffix:
 - `RepositoryContainerTable` (was `RepositoryContainerList`)
 
 #### 6. State Variable Convention (Documented Standard)
-For modal state variables, use `is*Open` pattern:
+For modal state variables, use the `is*Open` pattern.
+
+**Correct:**
 - `const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)`
+
+**Incorrect examples to avoid:**
 - `const [assignModalOpen, setAssignModalOpen] = useState(false)`
 - `const [showTFAModal, setShowTFAModal] = useState(false)`
 
