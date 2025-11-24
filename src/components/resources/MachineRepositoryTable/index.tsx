@@ -1342,32 +1342,23 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
       sorter: createCustomSorter<Container>((c) =>
         c.state === 'running' ? 0 : c.state === 'paused' ? 1 : 2
       ),
-      render: (state: string, record: Container, index) =>
-        systemStatusColumn.render?.(
-          state === 'exited' ? 'stopped' : state,
-          record,
-          index
-        ) as React.ReactNode,
+      render: (state: string) => systemStatusColumn.render?.(state === 'exited' ? 'stopped' : state),
     },
     {
       ...systemNameColumn,
-      render: (name: string, record: Container, index) => (
+      render: (name: string) => (
         <Space>
           <CloudServerOutlined style={{ color: '#722ed1' }} />
-          <strong>{systemNameColumn.render?.(name, record, index) as React.ReactNode}</strong>
+          <strong>{systemNameColumn.render?.(name)}</strong>
         </Space>
       ),
     },
     systemImageColumn,
     {
       ...systemStateColumn,
-      render: (state: string, record: Container, index) => (
+      render: (state: string, record: Container) => (
         <Space>
-          {systemStateColumn.render?.(
-            state === 'exited' ? 'stopped' : state,
-            record,
-            index
-          ) as React.ReactNode}
+          {systemStateColumn.render?.(state === 'exited' ? 'stopped' : state)}
           {record.status && <Text type="secondary" style={{ fontSize: 12 }}>{record.status}</Text>}
         </Space>
       ),
@@ -1498,7 +1489,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
         if (r.mounted) return 1
         return 2
       }),
-      render: (_: unknown, record: RepositoryTableRow, index) => {
+      render: (_: unknown, record: RepositoryTableRow) => {
         if (record._isGroupHeader) {
           return null
         }
@@ -1507,7 +1498,7 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
           : record.mounted
             ? 'mounted'
             : 'unmounted'
-        return repositoryStatusColumn.render?.(statusKey, record, index) as React.ReactNode
+        return repositoryStatusColumn.render?.(statusKey)
       },
     },
     {

@@ -603,8 +603,8 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
   const columns: ColumnsType<RemoteFile> = [
     {
       ...nameColumn,
-      render: (name: string, record: RemoteFile, index) => {
-        const truncated = nameColumn.render?.(name, record, index) as React.ReactNode;
+      render: (name: string, record: RemoteFile) => {
+        const truncated = nameColumn.render?.(name, record);
         const nameContent = record.isDirectory ? (
           <a
             onClick={() => handleNavigate(currentPath ? `${currentPath}/${name}` : name)}

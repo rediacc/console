@@ -238,9 +238,9 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
     bridgeColumn,
     {
       ...statusColumn,
-      render: (status: TestResult['status'], record, index) => (
+      render: (status: TestResult['status'], record) => (
         <span data-testid={`connectivity-status-tag-${record.machineName}-${status}`}>
-          {statusColumn.render?.(status, record, index) as React.ReactNode}
+          {statusColumn.render?.(status)}
         </span>
       ),
     },
@@ -257,11 +257,11 @@ const ConnectivityTestModal: React.FC<ConnectivityTestModalProps> = ({
     },
     {
       ...baseMessageColumn,
-      render: (message: string | undefined, record, index) => {
+      render: (message: string | undefined, record) => {
         if (!message) {
-          return baseMessageColumn.render?.(message, record, index) as React.ReactNode
+          return baseMessageColumn.render?.(message, record)
         }
-        const truncated = baseMessageColumn.render?.(message, record, index) as React.ReactNode
+        const truncated = baseMessageColumn.render?.(message, record)
         return <MessageText $isError={record.status === 'failed'}>{truncated}</MessageText>
       },
     },

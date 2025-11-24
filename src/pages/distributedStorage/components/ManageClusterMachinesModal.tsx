@@ -179,11 +179,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
     dataIndex: 'assignedDate',
     key: 'assignedDate',
     sorter: false,
-    render: (date: string | Date | null | undefined) => {
-      if (!date) return '-'
-      const resolved = typeof date === 'string' ? date : date.toString()
-      return formatTimestampAsIs(resolved, 'datetime')
-    },
+    render: (date: string | null) => (date ? formatTimestampAsIs(date, 'datetime') : '-'),
   })
 
   const assignedColumns: ColumnsType<Machine> = [machineColumn, bridgeColumn, assignedDateColumn]

@@ -500,7 +500,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
     {
       ...nameColumn,
       render: (name: string, record: ImportStatus) => {
-        const truncated = nameColumn.render?.(name, record, 0) as React.ReactNode
+        const truncated = nameColumn.render?.(name, record)
         return (
           <Space>
             <CloudOutlined />
@@ -535,7 +535,7 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
         if (currentStep < 2) return null
         return (
           <Space direction="vertical" size="small">
-            {statusColumn.render?.(status, record, 0) as React.ReactNode}
+            {statusColumn.render?.(status)}
             {record.message && <StatusMessage>{record.message}</StatusMessage>}
           </Space>
         )

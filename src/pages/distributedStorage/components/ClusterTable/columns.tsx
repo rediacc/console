@@ -61,24 +61,20 @@ export const buildClusterColumns = ({
   return [
     {
       ...clusterNameColumn,
-      render: (name: string, record: DistributedStorageCluster, index) => {
+      render: (name: string, record: DistributedStorageCluster) => {
         const isExpanded = expandedRowKeys.includes(record.clusterName)
         return (
           <ClusterNameCell>
             <ExpandIcon $expanded={isExpanded} />
             <ClusterIcon />
-            <ClusterNameText>
-              {clusterNameColumn.render?.(name, record, index) as React.ReactNode}
-            </ClusterNameText>
+            <ClusterNameText>{clusterNameColumn.render?.(name, record)}</ClusterNameText>
           </ClusterNameCell>
         )
       },
     },
     {
       ...teamColumn,
-      render: (teamName: string, record: DistributedStorageCluster, index) => (
-        <TeamTag>{teamColumn.render?.(teamName, record, index) as React.ReactNode}</TeamTag>
-      ),
+      render: (teamName: string) => <TeamTag>{teamColumn.render?.(teamName)}</TeamTag>,
     },
   {
     title: t('machines:title'),

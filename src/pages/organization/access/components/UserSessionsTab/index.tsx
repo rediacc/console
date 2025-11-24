@@ -78,7 +78,7 @@ const UserSessionsTab: React.FC = () => {
     dataIndex: 'userAgent',
     key: 'userAgent',
     width: 300,
-    renderText: (agent: string | null | undefined) => agent ?? userAgentFallback,
+    renderText: (agent: string | null) => agent || userAgentFallback,
     renderWrapper: (content, fullText) => (
       <CellText $muted={fullText === userAgentFallback}>{content}</CellText>
     ),
@@ -111,11 +111,7 @@ const UserSessionsTab: React.FC = () => {
     key: 'lastActivity',
     width: 150,
     sorter: createDateSorter<UserRequest>('lastActivity'),
-    render: (value: string | Date | null | undefined) => {
-      if (!value) return '-'
-      const timestamp = typeof value === 'string' ? value : value.toString()
-      return dayjs(timestamp).fromNow()
-    },
+    render: (value: string | null) => (value ? dayjs(value).fromNow() : '-'),
   })
 
   const actionsColumn = createActionColumn<UserRequest>({
@@ -216,8 +212,7 @@ const UserSessionsTab: React.FC = () => {
     userAgentColumn,
     {
       ...statusColumn,
-      render: (isActive: boolean, record, index) =>
-        statusColumn.render?.(String(isActive), record, index) as React.ReactNode,
+      render: (isActive: boolean) => statusColumn.render?.(String(isActive)),
     },
     createdAtColumn,
     lastActivityColumn,
