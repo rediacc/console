@@ -9,6 +9,155 @@ import { handleError } from '../utils/errors.js'
 import type { OutputFormat } from '../types/index.js'
 import { getFirstRow, type QueueItemResponse } from '../types/api-responses.js'
 
+// Exported action handlers for reuse in shortcuts
+
+export interface CreateActionOptions {
+  team?: string
+  machine?: string
+  bridge?: string
+  priority: string
+  param?: string[]
+  function: string
+}
+
+export interface TraceActionOptions {
+  watch?: boolean
+  interval: string
+}
+
+export async function createAction(
+  options: CreateActionOptions,
+  program: Command
+): Promise<{ taskId?: string }> {
+  await authService.requireAuth()
+  const opts = await contextService.applyDefaults(options)
+
+  if (!opts.team) {
+    outputService.error('Team name required. Use --team or set context.')
+    process.exit(1)
+  }
+
+  // Parse parameters
+  const params: Record<string, string> = {}
+  for (const param of options.param || []) {
+    const [key, ...valueParts] = param.split('=')
+    params[key] = valueParts.join('=')
+  }
+
+  // Build proper queue vault using the queue service
+  const queueVault = await withSpinner(
+    'Building queue vault...',
+    () => queueService.buildQueueVault({
+      teamName: opts.team as string,
+      machineName: opts.machine,
+      bridgeName: opts.bridge,
+      functionName: options.function,
+      params,
+      priority: parseInt(options.priority, 10),
+    }),
+    'Queue vault built'
+  )
+
+  const response = await withSpinner(
+    `Creating queue item for function "${options.function}"...`,
+    () => apiClient.post('/CreateQueueItem', {
+      teamName: opts.team,
+      machineName: opts.machine,
+      bridgeName: opts.bridge,
+      queueVault,
+      priority: parseInt(options.priority, 10),
+    }),
+    'Queue item created'
+  )
+
+  const data = getFirstRow<QueueItemResponse>(response.resultSets)
+  if (data?.taskId) {
+    outputService.success(`Task ID: ${data.taskId}`)
+  }
+
+  return { taskId: data?.taskId }
+}
+
+export async function traceAction(
+  taskId: string,
+  options: TraceActionOptions,
+  program: Command
+): Promise<void> {
+  await authService.requireAuth()
+
+  const fetchTrace = async () => {
+    return apiClient.get('/GetQueueItemTrace', { taskId })
+  }
+
+  if (options.watch) {
+    // Watch mode - poll until complete
+    const interval = parseInt(options.interval, 10)
+    let isComplete = false
+
+    const spinner = startSpinner('Watching queue item...')
+
+    while (!isComplete) {
+      const response = await fetchTrace()
+      const trace = getFirstRow<QueueItemResponse>(response.resultSets)
+
+      if (trace) {
+        spinner.text = `Status: ${trace.status} | ${trace.progress || 'No progress'}`
+
+        // Check for terminal status
+        const terminalStatuses = ['COMPLETED', 'FAILED', 'CANCELLED']
+        if (trace.status && terminalStatuses.includes(trace.status.toUpperCase())) {
+          isComplete = true
+          stopSpinner(trace.status === 'COMPLETED', `Final status: ${trace.status}`)
+
+          // Output final trace
+          const format = program.opts().output as OutputFormat
+          outputService.print(trace, format)
+        }
+      }
+
+      if (!isComplete) {
+        await new Promise(resolve => setTimeout(resolve, interval))
+      }
+    }
+  } else {
+    // Single fetch
+    const response = await withSpinner(
+      'Fetching queue trace...',
+      fetchTrace,
+      'Trace fetched'
+    )
+
+    const trace = getFirstRow<QueueItemResponse>(response.resultSets)
+    const format = program.opts().output as OutputFormat
+
+    if (trace) {
+      outputService.print(trace, format)
+    } else {
+      outputService.info('No trace found for this task')
+    }
+  }
+}
+
+export async function cancelAction(taskId: string): Promise<void> {
+  await authService.requireAuth()
+
+  await withSpinner(
+    `Cancelling task ${taskId}...`,
+    () => apiClient.post('/CancelQueueItem', { taskId }),
+    'Task cancelled'
+  )
+}
+
+export async function retryAction(taskId: string): Promise<void> {
+  await authService.requireAuth()
+
+  await withSpinner(
+    `Retrying task ${taskId}...`,
+    () => apiClient.post('/RetryFailedQueueItem', { taskId }),
+    'Task retry initiated'
+  )
+}
+
 export function registerQueueCommands(program: Command): void {
   const queue = program
     .command('queue')
@@ -71,51 +220,7 @@ export function registerQueueCommands(program: Command): void {
     }, [])
     .action(async (options) => {
       try {
-        await authService.requireAuth()
-        const opts = await contextService.applyDefaults(options)
-
-        if (!opts.team) {
-          outputService.error('Team name required. Use --team or set context.')
-          process.exit(1)
-        }
-
-        // Parse parameters
-        const params: Record<string, string> = {}
-        for (const param of options.param || []) {
-          const [key, ...valueParts] = param.split('=')
-          params[key] = valueParts.join('=')
-        }
-
-        // Build proper queue vault using the queue service
-        const queueVault = await withSpinner(
-          'Building queue vault...',
-          () => queueService.buildQueueVault({
-            teamName: opts.team as string,
-            machineName: opts.machine,
-            bridgeName: opts.bridge,
-            functionName: options.function,
-            params,
-            priority: parseInt(options.priority, 10),
-          }),
-          'Queue vault built'
-        )
-
-        const response = await withSpinner(
-          `Creating queue item for function "${options.function}"...`,
-          () => apiClient.post('/CreateQueueItem', {
-            teamName: opts.team,
-            machineName: opts.machine,
-            bridgeName: opts.bridge,
-            queueVault,
-            priority: parseInt(options.priority, 10),
-          }),
-          'Queue item created'
-        )
-
-        const data = getFirstRow<QueueItemResponse>(response.resultSets)
-        if (data?.taskId) {
-          outputService.success(`Task ID: ${data.taskId}`)
-        }
+        await createAction(options, program)
       } catch (error) {
         handleError(error)
       }
@@ -129,59 +234,7 @@ export function registerQueueCommands(program: Command): void {
     .option('--interval <ms>', 'Poll interval in milliseconds', '2000')
     .action(async (taskId, options) => {
       try {
-        await authService.requireAuth()
-
-        const fetchTrace = async () => {
-          return apiClient.get('/GetQueueItemTrace', { taskId })
-        }
-
-        if (options.watch) {
-          // Watch mode - poll until complete
-          const interval = parseInt(options.interval, 10)
-          let isComplete = false
-
-          const spinner = startSpinner('Watching queue item...')
-
-          while (!isComplete) {
-            const response = await fetchTrace()
-            const trace = getFirstRow<QueueItemResponse>(response.resultSets)
-
-            if (trace) {
-              spinner.text = `Status: ${trace.status} | ${trace.progress || 'No progress'}`
-
-              // Check for terminal status
-              const terminalStatuses = ['COMPLETED', 'FAILED', 'CANCELLED']
-              if (trace.status && terminalStatuses.includes(trace.status.toUpperCase())) {
-                isComplete = true
-                stopSpinner(trace.status === 'COMPLETED', `Final status: ${trace.status}`)
-
-                // Output final trace
-                const format = program.opts().output as OutputFormat
-                outputService.print(trace, format)
-              }
-            }
-
-            if (!isComplete) {
-              await new Promise(resolve => setTimeout(resolve, interval))
-            }
-          }
-        } else {
-          // Single fetch
-          const response = await withSpinner(
-            'Fetching queue trace...',
-            fetchTrace,
-            'Trace fetched'
-          )
-
-          const trace = getFirstRow<QueueItemResponse>(response.resultSets)
-          const format = program.opts().output as OutputFormat
-
-          if (trace) {
-            outputService.print(trace, format)
-          } else {
-            outputService.info('No trace found for this task')
-          }
-        }
+        await traceAction(taskId, options, program)
       } catch (error) {
         handleError(error)
       }
@@ -193,13 +246,7 @@ export function registerQueueCommands(program: Command): void {
     .description('Cancel a queue item')
     .action(async (taskId) => {
       try {
-        await authService.requireAuth()
-
-        await withSpinner(
-          `Cancelling task ${taskId}...`,
-          () => apiClient.post('/CancelQueueItem', { taskId }),
-          'Task cancelled'
-        )
+        await cancelAction(taskId)
       } catch (error) {
         handleError(error)
       }
@@ -211,13 +258,7 @@ export function registerQueueCommands(program: Command): void {
     .description('Retry a failed queue item')
     .action(async (taskId) => {
       try {
-        await authService.requireAuth()
-
-        await withSpinner(
-          `Retrying task ${taskId}...`,
-          () => apiClient.post('/RetryFailedQueueItem', { taskId }),
-          'Task retry initiated'
-        )
+        await retryAction(taskId)
       } catch (error) {
         handleError(error)
       }
