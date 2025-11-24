@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { ColumnsType } from 'antd/es/table'
 import type { TFunction } from 'i18next'
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge'
@@ -40,7 +41,7 @@ export const buildCloneMachineColumns = ({
       render: (name: string, record: CloneMachine) => (
         <MachineNameCell data-testid={`clone-manager-machine-${record.machineName}`}>
           <MachineNameIcon />
-          <MachineName>{machineNameColumn.render?.(name, record)}</MachineName>
+          <MachineName>{machineNameColumn.render?.(name, record, 0) as ReactNode}</MachineName>
         </MachineNameCell>
       ),
     },
@@ -48,7 +49,7 @@ export const buildCloneMachineColumns = ({
       ...bridgeColumn,
       render: (bridge: string, record: CloneMachine) => (
         <BridgeTag data-testid={`clone-manager-bridge-${record.machineName}`}>
-          {bridgeColumn.render?.(bridge, record)}
+          {bridgeColumn.render?.(bridge, record, 0) as ReactNode}
         </BridgeTag>
       ),
     },
