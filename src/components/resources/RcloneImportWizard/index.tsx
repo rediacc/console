@@ -7,7 +7,7 @@ import { useStorage } from '@/api/queries/storage'
 import type { UploadFile } from 'antd/es/upload'
 import type { ColumnsType } from 'antd/es/table'
 import type { TFunction } from 'i18next'
-import { createSorter } from '@/utils/tableSorters'
+import { createSorter } from '@/core'
 import {
   WizardModal,
   UploadStepWrapper,

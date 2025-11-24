@@ -4,6 +4,7 @@ import {
   UserOutlined,
   SafetyOutlined,
   CheckCircleOutlined,
+  CheckOutlined,
   StopOutlined,
   HistoryOutlined,
   PlusOutlined,
@@ -19,6 +20,7 @@ import {
   useUsers,
   useCreateUser,
   useDeactivateUser,
+  useReactivateUser,
   useAssignUserPermissions,
   User,
 } from '@/api/queries/users'
@@ -64,6 +66,7 @@ const UsersPage: React.FC = () => {
   const { data: users = [], isLoading: usersLoading } = useUsers()
   const createUserMutation = useCreateUser()
   const deactivateUserMutation = useDeactivateUser()
+  const reactivateUserMutation = useReactivateUser()
   const assignUserPermissionsMutation = useAssignUserPermissions()
   const { data: permissionGroups = [] } = usePermissionGroupsQuery()
 
@@ -100,6 +103,14 @@ const UsersPage: React.FC = () => {
   const handleDeactivateUser = async (userEmail: string) => {
     try {
       await deactivateUserMutation.mutateAsync(userEmail)
+    } catch {
+      // handled by mutation
+    }
+  }
+
+  const handleReactivateUser = async (userEmail: string) => {
+    try {
+      await reactivateUserMutation.mutateAsync(userEmail)
     } catch {
       // handled by mutation
     }
@@ -224,6 +235,29 @@ const UsersPage: React.FC = () => {
                   loading={deactivateUserMutation.isPending}
                   data-testid={`system-user-deactivate-button-${record.userEmail}`}
                   aria-label={tSystem('actions.deactivate')}
+                />
+              </Tooltip>
+            </Popconfirm>
+          )}
+          {!record.activated && (
+            <Popconfirm
+              title={tSystem('users.activate.confirmTitle', { defaultValue: 'Activate User' })}
+              description={tSystem('users.activate.confirmDescription', {
+                defaultValue: 'Are you sure you want to activate "{{email}}"?',
+                email: record.userEmail,
+              })}
+              onConfirm={() => handleReactivateUser(record.userEmail)}
+              okText={tCommon('general.yes')}
+              cancelText={tCommon('general.no')}
+            >
+              <Tooltip title={tSystem('actions.activate')}>
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<CheckOutlined />}
+                  loading={reactivateUserMutation.isPending}
+                  data-testid={`system-user-activate-button-${record.userEmail}`}
+                  aria-label={tSystem('actions.activate')}
                 />
               </Tooltip>
             </Popconfirm>

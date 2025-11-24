@@ -1,5 +1,6 @@
 {
   "actions": {
+    "activate": "Activate",
     "addMember": "Add Member",
     "addPermission": "Add Permission",
     "assignUser": "Assign User",
@@ -250,6 +251,16 @@
       "lastActive": "Last Active",
       "permissionGroup": "Permission Group",
       "status": "Status"
+    }
+  },
+  "users": {
+    "activate": {
+      "confirmTitle": "Activate User",
+      "confirmDescription": "Are you sure you want to activate \"{{email}}\"?"
+    },
+    "deactivate": {
+      "confirmTitle": "Deactivate User",
+      "confirmDescription": "Are you sure you want to deactivate \"{{email}}\"?"
     }
   },
   "userSessions": {

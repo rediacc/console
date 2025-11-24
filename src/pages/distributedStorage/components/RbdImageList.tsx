@@ -35,7 +35,7 @@ import { ImageMachineReassignmentModal } from '@/components/resources/ImageMachi
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import SnapshotList from './SnapshotList'
-import { createSorter } from '@/utils/tableSorters'
+import { createSorter } from '@/core'
 
 interface RbdImageListProps {
   pool: DistributedStoragePool

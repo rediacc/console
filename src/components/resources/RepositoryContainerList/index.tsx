@@ -12,7 +12,8 @@ import { LocalActionsMenu } from '../LocalActionsMenu'
 import { showMessage } from '@/utils/messages'
 import { useAppSelector } from '@/store/store'
 import { featureFlags } from '@/config/featureFlags'
-import { createSorter, createCustomSorter, createArrayLengthSorter } from '@/utils/tableSorters'
+import { createSorter, createCustomSorter, createArrayLengthSorter, getGrandVaultForOperation } from '@/core'
+import { parseVaultStatus } from '@/core/services/machine'
 
 const { Text } = Typography
 
@@ -101,11 +102,14 @@ export const RepositoryContainerList: React.FC<RepositoryContainerListProps> = (
     r.repositoryGuid === repository.name
   )
 
-  // Get grand repository vault (for credentials)
-  const grandRepositoryData = repositoryData?.grandGuid
-    ? teamRepositories.find(r => r.repositoryGuid === repositoryData.grandGuid)
-    : repositoryData
-  const grandRepositoryVault = grandRepositoryData?.vaultContent || '{}'
+  // Get grand repository vault (for credentials) using core orchestration
+  const grandRepositoryVault = repositoryData
+    ? getGrandVaultForOperation(
+        repositoryData.repositoryGuid,
+        repositoryData.grandGuid,
+        teamRepositories
+      ) || '{}'
+    : '{}'
 
   // Parse containers from machine vaultStatus
   useEffect(() => {
@@ -122,29 +126,18 @@ export const RepositoryContainerList: React.FC<RepositoryContainerListProps> = (
           return
         }
 
-        // Check if vaultStatus is valid JSON
-        if (machine.vaultStatus.trim().startsWith('jq:') ||
-            machine.vaultStatus.trim().startsWith('error:') ||
-            !machine.vaultStatus.trim().startsWith('{')) {
+        // Parse vaultStatus using core utility
+        const parsed = parseVaultStatus(machine.vaultStatus)
+
+        if (parsed.error) {
+          // Invalid vaultStatus data format (e.g., jq errors)
           setError('Invalid repository data')
           setLoading(false)
           return
         }
 
-        // Parse vaultStatus
-        const vaultStatusData = JSON.parse(machine.vaultStatus)
-
-        if (vaultStatusData.status === 'completed' && vaultStatusData.result) {
-          // Clean the result string
-          let cleanedResult = vaultStatusData.result.trim()
-
-          // Remove any jq errors at the end
-          const newlineIndex = cleanedResult.indexOf('\njq:')
-          if (newlineIndex > 0) {
-            cleanedResult = cleanedResult.substring(0, newlineIndex)
-          }
-
-          const result = JSON.parse(cleanedResult)
+        if (parsed.status === 'completed' && parsed.rawResult) {
+          const result = JSON.parse(parsed.rawResult)
 
           if (result && result.containers && Array.isArray(result.containers)) {
             // Filter containers that belong to this repository

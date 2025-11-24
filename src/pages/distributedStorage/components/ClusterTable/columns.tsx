@@ -8,7 +8,7 @@ import {
   HistoryOutlined,
 } from '@/utils/optimizedIcons'
 import type { DistributedStorageCluster } from '@/api/queries/distributedStorage'
-import { createSorter } from '@/utils/tableSorters'
+import { createSorter } from '@/core'
 import { MachineCountBadge } from './components/MachineCountBadge'
 import { getClusterFunctionMenuItems } from './menus'
 import {

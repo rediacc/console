@@ -10,10 +10,10 @@ import {
   useUpdateMachineClusterRemoval
 } from '@/api/queries/distributedStorage'
 import { AvailableMachinesSelector } from '@/components/resources/AvailableMachinesSelector'
-import { formatTimestampAsIs } from '@/utils/timeUtils'
+import { formatTimestampAsIs } from '@/core'
 import { ModalSize } from '@/types/modal'
 import type { Machine } from '@/types'
-import { createSorter } from '@/utils/tableSorters'
+import { createSorter } from '@/core'
 
 interface ManageClusterMachinesModalProps {
   open: boolean

@@ -35,7 +35,7 @@ import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder';
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem';
 import { waitForQueueItemCompletion } from '@/services/helloService';
 import { showMessage } from '@/utils/messages';
-import { createSorter, createCustomSorter } from '@/utils/tableSorters';
+import { createSorter, createCustomSorter } from '@/core';
 
 interface RemoteFile {
   name: string;

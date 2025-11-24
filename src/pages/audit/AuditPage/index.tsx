@@ -1,15 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
-import type { ElementType } from 'react';
 import { Space, Typography, DatePicker, Select, Table, Input, Row, Col, Empty, Dropdown, message, Alert, Tooltip } from 'antd';
 import {
   ReloadOutlined,
   SearchOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  EditOutlined,
-  LoginOutlined,
-  SwapOutlined,
-  InfoCircleOutlined,
   DownloadOutlined,
   FileExcelOutlined,
   FileTextOutlined
@@ -17,6 +10,16 @@ import {
 import { useAuditLogs } from '@/api/queries/audit';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
+import {
+  findActionConfig,
+  getActionTagColor,
+  searchInFields,
+  getUniqueMappedValues,
+  buildCSVContent,
+  downloadCSV,
+  downloadJSON,
+  generateTimestampedFilename
+} from '@/core';
 import {
   PageWrapper,
   ContentStack,
@@ -31,18 +34,6 @@ import {
   ActionIcon,
 } from './styles';
 import { buildAuditColumns } from './columns';
-
-const ACTION_ICON_MAP: Array<{
-  keywords: string[]
-  icon: ElementType
-  color: string
-}> = [
-  { keywords: ['create'], icon: CheckCircleOutlined, color: 'var(--color-success)' },
-  { keywords: ['delete'], icon: CloseCircleOutlined, color: 'var(--color-error)' },
-  { keywords: ['update', 'modify'], icon: EditOutlined, color: 'var(--color-warning)' },
-  { keywords: ['login', 'auth'], icon: LoginOutlined, color: 'var(--color-primary)' },
-  { keywords: ['export', 'import'], icon: SwapOutlined, color: 'var(--color-info)' },
-]
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -71,12 +62,7 @@ const AuditPage = () => {
   });
 
   const getActionIcon = useCallback((action: string) => {
-    const actionLower = action.toLowerCase()
-    const config =
-      ACTION_ICON_MAP.find(({ keywords }) =>
-        keywords.some((keyword) => actionLower.includes(keyword)),
-      ) || { icon: InfoCircleOutlined, color: 'var(--color-text-secondary)' }
-
+    const config = findActionConfig(action)
     const IconComponent = config.icon
 
     return (
@@ -87,24 +73,12 @@ const AuditPage = () => {
   }, [])
 
   const getActionColor = useCallback((action: string) => {
-    const actionLower = action.toLowerCase();
-    if (actionLower.includes('create')) return 'success';
-    if (actionLower.includes('delete')) return 'error';
-    if (actionLower.includes('update') || actionLower.includes('modify')) return 'warning';
-    if (actionLower.includes('login') || actionLower.includes('auth')) return 'processing';
-    return 'default';
+    return getActionTagColor(action);
   }, []);
 
-  const filteredLogs = auditLogs?.filter(log => {
-    if (!searchText) return true;
-    const search = searchText.toLowerCase();
-    return (
-      log.entityName?.toLowerCase().includes(search) ||
-      log.action?.toLowerCase().includes(search) ||
-      log.details?.toLowerCase().includes(search) ||
-      log.actionByUser?.toLowerCase().includes(search)
-    );
-  });
+  const filteredLogs = auditLogs?.filter(log =>
+    searchInFields(log, searchText, ['entityName', 'action', 'details', 'actionByUser'])
+  );
 
   const columns = useMemo(
     () =>
@@ -117,7 +91,7 @@ const AuditPage = () => {
     [t, auditLogs, getActionIcon, getActionColor],
   )
 
-  const entityTypes = [...new Set(auditLogs?.map(log => log.entity) || [])];
+  const entityTypes = getUniqueMappedValues(auditLogs || [], log => log.entity);
 
   const exportToCSV = () => {
     if (!filteredLogs || filteredLogs.length === 0) {
@@ -141,20 +115,8 @@ const AuditPage = () => {
       log.details || ''
     ]);
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `audit_logs_${dayjs().format('YYYY-MM-DD_HHmmss')}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const csvContent = buildCSVContent(headers, rows);
+    downloadCSV(csvContent, generateTimestampedFilename('audit_logs', 'csv').replace('.csv', ''));
     message.success(t('system:audit.export.successCSV', { count: filteredLogs.length }));
   };
 
@@ -177,16 +139,7 @@ const AuditPage = () => {
       logs: filteredLogs
     };
 
-    const jsonContent = JSON.stringify(exportData, null, 2);
-    const blob = new Blob([jsonContent], { type: 'application/json' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `audit_logs_${dayjs().format('YYYY-MM-DD_HHmmss')}.json`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadJSON(exportData, generateTimestampedFilename('audit_logs', 'json').replace('.json', ''));
     message.success(t('system:audit.export.successJSON', { count: filteredLogs.length }));
   };
 

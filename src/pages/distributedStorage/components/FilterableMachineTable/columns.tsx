@@ -2,7 +2,7 @@ import type { ColumnsType } from 'antd/es/table/interface'
 import type { TFunction } from 'i18next'
 import type { Machine } from '@/types'
 import MachineAssignmentStatusCell from '@/components/resources/MachineAssignmentStatusCell'
-import { createSorter } from '@/utils/tableSorters'
+import { createSorter } from '@/core'
 import { AssignmentTag, QueueBadge } from './styles'
 
 export const buildMachineTableColumns = (
