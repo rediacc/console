@@ -1,5 +1,5 @@
 import React from 'react'
-import { Button, Tooltip, Modal, Form, Input } from 'antd'
+import { Button, Tooltip, Modal, Form } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
@@ -16,7 +16,8 @@ import { useUserVault, useUpdateUserVault, useUpdateUserPassword } from '@/api/q
 import VaultEditorModal from '@/components/common/VaultEditorModal'
 import TwoFactorSettings from '@/components/settings/TwoFactorSettings'
 import { ModalSize } from '@/types/modal'
-import { useDialogState } from '@/hooks/useDialogState'
+import { useDialogState, useModalForm } from '@/hooks'
+import { PasswordField, PasswordConfirmField } from '@/components/forms/FormFields'
 import {
   ProfilePageWrapper,
   ProfileSectionStack,
@@ -46,10 +47,9 @@ const ProfilePage: React.FC = () => {
   const navigate = useNavigate()
   const currentUser = useSelector((state: RootState) => state.auth.user)
 
-  const changePasswordModal = useDialogState<void>()
+  const { form: changePasswordForm, isOpen: isChangePasswordOpen, open: openChangePassword, close: closeChangePassword } = useModalForm<{ newPassword: string; confirmPassword: string }>()
   const twoFactorModal = useDialogState<void>()
   const userVaultModal = useDialogState<void>()
-  const [changePasswordForm] = Form.useForm()
 
   const { data: userVault, refetch: refetchUserVault } = useUserVault()
   const updateUserVaultMutation = useUpdateUserVault()
@@ -72,8 +72,7 @@ const ProfilePage: React.FC = () => {
         newPassword: values.newPassword,
       })
 
-      changePasswordModal.close()
-      changePasswordForm.resetFields()
+      closeChangePassword()
 
       let countdown = 3
       const modal = Modal.success({
@@ -146,7 +145,7 @@ const ProfilePage: React.FC = () => {
                 <Button
                   type="primary"
                   icon={<KeyOutlined />}
-                  onClick={() => changePasswordModal.open()}
+                  onClick={openChangePassword}
                   size="large"
                   data-testid="system-change-password-button"
                   aria-label={tSystem('actions.changePassword')}
@@ -180,11 +179,8 @@ const ProfilePage: React.FC = () => {
 
       <Modal
         title={t('personal.changePassword.title', { defaultValue: 'Change Password' })}
-        open={changePasswordModal.isOpen}
-        onCancel={() => {
-          changePasswordModal.close()
-          changePasswordForm.resetFields()
-        }}
+        open={isChangePasswordOpen}
+        onCancel={closeChangePassword}
         footer={null}
         className={ModalSize.Medium}
       >
@@ -203,52 +199,28 @@ const ProfilePage: React.FC = () => {
             showIcon
           />
 
-          <Form.Item
-            label={t('personal.changePassword.newPasswordLabel', { defaultValue: 'New Password' })}
+          <PasswordField
             name="newPassword"
-            rules={[
-              { required: true, message: t('personal.changePassword.newPasswordRequired', { defaultValue: 'Please enter your new password' }) },
-              { min: 8, message: t('personal.changePassword.newPasswordMin', { defaultValue: 'Password must be at least 8 characters long' }) },
-              {
-                pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])/,
-                message: t('personal.changePassword.newPasswordPattern', {
-                  defaultValue: 'Password must contain uppercase, lowercase, number and special character',
-                }),
-              },
-            ]}
-          >
-            <Input.Password placeholder={t('personal.changePassword.newPasswordPlaceholder', { defaultValue: 'Enter new password' })} size="large" autoComplete="new-password" />
-          </Form.Item>
+            label={t('personal.changePassword.newPasswordLabel', { defaultValue: 'New Password' })}
+            placeholder={t('personal.changePassword.newPasswordPlaceholder', { defaultValue: 'Enter new password' })}
+            minLength={8}
+            requiredMessage={t('personal.changePassword.newPasswordRequired', { defaultValue: 'Please enter your new password' })}
+            minLengthMessage={t('personal.changePassword.newPasswordMin', { defaultValue: 'Password must be at least 8 characters long' })}
+            patternMessage={t('personal.changePassword.newPasswordPattern', { defaultValue: 'Password must contain uppercase, lowercase, number and special character' })}
+          />
 
-          <Form.Item
-            label={t('personal.changePassword.confirmPasswordLabel', { defaultValue: 'Confirm New Password' })}
+          <PasswordConfirmField
             name="confirmPassword"
-            dependencies={['newPassword']}
-            rules={[
-              { required: true, message: t('personal.changePassword.confirmPasswordRequired', { defaultValue: 'Please confirm your new password' }) },
-              ({ getFieldValue }) => ({
-                validator(_, value) {
-                  if (!value || getFieldValue('newPassword') === value) {
-                    return Promise.resolve()
-                  }
-                  return Promise.reject(
-                    new Error(t('personal.changePassword.confirmPasswordMismatch', { defaultValue: 'Passwords do not match' }))
-                  )
-                },
-              }),
-            ]}
-          >
-            <Input.Password placeholder={t('personal.changePassword.confirmPasswordPlaceholder', { defaultValue: 'Confirm new password' })} size="large" autoComplete="new-password" />
-          </Form.Item>
+            label={t('personal.changePassword.confirmPasswordLabel', { defaultValue: 'Confirm New Password' })}
+            passwordFieldName="newPassword"
+            placeholder={t('personal.changePassword.confirmPasswordPlaceholder', { defaultValue: 'Confirm new password' })}
+            requiredMessage={t('personal.changePassword.confirmPasswordRequired', { defaultValue: 'Please confirm your new password' })}
+            mismatchMessage={t('personal.changePassword.confirmPasswordMismatch', { defaultValue: 'Passwords do not match' })}
+          />
 
           <FormItemActions>
             <ModalActions>
-              <Button
-                onClick={() => {
-                  changePasswordModal.close()
-                  changePasswordForm.resetFields()
-                }}
-              >
+              <Button onClick={closeChangePassword}>
                 {tCommon('actions.cancel')}
               </Button>
               <Button type="primary" htmlType="submit" loading={updateUserPasswordMutation.isPending}>

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Select, Spin } from 'antd'
 import { useTranslation } from 'react-i18next'
 import {
-  useGetAvailableMachinesForClone,
+  useAvailableMachinesForClone,
   type DistributedStorageRbdImage,
   type AvailableMachine,
 } from '@/api/queries/distributedStorage'
@@ -50,7 +50,7 @@ export const ImageMachineReassignmentModal: React.FC<ImageMachineReassignmentMod
   const updateMachineAssignment = useUpdateImageMachineAssignment()
   
   // Fetch available machines
-  const { data: availableMachines = [], isLoading: loadingMachines } = useGetAvailableMachinesForClone(
+  const { data: availableMachines = [], isLoading: loadingMachines } = useAvailableMachinesForClone(
     teamName,
     open && !!image
   ) as { data?: AvailableMachine[]; isLoading: boolean }

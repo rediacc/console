@@ -3,7 +3,7 @@ import { Table } from 'antd'
 import type { TableRowSelection } from 'antd/es/table/interface'
 import { useTranslation } from 'react-i18next'
 import type { Machine } from '@/types'
-import { MachineRepositoryList } from '@/components/resources/MachineRepositoryList'
+import { MachineRepositoryTable } from '@/components/resources/MachineRepositoryTable'
 import { buildMachineTableColumns } from './columns'
 import {
   TableContainer,
@@ -58,7 +58,7 @@ export const FilterableMachineTable: React.FC<FilterableMachineTableProps> = ({
   const renderExpandedRow = React.useCallback(
     (machine: Machine) => (
       <ExpandedRowContent>
-        <MachineRepositoryList
+        <MachineRepositoryTable
           machine={machine}
           refreshKey={refreshKeys[machine.machineName]}
         />

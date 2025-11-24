@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@/api/client'
 import { extractTableData } from '@/core/api/response'
 import { showMessage } from '@/utils/messages'
+import { createErrorHandler } from '@/utils/mutationUtils'
+import i18n from '@/i18n/config'
 
 export interface PermissionGroup {
   permissionGroupName: string
@@ -67,11 +69,9 @@ export const useCreatePermissionGroup = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['permissionGroups'] })
       queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      showMessage('success', `Permission group "${variables.permissionGroupName}" created successfully`)
+      showMessage('success', i18n.t('organization:access.success.groupCreated', { group: variables.permissionGroupName }))
     },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to create permission group')
-    },
+    onError: createErrorHandler(i18n.t('organization:access.errors.createGroupFailed')),
   })
 }
 
@@ -87,11 +87,9 @@ export const useDeletePermissionGroup = () => {
     onSuccess: (_, permissionGroupName) => {
       queryClient.invalidateQueries({ queryKey: ['permissionGroups'] })
       queryClient.invalidateQueries({ queryKey: ['dropdown-data'] })
-      showMessage('success', `Permission group "${permissionGroupName}" deleted successfully`)
+      showMessage('success', i18n.t('organization:access.success.groupDeleted', { group: permissionGroupName }))
     },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to delete permission group')
-    },
+    onError: createErrorHandler(i18n.t('organization:access.errors.deleteGroupFailed')),
   })
 }
 
@@ -107,11 +105,9 @@ export const useAddPermissionToGroup = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['permissionGroup', variables.permissionGroupName] })
       queryClient.invalidateQueries({ queryKey: ['permissionGroups'] }) // Update permission counts
-      showMessage('success', `Permission "${variables.permissionName}" added to group`)
+      showMessage('success', i18n.t('organization:access.success.permissionAdded', { permission: variables.permissionName }))
     },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to add permission to group')
-    },
+    onError: createErrorHandler(i18n.t('organization:access.errors.addPermissionFailed')),
   })
 }
 
@@ -127,11 +123,9 @@ export const useRemovePermissionFromGroup = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['permissionGroup', variables.permissionGroupName] })
       queryClient.invalidateQueries({ queryKey: ['permissionGroups'] }) // Update permission counts
-      showMessage('success', `Permission "${variables.permissionName}" removed from group`)
+      showMessage('success', i18n.t('organization:access.success.permissionRemoved', { permission: variables.permissionName }))
     },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to remove permission from group')
-    },
+    onError: createErrorHandler(i18n.t('organization:access.errors.removePermissionFailed')),
   })
 }
 
@@ -147,10 +141,8 @@ export const useAssignUserToGroup = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
       queryClient.invalidateQueries({ queryKey: ['permissionGroup', variables.permissionGroupName] })
-      showMessage('success', `User assigned to permission group "${variables.permissionGroupName}"`)
+      showMessage('success', i18n.t('organization:access.success.userAssigned', { group: variables.permissionGroupName }))
     },
-    onError: (error: any) => {
-      showMessage('error', error.message || 'Failed to assign user to permission group')
-    },
+    onError: createErrorHandler(i18n.t('organization:access.errors.assignUserFailed')),
   })
 }

@@ -104,7 +104,7 @@ export const useUpdateCompanyBlockUserRequests = () => {
 }
 
 // Get all company vaults for export
-export const useGetCompanyVaults = () => {
+export const useCompanyVaults = () => {
   return useQuery({
     queryKey: ['company-all-vaults'],
     queryFn: async () => {

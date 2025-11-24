@@ -27,17 +27,17 @@ import QueueItemTraceModal from '@/components/common/QueueItemTraceModal'
 import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import { useQueueTraceModal, useExpandableTable } from '@/hooks'
-import CloneList from '../CloneList'
+import CloneTable from '../CloneTable'
 import { buildSnapshotColumns } from './columns'
 import { ActionsRow, Container, CreateButton, ExpandButton, TableWrapper, Title } from './styles'
 
-interface SnapshotListProps {
+interface SnapshotTableProps {
   image: DistributedStorageRbdImage
   pool: DistributedStoragePool
   teamFilter: string | string[]
 }
 
-const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) => {
+const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }) => {
   const { t } = useTranslation('distributedStorage')
   const { expandedRowKeys, setExpandedRowKeys } = useExpandableTable()
   const [modalState, setModalState] = useState<{
@@ -225,7 +225,7 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
 
   const expandedRowRender = useCallback(
     (record: DistributedStorageRbdSnapshot) => (
-      <CloneList snapshot={record} image={image} pool={pool} teamFilter={teamFilter} />
+      <CloneTable snapshot={record} image={image} pool={pool} teamFilter={teamFilter} />
     ),
     [image, pool, teamFilter],
   )
@@ -312,8 +312,8 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
       />
 
       <QueueItemTraceModal
-        visible={queueTrace.state.visible}
-        onClose={queueTrace.close}
+        open={queueTrace.state.open}
+        onCancel={queueTrace.close}
         taskId={queueTrace.state.taskId}
         data-testid="snapshot-list-queue-modal"
       />
@@ -321,4 +321,4 @@ const SnapshotList: React.FC<SnapshotListProps> = ({ image, pool, teamFilter }) 
   )
 }
 
-export default SnapshotList
+export default SnapshotTable

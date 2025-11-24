@@ -99,5 +99,27 @@
     "failedTitle": "Task Failed Permanently"
   },
   "team": "Team",
-  "title": "Queue Management"
+  "title": "Queue Management",
+  "errors": {
+    "createFailed": "Failed to create queue item",
+    "updateFailed": "Failed to update queue item",
+    "updatePriorityFailed": "Failed to update queue item priority",
+    "updateProtectionFailed": "Failed to update queue item protection",
+    "cancelFailed": "Failed to cancel queue item",
+    "deleteFailed": "Failed to delete queue item",
+    "retryFailed": "Failed to retry queue item"
+  },
+  "success": {
+    "created": "Queue item created",
+    "createdWithId": "Queue item created with ID: {{taskId}}",
+    "responseUpdated": "Queue item {{taskId}} response updated",
+    "completed": "Queue item {{taskId}} completed",
+    "markedFailed": "Queue item {{taskId}} marked as failed",
+    "priorityUpdated": "Queue item {{taskId}} priority updated to {{priority}}",
+    "protectionEnabled": "Queue item {{taskId}} protection enabled",
+    "protectionDisabled": "Queue item {{taskId}} protection disabled",
+    "cancellationInitiated": "Queue item {{taskId}} cancellation initiated",
+    "deleted": "Queue item {{taskId}} deleted",
+    "queuedForRetry": "Queue item {{taskId}} queued for retry"
+  }
 }

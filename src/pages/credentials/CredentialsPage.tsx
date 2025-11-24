@@ -638,8 +638,8 @@ const CredentialsPage: React.FC = () => {
       <QueueItemTraceModal
         data-testid="resources-queue-trace-modal"
         taskId={queueTrace.state.taskId}
-        visible={queueTrace.state.visible}
-        onClose={() => {
+        open={queueTrace.state.open}
+        onCancel={() => {
           queueTrace.close()
           refetchRepositories()
         }}

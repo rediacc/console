@@ -5,7 +5,7 @@ import { CloudServerOutlined, DesktopOutlined, PlusOutlined, DeleteOutlined } fr
 import { useTranslation } from 'react-i18next'
 import {
   useDistributedStorageClusterMachines,
-  useGetAvailableMachinesForClone,
+  useAvailableMachinesForClone,
 } from '@/api/queries/distributedStorage'
 import {
   useUpdateMachineClusterAssignment,
@@ -47,7 +47,7 @@ export const ManageClusterMachinesModal: React.FC<ManageClusterMachinesModalProp
   
   // Fetch available machines
   const { data: availableMachines = [], isLoading: loadingAvailable } =
-    useGetAvailableMachinesForClone(teamName, open && activeTab === 'assign')
+    useAvailableMachinesForClone(teamName, open && activeTab === 'assign')
   const normalizedAvailableMachines = availableMachines as unknown as Machine[]
   
   // Mutations

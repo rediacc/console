@@ -3,8 +3,8 @@ import { Spin, Tabs } from 'antd'
 import { CloudServerOutlined, CopyOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import {
-  useGetAvailableMachinesForClone,
-  useGetCloneMachines,
+  useAvailableMachinesForClone,
+  useCloneMachines,
   type DistributedStorageRbdClone,
   type AvailableMachine,
   type CloneMachine,
@@ -63,13 +63,13 @@ export const AssignMachinesToCloneModal: React.FC<AssignMachinesToCloneModalProp
   const [activeTab, setActiveTab] = useState<'assign' | 'manage'>('assign')
   
   // Fetch available machines
-  const { data: availableMachines = [], isLoading: loadingAvailable } = useGetAvailableMachinesForClone(
+  const { data: availableMachines = [], isLoading: loadingAvailable } = useAvailableMachinesForClone(
     teamName,
     open && !!clone
   ) as { data?: AvailableMachine[]; isLoading: boolean }
-  
+
   // Fetch currently assigned machines
-  const { data: assignedMachines = [], isLoading: loadingAssigned, refetch: refetchAssigned } = useGetCloneMachines(
+  const { data: assignedMachines = [], isLoading: loadingAssigned, refetch: refetchAssigned } = useCloneMachines(
     clone?.cloneName || '',
     snapshotName,
     imageName,

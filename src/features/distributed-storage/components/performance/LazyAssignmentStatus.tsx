@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { Skeleton } from 'antd'
 import MachineAssignmentStatusBadge from '@/components/resources/MachineAssignmentStatusBadge'
 import { MachineAssignmentService } from '../../services'
-import { useGetMachineAssignmentStatus } from '@/api/queries/distributedStorage'
+import { useMachineAssignmentStatus } from '@/api/queries/distributedStorage'
 import { useComponentStyles } from '@/hooks/useComponentStyles'
 import type { Machine, MachineAssignmentType } from '@/types'
 
@@ -40,7 +40,7 @@ export const LazyAssignmentStatus: React.FC<LazyAssignmentStatusProps> = ({
   const needsApiCall = immediateStatus === 'CLONE'
   
   // Only fetch if visible and needs API call
-  const { data: assignmentData, isLoading } = useGetMachineAssignmentStatus(
+  const { data: assignmentData, isLoading } = useMachineAssignmentStatus(
     teamName || machine.teamName,
     machine.machineName,
     isVisible && needsApiCall && !hasLoaded

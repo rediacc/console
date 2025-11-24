@@ -23,7 +23,7 @@ import type { MenuProps } from 'antd'
 import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
 import {
   useDistributedStorageRbdImages,
-  useGetAvailableMachinesForClone,
+  useAvailableMachinesForClone,
   type DistributedStorageRbdImage,
   type DistributedStoragePool
 } from '@/api/queries/distributedStorage'
@@ -39,15 +39,15 @@ import { useManagedQueueItem } from '@/hooks/useManagedQueueItem'
 import { useQueueVaultBuilder } from '@/hooks/useQueueVaultBuilder'
 import { useDialogState, useQueueTraceModal, useExpandableTable } from '@/hooks'
 import { renderTruncatedId } from '@/components/common/columns'
-import SnapshotList from './SnapshotList'
+import SnapshotTable from './SnapshotTable'
 import { createSorter } from '@/core'
 
-interface RbdImageListProps {
+interface RbdImageTableProps {
   pool: DistributedStoragePool
   teamFilter: string | string[]
 }
 
-const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
+const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
   const { t } = useTranslation('distributedStorage')
   const tableStyles = useTableStyles()
   const componentStyles = useComponentStyles()
@@ -68,7 +68,7 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
   const updateImageVaultMutation = useUpdateDistributedStoragePoolVault()
   
   // Fetch available machines for the team
-  const { data: availableMachines = [] } = useGetAvailableMachinesForClone(pool.teamName, modalState.open && modalState.mode === 'create')
+  const { data: availableMachines = [] } = useAvailableMachinesForClone(pool.teamName, modalState.open && modalState.mode === 'create')
   
   const handleCreate = () => {
     setModalState({ open: true, mode: 'create' })
@@ -306,10 +306,10 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
   
   const expandedRowRender = (record: DistributedStorageRbdImage) => (
     <div data-testid={`rbd-snapshot-list-${record.imageName}`}>
-      <SnapshotList 
-        image={record} 
+      <SnapshotTable
+        image={record}
         pool={pool}
-        teamFilter={teamFilter} 
+        teamFilter={teamFilter}
       />
     </div>
   )
@@ -394,8 +394,8 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
       />
       
       <QueueItemTraceModal
-        visible={queueTrace.state.visible}
-        onClose={queueTrace.close}
+        open={queueTrace.state.open}
+        onCancel={queueTrace.close}
         taskId={queueTrace.state.taskId}
       />
 
@@ -416,4 +416,4 @@ const RbdImageList: React.FC<RbdImageListProps> = ({ pool, teamFilter }) => {
   )
 }
 
-export default RbdImageList
+export default RbdImageTable

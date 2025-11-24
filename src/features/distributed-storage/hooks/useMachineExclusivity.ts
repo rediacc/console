@@ -1,8 +1,8 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useDebounce } from '../utils/useDebounce'
 import {
-  useGetCloneMachineAssignmentValidation,
-  useGetAvailableMachinesForClone,
+  useCloneMachineAssignmentValidation,
+  useAvailableMachinesForClone,
   type MachineAssignmentValidation,
   type AvailableMachine
 } from '@/api/queries/distributedStorage'
@@ -35,13 +35,13 @@ export const useMachineExclusivity = (teamName?: string) => {
   const debouncedMachines = useDebounce(pendingValidation, 300)
   
   // Fetch available machines
-  const { data: availableMachinesData = [], isLoading: loadingAvailable } = useGetAvailableMachinesForClone(
+  const { data: availableMachinesData = [], isLoading: loadingAvailable } = useAvailableMachinesForClone(
     teamName || '',
     !!teamName
   )
-  
+
   // Validate machines when debounced value changes
-  const { data: validationData, isLoading: loadingValidation } = useGetCloneMachineAssignmentValidation(
+  const { data: validationData, isLoading: loadingValidation } = useCloneMachineAssignmentValidation(
     teamName || '',
     debouncedMachines.join(','),
     !!teamName && debouncedMachines.length > 0

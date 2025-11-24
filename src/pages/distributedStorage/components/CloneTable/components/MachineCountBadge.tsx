@@ -1,6 +1,6 @@
 import React from 'react'
 import { CloudServerOutlined } from '@ant-design/icons'
-import { useGetCloneMachines, type DistributedStorageRbdClone } from '@/api/queries/distributedStorage'
+import { useCloneMachines, type DistributedStorageRbdClone } from '@/api/queries/distributedStorage'
 import { MachineCountBadgeWrapper } from '../styles'
 
 interface MachineCountBadgeProps {
@@ -18,7 +18,7 @@ export const MachineCountBadge: React.FC<MachineCountBadgeProps> = ({
   poolName,
   teamName,
 }) => {
-  const { data: machines = [] } = useGetCloneMachines(
+  const { data: machines = [] } = useCloneMachines(
     clone.cloneName,
     snapshotName,
     imageName,

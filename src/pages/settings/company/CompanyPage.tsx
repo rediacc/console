@@ -12,7 +12,6 @@ import {
   Result,
   Typography,
   Form,
-  Input,
 } from 'antd'
 import {
   BankOutlined,
@@ -38,11 +37,12 @@ import { masterPasswordService } from '@/services/masterPasswordService'
 import { encryptString, decryptString } from '@/utils/encryption'
 import { showMessage } from '@/utils/messages'
 import { useDialogState } from '@/hooks/useDialogState'
+import { PasswordField, PasswordConfirmField } from '@/components/forms/FormFields'
 import {
   useCompanyVault,
   useUpdateCompanyVault,
   useUpdateCompanyBlockUserRequests,
-  useGetCompanyVaults,
+  useCompanyVaults,
   useUpdateCompanyVaults,
   useExportCompanyData,
   useImportCompanyData,
@@ -109,7 +109,7 @@ const CompanyPage: React.FC = () => {
   const { data: companyVault } = useCompanyVault()
   const updateCompanyVaultMutation = useUpdateCompanyVault()
   const blockUserRequestsMutation = useUpdateCompanyBlockUserRequests()
-  const exportVaultsQuery = useGetCompanyVaults()
+  const exportVaultsQuery = useCompanyVaults()
   const updateVaultsMutation = useUpdateCompanyVaults()
   const exportCompanyDataQuery = useExportCompanyData()
   const importCompanyDataMutation = useImportCompanyData()
@@ -625,49 +625,24 @@ const CompanyPage: React.FC = () => {
 
           {masterPasswordOperation !== 'remove' && (
             <>
-              <Form.Item
-                label={tSystem('dangerZone.updateMasterPassword.modal.newPasswordLabel')}
+              <PasswordField
                 name="password"
-                rules={[
-                  { required: true, message: tSystem('dangerZone.updateMasterPassword.modal.newPasswordRequired') },
-                  { min: 12, message: tSystem('dangerZone.updateMasterPassword.modal.newPasswordMinLength') },
-                  {
-                    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])/,
-                    message: tSystem('dangerZone.updateMasterPassword.modal.newPasswordPattern'),
-                  },
-                ]}
-              >
-                <Input.Password
-                  placeholder={tSystem('dangerZone.updateMasterPassword.modal.newPasswordPlaceholder')}
-                  size="large"
-                  autoComplete="new-password"
-                />
-              </Form.Item>
+                label={tSystem('dangerZone.updateMasterPassword.modal.newPasswordLabel')}
+                placeholder={tSystem('dangerZone.updateMasterPassword.modal.newPasswordPlaceholder')}
+                minLength={12}
+                requiredMessage={tSystem('dangerZone.updateMasterPassword.modal.newPasswordRequired')}
+                minLengthMessage={tSystem('dangerZone.updateMasterPassword.modal.newPasswordMinLength')}
+                patternMessage={tSystem('dangerZone.updateMasterPassword.modal.newPasswordPattern')}
+              />
 
-              <Form.Item
-                label={tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordLabel')}
+              <PasswordConfirmField
                 name="confirmPassword"
-                dependencies={['password']}
-                rules={[
-                  { required: true, message: tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordRequired') },
-                  ({ getFieldValue }) => ({
-                    validator(_, value) {
-                      if (!value || getFieldValue('password') === value) {
-                        return Promise.resolve()
-                      }
-                      return Promise.reject(
-                        new Error(tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordMatch'))
-                      )
-                    },
-                  }),
-                ]}
-              >
-                <Input.Password
-                  placeholder={tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordPlaceholder')}
-                  size="large"
-                  autoComplete="new-password"
-                />
-              </Form.Item>
+                label={tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordLabel')}
+                passwordFieldName="password"
+                placeholder={tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordPlaceholder')}
+                requiredMessage={tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordRequired')}
+                mismatchMessage={tSystem('dangerZone.updateMasterPassword.modal.confirmPasswordMatch')}
+              />
             </>
           )}
 

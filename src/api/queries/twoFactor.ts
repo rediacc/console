@@ -20,7 +20,7 @@ export interface EnableTwoFactorResponse {
 }
 
 // Get TFA status for current user
-export const useGetTFAStatus = () => {
+export const useTFAStatus = () => {
   const userEmail = useSelector((state: RootState) => state.auth.user?.email)
   
   return useQuery({

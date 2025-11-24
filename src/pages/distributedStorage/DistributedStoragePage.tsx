@@ -412,9 +412,9 @@ const DistributedStoragePage: React.FC = () => {
       {/* Queue Item Trace Modal */}
       <QueueItemTraceModal
         taskId={queueTrace.state.taskId}
-        visible={queueTrace.state.visible}
+        open={queueTrace.state.open}
         data-testid="ds-queue-trace-modal"
-        onClose={() => {
+        onCancel={() => {
           queueTrace.close()
           // Refresh data when modal closes
           if (activeTab === 'clusters') {

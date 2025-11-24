@@ -4,7 +4,7 @@ import type { DefaultOptionType } from 'antd/es/select'
 import { CloudServerOutlined, CheckCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import type { Machine } from '@/types'
-import { useGetAvailableMachinesForClone } from '@/api/queries/distributedStorage'
+import { useAvailableMachinesForClone } from '@/api/queries/distributedStorage'
 import MachineAssignmentStatusBadge from '../MachineAssignmentStatusBadge'
 import {
   StyledSelect,
@@ -179,7 +179,7 @@ export const SimpleMachineSelector: React.FC<{
   style?: React.CSSProperties
 }> = ({ teamName, value, onChange, placeholder, disabled, style }) => {
   const { t: _t } = useTranslation(['machines'])
-  const { data: machines = [], isLoading } = useGetAvailableMachinesForClone(teamName, !disabled)
+  const { data: machines = [], isLoading } = useAvailableMachinesForClone(teamName, !disabled)
 
   return (
     <AvailableMachinesSelector

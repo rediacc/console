@@ -38,8 +38,8 @@ const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || ''
 const isCaptchaEnabled = !!turnstileSiteKey 
 
 interface RegistrationModalProps {
-  visible: boolean
-  onClose: () => void
+  open: boolean
+  onCancel: () => void
   autoFillData?: {
     email: string
     password: string
@@ -62,12 +62,12 @@ interface VerificationForm {
   activationCode: string
 }
 
-const RegistrationModal: React.FC<RegistrationModalProps> = ({ 
-  visible, 
-  onClose, 
+const RegistrationModal: React.FC<RegistrationModalProps> = ({
+  open,
+  onCancel,
   autoFillData,
   autoSubmit = false,
-  onRegistrationComplete 
+  onRegistrationComplete
 }) => {
   const { t, i18n } = useTranslation(['auth', 'common'])
   const [currentStep, setCurrentStep] = useState(0)
@@ -105,7 +105,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
   // Auto-fill and auto-submit logic
   React.useEffect(() => {
-    if (visible && autoFillData && autoSubmit) {
+    if (open && autoFillData && autoSubmit) {
       // Auto-fill registration form
       registrationForm.setFieldsValue({
         email: autoFillData.email,
@@ -113,13 +113,13 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
         passwordConfirm: autoFillData.password,
         companyName: autoFillData.companyName
       })
-      
+
       // Auto-submit registration form after a short delay
       setTimeout(() => {
         registrationForm.submit()
       }, 500)
     }
-  }, [visible, autoFillData, autoSubmit, registrationForm])
+  }, [open, autoFillData, autoSubmit, registrationForm])
 
   // Auto-fill and auto-submit verification code
   React.useEffect(() => {
@@ -260,7 +260,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
     registrationForm.resetFields()
     verificationForm.resetFields()
 
-    onClose()
+    onCancel()
   }
 
   const renderRegistrationForm = () => (
@@ -484,7 +484,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({
   return (
     <StyledModal
       title={t('auth:registration.title')}
-      open={visible}
+      open={open}
       onCancel={handleClose}
       footer={null}
       destroyOnHidden
