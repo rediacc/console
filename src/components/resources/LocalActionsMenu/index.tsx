@@ -143,7 +143,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
         installModal.open(errorType)
       }
     },
-    [teamName, machine, repository, isContainerMenu, containerId, containerName, isMachineOnlyMenu]
+    [teamName, machine, repository, isContainerMenu, containerId, containerName, isMachineOnlyMenu, installModal]
   )
 
   const buildContainerMenuItems = (): MenuItemWithTestId[] => {

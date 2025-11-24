@@ -142,7 +142,7 @@ export const createStatusRenderer = <T extends string>(
   statusMap: Record<T, StatusConfig>,
   defaultConfig: StatusConfig = { color: 'default' }
 ) => {
-  return (status: T): React.ReactNode => {
+  const StatusRenderer = (status: T): React.ReactNode => {
     const config = statusMap[status] || defaultConfig
     return (
       <Tag color={config.color} icon={config.icon}>
@@ -150,6 +150,7 @@ export const createStatusRenderer = <T extends string>(
       </Tag>
     )
   }
+  return StatusRenderer
 }
 
 /**
