@@ -93,6 +93,7 @@
   "groupByStatus": "Статус",
   "groupByTeam": "Команда",
   "groupByUnmounted": "Размонтирован",
+  "heading": "Машины",
   "hoursAgo": "{{count}} час назад",
   "hoursAgo_plural": "{{count}} часов назад",
   "itemCount": "предмет | предметы",

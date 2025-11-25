@@ -1,5 +1,19 @@
 {
+  "cancelConfirm": {
+    "content": "Sind Sie sicher, dass Sie dieses Warteschlangenelement stornieren möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "okText": "Ja, Abbrechen",
+    "title": "Warteschlangenelement abbrechen"
+  },
   "dateRange": "Datumsbereich",
+  "errors": {
+    "cancelFailed": "Das Abbrechen des Warteschlangenelements ist fehlgeschlagen",
+    "createFailed": "Das Erstellen des Warteschlangenelements ist fehlgeschlagen",
+    "deleteFailed": "Das Löschen des Warteschlangenelements ist fehlgeschlagen",
+    "retryFailed": "Warteschlangenelement konnte nicht erneut versucht werden",
+    "updateFailed": "Das Warteschlangenelement konnte nicht aktualisiert werden",
+    "updatePriorityFailed": "Die Priorität des Warteschlangenelements konnte nicht aktualisiert werden",
+    "updateProtectionFailed": "Der Schutz für Warteschlangenelemente konnte nicht aktualisiert werden"
+  },
   "filters": "Filter",
   "includeCancelled": "Storniert einbeziehen",
   "includeCompleted": "Schließen Sie „Abgeschlossen“ ein",
@@ -59,6 +73,19 @@
   "statusProcessing": "Verarbeitung",
   "statusRunning": "Läuft",
   "statusStale": "Abgestanden",
+  "success": {
+    "cancellationInitiated": "Abbruch des Warteschlangenelements {{taskId}} eingeleitet",
+    "completed": "Warteschlangenelement {{taskId}} abgeschlossen",
+    "created": "Warteschlangenelement erstellt",
+    "createdWithId": "Warteschlangenelement mit der ID erstellt: {{taskId}}",
+    "deleted": "Warteschlangenelement {{taskId}} gelöscht",
+    "markedFailed": "Warteschlangenelement {{taskId}} als fehlgeschlagen markiert",
+    "priorityUpdated": "Die Priorität des Warteschlangenelements {{taskId}} wurde auf {{priority}} aktualisiert.",
+    "protectionDisabled": "Der Schutz für das Warteschlangenelement {{taskId}} wurde deaktiviert",
+    "protectionEnabled": "Schutz für Warteschlangenelement {{taskId}} aktiviert",
+    "queuedForRetry": "Warteschlangenelement {{taskId}} befindet sich in der Warteschlange für einen erneuten Versuch",
+    "responseUpdated": "Antwort des Warteschlangenelements {{taskId}} aktualisiert"
+  },
   "tabs": {
     "active": {
       "description": "In diesem Abschnitt werden alle aktiven Aufgaben angezeigt, einschließlich ausstehender Elemente, die auf Zuweisung warten, Aufgaben, die von Maschinen verarbeitet werden, und Aufgaben, die gerade abgebrochen werden.",

@@ -93,6 +93,24 @@
     "subtitle": "Rastree todas las actividades y cambios en su organización",
     "title": "Registros de Auditoría"
   },
+  "company": {
+    "errors": {
+      "blockRequestsFailed": "No se pudo actualizar el estado de bloqueo de solicitudes de usuario",
+      "importFailed": "No se pudieron importar los datos de la empresa",
+      "noExportData": "No se devolvieron datos de exportación",
+      "vaultUpdateFailed": "No se pudo actualizar la configuración del almacén"
+    },
+    "success": {
+      "errorCount": "{{count}} errores",
+      "importComplete": "Importación completada: {{summary}}",
+      "importedCount": "{{count}} artículos importados",
+      "requestsBlocked": "Solicitudes de usuarios bloqueadas con éxito",
+      "requestsBlockedWithTerminations": "Solicitudes de usuarios bloqueadas. Se finalizaron {{count}} sesiones activas.",
+      "requestsUnblocked": "Solicitudes de usuario desbloqueadas con éxito",
+      "skippedCount": "{{count}} elementos omitidos",
+      "vaultUpdated": "La configuración de la bóveda se actualizó correctamente"
+    }
+  },
   "dangerZone": {
     "blockUserRequests": {
       "blockButton": "Bloquear solicitudes de usuarios",
@@ -294,6 +312,17 @@
     "deactivate": {
       "confirmDescription": "¿Estás segura de que quieres desactivar \"{{email}}\"?",
       "confirmTitle": "Desactivar usuario"
+    }
+  },
+  "vaultProtocol": {
+    "errors": {
+      "disableFailed": "No se pudo deshabilitar el cifrado de la bóveda",
+      "enableFailed": "No se pudo habilitar el cifrado de bóveda",
+      "noCompanySelected": "Ninguna empresa seleccionada. Elija una empresa antes de actualizar el cifrado."
+    },
+    "success": {
+      "disabled": "Cifrado de bóveda deshabilitado. Ya no se requieren contraseñas maestras.",
+      "enabled": "El cifrado de bóveda se ha habilitado correctamente. Todos los usuarios ahora deben utilizar esta contraseña maestra."
     }
   }
 }

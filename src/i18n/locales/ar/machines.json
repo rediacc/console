@@ -93,6 +93,7 @@
   "groupByStatus": "حالة",
   "groupByTeam": "فريق",
   "groupByUnmounted": "غير مثبتة",
+  "heading": "الماكينات",
   "hoursAgo": "{{count}} قبل ساعة",
   "hoursAgo_plural": "قبل {{count}} ساعات",
   "itemCount": "البند | أغراض",

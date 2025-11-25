@@ -65,6 +65,14 @@
       "verified": "TFA Başarıyla Doğrulandı",
       "verifiedDescription": "Kimlik doğrulayıcı uygulamanız başarıyla yapılandırıldı ve iki faktörlü kimlik doğrulama artık hesabınızda etkin."
     },
+    "errors": {
+      "disableFailed": "İki faktörlü kimlik doğrulamayı devre dışı bırakılamadı.",
+      "enableFailed": "İki faktörlü kimlik doğrulama etkinleştirilemedi.",
+      "invalidParameters": "TFA işlemi için geçersiz parametreler.",
+      "missingData": "Beklenmeyen yanıt biçimi: TFA veri tablosu eksik.",
+      "missingSecret": "İki faktörlü kimlik doğrulama sırrı sunucu tarafından döndürülmüyor.",
+      "verificationFailed": "Geçersiz TFA kodu."
+    },
     "important": "Önemli",
     "manualSetup": {
       "instructions": "Bu gizli anahtarı kimlik doğrulayıcı uygulamanıza girin:",
@@ -82,6 +90,16 @@
       "disabledDescription": "Hesabınıza ekstra bir güvenlik katmanı ekleyin.",
       "enabled": "İki Faktörlü Kimlik Doğrulama Etkinleştirildi",
       "enabledDescription": "Hesabınız ek bir güvenlik katmanı ile korunmaktadır."
+    },
+    "statusMessages": {
+      "enabled": "TFA etkin",
+      "none": "TFA yapılandırılmadı",
+      "unknown": "TFA durumu belirlenemiyor"
+    },
+    "success": {
+      "disabled": "İki faktörlü kimlik doğrulama devre dışı bırakıldı.",
+      "enabled": "İki faktörlü kimlik doğrulama etkinleştirildi ve başarıyla doğrulandı.",
+      "verified": "TFA doğrulaması başarılı."
     },
     "title": "İki Faktörlü Kimlik Doğrulama",
     "verification": {

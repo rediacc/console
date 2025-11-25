@@ -94,6 +94,7 @@
   "groupByStatus": "状态",
   "groupByTeam": "团队",
   "groupByUnmounted": "未挂载",
+  "heading": "机器",
   "hoursAgo": "{{count}} 小时前",
   "hoursAgo_plural": "{{count}} 小时前",
   "itemCount": "个项目",

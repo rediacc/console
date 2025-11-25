@@ -28,6 +28,7 @@
     "trace": "トレース",
     "viewTrace": "トレースの表示"
   },
+  "actionsColumn": "アクション",
   "close": "近い",
   "copiedToClipboard": "クリップボードにコピーされました",
   "copyFailed": "クリップボードへのコピーに失敗しました",
@@ -39,6 +40,7 @@
     "enterprisePlanDescription": "あなたはすべての機能がロック解除された最高レベルのプランを利用しています",
     "upgradeOptions": "アップグレードオプション"
   },
+  "dateColumn": "日付",
   "export": "輸出",
   "exportCSV": "CSVとしてエクスポート",
   "exportJSON": "JSONとしてエクスポート",
@@ -171,6 +173,7 @@
     "running": "ランニング",
     "waitingForExecution": "実行を待っています"
   },
+  "statusColumn": "状態",
   "table": {
     "actions": "アクション",
     "showingRecords": "{{total}} 件中 {{start}}～{{end}} 件のレコードを表示しています"

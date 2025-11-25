@@ -28,6 +28,7 @@
     "trace": "Rastro",
     "viewTrace": "Ver seguimiento"
   },
+  "actionsColumn": "Comportamiento",
   "close": "Cerca",
   "copiedToClipboard": "Copiada al portapapeles",
   "copyFailed": "No se pudo copiar al portapapeles",
@@ -39,6 +40,7 @@
     "enterprisePlanDescription": "Estás en nuestro plan de nivel más alto con todas las funciones desbloqueadas",
     "upgradeOptions": "Opciones de actualización"
   },
+  "dateColumn": "Fecha",
   "export": "Exportar",
   "exportCSV": "Exportar como CSV",
   "exportJSON": "Exportar como JSON",
@@ -171,6 +173,7 @@
     "running": "Correr",
     "waitingForExecution": "Esperando ejecución"
   },
+  "statusColumn": "Estado",
   "table": {
     "actions": "Comportamiento",
     "showingRecords": "Mostrando registros {{start}}-{{end}} de {{total}}"

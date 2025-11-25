@@ -1,4 +1,8 @@
 {
+  "accessDenied": {
+    "description": "Votre forfait actuel n'inclut pas le stockage distribué. Effectuez une mise à niveau vers Business ou Enterprise ou contactez le support pour l'activer.",
+    "title": "Stockage distribué indisponible"
+  },
   "assignment": {
     "actions": {
       "assignToCluster": "Attribué au cluster",
@@ -29,12 +33,25 @@
     "addMachine": "Ajouter une machine",
     "assignMachines": "Attribuer des machines",
     "assignedMachines": "Machines attribuées",
+    "create": "Créer un clone",
+    "createSuccess": "Clone créé avec succès",
+    "delete": "Supprimer le clone",
+    "deleteSuccess": "Clone supprimé avec succès",
+    "edit": "Modifier le clone",
+    "export": "Exporter le clone",
     "exportMachines": "Machines d'exportation",
+    "flatten": "Aplatir le clone",
+    "info": "Informations sur le clonage",
     "machineManager": "Gestionnaire de machines",
+    "machinesAssignedSuccess": "Machines assignées au clonage avec succès",
+    "machinesRemovedSuccess": "Machines supprimées du clonage avec succès",
+    "manageMachines": "Gérer les machines",
+    "name": "Nom du clone",
     "noMachinesAssigned": "Aucune machine affectée à ce clone",
     "removeMachine": "Supprimer la machine",
     "removeSelectedMachines": "Supprimer les machines sélectionnées",
     "searchMachines": "Rechercher des machines...",
+    "split": "Clone divisé",
     "statistics": "Statistiques",
     "title": "Cloner",
     "totalMachines": "Total des machines"
@@ -44,18 +61,26 @@
     "assignedMachines": "Machines attribuées",
     "availableMachines": "Machines disponibles",
     "clusterDetails": "Détails du cluster",
+    "clusterName": "Nom du cluster",
     "configureVault": "Configurer le coffre-fort",
+    "confirmDelete": "Supprimer le cluster",
+    "create": "Créer un cluster",
     "createCluster": "Créer un cluster",
+    "createSuccess": "Cluster créé avec succès",
     "deleteCluster": "Supprimer le cluster",
+    "deleteSuccess": "Cluster supprimé avec succès",
+    "deleteWarning": "Êtes-vous sûr de vouloir supprimer le cluster « {{name}} » ?",
     "editCluster": "Modifier le cluster",
     "fsid": "Blé",
     "manageMachines": "Gérer les machines",
     "monitorHosts": "Surveiller les hôtes",
     "name": "Nom du cluster",
+    "noClusters": "Aucun cluster trouvé",
     "noMachinesAssigned": "Aucune machine affectée à ce cluster",
     "removeFromCluster": "Supprimer du cluster",
     "secretKey": "Clé secrète",
-    "title": "Groupes"
+    "title": "Groupes",
+    "updateSuccess": "Cluster mis à jour avec succès"
   },
   "common": {
     "actions": "Actes",
@@ -66,10 +91,13 @@
     "details": "Détails",
     "edit": "Modifier",
     "error": "Erreur",
+    "hasVault": "A un coffre-fort",
     "loading": "Chargement...",
+    "none": "Aucune",
     "refresh": "Rafraîchir",
     "save": "Sauvegarder",
-    "success": "Succès"
+    "success": "Succès",
+    "vault": "Sauter"
   },
   "dashboard": {
     "avgMachinesPerCluster": "Machines/cluster moyenne",
@@ -82,8 +110,30 @@
     "utilizationDetails": "{{used}} machines sur {{total}} en cours d'utilisation"
   },
   "description": "Gérer les clusters de stockage distribué, les pools, les images et les instantanés",
+  "errors": {
+    "operationFailed": "Échec de {{opération}} {{ressource}}"
+  },
+  "functions": {
+    "cluster_dashboard": "Ouvrir le tableau de bord du cluster",
+    "cluster_status": "Vérifier l'état du cluster",
+    "image_create": "Créer une image",
+    "pool_list": "Répertorier les pools"
+  },
   "images": {
     "assignedMachine": "Machine attribuée",
+    "clone": "Cloner une image",
+    "create": "Créer une image",
+    "createSnapshot": "Créer un instantané",
+    "createSuccess": "Image créée avec succès",
+    "delete": "Supprimer l'image",
+    "deleteSuccess": "Image supprimée avec succès",
+    "edit": "Modifier l'image",
+    "export": "Exporter une image",
+    "flatten": "Aplatir l'image",
+    "guid": "GUID",
+    "import": "Importer une image",
+    "info": "Informations sur l'image",
+    "map": "Image de la carte",
     "name": "Nom de l'image",
     "reassignMachine": "Réaffecter la machine",
     "reassignmentModal": {
@@ -94,7 +144,12 @@
       "warning": "Avertissement : la réaffectation d'une image à une autre machine la rendra indisponible sur la machine actuelle jusqu'à ce que les données soient migrées."
     },
     "reassignmentSuccess": "L'attribution de la machine à images a été mise à jour avec succès",
-    "title": "Images"
+    "resize": "Redimensionner l'image",
+    "showMapped": "Afficher les images cartographiées",
+    "status": "Statut",
+    "title": "Images",
+    "unmap": "Démapper l'image",
+    "updateSuccess": "Image mise à jour avec succès"
   },
   "machineSection": {
     "manageAssignment": "Gérer l'affectation",
@@ -108,11 +163,16 @@
       "removeAssignment": "Supprimer l'affectation",
       "viewDetails": "Afficher les détails"
     },
+    "assignedDate": "Date assignée",
+    "bridgeName": "Pont",
+    "clusterAssignedSuccess": "Machine affectée au cluster avec succès",
+    "clusterRemovedSuccess": "Machine supprimée du cluster avec succès",
     "filters": {
       "allStatuses": "Tous les statuts",
       "assignmentStatus": "Statut de l'affectation",
       "searchPlaceholder": "Rechercher des machines..."
     },
+    "machineName": "Nom de l'appareil",
     "summary": {
       "assignedToClones": "Attribué aux clones",
       "assignedToClusters": "Attribué aux clusters",
@@ -120,14 +180,42 @@
       "available": "Disponible",
       "title": "Disponibilité des machines",
       "total": "Total des machines"
+    },
+    "updateSuccess": "L'attribution du cluster de machines a été mise à jour avec succès"
+  },
+  "mutations": {
+    "operations": {
+      "assign": "attribuer",
+      "create": "créer",
+      "delete": "supprimer",
+      "remove": "retirer",
+      "update": "mise à jour"
+    },
+    "resources": {
+      "cloneMachines": "cloner des machines",
+      "cluster": "grappe",
+      "clusterVault": "coffre-fort en cluster",
+      "imageMachine": "machine à images",
+      "machineCluster": "cluster de machines",
+      "machineClusterAssignment": "affectation de cluster de machines",
+      "pool": "piscine",
+      "poolVault": "voûte de piscine",
+      "rbdClone": "Clone RBD",
+      "rbdImage": "Image RBD",
+      "rbdSnapshot": "Instantané RBD"
     }
   },
   "pools": {
+    "clusterPrefix": "Grappe",
     "configureVault": "Configurer le coffre-fort",
+    "confirmDelete": "Supprimer le pool",
     "create": "Créer un pool",
     "createPool": "Créer un pool",
+    "createSuccess": "Pool créé avec succès",
     "crush": "Règle ÉCRASER",
     "deletePool": "Supprimer le pool",
+    "deleteSuccess": "Pool supprimé avec succès",
+    "deleteWarning": "Êtes-vous sûr de vouloir supprimer le pool '{{name}}' ?",
     "editPool": "Modifier le pool",
     "minSize": "Taille minimale",
     "name": "Nom de la piscine",
@@ -136,11 +224,31 @@
     "pgpNum": "Numéro PGP",
     "poolDetails": "Détails de la piscine",
     "poolId": "Identifiant du pool",
+    "poolName": "Nom de la piscine",
     "size": "Taille",
-    "title": "Piscines"
+    "title": "Piscines",
+    "updateSuccess": "Pool mis à jour avec succès"
   },
+  "queue": {
+    "createError": "Échec de la soumission de la tâche en file d'attente",
+    "itemCreated": "Tâche de file d'attente créée avec succès"
+  },
+  "selectTeamPrompt": "Sélectionnez une équipe pour commencer",
+  "selectTeamToView": "Sélectionnez une équipe",
   "snapshots": {
-    "title": "Instantanés"
+    "create": "Créer un instantané",
+    "createSuccess": "Instantané créé avec succès",
+    "delete": "Supprimer l'instantané",
+    "deleteSuccess": "L'instantané a été supprimé avec succès",
+    "diff": "Instantané différentiel",
+    "edit": "Modifier l'instantané",
+    "guid": "GUID",
+    "name": "Nom de l'instantané",
+    "protect": "Protéger l'instantané",
+    "rollback": "Instantané de restauration",
+    "title": "Instantanés",
+    "unprotect": "Déprotéger l'instantané",
+    "vault": "Coffre-fort d'instantanés"
   },
   "tabs": {
     "clusters": "Groupes",
@@ -154,6 +262,7 @@
     "exclusivityClone": "Cette machine est actuellement attribuée à un clone. Il doit être supprimé du clone avant de pouvoir être affecté ailleurs.",
     "exclusivityCluster": "Cette machine est actuellement affectée à un cluster. Il doit être supprimé du cluster avant de pouvoir être affecté ailleurs.",
     "exclusivityImage": "Cette machine est actuellement attribuée à une image. L'image doit être réaffectée avant que cette machine puisse être utilisée ailleurs.",
+    "machineExclusivity": "Les machines ne peuvent appartenir qu’à une seule ressource de stockage distribuée à la fois.",
     "reassignment": "La réaffectation des ressources nécessite une planification minutieuse pour éviter toute interruption de service."
   }
 }

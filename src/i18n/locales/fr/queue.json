@@ -1,5 +1,19 @@
 {
+  "cancelConfirm": {
+    "content": "Êtes-vous sûr de vouloir annuler cet élément de file d'attente ? Cette action ne peut pas être annulée.",
+    "okText": "Oui, annuler",
+    "title": "Annuler un élément de file d'attente"
+  },
   "dateRange": "Plage de dates",
+  "errors": {
+    "cancelFailed": "Échec de l'annulation de l'élément de file d'attente",
+    "createFailed": "Échec de la création d'un élément de file d'attente",
+    "deleteFailed": "Échec de la suppression de l'élément de file d'attente",
+    "retryFailed": "Échec de la nouvelle tentative de l'élément de file d'attente",
+    "updateFailed": "Échec de la mise à jour de l'élément de file d'attente",
+    "updatePriorityFailed": "Échec de la mise à jour de la priorité des éléments de file d'attente",
+    "updateProtectionFailed": "Échec de la mise à jour de la protection des éléments de file d'attente"
+  },
   "filters": "Filtres",
   "includeCancelled": "Inclure Annulé",
   "includeCompleted": "Inclure terminé",
@@ -59,6 +73,19 @@
   "statusProcessing": "Traitement",
   "statusRunning": "En cours d'exécution",
   "statusStale": "Viciée",
+  "success": {
+    "cancellationInitiated": "Annulation de l'élément de file d'attente {{taskId}} initiée",
+    "completed": "Élément de file d'attente {{taskId}} terminé",
+    "created": "Élément de file d'attente créé",
+    "createdWithId": "Élément de file d'attente créé avec l'ID : {{taskId}}",
+    "deleted": "Élément de file d'attente {{taskId}} supprimé",
+    "markedFailed": "Élément de file d'attente {{taskId}} marqué comme ayant échoué",
+    "priorityUpdated": "La priorité de l'élément de file d'attente {{taskId}} a été mise à jour sur {{priority}}.",
+    "protectionDisabled": "Protection de l'élément de file d'attente {{taskId}} désactivée",
+    "protectionEnabled": "Protection de l'élément de file d'attente {{taskId}} activée",
+    "queuedForRetry": "Élément de file d'attente {{taskId}} mis en file d'attente pour une nouvelle tentative",
+    "responseUpdated": "Réponse de l'élément de file d'attente {{taskId}} mise à jour"
+  },
   "tabs": {
     "active": {
       "description": "Cette section affiche toutes les tâches actives, y compris les éléments en attente d'affectation, les tâches en cours de traitement par les machines et les tâches en cours d'annulation.",

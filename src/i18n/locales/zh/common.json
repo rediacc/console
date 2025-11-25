@@ -28,6 +28,7 @@
     "trace": "痕迹",
     "viewTrace": "查看跟踪"
   },
+  "actionsColumn": "行动",
   "close": "关闭",
   "copiedToClipboard": "已复制到剪贴板",
   "copyFailed": "复制到剪贴板失败",
@@ -39,6 +40,7 @@
     "enterprisePlanDescription": "您正在使用我们的最高级别计划，所有功能均已解锁",
     "upgradeOptions": "升级选项"
   },
+  "dateColumn": "日期",
   "export": "导出",
   "exportCSV": "导出为CSV",
   "exportJSON": "导出为JSON",
@@ -172,6 +174,7 @@
     "running": "运行中",
     "waitingForExecution": "等待执行"
   },
+  "statusColumn": "地位",
   "table": {
     "actions": "操作",
     "showingRecords": "显示第 {{start}}-{{end}} 条记录，共 {{total}} 条"

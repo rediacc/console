@@ -31,6 +31,8 @@ import { useVerifyTFA } from '@/api/queries/twoFactor'
 import RegistrationModal from '@/pages/login/components/RegistrationModal'
 import { generateRandomEmail, generateRandomCompanyName, generateRandomPassword } from '@/utils/cryptoGenerators'
 import SandboxWarning from '@/components/common/SandboxWarning'
+import InsecureConnectionWarning from '@/components/common/InsecureConnectionWarning'
+import { isSecureContext } from '@/utils/secureContext'
 import {
   LoginContainer,
   LogoContainer,
@@ -140,6 +142,8 @@ const LoginPage: React.FC = () => {
     activationCode: string
   } | undefined>(undefined)
   const [isQuickRegistration, setIsQuickRegistration] = useState(false)
+  const [isConnectionSecure, setIsConnectionSecure] = useState(true)
+  const [insecureWarningDismissed, setInsecureWarningDismissed] = useState(false)
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const dispatch = useDispatch()
@@ -237,6 +241,15 @@ const LoginPage: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
+  }, [])
+
+  // Check if connection is secure (required for Web Crypto API)
+  useEffect(() => {
+    const secure = isSecureContext()
+    setIsConnectionSecure(secure)
+    if (!secure) {
+      console.warn('[LoginPage] Insecure connection detected. Web Crypto API unavailable.')
+    }
   }, [])
 
   // Health check completion callback
@@ -478,6 +491,12 @@ const LoginPage: React.FC = () => {
               />
             )}
 
+            {!isConnectionSecure && !insecureWarningDismissed && (
+              <InsecureConnectionWarning
+                onClose={() => setInsecureWarningDismissed(true)}
+              />
+            )}
+
         <Form
           form={form}
           name="login"
@@ -586,16 +605,21 @@ const LoginPage: React.FC = () => {
             )}
 
             <LargeGapFormItem>
-              <LoginButton
-                type="primary"
-                htmlType="submit"
-                size="large"
-                block
-                loading={loading}
-                data-testid="login-submit-button"
+              <Tooltip
+                title={!isConnectionSecure ? t('auth:login.insecureConnection.buttonDisabled') : undefined}
               >
-                {loading ? t('auth:login.signingIn') : t('auth:login.signIn')}
-              </LoginButton>
+                <LoginButton
+                  type="primary"
+                  htmlType="submit"
+                  size="large"
+                  block
+                  loading={loading}
+                  disabled={!isConnectionSecure}
+                  data-testid="login-submit-button"
+                >
+                  {loading ? t('auth:login.signingIn') : t('auth:login.signIn')}
+                </LoginButton>
+              </Tooltip>
             </LargeGapFormItem>
           
           </Form>

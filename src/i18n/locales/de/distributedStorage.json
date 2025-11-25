@@ -1,4 +1,8 @@
 {
+  "accessDenied": {
+    "description": "Ihr aktueller Plan beinhaltet keinen verteilten Speicher. Führen Sie ein Upgrade auf Business oder Enterprise durch oder wenden Sie sich an den Support, um es zu aktivieren.",
+    "title": "Verteilter Speicher nicht verfügbar"
+  },
   "assignment": {
     "actions": {
       "assignToCluster": "Dem Cluster zugewiesen",
@@ -29,12 +33,25 @@
     "addMachine": "Maschine hinzufügen",
     "assignMachines": "Maschinen zuweisen",
     "assignedMachines": "Zugewiesene Maschinen",
+    "create": "Klon erstellen",
+    "createSuccess": "Klon erfolgreich erstellt",
+    "delete": "Klon löschen",
+    "deleteSuccess": "Klon erfolgreich gelöscht",
+    "edit": "Klon bearbeiten",
+    "export": "Klon exportieren",
     "exportMachines": "Maschinen exportieren",
+    "flatten": "Klon reduzieren",
+    "info": "Kloninformationen",
     "machineManager": "Maschinenmanager",
+    "machinesAssignedSuccess": "Maschinen, denen das Klonen erfolgreich zugewiesen wurde",
+    "machinesRemovedSuccess": "Maschinen wurden erfolgreich aus dem Klon entfernt",
+    "manageMachines": "Maschinen verwalten",
+    "name": "Klonname",
     "noMachinesAssigned": "Diesem Klon sind keine Maschinen zugewiesen",
     "removeMachine": "Maschine entfernen",
     "removeSelectedMachines": "Ausgewählte Maschinen entfernen",
     "searchMachines": "Suchmaschinen...",
+    "split": "Geteilter Klon",
     "statistics": "Statistiken",
     "title": "Klone",
     "totalMachines": "Gesamtmaschinen"
@@ -44,18 +61,26 @@
     "assignedMachines": "Zugewiesene Maschinen",
     "availableMachines": "Verfügbare Maschinen",
     "clusterDetails": "Clusterdetails",
+    "clusterName": "Clustername",
     "configureVault": "Vault konfigurieren",
+    "confirmDelete": "Cluster löschen",
+    "create": "Cluster erstellen",
     "createCluster": "Cluster erstellen",
+    "createSuccess": "Cluster erfolgreich erstellt",
     "deleteCluster": "Cluster löschen",
+    "deleteSuccess": "Cluster erfolgreich gelöscht",
+    "deleteWarning": "Sind Sie sicher, dass Sie den Cluster „{{name}}“ löschen möchten?",
     "editCluster": "Cluster bearbeiten",
     "fsid": "Ble",
     "manageMachines": "Maschinen verwalten",
     "monitorHosts": "Überwachen Sie Hosts",
     "name": "Clustername",
+    "noClusters": "Keine Cluster gefunden",
     "noMachinesAssigned": "Diesem Cluster sind keine Maschinen zugewiesen",
     "removeFromCluster": "Aus Cluster entfernen",
     "secretKey": "Geheimer Schlüssel",
-    "title": "Cluster"
+    "title": "Cluster",
+    "updateSuccess": "Cluster erfolgreich aktualisiert"
   },
   "common": {
     "actions": "Aktionen",
@@ -66,10 +91,13 @@
     "details": "Einzelheiten",
     "edit": "Bearbeiten",
     "error": "Fehler",
+    "hasVault": "Hat Tresor",
     "loading": "Laden...",
+    "none": "Keiner",
     "refresh": "Aktualisieren",
     "save": "Speichern",
-    "success": "Erfolg"
+    "success": "Erfolg",
+    "vault": "Gewölbe"
   },
   "dashboard": {
     "avgMachinesPerCluster": "Durchschnittliche Maschinen/Cluster",
@@ -82,8 +110,30 @@
     "utilizationDetails": "{{used}} von {{total}} Maschinen im Einsatz"
   },
   "description": "Verwalten Sie verteilte Speichercluster, Pools, Images und Snapshots",
+  "errors": {
+    "operationFailed": "{{Operation}} {{resource}} ist fehlgeschlagen"
+  },
+  "functions": {
+    "cluster_dashboard": "Öffnen Sie das Cluster-Dashboard",
+    "cluster_status": "Überprüfen Sie den Clusterstatus",
+    "image_create": "Bild erstellen",
+    "pool_list": "Pools auflisten"
+  },
   "images": {
     "assignedMachine": "Zugewiesene Maschine",
+    "clone": "Bild klonen",
+    "create": "Bild erstellen",
+    "createSnapshot": "Schnappschuss erstellen",
+    "createSuccess": "Bild erfolgreich erstellt",
+    "delete": "Bild löschen",
+    "deleteSuccess": "Bild erfolgreich gelöscht",
+    "edit": "Bild bearbeiten",
+    "export": "Bild exportieren",
+    "flatten": "Bild reduzieren",
+    "guid": "GUID",
+    "import": "Bild importieren",
+    "info": "Bildinformationen",
+    "map": "Kartenbild",
     "name": "Bildname",
     "reassignMachine": "Maschine neu zuweisen",
     "reassignmentModal": {
@@ -94,7 +144,12 @@
       "warning": "Warnung: Wenn Sie ein Image einem anderen Computer erneut zuweisen, ist es auf dem aktuellen Computer nicht verfügbar, bis die Daten migriert werden."
     },
     "reassignmentSuccess": "Bildmaschinenzuweisung erfolgreich aktualisiert",
-    "title": "Bilder"
+    "resize": "Bildgröße ändern",
+    "showMapped": "Zugeordnete Bilder anzeigen",
+    "status": "Status",
+    "title": "Bilder",
+    "unmap": "Bildzuordnung aufheben",
+    "updateSuccess": "Bild erfolgreich aktualisiert"
   },
   "machineSection": {
     "manageAssignment": "Aufgabe verwalten",
@@ -108,11 +163,16 @@
       "removeAssignment": "Zuordnung entfernen",
       "viewDetails": "Details anzeigen"
     },
+    "assignedDate": "Zugewiesenes Datum",
+    "bridgeName": "Brücke",
+    "clusterAssignedSuccess": "Maschine wurde erfolgreich dem Cluster zugewiesen",
+    "clusterRemovedSuccess": "Die Maschine wurde erfolgreich aus dem Cluster entfernt",
     "filters": {
       "allStatuses": "Alle Status",
       "assignmentStatus": "Zuweisungsstatus",
       "searchPlaceholder": "Suchmaschinen..."
     },
+    "machineName": "Maschinenname",
     "summary": {
       "assignedToClones": "Klonen zugewiesen",
       "assignedToClusters": "Clustern zugewiesen",
@@ -120,14 +180,42 @@
       "available": "Verfügbar",
       "title": "Maschinenverfügbarkeit",
       "total": "Gesamtmaschinen"
+    },
+    "updateSuccess": "Die Zuordnung des Maschinenclusters wurde erfolgreich aktualisiert"
+  },
+  "mutations": {
+    "operations": {
+      "assign": "zuordnen",
+      "create": "erstellen",
+      "delete": "löschen",
+      "remove": "entfernen",
+      "update": "aktualisieren"
+    },
+    "resources": {
+      "cloneMachines": "Maschinen klonen",
+      "cluster": "Cluster",
+      "clusterVault": "Cluster-Tresor",
+      "imageMachine": "Bildmaschine",
+      "machineCluster": "Maschinencluster",
+      "machineClusterAssignment": "Maschinen-Cluster-Zuordnung",
+      "pool": "Pool",
+      "poolVault": "Pool-Tresor",
+      "rbdClone": "RBD-Klon",
+      "rbdImage": "RBD-Bild",
+      "rbdSnapshot": "RBD-Schnappschuss"
     }
   },
   "pools": {
+    "clusterPrefix": "Cluster",
     "configureVault": "Vault konfigurieren",
+    "confirmDelete": "Pool löschen",
     "create": "Pool erstellen",
     "createPool": "Pool erstellen",
+    "createSuccess": "Pool erfolgreich erstellt",
     "crush": "CRUSH-Regel",
     "deletePool": "Pool löschen",
+    "deleteSuccess": "Pool erfolgreich gelöscht",
+    "deleteWarning": "Sind Sie sicher, dass Sie den Pool „{{name}}“ löschen möchten?",
     "editPool": "Pool bearbeiten",
     "minSize": "Mindestgröße",
     "name": "Poolname",
@@ -136,11 +224,31 @@
     "pgpNum": "PGP-Nummer",
     "poolDetails": "Pooldetails",
     "poolId": "Pool-ID",
+    "poolName": "Poolname",
     "size": "Größe",
-    "title": "Pools"
+    "title": "Pools",
+    "updateSuccess": "Pool erfolgreich aktualisiert"
   },
+  "queue": {
+    "createError": "Warteschlangenaufgabe konnte nicht gesendet werden",
+    "itemCreated": "Warteschlangenaufgabe erfolgreich erstellt"
+  },
+  "selectTeamPrompt": "Wählen Sie ein Team aus, um loszulegen",
+  "selectTeamToView": "Wählen Sie ein Team aus",
   "snapshots": {
-    "title": "Schnappschüsse"
+    "create": "Schnappschuss erstellen",
+    "createSuccess": "Snapshot erfolgreich erstellt",
+    "delete": "Snapshot löschen",
+    "deleteSuccess": "Snapshot erfolgreich gelöscht",
+    "diff": "Diff-Schnappschuss",
+    "edit": "Schnappschuss bearbeiten",
+    "guid": "GUID",
+    "name": "Snapshot-Name",
+    "protect": "Snapshot schützen",
+    "rollback": "Rollback-Snapshot",
+    "title": "Schnappschüsse",
+    "unprotect": "Snapshot-Schutz aufheben",
+    "vault": "Snapshot-Tresor"
   },
   "tabs": {
     "clusters": "Cluster",
@@ -154,6 +262,7 @@
     "exclusivityClone": "Diese Maschine ist derzeit einem Klon zugewiesen. Es muss aus dem Klon entfernt werden, bevor es an anderer Stelle zugewiesen werden kann.",
     "exclusivityCluster": "Diese Maschine ist derzeit einem Cluster zugewiesen. Es muss aus dem Cluster entfernt werden, bevor es an anderer Stelle zugewiesen werden kann.",
     "exclusivityImage": "Dieser Maschine ist derzeit ein Bild zugewiesen. Das Bild muss neu zugewiesen werden, bevor dieses Gerät an anderer Stelle verwendet werden kann.",
+    "machineExclusivity": "Maschinen können jeweils nur zu einer verteilten Speicherressource gehören.",
     "reassignment": "Die Neuzuweisung von Ressourcen erfordert eine sorgfältige Planung, um Serviceunterbrechungen zu vermeiden."
   }
 }

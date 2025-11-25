@@ -93,6 +93,7 @@
   "groupByStatus": "Statut",
   "groupByTeam": "Équipe",
   "groupByUnmounted": "Non monté",
+  "heading": "Machines",
   "hoursAgo": "il y a {{count}} heure",
   "hoursAgo_plural": "Il y a {{count}} heures",
   "itemCount": "article | articles",

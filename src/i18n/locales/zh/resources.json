@@ -70,6 +70,11 @@
     "state": "状态",
     "status": "地位"
   },
+  "credentials": {
+    "heading": "存储库凭证",
+    "subtitle": "管理存储库凭据和部署",
+    "title": "证书"
+  },
   "errors": {
     "failedToGetRepositoryGuid": "获取仓库GUID失败",
     "machineNotFound": "未找到所选机器"
@@ -506,6 +511,7 @@
     "deleteStorage": "删除存储",
     "deleteSuccess": "存储删除成功",
     "editStorage": "编辑存储",
+    "heading": "贮存",
     "import": {
       "alreadyExists": "团队中已存在此名称的存储",
       "button": "从 Rclone 导入",
@@ -548,7 +554,9 @@
     "selectStorageSystems": "选择存储系统",
     "storage": "存储",
     "storageFunctions": "存储功能",
-    "storageName": "存储名称"
+    "storageName": "存储名称",
+    "subtitle": "管理远程存储位置和 rclone 配置",
+    "title": "储存地点"
   },
   "teams": {
     "confirmDelete": "您确定要删除团队 \"{{teamName}}\" 吗？这将删除团队中的所有资源。",

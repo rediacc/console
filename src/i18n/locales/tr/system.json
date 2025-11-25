@@ -93,6 +93,24 @@
     "subtitle": "Kuruluşunuzdaki tüm etkinlikleri ve değişiklikleri takip edin",
     "title": "Denetim Günlükleri"
   },
+  "company": {
+    "errors": {
+      "blockRequestsFailed": "Kullanıcı isteği engelleme durumu güncellenemedi",
+      "importFailed": "Şirket verileri içe aktarılamadı",
+      "noExportData": "Hiçbir dışa aktarma verisi döndürülmedi",
+      "vaultUpdateFailed": "Kasa yapılandırması güncellenemedi"
+    },
+    "success": {
+      "errorCount": "{{count}} hata",
+      "importComplete": "İçe aktarma tamamlandı: {{summary}}",
+      "importedCount": "{{count}} öğe içe aktarıldı",
+      "requestsBlocked": "Kullanıcı istekleri başarıyla engellendi",
+      "requestsBlockedWithTerminations": "Kullanıcı istekleri engellendi. {{count}} aktif oturum sonlandırıldı.",
+      "requestsUnblocked": "Kullanıcı isteklerinin engellemesi başarıyla kaldırıldı",
+      "skippedCount": "{{count}} öğe atlandı",
+      "vaultUpdated": "Apps Kasası yapılandırması başarıyla güncellendi"
+    }
+  },
   "dangerZone": {
     "blockUserRequests": {
       "blockButton": "Kullanıcı İsteklerini Engelle",
@@ -294,6 +312,17 @@
     "deactivate": {
       "confirmDescription": "\"{{email}}\" adresini devre dışı bırakmak istediğinizden emin misiniz?",
       "confirmTitle": "Kullanıcıyı Devre Dışı Bırak"
+    }
+  },
+  "vaultProtocol": {
+    "errors": {
+      "disableFailed": "Kasa şifrelemesi devre dışı bırakılamadı",
+      "enableFailed": "Kasa şifrelemesi etkinleştirilemedi",
+      "noCompanySelected": "Hiçbir şirket seçilmedi. Şifrelemeyi güncellemeden önce lütfen bir şirket seçin."
+    },
+    "success": {
+      "disabled": "Kasa şifrelemesi devre dışı. Artık ana parolalara gerek yok.",
+      "enabled": "Kasa şifrelemesi başarıyla etkinleştirildi. Artık tüm kullanıcıların bu ana şifreyi kullanması gerekiyor."
     }
   }
 }

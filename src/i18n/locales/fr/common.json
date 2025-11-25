@@ -28,6 +28,7 @@
     "trace": "Tracer",
     "viewTrace": "Afficher le suivi"
   },
+  "actionsColumn": "Actes",
   "close": "Fermer",
   "copiedToClipboard": "Copié dans le presse-papiers",
   "copyFailed": "Échec de la copie dans le presse-papiers",
@@ -39,6 +40,7 @@
     "enterprisePlanDescription": "Vous bénéficiez de notre forfait le plus élevé avec toutes les fonctionnalités débloquées",
     "upgradeOptions": "Options de mise à niveau"
   },
+  "dateColumn": "Date",
   "export": "Exporter",
   "exportCSV": "Exporter au format CSV",
   "exportJSON": "Exporter au format JSON",
@@ -171,6 +173,7 @@
     "running": "En cours d'exécution",
     "waitingForExecution": "En attente d'exécution"
   },
+  "statusColumn": "Statut",
   "table": {
     "actions": "Actes",
     "showingRecords": "Affichage des enregistrements {{start}}-{{end}} sur {{total}}"

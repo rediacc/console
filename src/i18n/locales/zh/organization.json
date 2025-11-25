@@ -1,78 +1,116 @@
 {
+  "access": {
+    "errors": {
+      "addPermissionFailed": "群组添加权限失败",
+      "assignUserFailed": "无法将用户分配到权限组",
+      "createGroupFailed": "创建权限组失败",
+      "deleteGroupFailed": "删除权限组失败",
+      "removePermissionFailed": "无法从组中删除权限"
+    },
+    "heading": "Access Control",
+    "modals": {
+      "addPermissionButton": "Add Permission",
+      "addPermissionsTab": "Add Permissions",
+      "assignUserTitle": "Assign User",
+      "assignUserTo": "to {{group}}",
+      "createGroupTitle": "Create Permission Group",
+      "currentPermissionsTab": "Current Permissions",
+      "deleteGroupDescription": "Are you sure you want to delete group \"{{group}}\"?",
+      "deleteGroupTitle": "Delete Permission Group",
+      "groupNameRequired": "Please enter a group name",
+      "groupPlaceholder": "Enter group name",
+      "managePermissionsTitle": "Manage Permissions",
+      "noPermissions": "No permissions assigned",
+      "permissionPlaceholder": "Select permission to add",
+      "userPlaceholder": "Select user"
+    },
+    "permissions": {
+      "searchPlaceholder": "Search permission groups...",
+      "subtitle": "Manage permission groups and their assignments",
+      "title": "Permission Groups"
+    },
+    "success": {
+      "groupCreated": "权限组“{{group}}”创建成功",
+      "groupDeleted": "权限组“{{group}}”删除成功",
+      "permissionAdded": "权限“{{permission}}”已添加到组",
+      "permissionRemoved": "从组中删除了权限“{{permission}}”",
+      "userAssigned": "分配给权限组“{{group}}”的用户"
+    },
+    "tabs": {
+      "permissions": "Permissions",
+      "sessions": "Sessions"
+    }
+  },
+  "teams": {
+    "heading": "Teams",
+    "manageMembers": {
+      "accessStatus": "Has Access",
+      "addTab": "Add Member",
+      "currentTab": "Current Members",
+      "empty": "No members in this team",
+      "memberStatus": "Member",
+      "pendingStatus": "Pending",
+      "removeButton": "Remove",
+      "removeDescription": "Are you sure you want to remove \"{{email}}\" from this team?",
+      "removeTitle": "Remove Team Member",
+      "selectUser": "Select user",
+      "title": "Manage Team Members"
+    },
+    "searchPlaceholder": "Search teams...",
+    "subtitle": "Manage teams and their members",
+    "title": "Teams"
+  },
   "users": {
-    "heading": "Users",
-    "title": "Users",
-    "subtitle": "Manage users and their permissions",
-    "searchPlaceholder": "Search users...",
-    "status": {
-      "active": "Active",
-      "inactive": "Inactive"
-    },
-    "permissionGroups": {
-      "none": "No Group"
-    },
-    "lastActive": {
-      "never": "Never"
+    "errors": {
+      "activateFailed": "激活用户失败",
+      "assignPermissionsFailed": "分配权限失败",
+      "createFailed": "创建用户失败",
+      "deactivateFailed": "无法停用用户",
+      "emailUpdateFailed": "无法更新电子邮件",
+      "languageUpdateFailed": "无法保存语言首选项",
+      "passwordUpdateFailed": "更新密码失败",
+      "permissionGroupCreateFailed": "创建权限组失败",
+      "sessionTerminateFailed": "无法终止会话",
+      "userVaultUpdateFailed": "无法更新用户保管库"
     },
     "form": {
       "emailLabel": "Email",
       "passwordLabel": "Password",
       "passwordPlaceholder": "Enter password"
     },
+    "heading": "Users",
+    "lastActive": {
+      "never": "Never"
+    },
     "modals": {
-      "createTitle": "Create User",
       "assignTitle": "Assign Permissions",
+      "createTitle": "Create User",
       "permissionGroupLabel": "Permission Group",
       "permissionGroupPlaceholder": "Select permission group",
-      "usersLabel": "users",
-      "permissionsLabel": "permissions"
-    }
-  },
-  "teams": {
-    "heading": "Teams",
-    "title": "Teams",
-    "subtitle": "Manage teams and their members",
-    "searchPlaceholder": "Search teams...",
-    "manageMembers": {
-      "title": "Manage Team Members",
-      "currentTab": "Current Members",
-      "addTab": "Add Member",
-      "removeTitle": "Remove Team Member",
-      "removeDescription": "Are you sure you want to remove \"{{email}}\" from this team?",
-      "removeButton": "Remove",
-      "memberStatus": "Member",
-      "accessStatus": "Has Access",
-      "pendingStatus": "Pending",
-      "empty": "No members in this team",
-      "selectUser": "Select user"
-    }
-  },
-  "access": {
-    "heading": "Access Control",
-    "tabs": {
-      "permissions": "Permissions",
-      "sessions": "Sessions"
+      "permissionsLabel": "permissions",
+      "usersLabel": "users"
     },
-    "permissions": {
-      "title": "Permission Groups",
-      "subtitle": "Manage permission groups and their assignments",
-      "searchPlaceholder": "Search permission groups..."
+    "permissionGroups": {
+      "none": "No Group"
     },
-    "modals": {
-      "createGroupTitle": "Create Permission Group",
-      "groupPlaceholder": "Enter group name",
-      "groupNameRequired": "Please enter a group name",
-      "managePermissionsTitle": "Manage Permissions",
-      "currentPermissionsTab": "Current Permissions",
-      "addPermissionsTab": "Add Permissions",
-      "noPermissions": "No permissions assigned",
-      "permissionPlaceholder": "Select permission to add",
-      "addPermissionButton": "Add Permission",
-      "assignUserTitle": "Assign User",
-      "assignUserTo": "to {{group}}",
-      "userPlaceholder": "Select user",
-      "deleteGroupTitle": "Delete Permission Group",
-      "deleteGroupDescription": "Are you sure you want to delete group \"{{group}}\"?"
-    }
+    "searchPlaceholder": "Search users...",
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "subtitle": "Manage users and their permissions",
+    "success": {
+      "activated": "用户“{{email}}”已激活",
+      "created": "用户“{{email}}”创建成功",
+      "deactivated": "用户“{{email}}”已停用",
+      "emailUpdated": "电子邮件已更新为“{{email}}”",
+      "languageSaved": "已保存语言首选项",
+      "passwordUpdated": "密码更新成功。 请使用您的新密码登录。",
+      "permissionGroupCreated": "已创建权限组“{{groupName}}”",
+      "permissionsAssigned": "用户“{{email}}”分配给群组“{{group}}”",
+      "sessionTerminated": "会话成功终止",
+      "userVaultUpdated": "用户保管库更新成功"
+    },
+    "title": "Users"
   }
 }

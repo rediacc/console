@@ -65,6 +65,14 @@
       "verified": "TFA验证成功",
       "verifiedDescription": "您的身份验证应用已成功配置，双因素认证现已在您的账户上激活。"
     },
+    "errors": {
+      "disableFailed": "无法禁用双因素身份验证。",
+      "enableFailed": "无法启用双因素身份验证。",
+      "invalidParameters": "TFA 操作的参数无效。",
+      "missingData": "意外的响应格式：缺少 TFA 数据表。",
+      "missingSecret": "服务器未返回双因素身份验证密钥。",
+      "verificationFailed": "TFA 代码无效。"
+    },
     "important": "重要",
     "manualSetup": {
       "instructions": "在您的身份验证应用中输入此密钥：",
@@ -82,6 +90,16 @@
       "disabledDescription": "为您的账户添加额外的安全层。",
       "enabled": "双因素认证已启用",
       "enabledDescription": "您的账户已通过额外的安全层进行保护。"
+    },
+    "statusMessages": {
+      "enabled": "启用 TFA",
+      "none": "未配置 TFA",
+      "unknown": "无法确定 TFA 状态"
+    },
+    "success": {
+      "disabled": "双因素身份验证已被禁用。",
+      "enabled": "已启用双因素身份验证并已成功验证。",
+      "verified": "TFA 验证成功。"
     },
     "title": "双因素认证",
     "verification": {

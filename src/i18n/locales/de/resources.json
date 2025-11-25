@@ -70,6 +70,11 @@
     "state": "Zustand",
     "status": "Status"
   },
+  "credentials": {
+    "heading": "Repository-Anmeldeinformationen",
+    "subtitle": "Verwalten Sie Repository-Anmeldeinformationen und -Bereitstellungen",
+    "title": "Anmeldeinformationen"
+  },
   "errors": {
     "failedToGetRepositoryGuid": "Repository-GUID konnte nicht abgerufen werden",
     "machineNotFound": "Ausgewählte Maschine nicht gefunden"
@@ -489,6 +494,7 @@
     "deleteStorage": "Speicher löschen",
     "deleteSuccess": "Speicher erfolgreich gelöscht",
     "editStorage": "Speicher bearbeiten",
+    "heading": "Lagerung",
     "import": {
       "alreadyExists": "Im Team existiert bereits ein Storage mit diesem Namen",
       "button": "Import aus Rclone",
@@ -531,7 +537,9 @@
     "selectStorageSystems": "Wählen Sie Speichersysteme aus",
     "storage": "Lagerung",
     "storageFunctions": "Speicherfunktionen",
-    "storageName": "Speichername"
+    "storageName": "Speichername",
+    "subtitle": "Verwalten Sie Remote-Speicherorte und RClone-Konfigurationen",
+    "title": "Speicherorte"
   },
   "teams": {
     "confirmDelete": "Sind Sie sicher, dass Sie das Team „{{teamName}}“ löschen möchten? Dadurch werden alle Ressourcen im Team entfernt.",

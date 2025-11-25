@@ -1,5 +1,12 @@
 {
   "access": {
+    "errors": {
+      "addPermissionFailed": "فشلت إضافة الإذن إلى المجموعة",
+      "assignUserFailed": "فشل تعيين المستخدم لمجموعة الأذونات",
+      "createGroupFailed": "فشل إنشاء مجموعة الأذونات",
+      "deleteGroupFailed": "فشل حذف مجموعة الأذونات",
+      "removePermissionFailed": "فشلت إزالة الإذن من المجموعة"
+    },
     "heading": "التحكم في الوصول",
     "modals": {
       "addPermissionButton": "إضافة إذن",
@@ -21,6 +28,13 @@
       "searchPlaceholder": "البحث في مجموعات الأذونات...",
       "subtitle": "إدارة مجموعات الأذونات ومهامها",
       "title": "مجموعات الأذونات"
+    },
+    "success": {
+      "groupCreated": "تم إنشاء مجموعة الأذونات \"{{group}}\" بنجاح",
+      "groupDeleted": "تم حذف مجموعة الأذونات \"{{group}}\" بنجاح",
+      "permissionAdded": "تمت إضافة الإذن \"{{permission}}\" إلى المجموعة",
+      "permissionRemoved": "تمت إزالة الإذن \"{{permission}}\" من المجموعة",
+      "userAssigned": "تم تعيين المستخدم لمجموعة الأذونات \"{{group}}\""
     },
     "tabs": {
       "permissions": "الأذونات",
@@ -47,6 +61,18 @@
     "title": "فرق"
   },
   "users": {
+    "errors": {
+      "activateFailed": "فشل في تفعيل المستخدم",
+      "assignPermissionsFailed": "فشل في تعيين الأذونات",
+      "createFailed": "فشل في إنشاء المستخدم",
+      "deactivateFailed": "فشل في إلغاء تنشيط المستخدم",
+      "emailUpdateFailed": "فشل في تحديث البريد الإلكتروني",
+      "languageUpdateFailed": "فشل حفظ تفضيلات اللغة",
+      "passwordUpdateFailed": "فشل تحديث كلمة المرور",
+      "permissionGroupCreateFailed": "فشل إنشاء مجموعة الأذونات",
+      "sessionTerminateFailed": "فشل في إنهاء الجلسة",
+      "userVaultUpdateFailed": "فشل تحديث قبو المستخدم"
+    },
     "form": {
       "emailLabel": "بريد إلكتروني",
       "passwordLabel": "كلمة المرور",
@@ -73,6 +99,18 @@
       "inactive": "غير نشط"
     },
     "subtitle": "إدارة المستخدمين وأذوناتهم",
+    "success": {
+      "activated": "تم تفعيل المستخدم \"{{email}}\".",
+      "created": "تم إنشاء المستخدم \"{{email}}\" بنجاح",
+      "deactivated": "تم إلغاء تنشيط المستخدم \"{{email}}\".",
+      "emailUpdated": "تم تحديث البريد الإلكتروني إلى \"{{email}}\"",
+      "languageSaved": "تم حفظ تفضيلات اللغة",
+      "passwordUpdated": "تم تحديث كلمة المرور بنجاح. الرجاء تسجيل الدخول باستخدام كلمة المرور الجديدة الخاصة بك.",
+      "permissionGroupCreated": "تم إنشاء مجموعة الأذونات \"{{groupName}}\".",
+      "permissionsAssigned": "تم تعيين المستخدم \"{{email}}\" للمجموعة \"{{group}}\"",
+      "sessionTerminated": "تم إنهاء الجلسة بنجاح",
+      "userVaultUpdated": "تم تحديث قبو المستخدم بنجاح"
+    },
     "title": "المستخدمين"
   }
 }

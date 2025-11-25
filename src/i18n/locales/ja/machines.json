@@ -93,6 +93,7 @@
   "groupByStatus": "状態",
   "groupByTeam": "チーム",
   "groupByUnmounted": "アンマウント",
+  "heading": "機械",
   "hoursAgo": "{{count}} 時間前",
   "hoursAgo_plural": "{{count}} 時間前",
   "itemCount": "アイテム | アイテム",

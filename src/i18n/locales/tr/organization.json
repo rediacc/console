@@ -1,5 +1,12 @@
 {
   "access": {
+    "errors": {
+      "addPermissionFailed": "Gruba izin eklenemedi",
+      "assignUserFailed": "Kullanıcı izin grubuna atanamadı",
+      "createGroupFailed": "İzin grubu oluşturulamadı",
+      "deleteGroupFailed": "İzin grubu silinemedi",
+      "removePermissionFailed": "Gruptan izin kaldırılamadı"
+    },
     "heading": "Erişim Kontrolü",
     "modals": {
       "addPermissionButton": "İzin Ekleme",
@@ -21,6 +28,13 @@
       "searchPlaceholder": "Arama izin grupları...",
       "subtitle": "İzin gruplarını ve atamalarını yönetme",
       "title": "İzin Grupları"
+    },
+    "success": {
+      "groupCreated": "\"{{group}}\" izin grubu başarıyla oluşturuldu",
+      "groupDeleted": "\"{{group}}\" izin grubu başarıyla silindi",
+      "permissionAdded": "\"{{permission}}\" izni gruba eklendi",
+      "permissionRemoved": "\"{{permission}}\" izni gruptan kaldırıldı",
+      "userAssigned": "Kullanıcı \"{{group}}\" izin grubuna atandı"
     },
     "tabs": {
       "permissions": "İzinler",
@@ -47,6 +61,18 @@
     "title": "Takımlar"
   },
   "users": {
+    "errors": {
+      "activateFailed": "Kullanıcı etkinleştirilemedi",
+      "assignPermissionsFailed": "İzinler atanamadı",
+      "createFailed": "Kullanıcı oluşturulamadı",
+      "deactivateFailed": "Kullanıcı devre dışı bırakılamadı",
+      "emailUpdateFailed": "E-posta güncellenemedi",
+      "languageUpdateFailed": "Dil tercihi kaydedilemedi",
+      "passwordUpdateFailed": "Şifre güncellenemedi",
+      "permissionGroupCreateFailed": "İzin grubu oluşturulamadı",
+      "sessionTerminateFailed": "Oturum sonlandırılamadı",
+      "userVaultUpdateFailed": "Kullanıcı kasası güncellenemedi"
+    },
     "form": {
       "emailLabel": "E-posta",
       "passwordLabel": "Şifre",
@@ -73,6 +99,18 @@
       "inactive": "Aktif değil"
     },
     "subtitle": "Kullanıcıları ve izinlerini yönetme",
+    "success": {
+      "activated": "\"{{email}}\" kullanıcısı etkinleştirildi",
+      "created": "\"{{email}}\" kullanıcısı başarıyla oluşturuldu",
+      "deactivated": "\"{{email}}\" kullanıcısı devre dışı bırakıldı",
+      "emailUpdated": "E-posta \"{{email}}\" olarak güncellendi",
+      "languageSaved": "Dil tercihi kaydedildi",
+      "passwordUpdated": "Şifre başarıyla güncellendi. Lütfen yeni şifrenizle giriş yapınız.",
+      "permissionGroupCreated": "\"{{groupName}}\" izin grubu oluşturuldu",
+      "permissionsAssigned": "\"{{email}}\" kullanıcısı \"{{group}}\" grubuna atandı",
+      "sessionTerminated": "Oturum başarıyla sonlandırıldı",
+      "userVaultUpdated": "Kullanıcı kasası başarıyla güncellendi"
+    },
     "title": "Kullanıcılar"
   }
 }

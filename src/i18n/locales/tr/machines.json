@@ -93,6 +93,7 @@
   "groupByStatus": "Durum",
   "groupByTeam": "Takım",
   "groupByUnmounted": "Monte edilmemiş",
+  "heading": "Makineler",
   "hoursAgo": "{{count}} saat önce",
   "hoursAgo_plural": "{{count}} saat önce",
   "itemCount": "öğe | öğeler",

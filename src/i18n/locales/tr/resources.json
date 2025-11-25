@@ -70,6 +70,11 @@
     "state": "Eyalet",
     "status": "Durum"
   },
+  "credentials": {
+    "heading": "Depo Kimlik Bilgileri",
+    "subtitle": "Depo kimlik bilgilerini ve dağıtımlarını yönetin",
+    "title": "Kimlik bilgileri"
+  },
   "errors": {
     "failedToGetRepositoryGuid": "Depo GUID'si alınamadı",
     "machineNotFound": "Seçilen makine bulunamadı"
@@ -481,6 +486,7 @@
     "deleteStorage": "Depolamayı Sil",
     "deleteSuccess": "Depolama başarıyla silindi",
     "editStorage": "Depolamayı Düzenle",
+    "heading": "Depolamak",
     "import": {
       "alreadyExists": "Ekipte bu ada sahip bir depolama alanı zaten mevcut",
       "button": "Rclone'dan içe aktarma",
@@ -523,7 +529,9 @@
     "selectStorageSystems": "Depolama sistemlerini seçin",
     "storage": "Depolama",
     "storageFunctions": "Depolama Fonksiyonları",
-    "storageName": "Depolama Adı"
+    "storageName": "Depolama Adı",
+    "subtitle": "Uzak depolama konumlarını ve rclone yapılandırmalarını yönetin",
+    "title": "Depolama Konumları"
   },
   "teams": {
     "confirmDelete": "\"{{teamName}}\" ekibini silmek istediğinizden emin misiniz? Bu, ekipteki tüm kaynakları kaldıracaktır.",

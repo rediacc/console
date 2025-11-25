@@ -65,6 +65,14 @@
       "verified": "TFA verificado con éxito",
       "verifiedDescription": "Su aplicación de autenticación se ha configurado correctamente y la autenticación de dos factores ahora está activa en su cuenta."
     },
+    "errors": {
+      "disableFailed": "No se pudo desactivar la autenticación de dos factores.",
+      "enableFailed": "No se pudo habilitar la autenticación de dos factores.",
+      "invalidParameters": "Parámetros no válidos para el funcionamiento de TFA.",
+      "missingData": "Formato de respuesta inesperado: falta la tabla de datos de TFA.",
+      "missingSecret": "Secreto de autenticación de dos factores no devuelto por el servidor.",
+      "verificationFailed": "Código TFA no válido."
+    },
     "important": "Importante",
     "manualSetup": {
       "instructions": "Ingrese esta clave secreta en su aplicación de autenticación:",
@@ -82,6 +90,16 @@
       "disabledDescription": "Agregue una capa adicional de seguridad a su cuenta.",
       "enabled": "La autenticación de dos factores está habilitada",
       "enabledDescription": "Su cuenta está protegida con una capa adicional de seguridad."
+    },
+    "statusMessages": {
+      "enabled": "TFA habilitada",
+      "none": "No hay TFA configurado",
+      "unknown": "No se puede determinar el estado de TFA"
+    },
+    "success": {
+      "disabled": "La autenticación de dos factores ha sido deshabilitada.",
+      "enabled": "Autenticación de dos factores habilitada y verificada exitosamente.",
+      "verified": "Verificación TFA exitosa."
     },
     "title": "Autenticación de dos factores",
     "verification": {
