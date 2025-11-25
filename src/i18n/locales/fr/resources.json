@@ -70,6 +70,11 @@
     "state": "État",
     "status": "Statut"
   },
+  "credentials": {
+    "heading": "Informations d'identification du référentiel",
+    "subtitle": "Gérer les informations d'identification et les déploiements du référentiel",
+    "title": "Informations d'identification"
+  },
   "errors": {
     "failedToGetRepositoryGuid": "Échec de l'obtention du GUID du référentiel",
     "machineNotFound": "Machine sélectionnée introuvable"
@@ -489,6 +494,7 @@
     "deleteStorage": "Supprimer le stockage",
     "deleteSuccess": "Stockage supprimé avec succès",
     "editStorage": "Modifier le stockage",
+    "heading": "Stockage",
     "import": {
       "alreadyExists": "Un stockage portant ce nom existe déjà dans l'équipe",
       "button": "Importer depuis Rclone",
@@ -531,7 +537,9 @@
     "selectStorageSystems": "Sélectionnez les systèmes de stockage",
     "storage": "Stockage",
     "storageFunctions": "Fonctions de stockage",
-    "storageName": "Nom de stockage"
+    "storageName": "Nom de stockage",
+    "subtitle": "Gérer les emplacements de stockage distants et les configurations rclone",
+    "title": "Emplacements de stockage"
   },
   "teams": {
     "confirmDelete": "Êtes-vous sûr de vouloir supprimer l'équipe \"{{teamName}}\" ? Cela supprimera toutes les ressources de l’équipe.",

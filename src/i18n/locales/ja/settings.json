@@ -65,6 +65,14 @@
       "verified": "TFA が正常に検証されました",
       "verifiedDescription": "認証アプリは正常に構成され、アカウントで 2 要素認証がアクティブになりました。"
     },
+    "errors": {
+      "disableFailed": "二要素認証を無効にできませんでした。",
+      "enableFailed": "二要素認証を有効にできませんでした。",
+      "invalidParameters": "TFA 操作のパラメータが無効です。",
+      "missingData": "予期しない応答形式: TFA データ テーブルがありません。",
+      "missingSecret": "2 要素認証のシークレットがサーバーから返されませんでした。",
+      "verificationFailed": "無効な TFA コードです。"
+    },
     "important": "重要",
     "manualSetup": {
       "instructions": "この秘密キーを認証アプリに入力します。",
@@ -82,6 +90,16 @@
       "disabledDescription": "アカウントに追加のセキュリティ層を追加します。",
       "enabled": "二要素認証が有効になっています",
       "enabledDescription": "あなたのアカウントは追加のセキュリティ層で保護されています。"
+    },
+    "statusMessages": {
+      "enabled": "TFA が有効になっている",
+      "none": "TFA が構成されていません",
+      "unknown": "TFA ステータスを判断できません"
+    },
+    "success": {
+      "disabled": "二要素認証が無効になっています。",
+      "enabled": "2 要素認証が有効になり、正常に検証されました。",
+      "verified": "TFA 検証が成功しました。"
     },
     "title": "二要素認証",
     "verification": {

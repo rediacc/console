@@ -93,6 +93,24 @@
     "subtitle": "組織内のすべてのアクティビティと変更を追跡する",
     "title": "監査ログ"
   },
+  "company": {
+    "errors": {
+      "blockRequestsFailed": "ユーザーリクエストのブロックステータスを更新できませんでした",
+      "importFailed": "会社データのインポートに失敗しました",
+      "noExportData": "エクスポート データが返されませんでした",
+      "vaultUpdateFailed": "ボールト構成の更新に失敗しました"
+    },
+    "success": {
+      "errorCount": "{{count}} 個のエラー",
+      "importComplete": "インポートが完了しました: {{まとめ}}",
+      "importedCount": "{{count}} 個のアイテムがインポートされました",
+      "requestsBlocked": "ユーザーリクエストは正常にブロックされました",
+      "requestsBlockedWithTerminations": "ユーザーリクエストはブロックされました。 {{count}} 個のアクティブなセッションが終了しました。",
+      "requestsUnblocked": "ユーザーリクエストのブロックが正常に解除されました",
+      "skippedCount": "{{count}} 個のアイテムがスキップされました",
+      "vaultUpdated": "ボールト構成が正常に更新されました"
+    }
+  },
   "dangerZone": {
     "blockUserRequests": {
       "blockButton": "ユーザーリクエストをブロックする",
@@ -294,6 +312,17 @@
     "deactivate": {
       "confirmDescription": "「{{email}}」を無効にしてもよろしいですか?",
       "confirmTitle": "ユーザーを非アクティブ化する"
+    }
+  },
+  "vaultProtocol": {
+    "errors": {
+      "disableFailed": "ボールトの暗号化を無効にできませんでした",
+      "enableFailed": "ボールトの暗号化を有効にできませんでした",
+      "noCompanySelected": "会社が選択されていません。 暗号化を更新する前に会社を選択してください。"
+    },
+    "success": {
+      "disabled": "ボールトの暗号化が無効になっています。 マスターパスワードは必要なくなりました。",
+      "enabled": "ボールトの暗号化が正常に有効になりました。 すべてのユーザーはこのマスター パスワードを使用する必要があります。"
     }
   }
 }

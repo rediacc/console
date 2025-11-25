@@ -1,5 +1,19 @@
 {
+  "cancelConfirm": {
+    "content": "您确定要取消此队列项目吗？ 此操作无法撤消。",
+    "okText": "是，取消",
+    "title": "取消队列项目"
+  },
   "dateRange": "日期范围",
+  "errors": {
+    "cancelFailed": "无法取消队列项目",
+    "createFailed": "创建队列项目失败",
+    "deleteFailed": "删除队列项目失败",
+    "retryFailed": "重试队列项目失败",
+    "updateFailed": "无法更新队列项目",
+    "updatePriorityFailed": "无法更新队列项目优先级",
+    "updateProtectionFailed": "无法更新队列项目保护"
+  },
   "filters": "筛选器",
   "includeCancelled": "包含已取消",
   "includeCompleted": "包含已完成",
@@ -59,6 +73,19 @@
   "statusProcessing": "加工",
   "statusRunning": "运行中",
   "statusStale": "陈旧",
+  "success": {
+    "cancellationInitiated": "已启动队列项目 {{taskId}} 取消",
+    "completed": "队列项目 {{taskId}} 已完成",
+    "created": "已创建队列项目",
+    "createdWithId": "使用 ID 创建的队列项目：{{taskId}}",
+    "deleted": "队列项目 {{taskId}} 已删除",
+    "markedFailed": "队列项目 {{taskId}} 标记为失败",
+    "priorityUpdated": "队列项目 {{taskId}} 优先级已更新为 {{priority}}",
+    "protectionDisabled": "队列项目 {{taskId}} 保护已禁用",
+    "protectionEnabled": "队列项目 {{taskId}} 保护已启用",
+    "queuedForRetry": "队列项目 {{taskId}} 已排队等待重试",
+    "responseUpdated": "队列项目 {{taskId}} 响应已更新"
+  },
   "tabs": {
     "active": {
       "description": "此部分显示所有活动任务，包括等待分配的待处理项、机器正在处理的任务以及正在取消的任务。",

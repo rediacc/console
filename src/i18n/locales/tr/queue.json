@@ -1,5 +1,19 @@
 {
+  "cancelConfirm": {
+    "content": "Bu kuyruk öğesini iptal etmek istediğinizden emin misiniz? Bu eylem geri alınamaz.",
+    "okText": "Evet, İptal",
+    "title": "Kuyruk Öğesini İptal Et"
+  },
   "dateRange": "Tarih Aralığı",
+  "errors": {
+    "cancelFailed": "Kuyruk öğesi iptal edilemedi",
+    "createFailed": "Kuyruk öğesi oluşturulamadı",
+    "deleteFailed": "Kuyruk öğesi silinemedi",
+    "retryFailed": "Sıra öğesi yeniden denenemedi",
+    "updateFailed": "Kuyruk öğesi güncellenemedi",
+    "updatePriorityFailed": "Kuyruk öğesi önceliği güncellenemedi",
+    "updateProtectionFailed": "Kuyruk öğesi koruması güncellenemedi"
+  },
   "filters": "Filtreler",
   "includeCancelled": "İptal Edilenleri Dahil Et",
   "includeCompleted": "Tamamlananları Dahil Et",
@@ -59,6 +73,19 @@
   "statusProcessing": "İşleme",
   "statusRunning": "Koşmak",
   "statusStale": "Bayat",
+  "success": {
+    "cancellationInitiated": "{{taskId}} kuyruk öğesinin iptali başlatıldı",
+    "completed": "{{taskId}} numaralı kuyruk öğesi tamamlandı",
+    "created": "Kuyruk öğesi oluşturuldu",
+    "createdWithId": "Şu kimlikle oluşturulan kuyruk öğesi: {{taskId}}",
+    "deleted": "{{taskId}} kuyruk öğesi silindi",
+    "markedFailed": "{{taskId}} kuyruk öğesi başarısız olarak işaretlendi",
+    "priorityUpdated": "Kuyruk öğesi {{taskId}} önceliği {{priority}} olarak güncellendi",
+    "protectionDisabled": "{{taskId}} kuyruk öğesi koruması devre dışı bırakıldı",
+    "protectionEnabled": "{{taskId}} kuyruk öğesi koruması etkinleştirildi",
+    "queuedForRetry": "{{taskId}} kuyruk öğesi yeniden denemek üzere sıraya alındı",
+    "responseUpdated": "Kuyruk öğesi {{taskId}} yanıtı güncellendi"
+  },
   "tabs": {
     "active": {
       "description": "Bu bölüm, atama için bekleyen öğeler, makineler tarafından işlenen görevler ve iptal edilme sürecindeki görevler dahil olmak üzere tüm aktif görevleri görüntüler.",

@@ -28,6 +28,7 @@
     "trace": "İz",
     "viewTrace": "İzi Görüntüle"
   },
+  "actionsColumn": "Eylemler",
   "close": "Kapat",
   "copiedToClipboard": "Panoya kopyalandı",
   "copyFailed": "Panoya kopyalanamadı",
@@ -39,6 +40,7 @@
     "enterprisePlanDescription": "Tüm özelliklerin açık olduğu en yüksek katmanlı planımızdasınız",
     "upgradeOptions": "Yükseltme Seçenekleri"
   },
+  "dateColumn": "Tarih",
   "export": "İhracat",
   "exportCSV": "CSV olarak dışa aktar",
   "exportJSON": "JSON olarak dışa aktar",
@@ -169,6 +171,7 @@
     "running": "Koşmak",
     "waitingForExecution": "İnfaz için bekleniyor"
   },
+  "statusColumn": "Durum",
   "table": {
     "actions": "Eylemler",
     "showingRecords": "{{total}}'nin {{start}}-{{end}} kayıtları gösteriliyor"

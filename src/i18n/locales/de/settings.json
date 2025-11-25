@@ -65,6 +65,14 @@
       "verified": "TFA erfolgreich verifiziert",
       "verifiedDescription": "Ihre Authentifizierungs-App wurde erfolgreich konfiguriert und die Zwei-Faktor-Authentifizierung ist jetzt für Ihr Konto aktiv."
     },
+    "errors": {
+      "disableFailed": "Die Zwei-Faktor-Authentifizierung konnte nicht deaktiviert werden.",
+      "enableFailed": "Die Aktivierung der Zwei-Faktor-Authentifizierung ist fehlgeschlagen.",
+      "invalidParameters": "Ungültige Parameter für den TFA-Betrieb.",
+      "missingData": "Unerwartetes Antwortformat: TFA-Datentabelle fehlt.",
+      "missingSecret": "Das Geheimnis der Zwei-Faktor-Authentifizierung wurde vom Server nicht zurückgegeben.",
+      "verificationFailed": "Ungültiger TFA-Code."
+    },
     "important": "Wichtig",
     "manualSetup": {
       "instructions": "Geben Sie diesen geheimen Schlüssel in Ihre Authentifizierungs-App ein:",
@@ -82,6 +90,16 @@
       "disabledDescription": "Fügen Sie Ihrem Konto eine zusätzliche Sicherheitsebene hinzu.",
       "enabled": "Die Zwei-Faktor-Authentifizierung ist aktiviert",
       "enabledDescription": "Ihr Konto ist durch eine zusätzliche Sicherheitsebene geschützt."
+    },
+    "statusMessages": {
+      "enabled": "TFA aktiviert",
+      "none": "Kein TFA konfiguriert",
+      "unknown": "Der TFA-Status kann nicht ermittelt werden"
+    },
+    "success": {
+      "disabled": "Die Zwei-Faktor-Authentifizierung wurde deaktiviert.",
+      "enabled": "Zwei-Faktor-Authentifizierung aktiviert und erfolgreich verifiziert.",
+      "verified": "TFA-Überprüfung erfolgreich."
     },
     "title": "Zwei-Faktor-Authentifizierung",
     "verification": {

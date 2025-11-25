@@ -1,5 +1,19 @@
 {
+  "cancelConfirm": {
+    "content": "¿Está seguro de que desea cancelar este elemento de la cola? Esta acción no se puede deshacer.",
+    "okText": "Sí, cancelar",
+    "title": "Cancelar elemento de cola"
+  },
   "dateRange": "Rango de fechas",
+  "errors": {
+    "cancelFailed": "No se pudo cancelar el elemento de la cola",
+    "createFailed": "No se pudo crear el elemento de la cola",
+    "deleteFailed": "No se pudo eliminar el elemento de la cola",
+    "retryFailed": "No se pudo reintentar el elemento de la cola",
+    "updateFailed": "No se pudo actualizar el elemento de la cola",
+    "updatePriorityFailed": "No se pudo actualizar la prioridad de los elementos de la cola",
+    "updateProtectionFailed": "No se pudo actualizar la protección de elementos de la cola"
+  },
   "filters": "Filtros",
   "includeCancelled": "Incluir cancelado",
   "includeCompleted": "Incluir completada",
@@ -59,6 +73,19 @@
   "statusProcessing": "Procesando",
   "statusRunning": "Correr",
   "statusStale": "Obsoleto",
+  "success": {
+    "cancellationInitiated": "Cancelación del elemento de cola {{taskId}} iniciada",
+    "completed": "Elemento de cola {{taskId}} completado",
+    "created": "Elemento de cola creado",
+    "createdWithId": "Elemento de cola creado con ID: {{taskId}}",
+    "deleted": "Elemento de cola {{taskId}} eliminado",
+    "markedFailed": "Elemento de cola {{taskId}} marcado como fallido",
+    "priorityUpdated": "Prioridad del elemento de cola {{taskId}} actualizada a {{priority}}",
+    "protectionDisabled": "Protección del elemento de cola {{taskId}} deshabilitada",
+    "protectionEnabled": "Protección del elemento de cola {{taskId}} habilitada",
+    "queuedForRetry": "Elemento de la cola {{taskId}} en cola para reintentar",
+    "responseUpdated": "Respuesta del elemento de cola {{taskId}} actualizada"
+  },
   "tabs": {
     "active": {
       "description": "Esta sección muestra todas las tareas activas, incluidos los elementos pendientes en espera de asignación, las tareas procesadas por las máquinas y las tareas en proceso de cancelación.",

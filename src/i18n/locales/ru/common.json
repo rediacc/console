@@ -28,6 +28,7 @@
     "trace": "След",
     "viewTrace": "Посмотреть трассировку"
   },
+  "actionsColumn": "Действия",
   "close": "Закрывать",
   "copiedToClipboard": "Скопировано в буфер обмена",
   "copyFailed": "Не удалось скопировать в буфер обмена",
@@ -39,6 +40,7 @@
     "enterprisePlanDescription": "Вы используете наш план самого высокого уровня со всеми разблокированными функциями.",
     "upgradeOptions": "Варианты обновления"
   },
+  "dateColumn": "Дата",
   "export": "Экспорт",
   "exportCSV": "Экспортировать в формате CSV",
   "exportJSON": "Экспортировать в формате JSON",
@@ -171,6 +173,7 @@
     "running": "Бег",
     "waitingForExecution": "Ожидание исполнения"
   },
+  "statusColumn": "Статус",
   "table": {
     "actions": "Действия",
     "showingRecords": "Показаны записи {{start}}-{{end}} из {{total}}"

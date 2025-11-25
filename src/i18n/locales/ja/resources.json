@@ -70,6 +70,11 @@
     "state": "州",
     "status": "状態"
   },
+  "credentials": {
+    "heading": "リポジトリの認証情報",
+    "subtitle": "リポジトリの認証情報とデプロイメントを管理する",
+    "title": "資格"
+  },
   "errors": {
     "failedToGetRepositoryGuid": "リポジトリ GUID の取得に失敗しました",
     "machineNotFound": "選択したマシンが見つかりません"
@@ -489,6 +494,7 @@
     "deleteStorage": "ストレージの削除",
     "deleteSuccess": "ストレージが正常に削除されました",
     "editStorage": "ストレージの編集",
+    "heading": "ストレージ",
     "import": {
       "alreadyExists": "この名前のストレージはチーム内にすでに存在します",
       "button": "Rcloneからインポート",
@@ -531,7 +537,9 @@
     "selectStorageSystems": "ストレージ システムの選択",
     "storage": "ストレージ",
     "storageFunctions": "ストレージ機能",
-    "storageName": "ストレージ名"
+    "storageName": "ストレージ名",
+    "subtitle": "リモートストレージの場所とrclone構成を管理する",
+    "title": "保管場所"
   },
   "teams": {
     "confirmDelete": "チーム「{{teamName}}」を削除してもよろしいですか? これにより、チーム内のすべてのリソースが削除されます。",

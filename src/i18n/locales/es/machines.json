@@ -93,6 +93,7 @@
   "groupByStatus": "Estado",
   "groupByTeam": "Equipo",
   "groupByUnmounted": "Desmontada",
+  "heading": "maquinas",
   "hoursAgo": "Hace {{count}} hora",
   "hoursAgo_plural": "Hace {{count}} horas",
   "itemCount": "artículo | elementos",

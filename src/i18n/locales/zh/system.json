@@ -93,6 +93,24 @@
     "subtitle": "跟踪组织中的所有活动和变化",
     "title": "审核日志"
   },
+  "company": {
+    "errors": {
+      "blockRequestsFailed": "无法更新用户请求阻止状态",
+      "importFailed": "导入公司数据失败",
+      "noExportData": "没有返回导出数据",
+      "vaultUpdateFailed": "无法更新保管库配置"
+    },
+    "success": {
+      "errorCount": "{{count}} 个错误",
+      "importComplete": "导入完成：{{summary}}",
+      "importedCount": "已导入 {{count}} 件商品",
+      "requestsBlocked": "用户请求已成功阻止",
+      "requestsBlockedWithTerminations": "用户请求被阻止。 {{count}} 个活动会话已终止。",
+      "requestsUnblocked": "用户请求解禁成功",
+      "skippedCount": "已跳过 {{count}} 项",
+      "vaultUpdated": "保管库配置更新成功"
+    }
+  },
   "dangerZone": {
     "blockUserRequests": {
       "blockButton": "阻止用户请求",
@@ -294,6 +312,17 @@
     "deactivate": {
       "confirmDescription": "您确定要停用“{{email}}”吗？",
       "confirmTitle": "停用用户"
+    }
+  },
+  "vaultProtocol": {
+    "errors": {
+      "disableFailed": "无法禁用保管库加密",
+      "enableFailed": "无法启用保管库加密",
+      "noCompanySelected": "没有选择任何公司。 请在更新加密前选择一家公司。"
+    },
+    "success": {
+      "disabled": "保管库加密已禁用。 不再需要主密码。",
+      "enabled": "保管库加密已成功启用。 所有用户现在都必须使用此主密码。"
     }
   }
 }

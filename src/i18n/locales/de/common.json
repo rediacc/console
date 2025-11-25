@@ -28,6 +28,7 @@
     "trace": "Verfolgen",
     "viewTrace": "Trace anzeigen"
   },
+  "actionsColumn": "Aktionen",
   "close": "Schließen",
   "copiedToClipboard": "In die Zwischenablage kopiert",
   "copyFailed": "Kopieren in die Zwischenablage fehlgeschlagen",
@@ -39,6 +40,7 @@
     "enterprisePlanDescription": "Sie nutzen unseren höchsten Tarif, bei dem alle Funktionen freigeschaltet sind",
     "upgradeOptions": "Upgrade-Optionen"
   },
+  "dateColumn": "Datum",
   "export": "Export",
   "exportCSV": "Als CSV exportieren",
   "exportJSON": "Als JSON exportieren",
@@ -171,6 +173,7 @@
     "running": "Läuft",
     "waitingForExecution": "Warten auf die Hinrichtung"
   },
+  "statusColumn": "Status",
   "table": {
     "actions": "Aktionen",
     "showingRecords": "Es werden Datensätze {{start}}–{{end}} von {{total}} angezeigt"

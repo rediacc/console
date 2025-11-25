@@ -1,4 +1,8 @@
 {
+  "accessDenied": {
+    "description": "Su plan actual no incluye almacenamiento distribuido. Actualice a Business o Enterprise o comuníquese con el soporte para habilitarlo.",
+    "title": "Almacenamiento distribuido no disponible"
+  },
   "assignment": {
     "actions": {
       "assignToCluster": "Asignado al clúster",
@@ -29,12 +33,25 @@
     "addMachine": "Agregar máquina",
     "assignMachines": "Asignar máquinas",
     "assignedMachines": "Máquinas asignadas",
+    "create": "Crear clon",
+    "createSuccess": "Clon creado exitosamente",
+    "delete": "Eliminar clon",
+    "deleteSuccess": "Clon eliminado exitosamente",
+    "edit": "Editar clonar",
+    "export": "Exportar clon",
     "exportMachines": "Máquinas de Exportación",
+    "flatten": "Aplanar clon",
+    "info": "Información de clonación",
     "machineManager": "Administrador de máquinas",
+    "machinesAssignedSuccess": "Máquinas asignadas para clonar exitosamente",
+    "machinesRemovedSuccess": "Máquinas eliminadas del clon con éxito",
+    "manageMachines": "Administrar máquinas",
+    "name": "Nombre del clon",
     "noMachinesAssigned": "No hay máquinas asignadas a este clon.",
     "removeMachine": "Quitar máquina",
     "removeSelectedMachines": "Eliminar máquinas seleccionadas",
     "searchMachines": "Máquinas de búsqueda...",
+    "split": "Clon dividido",
     "statistics": "Estadística",
     "title": "Clones",
     "totalMachines": "Máquinas totales"
@@ -44,18 +61,26 @@
     "assignedMachines": "Máquinas asignadas",
     "availableMachines": "Máquinas disponibles",
     "clusterDetails": "Detalles del clúster",
+    "clusterName": "Nombre del clúster",
     "configureVault": "Configurar bóveda",
+    "confirmDelete": "Eliminar clúster",
+    "create": "Crear clúster",
     "createCluster": "Crear clúster",
+    "createSuccess": "Clúster creado exitosamente",
     "deleteCluster": "Eliminar clúster",
+    "deleteSuccess": "Clúster eliminado correctamente",
+    "deleteWarning": "¿Está seguro de que desea eliminar el clúster '{{name}}'?",
     "editCluster": "Editar grupo",
     "fsid": "Blé",
     "manageMachines": "Administrar máquinas",
     "monitorHosts": "Monitorear hosts",
     "name": "Nombre del clúster",
+    "noClusters": "No se encontraron grupos",
     "noMachinesAssigned": "No hay máquinas asignadas a este clúster.",
     "removeFromCluster": "Quitar del clúster",
     "secretKey": "clave secreta",
-    "title": "Clústeres"
+    "title": "Clústeres",
+    "updateSuccess": "Clúster actualizado correctamente"
   },
   "common": {
     "actions": "Comportamiento",
@@ -66,10 +91,13 @@
     "details": "Detalles",
     "edit": "Editar",
     "error": "Error",
+    "hasVault": "Tiene bóveda",
     "loading": "Cargando...",
+    "none": "Ninguna",
     "refresh": "Refrescar",
     "save": "Ahorrar",
-    "success": "Éxito"
+    "success": "Éxito",
+    "vault": "Bóveda"
   },
   "dashboard": {
     "avgMachinesPerCluster": "Promedio de máquinas/clúster",
@@ -82,8 +110,30 @@
     "utilizationDetails": "{{used}} de {{total}} máquinas en uso"
   },
   "description": "Administre clústeres, grupos, imágenes e instantáneas de almacenamiento distribuido",
+  "errors": {
+    "operationFailed": "Error al {{operación}} {{recurso}}"
+  },
+  "functions": {
+    "cluster_dashboard": "Panel de control de clúster abierto",
+    "cluster_status": "Verificar el estado del clúster",
+    "image_create": "Crear imagen",
+    "pool_list": "Listar grupos"
+  },
   "images": {
     "assignedMachine": "Máquina asignada",
+    "clone": "Clonar imagen",
+    "create": "Crear imagen",
+    "createSnapshot": "Crear instantánea",
+    "createSuccess": "Imagen creada exitosamente",
+    "delete": "Eliminar imagen",
+    "deleteSuccess": "Imagen eliminada exitosamente",
+    "edit": "Editar imagen",
+    "export": "Exportar imagen",
+    "flatten": "Aplanar imagen",
+    "guid": "GUID",
+    "import": "Importar imagen",
+    "info": "Información de la imagen",
+    "map": "Imagen del mapa",
     "name": "Nombre de la imagen",
     "reassignMachine": "Reasignar máquina",
     "reassignmentModal": {
@@ -94,7 +144,12 @@
       "warning": "Advertencia: Reasignar una imagen a una máquina diferente hará que no esté disponible en la máquina actual hasta que se migren los datos."
     },
     "reassignmentSuccess": "La asignación de la máquina de imágenes se actualizó correctamente",
-    "title": "Imágenes"
+    "resize": "Cambiar el tamaño de la imagen",
+    "showMapped": "Mostrar imágenes mapeadas",
+    "status": "Estado",
+    "title": "Imágenes",
+    "unmap": "Desasignar imagen",
+    "updateSuccess": "Imagen actualizada exitosamente"
   },
   "machineSection": {
     "manageAssignment": "Administrar tarea",
@@ -108,11 +163,16 @@
       "removeAssignment": "Eliminar tarea",
       "viewDetails": "Ver detalles"
     },
+    "assignedDate": "Fecha asignada",
+    "bridgeName": "Puente",
+    "clusterAssignedSuccess": "Máquina asignada al clúster correctamente",
+    "clusterRemovedSuccess": "Máquina eliminada del clúster con éxito",
     "filters": {
       "allStatuses": "Todos los estados",
       "assignmentStatus": "Estado de la asignación",
       "searchPlaceholder": "Máquinas de búsqueda..."
     },
+    "machineName": "Nombre de la máquina",
     "summary": {
       "assignedToClones": "Asignado a clones",
       "assignedToClusters": "Asignado a clústeres",
@@ -120,14 +180,42 @@
       "available": "Disponible",
       "title": "Disponibilidad de la máquina",
       "total": "Máquinas totales"
+    },
+    "updateSuccess": "La asignación del clúster de máquinas se actualizó correctamente"
+  },
+  "mutations": {
+    "operations": {
+      "assign": "asignar",
+      "create": "crear",
+      "delete": "borrar",
+      "remove": "eliminar",
+      "update": "actualizar"
+    },
+    "resources": {
+      "cloneMachines": "máquinas clonadoras",
+      "cluster": "grupo",
+      "clusterVault": "bóveda de racimo",
+      "imageMachine": "maquina de imagen",
+      "machineCluster": "grupo de máquinas",
+      "machineClusterAssignment": "asignación de grupo de máquinas",
+      "pool": "piscina",
+      "poolVault": "bóveda de piscina",
+      "rbdClone": "clon de RBD",
+      "rbdImage": "imagen RBD",
+      "rbdSnapshot": "instantánea de RBD"
     }
   },
   "pools": {
+    "clusterPrefix": "Grupo",
     "configureVault": "Configurar bóveda",
+    "confirmDelete": "Eliminar grupo",
     "create": "Crear grupo",
     "createPool": "Crear grupo",
+    "createSuccess": "Grupo creado con éxito",
     "crush": "Regla de aplastamiento",
     "deletePool": "Eliminar grupo",
+    "deleteSuccess": "Grupo eliminado con éxito",
+    "deleteWarning": "¿Estás segura de que quieres eliminar el grupo '{{name}}'?",
     "editPool": "Editar grupo",
     "minSize": "Tamaño mínimo",
     "name": "Nombre de la piscina",
@@ -136,11 +224,31 @@
     "pgpNum": "Número PGP",
     "poolDetails": "Detalles de la piscina",
     "poolId": "ID de piscina",
+    "poolName": "Nombre de la piscina",
     "size": "Tamaño",
-    "title": "Quinielas"
+    "title": "Quinielas",
+    "updateSuccess": "Grupo actualizado exitosamente"
   },
+  "queue": {
+    "createError": "No se pudo enviar la tarea de la cola",
+    "itemCreated": "Tarea de cola creada exitosamente"
+  },
+  "selectTeamPrompt": "Seleccione un equipo para comenzar",
+  "selectTeamToView": "Selecciona un equipo",
   "snapshots": {
-    "title": "Instantáneas"
+    "create": "Crear instantánea",
+    "createSuccess": "Instantánea creada con éxito",
+    "delete": "Eliminar instantánea",
+    "deleteSuccess": "Instantánea eliminada correctamente",
+    "diff": "Instantánea de diferencias",
+    "edit": "Editar instantánea",
+    "guid": "GUID",
+    "name": "Nombre de la instantánea",
+    "protect": "Proteger instantánea",
+    "rollback": "Instantánea de reversión",
+    "title": "Instantáneas",
+    "unprotect": "Desproteger instantánea",
+    "vault": "Bóveda de instantáneas"
   },
   "tabs": {
     "clusters": "Clústeres",
@@ -154,6 +262,7 @@
     "exclusivityClone": "Esta máquina está actualmente asignada a un clon. Debe eliminarse del clon antes de poder asignarlo a otro lugar.",
     "exclusivityCluster": "Esta máquina está actualmente asignada a un clúster. Debe eliminarse del clúster antes de poder asignarse a otro lugar.",
     "exclusivityImage": "Esta máquina está actualmente asignada a una imagen. La imagen debe reasignarse antes de que esta máquina pueda usarse en otro lugar.",
+    "machineExclusivity": "Las máquinas sólo pueden pertenecer a un recurso de almacenamiento distribuido a la vez.",
     "reassignment": "La reasignación de recursos requiere una planificación cuidadosa para evitar la interrupción del servicio."
   }
 }

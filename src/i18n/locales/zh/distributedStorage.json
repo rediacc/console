@@ -1,4 +1,8 @@
 {
+  "accessDenied": {
+    "description": "您当前的计划不包括分布式存储。 升级到商业版或企业版或联系支持人员以启用它。",
+    "title": "分布式存储不可用"
+  },
   "assignment": {
     "actions": {
       "assignToCluster": "分配给集群",
@@ -34,17 +38,29 @@
     "clones": "Clones",
     "create": "Create Clone",
     "createError": "Failed to create clone",
+    "createSuccess": "克隆创建成功",
     "createdSuccess": "Clone created successfully",
+    "delete": "删除克隆",
     "deleteError": "Failed to delete clone",
+    "deleteSuccess": "克隆删除成功",
     "deletedSuccess": "Clone deleted successfully",
+    "edit": "编辑克隆",
+    "export": "导出克隆",
     "exportMachines": "出口机器",
+    "flatten": "展平克隆",
+    "info": "克隆信息",
     "machineManager": "机器经理",
+    "machinesAssignedSuccess": "已成功分配克隆的计算机",
+    "machinesRemovedSuccess": "机器已成功从克隆中删除",
+    "manageMachines": "管理机器",
+    "name": "克隆名称",
     "noClones": "No clones",
     "noMachinesAssigned": "没有计算机分配给此克隆",
     "parentSnapshot": "Parent Snapshot",
     "removeMachine": "移除机器",
     "removeSelectedMachines": "删除选定的机器",
     "searchMachines": "搜索机...",
+    "split": "分裂克隆",
     "statistics": "统计数据",
     "title": "克隆",
     "totalMachines": "机器总数"
@@ -68,9 +84,11 @@
     "createDescription": "Use the Remote button to run cluster creation functions. This will only create the cluster configuration entry.",
     "createError": "Failed to create cluster",
     "createInfo": "Important",
+    "createSuccess": "集群创建成功",
     "createdSuccess": "Cluster created successfully",
     "deleteCluster": "删除集群",
     "deleteError": "Failed to delete cluster",
+    "deleteSuccess": "集群删除成功",
     "deleteWarning": "Are you sure you want to delete cluster '{{name}}'? This action cannot be undone.",
     "deletedSuccess": "Cluster deleted successfully",
     "editCluster": "编辑集群",
@@ -92,6 +110,7 @@
     "status": "Status",
     "title": "集群",
     "updateError": "Failed to update cluster",
+    "updateSuccess": "集群更新成功",
     "updatedSuccess": "Cluster updated successfully"
   },
   "common": {
@@ -103,10 +122,13 @@
     "details": "细节",
     "edit": "编辑",
     "error": "错误",
+    "hasVault": "有保险库",
     "loading": "加载中...",
+    "none": "没有任何",
     "refresh": "刷新",
     "save": "节省",
-    "success": "成功"
+    "success": "成功",
+    "vault": "避难所"
   },
   "dashboard": {
     "avgMachinesPerCluster": "平均机器/集群",
@@ -125,6 +147,7 @@
     "loadMachines": "Failed to load machines",
     "loadPools": "Failed to load pools",
     "noTeamSelected": "No team selected",
+    "operationFailed": "无法{{操作}} {{资源}}",
     "vaultRequired": "Vault configuration is required"
   },
   "functions": {
@@ -155,15 +178,27 @@
   },
   "images": {
     "assignedMachine": "指定机器",
+    "clone": "克隆图像",
     "create": "Create Image",
     "createError": "Failed to create image",
+    "createSnapshot": "创建快照",
+    "createSuccess": "图像创建成功",
     "createdSuccess": "Image created successfully",
+    "delete": "删除图像",
     "deleteError": "Failed to delete image",
+    "deleteSuccess": "图片删除成功",
     "deletedSuccess": "Image deleted successfully",
+    "edit": "编辑图像",
+    "export": "导出图片",
     "features": "Features",
+    "flatten": "拼合图像",
+    "guid": "GUID",
     "image": "Image",
     "imageName": "Image Name",
     "images": "Images",
+    "import": "导入图像",
+    "info": "图像信息",
+    "map": "地图图像",
     "name": "图片名称",
     "noImages": "No images in this pool",
     "reassignMachine": "重新分配机器",
@@ -175,9 +210,14 @@
       "warning": "警告：将映像重新分配给其他计算机将使其在当前计算机上不可用，直到迁移数据为止。"
     },
     "reassignmentSuccess": "图像机分配已成功更新",
+    "resize": "调整图像大小",
+    "showMapped": "显示映射图像",
     "size": "Size",
+    "status": "地位",
     "title": "图片",
+    "unmap": "取消映射图像",
     "updateError": "Failed to update image",
+    "updateSuccess": "图片更新成功",
     "updatedSuccess": "Image updated successfully"
   },
   "machineSection": {
@@ -194,12 +234,17 @@
     },
     "assignError": "Failed to assign machine",
     "assignMachine": "Assign Machine",
+    "assignedDate": "指定日期",
     "assignedSuccess": "Machine assigned successfully",
+    "bridgeName": "桥",
+    "clusterAssignedSuccess": "机器成功分配到集群",
+    "clusterRemovedSuccess": "机器已成功从集群中删除",
     "filters": {
       "allStatuses": "所有状态",
       "assignmentStatus": "分配状态",
       "searchPlaceholder": "搜索机..."
     },
+    "machineName": "机器名称",
     "selectMachines": "Select Machines",
     "selectMachinesDescription": "Select machines to assign to this cluster",
     "summary": {
@@ -212,7 +257,30 @@
     },
     "unassignError": "Failed to unassign machine",
     "unassignMachine": "Unassign Machine",
-    "unassignedSuccess": "Machine unassigned successfully"
+    "unassignedSuccess": "Machine unassigned successfully",
+    "updateSuccess": "机器集群分配已成功更新"
+  },
+  "mutations": {
+    "operations": {
+      "assign": "分配",
+      "create": "创造",
+      "delete": "删除",
+      "remove": "消除",
+      "update": "更新"
+    },
+    "resources": {
+      "cloneMachines": "克隆机",
+      "cluster": "簇",
+      "clusterVault": "集群保险库",
+      "imageMachine": "影像机",
+      "machineCluster": "机器集群",
+      "machineClusterAssignment": "机器集群分配",
+      "pool": "水池",
+      "poolVault": "泳池跳马",
+      "rbdClone": "RBD克隆",
+      "rbdImage": "RBD图像",
+      "rbdSnapshot": "RBD快照"
+    }
   },
   "placeholders": {
     "searchClusters": "Search clusters...",
@@ -230,10 +298,12 @@
     "createError": "Failed to create pool",
     "createInfo": "Important",
     "createPool": "创建池",
+    "createSuccess": "池创建成功",
     "createdSuccess": "Pool created successfully",
     "crush": "粉碎规则",
     "deleteError": "Failed to delete pool",
     "deletePool": "删除池",
+    "deleteSuccess": "池删除成功",
     "deleteWarning": "Are you sure you want to delete pool '{{name}}'? This action cannot be undone.",
     "deletedSuccess": "Pool deleted successfully",
     "editPool": "编辑池",
@@ -254,20 +324,38 @@
     "size": "尺寸",
     "title": "泳池",
     "updateError": "Failed to update pool",
+    "updateSuccess": "池更新成功",
     "updatedSuccess": "Pool updated successfully"
   },
+  "queue": {
+    "createError": "提交队列任务失败",
+    "itemCreated": "队列任务创建成功"
+  },
+  "selectTeamPrompt": "选择一个团队开始",
+  "selectTeamToView": "选择团队",
   "snapshots": {
     "create": "Create Snapshot",
     "createError": "Failed to create snapshot",
+    "createSuccess": "快照创建成功",
     "createdSuccess": "Snapshot created successfully",
+    "delete": "删除快照",
     "deleteError": "Failed to delete snapshot",
+    "deleteSuccess": "快照删除成功",
     "deletedSuccess": "Snapshot deleted successfully",
+    "diff": "差异快照",
+    "edit": "编辑快照",
+    "guid": "GUID",
+    "name": "快照名称",
     "noSnapshots": "No snapshots",
+    "protect": "保护快照",
     "protected": "Protected",
+    "rollback": "回滚快照",
     "snapshot": "Snapshot",
     "snapshotName": "Snapshot Name",
     "snapshots": "Snapshots",
-    "title": "快照"
+    "title": "快照",
+    "unprotect": "取消保护快照",
+    "vault": "快照库"
   },
   "tabs": {
     "clusters": "Clusters",
@@ -288,6 +376,7 @@
     "exclusivityClone": "该机器当前已分配给克隆。 必须先将其从克隆中删除，然后才能将其分配到其他地方。",
     "exclusivityCluster": "该机器当前已分配到一个集群。 必须先将其从集群中删除，然后才能将其分配到其他地方。",
     "exclusivityImage": "该机器当前已分配给一个映像。 必须先重新分配映像，然后才能将本机用于其他地方。",
+    "machineExclusivity": "机器一次只能属于一个分布式存储资源。",
     "reassignment": "重新分配资源需要仔细规划以避免服务中断。"
   }
 }

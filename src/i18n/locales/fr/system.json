@@ -93,6 +93,24 @@
     "subtitle": "Suivez toutes les activités et les changements dans votre organisation",
     "title": "Journaux d'audit"
   },
+  "company": {
+    "errors": {
+      "blockRequestsFailed": "Échec de la mise à jour de l'état de blocage des demandes utilisateur",
+      "importFailed": "Échec de l'importation des données de l'entreprise",
+      "noExportData": "Aucune donnée d'exportation renvoyée",
+      "vaultUpdateFailed": "Échec de la mise à jour de la configuration du coffre-fort"
+    },
+    "success": {
+      "errorCount": "{{count}} erreurs",
+      "importComplete": "Importation terminée : {{summary}}",
+      "importedCount": "{{count}} éléments importés",
+      "requestsBlocked": "Demandes des utilisateurs bloquées avec succès",
+      "requestsBlockedWithTerminations": "Demandes des utilisateurs bloquées. {{count}} sessions actives ont été interrompues.",
+      "requestsUnblocked": "Demandes des utilisateurs débloquées avec succès",
+      "skippedCount": "{{count}} éléments ignorés",
+      "vaultUpdated": "La configuration du coffre-fort a été mise à jour avec succès"
+    }
+  },
   "dangerZone": {
     "blockUserRequests": {
       "blockButton": "Bloquer les demandes des utilisateurs",
@@ -294,6 +312,17 @@
     "deactivate": {
       "confirmDescription": "Êtes-vous sûr de vouloir désactiver « {{email}} » ?",
       "confirmTitle": "Désactiver l'utilisateur"
+    }
+  },
+  "vaultProtocol": {
+    "errors": {
+      "disableFailed": "Échec de la désactivation du chiffrement du coffre-fort",
+      "enableFailed": "Échec de l'activation du chiffrement du coffre-fort",
+      "noCompanySelected": "Aucune entreprise sélectionnée. Veuillez choisir une entreprise avant de mettre à jour le cryptage."
+    },
+    "success": {
+      "disabled": "Cryptage du coffre-fort désactivé. Les mots de passe principaux ne sont plus requis.",
+      "enabled": "Le chiffrement du coffre-fort a été activé avec succès. Tous les utilisateurs doivent désormais utiliser ce mot de passe principal."
     }
   }
 }

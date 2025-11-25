@@ -70,6 +70,11 @@
     "state": "ولاية",
     "status": "حالة"
   },
+  "credentials": {
+    "heading": "بيانات اعتماد المستودع",
+    "subtitle": "إدارة بيانات اعتماد المستودع وعمليات النشر",
+    "title": "أوراق اعتماد"
+  },
   "errors": {
     "failedToGetRepositoryGuid": "فشل في الحصول على GUID للمستودع",
     "machineNotFound": "لم يتم العثور على الجهاز المحدد"
@@ -489,6 +494,7 @@
     "deleteStorage": "حذف التخزين",
     "deleteSuccess": "تم حذف مساحة التخزين بنجاح",
     "editStorage": "تحرير التخزين",
+    "heading": "تخزين",
     "import": {
       "alreadyExists": "يوجد مخزن بهذا الاسم بالفعل في الفريق",
       "button": "استيراد من Rclone",
@@ -531,7 +537,9 @@
     "selectStorageSystems": "حدد أنظمة التخزين",
     "storage": "تخزين",
     "storageFunctions": "وظائف التخزين",
-    "storageName": "اسم التخزين"
+    "storageName": "اسم التخزين",
+    "subtitle": "إدارة مواقع التخزين عن بعد وتكوينات rclone",
+    "title": "مواقع التخزين"
   },
   "teams": {
     "confirmDelete": "هل أنت متأكد أنك تريد حذف الفريق \"{{teamName}}\"؟ سيؤدي هذا إلى إزالة كافة الموارد في الفريق.",

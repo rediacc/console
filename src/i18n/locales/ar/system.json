@@ -93,6 +93,24 @@
     "subtitle": "تتبع جميع الأنشطة والتغييرات في مؤسستك",
     "title": "سجلات التدقيق"
   },
+  "company": {
+    "errors": {
+      "blockRequestsFailed": "فشل تحديث حالة حظر طلب المستخدم",
+      "importFailed": "فشل في استيراد بيانات الشركة",
+      "noExportData": "لم يتم إرجاع أي بيانات تصدير",
+      "vaultUpdateFailed": "فشل تحديث تكوين المخزن"
+    },
+    "success": {
+      "errorCount": "{{عدد}} أخطاء",
+      "importComplete": "اكتمل الاستيراد: {{الملخص}}",
+      "importedCount": "تم استيراد {{count}} من العناصر",
+      "requestsBlocked": "تم حظر طلبات المستخدم بنجاح",
+      "requestsBlockedWithTerminations": "تم حظر طلبات المستخدم. تم إنهاء {{count}} من الجلسات النشطة.",
+      "requestsUnblocked": "تم إلغاء حظر طلبات المستخدم بنجاح",
+      "skippedCount": "تم تخطي {{count}} من العناصر",
+      "vaultUpdated": "تم تحديث تكوين Vault بنجاح"
+    }
+  },
   "dangerZone": {
     "blockUserRequests": {
       "blockButton": "حظر طلبات المستخدم",
@@ -294,6 +312,17 @@
     "deactivate": {
       "confirmDescription": "هل أنت متأكد أنك تريد إلغاء تفعيل \"{{email}}\"؟",
       "confirmTitle": "إلغاء تنشيط المستخدم"
+    }
+  },
+  "vaultProtocol": {
+    "errors": {
+      "disableFailed": "فشل في تعطيل تشفير المخزن",
+      "enableFailed": "فشل في تمكين تشفير المخزن",
+      "noCompanySelected": "لم يتم اختيار أي شركة. الرجاء اختيار شركة قبل تحديث التشفير."
+    },
+    "success": {
+      "disabled": "تم تعطيل تشفير Vault. لم تعد كلمات المرور الرئيسية مطلوبة.",
+      "enabled": "تم تمكين تشفير Vault بنجاح. يجب على جميع المستخدمين الآن استخدام كلمة المرور الرئيسية هذه."
     }
   }
 }

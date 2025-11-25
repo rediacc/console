@@ -28,6 +28,7 @@
     "trace": "يتعقب",
     "viewTrace": "عرض التتبع"
   },
+  "actionsColumn": "الإجراءات",
   "close": "يغلق",
   "copiedToClipboard": "تم النسخ إلى الحافظة",
   "copyFailed": "فشل النسخ إلى الحافظة",
@@ -39,6 +40,7 @@
     "enterprisePlanDescription": "أنت مشترك في خطتنا ذات المستوى الأعلى مع فتح جميع الميزات",
     "upgradeOptions": "خيارات الترقية"
   },
+  "dateColumn": "التاريخ",
   "export": "يصدّر",
   "exportCSV": "تصدير كملف CSV",
   "exportJSON": "تصدير كـ JSON",
@@ -103,6 +105,9 @@
     "credentials": "أوراق اعتماد",
     "dashboard": "لوحة القيادة",
     "distributedStorage": "التخزين الموزع",
+    "distributedStorageClusters": "مجموعات",
+    "distributedStorageMachines": "آلات",
+    "distributedStoragePools": "حمامات سباحة",
     "logout": "تسجيل الخروج",
     "machines": "آلات",
     "mainNavigation": "الملاحة الرئيسية",
@@ -119,9 +124,6 @@
     "storage": "تخزين",
     "storageCloud": "سحاب",
     "storageDistributed": "وزعت",
-    "distributedStorageClusters": "المجموعات",
-    "distributedStoragePools": "التجمعات",
-    "distributedStorageMachines": "الآلات",
     "system": "نظام"
   },
   "nestedObjectEditor": {
@@ -171,6 +173,7 @@
     "running": "جري",
     "waitingForExecution": "في انتظار التنفيذ"
   },
+  "statusColumn": "الحالة",
   "table": {
     "actions": "الإجراءات",
     "showingRecords": "عرض السجلات {{start}}-{{end}} من {{total}}"

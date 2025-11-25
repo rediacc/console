@@ -1,5 +1,19 @@
 {
+  "cancelConfirm": {
+    "content": "このキューアイテムをキャンセルしてもよろしいですか? この操作は元に戻すことができません。",
+    "okText": "はい、キャンセルします",
+    "title": "キューアイテムのキャンセル"
+  },
   "dateRange": "日付範囲",
+  "errors": {
+    "cancelFailed": "キューアイテムのキャンセルに失敗しました",
+    "createFailed": "キューアイテムの作成に失敗しました",
+    "deleteFailed": "キューアイテムの削除に失敗しました",
+    "retryFailed": "キューアイテムの再試行に失敗しました",
+    "updateFailed": "キューアイテムの更新に失敗しました",
+    "updatePriorityFailed": "キューアイテムの優先度を更新できませんでした",
+    "updateProtectionFailed": "キューアイテムの保護を更新できませんでした"
+  },
   "filters": "フィルター",
   "includeCancelled": "キャンセル済みを含む",
   "includeCompleted": "完了済みを含める",
@@ -59,6 +73,19 @@
   "statusProcessing": "処理",
   "statusRunning": "ランニング",
   "statusStale": "古い",
+  "success": {
+    "cancellationInitiated": "キュー アイテム {{taskId}} のキャンセルが開始されました",
+    "completed": "キューアイテム {{taskId}} が完了しました",
+    "created": "キューアイテムが作成されました",
+    "createdWithId": "ID: {{taskId}} でキュー アイテムが作成されました",
+    "deleted": "キューアイテム {{taskId}} が削除されました",
+    "markedFailed": "キュー アイテム {{taskId}} が失敗としてマークされました",
+    "priorityUpdated": "キューアイテム {{taskId}} の優先度が {{priority}} に更新されました",
+    "protectionDisabled": "キュー項目 {{taskId}} の保護が無効になりました",
+    "protectionEnabled": "キュー項目 {{taskId}} の保護が有効になりました",
+    "queuedForRetry": "キューアイテム {{taskId}} が再試行のためにキューに入れられました",
+    "responseUpdated": "キューアイテム {{taskId}} の応答が更新されました"
+  },
   "tabs": {
     "active": {
       "description": "このセクションには、割り当てを待っている保留中のアイテム、マシンによって処理中のタスク、キャンセル中のタスクを含むすべてのアクティブなタスクが表示されます。",

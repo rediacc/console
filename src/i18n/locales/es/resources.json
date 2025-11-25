@@ -70,6 +70,11 @@
     "state": "Estado",
     "status": "Estado"
   },
+  "credentials": {
+    "heading": "Credenciales del repositorio",
+    "subtitle": "Administrar las credenciales y las implementaciones del repositorio",
+    "title": "Cartas credenciales"
+  },
   "errors": {
     "failedToGetRepositoryGuid": "No se pudo obtener el GUID del repositorio",
     "machineNotFound": "Máquina seleccionada no encontrada"
@@ -489,6 +494,7 @@
     "deleteStorage": "Eliminar almacenamiento",
     "deleteSuccess": "Almacenamiento eliminado correctamente",
     "editStorage": "Editar almacenamiento",
+    "heading": "Almacenamiento",
     "import": {
       "alreadyExists": "Ya existe un almacenamiento con este nombre en el equipo.",
       "button": "Importar desde Rclone",
@@ -531,7 +537,9 @@
     "selectStorageSystems": "Seleccionar sistemas de almacenamiento",
     "storage": "Almacenamiento",
     "storageFunctions": "Funciones de almacenamiento",
-    "storageName": "Nombre de almacenamiento"
+    "storageName": "Nombre de almacenamiento",
+    "subtitle": "Administre ubicaciones de almacenamiento remoto y configuraciones de rclone",
+    "title": "Ubicaciones de almacenamiento"
   },
   "teams": {
     "confirmDelete": "¿Estás seguro de que deseas eliminar el equipo \"{{teamName}}\"? Esto eliminará todos los recursos del equipo.",

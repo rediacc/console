@@ -1,4 +1,8 @@
 {
+  "accessDenied": {
+    "description": "現在のプランには分散ストレージは含まれていません。 Business または Enterprise にアップグレードするか、サポートに問い合わせて有効にしてください。",
+    "title": "分散ストレージが利用できない"
+  },
   "assignment": {
     "actions": {
       "assignToCluster": "クラスターに割り当てられました",
@@ -29,12 +33,25 @@
     "addMachine": "マシンの追加",
     "assignMachines": "マシンの割り当て",
     "assignedMachines": "割り当てられたマシン",
+    "create": "クローンの作成",
+    "createSuccess": "クローンが正常に作成されました",
+    "delete": "クローンの削除",
+    "deleteSuccess": "クローンが正常に削除されました",
+    "edit": "クローンの編集",
+    "export": "クローンのエクスポート",
     "exportMachines": "輸出機械",
+    "flatten": "クローンをフラット化する",
+    "info": "クローン情報",
     "machineManager": "マシンマネージャー",
+    "machinesAssignedSuccess": "正常にクローンを作成するように割り当てられたマシン",
+    "machinesRemovedSuccess": "マシンがクローンから正常に削除されました",
+    "manageMachines": "マシンの管理",
+    "name": "クローン名",
     "noMachinesAssigned": "このクローンにはマシンが割り当てられていません",
     "removeMachine": "マシンの削除",
     "removeSelectedMachines": "選択したマシンを削除",
     "searchMachines": "マシンを検索...",
+    "split": "スプリットクローン",
     "statistics": "統計",
     "title": "クローン",
     "totalMachines": "トータルマシン"
@@ -44,18 +61,26 @@
     "assignedMachines": "割り当てられたマシン",
     "availableMachines": "利用可能なマシン",
     "clusterDetails": "クラスターの詳細",
+    "clusterName": "クラスター名",
     "configureVault": "ボールトの構成",
+    "confirmDelete": "クラスターの削除",
+    "create": "クラスターの作成",
     "createCluster": "クラスターの作成",
+    "createSuccess": "クラスターが正常に作成されました",
     "deleteCluster": "クラスターの削除",
+    "deleteSuccess": "クラスターは正常に削除されました",
+    "deleteWarning": "クラスター「{{name}}」を削除してもよろしいですか?",
     "editCluster": "クラスターの編集",
     "fsid": "ブレ",
     "manageMachines": "マシンの管理",
     "monitorHosts": "ホストの監視",
     "name": "クラスター名",
+    "noClusters": "クラスターが見つかりませんでした",
     "noMachinesAssigned": "このクラスターにはマシンが割り当てられていません",
     "removeFromCluster": "クラスターから削除",
     "secretKey": "秘密鍵",
-    "title": "クラスター"
+    "title": "クラスター",
+    "updateSuccess": "クラスターが正常に更新されました"
   },
   "common": {
     "actions": "アクション",
@@ -66,10 +91,13 @@
     "details": "詳細",
     "edit": "編集",
     "error": "エラー",
+    "hasVault": "金庫あり",
     "loading": "読み込み中...",
+    "none": "なし",
     "refresh": "リフレッシュ",
     "save": "保存",
-    "success": "成功"
+    "success": "成功",
+    "vault": "保管庫"
   },
   "dashboard": {
     "avgMachinesPerCluster": "平均マシン/クラスター",
@@ -82,8 +110,30 @@
     "utilizationDetails": "{{total}} 台中 {{used}} 台が使用中"
   },
   "description": "分散ストレージクラスター、プール、イメージ、スナップショットを管理する",
+  "errors": {
+    "operationFailed": "{{オペレーション}} {{リソース}} に失敗しました"
+  },
+  "functions": {
+    "cluster_dashboard": "オープンクラスターダッシュボード",
+    "cluster_status": "クラスターのステータスを確認する",
+    "image_create": "画像の作成",
+    "pool_list": "プールの一覧表示"
+  },
   "images": {
     "assignedMachine": "割り当てられたマシン",
+    "clone": "クローンイメージ",
+    "create": "画像の作成",
+    "createSnapshot": "スナップショットの作成",
+    "createSuccess": "イメージが正常に作成されました",
+    "delete": "画像の削除",
+    "deleteSuccess": "画像は正常に削除されました",
+    "edit": "画像の編集",
+    "export": "画像のエクスポート",
+    "flatten": "画像を平坦化する",
+    "guid": "GUID",
+    "import": "画像のインポート",
+    "info": "画像情報",
+    "map": "地図画像",
     "name": "画像名",
     "reassignMachine": "マシンの再割り当て",
     "reassignmentModal": {
@@ -94,7 +144,12 @@
       "warning": "警告: イメージを別のマシンに再割り当てすると、データが移行されるまで、そのイメージは現在のマシンで使用できなくなります。"
     },
     "reassignmentSuccess": "イメージマシンの割り当てが正常に更新されました",
-    "title": "画像"
+    "resize": "画像のサイズを変更する",
+    "showMapped": "マップされた画像を表示",
+    "status": "状態",
+    "title": "画像",
+    "unmap": "画像のマップ解除",
+    "updateSuccess": "画像が正常に更新されました"
   },
   "machineSection": {
     "manageAssignment": "割り当ての管理",
@@ -108,11 +163,16 @@
       "removeAssignment": "割り当ての削除",
       "viewDetails": "詳細を見る"
     },
+    "assignedDate": "割り当てられた日付",
+    "bridgeName": "橋",
+    "clusterAssignedSuccess": "マシンがクラスターに正常に割り当てられました",
+    "clusterRemovedSuccess": "マシンがクラスターから正常に削除されました",
     "filters": {
       "allStatuses": "すべてのステータス",
       "assignmentStatus": "割り当てステータス",
       "searchPlaceholder": "マシンを検索..."
     },
+    "machineName": "マシン名",
     "summary": {
       "assignedToClones": "クローンに割り当て",
       "assignedToClusters": "クラスタに割り当てられる",
@@ -120,14 +180,42 @@
       "available": "利用可能",
       "title": "マシンの可用性",
       "total": "トータルマシン"
+    },
+    "updateSuccess": "マシンクラスターの割り当てが正常に更新されました"
+  },
+  "mutations": {
+    "operations": {
+      "assign": "割り当てる",
+      "create": "作成する",
+      "delete": "消去",
+      "remove": "取り除く",
+      "update": "アップデート"
+    },
+    "resources": {
+      "cloneMachines": "クローンマシン",
+      "cluster": "クラスタ",
+      "clusterVault": "クラスターボルト",
+      "imageMachine": "画像マシン",
+      "machineCluster": "マシンクラスタ",
+      "machineClusterAssignment": "マシンクラスタの割り当て",
+      "pool": "プール",
+      "poolVault": "プールの金庫室",
+      "rbdClone": "RBDクローン",
+      "rbdImage": "RBD画像",
+      "rbdSnapshot": "RBD スナップショット"
     }
   },
   "pools": {
+    "clusterPrefix": "クラスタ",
     "configureVault": "ボールトの構成",
+    "confirmDelete": "プールの削除",
     "create": "プールの作成",
     "createPool": "プールの作成",
+    "createSuccess": "プールが正常に作成されました",
     "crush": "クラッシュルール",
     "deletePool": "プールの削除",
+    "deleteSuccess": "プールが正常に削除されました",
+    "deleteWarning": "プール「{{name}}」を削除してもよろしいですか?",
     "editPool": "プールの編集",
     "minSize": "最小サイズ",
     "name": "プール名",
@@ -136,11 +224,31 @@
     "pgpNum": "PGP 番号",
     "poolDetails": "プールの詳細",
     "poolId": "プールID",
+    "poolName": "プール名",
     "size": "サイズ",
-    "title": "プール"
+    "title": "プール",
+    "updateSuccess": "プールが正常に更新されました"
   },
+  "queue": {
+    "createError": "キュータスクの送信に失敗しました",
+    "itemCreated": "キュータスクが正常に作成されました"
+  },
+  "selectTeamPrompt": "始めるチームを選択してください",
+  "selectTeamToView": "チームを選択してください",
   "snapshots": {
-    "title": "スナップショット"
+    "create": "スナップショットの作成",
+    "createSuccess": "スナップショットが正常に作成されました",
+    "delete": "スナップショットの削除",
+    "deleteSuccess": "スナップショットが正常に削除されました",
+    "diff": "差分スナップショット",
+    "edit": "スナップショットの編集",
+    "guid": "GUID",
+    "name": "スナップショット名",
+    "protect": "スナップショットの保護",
+    "rollback": "ロールバックスナップショット",
+    "title": "スナップショット",
+    "unprotect": "スナップショットの保護を解除する",
+    "vault": "スナップショットボールト"
   },
   "tabs": {
     "clusters": "クラスター",
@@ -154,6 +262,7 @@
     "exclusivityClone": "このマシンは現在クローンに割り当てられています。 他の場所に割り当てる前に、クローンから削除する必要があります。",
     "exclusivityCluster": "このマシンは現在クラスターに割り当てられています。 他の場所に割り当てる前に、クラスターから削除する必要があります。",
     "exclusivityImage": "このマシンは現在イメージに割り当てられています。 このマシンを他の場所で使用するには、イメージを再割り当てする必要があります。",
+    "machineExclusivity": "マシンは一度に 1 つの分散ストレージ リソースにのみ所属できます。",
     "reassignment": "リソースの再割り当てには、サービスの中断を避けるために慎重な計画が必要です。"
   }
 }

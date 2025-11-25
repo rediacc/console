@@ -1,78 +1,116 @@
 {
+  "access": {
+    "errors": {
+      "addPermissionFailed": "No se pudo agregar permiso al grupo",
+      "assignUserFailed": "No se pudo asignar el usuario al grupo de permisos",
+      "createGroupFailed": "No se pudo crear el grupo de permisos",
+      "deleteGroupFailed": "No se pudo eliminar el grupo de permisos",
+      "removePermissionFailed": "No se pudo eliminar el permiso del grupo"
+    },
+    "heading": "Access Control",
+    "modals": {
+      "addPermissionButton": "Add Permission",
+      "addPermissionsTab": "Add Permissions",
+      "assignUserTitle": "Assign User",
+      "assignUserTo": "to {{group}}",
+      "createGroupTitle": "Create Permission Group",
+      "currentPermissionsTab": "Current Permissions",
+      "deleteGroupDescription": "Are you sure you want to delete group \"{{group}}\"?",
+      "deleteGroupTitle": "Delete Permission Group",
+      "groupNameRequired": "Please enter a group name",
+      "groupPlaceholder": "Enter group name",
+      "managePermissionsTitle": "Manage Permissions",
+      "noPermissions": "No permissions assigned",
+      "permissionPlaceholder": "Select permission to add",
+      "userPlaceholder": "Select user"
+    },
+    "permissions": {
+      "searchPlaceholder": "Search permission groups...",
+      "subtitle": "Manage permission groups and their assignments",
+      "title": "Permission Groups"
+    },
+    "success": {
+      "groupCreated": "El grupo de permisos \"{{group}}\" se creó correctamente",
+      "groupDeleted": "El grupo de permisos \"{{group}}\" se eliminó correctamente",
+      "permissionAdded": "Permiso \"{{permission}}\" agregado al grupo",
+      "permissionRemoved": "Permiso \"{{permission}}\" eliminado del grupo",
+      "userAssigned": "Usuario asignado al grupo de permisos \"{{group}}\""
+    },
+    "tabs": {
+      "permissions": "Permissions",
+      "sessions": "Sessions"
+    }
+  },
+  "teams": {
+    "heading": "Teams",
+    "manageMembers": {
+      "accessStatus": "Has Access",
+      "addTab": "Add Member",
+      "currentTab": "Current Members",
+      "empty": "No members in this team",
+      "memberStatus": "Member",
+      "pendingStatus": "Pending",
+      "removeButton": "Remove",
+      "removeDescription": "Are you sure you want to remove \"{{email}}\" from this team?",
+      "removeTitle": "Remove Team Member",
+      "selectUser": "Select user",
+      "title": "Manage Team Members"
+    },
+    "searchPlaceholder": "Search teams...",
+    "subtitle": "Manage teams and their members",
+    "title": "Teams"
+  },
   "users": {
-    "heading": "Users",
-    "title": "Users",
-    "subtitle": "Manage users and their permissions",
-    "searchPlaceholder": "Search users...",
-    "status": {
-      "active": "Active",
-      "inactive": "Inactive"
-    },
-    "permissionGroups": {
-      "none": "No Group"
-    },
-    "lastActive": {
-      "never": "Never"
+    "errors": {
+      "activateFailed": "No se pudo activar la usuaria",
+      "assignPermissionsFailed": "No se pudieron asignar permisos",
+      "createFailed": "No se pudo crear el usuario",
+      "deactivateFailed": "No se pudo desactivar la usuaria",
+      "emailUpdateFailed": "No se pudo actualizar el correo electrónico",
+      "languageUpdateFailed": "No se pudo guardar la preferencia de idioma",
+      "passwordUpdateFailed": "No se pudo actualizar la contraseña",
+      "permissionGroupCreateFailed": "No se pudo crear el grupo de permisos",
+      "sessionTerminateFailed": "No se pudo finalizar la sesión",
+      "userVaultUpdateFailed": "No se pudo actualizar la bóveda de usuarios"
     },
     "form": {
       "emailLabel": "Email",
       "passwordLabel": "Password",
       "passwordPlaceholder": "Enter password"
     },
+    "heading": "Users",
+    "lastActive": {
+      "never": "Never"
+    },
     "modals": {
-      "createTitle": "Create User",
       "assignTitle": "Assign Permissions",
+      "createTitle": "Create User",
       "permissionGroupLabel": "Permission Group",
       "permissionGroupPlaceholder": "Select permission group",
-      "usersLabel": "users",
-      "permissionsLabel": "permissions"
-    }
-  },
-  "teams": {
-    "heading": "Teams",
-    "title": "Teams",
-    "subtitle": "Manage teams and their members",
-    "searchPlaceholder": "Search teams...",
-    "manageMembers": {
-      "title": "Manage Team Members",
-      "currentTab": "Current Members",
-      "addTab": "Add Member",
-      "removeTitle": "Remove Team Member",
-      "removeDescription": "Are you sure you want to remove \"{{email}}\" from this team?",
-      "removeButton": "Remove",
-      "memberStatus": "Member",
-      "accessStatus": "Has Access",
-      "pendingStatus": "Pending",
-      "empty": "No members in this team",
-      "selectUser": "Select user"
-    }
-  },
-  "access": {
-    "heading": "Access Control",
-    "tabs": {
-      "permissions": "Permissions",
-      "sessions": "Sessions"
+      "permissionsLabel": "permissions",
+      "usersLabel": "users"
     },
-    "permissions": {
-      "title": "Permission Groups",
-      "subtitle": "Manage permission groups and their assignments",
-      "searchPlaceholder": "Search permission groups..."
+    "permissionGroups": {
+      "none": "No Group"
     },
-    "modals": {
-      "createGroupTitle": "Create Permission Group",
-      "groupPlaceholder": "Enter group name",
-      "groupNameRequired": "Please enter a group name",
-      "managePermissionsTitle": "Manage Permissions",
-      "currentPermissionsTab": "Current Permissions",
-      "addPermissionsTab": "Add Permissions",
-      "noPermissions": "No permissions assigned",
-      "permissionPlaceholder": "Select permission to add",
-      "addPermissionButton": "Add Permission",
-      "assignUserTitle": "Assign User",
-      "assignUserTo": "to {{group}}",
-      "userPlaceholder": "Select user",
-      "deleteGroupTitle": "Delete Permission Group",
-      "deleteGroupDescription": "Are you sure you want to delete group \"{{group}}\"?"
-    }
+    "searchPlaceholder": "Search users...",
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "subtitle": "Manage users and their permissions",
+    "success": {
+      "activated": "Usuario \"{{email}}\" activada",
+      "created": "Usuario \"{{email}}\" creado exitosamente",
+      "deactivated": "Usuario \"{{email}}\" desactivada",
+      "emailUpdated": "Correo electrónico actualizado a \"{{email}}\"",
+      "languageSaved": "Preferencia de idioma guardada",
+      "passwordUpdated": "Contraseña actualizada exitosamente. Por favor inicie sesión con su nueva contraseña.",
+      "permissionGroupCreated": "Grupo de permisos \"{{groupName}}\" creado",
+      "permissionsAssigned": "Usuario \"{{email}}\" asignado al grupo \"{{group}}\"",
+      "sessionTerminated": "La sesión finalizó exitosamente",
+      "userVaultUpdated": "Bóveda de usuario actualizada correctamente"
+    },
+    "title": "Users"
   }
 }

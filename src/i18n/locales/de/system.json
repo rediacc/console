@@ -93,6 +93,24 @@
     "subtitle": "Verfolgen Sie alle Aktivitäten und Änderungen in Ihrer Organisation",
     "title": "Audit-Protokolle"
   },
+  "company": {
+    "errors": {
+      "blockRequestsFailed": "Der Blockierungsstatus der Benutzeranfrage konnte nicht aktualisiert werden",
+      "importFailed": "Firmendaten konnten nicht importiert werden",
+      "noExportData": "Es wurden keine Exportdaten zurückgegeben",
+      "vaultUpdateFailed": "Die Tresorkonfiguration konnte nicht aktualisiert werden"
+    },
+    "success": {
+      "errorCount": "{{count}} Fehler",
+      "importComplete": "Import abgeschlossen: {{summary}}",
+      "importedCount": "{{count}} Artikel importiert",
+      "requestsBlocked": "Benutzeranfragen erfolgreich blockiert",
+      "requestsBlockedWithTerminations": "Benutzeranfragen blockiert. {{count}} aktive Sitzungen wurden beendet.",
+      "requestsUnblocked": "Benutzeranfragen wurden erfolgreich entsperrt",
+      "skippedCount": "{{count}} Elemente übersprungen",
+      "vaultUpdated": "Die Tresorkonfiguration wurde erfolgreich aktualisiert"
+    }
+  },
   "dangerZone": {
     "blockUserRequests": {
       "blockButton": "Benutzeranfragen blockieren",
@@ -294,6 +312,17 @@
     "deactivate": {
       "confirmDescription": "Sind Sie sicher, dass Sie „{{email}}“ deaktivieren möchten?",
       "confirmTitle": "Benutzer deaktivieren"
+    }
+  },
+  "vaultProtocol": {
+    "errors": {
+      "disableFailed": "Die Tresorverschlüsselung konnte nicht deaktiviert werden",
+      "enableFailed": "Die Tresorverschlüsselung konnte nicht aktiviert werden",
+      "noCompanySelected": "Kein Unternehmen ausgewählt. Bitte wählen Sie ein Unternehmen aus, bevor Sie die Verschlüsselung aktualisieren."
+    },
+    "success": {
+      "disabled": "Tresorverschlüsselung deaktiviert. Master-Passwörter sind nicht mehr erforderlich.",
+      "enabled": "Die Tresorverschlüsselung wurde erfolgreich aktiviert. Alle Benutzer müssen nun dieses Master-Passwort verwenden."
     }
   }
 }
