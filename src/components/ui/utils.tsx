@@ -9,9 +9,10 @@
  */
 
 import styled, { type DefaultTheme } from 'styled-components'
-import { Empty } from 'antd'
+import { PaddedEmpty as PrimitivePaddedEmpty } from '@/styles/primitives'
 
 type IconSize = 'sm' | 'md' | 'lg'
+type IconTone = 'primary' | 'inherit' | 'success' | 'warning' | 'danger' | 'info' | 'muted'
 
 const getIconSize = (size: IconSize, theme: DefaultTheme) => {
   switch (size) {
@@ -24,15 +25,39 @@ const getIconSize = (size: IconSize, theme: DefaultTheme) => {
   }
 }
 
+const getIconColor = (tone: IconTone, theme: DefaultTheme) => {
+  switch (tone) {
+    case 'success':
+      return theme.colors.success
+    case 'warning':
+      return theme.colors.warning
+    case 'danger':
+      return theme.colors.error
+    case 'info':
+      return theme.colors.info
+    case 'muted':
+      return theme.colors.textSecondary
+    case 'inherit':
+      return 'currentColor'
+    case 'primary':
+    default:
+      return theme.colors.primary
+  }
+}
+
 /**
  * IconWrapper - Wrapper for icons with consistent sizing
  */
-export const IconWrapper = styled.span<{ $size?: IconSize; $tone?: 'primary' | 'inherit' }>`
+export const IconWrapper = styled.span<{
+  $size?: IconSize
+  $tone?: IconTone
+  $color?: string
+}>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: ${({ theme, $size = 'md' }) => getIconSize($size, theme)};
-  color: ${({ theme, $tone = 'primary' }) => ($tone === 'primary' ? theme.colors.primary : 'currentColor')};
+  color: ${({ theme, $tone = 'primary', $color }) => $color ?? getIconColor($tone, theme)};
 `
 
 export const RightAlign = styled.div`
@@ -66,9 +91,7 @@ export const ErrorWrapper = styled.div`
   width: 100%;
 `
 
-export const PaddedEmpty = styled(Empty)`
-  padding: ${({ theme }) => theme.spacing['5']}px 0;
-`
+export const PaddedEmpty = PrimitivePaddedEmpty
 
 export const RegionsSection = styled.section`
   margin-top: ${({ theme }) => theme.spacing['6']}px;

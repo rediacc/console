@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import { Alert, Space, Typography, Button, Dropdown, Tooltip } from 'antd'
-import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
+import { Alert, Space, Typography } from 'antd'
+import type { MenuProps } from 'antd'
+import { useTableStyles } from '@/hooks/useComponentStyles'
 import { FunctionOutlined, PlayCircleOutlined, StopOutlined, ReloadOutlined, DeleteOutlined, PauseCircleOutlined, CheckCircleOutlined, DisconnectOutlined, EyeOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import * as S from './styles'
@@ -16,6 +17,8 @@ import { createSorter, createCustomSorter, createArrayLengthSorter, getGrandVaul
 import { parseVaultStatus } from '@/core/services/machine'
 import LoadingWrapper from '@/components/common/LoadingWrapper'
 import { createActionColumn, createStatusColumn, createTruncatedColumn } from '@/components/common/columns'
+import { ActionButtonGroup } from '@/components/common/ActionButtonGroup'
+import { DESIGN_TOKENS } from '@/utils/styleConstants'
 
 const { Text } = Typography
 
@@ -88,7 +91,6 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
   const { t } = useTranslation(['resources', 'common', 'machines', 'functions'])
   const userEmail = useAppSelector((state) => state.auth.user?.email || '')
   const tableStyles = useTableStyles()
-  const componentStyles = useComponentStyles()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [containers, setContainers] = useState<Container[]>([])
@@ -234,28 +236,26 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
     title: t('machines:status'),
     dataIndex: 'state',
     key: 'status',
-    width: 80,
     statusMap: {
-      running: { color: 'success', label: t('machines:connected'), icon: <CheckCircleOutlined /> },
-      paused: { color: 'warning', label: t('resources:containers.containerStatusPaused') },
-      exited: { color: 'default', label: t('machines:connectionFailed'), icon: <DisconnectOutlined /> },
-      restarting: { color: 'blue', label: t('resources:containers.containerStatusRestarting'), icon: <ReloadOutlined /> },
+      running: { icon: <CheckCircleOutlined />, label: t('machines:connected'), color: 'success' },
+      paused: { icon: <PauseCircleOutlined />, label: t('resources:containers.containerStatusPaused'), color: 'warning' },
+      exited: { icon: <DisconnectOutlined />, label: t('machines:connectionFailed'), color: 'default' },
+      restarting: { icon: <ReloadOutlined />, label: t('resources:containers.containerStatusRestarting'), color: 'blue' },
     },
-    defaultConfig: { color: 'default', label: t('machines:connectionFailed'), icon: <DisconnectOutlined /> },
+    defaultConfig: { icon: <DisconnectOutlined />, label: t('machines:connectionFailed'), color: 'default' },
   })
 
   const stateColumn = createStatusColumn<Container>({
     title: t('resources:containers.state'),
     dataIndex: 'state',
     key: 'state',
-    width: 120,
     statusMap: {
-      running: { color: 'success', label: t('resources:containers.containerStatusRunning') },
-      paused: { color: 'warning', label: t('resources:containers.containerStatusPaused') },
-      restarting: { color: 'blue', label: t('resources:containers.containerStatusRestarting') },
-      exited: { color: 'default', label: t('resources:containers.containerStatusStopped') },
+      running: { icon: <PlayCircleOutlined />, label: t('resources:containers.containerStatusRunning'), color: 'success' },
+      paused: { icon: <PauseCircleOutlined />, label: t('resources:containers.containerStatusPaused'), color: 'warning' },
+      restarting: { icon: <ReloadOutlined />, label: t('resources:containers.containerStatusRestarting'), color: 'blue' },
+      exited: { icon: <StopOutlined />, label: t('resources:containers.containerStatusStopped'), color: 'default' },
     },
-    defaultConfig: { color: 'default', label: t('resources:containers.containerStatusStopped') },
+    defaultConfig: { icon: <StopOutlined />, label: t('resources:containers.containerStatusStopped'), color: 'default' },
   })
 
   const containerNameColumn = createTruncatedColumn<Container>({
@@ -323,29 +323,29 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
     },
     createActionColumn<Container>({
       title: t('common:table.actions'),
-      width: 120,
+      width: DESIGN_TOKENS.DIMENSIONS.CARD_WIDTH,
       fixed: 'right',
       renderActions: (container) => {
-        const menuItems = []
+        const menuItems: MenuProps['items'] = []
 
         if (container.state === 'running') {
           menuItems.push(
             {
               key: 'stop',
               label: t('functions:functions.container_stop.name'),
-              icon: <StopOutlined style={componentStyles.icon.small} />,
+              icon: <StopOutlined />,
               onClick: () => handleContainerAction(container, 'container_stop'),
             },
             {
               key: 'restart',
               label: t('functions:functions.container_restart.name'),
-              icon: <ReloadOutlined style={componentStyles.icon.small} />,
+              icon: <ReloadOutlined />,
               onClick: () => handleContainerAction(container, 'container_restart'),
             },
             {
               key: 'pause',
               label: t('functions:functions.container_pause.name'),
-              icon: <PauseCircleOutlined style={componentStyles.icon.small} />,
+              icon: <PauseCircleOutlined />,
               onClick: () => handleContainerAction(container, 'container_pause'),
             },
           )
@@ -353,7 +353,7 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
           menuItems.push({
             key: 'unpause',
             label: t('functions:functions.container_unpause.name'),
-            icon: <PlayCircleOutlined style={componentStyles.icon.small} />,
+            icon: <PlayCircleOutlined />,
             onClick: () => handleContainerAction(container, 'container_unpause'),
           })
         } else {
@@ -361,57 +361,58 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
             {
               key: 'start',
               label: t('functions:functions.container_start.name'),
-              icon: <PlayCircleOutlined style={componentStyles.icon.small} />,
+              icon: <PlayCircleOutlined />,
               onClick: () => handleContainerAction(container, 'container_start'),
             },
             {
               key: 'remove',
               label: t('functions:functions.container_remove.name'),
-              icon: <DeleteOutlined style={componentStyles.icon.small} />,
+              icon: <DeleteOutlined />,
               onClick: () => handleContainerAction(container, 'container_remove'),
             },
           )
         }
 
         return (
-          <Space size="small">
-            <Tooltip title={t('common:viewDetails')}>
-              <Button
-                type="default"
-                size="small"
-                icon={<EyeOutlined />}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onContainerClick?.(container)
-                }}
-                data-testid={`container-view-details-${container.id}`}
-                aria-label={t('common:viewDetails')}
-              />
-            </Tooltip>
-
-            <Dropdown menu={{ items: menuItems }} trigger={['click']}>
-              <Tooltip title={t('machines:remote')}>
-                <Button
-                  type="primary"
-                  size="small"
-                  icon={<FunctionOutlined />}
-                  loading={isExecuting}
-                  data-testid={`container-actions-${container.id}`}
-                  aria-label={t('machines:remote')}
-                />
-              </Tooltip>
-            </Dropdown>
-            <LocalActionsMenu
-              machine={machine.machineName}
-              repository={repository.name}
-              teamName={machine.teamName}
-              userEmail={userEmail}
-              containerId={container.id}
-              containerName={container.name}
-              containerState={container.state}
-              isContainerMenu={true}
-            />
-          </Space>
+          <ActionButtonGroup
+            buttons={[
+              {
+                type: 'view',
+                icon: <EyeOutlined />,
+                tooltip: 'common:viewDetails',
+                variant: 'default',
+                onClick: (row) => onContainerClick?.(row),
+                testId: (row) => `container-view-details-${row.id}`,
+              },
+              {
+                type: 'remote',
+                icon: <FunctionOutlined />,
+                tooltip: 'machines:remote',
+                variant: 'primary',
+                dropdownItems: menuItems,
+                loading: isExecuting,
+                testId: (row) => `container-actions-${row.id}`,
+              },
+              {
+                type: 'custom',
+                render: (row) => (
+                  <LocalActionsMenu
+                    machine={machine.machineName}
+                    repository={repository.name}
+                    teamName={machine.teamName}
+                    userEmail={userEmail}
+                    containerId={row.id}
+                    containerName={row.name}
+                    containerState={row.state}
+                    isContainerMenu={true}
+                  />
+                ),
+              },
+            ]}
+            record={container}
+            idField="id"
+            t={t}
+          />
         )
       },
     }),

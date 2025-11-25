@@ -3,6 +3,7 @@ import { Machine, Repository } from '@/types'
 import { MachineTable } from '@/components/resources/internal/MachineTable'
 import { UnifiedDetailPanel } from '@/components/resources/UnifiedDetailPanel'
 import { usePanelWidth } from '@/hooks/usePanelWidth'
+import { DETAIL_PANEL } from '@/constants/layout'
 import { Backdrop, LeftPanel, SplitViewContainer } from './styles'
 
 interface ContainerData {
@@ -104,8 +105,7 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
   }
 
   // Determine the actual width of the panel based on collapsed state
-  const COLLAPSED_PANEL_WIDTH = 50 // Width when collapsed, showing only toggle button
-  const actualPanelWidth = isPanelCollapsed ? COLLAPSED_PANEL_WIDTH : splitWidth
+  const actualPanelWidth = isPanelCollapsed ? DETAIL_PANEL.COLLAPSED_WIDTH : splitWidth
 
   // For machine type, render machine table and detail panel
   if (type === 'machine') {
@@ -144,7 +144,7 @@ export const SplitResourceView: React.FC<SplitResourceViewProps> = (props) => {
             onSplitWidthChange={setSplitWidth}
             isCollapsed={isPanelCollapsed}
             onToggleCollapse={onTogglePanelCollapse}
-            collapsedWidth={COLLAPSED_PANEL_WIDTH}
+            collapsedWidth={DETAIL_PANEL.COLLAPSED_WIDTH}
           />
         )}
       </SplitViewContainer>

@@ -82,5 +82,6 @@ export const CollapsedIcon = styled.span<{ $type: ResourceType }>`
 
 export const ExpandedContent = styled.div`
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 `

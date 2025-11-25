@@ -34,13 +34,13 @@ export const PanelWrapper = styled.div<{ $splitView: boolean; $visible: boolean 
   bottom: 0;
   width: ${({ $splitView }) => ($splitView ? '100%' : '520px')};
   max-width: 100vw;
-  height: ${({ $splitView }) => ($splitView ? '100%' : 'auto')};
   background-color: var(--color-bg-primary);
   box-shadow: ${({ $splitView }) => ($splitView ? 'none' : '-2px 0 8px rgba(0, 0, 0, 0.15)')};
   transition: right 0.3s ease-in-out;
-  overflow-y: auto;
-  overflow-x: hidden;
   z-index: ${({ $splitView, theme }) => ($splitView ? 'auto' : theme.zIndex.MODAL)};
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 `
 
 export const StickyHeader = styled.div`
@@ -183,14 +183,6 @@ export const SectionTitle = styled(Title)`
   && {
     margin: 0;
   }
-`
-
-export const IconWrapper = styled.span<{ $color?: string; $size?: number }>`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: ${({ $size }) => ($size ? `${$size}px` : '16px')};
-  color: ${({ $color }) => $color || 'var(--color-text-secondary)'};
 `
 
 export const StatusTag = styled(Tag)<{ $tone?: keyof typeof STATUS_TONES }>`

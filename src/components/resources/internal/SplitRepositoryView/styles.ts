@@ -1,21 +1,8 @@
 import styled from 'styled-components'
 import { Button, Empty, Table, Tag, Typography } from 'antd'
+import { PrimaryButton as PrimitivePrimaryButton } from '@/styles/primitives'
 import type { Repository } from '@/api/queries/repositories'
-import type { StyledTheme } from '@/styles/styledTheme'
-
 const { Title, Text } = Typography
-
-type IconVariant = 'primary' | 'success'
-
-const getIconColor = (variant: IconVariant, theme: StyledTheme) => {
-  switch (variant) {
-    case 'success':
-      return theme.colors.success
-    case 'primary':
-    default:
-      return theme.colors.primary
-  }
-}
 
 export const SplitViewContainer = styled.div`
   display: flex;
@@ -56,14 +43,6 @@ export const HeaderTitle = styled(Title).attrs({ level: 4 })`
   }
 `
 
-export const IconWrapper = styled.span<{ $variant?: IconVariant; $size?: 'md' | 'lg' }>`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: ${({ theme, $size = 'md' }) => ($size === 'lg' ? theme.fontSize.XXL : theme.fontSize.XL)}px;
-  color: ${({ theme, $variant = 'primary' }) => getIconColor($variant, theme)};
-`
-
 export const TeamFilterTag = styled(Tag)`
   && {
     border-radius: ${({ theme }) => theme.borderRadius.MD}px;
@@ -73,13 +52,8 @@ export const TeamFilterTag = styled(Tag)`
   }
 `
 
-export const PrimaryButton = styled(Button).attrs({
-  type: 'primary',
-})`
+export const PrimaryButton = styled(PrimitivePrimaryButton)`
   && {
-    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-    display: inline-flex;
-    align-items: center;
     gap: ${({ theme }) => theme.spacing.XS}px;
   }
 `

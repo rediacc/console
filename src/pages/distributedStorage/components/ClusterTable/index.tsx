@@ -8,12 +8,9 @@ import { ManageClusterMachinesModal } from '../ManageClusterMachinesModal'
 import { buildClusterColumns } from './columns'
 import { ClusterMachines } from './components/ClusterMachines'
 import { useTraceModal, useExpandableTable } from '@/hooks'
-import {
-  TableContainer,
-  EmptyStateWrapper,
-  CreateClusterButton,
-} from './styles'
+import { TableContainer, CreateClusterButton } from './styles'
 import { confirmAction } from '@/utils/confirmations'
+import { EmptyStatePanel } from '@/styles/primitives'
 
 interface ClusterTableProps {
   clusters: DistributedStorageCluster[]
@@ -113,7 +110,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
 
   if (clusters.length === 0 && !loading) {
     return (
-      <EmptyStateWrapper description={t('clusters.noClusters')}>
+      <EmptyStatePanel description={t('clusters.noClusters')} $marginTop="XXXL">
         <CreateClusterButton
           type="primary"
           data-testid="ds-create-cluster-empty"
@@ -121,7 +118,7 @@ export const ClusterTable: React.FC<ClusterTableProps> = ({
         >
           {t('clusters.create')}
         </CreateClusterButton>
-      </EmptyStateWrapper>
+      </EmptyStatePanel>
     )
   }
 

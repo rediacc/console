@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react'
-import { Alert, Empty, Modal, Space, Tag, Tooltip, Typography } from 'antd'
+import { Alert, Button, Modal, Space, Tag, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTheme } from 'styled-components'
@@ -20,6 +20,10 @@ import AuditTraceModal from '@/components/common/AuditTraceModal'
 import TeamSelector from '@/components/common/TeamSelector'
 import { ActionButtonGroup, ActionButtonConfig } from '@/components/common/ActionButtonGroup'
 import { createActionColumn } from '@/components/common/columns'
+import ResourceListView, {
+  COLUMN_WIDTHS,
+  COLUMN_RESPONSIVE,
+} from '@/components/common/ResourceListView'
 import {
   useRepositories,
   useCreateRepository,
@@ -45,16 +49,12 @@ import { showMessage } from '@/utils/messages'
 import { QueueFunction } from '@/api/queries/queue'
 import {
   PageWrapper,
-  PageCard,
-  HeaderSection,
-  HeaderRow,
-  TeamControls,
-  TeamSelectorWrapper,
-  ButtonGroup,
-  ActionButton,
-  ContentSection,
-  DataTable
-} from './styles'
+  SectionStack,
+  SectionHeading,
+  ListTitleRow,
+  ListTitle,
+  ListSubtitle,
+} from '@/components/ui'
 import { featureFlags } from '@/config/featureFlags'
 import { getAffectedResources as coreGetAffectedResources } from '@/core'
 
@@ -453,6 +453,7 @@ const CredentialsPage: React.FC = () => {
         title: t('repositories.repositoryName'),
         dataIndex: 'repositoryName',
         key: 'repositoryName',
+        width: COLUMN_WIDTHS.NAME,
         ellipsis: true,
         render: (text: string) => (
           <Space>
@@ -465,7 +466,7 @@ const CredentialsPage: React.FC = () => {
         title: t('general.team'),
         dataIndex: 'teamName',
         key: 'teamName',
-        width: 150,
+        width: COLUMN_WIDTHS.TAG,
         ellipsis: true,
         render: (teamName: string) => <Tag color={theme.colors.secondary}>{teamName}</Tag>
       },
@@ -475,14 +476,15 @@ const CredentialsPage: React.FC = () => {
               title: t('general.vaultVersion'),
               dataIndex: 'vaultVersion',
               key: 'vaultVersion',
-              width: 120,
+              width: COLUMN_WIDTHS.VERSION,
               align: 'center' as const,
+              responsive: COLUMN_RESPONSIVE.DESKTOP_ONLY,
               render: (version: number) => <Tag>{t('common:general.versionFormat', { version })}</Tag>
             }
           ]
         : []),
       createActionColumn<Repository>({
-        width: 200,
+        width: COLUMN_WIDTHS.ACTIONS_WIDE,
         renderActions: (record) => {
           const buttons: ActionButtonConfig<Repository>[] = [
             {
@@ -529,29 +531,84 @@ const CredentialsPage: React.FC = () => {
     [auditTrace, handleDeleteRepository, openUnifiedModal, t, theme.colors.primary, theme.colors.secondary]
   )
 
+  const hasTeamSelection = selectedTeams.length > 0
+  const displayedRepositories = hasTeamSelection ? originalRepositories : []
+  const emptyDescription = hasTeamSelection
+    ? t('repositories.noRepositories', { defaultValue: 'No repositories found in this team' })
+    : t('teams.selectTeamPrompt', { defaultValue: 'Select a team to view its resources' })
+
   return (
     <>
       <PageWrapper>
-        <PageCard>
-          <HeaderSection>
-            <HeaderRow>
-              <TeamControls>
-                <TeamSelectorWrapper>
-                  <TeamSelector
-                    data-testid="resources-team-selector"
-                    teams={teams}
-                    selectedTeams={selectedTeams}
-                    onChange={setSelectedTeams}
-                    loading={teamsLoading}
-                    placeholder={t('teams.selectTeamToView')}
-                    style={{ width: '100%' }}
-                  />
-                </TeamSelectorWrapper>
-              </TeamControls>
-              {selectedTeams.length > 0 && (
-                <ButtonGroup>
+        <SectionStack>
+          <SectionHeading level={3}>
+            {t('credentials.heading', { defaultValue: 'Repository Credentials' })}
+          </SectionHeading>
+
+          <div style={{ width: '100%', maxWidth: 420 }}>
+            <TeamSelector
+              data-testid="resources-team-selector"
+              teams={teams}
+              selectedTeams={selectedTeams}
+              onChange={setSelectedTeams}
+              loading={teamsLoading}
+              placeholder={t('teams.selectTeamToView', {
+                defaultValue: 'Select a team to view its resources',
+              })}
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          <ResourceListView<Repository>
+            title={
+              <ListTitleRow>
+                <ListTitle>
+                  {t('credentials.title', { defaultValue: 'Credentials' })}
+                </ListTitle>
+                <ListSubtitle>
+                  {t('credentials.subtitle', {
+                    defaultValue: 'Manage repository credentials and deployments',
+                  })}
+                </ListSubtitle>
+              </ListTitleRow>
+            }
+            loading={repositoriesLoading}
+            data={displayedRepositories}
+            columns={repositoryColumns}
+            rowKey="repositoryName"
+            data-testid="resources-repository-table"
+            resourceType="repositories"
+            emptyDescription={emptyDescription}
+            pagination={
+              hasTeamSelection
+                ? {
+                    current: repositoryPage,
+                    pageSize: repositoryPageSize,
+                    total: displayedRepositories.length,
+                    showSizeChanger: true,
+                    pageSizeOptions: ['10', '20', '50', '100'],
+                    showTotal: (total: number, range: [number, number]) =>
+                      `${t('common:general.showingRecords', {
+                        start: range[0],
+                        end: range[1],
+                        total,
+                      })}`,
+                    onChange: (page: number, size: number) => {
+                      setRepositoryPage(page)
+                      if (size && size !== repositoryPageSize) {
+                        setRepositoryPageSize(size)
+                        setRepositoryPage(1)
+                      }
+                    },
+                    position: ['bottomRight'],
+                  }
+                : false
+            }
+            actions={
+              hasTeamSelection ? (
+                <>
                   <Tooltip title={t('repositories.createRepository')}>
-                    <ActionButton
+                    <Button
                       type="primary"
                       icon={<PlusOutlined />}
                       data-testid="resources-create-repositorie-button"
@@ -560,55 +617,18 @@ const CredentialsPage: React.FC = () => {
                     />
                   </Tooltip>
                   <Tooltip title={t('common:actions.refresh')}>
-                    <ActionButton
+                    <Button
                       icon={<ReloadOutlined />}
                       data-testid="resources-refresh-button"
                       onClick={() => refetchRepositories()}
                       aria-label={t('common:actions.refresh')}
                     />
                   </Tooltip>
-                </ButtonGroup>
-              )}
-            </HeaderRow>
-          </HeaderSection>
-
-          <ContentSection>
-            {selectedTeams.length === 0 ? (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={t('teams.selectTeamPrompt')}
-                style={{ padding: `${theme.spacing.LG}px 0` }}
-              />
-            ) : (
-              <DataTable
-                data-testid="resources-repository-table"
-                columns={repositoryColumns}
-                dataSource={originalRepositories}
-                rowKey="repositoryName"
-                scroll={{ x: 'max-content' }}
-                loading={repositoriesLoading}
-                $isLoading={repositoriesLoading}
-                pagination={{
-                  current: repositoryPage,
-                  pageSize: repositoryPageSize,
-                  total: originalRepositories.length,
-                  showSizeChanger: true,
-                  pageSizeOptions: ['10', '20', '50', '100'],
-                  showTotal: (total: number, range: [number, number]) =>
-                    `${t('common:general.showingRecords', { start: range[0], end: range[1], total })}`,
-                  onChange: (page: number, size: number) => {
-                    setRepositoryPage(page)
-                    if (size && size !== repositoryPageSize) {
-                      setRepositoryPageSize(size)
-                      setRepositoryPage(1)
-                    }
-                  },
-                  position: ['bottomRight']
-                }}
-              />
-            )}
-          </ContentSection>
-        </PageCard>
+                </>
+              ) : undefined
+            }
+          />
+        </SectionStack>
       </PageWrapper>
 
       <UnifiedResourceModal

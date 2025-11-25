@@ -1,5 +1,5 @@
-import styled, { css } from 'styled-components'
-import { Alert, Button, Divider, Form, Row, Space, Typography, Input, InputNumber, Select } from 'antd'
+import styled from 'styled-components'
+import { Alert, Button, Divider, Form, Row, Space, Typography } from 'antd'
 import {
   InfoCircleOutlined,
   BulbOutlined,
@@ -8,10 +8,6 @@ import {
 } from '@/utils/optimizedIcons'
 
 const { Text } = Typography
-
-const fullWidthControl = css`
-  width: 100%;
-`
 
 export const EditorContainer = styled.div`
   display: flex;
@@ -147,32 +143,10 @@ export const FormatButton = styled(Button)`
   }
 `
 
-export const FullWidthInput = styled(Input)`
-  && {
-    ${fullWidthControl}
-  }
-`
-
-export const FullWidthPasswordInput = styled(Input.Password)`
-  && {
-    ${fullWidthControl}
-  }
-`
-
-export const FullWidthTextArea = styled(Input.TextArea)`
-  && {
-    ${fullWidthControl}
-  }
-`
-
-export const FullWidthInputNumber = styled(InputNumber)`
-  && {
-    ${fullWidthControl}
-  }
-`
-
-export const FullWidthSelect = styled(Select)`
-  && {
-    ${fullWidthControl}
-  }
-`
+export {
+  FullWidthInput,
+  FullWidthPasswordInput,
+  FullWidthTextArea,
+  FullWidthInputNumber,
+  FullWidthSelect,
+} from '@/styles/primitives'

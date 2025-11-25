@@ -4,6 +4,7 @@ import { Button, Space, Tag, Typography, Alert, Tooltip } from 'antd'
 import { DoubleLeftOutlined, ReloadOutlined, DesktopOutlined, PlusOutlined, CloudDownloadOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { usePanelWidth } from '@/hooks/usePanelWidth'
+import { DETAIL_PANEL } from '@/constants/layout'
 import { useMachines } from '@/api/queries/machines'
 import { useRepositories } from '@/api/queries/repositories'
 import { MachineRepositoryTable } from '@/components/resources/MachineRepositoryTable'
@@ -243,8 +244,7 @@ const MachineRepositoriesPage: React.FC = () => {
     }
   }, [selectedResource])
 
-  const COLLAPSED_PANEL_WIDTH = 50
-  const actualPanelWidth = isPanelCollapsed ? COLLAPSED_PANEL_WIDTH : splitWidth
+  const actualPanelWidth = isPanelCollapsed ? DETAIL_PANEL.COLLAPSED_WIDTH : splitWidth
 
   // Loading state
   if (machinesLoading && !machine) {
@@ -396,7 +396,7 @@ const MachineRepositoriesPage: React.FC = () => {
               onSplitWidthChange={setSplitWidth}
               isCollapsed={isPanelCollapsed}
               onToggleCollapse={handleTogglePanelCollapse}
-              collapsedWidth={COLLAPSED_PANEL_WIDTH}
+              collapsedWidth={DETAIL_PANEL.COLLAPSED_WIDTH}
             />
           )}
         </SplitLayout>

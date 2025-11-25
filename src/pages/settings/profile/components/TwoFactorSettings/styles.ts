@@ -1,7 +1,8 @@
 import styled from 'styled-components'
-import { Space, Button, Alert, Typography, Input, Form } from 'antd'
+import { Space, Alert, Typography, Input, Form } from 'antd'
 import { SafetyCertificateOutlined } from '@/utils/optimizedIcons'
 import { DESIGN_TOKENS } from '@/utils/styleConstants'
+import { PrimaryButton as PrimitivePrimaryButton, StyledIcon, NeutralStack } from '@/styles/primitives'
 
 type SpacingKey = keyof typeof DESIGN_TOKENS.SPACING
 
@@ -10,11 +11,10 @@ export const LoadingContainer = styled.div`
   padding: ${({ theme }) => `${theme.spacing.XXXL}px 0`};
 `
 
-export const FullWidthStack = styled.div<{ $gap?: SpacingKey }>`
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  gap: ${({ theme, $gap = 'MD' }) => `${theme.spacing[$gap]}px`};
+export const FullWidthStack = styled(NeutralStack)<{ $gap?: SpacingKey }>`
+  && {
+    gap: ${({ theme, $gap = 'MD' }) => `${theme.spacing[$gap]}px`};
+  }
 `
 
 export const CenteredStack = styled(FullWidthStack)`
@@ -28,13 +28,14 @@ const ICON_TONES = {
   muted: 'var(--color-text-quaternary)',
 } as const
 
-export const StatusIcon = styled(SafetyCertificateOutlined)<{
+export const StatusIcon = styled(StyledIcon).attrs<{
   $tone?: keyof typeof ICON_TONES
   $size?: number
-}>`
-  font-size: ${({ $size }) => ($size ? `${$size}px` : `${DESIGN_TOKENS.FONT_SIZE.XXXXL}px`)};
-  color: ${({ $tone = 'primary' }) => ICON_TONES[$tone]};
-`
+}>(({ $tone = 'primary', $size }) => ({
+  as: SafetyCertificateOutlined,
+  $size: $size ?? DESIGN_TOKENS.FONT_SIZE.XXXXL,
+  $color: ICON_TONES[$tone],
+}))``
 
 export const SectionTitle = styled(Typography.Title)`
   && {
@@ -81,12 +82,7 @@ export const FormActionRow = styled.div<{ $align?: 'space-between' | 'flex-end' 
   width: 100%;
 `
 
-export const PrimaryButton = styled(Button)`
-  && {
-    background-color: var(--color-primary);
-    border-color: var(--color-primary);
-  }
-`
+export const PrimaryButton = PrimitivePrimaryButton
 
 export const AlertSpacer = styled(Alert)`
   margin-bottom: ${({ theme }) => theme.spacing.LG}px;
@@ -100,9 +96,11 @@ export const FormItemNoMargin = styled(Form.Item)`
   margin-bottom: 0;
 `
 
-export const ModalTitleIcon = styled(SafetyCertificateOutlined)`
-  color: var(--color-primary);
-`
+export const ModalTitleIcon = styled(StyledIcon).attrs({
+  as: SafetyCertificateOutlined,
+  $size: 'MD',
+  $color: 'var(--color-primary)',
+})``
 
 export const ModalTitleWrapper = styled.span`
   display: inline-flex;

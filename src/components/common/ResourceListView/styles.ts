@@ -1,7 +1,6 @@
 import styled, { css } from 'styled-components'
-import { Card, Input, Space, Typography, Button } from 'antd'
-
-const { Text } = Typography
+import { Card, Input, Space, Button } from 'antd'
+import { EmptyStateTitle, EmptyStateDescription } from '@/styles/primitives'
 
 export const ContainerCard = styled(Card)`
   && {
@@ -73,11 +72,6 @@ export const SearchInput = styled(Input.Search)`
   }
 `
 
-export const LoadingState = styled.div`
-  text-align: center;
-  padding: ${({ theme }) => theme.spacing.XXXXL}px 0;
-`
-
 export const EmptyDescriptionStack = styled(Space).attrs({
   direction: 'vertical',
   align: 'center',
@@ -87,19 +81,7 @@ export const EmptyDescriptionStack = styled(Space).attrs({
   padding: ${({ theme }) => theme.spacing.LG}px;
 `
 
-export const EmptyTitle = styled(Text)`
-  && {
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-size: ${({ theme }) => theme.fontSize.BASE}px;
-  }
-`
-
-export const EmptySubtitle = styled(Text)`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-    color: ${({ theme }) => theme.colors.textSecondary};
-  }
-`
+export { EmptyStateTitle as EmptyTitle, EmptyStateDescription as EmptySubtitle }
 
 export const EmptyActions = styled(Space).attrs({
   size: 'small' as const,

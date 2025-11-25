@@ -1,5 +1,6 @@
 import styled from 'styled-components'
-import { Badge, Tag } from 'antd'
+import { Badge } from 'antd'
+import { PillTag } from '@/styles/primitives'
 
 export const TableContainer = styled.div`
   width: 100%;
@@ -32,13 +33,15 @@ export const ExpandedRowContent = styled.div`
   border-radius: ${({ theme }) => theme.borderRadius.MD}px;
 `
 
-export const AssignmentTag = styled(Tag)`
+export const AssignmentTag = styled(PillTag).attrs({
+  $variant: 'primary',
+  $size: 'SM',
+  $borderless: true,
+})`
   && {
     margin: 0;
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
     background: ${({ theme }) => theme.colors.bgSelected};
     color: ${({ theme }) => theme.colors.textSelected};
-    border: none;
     padding: 0 ${({ theme }) => theme.spacing.XS}px;
     font-size: ${({ theme }) => theme.fontSize.SM}px;
     line-height: ${({ theme }) => theme.lineHeight.NORMAL};

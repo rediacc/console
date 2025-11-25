@@ -1,6 +1,7 @@
 import styled from 'styled-components'
 import { Modal, Alert, Typography } from 'antd'
 import { DESIGN_TOKENS } from '@/utils/styleConstants'
+import { LoadingState as BaseLoadingState } from '@/styles/primitives'
 
 const { Title, Text } = Typography
 
@@ -55,10 +56,9 @@ export const StepsContainer = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.LG}px;
 `
 
-export const LoadingState = styled.div`
-  text-align: center;
-  padding: ${({ theme }) => `${theme.spacing.XXL}px 0`};
-`
+export const LoadingState = styled(BaseLoadingState).attrs({
+  $paddingY: 'XXL',
+})``
 
 export const LoadingTitle = styled(Title)`
   && {

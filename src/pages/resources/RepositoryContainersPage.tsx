@@ -4,6 +4,7 @@ import { Button, Space, Tag, Typography, Alert, Tooltip } from 'antd'
 import { DoubleLeftOutlined, ReloadOutlined, InboxOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { usePanelWidth } from '@/hooks/usePanelWidth'
+import { DETAIL_PANEL } from '@/constants/layout'
 import { useMachines } from '@/api/queries/machines'
 import { RepositoryContainerTable } from '@/pages/resources/components/RepositoryContainerTable'
 import { Machine } from '@/types'
@@ -130,7 +131,6 @@ const RepositoryContainersPage: React.FC = () => {
   }, [repository, actualMachine?.vaultStatus, repositoryName])
 
   // Panel width management
-  const COLLAPSED_PANEL_WIDTH = 50
   const panelWidth = usePanelWidth()
   const [splitWidth, setSplitWidth] = useState(panelWidth)
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(true)
@@ -140,7 +140,7 @@ const RepositoryContainersPage: React.FC = () => {
     setSplitWidth(panelWidth)
   }, [panelWidth])
 
-  const actualPanelWidth = isPanelCollapsed ? COLLAPSED_PANEL_WIDTH : splitWidth
+  const actualPanelWidth = isPanelCollapsed ? DETAIL_PANEL.COLLAPSED_WIDTH : splitWidth
 
   // Determine selected resource for detail panel
   const selectedResource = selectedContainer
@@ -316,6 +316,19 @@ const RepositoryContainersPage: React.FC = () => {
             />
           </ListPanel>
 
+          {/* Backdrop must come BEFORE panel for correct z-index layering */}
+          {selectedResource && !isPanelCollapsed && (
+            <DetailBackdrop
+              $right={actualPanelWidth}
+              $visible={true}
+              onClick={() => {
+                setSelectedContainer(null)
+                setIsPanelCollapsed(true)
+              }}
+              data-testid="repository-containers-backdrop"
+            />
+          )}
+
           {selectedResource && (
             <UnifiedDetailPanel
               type={selectedResource.type}
@@ -329,18 +342,7 @@ const RepositoryContainersPage: React.FC = () => {
               onSplitWidthChange={setSplitWidth}
               isCollapsed={isPanelCollapsed}
               onToggleCollapse={() => setIsPanelCollapsed(!isPanelCollapsed)}
-              collapsedWidth={COLLAPSED_PANEL_WIDTH}
-            />
-          )}
-
-          {selectedResource && !isPanelCollapsed && (
-            <DetailBackdrop
-              $right={0}
-              $visible={true}
-              onClick={() => {
-                setSelectedContainer(null)
-                setIsPanelCollapsed(true)
-              }}
+              collapsedWidth={DETAIL_PANEL.COLLAPSED_WIDTH}
             />
           )}
         </SplitLayout>

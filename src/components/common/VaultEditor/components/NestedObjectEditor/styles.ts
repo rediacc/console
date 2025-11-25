@@ -1,5 +1,6 @@
 import styled from 'styled-components'
 import { Card, Collapse, Typography, Tag, Button, Input, Form } from 'antd'
+import { PrimaryButton as PrimitivePrimaryButton, SecondaryButton as PrimitiveSecondaryButton } from '@/styles/primitives'
 
 const { Title, Text } = Typography
 
@@ -104,18 +105,17 @@ export const KeyInput = styled(Input)`
   }
 `
 
-export const PrimaryActionButton = styled(Button)`
+export const PrimaryActionButton = styled(PrimitivePrimaryButton).attrs({
+  $size: 'SM',
+})`
   && {
-    min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT_SM}px;
     font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   }
 `
 
-export const SecondaryActionButton = styled(Button)`
-  && {
-    min-height: ${({ theme }) => theme.dimensions.INPUT_HEIGHT_SM}px;
-  }
-`
+export const SecondaryActionButton = styled(PrimitiveSecondaryButton).attrs({
+  $size: 'SM',
+})``
 
 export const CollapseWrapper = styled(Collapse)`
   && {

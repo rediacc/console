@@ -5,13 +5,13 @@ const { Text } = Typography
 
 export const PanelWrapper = styled.div<{ $splitView?: boolean; $visible?: boolean }>`
   background-color: ${({ theme }) => theme.colors.bgPrimary};
+  display: flex;
+  flex-direction: column;
   ${({ $splitView, $visible }) =>
     $splitView
       ? css`
           width: 100%;
           height: 100%;
-          overflow-y: auto;
-          overflow-x: hidden;
         `
       : css`
           position: fixed;
@@ -23,8 +23,6 @@ export const PanelWrapper = styled.div<{ $splitView?: boolean; $visible?: boolea
           box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
           z-index: ${({ theme }) => theme.zIndex.MODAL};
           transition: right ${({ theme }) => theme.transitions.NORMAL};
-          overflow-y: auto;
-          overflow-x: hidden;
         `}
 `
 

@@ -48,11 +48,9 @@ import {
   useImportCompanyData,
 } from '@/api/queries/company'
 import {
-  CompanyPageWrapper,
-  CompanySectionStack,
-  CompanySectionHeading,
-} from './styles'
-import {
+  PageWrapper as CompanyPageWrapper,
+  SectionStack as CompanySectionStack,
+  SectionHeading as CompanySectionHeading,
   CardContent,
   CardHeader,
   CardTitle,

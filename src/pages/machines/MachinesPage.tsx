@@ -25,17 +25,18 @@ import TeamSelector from '@/components/common/TeamSelector'
 import { type Machine } from '@/types'
 import { QueueFunction } from '@/api/queries/queue'
 import { useTheme } from 'styled-components'
+import { SectionStack, SectionHeading } from '@/components/ui'
 import {
-  PageWrapper,
+  PageContainer as PageWrapper,
   PageCard,
-  HeaderSection,
-  HeaderRow,
-  TeamControls,
-  TeamSelectorWrapper,
-  ButtonGroup,
+  SectionStack as HeaderSection,
+  SectionHeaderRow as HeaderRow,
+  ControlStack as TeamControls,
+  InputSlot as TeamSelectorWrapper,
+  ActionBar as ButtonGroup,
   ActionButton,
-  ContentSection
-} from './styles'
+  ContentSection,
+} from '@/styles/primitives'
 
 const MachinesPage: React.FC = () => {
   const { t } = useTranslation(['resources', 'machines', 'common'])
@@ -338,95 +339,105 @@ const MachinesPage: React.FC = () => {
 
   const isUpdatingVault = updateMachineVaultMutation.isPending
 
+  // Note: This page uses SplitResourceView instead of ResourceListView
+  // to support the side panel detail view. This is intentional.
+
   return (
     <>
       <PageWrapper>
-        <PageCard>
-          <HeaderSection>
-            <HeaderRow>
-              <TeamControls>
-                <TeamSelectorWrapper>
-                  <TeamSelector
-                    data-testid="machines-team-selector"
-                    teams={teams}
-                    selectedTeams={selectedTeams}
-                    onChange={setSelectedTeams}
-                    loading={teamsLoading}
-                    placeholder={t('teams.selectTeamToView')}
-                    style={{ width: '100%' }}
-                  />
-                </TeamSelectorWrapper>
-              </TeamControls>
-              {selectedTeams.length > 0 && (
-                <ButtonGroup>
-                  <Tooltip title={t('machines:createMachine')}>
-                    <ActionButton
-                      type="primary"
-                      icon={<PlusOutlined />}
-                      data-testid="machines-create-machine-button"
-                      onClick={() => openUnifiedModal('create')}
-                      aria-label={t('machines:createMachine')}
+        <SectionStack>
+          <SectionHeading level={3}>
+            {t('machines:heading', { defaultValue: 'Machines' })}
+          </SectionHeading>
+          <PageCard>
+            <HeaderSection>
+              <HeaderRow>
+                <TeamControls>
+                  <TeamSelectorWrapper>
+                    <TeamSelector
+                      data-testid="machines-team-selector"
+                      teams={teams}
+                      selectedTeams={selectedTeams}
+                      onChange={setSelectedTeams}
+                      loading={teamsLoading}
+                      placeholder={t('teams.selectTeamToView')}
+                      style={{ width: '100%' }}
                     />
-                  </Tooltip>
-                  <Tooltip title={t('machines:connectivityTest')}>
-                    <ActionButton
-                      icon={<WifiOutlined />}
-                      data-testid="machines-connectivity-test-button"
-                      onClick={() => connectivityTest.open()}
-                      disabled={machines.length === 0}
-                      aria-label={t('machines:connectivityTest')}
-                    />
-                  </Tooltip>
-                  <Tooltip title={t('common:actions.refresh')}>
-                    <ActionButton
-                      icon={<ReloadOutlined />}
-                      data-testid="machines-refresh-button"
-                      onClick={handleRefreshMachines}
-                      aria-label={t('common:actions.refresh')}
-                    />
-                  </Tooltip>
-                </ButtonGroup>
-              )}
-            </HeaderRow>
-          </HeaderSection>
+                  </TeamSelectorWrapper>
+                </TeamControls>
+                {selectedTeams.length > 0 && (
+                  <ButtonGroup>
+                    <Tooltip title={t('machines:createMachine')}>
+                      <ActionButton
+                        $variant="primary"
+                        icon={<PlusOutlined />}
+                        data-testid="machines-create-machine-button"
+                        onClick={() => openUnifiedModal('create')}
+                        aria-label={t('machines:createMachine')}
+                      />
+                    </Tooltip>
+                    <Tooltip title={t('machines:connectivityTest')}>
+                      <ActionButton
+                        icon={<WifiOutlined />}
+                        data-testid="machines-connectivity-test-button"
+                        onClick={() => connectivityTest.open()}
+                        disabled={machines.length === 0}
+                        aria-label={t('machines:connectivityTest')}
+                      />
+                    </Tooltip>
+                    <Tooltip title={t('common:actions.refresh')}>
+                      <ActionButton
+                        icon={<ReloadOutlined />}
+                        data-testid="machines-refresh-button"
+                        onClick={handleRefreshMachines}
+                        aria-label={t('common:actions.refresh')}
+                      />
+                    </Tooltip>
+                  </ButtonGroup>
+                )}
+              </HeaderRow>
+            </HeaderSection>
 
-          <ContentSection>
-            {selectedTeams.length === 0 ? (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={t('teams.selectTeamPrompt')}
-                style={{ padding: `${theme.spacing.LG}px 0` }}
-              />
-            ) : (
-              <SplitResourceView
-                type="machine"
-                teamFilter={selectedTeams}
-                showFilters
-                showActions
-                onCreateMachine={() => openUnifiedModal('create')}
-                onEditMachine={(machine) => openUnifiedModal('edit', machine)}
-                onVaultMachine={(machine) => openUnifiedModal('vault', machine)}
-                onFunctionsMachine={(machine, functionName) => {
-                  openUnifiedModal('create', machine, functionName)
-                  setRefreshKeys((prev) => ({
-                    ...prev,
-                    [machine.machineName]: Date.now()
-                  }))
-                }}
-                onDeleteMachine={handleDeleteMachine}
-                enabled={selectedTeams.length > 0}
-                refreshKeys={refreshKeys}
-                onQueueItemCreated={(taskId, machineName) => {
-                  openQueueTrace(taskId, machineName)
-                }}
-                selectedResource={selectedMachine || selectedRepositoryFromMachine || selectedContainerFromMachine}
-                onResourceSelect={handleResourceSelection}
-                isPanelCollapsed={isPanelCollapsed}
-                onTogglePanelCollapse={handleTogglePanelCollapse}
-              />
-            )}
-          </ContentSection>
-        </PageCard>
+            <ContentSection>
+              {selectedTeams.length === 0 ? (
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description={t('teams.selectTeamPrompt')}
+                  style={{ padding: `${theme.spacing.LG}px 0` }}
+                />
+              ) : (
+                <SplitResourceView
+                  type="machine"
+                  teamFilter={selectedTeams}
+                  showFilters
+                  showActions
+                  onCreateMachine={() => openUnifiedModal('create')}
+                  onEditMachine={(machine) => openUnifiedModal('edit', machine)}
+                  onVaultMachine={(machine) => openUnifiedModal('vault', machine)}
+                  onFunctionsMachine={(machine, functionName) => {
+                    openUnifiedModal('create', machine, functionName)
+                    setRefreshKeys((prev) => ({
+                      ...prev,
+                      [machine.machineName]: Date.now()
+                    }))
+                  }}
+                  onDeleteMachine={handleDeleteMachine}
+                  enabled={selectedTeams.length > 0}
+                  refreshKeys={refreshKeys}
+                  onQueueItemCreated={(taskId, machineName) => {
+                    openQueueTrace(taskId, machineName)
+                  }}
+                  selectedResource={
+                    selectedMachine || selectedRepositoryFromMachine || selectedContainerFromMachine
+                  }
+                  onResourceSelect={handleResourceSelection}
+                  isPanelCollapsed={isPanelCollapsed}
+                  onTogglePanelCollapse={handleTogglePanelCollapse}
+                />
+              )}
+            </ContentSection>
+          </PageCard>
+        </SectionStack>
       </PageWrapper>
 
       <UnifiedResourceModal

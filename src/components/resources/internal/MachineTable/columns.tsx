@@ -8,7 +8,7 @@ import { LocalActionsMenu } from '../LocalActionsMenu'
 import { showMessage } from '@/utils/messages'
 import { DESIGN_TOKENS } from '@/utils/styleConstants'
 import { ActionButtonGroup } from '@/components/common/ActionButtonGroup'
-import { createActionColumn, createTruncatedColumn } from '@/components/common/columns'
+import { createActionColumn, createStatusColumn, createTruncatedColumn } from '@/components/common/columns'
 import {
   EditOutlined,
   FunctionOutlined,
@@ -21,7 +21,7 @@ import {
   DisconnectOutlined,
 } from '@/utils/optimizedIcons'
 import type { usePingFunction } from '@/services/pingService'
-import { StatusIcon, MachineNameIcon, StyledTag, StyledBadge } from './styles'
+import { MachineNameIcon, StyledTag, StyledBadge } from './styles'
 
 type ExecutePingForMachineAndWait = ReturnType<typeof usePingFunction>['executePingForMachineAndWait']
 
@@ -87,44 +87,28 @@ export const buildMachineTableColumns = ({
   })
 
   baseColumns.push(
-    {
+    createStatusColumn<Machine>({
       title: t('machines:status'),
       dataIndex: 'vaultStatusTime',
       key: 'status',
-      width: 100,
-      align: 'center',
+      statusMap: {
+        online: { icon: <CheckCircleOutlined />, label: t('machines:connected'), color: 'success' },
+        offline: { icon: <DisconnectOutlined />, label: t('machines:connectionFailed'), color: 'error' },
+        unknown: { icon: <DisconnectOutlined />, label: t('machines:statusUnknown'), color: 'default' },
+      },
       sorter: createCustomSorter<Machine>((m) => {
         if (!m.vaultStatusTime) return Infinity
         const statusTime = new Date(m.vaultStatusTime + 'Z')
-        const now = new Date()
-        const diffMinutes = (now.getTime() - statusTime.getTime()) / 60000
+        const diffMinutes = (new Date().getTime() - statusTime.getTime()) / 60000
         return diffMinutes <= 3 ? 0 : 1
       }),
-      render: (_: unknown, record: Machine) => {
-        if (!record.vaultStatusTime) {
-          return (
-            <Tooltip title={t('machines:statusUnknown')}>
-              <StatusIcon $status="unknown">
-                <DisconnectOutlined />
-              </StatusIcon>
-            </Tooltip>
-          )
-        }
-
+      renderValue: (_: string, record: Machine) => {
+        if (!record.vaultStatusTime) return 'unknown'
         const statusTime = new Date(record.vaultStatusTime + 'Z')
-        const now = new Date()
-        const diffMinutes = (now.getTime() - statusTime.getTime()) / 60000
-        const isOnline = diffMinutes <= 3
-
-        return (
-          <Tooltip title={isOnline ? t('machines:connected') : t('machines:connectionFailed')}>
-            <StatusIcon $status={isOnline ? 'online' : 'offline'}>
-              {isOnline ? <CheckCircleOutlined /> : <DisconnectOutlined />}
-            </StatusIcon>
-          </Tooltip>
-        )
+        const diffMinutes = (new Date().getTime() - statusTime.getTime()) / 60000
+        return diffMinutes <= 3 ? 'online' : 'offline'
       },
-    },
+    }),
     machineNameColumn,
   )
 

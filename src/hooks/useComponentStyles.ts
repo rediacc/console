@@ -255,8 +255,8 @@ export const useTableStyles = () => {
     },
     
     tableActionButton: {
-      ...createControlSurfaceStyle(DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT_SM),
-      borderRadius: borderRadius('SM'),
+      ...createControlSurfaceStyle(DESIGN_TOKENS.DIMENSIONS.CONTROL_HEIGHT),
+      borderRadius: borderRadius('MD'),
       border: 'none',
       background: 'transparent',
       cursor: 'pointer',

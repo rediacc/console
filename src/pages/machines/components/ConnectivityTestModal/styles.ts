@@ -1,6 +1,15 @@
 import styled, { keyframes } from 'styled-components'
 import { Typography, Progress, Alert, Space, Tag, Button } from 'antd'
-import { BaseModal, BaseTable, ModalBody, StatusTag, StatusVariant } from '@/styles/primitives'
+import {
+  BaseModal,
+  BaseTable,
+  ModalBody,
+  ModalContentStack,
+  ModalFooterActions as PrimitiveModalFooterActions,
+  PrimaryButton as PrimitivePrimaryButton,
+  StatusTag,
+  StatusVariant,
+} from '@/styles/primitives'
 
 const { Text } = Typography
 
@@ -26,11 +35,7 @@ export const ModalContent = styled(ModalBody)`
   width: 100%;
 `
 
-export const ContentStack = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.LG}px;
-`
+export const ContentStack = styled(ModalContentStack)``
 
 export const TitleStack = styled(Space)`
   && {
@@ -46,18 +51,12 @@ export const TitleStack = styled(Space)`
   }
 `
 
-export const ModalFooterActions = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`
+export const ModalFooterActions = styled(PrimitiveModalFooterActions)``
 
-export const PrimaryActionButton = styled(Button)`
+export const PrimaryActionButton = styled(PrimitivePrimaryButton)`
   && {
     min-width: ${({ theme }) => theme.spacing.XXL * 2}px;
-    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
     font-size: ${({ theme }) => theme.fontSize.SM}px;
-    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
   }
 `
 
