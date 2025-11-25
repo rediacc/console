@@ -141,15 +141,19 @@ export interface StatusConfig {
 export const createStatusRenderer = <T extends string>(
   statusMap: Record<T, StatusConfig>,
   defaultConfig: StatusConfig = { color: 'default' }
-) => (status: T): React.ReactNode => {
-  const config = statusMap[status] || defaultConfig
-  return (
-    <Tooltip title={config.label || status}>
-      <span style={{ fontSize: '16px', cursor: 'pointer' }}>
-        {config.icon}
-      </span>
-    </Tooltip>
-  )
+) => {
+  function StatusRenderer(status: T): React.ReactNode {
+    const config = statusMap[status] || defaultConfig
+    return (
+      <Tooltip title={config.label || status}>
+        <span style={{ fontSize: '16px', cursor: 'pointer' }}>
+          {config.icon}
+        </span>
+      </Tooltip>
+    )
+  }
+
+  return StatusRenderer
 }
 
 /**
