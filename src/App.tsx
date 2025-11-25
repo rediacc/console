@@ -218,9 +218,20 @@ const AppContent: React.FC = () => {
                 } />
 
                 {/* Distributed Storage */}
-                <Route path="/distributed-storage" element={
+                <Route path="/distributed-storage" element={<Navigate to="/distributed-storage/clusters" replace />} />
+                <Route path="/distributed-storage/clusters" element={
                   <Suspense fallback={<PageLoader />}>
-                    <DistributedStoragePage />
+                    <DistributedStoragePage view="clusters" />
+                  </Suspense>
+                } />
+                <Route path="/distributed-storage/pools" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <DistributedStoragePage view="pools" />
+                  </Suspense>
+                } />
+                <Route path="/distributed-storage/machines" element={
+                  <Suspense fallback={<PageLoader />}>
+                    <DistributedStoragePage view="machines" />
                   </Suspense>
                 } />
 

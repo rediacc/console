@@ -119,6 +119,9 @@
     "storage": "Хранилище",
     "storageCloud": "Cloud",
     "storageDistributed": "Distributed",
+    "distributedStorageClusters": "Кластеры",
+    "distributedStoragePools": "Пулы",
+    "distributedStorageMachines": "Машины",
     "system": "Система"
   },
   "nestedObjectEditor": {

@@ -121,7 +121,10 @@
     "settingsCompany": "Company",
     "settingsInfrastructure": "Infrastructure",
     "storageCloud": "Cloud",
-    "storageDistributed": "Distributed"
+    "storageDistributed": "Distributed",
+    "distributedStorageClusters": "Clusters",
+    "distributedStoragePools": "Pools",
+    "distributedStorageMachines": "Machines"
   },
   "nestedObjectEditor": {
     "Active": "Active",
