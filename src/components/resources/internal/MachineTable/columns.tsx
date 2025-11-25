@@ -1,4 +1,4 @@
-import { Space, Tooltip } from 'antd'
+import { Space } from 'antd'
 import type { ColumnsType } from 'antd/es/table/interface'
 import { TFunction } from 'i18next'
 import { createSorter, createCustomSorter } from '@/core'
