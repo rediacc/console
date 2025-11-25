@@ -32,7 +32,6 @@ import {
   EmptyState,
   SectionHeader,
   SectionTitle,
-  IconWrapper,
   SectionCard,
   InlineField,
   LabelText,
@@ -57,6 +56,7 @@ import {
   ActivityCard,
   ActivityMetrics,
 } from './styles'
+import { IconWrapper } from '@/components/ui'
 
 interface RepositoryDetailPanelProps {
   repository: Repository | null
@@ -282,7 +282,7 @@ const RepositoryInfoSection: React.FC<SectionProps> = ({ repository, panelData, 
   return (
     <Section data-testid="repo-detail-info-section">
       <SectionHeader>
-        <IconWrapper $color="var(--color-success)" $size={20}>
+        <IconWrapper $color="var(--color-success)" $size="lg">
           <FolderOutlined />
         </IconWrapper>
         <SectionTitle level={5}>{t('resources:repositories.repositoryInfo')}</SectionTitle>

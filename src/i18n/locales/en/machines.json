@@ -152,6 +152,7 @@
   "testing": "Testing...",
   "testingConnection": "Testing connection...",
   "testingMachine": "Testing {{machineName}}...",
+  "heading": "Machines",
   "title": "Machines",
   "totalMachines": "Total Machines",
   "trace": "Trace",

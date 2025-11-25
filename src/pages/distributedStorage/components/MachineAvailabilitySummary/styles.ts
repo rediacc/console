@@ -1,6 +1,7 @@
 import styled from 'styled-components'
 import { Card, Statistic } from 'antd'
 import { ReloadOutlined } from '@/utils/optimizedIcons'
+import { StyledIcon } from '@/styles/primitives'
 
 export const SummaryCard = styled(Card)`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
@@ -36,9 +37,10 @@ export const RefreshButton = styled.button`
   }
 `
 
-export const RefreshIcon = styled(ReloadOutlined)`
-  font-size: ${({ theme }) => theme.spacing.MD}px;
-`
+export const RefreshIcon = styled(StyledIcon).attrs(({ theme }) => ({
+  as: ReloadOutlined,
+  $size: theme.spacing.MD,
+}))``
 
 export const StatCard = styled(Card)`
   text-align: center;

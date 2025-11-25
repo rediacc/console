@@ -9,7 +9,8 @@ import {
 import { useTranslation } from 'react-i18next'
 import type { MachineAssignmentType } from '@/types'
 import type { StatusVariant } from '@/styles/primitives'
-import { AssignmentBadge, AssignmentTag, IconWrapper, TooltipText } from './styles'
+import { AssignmentBadge, AssignmentTag, TooltipText } from './styles'
+import { IconWrapper } from '@/components/ui'
 
 interface MachineAssignmentStatusBadgeProps {
   assignmentType: MachineAssignmentType
@@ -67,7 +68,13 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
     const content = (
       <AssignmentTag
         $variant={config.variant}
-        icon={showIcon ? <IconWrapper>{config.icon}</IconWrapper> : undefined}
+        icon={
+          showIcon ? (
+            <IconWrapper $size="sm" $tone="inherit">
+              {config.icon}
+            </IconWrapper>
+          ) : undefined
+        }
         data-testid={`machine-status-badge-tag-${assignmentType.toLowerCase()}`}
       >
         {config.text}
@@ -94,7 +101,11 @@ const MachineAssignmentStatusBadge: React.FC<MachineAssignmentStatusBadgeProps> 
           $variant={config.variant}
           data-testid={`machine-status-badge-${assignmentType.toLowerCase()}`}
         >
-          {showIcon && <IconWrapper>{config.icon}</IconWrapper>}
+          {showIcon && (
+            <IconWrapper $size="sm" $tone="inherit">
+              {config.icon}
+            </IconWrapper>
+          )}
           {config.text}
         </AssignmentBadge>
       </span>

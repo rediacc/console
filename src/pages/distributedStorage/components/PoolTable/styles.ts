@@ -1,16 +1,14 @@
 import styled from 'styled-components'
-import { Button, Card, Empty, Tag } from 'antd'
+import { Button, Card } from 'antd'
+import { CloudServerOutlined, DatabaseOutlined } from '@/utils/optimizedIcons'
 import {
-  CloudServerOutlined,
-  DatabaseOutlined,
-  RightOutlined,
-} from '@/utils/optimizedIcons'
-
-export const EmptyStateWrapper = styled(Empty)`
-  && {
-    margin-bottom: ${({ theme }) => theme.spacing.XL}px;
-  }
-`
+  TableContainer as BaseTableContainer,
+  TableCellContent,
+  TableCellText,
+  ExpandIcon as BaseExpandIcon,
+  PillTag,
+  StyledIcon,
+} from '@/styles/primitives'
 
 export const CreatePoolButton = styled(Button)`
   && {
@@ -33,32 +31,24 @@ export const CardHeader = styled.div`
   gap: ${({ theme }) => theme.spacing.SM}px;
 `
 
-export const CardIcon = styled(CloudServerOutlined)`
-  font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
-  color: ${({ theme }) => theme.colors.primary};
-`
+export const CardIcon = styled(StyledIcon).attrs(({ theme }) => ({
+  as: CloudServerOutlined,
+  $size: 'MD',
+  $color: theme.colors.primary,
+}))``
 
 export const CardTitle = styled.span`
   font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
   color: ${({ theme }) => theme.colors.textPrimary};
 `
 
-export const ClusterTag = styled(Tag)`
-  && {
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-    border-color: ${({ theme }) => theme.colors.success};
-    color: ${({ theme }) => theme.colors.success};
-    background: ${({ theme }) => theme.colors.bgPrimary};
-  }
-`
+export const ClusterTag = styled(PillTag).attrs({
+  $variant: 'team',
+  $size: 'SM',
+})``
 
-export const TableWrapper = styled.div`
+export const TableWrapper = styled(BaseTableContainer)`
   margin-top: ${({ theme }) => theme.spacing.MD}px;
-  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  overflow: hidden;
-  background: ${({ theme }) => theme.colors.bgPrimary};
-
   .pool-row {
     cursor: pointer;
     transition: background-color ${({ theme }) => theme.transitions.FAST};
@@ -69,26 +59,14 @@ export const TableWrapper = styled.div`
   }
 `
 
-export const PoolNameCell = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`
+export const PoolNameCell = styled(TableCellContent)``
 
-export const ExpandIcon = styled(RightOutlined)<{ $expanded: boolean }>`
-  font-size: ${({ theme }) => theme.dimensions.ICON_SM}px;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  transition: transform ${({ theme }) => theme.transitions.FAST};
-  transform: ${({ $expanded }) =>
-    $expanded ? 'rotate(90deg)' : 'rotate(0deg)'};
-`
+export const ExpandIcon = styled(BaseExpandIcon)<{ $expanded: boolean }>``
 
-export const PoolIcon = styled(DatabaseOutlined)`
-  font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
-  color: ${({ theme }) => theme.colors.primary};
-`
+export const PoolIcon = styled(StyledIcon).attrs(({ theme }) => ({
+  as: DatabaseOutlined,
+  $size: 'MD',
+  $color: theme.colors.primary,
+}))``
 
-export const PoolNameText = styled.span`
-  font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-  color: ${({ theme }) => theme.colors.textPrimary};
-`
+export const PoolNameText = styled(TableCellText)``

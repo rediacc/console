@@ -34,9 +34,9 @@ import {
   filterCancelledItems,
   filterFailedItems
 } from '@/core'
-import { IconButton } from '@/styles/primitives'
+import { PageWrapper } from '@/components/ui'
 import {
-  PageWrapper,
+  IconButton,
   FiltersCard,
   FiltersGrid,
   FilterSelect,
@@ -51,7 +51,7 @@ import {
   TabLabel,
   TabCount,
   FilterCheckbox,
-} from './styles'
+} from '@/styles/primitives'
 
 const { Text } = Typography
 const QueuePage: React.FC = () => {

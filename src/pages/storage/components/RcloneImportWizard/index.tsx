@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Steps, Upload, Button, Table, Checkbox, Space, Typography, Tag, Tooltip } from 'antd'
-import { CloudOutlined, InfoCircleOutlined, UploadOutlined } from '@/utils/optimizedIcons'
+import { CloudOutlined, InfoCircleOutlined, UploadOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useCreateStorage } from '@/api/queries/storage'
 import { useStorage } from '@/api/queries/storage'
@@ -465,12 +465,11 @@ const RcloneImportWizard: React.FC<RcloneImportWizardProps> = ({
     title: t('resources:storage.import.status'),
     dataIndex: 'status',
     key: 'status',
-    width: 150,
     statusMap: {
-      pending: { color: 'default', label: t('resources:storage.import.pending') },
-      success: { color: 'success', label: t('resources:storage.import.success') },
-      error: { color: 'error', label: t('resources:storage.import.error') },
-      skipped: { color: 'warning', label: t('resources:storage.import.skipped') },
+      pending: { icon: <ClockCircleOutlined />, label: t('resources:storage.import.pending'), color: 'default' },
+      success: { icon: <CheckCircleOutlined />, label: t('resources:storage.import.success'), color: 'success' },
+      error: { icon: <CloseCircleOutlined />, label: t('resources:storage.import.error'), color: 'error' },
+      skipped: { icon: <WarningOutlined />, label: t('resources:storage.import.skipped'), color: 'warning' },
     },
   })
 

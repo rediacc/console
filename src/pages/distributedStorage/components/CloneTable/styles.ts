@@ -1,6 +1,14 @@
 import styled from 'styled-components'
 import { Badge, Button, Space, Tag } from 'antd'
 import { CopyOutlined, CloudUploadOutlined } from '@ant-design/icons'
+import {
+  EmptyStateWrapper,
+  IconButton as BaseIconButton,
+  TableContainer as BaseTableContainer,
+  TableCellContent,
+  TableCellText,
+  StyledIcon,
+} from '@/styles/primitives'
 
 export const Container = styled.div`
   padding: ${({ theme }) =>
@@ -35,22 +43,15 @@ export const CreateButton = styled(Button)`
   }
 `
 
-export const TableWrapper = styled.div`
-  border: 1px solid var(--color-border-secondary);
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  overflow: hidden;
-  background: ${({ theme }) => theme.colors.bgPrimary};
-`
+export const TableWrapper = styled(BaseTableContainer)``
 
-export const IconActionButton = styled(Button)`
+export const IconActionButton = styled(BaseIconButton)`
   && {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
     height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
-    padding: 0;
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
+    min-width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
+    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
+    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
     border: none;
     box-shadow: none;
 
@@ -65,20 +66,17 @@ export const ExpandButton = styled(IconActionButton)`
   margin-right: ${({ theme }) => theme.spacing.SM}px;
 `
 
-export const NameCell = styled(Space)`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`
+export const NameCell = styled(TableCellContent)``
 
-export const CloneIcon = styled(CopyOutlined)`
-  color: ${({ theme }) => theme.colors.textSecondary};
-`
+export const CloneIcon = styled(StyledIcon).attrs(({ theme }) => ({
+  as: CopyOutlined,
+  $size: 'MD',
+  $color: theme.colors.textSecondary,
+}))``
 
-export const CloneName = styled.span`
+export const CloneName = styled(TableCellText)`
   font-size: ${({ theme }) => theme.fontSize.BASE}px;
   font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
-  color: ${({ theme }) => theme.colors.textPrimary};
 `
 
 export const VaultTag = styled(Tag)`
@@ -143,9 +141,8 @@ export const MachineListActions = styled(Space)`
   width: 100%;
 `
 
-export const EmptyState = styled.div`
-  text-align: center;
-  padding: ${({ theme }) => theme.spacing.LG}px ${({ theme }) => theme.spacing.MD}px;
+export const EmptyState = styled(EmptyStateWrapper)`
+  padding: ${({ theme }) => `${theme.spacing.LG}px ${theme.spacing.MD}px`};
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.SM}px;
@@ -158,6 +155,7 @@ export const AssignButton = styled(Button)`
   }
 `
 
-export const RemoteIcon = styled(CloudUploadOutlined)`
-  font-size: ${({ theme }) => theme.fontSize.BASE}px;
-`
+export const RemoteIcon = styled(StyledIcon).attrs(({ theme }) => ({
+  as: CloudUploadOutlined,
+  $size: theme.fontSize.BASE,
+}))``

@@ -25,16 +25,17 @@ import {
   useAssignUserToGroup,
   PermissionGroup,
 } from '@/api/queries/permissions'
-import {
-  AccessPageWrapper,
-  AccessSectionStack,
-  AccessSectionHeading,
-  AccessListHeader,
-  AccessListTitle,
-  AccessListSubtitle,
-} from './styles'
 import { ModalSize } from '@/types/modal'
-import { ModalStack, InlineFormRow } from '@/components/ui'
+import {
+  PageWrapper as AccessPageWrapper,
+  SectionStack as AccessSectionStack,
+  SectionHeading as AccessSectionHeading,
+  ListTitleRow as AccessListHeader,
+  ListTitle as AccessListTitle,
+  ListSubtitle as AccessListSubtitle,
+  ModalStack,
+  InlineFormRow,
+} from '@/components/ui'
 import { FullWidthSelect } from '@/pages/system/styles'
 import { showMessage } from '@/utils/messages'
 import { RootState } from '@/store/store'

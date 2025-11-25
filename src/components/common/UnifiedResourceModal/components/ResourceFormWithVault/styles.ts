@@ -1,5 +1,6 @@
 import styled from 'styled-components'
 import { Form, Divider, Alert, InputNumber, Select } from 'antd'
+import { FullWidthSelect as PrimitiveFullWidthSelect } from '@/styles/primitives'
 
 export const FormWrapper = styled.div`
   display: flex;
@@ -56,8 +57,4 @@ export const SizeUnitSelect = styled(Select)`
   }
 `
 
-export const FullWidthSelect = styled(Select)`
-  && {
-    width: 100%;
-  }
-`
+export const FullWidthSelect = PrimitiveFullWidthSelect

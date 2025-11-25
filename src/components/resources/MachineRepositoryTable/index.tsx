@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Alert, Tag, Space, Typography, Button, Dropdown, Tooltip, Modal, Input } from 'antd'
-import { useTableStyles, useComponentStyles } from '@/hooks/useComponentStyles'
+import { Alert, Tag, Space, Typography, Button, Tooltip, Modal, Input } from 'antd'
+import type { MenuProps } from 'antd'
+import { useTableStyles } from '@/hooks/useComponentStyles'
 import { CheckCircleOutlined, FunctionOutlined, PlayCircleOutlined, StopOutlined, ExpandOutlined, CloudUploadOutlined, SaveOutlined, PauseCircleOutlined, ReloadOutlined, DeleteOutlined, DesktopOutlined, ClockCircleOutlined, DatabaseOutlined, DisconnectOutlined, KeyOutlined, AppstoreOutlined, CloudServerOutlined, RightOutlined, CopyOutlined, RiseOutlined, StarOutlined, EditOutlined, ShrinkOutlined, ControlOutlined, CaretDownOutlined, CaretRightOutlined, FolderOutlined, EyeOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useDialogState } from '@/hooks/useDialogState'
@@ -16,8 +17,10 @@ import { useStorage } from '@/api/queries/storage'
 import type { ColumnsType } from 'antd/es/table'
 import type { MenuInfo } from 'rc-menu/lib/interface'
 import FunctionSelectionModal from '@/components/common/FunctionSelectionModal'
+import { ActionButtonGroup } from '@/components/common/ActionButtonGroup'
 import { LocalActionsMenu } from '../internal/LocalActionsMenu'
 import { showMessage } from '@/utils/messages'
+import { DESIGN_TOKENS } from '@/utils/styleConstants'
 import { useAppSelector } from '@/store/store'
 import { createSorter, createCustomSorter, createArrayLengthSorter } from '@/core'
 import { parseVaultStatus } from '@/core/services/machine'
@@ -86,6 +89,7 @@ interface RepositoryTableRow extends Repository {
   _isTagRow?: boolean
   _indentLevel?: number
   _isLastInGroup?: boolean
+  actionId?: string
 }
 
 // Helper to group repositories by name
@@ -195,7 +199,6 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
   const [modal, contextHolder] = Modal.useModal()
   const userEmail = useAppSelector((state) => state.auth.user?.email || '')
   const tableStyles = useTableStyles()
-  const componentStyles = useComponentStyles()
   const [_repositories, setRepositories] = useState<Repository[]>([])
   const [systemContainers] = useState<any[]>([])
   const [_systemInfo, setSystemInfo] = useState<SystemInfo | null>(null)
@@ -1311,12 +1314,12 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
     dataIndex: 'state',
     key: 'state',
     statusMap: {
-      running: { color: 'success', label: t('resources:containers.containerStatusRunning') },
-      paused: { color: 'warning', label: t('resources:containers.containerStatusPaused') },
-      restarting: { color: 'blue', label: t('resources:containers.containerStatusRestarting') },
-      stopped: { color: 'default', label: t('resources:containers.containerStatusStopped') },
+      running: { color: 'success', label: t('resources:containers.containerStatusRunning'), icon: <PlayCircleOutlined /> },
+      paused: { color: 'warning', label: t('resources:containers.containerStatusPaused'), icon: <PauseCircleOutlined /> },
+      restarting: { color: 'blue', label: t('resources:containers.containerStatusRestarting'), icon: <ReloadOutlined /> },
+      stopped: { color: 'default', label: t('resources:containers.containerStatusStopped'), icon: <StopOutlined /> },
     },
-    defaultConfig: { color: 'default', label: t('resources:containers.containerStatusStopped') },
+    defaultConfig: { color: 'default', label: t('resources:containers.containerStatusStopped'), icon: <StopOutlined /> },
   })
 
   const systemNameColumn = createTruncatedColumn<Container>({
@@ -1578,388 +1581,342 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
     },
     createActionColumn<RepositoryTableRow>({
       title: t('common:table.actions'),
-      width: 160,
+      width: DESIGN_TOKENS.DIMENSIONS.CARD_WIDTH,
       fixed: 'right',
       renderActions: (record) => {
-        const isGroupHeader = record._isGroupHeader
         const groupData = record._groupData
 
-        // Group header actions (apply to grand repository if exists)
-        if (isGroupHeader && groupData) {
+        if (record._isGroupHeader && groupData) {
           const target = groupData.grandTag
-          if (!target) return null
+          if (!target) {
+            return null
+          }
 
-          // Actions for group header (enhanced with navigation and quick actions)
-          const menuItems = []
+          const actionRecord: RepositoryTableRow = {
+            ...record,
+            actionId: groupData.name,
+          }
 
-          // View Containers - navigate to grand tag containers
-          menuItems.push({
-            key: 'view-containers',
-            label: t('machines:viewContainers'),
-            icon: <RightOutlined style={componentStyles.icon.small} />,
-            onClick: () => navigate(`/machines/${machine.machineName}/repositories/${groupData.name}/containers`, {
-              state: { machine, repository: target }
-            })
-          })
-
-          // Expand/Collapse Tags
-          menuItems.push({
-            key: 'expand-collapse',
-            label: groupData.isExpanded ? 'Collapse Tags' : 'Expand Tags',
-            icon: groupData.isExpanded ? <CaretRightOutlined style={componentStyles.icon.small} /> : <CaretDownOutlined style={componentStyles.icon.small} />,
-            onClick: () => toggleRepositoryGroup(groupData.name)
-          })
-
-          // Divider before quick actions
-          menuItems.push({
-            type: 'divider' as const
-          })
-
-          // Quick actions for grand tag
-          menuItems.push({
-            key: 'fork-grand',
-            label: t('functions:functions.fork.name'),
-            icon: <CopyOutlined style={componentStyles.icon.small} />,
-            onClick: () => handleForkRepository(target)
-          })
-
-          menuItems.push({
-            key: 'deploy-grand',
-            label: t('functions:functions.deploy.name'),
-            icon: <CloudUploadOutlined style={componentStyles.icon.small} />,
-            onClick: () => handleRunFunction(target, 'deploy')
-          })
-
-          menuItems.push({
-            key: 'backup-grand',
-            label: t('functions:functions.backup.name'),
-            icon: <SaveOutlined style={componentStyles.icon.small} />,
-            onClick: () => handleRunFunction(target, 'backup')
-          })
+          const menuItems: MenuProps['items'] = [
+            {
+              key: 'view-containers',
+              label: t('machines:viewContainers'),
+              icon: <RightOutlined />,
+              onClick: () =>
+                navigate(`/machines/${machine.machineName}/repositories/${groupData.name}/containers`, {
+                  state: { machine, repository: target },
+                }),
+            },
+            {
+              key: 'expand-collapse',
+              label: groupData.isExpanded ? 'Collapse Tags' : 'Expand Tags',
+              icon: groupData.isExpanded ? <CaretRightOutlined /> : <CaretDownOutlined />,
+              onClick: () => toggleRepositoryGroup(groupData.name),
+            },
+            { type: 'divider' as const },
+            {
+              key: 'fork-grand',
+              label: t('functions:functions.fork.name'),
+              icon: <CopyOutlined />,
+              onClick: () => handleForkRepository(target),
+            },
+            {
+              key: 'deploy-grand',
+              label: t('functions:functions.deploy.name'),
+              icon: <CloudUploadOutlined />,
+              onClick: () => handleRunFunction(target, 'deploy'),
+            },
+            {
+              key: 'backup-grand',
+              label: t('functions:functions.backup.name'),
+              icon: <SaveOutlined />,
+              onClick: () => handleRunFunction(target, 'backup'),
+            },
+          ]
 
           return (
-            <Space size="small">
-              {/* Eye button - opens detail panel for grand tag */}
-              <Tooltip title={t('common:viewDetails')}>
-                <Button
-                  type="default"
-                  size="small"
-                  icon={<EyeOutlined />}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    if (target) {
-                      onRepositoryClick?.(target)
-                    }
-                  }}
-                  data-testid={`machine-repo-view-details-group-${groupData.name}`}
-                  aria-label={t('common:viewDetails')}
-                />
-              </Tooltip>
-
-              <Dropdown
-                menu={{ items: menuItems }}
-                trigger={['click']}
-              >
-                <Tooltip title={t('machines:remote')}>
-                  <Button
-                    type="primary"
-                    size="small"
-                    icon={<FunctionOutlined />}
-                    loading={isExecuting}
-                    data-testid={`machine-repo-list-group-actions-${groupData.name}`}
-                    aria-label={t('machines:remote')}
-                  />
-                </Tooltip>
-              </Dropdown>
-            </Space>
+            <ActionButtonGroup
+              buttons={[
+                {
+                  type: 'view',
+                  icon: <EyeOutlined />,
+                  tooltip: 'common:viewDetails',
+                  variant: 'default',
+                  onClick: () => onRepositoryClick?.(target),
+                  testId: () => `machine-repo-view-details-group-${groupData.name}`,
+                },
+                {
+                  type: 'remote',
+                  icon: <FunctionOutlined />,
+                  tooltip: 'machines:remote',
+                  variant: 'primary',
+                  dropdownItems: menuItems,
+                  loading: isExecuting,
+                  testId: () => `machine-repo-list-group-actions-${groupData.name}`,
+                },
+              ]}
+              record={actionRecord}
+              idField="actionId"
+              t={t}
+            />
           )
         }
 
-        // Tag row or single repository - show full actions
-        // Look up repository data from database to get grandGuid
-        const repositoryData = teamRepositories.find(r =>
-          r.repositoryName === record.name &&
-          r.repoTag === record.repoTag
+        const repositoryData = teamRepositories.find(
+          (r) => r.repositoryName === record.name && r.repoTag === record.repoTag
         )
 
-        // Build smart menu items based on repository state
-        const menuItems = []
+        const menuItems: MenuProps['items'] = []
 
-        // PRIMARY ACTIONS AT TOP LEVEL
-
-        // Up - always available
         menuItems.push({
           key: 'up',
           label: t('functions:functions.up.name'),
-          icon: <PlayCircleOutlined style={componentStyles.icon.small} />,
+          icon: <PlayCircleOutlined />,
           onClick: (info: MenuInfo) => {
             info.domEvent.stopPropagation()
             handleQuickAction(record, 'up', 4, 'mount')
-          }
+          },
         })
 
-        // Down - only when mounted
         if (record.mounted) {
           menuItems.push({
             key: 'down',
             label: t('functions:functions.down.name'),
-            icon: <PauseCircleOutlined style={componentStyles.icon.small} />,
+            icon: <PauseCircleOutlined />,
             onClick: (info: MenuInfo) => {
               info.domEvent.stopPropagation()
               handleQuickAction(record, 'down', 4, 'unmount')
-            }
+            },
           })
         }
 
-        // Validate - only when unmounted (tests complete lifecycle from clean state)
         if (!record.mounted) {
           menuItems.push({
             key: 'validate',
             label: t('functions:functions.validate.name'),
-            icon: <CheckCircleOutlined style={componentStyles.icon.small} />,
+            icon: <CheckCircleOutlined />,
             onClick: (info: MenuInfo) => {
               info.domEvent.stopPropagation()
               handleRunFunction(record, 'validate')
-            }
+            },
           })
         }
 
-        // Fork - always available (use 'Fork' instead of 'Clone' for consistency)
         menuItems.push({
           key: 'fork',
           label: t('functions:functions.fork.name'),
-          icon: <CopyOutlined style={componentStyles.icon.small} />,
+          icon: <CopyOutlined />,
           onClick: (info: MenuInfo) => {
             info.domEvent.stopPropagation()
             handleForkRepository(record)
-          }
+          },
         })
 
-        // Deploy - always available
         menuItems.push({
           key: 'deploy',
           label: t('functions:functions.deploy.name'),
-          icon: <CloudUploadOutlined style={componentStyles.icon.small} />,
+          icon: <CloudUploadOutlined />,
           onClick: (info: MenuInfo) => {
             info.domEvent.stopPropagation()
             handleRunFunction(record, 'deploy')
-          }
+          },
         })
 
-        // Backup - only available for grand repositories (not forks)
         const repoIsFork = repositoryData ? coreIsFork(repositoryData) : false
         menuItems.push({
           key: 'backup',
           label: t('functions:functions.backup.name'),
-          icon: <SaveOutlined style={componentStyles.icon.small} />,
+          icon: <SaveOutlined />,
           onClick: (info: MenuInfo) => {
             info.domEvent.stopPropagation()
             handleRunFunction(record, 'backup')
           },
           disabled: repoIsFork,
-          title: repoIsFork ? t('resources:repositories.backupForkDisabledTooltip') : undefined
+          title: repoIsFork ? t('resources:repositories.backupForkDisabledTooltip') : undefined,
         })
 
-        // Apply Template - always available
         menuItems.push({
           key: 'apply_template',
           label: t('functions:functions.apply_template.name'),
-          icon: <AppstoreOutlined style={componentStyles.icon.small} />,
+          icon: <AppstoreOutlined />,
           onClick: (info: MenuInfo) => {
             info.domEvent.stopPropagation()
             handleRunFunction(record, 'apply_template')
-          }
+          },
         })
 
-        // ADVANCED SUBMENU FOR STORAGE OPERATIONS
-        const advancedSubmenuItems = []
+        const advancedSubmenuItems: MenuProps['items'] = []
 
-        // Mount/Unmount
         if (!record.mounted) {
           advancedSubmenuItems.push({
             key: 'mount',
             label: t('resources:repositories.mount'),
-            icon: <DatabaseOutlined style={componentStyles.icon.small} />,
+            icon: <DatabaseOutlined />,
             onClick: (info: MenuInfo) => {
               info.domEvent.stopPropagation()
               handleQuickAction(record, 'mount', 4)
-            }
+            },
           })
         } else {
           advancedSubmenuItems.push({
             key: 'unmount',
             label: t('resources:repositories.unmount'),
-            icon: <DisconnectOutlined style={componentStyles.icon.small} />,
+            icon: <DisconnectOutlined />,
             onClick: (info: MenuInfo) => {
               info.domEvent.stopPropagation()
               handleQuickAction(record, 'unmount', 4)
-            }
+            },
           })
         }
 
-        // Resize - only when NOT mounted (offline operation)
         if (!record.mounted) {
           advancedSubmenuItems.push({
             key: 'resize',
             label: t('functions:functions.resize.name'),
-            icon: <ShrinkOutlined style={componentStyles.icon.small} />,
+            icon: <ShrinkOutlined />,
             onClick: (info: MenuInfo) => {
               info.domEvent.stopPropagation()
               handleRunFunction(record, 'resize')
-            }
+            },
           })
         }
 
-        // Expand - only when mounted (online expansion)
         if (record.mounted) {
           advancedSubmenuItems.push({
             key: 'expand',
             label: t('functions:functions.expand.name'),
-            icon: <ExpandOutlined style={componentStyles.icon.small} />,
+            icon: <ExpandOutlined />,
             onClick: (info: MenuInfo) => {
               info.domEvent.stopPropagation()
               handleRunFunction(record, 'expand')
-            }
+            },
           })
         }
 
-        // Add divider and experimental to advanced submenu
         if (advancedSubmenuItems.length > 0) {
-          advancedSubmenuItems.push({
-            type: 'divider' as const
-          })
+          advancedSubmenuItems.push({ type: 'divider' as const })
         }
 
         advancedSubmenuItems.push({
           key: 'experimental',
           label: t('machines:experimental'),
-          icon: <FunctionOutlined style={componentStyles.icon.small} />,
+          icon: <FunctionOutlined />,
           onClick: (info: MenuInfo) => {
             info.domEvent.stopPropagation()
             handleRunFunction(record)
-          }
+          },
         })
 
-        // Add Advanced submenu if there are items
         if (advancedSubmenuItems.length > 0) {
           menuItems.push({
             key: 'advanced',
             label: t('resources:repositories.advanced'),
-            icon: <ControlOutlined style={componentStyles.icon.small} />,
-            children: advancedSubmenuItems
+            icon: <ControlOutlined />,
+            children: advancedSubmenuItems,
           })
         }
 
-        // Promote to Original and Delete - only for forks (repositories with a parent)
         if (repositoryData && coreIsFork(repositoryData)) {
           menuItems.push({
             key: 'promote-to-grand',
             label: t('resources:repositories.promoteToGrand'),
-            icon: <RiseOutlined style={componentStyles.icon.small} />,
+            icon: <RiseOutlined />,
             onClick: (info: MenuInfo) => {
               info.domEvent.stopPropagation()
               handlePromoteToGrand(record)
-            }
+            },
           })
           menuItems.push({
             key: 'delete-fork',
             label: t('resources:repositories.deleteFork'),
-            icon: <DeleteOutlined style={componentStyles.icon.small} />,
+            icon: <DeleteOutlined />,
             onClick: (info: MenuInfo) => {
               info.domEvent.stopPropagation()
               handleDeleteFork(record)
             },
-            danger: true
+            danger: true,
           })
         }
 
-        // Always add divider before management actions
         if (menuItems.length > 0) {
-          menuItems.push({
-            type: 'divider' as const
-          })
+          menuItems.push({ type: 'divider' as const })
         }
 
-        // Rename - always available
         menuItems.push({
           key: 'rename',
           label: t('resources:repositories.rename'),
-          icon: <EditOutlined style={componentStyles.icon.small} />,
+          icon: <EditOutlined />,
           onClick: (info: MenuInfo) => {
             info.domEvent.stopPropagation()
             handleRenameRepository(record)
-          }
+          },
         })
 
-        // Delete Grand Repository - only for grand repositories (no parent)
         if (repositoryData && coreIsCredential(repositoryData)) {
           menuItems.push({
             key: 'delete-grand',
             label: t('resources:repositories.deleteGrand'),
-            icon: <DeleteOutlined style={componentStyles.icon.small} />,
+            icon: <DeleteOutlined />,
             onClick: (info: MenuInfo) => {
               info.domEvent.stopPropagation()
               handleDeleteGrandRepository(record)
             },
-            danger: true
+            danger: true,
           })
         }
 
-        return (
-          <Space size="small">
-            {/* Eye button - opens detail panel */}
-            <Tooltip title={t('common:viewDetails')}>
-              <Button
-                type="default"
-                size="small"
-                icon={<EyeOutlined />}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onRepositoryClick?.(record)
-                }}
-                data-testid={`machine-repo-view-details-${record.name}-${record.repoTag || 'latest'}`}
-                aria-label={t('common:viewDetails')}
-              />
-            </Tooltip>
+        const actionRecord: RepositoryTableRow = {
+          ...record,
+          actionId: `${record.name}-${record.repoTag || 'latest'}`,
+        }
 
-            <Dropdown
-              menu={{ items: menuItems }}
-              trigger={['click']}
-            >
-              <Tooltip title={t('machines:remote')}>
-                <Button
-                  type="primary"
-                  size="small"
-                  icon={<FunctionOutlined />}
-                  loading={isExecuting}
-                  data-testid={`machine-repo-list-repo-actions-${record.name}`}
-                  aria-label={t('machines:remote')}
-                />
-              </Tooltip>
-            </Dropdown>
-            {record.mounted && (
-              <LocalActionsMenu
-                machine={machine.machineName}
-                repository={record.name}
-                teamName={machine.teamName}
-                userEmail={userEmail}
-                pluginContainers={containersData[record.name]?.containers || []}
-              />
-            )}
-            {record.isUnmapped && onCreateRepository && (
-              <Tooltip title={t('resources:repositories.addCredential')}>
-                <Button
-                  type="default"
-                  size="small"
-                  icon={<KeyOutlined />}
-                  onClick={() => onCreateRepository(machine, record.originalGuid || record.name)}
-                  style={componentStyles.controlSurface}
-                  data-testid={`machine-repo-list-add-credential-${record.name}`}
-                  aria-label={t('resources:repositories.addCredential')}
-                />
-              </Tooltip>
-            )}
-          </Space>
+        return (
+          <ActionButtonGroup
+            buttons={[
+              {
+                type: 'view',
+                icon: <EyeOutlined />,
+                tooltip: 'common:viewDetails',
+                variant: 'default',
+                onClick: (row) => onRepositoryClick?.(row),
+                testId: (row) => `machine-repo-view-details-${row.name}-${row.repoTag || 'latest'}`,
+              },
+              {
+                type: 'remote',
+                icon: <FunctionOutlined />,
+                tooltip: 'machines:remote',
+                variant: 'primary',
+                dropdownItems: menuItems,
+                loading: isExecuting,
+                testId: (row) => `machine-repo-list-repo-actions-${row.name}`,
+              },
+              {
+                type: 'custom',
+                visible: (row) => row.mounted,
+                render: (row) => (
+                  <LocalActionsMenu
+                    machine={machine.machineName}
+                    repository={row.name}
+                    teamName={machine.teamName}
+                    userEmail={userEmail}
+                    pluginContainers={containersData[row.name]?.containers || []}
+                  />
+                ),
+              },
+              {
+                type: 'vault',
+                icon: <KeyOutlined />,
+                tooltip: 'resources:repositories.addCredential',
+                onClick: (row) => onCreateRepository?.(machine, row.originalGuid || row.name),
+                variant: 'default',
+                visible: (row) => Boolean(row.isUnmapped && onCreateRepository),
+                testId: (row) => `machine-repo-list-add-credential-${row.name}`,
+              },
+            ]}
+            record={actionRecord}
+            idField="actionId"
+            t={t}
+          />
         )
       },
     }),

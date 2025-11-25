@@ -6,6 +6,8 @@ import {
   ReloadOutlined,
   LinkOutlined,
   BranchesOutlined,
+  CheckCircleOutlined,
+  StopOutlined,
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useUserRequests, useDeleteUserRequest, type UserRequest } from '@/api/queries/users'
@@ -88,10 +90,9 @@ const UserSessionsTab: React.FC = () => {
     title: t('userSessions.columns.status'),
     dataIndex: 'isActive',
     key: 'isActive',
-    width: 100,
     statusMap: {
-      true: { color: 'success', label: t('userSessions.active') },
-      false: { color: 'default', label: t('userSessions.inactive') },
+      true: { icon: <CheckCircleOutlined />, label: t('userSessions.active'), color: 'success' },
+      false: { icon: <StopOutlined />, label: t('userSessions.inactive'), color: 'default' },
     },
   })
 

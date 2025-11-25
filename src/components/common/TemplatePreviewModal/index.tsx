@@ -19,6 +19,7 @@ import type { SyntaxHighlighterProps } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { templateService } from '@/services/templateService'
 import LoadingWrapper from '@/components/common/LoadingWrapper'
+import { TabLabel } from '@/styles/primitives'
 import {
   StyledModal,
   TitleStack,
@@ -27,7 +28,6 @@ import {
   TemplateHeading,
   DifficultyTag,
   StyledTabs,
-  TabLabel,
   OverviewScroll,
   DescriptionCard,
   FeatureCard,

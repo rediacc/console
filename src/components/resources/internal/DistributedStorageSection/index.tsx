@@ -16,7 +16,6 @@ import {
   SectionDivider,
   DividerContent,
   SectionTitle,
-  IconWrapper,
   SectionCard,
   ContentStack,
   AssignmentLabel,
@@ -27,6 +26,7 @@ import {
   ButtonLabel
 } from './styles'
 import LoadingWrapper from '@/components/common/LoadingWrapper'
+import { IconWrapper } from '@/components/ui'
 
 interface DistributedStorageSectionProps {
   machine: Machine

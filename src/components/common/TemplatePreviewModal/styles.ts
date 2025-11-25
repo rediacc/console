@@ -1,6 +1,6 @@
 import styled from 'styled-components'
-import { Tabs, Card, Button, Space, Tag, Alert, Divider, List, Typography } from 'antd'
-import { BaseModal } from '@/styles/primitives'
+import { Tabs, Card, Space, Tag, Alert, Divider, List, Typography } from 'antd'
+import { BaseModal, PrimaryButton as PrimitivePrimaryButton, SecondaryButton as PrimitiveSecondaryButton } from '@/styles/primitives'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -55,12 +55,6 @@ export const StyledTabs = styled(Tabs)`
   .ant-tabs-nav {
     margin-bottom: ${({ theme }) => theme.spacing.MD}px;
   }
-`
-
-export const TabLabel = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.XS}px;
 `
 
 export const OverviewScroll = styled.div`
@@ -282,13 +276,13 @@ export const SecurityTitle = styled(Title).attrs({ level: 5 })`
   }
 `
 
-export const PrimaryActionButton = styled(Button)`
+export const PrimaryActionButton = styled(PrimitivePrimaryButton)`
   && {
     min-width: 160px;
   }
 `
 
-export const SecondaryActionButton = styled(Button)`
+export const SecondaryActionButton = styled(PrimitiveSecondaryButton)`
   && {
     margin-right: ${({ theme }) => theme.spacing.SM}px;
     min-width: 120px;
