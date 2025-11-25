@@ -2,6 +2,7 @@ import styled, { css } from 'styled-components'
 import { Table as AntTable } from 'antd'
 import type { TableProps } from 'antd'
 import type { ComponentType } from 'react'
+import { ExpandIcon as BaseExpandIcon } from '@/styles/primitives'
 
 export const Container = styled.div`
   overflow-x: auto;
@@ -91,12 +92,14 @@ export const StatusIcon = styled.span<{ $color: string }>`
   color: ${props => props.$color};
 `
 
-export const ExpandIcon = styled.span<{ $isExpanded: boolean; $visible: boolean }>`
-  display: inline-block;
+export const ExpandIcon = styled(BaseExpandIcon).attrs<{
+  $isExpanded: boolean
+  $visible: boolean
+}>(({ $isExpanded, $visible }) => ({
+  $expanded: $isExpanded,
+  $visible,
+}))<{ $isExpanded: boolean; $visible: boolean }>`
   width: 12px;
-  transition: transform 0.3s ease;
-  transform: ${props => props.$isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'};
-  visibility: ${props => props.$visible ? 'visible' : 'hidden'};
 `
 
 export const PortText = styled.span`

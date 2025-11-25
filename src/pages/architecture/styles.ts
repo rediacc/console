@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import { Space, Typography } from 'antd'
-import { PageContainer } from '@/styles/primitives'
+import { PageContainer, SectionHeaderRow } from '@/styles/primitives'
 
 export const PageWrapper = PageContainer
 
@@ -12,13 +12,7 @@ export const HeaderStack = styled(Space).attrs({ direction: 'vertical', size: 'm
   width: 100%;
 `
 
-export const HeaderRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing.MD}px;
-`
+export const HeaderRow = SectionHeaderRow
 
 export const ActionGroup = styled.div`
   display: flex;

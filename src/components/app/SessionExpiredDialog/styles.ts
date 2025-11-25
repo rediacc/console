@@ -24,11 +24,6 @@ export const DangerTitle = styled(Title).attrs({ level: 4 })`
   }
 `
 
-export const IconWrapper = styled.span`
-  color: ${({ theme }) => theme.colors.error};
-  font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
-`
-
 export const ContentStack = styled(ModalBody)`
   gap: ${({ theme }) => theme.spacing.MD}px;
 `

@@ -30,13 +30,13 @@ import {
   PermissionGroup,
 } from '@/api/queries/permissions'
 import {
-  UsersPageWrapper,
-  UsersSectionStack,
-  UsersSectionHeading,
-  UsersListHeader,
-  UsersListTitle,
-  UsersListSubtitle,
-} from './styles'
+  PageWrapper as UsersPageWrapper,
+  SectionStack as UsersSectionStack,
+  SectionHeading as UsersSectionHeading,
+  ListTitleRow as UsersListHeader,
+  ListTitle as UsersListTitle,
+  ListSubtitle as UsersListSubtitle,
+} from '@/components/ui'
 
 const UsersPage: React.FC = () => {
   const { t } = useTranslation('organization')

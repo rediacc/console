@@ -224,10 +224,7 @@ export const AuditMeta = styled(Text)`
   }
 `
 
-export const EmptyState = styled.div`
-  text-align: center;
-  padding: ${({ theme }) => theme.spacing.LG}px 0;
-`
+export { EmptyStateWrapper as EmptyState } from '@/styles/primitives'
 
 export const Divider = styled.hr`
   border: none;

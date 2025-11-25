@@ -6,7 +6,8 @@
  */
 
 import styled from 'styled-components'
-import { Button, Space, Typography } from 'antd'
+import { Space, Typography } from 'antd'
+import { IconButton } from '@/styles/primitives'
 
 const { Text } = Typography
 
@@ -208,8 +209,6 @@ export const ContentStack = styled(Space).attrs({ direction: 'vertical', size: '
 // =============================================================================
 
 export interface TableActionButtonProps {
-  /** Button size */
-  $size?: 'SM' | 'MD'
   /** Include gap for label */
   $hasLabel?: boolean
 }
@@ -218,27 +217,22 @@ export interface TableActionButtonProps {
  * Action button for table cells
  *
  * @example
- * <TableActionButton $size="SM" icon={<EditOutlined />} />
+ * <TableActionButton icon={<EditOutlined />} />
  */
-export const TableActionButton = styled(Button)<TableActionButtonProps>`
+export const TableActionButton = styled(IconButton)<TableActionButtonProps>`
   && {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    ${({ $hasLabel, theme }) => $hasLabel && `gap: ${theme.spacing.XS}px;`}
-    ${({ $size = 'SM', theme }) => {
-      if ($size === 'SM') {
-        return `
-          width: ${theme.dimensions.CONTROL_HEIGHT_SM}px;
-          height: ${theme.dimensions.CONTROL_HEIGHT_SM}px;
-        `
-      }
-      return `
-        min-width: ${theme.dimensions.CONTROL_HEIGHT}px;
-        min-height: ${theme.dimensions.CONTROL_HEIGHT}px;
-      `
-    }}
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
+    ${({ $hasLabel, theme }) =>
+      $hasLabel
+        ? `
+      min-width: ${theme.dimensions.CONTROL_HEIGHT}px;
+      padding: 0 ${theme.spacing.SM}px;
+      gap: ${theme.spacing.XS}px;
+    `
+        : `
+      width: ${theme.dimensions.CONTROL_HEIGHT}px;
+    `}
+    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
+    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
   }
 `
 

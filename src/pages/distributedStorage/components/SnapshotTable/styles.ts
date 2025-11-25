@@ -1,6 +1,13 @@
 import styled from 'styled-components'
-import { Button, Tag, Space } from 'antd'
+import { Button, Tag } from 'antd'
 import { CameraOutlined } from '@ant-design/icons'
+import {
+  IconButton as BaseIconButton,
+  TableContainer as BaseTableContainer,
+  TableCellContent,
+  TableCellText,
+  StyledIcon,
+} from '@/styles/primitives'
 
 export const Container = styled.div`
   padding: ${({ theme }) => theme.spacing.MD}px;
@@ -35,28 +42,18 @@ export const CreateButton = styled(Button)`
   }
 `
 
-export const TableWrapper = styled.div`
-  border: 1px solid var(--color-border-secondary);
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  overflow: hidden;
-  background: ${({ theme }) => theme.colors.bgPrimary};
-`
+export const TableWrapper = styled(BaseTableContainer)``
 
-export const NameCell = styled(Space)`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`
+export const NameCell = styled(TableCellContent)``
 
-export const NameIcon = styled(CameraOutlined)`
-  font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
-  color: ${({ theme }) => theme.colors.primary};
-`
+export const NameIcon = styled(StyledIcon).attrs(({ theme }) => ({
+  as: CameraOutlined,
+  $size: 'MD',
+  $color: theme.colors.primary,
+}))``
 
-export const NameText = styled.span`
+export const NameText = styled(TableCellText)`
   font-size: ${({ theme }) => theme.fontSize.BASE}px;
-  font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-  color: ${({ theme }) => theme.colors.textPrimary};
 `
 
 export const VaultTag = styled(Tag)`
@@ -70,25 +67,23 @@ export const GuidText = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
 `
 
-const IconButton = styled(Button)`
+const IconButton = styled(BaseIconButton)`
   && {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
     height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
-    padding: 0;
+    min-width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
+    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
+    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
     border: none;
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
     background: transparent;
     box-shadow: none;
     color: ${({ theme }) => theme.colors.textPrimary};
     transition: background ${({ theme }) => theme.transitions.FAST};
-  }
 
-  &&:hover,
-  &&:focus {
-    background: var(--color-fill-tertiary);
+    &:hover,
+    &:focus {
+      background: var(--color-fill-tertiary);
+    }
   }
 `
 

@@ -23,7 +23,6 @@ import {
   GuidText,
   Header,
   HeaderTitle,
-  IconWrapper,
   LeftPanel,
   PrimaryButton,
   RepositoryLink,
@@ -33,6 +32,7 @@ import {
   TeamFilterTag,
   TitleRow,
 } from './styles'
+import { IconWrapper } from '@/components/ui'
 
 interface SplitRepositoryViewProps {
   repositories: Repository[]
@@ -94,7 +94,7 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
       align: 'center',
       render: () => (
         <Tooltip title={t('resources:repositories.credentialExists')}>
-          <IconWrapper>
+          <IconWrapper $size="sm" $tone="primary">
             <KeyOutlined />
           </IconWrapper>
         </Tooltip>
@@ -106,7 +106,7 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
         const truncated = repositoryNameColumn.render?.(name, record, 0) as React.ReactNode
         return (
           <Space>
-            <IconWrapper $variant="success">
+            <IconWrapper $tone="success">
               <FolderOutlined />
             </IconWrapper>
             <RepositoryLink
@@ -211,7 +211,7 @@ export const SplitRepositoryView: React.FC<SplitRepositoryViewProps> = ({
         {/* Header */}
         <Header data-testid="split-repo-view-header">
           <TitleRow>
-            <IconWrapper $variant="success" $size="lg">
+            <IconWrapper $tone="success" $size="lg">
               <FolderOutlined />
             </IconWrapper>
             <HeaderTitle data-testid="split-repo-view-title">

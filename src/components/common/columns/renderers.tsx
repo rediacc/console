@@ -133,23 +133,26 @@ export interface StatusConfig {
 }
 
 /**
- * Create a status tag renderer with custom configuration
+ * Create a status renderer with icon and tooltip
  * @param statusMap - Map of status values to their configuration
  * @param defaultConfig - Default configuration for unknown statuses
- * @returns Render function for status tags
+ * @returns Render function for status icons with tooltips
  */
 export const createStatusRenderer = <T extends string>(
   statusMap: Record<T, StatusConfig>,
   defaultConfig: StatusConfig = { color: 'default' }
 ) => {
-  const StatusRenderer = (status: T): React.ReactNode => {
+  function StatusRenderer(status: T): React.ReactNode {
     const config = statusMap[status] || defaultConfig
     return (
-      <Tag color={config.color} icon={config.icon}>
-        {config.label || status}
-      </Tag>
+      <Tooltip title={config.label || status}>
+        <span style={{ fontSize: '16px', cursor: 'pointer' }}>
+          {config.icon}
+        </span>
+      </Tooltip>
     )
   }
+
   return StatusRenderer
 }
 

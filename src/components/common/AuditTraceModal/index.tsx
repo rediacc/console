@@ -32,10 +32,10 @@ import {
   SummaryStats,
   StatItem,
   StatValue,
-  IconWrapper
 } from './styles'
 import { createSorter, createDateSorter } from '@/core'
 import LoadingWrapper from '@/components/common/LoadingWrapper'
+import { IconWrapper } from '@/components/ui'
 
 const { Text } = Typography
 

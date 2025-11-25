@@ -1,5 +1,6 @@
 import styled from 'styled-components'
-import { Select, Tag, Typography } from 'antd'
+import { Select, Typography } from 'antd'
+import { PillTag } from '@/styles/primitives'
 
 const { Text } = Typography
 
@@ -52,30 +53,23 @@ export const MachineName = styled(Text)<{ $dimmed?: boolean }>`
   }
 `
 
-const PillTag = styled(Tag)`
+export const TeamTag = styled(PillTag).attrs({
+  $variant: 'success',
+  $size: 'SM',
+  $borderless: true,
+})`
   && {
-    display: inline-flex;
-    align-items: center;
-    gap: ${({ theme }) => theme.spacing.XS}px;
     padding: 0 ${({ theme }) => theme.spacing.SM}px;
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-    border-width: 0;
-    font-size: ${({ theme }) => theme.fontSize.CAPTION}px;
-    line-height: ${({ theme }) => theme.lineHeight.NORMAL};
   }
 `
 
-export const TeamTag = styled(PillTag)`
+export const BridgeTag = styled(PillTag).attrs({
+  $variant: 'bridge',
+  $size: 'SM',
+  $borderless: true,
+})`
   && {
-    background-color: ${({ theme }) => theme.colors.bgSuccess};
-    color: ${({ theme }) => theme.colors.success};
-  }
-`
-
-export const BridgeTag = styled(PillTag)`
-  && {
-    background-color: ${({ theme }) => theme.colors.bgSecondary};
-    color: ${({ theme }) => theme.colors.textSecondary};
+    padding: 0 ${({ theme }) => theme.spacing.SM}px;
   }
 `
 
@@ -86,16 +80,9 @@ export const StatusContainer = styled.div`
   gap: ${({ theme }) => theme.spacing.SM}px;
 `
 
-export const StatusTag = styled(PillTag)<{ $variant: 'cluster' | 'available' }>`
-  && {
-    background-color: ${({ theme, $variant }) =>
-      $variant === 'cluster' ? theme.colors.bgInfo : theme.colors.bgSuccess};
-    color: ${({ theme, $variant }) =>
-      $variant === 'cluster' ? theme.colors.info : theme.colors.success};
-    border: 1px solid
-      ${({ theme, $variant }) => ($variant === 'cluster' ? theme.colors.info : theme.colors.success)};
-  }
-`
+export const StatusTag = styled(PillTag).attrs({
+  $size: 'SM',
+})<{ $variant: 'cluster' | 'available' }>``
 
 export const StatusIcon = styled.span`
   display: inline-flex;

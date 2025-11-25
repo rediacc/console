@@ -1,6 +1,15 @@
 import styled from 'styled-components'
-import { Alert, Button, Empty, Select, Tag, Typography } from 'antd'
-import { BaseModal, BaseTable } from '@/styles/primitives'
+import { Button, Select, Typography } from 'antd'
+import {
+  BaseModal,
+  BaseTable,
+  ModalContentStack,
+  ModalTitleRow,
+  PaddedEmpty,
+  PillTag,
+  FormLabel,
+  AlertCard,
+} from '@/styles/primitives'
 import { ModalSize } from '@/types/modal'
 
 const { Text } = Typography
@@ -13,51 +22,25 @@ export const StyledModal = styled(BaseModal).attrs({
     flex-direction: column;
     gap: ${({ theme }) => theme.spacing.LG}px;
   }
-
-  .ant-modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: ${({ theme }) => theme.spacing.SM}px;
-  }
 `
 
-export const TitleStack = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-  font-size: ${({ theme }) => theme.fontSize.LG}px;
-  font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-  color: ${({ theme }) => theme.colors.textPrimary};
-`
+export const TitleStack = styled(ModalTitleRow)``
 
-export const CloneTag = styled(Tag)`
-  && {
-    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-    border-color: transparent;
-    background-color: ${({ theme }) => theme.colors.bgWarning};
-    color: ${({ theme }) => theme.colors.warning};
-    font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
-  }
-`
+export const CloneTag = styled(PillTag).attrs({
+  $variant: 'warning',
+  $size: 'MD',
+  $borderless: true,
+})``
 
-const TabStack = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.LG}px;
+const TabStack = styled(ModalContentStack)`
   width: 100%;
 `
 
 export const AssignTabContainer = TabStack
 export const ManageTabContainer = TabStack
 
-const BaseAlert = styled(Alert)`
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  background-color: ${({ theme }) => theme.colors.bgSecondary};
-`
-
-export const InfoAlert = BaseAlert
-export const WarningAlert = BaseAlert
+export const InfoAlert = styled(AlertCard).attrs({ $variant: 'info' })``
+export const WarningAlert = styled(AlertCard).attrs({ $variant: 'warning' })``
 
 export const FieldGroup = styled.div`
   display: flex;
@@ -65,12 +48,7 @@ export const FieldGroup = styled.div`
   gap: ${({ theme }) => theme.spacing.XS}px;
 `
 
-export const FieldLabel = styled(Text)`
-  && {
-    font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
-    color: ${({ theme }) => theme.colors.textPrimary};
-  }
-`
+export const FieldLabel = FormLabel
 
 export const StyledSelect = styled(Select)`
   && {
@@ -92,7 +70,7 @@ export const StyledSelect = styled(Select)`
   }
 `
 
-export const EmptyState = styled(Empty)`
+export const EmptyState = styled(PaddedEmpty)`
   margin-top: ${({ theme }) => theme.spacing.XL}px;
 `
 
@@ -115,14 +93,13 @@ export const MachineNameText = styled(Text)`
   }
 `
 
-export const BridgeTag = styled(Tag)`
+export const BridgeTag = styled(PillTag).attrs({
+  $variant: 'success',
+  $size: 'SM',
+  $borderless: true,
+})`
   && {
-    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-    border-color: transparent;
-    background-color: ${({ theme }) => theme.colors.bgSuccess};
-    color: ${({ theme }) => theme.colors.success};
     font-size: ${({ theme }) => theme.fontSize.XS}px;
-    padding: 0 ${({ theme }) => theme.spacing.XS}px;
   }
 `
 

@@ -19,7 +19,6 @@ import {
   HeaderTop,
   TitleGroup,
   PanelTitle,
-  IconWrapper,
   CollapseButton,
   TagGroup,
   PanelContent,
@@ -42,6 +41,7 @@ import {
   InlineText,
   SubduedText,
 } from './styles'
+import { IconWrapper } from '@/components/ui'
 
 interface ContainerData {
   id: string
@@ -160,7 +160,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
       <Header data-testid="container-detail-header">
         <HeaderTop>
           <TitleGroup>
-            <IconWrapper $variant={isPlugin ? 'plugin' : 'primary'}>
+            <IconWrapper $tone={isPlugin ? 'info' : 'success'} $size="lg">
               {isPlugin ? <ApiOutlined /> : <AppstoreOutlined />}
             </IconWrapper>
             <PanelTitle data-testid="container-detail-title">
@@ -192,7 +192,7 @@ export const ContainerDetailPanel: React.FC<ContainerDetailPanelProps> = ({
       <PanelContent data-testid="container-detail-content">
         <SectionStack>
           <SectionHeader data-testid="container-detail-info-section">
-            <IconWrapper $variant="primary" $size="md">
+            <IconWrapper $tone="success" $size="md">
               {isPlugin ? <ApiOutlined /> : <ContainerOutlined />}
             </IconWrapper>
             <SectionTitle>{t('resources:containers.containerInfo')}</SectionTitle>

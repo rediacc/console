@@ -1,6 +1,7 @@
 import styled from 'styled-components'
-import { Button, Checkbox, Collapse, Tag, Typography } from 'antd'
+import { Checkbox, Collapse, Tag, Typography } from 'antd'
 import { UploadOutlined, DownloadOutlined } from '@/utils/optimizedIcons'
+import { StyledIcon } from '@/styles/primitives'
 
 const { Text } = Typography
 
@@ -37,29 +38,18 @@ export const FooterLeftActions = styled.div`
   margin-right: auto;
 `
 
-export const ActionButton = styled(Button)`
-  && {
-    min-height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
-    border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-  }
-`
+export { ActionButton } from '@/styles/primitives'
+export { PrimaryButton as PrimaryActionButton } from '@/styles/primitives'
 
-export const PrimaryActionButton = styled(ActionButton)`
-  && {
-    background-color: ${({ theme }) => theme.colors.primary};
-    border-color: ${({ theme }) => theme.colors.primary};
-    color: ${({ theme }) => theme.colors.textInverse};
-  }
-`
+export const UploadIcon = styled(StyledIcon).attrs({
+  as: UploadOutlined,
+  $size: 'SM',
+})``
 
-export const UploadIcon = styled(UploadOutlined)`
-  font-size: ${({ theme }) => theme.dimensions.ICON_SM}px;
-`
-
-export const DownloadIcon = styled(DownloadOutlined)`
-  font-size: ${({ theme }) => theme.dimensions.ICON_SM}px;
-`
+export const DownloadIcon = styled(StyledIcon).attrs({
+  as: DownloadOutlined,
+  $size: 'SM',
+})``
 
 export const AutoSetupCheckbox = styled(Checkbox)`
   && {

@@ -1,6 +1,12 @@
 import styled from 'styled-components'
-import { Alert, Select, Typography } from 'antd'
-import { BaseModal } from '@/styles/primitives'
+import { Select, Typography } from 'antd'
+import {
+  BaseModal,
+  HelperText as PrimitiveHelperText,
+  FormLabel,
+  StyledIcon,
+  AlertCard,
+} from '@/styles/primitives'
 import { ModalSize } from '@/types/modal'
 import { CloudServerOutlined, FileImageOutlined } from '@/utils/optimizedIcons'
 
@@ -29,10 +35,11 @@ export const TitleStack = styled.div`
   color: ${({ theme }) => theme.colors.textPrimary};
 `
 
-export const TitleIcon = styled(FileImageOutlined)`
-  font-size: ${({ theme }) => theme.fontSize.LG}px;
-  color: ${({ theme }) => theme.colors.primary};
-`
+export const TitleIcon = styled(StyledIcon).attrs(({ theme }) => ({
+  as: FileImageOutlined,
+  $size: theme.fontSize.LG,
+  $color: theme.colors.primary,
+}))``
 
 export const ContentStack = styled.div`
   display: flex;
@@ -47,10 +54,9 @@ export const FieldRow = styled.div`
   gap: ${({ theme }) => theme.spacing.XS}px;
 `
 
-export const FieldLabel = styled(Text)`
+export const FieldLabel = styled(FormLabel)`
   && {
     font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-    color: ${({ theme }) => theme.colors.textPrimary};
   }
 `
 
@@ -60,19 +66,14 @@ export const FieldValue = styled(Text)`
   }
 `
 
-const BaseAlert = styled(Alert)`
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  background-color: ${({ theme }) => theme.colors.bgSecondary};
-`
+export const InfoAlert = styled(AlertCard).attrs({ $variant: 'info' })``
+export const WarningAlert = styled(AlertCard).attrs({ $variant: 'warning' })``
 
-export const InfoAlert = BaseAlert
-export const WarningAlert = BaseAlert
-
-export const MachineIcon = styled(CloudServerOutlined)`
-  font-size: ${({ theme }) => theme.fontSize.BASE}px;
-  color: ${({ theme }) => theme.colors.primary};
-`
+export const MachineIcon = styled(StyledIcon).attrs(({ theme }) => ({
+  as: CloudServerOutlined,
+  $size: theme.fontSize.BASE,
+  $color: theme.colors.primary,
+}))``
 
 export const StyledSelect = styled(Select)`
   && {
@@ -94,11 +95,10 @@ export const StyledSelect = styled(Select)`
   }
 `
 
-export const SelectLabel = styled(Text)`
+export const SelectLabel = styled(FormLabel)`
   && {
     display: block;
     margin-bottom: ${({ theme }) => theme.spacing.XS}px;
-    font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
   }
 `
 
@@ -111,12 +111,7 @@ export const DisabledOptionText = styled(SelectOptionText)`
   opacity: 0.6;
 `
 
-export const HelperText = styled(Text)`
-  && {
-    color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-  }
-`
+export const HelperText = PrimitiveHelperText
 
 export const LoadingContainer = styled.div`
   display: flex;

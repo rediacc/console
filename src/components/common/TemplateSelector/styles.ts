@@ -1,5 +1,6 @@
 import styled from 'styled-components'
 import { Card, Space, Input, Typography, Button, Tag, Empty, Row } from 'antd'
+import { HelperText as PrimitiveHelperText, MutedCaption } from '@/styles/primitives'
 
 const { Text, Paragraph } = Typography
 
@@ -22,12 +23,7 @@ export const HelperRow = styled.div`
   gap: ${({ theme }) => theme.spacing.SM}px;
 `
 
-export const HelperText = styled(Text)`
-  && {
-    font-size: ${({ theme }) => theme.fontSize.SM}px;
-    color: ${({ theme }) => theme.colors.textSecondary};
-  }
-`
+export const HelperText = PrimitiveHelperText
 
 export const ClearButton = styled(Button)`
   && {
@@ -44,10 +40,8 @@ export const SearchInput = styled(Input.Search)`
   }
 `
 
-export const ResultCount = styled(Text)`
+export const ResultCount = styled(MutedCaption)`
   && {
-    font-size: ${({ theme }) => theme.fontSize.XS}px;
-    color: ${({ theme }) => theme.colors.textSecondary};
     margin-bottom: ${({ theme }) => theme.spacing.SM}px;
     display: block;
   }
@@ -142,12 +136,6 @@ export const DefaultTag = styled(Tag)`
   }
 `
 
-export const LoadingState = styled.div`
-  text-align: center;
-  padding: ${({ theme }) => `${theme.spacing.XL}px 0`};
-  color: ${({ theme }) => theme.colors.textSecondary};
-`
-
 export const LoadingText = styled.div`
   margin-top: ${({ theme }) => theme.spacing.SM}px;
 `
@@ -156,3 +144,5 @@ export const ErrorState = styled.div`
   text-align: center;
   padding: ${({ theme }) => `${theme.spacing.MD}px 0`};
 `
+
+export { LoadingState } from '@/styles/primitives'

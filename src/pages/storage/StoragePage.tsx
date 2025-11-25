@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react'
-import { Empty, Modal, Space, Tag, Tooltip } from 'antd'
+import { Button, Modal, Space, Tag, Tooltip } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from 'styled-components'
 import {
@@ -15,6 +15,10 @@ import RcloneImportWizard from '@/pages/storage/components/RcloneImportWizard'
 import TeamSelector from '@/components/common/TeamSelector'
 import { ActionButtonGroup, ActionButtonConfig } from '@/components/common/ActionButtonGroup'
 import { createActionColumn } from '@/components/common/columns'
+import ResourceListView, {
+  COLUMN_WIDTHS,
+  COLUMN_RESPONSIVE,
+} from '@/components/common/ResourceListView'
 import { FunctionOutlined, EditOutlined, DeleteOutlined, HistoryOutlined } from '@/utils/optimizedIcons'
 import {
   useStorage,
@@ -41,16 +45,12 @@ import { showMessage } from '@/utils/messages'
 import { QueueFunction } from '@/api/queries/queue'
 import {
   PageWrapper,
-  PageCard,
-  HeaderSection,
-  HeaderRow,
-  TeamControls,
-  TeamSelectorWrapper,
-  ButtonGroup,
-  ActionButton,
-  ContentSection,
-  DataTable,
-} from './styles'
+  SectionStack,
+  SectionHeading,
+  ListTitleRow,
+  ListTitle,
+  ListSubtitle,
+} from '@/components/ui'
 import { featureFlags } from '@/config/featureFlags'
 
 const StoragePage: React.FC = () => {
@@ -285,6 +285,7 @@ const StoragePage: React.FC = () => {
         title: t('storage.storageName'),
         dataIndex: 'storageName',
         key: 'storageName',
+        width: COLUMN_WIDTHS.NAME,
         ellipsis: true,
         render: (text: string) => (
           <Space>
@@ -297,7 +298,7 @@ const StoragePage: React.FC = () => {
         title: t('general.team'),
         dataIndex: 'teamName',
         key: 'teamName',
-        width: 150,
+        width: COLUMN_WIDTHS.TAG,
         ellipsis: true,
         render: (teamName: string) => <Tag color={theme.colors.secondary}>{teamName}</Tag>,
       },
@@ -307,8 +308,9 @@ const StoragePage: React.FC = () => {
               title: t('general.vaultVersion'),
               dataIndex: 'vaultVersion',
               key: 'vaultVersion',
-              width: 120,
+              width: COLUMN_WIDTHS.VERSION,
               align: 'center' as const,
+              responsive: COLUMN_RESPONSIVE.DESKTOP_ONLY,
               render: (version: number) => (
                 <Tag>{t('common:general.versionFormat', { version })}</Tag>
               ),
@@ -316,7 +318,7 @@ const StoragePage: React.FC = () => {
           ]
         : []),
       createActionColumn<Storage>({
-        width: 200,
+        width: COLUMN_WIDTHS.ACTIONS_WIDE,
         renderActions: (record) => {
           const buttons: ActionButtonConfig<Storage>[] = [
             {
@@ -373,29 +375,84 @@ const StoragePage: React.FC = () => {
     [auditTrace, handleDeleteStorage, openUnifiedModal, setCurrentResource, t, theme.colors.primary, theme.colors.secondary]
   )
 
+  const hasTeamSelection = selectedTeams.length > 0
+  const displayedStorages = hasTeamSelection ? storages : []
+  const emptyDescription = hasTeamSelection
+    ? t('storage.noStorage', { defaultValue: 'No storage found in this team' })
+    : t('teams.selectTeamPrompt', { defaultValue: 'Select a team to view its resources' })
+
   return (
     <>
       <PageWrapper>
-        <PageCard>
-          <HeaderSection>
-            <HeaderRow>
-              <TeamControls>
-                <TeamSelectorWrapper>
-                  <TeamSelector
-                    data-testid="resources-team-selector"
-                    teams={teams}
-                    selectedTeams={selectedTeams}
-                    onChange={setSelectedTeams}
-                    loading={teamsLoading}
-                    placeholder={t('teams.selectTeamToView')}
-                    style={{ width: '100%' }}
-                  />
-                </TeamSelectorWrapper>
-              </TeamControls>
-              {selectedTeams.length > 0 && (
-                <ButtonGroup>
+        <SectionStack>
+          <SectionHeading level={3}>
+            {t('storage.heading', { defaultValue: 'Storage' })}
+          </SectionHeading>
+
+          <div style={{ width: '100%', maxWidth: 420 }}>
+            <TeamSelector
+              data-testid="resources-team-selector"
+              teams={teams}
+              selectedTeams={selectedTeams}
+              onChange={setSelectedTeams}
+              loading={teamsLoading}
+              placeholder={t('teams.selectTeamToView', {
+                defaultValue: 'Select a team to view its resources',
+              })}
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          <ResourceListView<Storage>
+            title={
+              <ListTitleRow>
+                <ListTitle>
+                  {t('storage.title', { defaultValue: 'Storage Locations' })}
+                </ListTitle>
+                <ListSubtitle>
+                  {t('storage.subtitle', {
+                    defaultValue: 'Manage remote storage locations and rclone configurations',
+                  })}
+                </ListSubtitle>
+              </ListTitleRow>
+            }
+            loading={storagesLoading}
+            data={displayedStorages}
+            columns={storageColumns}
+            rowKey="storageName"
+            data-testid="resources-storage-table"
+            resourceType="storage locations"
+            emptyDescription={emptyDescription}
+            pagination={
+              hasTeamSelection
+                ? {
+                    current: storagePage,
+                    pageSize: storagePageSize,
+                    total: displayedStorages.length,
+                    showSizeChanger: true,
+                    pageSizeOptions: ['10', '20', '50', '100'],
+                    showTotal: (total: number, range: [number, number]) =>
+                      `${t('common:general.showingRecords', {
+                        start: range[0],
+                        end: range[1],
+                        total,
+                      })}`,
+                    onChange: (page: number, size: number) => {
+                      setStoragePage(page)
+                      if (size && size !== storagePageSize) {
+                        setStoragePageSize(size)
+                        setStoragePage(1)
+                      }
+                    },
+                    position: ['bottomRight'],
+                  }
+                : false
+            }
+            actions={
+              hasTeamSelection ? (
+                <>
                   <Tooltip title={t('storage.createStorage')}>
-                    <ActionButton
+                    <Button
                       type="primary"
                       icon={<PlusOutlined />}
                       data-testid="resources-create-storage-button"
@@ -404,7 +461,7 @@ const StoragePage: React.FC = () => {
                     />
                   </Tooltip>
                   <Tooltip title={t('resources:storage.import.button')}>
-                    <ActionButton
+                    <Button
                       icon={<ImportOutlined />}
                       data-testid="resources-import-button"
                       onClick={() => rcloneImportWizard.open()}
@@ -412,55 +469,18 @@ const StoragePage: React.FC = () => {
                     />
                   </Tooltip>
                   <Tooltip title={t('common:actions.refresh')}>
-                    <ActionButton
+                    <Button
                       icon={<ReloadOutlined />}
                       data-testid="resources-refresh-button"
                       onClick={() => refetchStorage()}
                       aria-label={t('common:actions.refresh')}
                     />
                   </Tooltip>
-                </ButtonGroup>
-              )}
-            </HeaderRow>
-          </HeaderSection>
-
-          <ContentSection>
-            {selectedTeams.length === 0 ? (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={t('teams.selectTeamPrompt')}
-                style={{ padding: `${theme.spacing.LG}px 0` }}
-              />
-            ) : (
-              <DataTable
-                data-testid="resources-storage-table"
-                columns={storageColumns}
-                dataSource={storages}
-                rowKey="storageName"
-                scroll={{ x: 'max-content' }}
-                loading={storagesLoading}
-                $isLoading={storagesLoading}
-                pagination={{
-                  current: storagePage,
-                  pageSize: storagePageSize,
-                  total: storages.length,
-                  showSizeChanger: true,
-                  pageSizeOptions: ['10', '20', '50', '100'],
-                  showTotal: (total: number, range: [number, number]) =>
-                    `${t('common:general.showingRecords', { start: range[0], end: range[1], total })}`,
-                  onChange: (page: number, size: number) => {
-                    setStoragePage(page)
-                    if (size && size !== storagePageSize) {
-                      setStoragePageSize(size)
-                      setStoragePage(1)
-                    }
-                  },
-                  position: ['bottomRight'],
-                }}
-              />
-            )}
-          </ContentSection>
-        </PageCard>
+                </>
+              ) : undefined
+            }
+          />
+        </SectionStack>
       </PageWrapper>
 
       <UnifiedResourceModal

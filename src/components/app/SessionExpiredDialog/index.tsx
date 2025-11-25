@@ -8,13 +8,13 @@ import {
   StyledModal,
   TitleStack,
   DangerTitle,
-  IconWrapper,
   ContentStack,
   DescriptionText,
   CountdownCard,
   CountdownText,
   FooterButton,
 } from './styles'
+import { IconWrapper } from '@/components/ui'
 
 const COUNTDOWN_DURATION = 60 // 60 seconds
 
@@ -75,7 +75,7 @@ export const SessionExpiredDialog: React.FC = () => {
     <StyledModal
       title={
         <TitleStack>
-          <IconWrapper>
+          <IconWrapper $tone="danger">
             <ClockCircleOutlined />
           </IconWrapper>
           <DangerTitle>Session Expired</DangerTitle>

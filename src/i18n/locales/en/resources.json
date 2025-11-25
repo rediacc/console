@@ -265,6 +265,11 @@
     "sourceLabel": "Source Location:",
     "title": "Browse Remote Files"
   },
+  "credentials": {
+    "heading": "Repository Credentials",
+    "title": "Credentials",
+    "subtitle": "Manage repository credentials and deployments"
+  },
   "repositories": {
     "accessible": "Accessible",
     "activeState": "State",
@@ -475,6 +480,9 @@
     "storageDescription": "Configure cloud storage connections"
   },
   "storage": {
+    "heading": "Storage",
+    "title": "Storage Locations",
+    "subtitle": "Manage remote storage locations and rclone configurations",
     "confirmDelete": "Are you sure you want to delete storage \"{{storageName}}\"?",
     "createStorage": "Add Storage",
     "deleteError": "Failed to delete storage",

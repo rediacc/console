@@ -13,8 +13,12 @@
  */
 
 import styled from 'styled-components'
-import { Card, Badge, Empty, Alert, Form, Select, Input, Space } from 'antd'
-import { ActionButton as PrimitiveActionButton } from '@/styles/primitives'
+import { Card, Badge, Alert, Form, Space } from 'antd'
+import {
+  ActionButton as PrimitiveActionButton,
+  FullWidthInput as PrimitiveFullWidthInput,
+  FullWidthSelect as PrimitiveFullWidthSelect,
+} from '@/styles/primitives'
 import { DESIGN_TOKENS } from '@/utils/styleConstants'
 
 const SpaceCompact = Space.Compact
@@ -43,26 +47,18 @@ export const PrimaryBadge = styled(Badge)`
   }
 `
 
-// ============================================
-// ANT DESIGN EMPTY STATE WRAPPERS
-// ============================================
-
-export const PaddedEmpty = styled(Empty)`
-  padding: ${({ theme }) => theme.spacing['5']}px 0;
-`
+export { PaddedEmpty } from '@/styles/primitives'
 
 // ============================================
 // ANT DESIGN FORM WRAPPERS
 // ============================================
 
-export const FullWidthSelect = styled(Select)`
-  width: 100%;
+export const FullWidthSelect = styled(PrimitiveFullWidthSelect)`
   flex: 1 1 240px;
   min-width: 200px;
 `
 
-export const FullWidthInput = styled(Input)`
-  width: 100%;
+export const FullWidthInput = styled(PrimitiveFullWidthInput)`
   flex: 1 1 240px;
   min-width: 200px;
 `

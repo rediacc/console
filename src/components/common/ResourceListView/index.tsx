@@ -18,8 +18,9 @@ import {
   TableWrapper,
 } from './styles'
 import LoadingWrapper from '@/components/common/LoadingWrapper'
+export { COLUMN_WIDTHS, COLUMN_RESPONSIVE } from './columnConstants'
 
-interface ResourceListViewProps<T extends Record<string, unknown> = Record<string, unknown>> {
+interface ResourceListViewProps<T extends object = Record<string, unknown>> {
   title?: ReactNode
   loading?: boolean
   data?: T[]
@@ -40,7 +41,7 @@ interface ResourceListViewProps<T extends Record<string, unknown> = Record<strin
   resourceType?: string
 }
 
-function ResourceListView<T extends Record<string, unknown> = Record<string, unknown>>({
+function ResourceListView<T extends object = Record<string, unknown>>({
   title,
   loading = false,
   data = [],

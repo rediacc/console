@@ -10,8 +10,9 @@ import RbdImageTable from '../RbdImageTable'
 import { buildPoolColumns } from './columns'
 import { ClusterPoolsCard } from './components/ClusterPoolsCard'
 import { useTraceModal, useExpandableTable } from '@/hooks'
-import { EmptyStateWrapper, CreatePoolButton } from './styles'
+import { CreatePoolButton } from './styles'
 import { confirmAction } from '@/utils/confirmations'
+import { EmptyStatePanel } from '@/styles/primitives'
 
 interface PoolTableProps {
   pools: DistributedStoragePool[]
@@ -137,7 +138,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
 
   if (pools.length === 0 && !loading) {
     return (
-      <EmptyStateWrapper description={t('pools.noPools')}>
+      <EmptyStatePanel description={t('pools.noPools')} $marginBottom="XL">
         <CreatePoolButton
           type="primary"
           onClick={onCreatePool}
@@ -145,7 +146,7 @@ export const PoolTable: React.FC<PoolTableProps> = ({
         >
           {t('pools.create')}
         </CreatePoolButton>
-      </EmptyStateWrapper>
+      </EmptyStatePanel>
     )
   }
 

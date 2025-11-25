@@ -1,17 +1,16 @@
 import styled from 'styled-components'
-import { Button, Tag, Empty, Badge } from 'antd'
+import { Button, Badge } from 'antd'
+import { CloudServerOutlined, TeamOutlined, DesktopOutlined } from '@/utils/optimizedIcons'
 import {
-  CloudServerOutlined,
-  RightOutlined,
-  TeamOutlined,
-  DesktopOutlined,
-} from '@/utils/optimizedIcons'
+  TableContainer as BaseTableContainer,
+  TableCellContent,
+  TableCellText,
+  ExpandIcon as BaseExpandIcon,
+  PillTag,
+  StyledIcon,
+} from '@/styles/primitives'
 
-export const TableContainer = styled.div`
-  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  overflow: hidden;
-  background: ${({ theme }) => theme.colors.bgPrimary};
+export const TableContainer = styled(BaseTableContainer)`
   .cluster-row {
     cursor: pointer;
     transition: background-color ${({ theme }) => theme.transitions.FAST};
@@ -22,50 +21,28 @@ export const TableContainer = styled.div`
   }
 `
 
-export const EmptyStateWrapper = styled(Empty)`
-  && {
-    margin-top: ${({ theme }) => theme.spacing.XXXL}px;
-  }
-`
-
 export const CreateClusterButton = styled(Button)`
   && {
     margin-top: ${({ theme }) => theme.spacing.SM}px;
   }
 `
 
-export const ClusterNameCell = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`
+export const ClusterNameCell = styled(TableCellContent)``
 
-export const ExpandIcon = styled(RightOutlined)<{ $expanded: boolean }>`
-  font-size: ${({ theme }) => theme.dimensions.ICON_SM}px;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  transition: transform ${({ theme }) => theme.transitions.FAST};
-  transform: ${({ $expanded }) =>
-    $expanded ? 'rotate(90deg)' : 'rotate(0deg)'};
-`
+export const ExpandIcon = styled(BaseExpandIcon)<{ $expanded: boolean }>``
 
-export const ClusterIcon = styled(CloudServerOutlined)`
-  font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
-  color: ${({ theme }) => theme.colors.primary};
-`
+export const ClusterIcon = styled(StyledIcon).attrs(({ theme }) => ({
+  as: CloudServerOutlined,
+  $size: 'MD',
+  $color: theme.colors.primary,
+}))``
 
-export const ClusterNameText = styled.span`
-  font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-  color: ${({ theme }) => theme.colors.textPrimary};
-`
+export const ClusterNameText = styled(TableCellText)``
 
-export const TeamTag = styled(Tag)`
-  && {
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-    border-color: ${({ theme }) => theme.colors.success};
-    color: ${({ theme }) => theme.colors.success};
-    background: ${({ theme }) => theme.colors.bgPrimary};
-  }
-`
+export const TeamTag = styled(PillTag).attrs({
+  $variant: 'team',
+  $size: 'SM',
+})``
 
 export const MachineCountBadgeWrapper = styled(Badge)<{ $hasMachines: boolean }>`
   .ant-badge-count {
@@ -76,10 +53,11 @@ export const MachineCountBadgeWrapper = styled(Badge)<{ $hasMachines: boolean }>
   }
 `
 
-export const MachineCountIcon = styled(TeamOutlined)`
-  font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`
+export const MachineCountIcon = styled(StyledIcon).attrs(({ theme }) => ({
+  as: TeamOutlined,
+  $size: 'MD',
+  $color: theme.colors.textSecondary,
+}))``
 
 export const ManageMachinesButton = styled(Button)`
   && {
@@ -105,37 +83,22 @@ export const ExpandedRowTitle = styled.h4`
   color: ${({ theme }) => theme.colors.textPrimary};
 `
 
-export const MachinesTableWrapper = styled.div`
-  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  overflow: hidden;
-  background: ${({ theme }) => theme.colors.bgPrimary};
-`
+export const MachinesTableWrapper = styled(BaseTableContainer)``
 
-export const MachineNameCell = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`
+export const MachineNameCell = styled(TableCellContent)``
 
-export const MachineNameIcon = styled(DesktopOutlined)`
-  font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
-  color: ${({ theme }) => theme.colors.primary};
-`
+export const MachineNameIcon = styled(StyledIcon).attrs(({ theme }) => ({
+  as: DesktopOutlined,
+  $size: 'MD',
+  $color: theme.colors.primary,
+}))``
 
-export const MachineNameText = styled.span`
-  font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-  color: ${({ theme }) => theme.colors.textPrimary};
-`
+export const MachineNameText = styled(TableCellText)``
 
-export const MachineBridgeTag = styled(Tag)`
-  && {
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-    border-color: ${({ theme }) => theme.colors.secondary};
-    color: ${({ theme }) => theme.colors.secondary};
-    background: ${({ theme }) => theme.colors.bgPrimary};
-  }
-`
+export const MachineBridgeTag = styled(PillTag).attrs({
+  $variant: 'bridge',
+  $size: 'SM',
+})``
 
 export const AssignedDateText = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};

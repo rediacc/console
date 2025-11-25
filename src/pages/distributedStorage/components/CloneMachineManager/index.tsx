@@ -21,7 +21,6 @@ import { useDialogState } from '@/hooks/useDialogState'
 import {
   ManagerCard,
   TableContainer,
-  EmptyStateWrapper,
   EmptyActionButton,
   WarningWrapper,
 } from './styles'
@@ -29,6 +28,7 @@ import { HeaderSummary } from './components/HeaderSummary'
 import { MachineControls } from './components/MachineControls'
 import { AssignMachinesModal } from './components/AssignMachinesModal'
 import LoadingWrapper from '@/components/common/LoadingWrapper'
+import { EmptyStatePanel } from '@/styles/primitives'
 
 interface CloneMachineManagerProps {
   clone: DistributedStorageRbdClone
@@ -230,9 +230,10 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
 
       <LoadingWrapper loading={loadingMachines} centered minHeight={240}>
         {assignedMachines.length === 0 ? (
-          <EmptyStateWrapper
+          <EmptyStatePanel
             description={t('distributedStorage:clones.noMachinesAssigned')}
             data-testid="clone-manager-empty-state"
+            $marginBottom="XL"
           >
             <EmptyActionButton
               type="primary"
@@ -242,7 +243,7 @@ export const CloneMachineManager: React.FC<CloneMachineManagerProps> = ({
             >
               {t('distributedStorage:clones.assignMachines')}
             </EmptyActionButton>
-          </EmptyStateWrapper>
+          </EmptyStatePanel>
         ) : (
           <TableContainer>
             <Table<CloneMachine>

@@ -1,8 +1,9 @@
 import React from 'react'
-import { Tooltip, Dropdown, Button } from 'antd'
+import { Tooltip, Dropdown } from 'antd'
 import type { MenuProps } from 'antd'
 import type { TFunction } from 'i18next'
 import styled from 'styled-components'
+import { TableActionButton } from '@/components/common/styled'
 
 // =============================================================================
 // TYPES
@@ -29,6 +30,8 @@ export interface StandardButtonConfig<T = unknown> {
   dropdownItems?: MenuProps['items']
   /** Dropdown menu click handler */
   onDropdownClick?: (key: string, record: T) => void
+  /** Show loading state */
+  loading?: boolean | ((record: T) => boolean)
   /** Button variant */
   variant?: ActionButtonVariant
   /** Show danger styling */
@@ -37,6 +40,8 @@ export interface StandardButtonConfig<T = unknown> {
   visible?: boolean | ((record: T) => boolean)
   /** Disabled check */
   disabled?: boolean | ((record: T) => boolean)
+  /** Explicit test identifier */
+  testId?: string | ((record: T) => string)
   /** Test ID suffix (auto-generated if not provided) */
   testIdSuffix?: string
   /** Aria label (defaults to tooltip) */
@@ -86,25 +91,6 @@ const Container = styled.div<{ $gap: 'XS' | 'SM' | 'MD' }>`
   display: inline-flex;
   align-items: center;
   gap: ${({ $gap, theme }) => theme.spacing[$gap]}px;
-`
-
-const ActionButton = styled(Button)<{ $hasLabel?: boolean }>`
-  && {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT_SM}px;
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-    ${({ $hasLabel, theme }) =>
-      $hasLabel
-        ? `
-      padding: 0 ${theme.spacing.SM}px;
-      gap: ${theme.spacing.XS}px;
-    `
-        : `
-      width: ${theme.dimensions.CONTROL_HEIGHT_SM}px;
-    `}
-  }
 `
 
 // =============================================================================
@@ -174,29 +160,35 @@ export function ActionButtonGroup<T>({
         const isDisabled =
           config.disabled === true ||
           (typeof config.disabled === 'function' && config.disabled(record))
+        const isLoading =
+          typeof config.loading === 'function' ? config.loading(record) : config.loading
 
-        const testId = config.testIdSuffix
-          ? `${prefix}${config.testIdSuffix}-${recordId}`
-          : `${prefix}${config.type}-${recordId}`
+        const testId =
+          typeof config.testId === 'function'
+            ? config.testId(record)
+            : config.testId ||
+              (config.testIdSuffix
+                ? `${prefix}${config.testIdSuffix}-${recordId}`
+                : `${prefix}${config.type}-${recordId}`)
 
         const tooltipText = getTooltipText(config.tooltip)
         const ariaLabel = config.ariaLabel ? getTooltipText(config.ariaLabel) : tooltipText
         const labelText = config.label ? getTooltipText(config.label) : undefined
 
         const buttonElement = (
-          <ActionButton
-            type={config.variant || 'primary'}
-            size="small"
+          <TableActionButton
+            type={config.variant || 'default'}
             icon={config.icon}
             danger={config.danger}
             disabled={isDisabled}
             onClick={config.onClick ? () => config.onClick?.(record) : undefined}
+            loading={isLoading}
             data-testid={testId}
             aria-label={ariaLabel}
             $hasLabel={!!labelText}
           >
             {labelText}
-          </ActionButton>
+          </TableActionButton>
         )
 
         // Wrap in dropdown if needed

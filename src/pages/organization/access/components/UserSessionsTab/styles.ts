@@ -1,5 +1,6 @@
 import styled from 'styled-components'
 import { Card, Button, Input, Tag, Statistic, Typography } from 'antd'
+import { TableContainer as BaseTableContainer, CardTitle as PrimitiveCardTitle } from '@/styles/primitives'
 
 const { Text } = Typography
 
@@ -46,11 +47,7 @@ export const CardTitleRow = styled.div`
   gap: ${({ theme }) => theme.spacing.SM}px;
 `
 
-export const CardTitleText = styled.span`
-  font-size: ${({ theme }) => theme.fontSize.H4}px;
-  font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-  color: ${({ theme }) => theme.colors.textPrimary};
-`
+export const CardTitleText = PrimitiveCardTitle
 
 export const RefreshButton = styled(Button)`
   && {
@@ -69,11 +66,7 @@ export const SearchInput = styled(Input)`
   }
 `
 
-export const TableWrapper = styled.div`
-  border: 1px solid var(--color-border-secondary);
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  overflow: hidden;
-`
+export const TableWrapper = styled(BaseTableContainer)``
 
 export const SessionTag = styled(Tag)`
   border-radius: ${({ theme }) => theme.borderRadius.SM}px;

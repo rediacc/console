@@ -1,6 +1,6 @@
 import styled from 'styled-components'
-import { Tag, Typography } from 'antd'
-import { BaseModal, BaseTable } from '@/styles/primitives'
+import { Typography } from 'antd'
+import { BaseModal, BaseTable, ModalTitleRow, PillTag } from '@/styles/primitives'
 import { InfoCircleOutlined } from '@/utils/optimizedIcons'
 import { ModalSize } from '@/types/modal'
 
@@ -16,14 +16,7 @@ export const StyledModal = styled(BaseModal).attrs({
   }
 `
 
-export const TitleStack = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: ${({ theme }) => theme.fontSize.LG}px;
-  font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-`
+export const TitleStack = styled(ModalTitleRow)``
 
 export const InfoIcon = styled(InfoCircleOutlined)`
   color: ${({ theme }) => theme.colors.info};
@@ -75,24 +68,22 @@ export const MachineNameText = styled(Text)`
   }
 `
 
-export const TeamTag = styled(Tag)`
+export const TeamTag = styled(PillTag).attrs({
+  $variant: 'success',
+  $size: 'SM',
+  $borderless: true,
+})`
   && {
-    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-    border-color: transparent;
-    background-color: ${({ theme }) => theme.colors.bgSuccess};
-    color: ${({ theme }) => theme.colors.success};
-    font-weight: ${({ theme }) => theme.fontWeight.MEDIUM};
     font-size: ${({ theme }) => theme.fontSize.XS}px;
     padding: 0 ${({ theme }) => theme.spacing.XS}px;
   }
 `
 
-export const ClusterTag = styled(Tag)`
+export const ClusterTag = styled(PillTag).attrs({
+  $variant: 'cluster',
+  $size: 'SM',
+})`
   && {
-    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
-    border-color: ${({ theme }) => theme.colors.primary};
-    color: ${({ theme }) => theme.colors.primary};
-    background-color: ${({ theme }) => theme.colors.primaryBg};
     font-size: ${({ theme }) => theme.fontSize.XS}px;
     padding: 0 ${({ theme }) => theme.spacing.XS}px;
   }

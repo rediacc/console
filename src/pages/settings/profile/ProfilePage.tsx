@@ -18,11 +18,7 @@ import TwoFactorSettings from '@/pages/settings/profile/components/TwoFactorSett
 import { ModalSize } from '@/types/modal'
 import { useDialogState, useModalForm } from '@/hooks'
 import { PasswordField, PasswordConfirmField } from '@/components/forms/FormFields'
-import {
-  ProfilePageWrapper,
-  ProfileSectionStack,
-  ProfileSectionHeading,
-} from './styles'
+import { PageWrapper, SectionStack, SectionHeading } from '@/components/ui'
 import {
   CardContent,
   CardHeader,
@@ -110,9 +106,9 @@ const ProfilePage: React.FC = () => {
   }
 
   return (
-    <ProfilePageWrapper>
-      <ProfileSectionStack>
-        <ProfileSectionHeading level={3}>{t('personal.title')}</ProfileSectionHeading>
+    <PageWrapper>
+      <SectionStack>
+        <SectionHeading level={3}>{t('personal.title')}</SectionHeading>
 
         <SettingsCard>
           <CardContent>
@@ -164,7 +160,7 @@ const ProfilePage: React.FC = () => {
             </CardActions>
           </CardContent>
         </SettingsCard>
-      </ProfileSectionStack>
+      </SectionStack>
 
       <VaultEditorModal
         open={userVaultModal.isOpen}
@@ -232,7 +228,7 @@ const ProfilePage: React.FC = () => {
       </Modal>
 
       <TwoFactorSettings open={twoFactorModal.isOpen} onCancel={twoFactorModal.close} />
-    </ProfilePageWrapper>
+    </PageWrapper>
   )
 }
 

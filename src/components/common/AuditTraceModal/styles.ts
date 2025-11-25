@@ -74,6 +74,3 @@ export const StatValue = styled.span`
 `
 
 // Icon wrappers with colors
-export const IconWrapper = styled.span<{ $color: string }>`
-  color: ${({ $color }) => $color};
-`

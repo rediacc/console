@@ -1,11 +1,18 @@
 import styled from 'styled-components'
-import { Card, Row, Input, Button, Empty, Tag, Statistic } from 'antd'
-import { Typography } from 'antd'
+import { Card, Row, Input, Button, Statistic, Typography } from 'antd'
 import {
   CopyOutlined,
   TeamOutlined,
   DesktopOutlined,
 } from '@/utils/optimizedIcons'
+import {
+  IconButton as BaseIconButton,
+  PillTag,
+  StyledIcon,
+  TableContainer as BaseTableContainer,
+  TableCellContent,
+  TableCellText,
+} from '@/styles/primitives'
 
 const { Title, Text } = Typography
 
@@ -34,10 +41,11 @@ export const TitleRow = styled.div`
   gap: ${({ theme }) => theme.spacing.SM}px;
 `
 
-export const TitleIcon = styled(CopyOutlined)`
-  font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
-  color: ${({ theme }) => theme.colors.primary};
-`
+export const TitleIcon = styled(StyledIcon).attrs(({ theme }) => ({
+  as: CopyOutlined,
+  $size: 'MD',
+  $color: theme.colors.primary,
+}))``
 
 export const TitleText = styled(Title).attrs({ level: 4 })`
   && {
@@ -79,10 +87,11 @@ export const StatCard = styled(Statistic)<{ $highlight?: boolean }>`
   }
 `
 
-export const StatIcon = styled(TeamOutlined)`
-  font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`
+export const StatIcon = styled(StyledIcon).attrs(({ theme }) => ({
+  as: TeamOutlined,
+  $size: 'MD',
+  $color: theme.colors.textSecondary,
+}))``
 
 export const ToolbarRow = styled(Row)`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
@@ -96,15 +105,9 @@ export const ActionButtonGroup = styled.div`
   gap: ${({ theme }) => theme.spacing.SM}px;
 `
 
-export const ToolbarButton = styled(Button)`
+export const ToolbarButton = styled(BaseIconButton)`
   && {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
-    height: ${({ theme }) => theme.dimensions.CONTROL_HEIGHT}px;
-    padding: 0;
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
+    border-radius: ${({ theme }) => theme.borderRadius.MD}px;
   }
 `
 
@@ -119,25 +122,7 @@ export const WarningWrapper = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.MD}px;
 `
 
-export const TableContainer = styled.div`
-  border: 1px solid ${({ theme }) => theme.colors.borderSecondary};
-  border-radius: ${({ theme }) => theme.borderRadius.LG}px;
-  overflow: hidden;
-  background: ${({ theme }) => theme.colors.bgPrimary};
-`
-
-export const LoadingState = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: ${({ theme }) => theme.spacing.XL}px;
-`
-
-export const EmptyStateWrapper = styled(Empty)`
-  && {
-    margin-bottom: ${({ theme }) => theme.spacing.XL}px;
-  }
-`
+export const TableContainer = styled(BaseTableContainer)``
 
 export const EmptyActionButton = styled(Button)`
   && {
@@ -158,12 +143,12 @@ export const ModalPlaceholder = styled.div`
   padding: ${({ theme }) => theme.spacing.XL}px;
 `
 
-export const SelectedCountTag = styled(Tag)`
+export const SelectedCountTag = styled(PillTag).attrs({
+  $variant: 'primary',
+  $size: 'SM',
+})`
   && {
     align-self: flex-start;
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-    border-color: ${({ theme }) => theme.colors.primary};
-    color: ${({ theme }) => theme.colors.primary};
   }
 `
 
@@ -175,32 +160,23 @@ export const ModalTitle = styled.span`
   color: ${({ theme }) => theme.colors.textPrimary};
 `
 
-export const ModalTitleIcon = styled(TeamOutlined)`
-  font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`
+export const ModalTitleIcon = styled(StyledIcon).attrs(({ theme }) => ({
+  as: TeamOutlined,
+  $size: 'MD',
+  $color: theme.colors.textSecondary,
+}))``
 
-export const MachineNameCell = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.SM}px;
-`
+export const MachineNameCell = styled(TableCellContent)``
 
-export const MachineNameIcon = styled(DesktopOutlined)`
-  font-size: ${({ theme }) => theme.dimensions.ICON_MD}px;
-  color: ${({ theme }) => theme.colors.primary};
-`
+export const MachineNameIcon = styled(StyledIcon).attrs(({ theme }) => ({
+  as: DesktopOutlined,
+  $size: 'MD',
+  $color: theme.colors.primary,
+}))``
 
-export const MachineName = styled.span`
-  font-weight: ${({ theme }) => theme.fontWeight.SEMIBOLD};
-  color: ${({ theme }) => theme.colors.textPrimary};
-`
+export const MachineName = styled(TableCellText)``
 
-export const BridgeTag = styled(Tag)`
-  && {
-    border-radius: ${({ theme }) => theme.borderRadius.SM}px;
-    border-color: ${({ theme }) => theme.colors.success};
-    background: ${({ theme }) => theme.colors.bgPrimary};
-    color: ${({ theme }) => theme.colors.success};
-  }
-`
+export const BridgeTag = styled(PillTag).attrs({
+  $variant: 'team',
+  $size: 'SM',
+})``

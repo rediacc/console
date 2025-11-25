@@ -275,16 +275,20 @@ export interface StatusColumnOptions<T> {
   statusMap: Record<string, StatusConfig>
   defaultConfig?: StatusConfig
   sorter?: boolean | ColumnsType<T>[number]['sorter']
+  align?: 'left' | 'center' | 'right'
+  renderValue?: (value: any, record: T) => string
 }
 
 /**
- * Create a status column with consistent tag rendering
+ * Create a status column with icon and tooltip rendering
  */
 export const createStatusColumn = <T,>(options: StatusColumnOptions<T>): ColumnsType<T>[number] => {
   const dataIndex = options.dataIndex
   const dataKey = typeof dataIndex === 'string' ? dataIndex : String(dataIndex)
-  const fallbackTitle = i18n.t('common:statusColumn', { defaultValue: 'Status' })
-  const renderStatus = createStatusRenderer<string>(options.statusMap as Record<string, StatusConfig>, options.defaultConfig)
+  const renderStatus = createStatusRenderer<string>(
+    options.statusMap as Record<string, StatusConfig>,
+    options.defaultConfig
+  )
 
   let sorter: ColumnsType<T>[number]['sorter'] | undefined
   if (options.sorter === true) {
@@ -298,12 +302,16 @@ export const createStatusColumn = <T,>(options: StatusColumnOptions<T>): Columns
   }
 
   return {
-    title: options.title || fallbackTitle,
+    title: options.title || i18n.t('common:statusColumn', { defaultValue: 'Status' }),
     dataIndex,
     key: options.key || dataKey || 'status',
-    width: options.width ?? 140,
+    width: options.width ?? 100,
+    align: options.align ?? 'center',
     sorter,
-    render: (value: string) => renderStatus(value),
+    render: (value: any, record: T) => {
+      const statusValue = options.renderValue ? options.renderValue(value, record) : value
+      return renderStatus(statusValue)
+    },
   }
 }
 

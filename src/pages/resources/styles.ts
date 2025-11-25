@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import { Card, Breadcrumb, Typography } from 'antd'
-import { PageContainer } from '@/styles/primitives'
+import { PageContainer, SectionStack, SectionHeaderRow } from '@/styles/primitives'
 
 export const PageWrapper = styled(PageContainer)`
   height: 100%;
@@ -16,19 +16,12 @@ export const BreadcrumbWrapper = styled(Breadcrumb)`
   margin-bottom: ${({ theme }) => theme.spacing.SM}px;
 `
 
-export const HeaderSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.MD}px;
+export const HeaderSection = styled(SectionStack)`
   margin-bottom: ${({ theme }) => theme.spacing.LG}px;
 `
 
-export const HeaderRow = styled.div`
-  display: flex;
-  justify-content: space-between;
+export const HeaderRow = styled(SectionHeaderRow)`
   align-items: flex-start;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.MD}px;
 `
 
 export const TitleColumn = styled.div`

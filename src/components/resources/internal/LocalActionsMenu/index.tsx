@@ -16,7 +16,8 @@ import { LocalCommandModal } from '../LocalCommandModal'
 import type { RootState } from '@/store/store'
 import type { PluginContainer } from '@/types'
 import { useDialogState } from '@/hooks/useDialogState'
-import { IconWrapper, MenuLabel, TriggerButton } from './styles'
+import { MenuLabel, TriggerButton } from './styles'
+import { IconWrapper } from '@/components/ui'
 
 type ContainerMenuAction = 'terminal' | 'logs' | 'stats'
 
@@ -36,8 +37,8 @@ interface LocalActionsMenuProps {
   isMachineOnlyMenu?: boolean
 }
 
-const createMenuIcon = (IconComponent: React.ElementType, size: 'sm' | 'md' = 'sm') => (
-  <IconWrapper $size={size}>
+const createMenuIcon = (IconComponent: React.ElementType) => (
+  <IconWrapper $size="md" $tone="primary">
     <IconComponent />
   </IconWrapper>
 )
@@ -238,7 +239,7 @@ export const LocalActionsMenu: React.FC<LocalActionsMenuProps> = ({
       >
         <Tooltip title={tooltipLabel}>
           <TriggerButton
-            icon={createMenuIcon(DesktopOutlined, 'md')}
+            icon={createMenuIcon(DesktopOutlined)}
             loading={isCheckingProtocol}
             disabled={disabled || isCheckingProtocol}
             data-testid={triggerTestId}

@@ -1,6 +1,5 @@
 import styled from 'styled-components'
 import { Button, Card, Divider, Typography } from 'antd'
-import type { StyledTheme } from '@/styles/styledTheme'
 import {
   PanelWrapper,
   StickyHeader,
@@ -13,18 +12,6 @@ import {
 } from '../detailPanelPrimitives'
 
 const { Title, Text } = Typography
-
-type IconVariant = 'primary' | 'plugin'
-
-const getIconColor = (variant: IconVariant, theme: StyledTheme) => {
-  switch (variant) {
-    case 'plugin':
-      return theme.colors.info
-    case 'primary':
-    default:
-      return theme.colors.success
-  }
-}
 
 export const DetailPanel = styled(PanelWrapper)`
   .ant-card {
@@ -57,13 +44,6 @@ export const PanelTitle = styled(Title).attrs({ level: 4 })`
     margin: 0;
     color: ${({ theme }) => theme.colors.textPrimary};
   }
-`
-
-export const IconWrapper = styled.span<{ $variant: IconVariant; $size?: 'md' | 'lg' }>`
-  font-size: ${({ theme, $size = 'lg' }) => ($size === 'lg' ? theme.fontSize.XXL : theme.fontSize.XL)}px;
-  color: ${({ theme, $variant }) => getIconColor($variant, theme)};
-  display: inline-flex;
-  align-items: center;
 `
 
 export const CollapseButton = styled(Button)`
