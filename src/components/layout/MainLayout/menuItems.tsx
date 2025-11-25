@@ -7,6 +7,7 @@ import {
   ShopOutlined,
   InboxOutlined,
   CloudOutlined,
+  CloudServerOutlined,
   TeamOutlined,
 } from '@/utils/optimizedIcons'
 import type { TFunction } from 'i18next'
@@ -94,13 +95,34 @@ export const getMenuItems = (t: TFunction): MenuConfig[] => [
         showInSimple: false,
         'data-testid': 'sub-nav-storage-cloud',
       },
+    ],
+  },
+  {
+    key: '/distributed-storage',
+    icon: <CloudServerOutlined />,
+    label: t('navigation.distributedStorage'),
+    showInSimple: false,
+    requiresPlan: ['ENTERPRISE', 'BUSINESS', 'Enterprise', 'Business'],
+    featureFlag: 'distributedStorage',
+    'data-testid': 'main-nav-distributed-storage',
+    children: [
       {
-        key: '/distributed-storage',
-        label: t('navigation.storageDistributed'),
+        key: '/distributed-storage/clusters',
+        label: t('navigation.distributedStorageClusters'),
         showInSimple: false,
-        requiresPlan: ['ENTERPRISE', 'BUSINESS', 'Enterprise', 'Business'],
-        featureFlag: 'distributedStorage',
-        'data-testid': 'sub-nav-storage-distributed',
+        'data-testid': 'sub-nav-distributed-storage-clusters',
+      },
+      {
+        key: '/distributed-storage/pools',
+        label: t('navigation.distributedStoragePools'),
+        showInSimple: false,
+        'data-testid': 'sub-nav-distributed-storage-pools',
+      },
+      {
+        key: '/distributed-storage/machines',
+        label: t('navigation.distributedStorageMachines'),
+        showInSimple: false,
+        'data-testid': 'sub-nav-distributed-storage-machines',
       },
     ],
   },

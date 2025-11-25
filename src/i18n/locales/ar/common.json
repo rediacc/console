@@ -119,6 +119,9 @@
     "storage": "تخزين",
     "storageCloud": "سحاب",
     "storageDistributed": "وزعت",
+    "distributedStorageClusters": "المجموعات",
+    "distributedStoragePools": "التجمعات",
+    "distributedStorageMachines": "الآلات",
     "system": "نظام"
   },
   "nestedObjectEditor": {

@@ -41,7 +41,16 @@
     "createSuccess": "Clone created successfully",
     "deleteSuccess": "Clone deleted successfully",
     "machinesAssignedSuccess": "Machines assigned to clone successfully",
-    "machinesRemovedSuccess": "Machines removed from clone successfully"
+    "machinesRemovedSuccess": "Machines removed from clone successfully",
+    "create": "Create Clone",
+    "delete": "Delete Clone",
+    "edit": "Edit Clone",
+    "export": "Export Clone",
+    "flatten": "Flatten Clone",
+    "info": "Clone Info",
+    "manageMachines": "Manage Machines",
+    "name": "Clone Name",
+    "split": "Split Clone"
   },
   "clusters": {
     "assignMachines": "Assign Machines",
@@ -62,7 +71,12 @@
     "title": "Clusters",
     "createSuccess": "Cluster created successfully",
     "updateSuccess": "Cluster updated successfully",
-    "deleteSuccess": "Cluster deleted successfully"
+    "deleteSuccess": "Cluster deleted successfully",
+    "noClusters": "No clusters found",
+    "clusterName": "Cluster Name",
+    "confirmDelete": "Delete Cluster",
+    "create": "Create Cluster",
+    "deleteWarning": "Are you sure you want to delete cluster '{{name}}'?"
   },
   "common": {
     "actions": "Actions",
@@ -76,7 +90,10 @@
     "loading": "Loading...",
     "refresh": "Refresh",
     "save": "Save",
-    "success": "Success"
+    "success": "Success",
+    "hasVault": "Has Vault",
+    "none": "None",
+    "vault": "Vault"
   },
   "dashboard": {
     "avgMachinesPerCluster": "Avg Machines/Cluster",
@@ -104,7 +121,22 @@
     "title": "Images",
     "createSuccess": "Image created successfully",
     "updateSuccess": "Image updated successfully",
-    "deleteSuccess": "Image deleted successfully"
+    "deleteSuccess": "Image deleted successfully",
+    "clone": "Clone Image",
+    "create": "Create Image",
+    "createSnapshot": "Create Snapshot",
+    "delete": "Delete Image",
+    "edit": "Edit Image",
+    "export": "Export Image",
+    "flatten": "Flatten Image",
+    "guid": "GUID",
+    "import": "Import Image",
+    "info": "Image Info",
+    "map": "Map Image",
+    "resize": "Resize Image",
+    "showMapped": "Show Mapped Images",
+    "status": "Status",
+    "unmap": "Unmap Image"
   },
   "machineSection": {
     "manageAssignment": "Manage Assignment",
@@ -133,7 +165,10 @@
     },
     "updateSuccess": "Machine cluster assignment updated successfully",
     "clusterAssignedSuccess": "Machine assigned to cluster successfully",
-    "clusterRemovedSuccess": "Machine removed from cluster successfully"
+    "clusterRemovedSuccess": "Machine removed from cluster successfully",
+    "assignedDate": "Assigned Date",
+    "bridgeName": "Bridge",
+    "machineName": "Machine Name"
   },
   "mutations": {
     "operations": {
@@ -178,12 +213,26 @@
     "title": "Pools",
     "createSuccess": "Pool created successfully",
     "updateSuccess": "Pool updated successfully",
-    "deleteSuccess": "Pool deleted successfully"
+    "deleteSuccess": "Pool deleted successfully",
+    "clusterPrefix": "Cluster",
+    "confirmDelete": "Delete Pool",
+    "deleteWarning": "Are you sure you want to delete pool '{{name}}'?",
+    "poolName": "Pool Name"
   },
   "snapshots": {
     "title": "Snapshots",
     "createSuccess": "Snapshot created successfully",
-    "deleteSuccess": "Snapshot deleted successfully"
+    "deleteSuccess": "Snapshot deleted successfully",
+    "create": "Create Snapshot",
+    "delete": "Delete Snapshot",
+    "diff": "Diff Snapshot",
+    "edit": "Edit Snapshot",
+    "guid": "GUID",
+    "name": "Snapshot Name",
+    "protect": "Protect Snapshot",
+    "rollback": "Rollback Snapshot",
+    "unprotect": "Unprotect Snapshot",
+    "vault": "Snapshot Vault"
   },
   "tabs": {
     "clusters": "Clusters",
@@ -197,6 +246,23 @@
     "exclusivityClone": "This machine is currently assigned to a clone. It must be removed from the clone before it can be assigned elsewhere.",
     "exclusivityCluster": "This machine is currently assigned to a cluster. It must be removed from the cluster before it can be assigned elsewhere.",
     "exclusivityImage": "This machine is currently assigned to an image. The image must be reassigned before this machine can be used elsewhere.",
-    "reassignment": "Reassigning resources requires careful planning to avoid service disruption."
-  }
+    "reassignment": "Reassigning resources requires careful planning to avoid service disruption.",
+    "machineExclusivity": "Machines can only belong to one distributed storage resource at a time."
+  },
+  "accessDenied": {
+    "title": "Distributed storage unavailable",
+    "description": "Your current plan does not include distributed storage. Upgrade to Business or Enterprise or contact support to enable it."
+  },
+  "functions": {
+    "cluster_dashboard": "Open Cluster Dashboard",
+    "cluster_status": "Check Cluster Status",
+    "image_create": "Create Image",
+    "pool_list": "List Pools"
+  },
+  "queue": {
+    "createError": "Failed to submit queue task",
+    "itemCreated": "Queue task created successfully"
+  },
+  "selectTeamPrompt": "Select a team to get started",
+  "selectTeamToView": "Select a team"
 }

@@ -123,6 +123,7 @@ export interface FeatureFlag {
   requiresBuildType?: 'DEBUG' | 'RELEASE'  // Only show in specific build type
   requiresExpertMode?: boolean  // Requires expert UI mode (checked separately in components)
   requiresPowerMode?: boolean  // Can be revealed via keyboard shortcuts (session-only)
+  localhostOnly?: boolean  // Automatically enable when running on localhost domain (ignores other requirement flags)
   description?: string  // Description of the feature
 }
 
@@ -155,6 +156,7 @@ class FeatureFlags {
     distributedStorage: {
       requiresLocalhost: true,  // Hide in production builds
       requiresExpertMode: true,
+      localhostOnly: true,
       description: 'Distributed storage cluster management - allows creating and managing storage clusters'
     },
 
@@ -305,6 +307,10 @@ class FeatureFlags {
     // If enabled is not specified, it defaults to true
     if (flag.enabled === false) {
       return false
+    }
+
+    if (flag.localhostOnly) {
+      return onLocalhost
     }
 
     // On localhost domain (but mode not active), hide features with requirement flags

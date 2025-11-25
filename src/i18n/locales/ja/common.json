@@ -119,6 +119,9 @@
     "storage": "ストレージ",
     "storageCloud": "Cloud",
     "storageDistributed": "Distributed",
+    "distributedStorageClusters": "クラスター",
+    "distributedStoragePools": "プール",
+    "distributedStorageMachines": "マシン",
     "system": "システム"
   },
   "nestedObjectEditor": {

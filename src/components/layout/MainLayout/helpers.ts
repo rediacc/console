@@ -15,6 +15,36 @@ type CompanyData = {
   }
 }
 
+type FilterContext = {
+  uiMode: 'simple' | 'expert'
+  currentPlan: string
+  isLocalhost: boolean
+}
+
+/**
+ * Checks if a menu item should be visible based on UI mode, plan, and feature flags
+ */
+const shouldShowMenuItem = (
+  item: { showInSimple?: boolean; requiresPlan?: string[]; featureFlag?: string },
+  context: FilterContext
+): boolean => {
+  const { uiMode, currentPlan, isLocalhost } = context
+
+  // Filter by UI mode
+  if (uiMode === 'simple' && !item.showInSimple) return false
+
+  const flag = item.featureFlag ? featureFlags.getFeature(item.featureFlag) : undefined
+  const bypassPlanCheck = isLocalhost && flag?.localhostOnly
+
+  // Filter by plan requirements
+  if (!bypassPlanCheck && item.requiresPlan && !item.requiresPlan.includes(currentPlan)) return false
+
+  // Filter by feature flags
+  if (item.featureFlag && !featureFlags.isEnabled(item.featureFlag)) return false
+
+  return true
+}
+
 /**
  * Builds menu items from configuration
  */
@@ -24,25 +54,20 @@ export const buildMenuItems = (
   companyData?: CompanyData
 ): MenuItem[] => {
   const currentPlan = companyData?.companyInfo?.Plan || 'FREE'
+  const isLocalhost = typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+
+  const filterContext: FilterContext = { uiMode, currentPlan, isLocalhost }
 
   return items
     .filter((item) => {
       // Filter out dividers
       if (item.type === 'divider') return false
-      
+
       // Filter out items without labels
       if (!item.label) return false
-      
-      // Filter by UI mode
-      if (uiMode === 'simple' && !item.showInSimple) return false
-      
-      // Filter by plan requirements
-      if (item.requiresPlan && !item.requiresPlan.includes(currentPlan)) return false
-      
-      // Filter by feature flags
-      if (item.featureFlag && !featureFlags.isEnabled(item.featureFlag)) return false
-      
-      return true
+
+      return shouldShowMenuItem(item, filterContext)
     })
     .map((item) => ({
       key: item.key,
@@ -50,18 +75,7 @@ export const buildMenuItems = (
       label: item.label!, // Non-null assertion safe because we filtered out items without labels
       children: item.children
         ? item.children
-            .filter((child) => {
-              // Filter children by UI mode
-              if (uiMode === 'simple' && !child.showInSimple) return false
-              
-              // Filter children by plan requirements
-              if (child.requiresPlan && !child.requiresPlan.includes(currentPlan)) return false
-              
-              // Filter children by feature flags
-              if (child.featureFlag && !featureFlags.isEnabled(child.featureFlag)) return false
-              
-              return true
-            })
+            .filter((child) => shouldShowMenuItem(child, filterContext))
             .map((child) => ({
               key: child.key,
               label: child.label,
