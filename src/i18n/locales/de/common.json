@@ -119,6 +119,9 @@
     "storage": "Speicher",
     "storageCloud": "Cloud",
     "storageDistributed": "Distributed",
+    "distributedStorageClusters": "Clusters",
+    "distributedStoragePools": "Pools",
+    "distributedStorageMachines": "Machines",
     "system": "System"
   },
   "nestedObjectEditor": {

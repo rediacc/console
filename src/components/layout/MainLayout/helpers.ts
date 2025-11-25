@@ -24,6 +24,8 @@ export const buildMenuItems = (
   companyData?: CompanyData
 ): MenuItem[] => {
   const currentPlan = companyData?.companyInfo?.Plan || 'FREE'
+  const isLocalhost = typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
   return items
     .filter((item) => {
@@ -36,8 +38,11 @@ export const buildMenuItems = (
       // Filter by UI mode
       if (uiMode === 'simple' && !item.showInSimple) return false
       
+      const flag = item.featureFlag ? featureFlags.getFeature(item.featureFlag) : undefined
+      const bypassPlanCheck = isLocalhost && flag?.localhostOnly
+      
       // Filter by plan requirements
-      if (item.requiresPlan && !item.requiresPlan.includes(currentPlan)) return false
+      if (!bypassPlanCheck && item.requiresPlan && !item.requiresPlan.includes(currentPlan)) return false
       
       // Filter by feature flags
       if (item.featureFlag && !featureFlags.isEnabled(item.featureFlag)) return false
@@ -54,8 +59,11 @@ export const buildMenuItems = (
               // Filter children by UI mode
               if (uiMode === 'simple' && !child.showInSimple) return false
               
+              const childFlag = child.featureFlag ? featureFlags.getFeature(child.featureFlag) : undefined
+              const childBypassPlanCheck = isLocalhost && childFlag?.localhostOnly
+              
               // Filter children by plan requirements
-              if (child.requiresPlan && !child.requiresPlan.includes(currentPlan)) return false
+              if (!childBypassPlanCheck && child.requiresPlan && !child.requiresPlan.includes(currentPlan)) return false
               
               // Filter children by feature flags
               if (child.featureFlag && !featureFlags.isEnabled(child.featureFlag)) return false

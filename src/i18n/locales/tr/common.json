@@ -117,7 +117,10 @@
     "settingsProfile": "Profil",
     "storage": "Depolama",
     "storageCloud": "Bulut",
-    "storageDistributed": "Dağıtılmış"
+    "storageDistributed": "Dağıtılmış",
+    "distributedStorageClusters": "Clusters",
+    "distributedStoragePools": "Pools",
+    "distributedStorageMachines": "Machines"
   },
   "nestedObjectEditor": {
     "Active": "Aktif",

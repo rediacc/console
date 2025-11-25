@@ -1,12 +1,9 @@
 import React, { useState } from 'react'
-import { Tabs, Empty, Alert, Tooltip } from 'antd'
+import { Empty, Alert, Tooltip } from 'antd'
 import {
   PlusOutlined,
-  DatabaseOutlined,
-  CloudServerOutlined,
   ReloadOutlined,
   SettingOutlined,
-  DesktopOutlined
 } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
 import { useCompanyInfo } from '@/api/queries/dashboard'
@@ -44,13 +41,18 @@ import {
   EmptyState,
 } from './styles'
 
-const DistributedStoragePage: React.FC = () => {
+type DistributedStorageView = 'clusters' | 'pools' | 'machines'
+
+interface DistributedStoragePageProps {
+  view?: DistributedStorageView
+}
+
+const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 'clusters' }) => {
   const { t } = useTranslation(['distributedStorage', 'common'])
 
-  // Use custom hooks for common patterns
   const { teams, selectedTeams, setSelectedTeams, isLoading: teamsLoading } = useTeamSelection()
-
-  const [activeTab, setActiveTab] = useState('clusters')
+  const queueTrace = useQueueTraceModal()
+  const { data: companyData } = useCompanyInfo()
   const [modalState, setModalState] = useState<{
     open: boolean
     type: 'cluster' | 'pool'
@@ -58,37 +60,33 @@ const DistributedStoragePage: React.FC = () => {
     data?: Record<string, any>
   }>({ open: false, type: 'cluster', mode: 'create' })
 
-  // Queue trace modal with hook
-  const queueTrace = useQueueTraceModal()
-  
-  // Company info for subscription check
-  const { data: companyData } = useCompanyInfo()
-  
-  // Debug logging
-  console.log('DistributedStorage Debug:', {
-    companyData,
-    activeSubscription: companyData?.activeSubscription,
-    planCode: companyData?.activeSubscription?.PlanCode,
-    fullCompanyData: JSON.stringify(companyData, null, 2)
-  })
-
   const planCode = companyData?.activeSubscription?.PlanCode
   const hasDistributedStorageAccess = planCode === 'ENTERPRISE' || planCode === 'BUSINESS'
+  const hasSelectedTeam = selectedTeams.length > 0
+  const teamFilter = hasSelectedTeam ? selectedTeams : undefined
+  const primaryTeam = hasSelectedTeam ? selectedTeams[0] : undefined
 
-  console.log('hasDistributedStorageAccess:', hasDistributedStorageAccess, 'planCode:', planCode)
+  const isClustersView = view === 'clusters'
+  const isPoolsView = view === 'pools'
+  const isMachinesView = view === 'machines'
 
-  // Distributed storage queries - must be called unconditionally
-  const { data: clusters = [], isLoading: clustersLoading, refetch: refetchClusters } = useDistributedStorageClusters(
-    selectedTeams.length > 0 ? selectedTeams : undefined,
-    hasDistributedStorageAccess && !!companyData
+  const {
+    data: clusters = [],
+    isLoading: clustersLoading,
+    refetch: refetchClusters,
+  } = useDistributedStorageClusters(
+    teamFilter,
+    hasDistributedStorageAccess && !!companyData,
   )
 
-  const { data: pools = [], isLoading: poolsLoading, refetch: refetchPools } = useDistributedStoragePools(
-    selectedTeams.length > 0 ? selectedTeams : undefined,
-    hasDistributedStorageAccess && activeTab === 'pools' && !!companyData
-  )
+  const shouldLoadPools = hasDistributedStorageAccess && !!companyData && hasSelectedTeam && isPoolsView
 
-  // Mutations - must be called unconditionally
+  const {
+    data: pools = [],
+    isLoading: poolsLoading,
+    refetch: refetchPools,
+  } = useDistributedStoragePools(teamFilter, shouldLoadPools)
+
   const createClusterMutation = useCreateDistributedStorageCluster()
   const createPoolMutation = useCreateDistributedStoragePool()
   const updateClusterVaultMutation = useUpdateDistributedStorageClusterVault()
@@ -96,11 +94,18 @@ const DistributedStoragePage: React.FC = () => {
   const deleteClusterMutation = useDeleteDistributedStorageCluster()
   const deletePoolMutation = useDeleteDistributedStoragePool()
 
-  // Queue management - must be called unconditionally (hooks must be called unconditionally)
   useManagedQueueItem()
   useQueueVaultBuilder()
 
-  // Show debug info in UI temporarily
+  console.log('DistributedStorage Debug:', {
+    companyData,
+    activeSubscription: companyData?.activeSubscription,
+    planCode: companyData?.activeSubscription?.PlanCode,
+    fullCompanyData: JSON.stringify(companyData, null, 2),
+  })
+
+  console.log('hasDistributedStorageAccess:', hasDistributedStorageAccess, 'planCode:', planCode)
+
   if (!companyData) {
     return (
       <PageWrapper>
@@ -110,43 +115,45 @@ const DistributedStoragePage: React.FC = () => {
       </PageWrapper>
     )
   }
-  
-  // Handle modal operations
-  const openModal = (type: 'cluster' | 'pool', mode: 'create' | 'edit' | 'vault', data?: Record<string, any>) => {
+
+  const openModal = (
+    type: 'cluster' | 'pool',
+    mode: 'create' | 'edit' | 'vault',
+    data?: Record<string, any>,
+  ) => {
     setModalState({
       open: true,
       type,
       mode,
-      data
+      data,
     })
   }
-  
+
   const closeModal = () => {
     setModalState({
       open: false,
       type: 'cluster',
       mode: 'create',
-      data: undefined
+      data: undefined,
     })
   }
-  
-  // Handle modal submit
+
   const handleModalSubmit = async (data: Record<string, any>) => {
     try {
       const { type, mode } = modalState
-      
+
       if (mode === 'create') {
         if (type === 'cluster') {
           await createClusterMutation.mutateAsync({
             clusterName: data.clusterName,
-            clusterVault: data.clusterVault
+            clusterVault: data.clusterVault,
           })
         } else if (type === 'pool') {
           await createPoolMutation.mutateAsync({
             teamName: data.teamName,
             clusterName: data.clusterName,
             poolName: data.poolName,
-            poolVault: data.poolVault
+            poolVault: data.poolVault,
           })
         }
       } else if (mode === 'edit' || mode === 'vault') {
@@ -154,114 +161,53 @@ const DistributedStoragePage: React.FC = () => {
           await updateClusterVaultMutation.mutateAsync({
             clusterName: data.clusterName,
             clusterVault: data.clusterVault,
-            vaultVersion: data.vaultVersion
+            vaultVersion: data.vaultVersion,
           })
         } else if (type === 'pool') {
           await updatePoolVaultMutation.mutateAsync({
             poolName: data.poolName,
             teamName: data.teamName,
             poolVault: data.poolVault,
-            vaultVersion: data.vaultVersion
+            vaultVersion: data.vaultVersion,
           })
         }
       }
-      
+
       closeModal()
     } catch {
       // Error handled by mutation
     }
   }
-  
-  // Handle delete operations
+
   const handleDelete = async (type: 'cluster' | 'pool', data: Record<string, any>) => {
     try {
       if (type === 'cluster') {
         await deleteClusterMutation.mutateAsync({
-          clusterName: data.clusterName
+          clusterName: data.clusterName,
         })
       } else if (type === 'pool') {
         await deletePoolMutation.mutateAsync({
           poolName: data.poolName,
-          teamName: data.teamName
+          teamName: data.teamName,
         })
       }
     } catch {
       // Error handled by mutation
     }
   }
-  
-  // Handle function execution
+
   const handleFunctionSubmit = async (_functionData: Record<string, any>) => {
-    // This will be implemented when we have the function definitions
     showMessage('info', 'Function execution coming soon')
     closeModal()
   }
-  
-  // Tab items
-  const tabItems = [
-    {
-      key: 'clusters',
-      label: (
-        <span data-testid="ds-tab-clusters">
-          <CloudServerOutlined />
-          {t('tabs.clusters')}
-        </span>
-      ),
-      children: (
-        <ClusterTable
-          clusters={clusters}
-          loading={clustersLoading}
-          onCreateCluster={() => openModal('cluster', 'create')}
-          onEditCluster={(cluster) => openModal('cluster', 'edit', cluster)}
-          onDeleteCluster={(cluster) => handleDelete('cluster', cluster)}
-          onRunFunction={(cluster) => openModal('cluster', 'create', { ...cluster, isFunction: true })}
-        />
-      )
-    },
-    {
-      key: 'pools',
-      label: (
-        <span data-testid="ds-tab-pools">
-          <DatabaseOutlined />
-          {t('tabs.pools')}
-        </span>
-      ),
-      children: (
-        <PoolTable
-          pools={pools}
-          clusters={clusters}
-          loading={poolsLoading}
-          onCreatePool={() => openModal('pool', 'create')}
-          onEditPool={(pool) => openModal('pool', 'edit', pool)}
-          onDeletePool={(pool) => handleDelete('pool', pool)}
-          onRunFunction={(pool) => openModal('pool', 'create', { ...pool, isFunction: true })}
-        />
-      )
-    },
-    {
-      key: 'machines',
-      label: (
-        <span data-testid="ds-tab-machines">
-          <DesktopOutlined />
-          {t('tabs.machines')}
-        </span>
-      ),
-      children: (
-        <DistributedStorageMachinesTab
-          teamFilter={selectedTeams.length > 0 ? selectedTeams : undefined}
-        />
-      )
-    }
-  ]
-  
-  // Render access denied message if no access
+
   if (!hasDistributedStorageAccess) {
     return (
       <PageWrapper>
         <PageCard>
           <Alert
             message={t('accessDenied.title')}
-            description={
+            description={(
               <>
                 {t('accessDenied.description')}
                 <br />
@@ -274,7 +220,7 @@ const DistributedStoragePage: React.FC = () => {
                 <br />
                 Company Data: {JSON.stringify(companyData, null, 2)}
               </>
-            }
+            )}
             type="warning"
             showIcon
             icon={<SettingOutlined />}
@@ -283,7 +229,93 @@ const DistributedStoragePage: React.FC = () => {
       </PageWrapper>
     )
   }
-  
+
+  const renderContent = () => {
+    if (!hasSelectedTeam) {
+      return (
+        <EmptyState>
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('selectTeamPrompt')} />
+        </EmptyState>
+      )
+    }
+
+    if (isClustersView) {
+      return (
+        <ClusterTable
+          clusters={clusters}
+          loading={clustersLoading}
+          onCreateCluster={() => openModal('cluster', 'create')}
+          onEditCluster={(cluster) => openModal('cluster', 'edit', cluster)}
+          onDeleteCluster={(cluster) => handleDelete('cluster', cluster)}
+          onRunFunction={(cluster) => openModal('cluster', 'create', { ...cluster, isFunction: true })}
+        />
+      )
+    }
+
+    if (isPoolsView) {
+      return (
+        <PoolTable
+          pools={pools}
+          clusters={clusters}
+          loading={poolsLoading}
+          onCreatePool={() => openModal('pool', 'create')}
+          onEditPool={(pool) => openModal('pool', 'edit', pool)}
+          onDeletePool={(pool) => handleDelete('pool', pool)}
+          onRunFunction={(pool) => openModal('pool', 'create', { ...pool, isFunction: true })}
+        />
+      )
+    }
+
+    return (
+      <DistributedStorageMachinesTab
+        teamFilter={teamFilter}
+      />
+    )
+  }
+
+  const renderActions = () => {
+    if (!hasSelectedTeam || isMachinesView) {
+      return null
+    }
+
+    const createLabel = isClustersView ? t('clusters.create') : t('pools.create')
+    const createTestId = isClustersView ? 'ds-create-cluster-button' : 'ds-create-pool-button'
+
+    return (
+      <ActionGroup>
+        <Tooltip title={createLabel}>
+          <PrimaryIconButton
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              if (isClustersView) {
+                openModal('cluster', 'create')
+              } else if (isPoolsView) {
+                openModal('pool', 'create')
+              }
+            }}
+            data-testid={createTestId}
+            aria-label={createLabel}
+          />
+        </Tooltip>
+        <Tooltip title={t('common:actions.refresh')}>
+          <SecondaryIconButton
+            icon={<ReloadOutlined />}
+            onClick={() => {
+              if (isClustersView) {
+                refetchClusters()
+              } else if (isPoolsView) {
+                refetchPools()
+              }
+            }}
+            data-testid="ds-refresh-button"
+            aria-label={t('common:actions.refresh')}
+          />
+        </Tooltip>
+      </ActionGroup>
+    )
+  }
+
   return (
     <PageWrapper>
       <PageCard>
@@ -302,128 +334,84 @@ const DistributedStoragePage: React.FC = () => {
                 />
               </TeamSelectorWrapper>
             </TitleGroup>
-            {selectedTeams.length > 0 && (
-              <ActionGroup>
-                {activeTab !== 'machines' && (
-                  <Tooltip title={activeTab === 'clusters' ? t('clusters.create') : t('pools.create')}>
-                    <PrimaryIconButton
-                      type="primary"
-                      icon={<PlusOutlined />}
-                      onClick={() => {
-                        if (activeTab === 'clusters') {
-                          openModal('cluster', 'create')
-                        } else if (activeTab === 'pools') {
-                          openModal('pool', 'create')
-                        }
-                      }}
-                      data-testid={activeTab === 'clusters' ? 'ds-create-cluster-button' : 'ds-create-pool-button'}
-                      aria-label={activeTab === 'clusters' ? t('clusters.create') : t('pools.create')}
-                    />
-                  </Tooltip>
-                )}
-                <Tooltip title={t('common:actions.refresh')}>
-                  <SecondaryIconButton
-                    icon={<ReloadOutlined />}
-                    onClick={() => {
-                      if (activeTab === 'clusters') {
-                        refetchClusters()
-                      } else if (activeTab === 'pools') {
-                        refetchPools()
-                      }
-                    }}
-                    data-testid="ds-refresh-button"
-                    aria-label={t('common:actions.refresh')}
-                  />
-                </Tooltip>
-              </ActionGroup>
-            )}
+            {renderActions()}
           </HeaderRow>
         </HeaderSection>
 
-        {selectedTeams.length === 0 ? (
-          <EmptyState>
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('selectTeamPrompt')} />
-          </EmptyState>
-        ) : (
-          <Tabs
-            activeKey={activeTab}
-            onChange={setActiveTab}
-            items={tabItems}
-            data-testid="ds-tabs"
-          />
-        )}
+        {renderContent()}
       </PageCard>
-      
-      {/* Unified Resource Modal */}
-      <UnifiedResourceModal
-        open={modalState.open}
-        onCancel={closeModal}
-        resourceType={modalState.type}
-        mode={modalState.mode}
-        data-testid="ds-resource-modal"
-        existingData={{
-          ...modalState.data,
-          teamName: selectedTeams[0],
-          clusters: clusters,
-          pools: pools,
-          vaultContent: modalState.data?.vaultContent || modalState.data?.[`${modalState.type}Vault`]
-        }}
-        teamFilter={selectedTeams[0]}
-        onSubmit={handleModalSubmit}
-        onFunctionSubmit={handleFunctionSubmit}
-        onUpdateVault={async (vault: string, version: number) => {
-          const data = modalState.data || {}
-          if (modalState.type === 'cluster') {
-            await updateClusterVaultMutation.mutateAsync({
-              clusterName: data.clusterName,
-              clusterVault: vault,
-              vaultVersion: version
-            })
-          } else if (modalState.type === 'pool') {
-            await updatePoolVaultMutation.mutateAsync({
-              teamName: selectedTeams[0],
-              poolName: data.poolName,
-              poolVault: vault,
-              vaultVersion: version
-            })
-          }
-        }}
-        isSubmitting={
-          createClusterMutation.isPending ||
-          createPoolMutation.isPending
-        }
-        isUpdatingVault={
-          updateClusterVaultMutation.isPending ||
-          updatePoolVaultMutation.isPending
-        }
-        functionCategories={modalState.data?.isFunction ? [modalState.type] : []}
-        hiddenParams={modalState.data?.isFunction ? 
-          (modalState.type === 'cluster' ? ['cluster_name'] : ['cluster_name', 'pool_name']) : []
-        }
-        defaultParams={modalState.data?.isFunction ? 
-          (modalState.type === 'cluster' ? 
-            { cluster_name: modalState.data.clusterName } : 
-            { cluster_name: modalState.data.clusterName, pool_name: modalState.data.poolName }
-          ) : {}
-        }
-        preselectedFunction={modalState.data?.preselectedFunction}
-      />
-      
-      {/* Queue Item Trace Modal */}
-      <QueueItemTraceModal
-        taskId={queueTrace.state.taskId}
-        open={queueTrace.state.open}
-        data-testid="ds-queue-trace-modal"
-        onCancel={() => {
-          queueTrace.close()
-          // Refresh data when modal closes
-          if (activeTab === 'clusters') {
-            refetchClusters()
-          } else if (activeTab === 'pools') {
-            refetchPools()
-          }
-        }}
-      />
+
+      {!isMachinesView && (
+        <>
+          <UnifiedResourceModal
+            open={modalState.open}
+            onCancel={closeModal}
+            resourceType={modalState.type}
+            mode={modalState.mode}
+            data-testid="ds-resource-modal"
+            existingData={{
+              ...modalState.data,
+              teamName: primaryTeam,
+              clusters: clusters,
+              pools: pools,
+              vaultContent: modalState.data?.vaultContent || modalState.data?.[`${modalState.type}Vault`],
+            }}
+            teamFilter={primaryTeam}
+            onSubmit={handleModalSubmit}
+            onFunctionSubmit={handleFunctionSubmit}
+            onUpdateVault={async (vault: string, version: number) => {
+              const data = modalState.data || {}
+              if (modalState.type === 'cluster') {
+                await updateClusterVaultMutation.mutateAsync({
+                  clusterName: data.clusterName,
+                  clusterVault: vault,
+                  vaultVersion: version,
+                })
+              } else if (modalState.type === 'pool') {
+                await updatePoolVaultMutation.mutateAsync({
+                  teamName: primaryTeam,
+                  poolName: data.poolName,
+                  poolVault: vault,
+                  vaultVersion: version,
+                })
+              }
+            }}
+            isSubmitting={
+              createClusterMutation.isPending ||
+              createPoolMutation.isPending
+            }
+            isUpdatingVault={
+              updateClusterVaultMutation.isPending ||
+              updatePoolVaultMutation.isPending
+            }
+            functionCategories={modalState.data?.isFunction ? [modalState.type] : []}
+            hiddenParams={modalState.data?.isFunction ?
+              (modalState.type === 'cluster' ? ['cluster_name'] : ['cluster_name', 'pool_name']) : []
+            }
+            defaultParams={modalState.data?.isFunction ?
+              (modalState.type === 'cluster' ?
+                { cluster_name: modalState.data.clusterName } :
+                { cluster_name: modalState.data.clusterName, pool_name: modalState.data.poolName }
+              ) : {}
+            }
+            preselectedFunction={modalState.data?.preselectedFunction}
+          />
+
+          <QueueItemTraceModal
+            taskId={queueTrace.state.taskId}
+            open={queueTrace.state.open}
+            data-testid="ds-queue-trace-modal"
+            onCancel={() => {
+              queueTrace.close()
+              if (isClustersView) {
+                refetchClusters()
+              } else if (isPoolsView) {
+                refetchPools()
+              }
+            }}
+          />
+        </>
+      )}
     </PageWrapper>
   )
 }

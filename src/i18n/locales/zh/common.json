@@ -120,6 +120,9 @@
     "storage": "存储",
     "storageCloud": "Cloud",
     "storageDistributed": "Distributed",
+    "distributedStorageClusters": "Clusters",
+    "distributedStoragePools": "Pools",
+    "distributedStorageMachines": "Machines",
     "system": "系统"
   },
   "nestedObjectEditor": {
