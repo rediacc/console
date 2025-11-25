@@ -367,7 +367,7 @@ const DistributedStoragePage: React.FC<DistributedStoragePageProps> = ({ view = 
                   clusterVault: vault,
                   vaultVersion: version,
                 })
-              } else if (modalState.type === 'pool') {
+              } else if (modalState.type === 'pool' && primaryTeam) {
                 await updatePoolVaultMutation.mutateAsync({
                   teamName: primaryTeam,
                   poolName: data.poolName,

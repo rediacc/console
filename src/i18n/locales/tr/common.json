@@ -118,9 +118,9 @@
     "storage": "Depolama",
     "storageCloud": "Bulut",
     "storageDistributed": "Dağıtılmış",
-    "distributedStorageClusters": "Clusters",
-    "distributedStoragePools": "Pools",
-    "distributedStorageMachines": "Machines"
+    "distributedStorageClusters": "Kümeler",
+    "distributedStoragePools": "Havuzlar",
+    "distributedStorageMachines": "Makineler"
   },
   "nestedObjectEditor": {
     "Active": "Aktif",
