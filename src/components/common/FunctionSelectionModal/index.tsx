@@ -2,8 +2,6 @@ import React, { useState, useMemo, useRef, useEffect, useCallback, startTransiti
 import { Modal, Row, Col, Input, Space, Form, Slider, Empty, Typography, Button, Select, Tooltip, Checkbox, Popover, message } from 'antd'
 import { ExclamationCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
-import { useSelector } from 'react-redux'
-import { RootState } from '@/store/store'
 import type { QueueFunction } from '@/api/queries/queue'
 import { useLocalizedFunctions } from '@/services/functionsService'
 import { useRepositories } from '@/api/queries/repositories'
@@ -108,9 +106,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
 }) => {
   const { t } = useTranslation(['functions', 'common', 'machines'])
   const { functions: localizedFunctions, categories } = useLocalizedFunctions()
-  const uiMode = useSelector((state: RootState) => state.ui.uiMode)
-  const isSimpleMode = uiMode === 'simple'
-  
+
   const [selectedFunction, setSelectedFunction] = useState<QueueFunction | null>(null)
   const [functionParams, setFunctionParams] = useState<FunctionParams>({})
   const [functionPriority, setFunctionPriority] = useState(4) // Fixed to normal priority
