@@ -35,7 +35,8 @@ import {
   filterFailedItems,
   parseFailureReason,
   getSeverityColor,
-  formatAge
+  formatAge,
+  STALE_TASK_CONSTANTS
 } from '@/core'
 import { renderQueueStatus, renderPriority } from '@/utils/queueRenderers'
 import { PageWrapper } from '@/components/ui'
@@ -377,8 +378,9 @@ const QueuePage: React.FC = () => {
       render: (retryCount: number | undefined, record: any) => {
         if (!retryCount && retryCount !== 0) return <Text type="secondary">-</Text>
 
-        const retryColor = retryCount === 0 ? 'green' : retryCount < 2 ? 'orange' : 'red'
-        const icon = retryCount >= 2 && record.permanentlyFailed ? <ExclamationCircleOutlined /> : undefined
+        const maxRetries = STALE_TASK_CONSTANTS.MAX_RETRY_COUNT
+        const retryColor = retryCount === 0 ? 'green' : retryCount < maxRetries - 1 ? 'orange' : 'red'
+        const icon = retryCount >= maxRetries - 1 && record.permanentlyFailed ? <ExclamationCircleOutlined /> : undefined
 
         // Parse error messages using consolidated utility function
         const { allErrors, primaryError } = parseFailureReason(record.lastFailureReason)
@@ -437,7 +439,7 @@ const QueuePage: React.FC = () => {
 
             {/* Retry count badge */}
             <Tag color={retryColor} icon={icon} style={{ margin: 0 }}>
-              {retryCount}/2 retries
+              {retryCount}/{maxRetries} retries
             </Tag>
           </Space>
         )

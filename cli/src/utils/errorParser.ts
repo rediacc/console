@@ -92,17 +92,12 @@ export function parseFailureReason(failureReason: string | null | undefined): Pa
 
 /**
  * Format parsed error for CLI display
+ * Colors will be applied by the outputService in the CLI
  *
  * @param error - Parsed error object
- * @param colorize - Whether to apply chalk colors (default: true)
  * @returns Formatted string for CLI output
  */
-export function formatErrorForCLI(error: ParsedError, colorize: boolean = true): string {
-  if (!colorize) {
-    return `[${error.severity}] ${error.message}`
-  }
-
-  // Colors will be applied by the outputService in the CLI
+export function formatErrorForCLI(error: ParsedError): string {
   return `[${error.severity}] ${error.message}`
 }
 
@@ -119,10 +114,10 @@ export function formatErrorsForCLI(result: ParsedErrorResult, showAll: boolean =
   }
 
   if (!showAll || result.allErrors.length === 1) {
-    return formatErrorForCLI(result.primaryError, false)
+    return formatErrorForCLI(result.primaryError)
   }
 
   return result.allErrors
-    .map(error => formatErrorForCLI(error, false))
+    .map(error => formatErrorForCLI(error))
     .join('\n')
 }

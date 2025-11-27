@@ -15,9 +15,32 @@ import {
   formatBoolean
 } from '../utils/queueFormatters.js'
 import type { OutputFormat } from '../types/index.js'
-import { getFirstRow, type QueueItemResponse } from '../types/api-responses.js'
+import { getFirstRow, getAllRows, type QueueItemResponse } from '../types/api-responses.js'
 
 // Exported action handlers for reuse in shortcuts
+
+/**
+ * Helper function to format and print trace output
+ * Reduces duplication between watch mode and single-fetch mode
+ */
+function printTrace(trace: QueueItemResponse, program: Command): void {
+  const format = program.opts().output as OutputFormat
+
+  if (format === 'table') {
+    const formattedTrace = {
+      taskId: trace.taskId,
+      status: formatStatus(trace.status || 'UNKNOWN'),
+      age: trace.ageInMinutes !== undefined ? formatAge(trace.ageInMinutes) : '-',
+      priority: trace.priority ? formatPriority(trace.priority) : '-',
+      retries: trace.retryCount !== undefined ? formatRetryCount(trace.retryCount) : '-',
+      progress: trace.progress || '-',
+      consoleOutput: trace.consoleOutput || '-'
+    }
+    outputService.print(formattedTrace, format)
+  } else {
+    outputService.print(trace, format)
+  }
+}
 
 export interface CreateActionOptions {
   team?: string
@@ -130,22 +153,7 @@ export async function traceAction(
           }
 
           // Output final trace
-          const format = program.opts().output as OutputFormat
-          if (format === 'table') {
-            // Format trace for table display
-            const formattedTrace = {
-              taskId: trace.taskId,
-              status: formatStatus(trace.status),
-              age: trace.ageInMinutes !== undefined ? formatAge(trace.ageInMinutes) : '-',
-              priority: trace.priority ? formatPriority(trace.priority) : '-',
-              retries: trace.retryCount !== undefined ? formatRetryCount(trace.retryCount) : '-',
-              progress: trace.progress || '-',
-              consoleOutput: trace.consoleOutput || '-'
-            }
-            outputService.print(formattedTrace, format)
-          } else {
-            outputService.print(trace, format)
-          }
+          printTrace(trace, program)
         }
       }
 
@@ -172,21 +180,8 @@ export async function traceAction(
         console.log('') // Empty line for spacing
       }
 
-      // Format trace for table display
-      if (format === 'table') {
-        const formattedTrace = {
-          taskId: trace.taskId,
-          status: formatStatus(trace.status || 'UNKNOWN'),
-          age: trace.ageInMinutes !== undefined ? formatAge(trace.ageInMinutes) : '-',
-          priority: trace.priority ? formatPriority(trace.priority) : '-',
-          retries: trace.retryCount !== undefined ? formatRetryCount(trace.retryCount) : '-',
-          progress: trace.progress || '-',
-          consoleOutput: trace.consoleOutput || '-'
-        }
-        outputService.print(formattedTrace, format)
-      } else {
-        outputService.print(trace, format)
-      }
+      // Output trace using helper function
+      printTrace(trace, program)
     } else {
       outputService.info('No trace found for this task')
     }
@@ -244,11 +239,11 @@ export function registerQueueCommands(program: Command): void {
           'Queue items fetched'
         )
 
-        let items = response.resultSets?.[0]?.data || []
+        let items = getAllRows<QueueItemResponse>(response.resultSets)
 
         // Filter by status if specified
         if (options.status) {
-          items = items.filter((item: any) =>
+          items = items.filter((item) =>
             item.status?.toLowerCase() === options.status.toLowerCase()
           )
         }
@@ -257,7 +252,7 @@ export function registerQueueCommands(program: Command): void {
 
         // Format items for better CLI display (table format only)
         if (format === 'table' && items.length > 0) {
-          items = items.map((item: any) => ({
+          const formattedItems = items.map((item) => ({
             taskId: item.taskId,
             status: formatStatus(item.status || item.healthStatus),
             priority: item.priority ? formatPriority(item.priority) : '-',
@@ -269,9 +264,10 @@ export function registerQueueCommands(program: Command): void {
             hasResponse: formatBoolean(item.hasResponse),
             error: item.lastFailureReason ? formatError(item.lastFailureReason) : '-'
           }))
+          outputService.print(formattedItems, format)
+        } else {
+          outputService.print(items, format)
         }
-
-        outputService.print(items, format)
       } catch (error) {
         handleError(error)
       }

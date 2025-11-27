@@ -169,8 +169,14 @@ export function formatError(failureReason: string | undefined, showAll: boolean 
 }
 
 /**
+ * Maximum retry count constant
+ * Should match STALE_TASK_CONSTANTS.MAX_RETRY_COUNT from core
+ */
+const MAX_RETRY_COUNT = 3
+
+/**
  * Format retry count with color
- * Green for 0, yellow for 1, red for 2+
+ * Green for 0, yellow for 1-2, red for 3+
  *
  * @param retryCount - Number of retries
  * @returns Colored retry count string
@@ -178,9 +184,10 @@ export function formatError(failureReason: string | undefined, showAll: boolean 
 export function formatRetryCount(retryCount: number | undefined): string {
   if (retryCount === undefined || retryCount === null) return chalk.gray('-')
 
-  if (retryCount === 0) return chalk.green(`${retryCount}/2`)
-  if (retryCount === 1) return chalk.yellow(`${retryCount}/2`)
-  return chalk.red.bold(`${retryCount}/2`)
+  const maxRetries = MAX_RETRY_COUNT
+  if (retryCount === 0) return chalk.green(`${retryCount}/${maxRetries}`)
+  if (retryCount < maxRetries - 1) return chalk.yellow(`${retryCount}/${maxRetries}`)
+  return chalk.red.bold(`${retryCount}/${maxRetries}`)
 }
 
 /**
