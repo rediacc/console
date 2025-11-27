@@ -24,6 +24,7 @@ import { confirmDelete } from '@/utils/confirmations'
 import TeamSelector from '@/components/common/TeamSelector'
 import { type Machine } from '@/types'
 import { QueueFunction } from '@/api/queries/queue'
+import { FUNCTION_DEFINITIONS } from '@/services/functionsService'
 import { useTheme } from 'styled-components'
 import { SectionStack, SectionHeading } from '@/components/ui'
 import {
@@ -331,6 +332,66 @@ const MachinesPage: React.FC = () => {
     }))
   }
 
+  // Direct queue handler for specific functions (bypasses modal)
+  const handleDirectFunctionQueue = useCallback(
+    async (machine: Machine, functionName: string) => {
+      const funcDef = FUNCTION_DEFINITIONS[functionName]
+      if (!funcDef) {
+        showMessage('error', t('resources:errors.functionNotFound'))
+        return
+      }
+
+      // Build default params from function definition
+      const defaultParams: Record<string, string> = {}
+      if (funcDef.params) {
+        Object.entries(funcDef.params).forEach(([paramName, paramInfo]) => {
+          if (paramInfo.default) {
+            defaultParams[paramName] = paramInfo.default
+          }
+        })
+      }
+
+      const teamData = teams.find((team) => team.teamName === machine.teamName)
+
+      const queuePayload = {
+        teamName: machine.teamName,
+        machineName: machine.machineName,
+        bridgeName: machine.bridgeName,
+        functionName,
+        params: defaultParams,
+        priority: 4, // Normal priority
+        description: `${functionName} for ${machine.machineName}`,
+        addedVia: 'machine-table-quick',
+        teamVault: teamData?.vaultContent || '{}',
+        machineVault: machine.vaultContent || '{}',
+        repositoryVault: '{}'
+      }
+
+      try {
+        const result = await executeAction(queuePayload)
+
+        if (result.success) {
+          if (result.taskId) {
+            showMessage('success', t('machines:queueItemCreated'))
+            openQueueTrace(result.taskId, machine.machineName)
+          } else if (result.isQueued) {
+            showMessage('info', t('resources:messages.highestPriorityQueued', { resourceType: 'machine' }))
+          }
+        } else {
+          showMessage('error', result.error || t('resources:errors.failedToCreateQueueItem'))
+        }
+
+        setRefreshKeys((prev) => ({
+          ...prev,
+          [machine.machineName]: Date.now()
+        }))
+      } catch (error) {
+        showMessage('error', t('resources:errors.failedToCreateQueueItem'))
+      }
+    },
+    [executeAction, openQueueTrace, t, teams]
+  )
+
   const isSubmitting =
     createMachineMutation.isPending ||
     updateMachineNameMutation.isPending ||
@@ -415,11 +476,16 @@ const MachinesPage: React.FC = () => {
                   onEditMachine={(machine) => openUnifiedModal('edit', machine)}
                   onVaultMachine={(machine) => openUnifiedModal('vault', machine)}
                   onFunctionsMachine={(machine, functionName) => {
-                    openUnifiedModal('create', machine, functionName)
-                    setRefreshKeys((prev) => ({
-                      ...prev,
-                      [machine.machineName]: Date.now()
-                    }))
+                    // WARNING: Do not change this pattern!
+                    // - Specific functions (functionName defined): Queue directly with defaults, NO modal
+                    // - "Advanced" (functionName undefined): Open modal with function list
+                    // This split behavior is intentional - users expect quick actions for specific
+                    // functions and full configuration only when clicking "Advanced".
+                    if (functionName) {
+                      handleDirectFunctionQueue(machine, functionName)
+                    } else {
+                      openUnifiedModal('create', machine)
+                    }
                   }}
                   onDeleteMachine={handleDeleteMachine}
                   enabled={selectedTeams.length > 0}

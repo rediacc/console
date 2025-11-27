@@ -23,6 +23,10 @@ export function registerTeamCommands(program: Command): void {
     vaultConfig: {
       endpoint: '/GetCompanyVaults',
       vaultType: 'Team'
+    },
+    vaultUpdateConfig: {
+      endpoint: '/UpdateTeamVault',
+      vaultFieldName: 'teamVault'
     }
   })
 

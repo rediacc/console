@@ -18,6 +18,7 @@ export interface CreateActionOptions {
   priority: string
   param?: string[]
   function: string
+  [key: string]: unknown
 }
 
 export interface TraceActionOptions {

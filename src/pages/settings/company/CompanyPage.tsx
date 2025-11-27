@@ -121,12 +121,10 @@ const CompanyPage: React.FC = () => {
     loadMasterPassword()
   }, [])
 
-  useEffect(() => {
-    if (masterPasswordModal.isOpen) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setMasterPasswordOperation(currentMasterPassword ? 'update' : 'create')
-    }
-  }, [masterPasswordModal.isOpen, currentMasterPassword])
+  const handleOpenMasterPasswordModal = () => {
+    setMasterPasswordOperation(currentMasterPassword ? 'update' : 'create')
+    masterPasswordModal.open()
+  }
 
   useEffect(() => {
     if (successModal.isOpen && countdown > 0) {
@@ -517,7 +515,7 @@ const CompanyPage: React.FC = () => {
                           type="primary"
                           danger
                           icon={<KeyOutlined />}
-                          onClick={() => masterPasswordModal.open()}
+                          onClick={handleOpenMasterPasswordModal}
                           data-testid="system-update-master-password-button"
                           aria-label={tSystem('dangerZone.updateMasterPassword.button')}
                         />

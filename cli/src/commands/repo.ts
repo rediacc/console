@@ -226,4 +226,67 @@ export function registerRepoCommands(program: Command): void {
         handleError(error)
       }
     })
+
+  // repo vault update
+  vault
+    .command('update <repoName>')
+    .description('Update repository vault data')
+    .option('-t, --team <name>', 'Team name')
+    .option('--tag <tag>', 'Repository tag', 'main')
+    .option('--vault <json>', 'Vault data as JSON string')
+    .option('--vault-version <n>', 'Current vault version (required for optimistic concurrency)', parseInt)
+    .action(async (repoName, options) => {
+      try {
+        await authService.requireAuth()
+        const opts = await contextService.applyDefaults(options)
+
+        if (!opts.team) {
+          outputService.error('Team name required. Use --team or set context.')
+          process.exit(1)
+        }
+
+        // Get vault data from --vault flag or stdin
+        let vaultData: string = options.vault
+        if (!vaultData && !process.stdin.isTTY) {
+          // Read from stdin if not a TTY (piped input)
+          const chunks: Buffer[] = []
+          for await (const chunk of process.stdin) {
+            chunks.push(chunk)
+          }
+          vaultData = Buffer.concat(chunks).toString('utf-8').trim()
+        }
+
+        if (!vaultData) {
+          outputService.error('Vault data required. Use --vault <json> or pipe JSON via stdin.')
+          process.exit(1)
+        }
+
+        if (options.vaultVersion === undefined || options.vaultVersion === null) {
+          outputService.error('Vault version required. Use --vault-version <n>.')
+          process.exit(1)
+        }
+
+        // Validate JSON
+        try {
+          JSON.parse(vaultData)
+        } catch {
+          outputService.error('Invalid JSON vault data.')
+          process.exit(1)
+        }
+
+        await withSpinner(
+          'Updating repository vault...',
+          () => apiClient.post('/UpdateRepositoryVault', {
+            teamName: opts.team,
+            repoName: repoName,
+            repoTag: options.tag,
+            repoVault: vaultData,
+            vaultVersion: options.vaultVersion,
+          }),
+          'Repository vault updated'
+        )
+      } catch (error) {
+        handleError(error)
+      }
+    })
 }

@@ -191,12 +191,6 @@ class FeatureFlags {
       description: 'API endpoint selector dropdown for switching between API backends'
     },
 
-    // Version Selector - Power mode feature
-    versionSelector: {
-      requiresPowerMode: true,
-      description: 'Version selector dropdown for switching between deployed versions'
-    },
-
     // Queue Management - Expert mode feature
     queueManagement: {
       requiresExpertMode: true,
@@ -225,7 +219,6 @@ class FeatureFlags {
 
     // Regions & Infrastructure - Expert mode feature
     regionsInfrastructure: {
-      requiresLocalhost: true,
       requiresExpertMode: true,
       description: 'Regions and infrastructure management section in System page'
     },

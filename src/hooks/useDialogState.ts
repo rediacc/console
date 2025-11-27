@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 
 /**
  * Generic dialog state interface
@@ -40,6 +40,17 @@ export interface UseDialogStateReturn<T> {
  *   Are you sure you want to delete {confirmDialog.state.data?.name}?
  * </Modal>
  */
+/**
+ * WARNING: Do not remove useMemo from return value!
+ *
+ * This hook returns a memoized object to prevent infinite render loops.
+ * Without useMemo, a new object is created on every render, which causes
+ * useEffect dependencies to trigger repeatedly, leading to "Maximum update
+ * depth exceeded" errors.
+ *
+ * See: UnifiedResourceModal's functionModal useEffect for an example of
+ * code that depends on stable references from this hook.
+ */
 export function useDialogState<T = unknown>(): UseDialogStateReturn<T> {
   const [state, setState] = useState<DialogState<T>>({
     open: false,
@@ -67,13 +78,16 @@ export function useDialogState<T = unknown>(): UseDialogStateReturn<T> {
     }))
   }, [])
 
-  return {
-    state,
-    open,
-    close,
-    setData,
-    isOpen: state.open,
-  }
+  return useMemo(
+    () => ({
+      state,
+      open,
+      close,
+      setData,
+      isOpen: state.open,
+    }),
+    [state, open, close, setData]
+  )
 }
 
 /**
@@ -122,12 +136,15 @@ export interface UseTraceModalReturn extends UseDialogStateReturn<TraceModalData
 export function useTraceModal(): UseTraceModalReturn {
   const dialogState = useDialogState<TraceModalData>()
 
-  return {
-    ...dialogState,
-    entityType: dialogState.state.data?.entityType ?? null,
-    entityIdentifier: dialogState.state.data?.entityIdentifier ?? null,
-    entityName: dialogState.state.data?.entityName,
-  }
+  return useMemo(
+    () => ({
+      ...dialogState,
+      entityType: dialogState.state.data?.entityType ?? null,
+      entityIdentifier: dialogState.state.data?.entityIdentifier ?? null,
+      entityName: dialogState.state.data?.entityName,
+    }),
+    [dialogState]
+  )
 }
 
 /**
@@ -187,10 +204,13 @@ export function useQueueTraceModal(): UseQueueTraceModalReturn {
     })
   }, [])
 
-  return {
-    state,
-    open: openModal,
-    close,
-    isOpen: state.open,
-  }
+  return useMemo(
+    () => ({
+      state,
+      open: openModal,
+      close,
+      isOpen: state.open,
+    }),
+    [state, openModal, close]
+  )
 }

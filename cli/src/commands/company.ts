@@ -120,6 +120,58 @@ export function registerCompanyCommands(program: Command): void {
       }
     })
 
+  // company vault update
+  vault
+    .command('update')
+    .description('Update company vault data')
+    .option('--vault <json>', 'Vault data as JSON string')
+    .option('--vault-version <n>', 'Current vault version (required for optimistic concurrency)', parseInt)
+    .action(async (options) => {
+      try {
+        await authService.requireAuth()
+
+        // Get vault data from --vault flag or stdin
+        let vaultData: string = options.vault
+        if (!vaultData && !process.stdin.isTTY) {
+          // Read from stdin if not a TTY (piped input)
+          const chunks: Buffer[] = []
+          for await (const chunk of process.stdin) {
+            chunks.push(chunk)
+          }
+          vaultData = Buffer.concat(chunks).toString('utf-8').trim()
+        }
+
+        if (!vaultData) {
+          outputService.error('Vault data required. Use --vault <json> or pipe JSON via stdin.')
+          process.exit(1)
+        }
+
+        if (options.vaultVersion === undefined || options.vaultVersion === null) {
+          outputService.error('Vault version required. Use --vault-version <n>.')
+          process.exit(1)
+        }
+
+        // Validate JSON
+        try {
+          JSON.parse(vaultData)
+        } catch {
+          outputService.error('Invalid JSON vault data.')
+          process.exit(1)
+        }
+
+        await withSpinner(
+          'Updating company vault...',
+          () => apiClient.post('/UpdateCompanyVault', {
+            companyVault: vaultData,
+            vaultVersion: options.vaultVersion,
+          }),
+          'Company vault updated'
+        )
+      } catch (error) {
+        handleError(error)
+      }
+    })
+
   // company export
   company
     .command('export')

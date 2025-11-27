@@ -77,6 +77,7 @@ export const buildMachineTableColumns = ({
     title: t('machines:machineName'),
     dataIndex: 'machineName',
     key: 'machineName',
+    maxLength: 50, // Increased from default 12 to show more of the machine name
     sorter: createSorter<Machine>('machineName'),
     renderWrapper: (content) => (
       <Space>
