@@ -19,7 +19,10 @@ export type {
   QueueHealthStatus,
   QueueStatus,
   StatusConfig,
-  PriorityConfig
+  PriorityConfig,
+  ErrorSeverity,
+  ParsedError,
+  ParsedErrorResult
 } from './utils/queue-status'
 export {
   // Export values from queue-status (exclude duplicates that are in validation.ts)
@@ -40,7 +43,11 @@ export {
   filterActiveItems,
   filterCompletedItems,
   filterFailedItems,
-  filterCancelledItems
+  filterCancelledItems,
+  extractFirstError,
+  extractAllErrors,
+  getSeverityColor,
+  parseFailureReason
 } from './utils/queue-status'
 export * from './utils/normalize'
 export * from './utils/progress-parser'

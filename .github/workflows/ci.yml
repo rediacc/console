@@ -182,6 +182,43 @@ jobs:
       - name: Run TypeScript type check
         run: npx tsc --noEmit
 
+  cli-check:
+    name: 🔧 Code Quality - CLI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903  # v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: cli/package-lock.json
+
+      - name: Install CLI dependencies
+        working-directory: cli
+        run: npm ci
+
+      - name: Build CLI
+        working-directory: cli
+        run: npm run build
+
+      - name: Check CLI build output
+        working-directory: cli
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "Error: CLI dist directory not created"
+            exit 1
+          fi
+          if [ ! -f "dist/index.js" ]; then
+            echo "Error: CLI index.js not found in dist"
+            exit 1
+          fi
+          echo "CLI build successful!"
+          ls -lah dist/
+
   build:
     name: 🏗️ Build - DEBUG & RELEASE
     runs-on: ubuntu-latest
@@ -334,7 +371,7 @@ jobs:
   ci-summary:
     name: ✅ CI Summary
     runs-on: ubuntu-latest
-    needs: [lint, type-check, build, security-scan, bundle-size]
+    needs: [lint, type-check, cli-check, build, security-scan, bundle-size]
     if: always()
 
     steps:
@@ -344,12 +381,14 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- Lint: ${{ needs.lint.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Type Check: ${{ needs.type-check.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- CLI Check: ${{ needs.cli-check.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Build: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Security Scan: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Bundle Size: ${{ needs.bundle-size.result }}" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ needs.lint.result }}" != "success" ] || \
              [ "${{ needs.type-check.result }}" != "success" ] || \
+             [ "${{ needs.cli-check.result }}" != "success" ] || \
              [ "${{ needs.build.result }}" != "success" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "❌ **CI Pipeline Failed**" >> $GITHUB_STEP_SUMMARY
