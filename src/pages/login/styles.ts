@@ -216,10 +216,6 @@ export const SelectorsContainer = styled.div`
   }
 `
 
-export const SelectorSpacer = styled.div<{ $hasSpacing: boolean }>`
-  margin-bottom: ${({ $hasSpacing, theme }) => ($hasSpacing ? `${theme.spacing.SM}px` : 0)};
-`
-
 export const FullWidthStack = styled(Space)`
   width: 100%;
 `

@@ -27,6 +27,7 @@ import {
 import { useDashboard, type QueueTeamIssue, type QueueMachineIssue } from '@/api/queries/dashboard'
 import { useRecentAuditLogs } from '@/api/queries/audit'
 import DistributedStorageDashboardWidget from '@/pages/dashboard/components/DistributedStorageDashboardWidget'
+import SystemVersionFooter from '@/pages/dashboard/components/SystemVersionFooter'
 import { createSorter } from '@/core'
 import { createTruncatedColumn } from '@/components/common/columns'
 import LoadingWrapper from '@/components/common/LoadingWrapper'
@@ -738,6 +739,8 @@ const DashboardPage: React.FC = () => {
             </EmptyState>
           )}
         </DashboardCard>
+
+        <SystemVersionFooter />
       </ContentStack>
     </PageWrapper>
   )

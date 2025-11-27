@@ -39,6 +39,11 @@ export interface ResourceCommandConfig {
     endpoint: string
     vaultType: string
   }
+  /** Optional: Vault update command configuration */
+  vaultUpdateConfig?: {
+    endpoint: string
+    vaultFieldName: string
+  }
 }
 
 /**
@@ -291,46 +296,129 @@ export function createResourceCommands(
     })
 
   // VAULT command (if configured)
-  if (vaultConfig) {
+  if (vaultConfig || config.vaultUpdateConfig) {
     const vault = resource
       .command('vault')
       .description(`${resourceName.charAt(0).toUpperCase() + resourceName.slice(1)} vault management`)
 
-    vault
-      .command(`get <${resourceName}Name>`)
-      .description(`Get ${resourceName} vault data`)
-      .option(parentFlag, parentDesc)
-      .action(async (resourceItemName, options) => {
+    // Vault GET command
+    if (vaultConfig) {
+      const getCmd = vault
+        .command(`get <${resourceName}Name>`)
+        .description(`Get ${resourceName} vault data`)
+
+      if (hasParent) {
+        getCmd.option(parentFlag, parentDesc)
+      }
+
+      getCmd.action(async (resourceItemName, options) => {
+          try {
+            await authService.requireAuth()
+            const opts = hasParent ? await contextService.applyDefaults(options) : options
+
+            if (!checkParent(opts)) {
+              process.exit(1)
+            }
+
+            const params: Record<string, any> = {
+              [nameField]: resourceItemName
+            }
+
+            if (hasParent) {
+              params[parentOption === 'team' ? 'teamName' : 'regionName'] = parentOption === 'team' ? opts.team : opts.region
+            }
+
+            const response = await withSpinner(
+              `Fetching ${resourceName} vault...`,
+              () => apiClient.get(vaultConfig.endpoint, params),
+              'Vault fetched'
+            )
+
+            const vaults = response.resultSets?.[0]?.data || []
+            const targetVault = vaults.find((v: any) => v.vaultType === vaultConfig.vaultType)
+            const format = program.opts().output as OutputFormat
+
+            if (targetVault) {
+              outputService.print(targetVault, format)
+            } else {
+              outputService.info(`No ${resourceName} vault found`)
+            }
+          } catch (error) {
+            handleError(error)
+          }
+        })
+    }
+
+    // Vault UPDATE command
+    if (config.vaultUpdateConfig) {
+      const updateCmd = vault
+        .command(`update <${resourceName}Name>`)
+        .description(`Update ${resourceName} vault data`)
+        .option('--vault <json>', 'Vault data as JSON string')
+        .option('--vault-version <n>', 'Current vault version (required for optimistic concurrency)', parseInt)
+
+      if (hasParent) {
+        updateCmd.option(parentFlag, parentDesc)
+      }
+
+      updateCmd.action(async (resourceItemName, options) => {
         try {
           await authService.requireAuth()
-          const opts = await contextService.applyDefaults(options)
+          const opts = hasParent ? await contextService.applyDefaults(options) : options
 
           if (!checkParent(opts)) {
             process.exit(1)
           }
 
-          const response = await withSpinner(
-            `Fetching ${resourceName} vault...`,
-            () => apiClient.get(vaultConfig.endpoint, {
-              [parentOption === 'team' ? 'teamName' : 'regionName']: parentOption === 'team' ? opts.team : opts.region,
-              [nameField]: resourceItemName
-            }),
-            'Vault fetched'
-          )
-
-          const vaults = response.resultSets?.[0]?.data || []
-          const targetVault = vaults.find((v: any) => v.vaultType === vaultConfig.vaultType)
-          const format = program.opts().output as OutputFormat
-
-          if (targetVault) {
-            outputService.print(targetVault, format)
-          } else {
-            outputService.info(`No ${resourceName} vault found`)
+          // Get vault data from --vault flag or stdin
+          let vaultData: string = options.vault
+          if (!vaultData && !process.stdin.isTTY) {
+            // Read from stdin if not a TTY (piped input)
+            const chunks: Buffer[] = []
+            for await (const chunk of process.stdin) {
+              chunks.push(chunk)
+            }
+            vaultData = Buffer.concat(chunks).toString('utf-8').trim()
           }
+
+          if (!vaultData) {
+            outputService.error('Vault data required. Use --vault <json> or pipe JSON via stdin.')
+            process.exit(1)
+          }
+
+          if (options.vaultVersion === undefined || options.vaultVersion === null) {
+            outputService.error('Vault version required. Use --vault-version <n>.')
+            process.exit(1)
+          }
+
+          // Validate JSON
+          try {
+            JSON.parse(vaultData)
+          } catch {
+            outputService.error('Invalid JSON vault data.')
+            process.exit(1)
+          }
+
+          const payload: Record<string, any> = {
+            [nameField]: resourceItemName,
+            [config.vaultUpdateConfig!.vaultFieldName]: vaultData,
+            vaultVersion: options.vaultVersion
+          }
+
+          if (hasParent) {
+            payload[parentOption === 'team' ? 'teamName' : 'regionName'] = parentOption === 'team' ? opts.team : opts.region
+          }
+
+          await withSpinner(
+            `Updating ${resourceName} vault...`,
+            () => apiClient.post(config.vaultUpdateConfig!.endpoint, payload),
+            `${resourceName.charAt(0).toUpperCase() + resourceName.slice(1)} vault updated`
+          )
         } catch (error) {
           handleError(error)
         }
       })
+    }
   }
 
   return resource

@@ -16,6 +16,10 @@ export function registerStorageCommands(program: Command): void {
     vaultConfig: {
       endpoint: '/GetCompanyVaults',
       vaultType: 'Storage'
+    },
+    vaultUpdateConfig: {
+      endpoint: '/UpdateStorageVault',
+      vaultFieldName: 'storageVault'
     }
   })
 }
