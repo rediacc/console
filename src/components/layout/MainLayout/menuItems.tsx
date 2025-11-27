@@ -9,11 +9,19 @@ import {
   CloudOutlined,
   CloudServerOutlined,
   TeamOutlined,
+  DashboardOutlined,
 } from '@/utils/optimizedIcons'
 import type { TFunction } from 'i18next'
 import type { MenuConfig } from './types'
 
 export const getMenuItems = (t: TFunction): MenuConfig[] => [
+  {
+    key: '/dashboard',
+    icon: <DashboardOutlined />,
+    label: t('navigation.dashboard'),
+    showInSimple: false,
+    'data-testid': 'main-nav-dashboard',
+  },
   {
     key: '/organization',
     icon: <TeamOutlined />,

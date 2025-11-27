@@ -20,6 +20,14 @@ export function registerBridgeCommands(program: Command): void {
       create: '/CreateBridge',
       rename: '/UpdateBridgeName',
       delete: '/DeleteBridge'
+    },
+    vaultConfig: {
+      endpoint: '/GetCompanyVaults',
+      vaultType: 'Bridge'
+    },
+    vaultUpdateConfig: {
+      endpoint: '/UpdateBridgeVault',
+      vaultFieldName: 'bridgeVault'
     }
   })
 

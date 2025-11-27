@@ -2,8 +2,6 @@ import React, { useState, useMemo, useRef, useEffect, useCallback, startTransiti
 import { Modal, Row, Col, Input, Space, Form, Slider, Empty, Typography, Button, Select, Tooltip, Checkbox, Popover, message } from 'antd'
 import { ExclamationCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons'
 import { useTranslation } from 'react-i18next'
-import { useSelector } from 'react-redux'
-import { RootState } from '@/store/store'
 import type { QueueFunction } from '@/api/queries/queue'
 import { useLocalizedFunctions } from '@/services/functionsService'
 import { useRepositories } from '@/api/queries/repositories'
@@ -108,9 +106,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
 }) => {
   const { t } = useTranslation(['functions', 'common', 'machines'])
   const { functions: localizedFunctions, categories } = useLocalizedFunctions()
-  const uiMode = useSelector((state: RootState) => state.ui.uiMode)
-  const isSimpleMode = uiMode === 'simple'
-  
+
   const [selectedFunction, setSelectedFunction] = useState<QueueFunction | null>(null)
   const [functionParams, setFunctionParams] = useState<FunctionParams>({})
   const [functionPriority, setFunctionPriority] = useState(4) // Fixed to normal priority
@@ -203,7 +199,10 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
   }
 
   // Handle preselected function - only when modal opens
-  const previousOpenRef = useRef(open)
+  // WARNING: Must initialize to false, NOT to `open` prop value!
+  // If initialized to `open`, when modal opens with open=true, the ref is already
+  // true, causing the preselection logic to never run (wasPreviouslyOpen check fails).
+  const previousOpenRef = useRef(false)
 
   useEffect(() => {
     const wasPreviouslyOpen = previousOpenRef.current
@@ -454,7 +453,11 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
       data-testid="function-modal"
     >
       <Row gutter={24}>
-        {!preselectedFunction && !isSimpleMode && (
+        {/* WARNING: Do not add isSimpleMode check here!
+            The function list must be visible when clicking "Advanced" regardless of UI mode.
+            Specific functions (setup, hello, etc.) are queued directly without modal,
+            so this modal is ONLY shown for "Advanced" which always needs the function list. */}
+        {!preselectedFunction && (
           <Col span={10}>
             <FunctionListCard title={t('functions:availableFunctions')} size="small">
               <SearchInput
@@ -500,7 +503,7 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
           </Col>
         )}
         
-        <Col span={preselectedFunction || isSimpleMode ? 24 : 14}>
+        <Col span={preselectedFunction ? 24 : 14}>
           {selectedFunction ? (
             <ContentStack>
               <ConfigCard title={`${t('functions:configure')}: ${selectedFunction.name}`} size="small">
@@ -928,8 +931,8 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                       )
                     })}
                   
-                  {/* Priority - Hidden when function is preselected or in simple mode */}
-                  {!preselectedFunction && !isSimpleMode && (
+                  {/* Priority - Hidden when function is preselected */}
+                  {!preselectedFunction && (
                     <Form.Item
                       label={
                         <Space size={4}>

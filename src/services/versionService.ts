@@ -12,16 +12,9 @@ interface VersionInfo {
   gitCommitShort?: string
 }
 
-interface VersionsManifest {
-  latest: string
-  versions: string[]
-}
-
 class VersionService {
   private versionCache: VersionInfo | null = null
   private fetchPromise: Promise<VersionInfo> | null = null
-  private versionsCache: VersionsManifest | null = null
-  private versionsFetchPromise: Promise<VersionsManifest> | null = null
 
   /**
    * Fetches the version information from version.json
@@ -99,89 +92,11 @@ class VersionService {
   }
 
   /**
-   * Fetches all available versions from versions.json manifest
-   * Returns cached result if available
-   */
-  async getAllVersions(): Promise<VersionsManifest> {
-    // Return cached versions if available
-    if (this.versionsCache) {
-      return this.versionsCache
-    }
-
-    // Return existing fetch promise if already fetching
-    if (this.versionsFetchPromise) {
-      return this.versionsFetchPromise
-    }
-
-    // Create new fetch promise
-    this.versionsFetchPromise = this.fetchVersionsManifest()
-
-    try {
-      this.versionsCache = await this.versionsFetchPromise
-      return this.versionsCache
-    } finally {
-      this.versionsFetchPromise = null
-    }
-  }
-
-  /**
-   * Fetches versions.json manifest from the root
-   */
-  private async fetchVersionsManifest(): Promise<VersionsManifest> {
-    try {
-      // Always fetch from root /versions.json
-      const response = await fetch('/versions.json')
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch versions.json: ${response.status}`)
-      }
-
-      const data = await response.json() as VersionsManifest
-
-      // Validate the response
-      if (!data.latest || !Array.isArray(data.versions)) {
-        throw new Error('versions.json has invalid structure')
-      }
-
-      return data
-    } catch (error) {
-      console.warn('Failed to fetch versions.json, using fallback', error)
-
-      // Fallback to current version only
-      const currentVersionInfo = await this.getVersion()
-      return {
-        latest: currentVersionInfo.version,
-        versions: [currentVersionInfo.version]
-      }
-    }
-  }
-
-  /**
-   * Detects if the app is running in local development
-   */
-  isLocalDevelopment(): boolean {
-    return window.location.hostname === 'localhost' ||
-           window.location.hostname === '127.0.0.1'
-  }
-
-  /**
-   * Gets the current version from the URL if on a versioned deployment
-   * Returns null if on root deployment
-   */
-  getCurrentVersion(): string | null {
-    const pathname = window.location.pathname
-    const versionMatch = pathname.match(/^\/versions\/(v\d+\.\d+\.\d+)/)
-    return versionMatch ? versionMatch[1] : null
-  }
-
-  /**
    * Clears the cached version (useful for testing)
    */
   clearCache(): void {
     this.versionCache = null
     this.fetchPromise = null
-    this.versionsCache = null
-    this.versionsFetchPromise = null
   }
 }
 

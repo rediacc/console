@@ -32,6 +32,10 @@ export function registerMachineCommands(program: Command): void {
     vaultConfig: {
       endpoint: '/GetCompanyVaults',
       vaultType: 'Machine'
+    },
+    vaultUpdateConfig: {
+      endpoint: '/UpdateMachineVault',
+      vaultFieldName: 'machineVault'
     }
   })
 

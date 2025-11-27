@@ -55,7 +55,6 @@ import {
   FullWidthStack,
   LargeGapFormItem,
   NoMarginFormItem,
-  SelectorSpacer,
 } from './styles'
 
 const { Text } = Typography
@@ -128,10 +127,6 @@ const LoginPage: React.FC = () => {
   const [showRegistration, setShowRegistration] = useState(false)
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
   const [endpointSelectorVisible, setEndpointSelectorVisible] = useState(() => {
-    // Default visibility based on build type
-    return featureFlags.getBuildType() === 'DEBUG'
-  })
-  const [versionSelectorVisible, setVersionSelectorVisible] = useState(() => {
     // Default visibility based on build type
     return featureFlags.getBuildType() === 'DEBUG'
   })
@@ -222,9 +217,8 @@ const LoginPage: React.FC = () => {
         // Toggle global power mode (or localhost mode if on localhost)
         const newState = featureFlags.togglePowerMode()
 
-        // Update visibility for both selectors
+        // Update visibility for endpoint selector
         setEndpointSelectorVisible(newState)
-        setVersionSelectorVisible(newState)
 
         // Show toast with current state - different message for localhost vs non-localhost
         const message = onLocalhost
@@ -262,29 +256,24 @@ const LoginPage: React.FC = () => {
       hasHealthyEndpoint,
       powerModeEnabled,
       currentVisibility: {
-        endpoint: endpointSelectorVisible,
-        version: versionSelectorVisible
+        endpoint: endpointSelectorVisible
       }
     })
 
     // Determine visibility based on build type and health status
     if (buildType === 'DEBUG') {
-      // DEBUG: Always show both
+      // DEBUG: Always show endpoint selector
       setEndpointSelectorVisible(true)
-      setVersionSelectorVisible(true)
     } else if (buildType === 'RELEASE') {
       if (powerModeEnabled) {
-        // Power mode overrides everything - show both
+        // Power mode overrides everything
         setEndpointSelectorVisible(true)
-        setVersionSelectorVisible(true)
       } else if (!hasHealthyEndpoint) {
-        // Fallback: show both when endpoint health fails
+        // Fallback: show when endpoint health fails
         setEndpointSelectorVisible(true)
-        setVersionSelectorVisible(true)
       } else {
-        // Hide both when healthy and no power mode
+        // Hide when healthy and no power mode
         setEndpointSelectorVisible(false)
-        setVersionSelectorVisible(false)
       }
     }
   }
@@ -639,27 +628,17 @@ const LoginPage: React.FC = () => {
               </Text>
             </RegisterContainer>
 
-            {/* Endpoint and Version selectors */}
+            {/* Endpoint selector and version display */}
             <SelectorsContainer>
-              {/* Advanced Options Container - Power Mode Features */}
-              {(endpointSelectorVisible || versionSelectorVisible) && (
+              {/* Endpoint Selector - Power Mode Feature */}
+              {endpointSelectorVisible && (
                 <AdvancedOptionsContainer>
-                  {/* Endpoint Selector */}
-                  {endpointSelectorVisible && (
-                    <SelectorSpacer $hasSpacing={versionSelectorVisible}>
-                      <EndpointSelector onHealthCheckComplete={handleHealthCheckComplete} />
-                    </SelectorSpacer>
-                  )}
-
-                  {/* Version Selector (Dropdown Mode) */}
-                  {versionSelectorVisible && (
-                    <VersionSelector showDropdown={true} />
-                  )}
+                  <EndpointSelector onHealthCheckComplete={handleHealthCheckComplete} />
                 </AdvancedOptionsContainer>
               )}
 
-              {/* Always-visible version display (Static Text Mode) */}
-              <VersionSelector showDropdown={false} />
+              {/* Always-visible version display */}
+              <VersionSelector />
             </SelectorsContainer>
           </FullWidthStack>
         </LoginContainer>
