@@ -2,7 +2,7 @@ import React, { useMemo, useCallback } from 'react'
 import { Typography, Space, Modal, Tag, Tabs, Tooltip, Dropdown } from 'antd'
 import FilterTagDisplay, { FilterTagConfig } from '@/pages/queue/components/FilterTagDisplay'
 import { renderTimestamp, renderBoolean } from '@/components/common/columns'
-import { ThunderboltOutlined, DesktopOutlined, ApiOutlined, PlayCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, WarningOutlined, GlobalOutlined, ClockCircleOutlined, ReloadOutlined, ExportOutlined, HistoryOutlined, SearchOutlined } from '@/utils/optimizedIcons'
+import { ThunderboltOutlined, DesktopOutlined, ApiOutlined, ExclamationCircleOutlined, GlobalOutlined, ReloadOutlined, ExportOutlined, HistoryOutlined, SearchOutlined, CloseCircleOutlined, PlayCircleOutlined, WarningOutlined } from '@/utils/optimizedIcons'
 import { useQueueItems, useCancelQueueItem, QueueFilters, type QueueStatistics } from '@/api/queries/queue'
 import { useDropdownData } from '@/api/queries/useDropdownData'
 import ResourceListView from '@/components/common/ResourceListView'
@@ -32,8 +32,13 @@ import {
   filterActiveItems,
   filterCompletedItems,
   filterCancelledItems,
-  filterFailedItems
+  filterFailedItems,
+  parseFailureReason,
+  getSeverityColor,
+  formatAge,
+  STALE_TASK_CONSTANTS
 } from '@/core'
+import { renderQueueStatus, renderPriority } from '@/utils/queueRenderers'
 import { PageWrapper } from '@/components/ui'
 import {
   IconButton,
@@ -290,40 +295,7 @@ const QueuePage: React.FC = () => {
       dataIndex: 'healthStatus',
       key: 'healthStatus',
       width: 120,
-      render: (healthStatus: string, record: any) => {
-        const statusConfig = {
-          'PENDING': { color: 'default', icon: <ClockCircleOutlined /> },
-          'ACTIVE': { color: 'processing', icon: <PlayCircleOutlined /> },
-          'STALE': { color: 'warning', icon: <WarningOutlined /> },
-          'STALE_PENDING': { color: 'orange', icon: <WarningOutlined /> },
-          'CANCELLING': { color: 'warning', icon: <PlayCircleOutlined spin /> },
-          'COMPLETED': { color: 'success', icon: <CheckCircleOutlined /> },
-          'FAILED': { color: 'error', icon: <ExclamationCircleOutlined /> },
-          'CANCELLED': { color: 'error', icon: <CloseCircleOutlined /> },
-          'UNKNOWN': { color: 'default', icon: <ExclamationCircleOutlined /> }
-        }
-        const config = statusConfig[healthStatus as keyof typeof statusConfig] || statusConfig.UNKNOWN
-        
-        // Show actual status alongside health status for active items
-        const statusText = healthStatus === 'ACTIVE' && record.status ? 
-          `${record.status} (${healthStatus})` : healthStatus
-        
-        let tooltipText = undefined
-        if (record.minutesSinceAssigned) {
-          tooltipText = `${record.minutesSinceAssigned} minutes since assigned`
-        } else if (healthStatus === 'STALE_PENDING') {
-          const hoursOld = Math.floor(record.ageInMinutes / 60)
-          tooltipText = `Pending for ${hoursOld} hours - may need attention`
-        }
-        
-        return (
-          <Tooltip title={tooltipText}>
-            <Tag color={config.color} icon={config.icon}>
-              {statusText}
-            </Tag>
-          </Tooltip>
-        )
-      }
+      render: (healthStatus: string, record: any) => renderQueueStatus(healthStatus, record)
     },
     {
       title: 'Priority',
@@ -331,36 +303,17 @@ const QueuePage: React.FC = () => {
       key: 'priority',
       width: 140,
       render: (priorityLabel: string | undefined, record: any) => {
-        if (!priorityLabel || !record.priority) {
-          return <Text type="secondary">-</Text>
-        }
-
-        const priorityConfig = {
-          1: { color: 'red', icon: <ExclamationCircleOutlined />, timeout: '33s' },
-          2: { color: 'orange', icon: undefined, timeout: 'Tier timeout' },
-          3: { color: 'gold', icon: undefined, timeout: 'Tier timeout' },
-          4: { color: 'blue', icon: undefined, timeout: 'Tier timeout' },
-          5: { color: 'green', icon: undefined, timeout: 'Tier timeout' }
-        }
-
-        const config = priorityConfig[record.priority as keyof typeof priorityConfig] || priorityConfig[3]
-
-        return (
-          <Tooltip title={
-            <div>
-              <div style={{ marginBottom: 4 }}><strong>{priorityLabel}</strong></div>
-              <div style={{ fontSize: 12 }}>
-                {record.priority === 1
-                  ? t('queue:priorityTooltipP1')
-                  : t('queue:priorityTooltipTier')}
-              </div>
+        const tooltipContent = (
+          <div>
+            <div style={{ marginBottom: 4 }}><strong>{priorityLabel}</strong></div>
+            <div style={{ fontSize: 12 }}>
+              {record.priority === 1
+                ? t('queue:priorityTooltipP1')
+                : t('queue:priorityTooltipTier')}
             </div>
-          }>
-            <Tag color={config.color} icon={config.icon}>
-              {priorityLabel}
-            </Tag>
-          </Tooltip>
+          </div>
         )
+        return renderPriority(priorityLabel, record.priority, tooltipContent) || <Text type="secondary">-</Text>
       },
       sorter: (a: any, b: any) => (a.priority || 3) - (b.priority || 3),
     },
@@ -369,11 +322,7 @@ const QueuePage: React.FC = () => {
       dataIndex: 'ageInMinutes',
       key: 'ageInMinutes',
       width: 100,
-      render: (minutes: number) => {
-        if (minutes < 60) return `${minutes}m`
-        if (minutes < 1440) return `${Math.floor(minutes / 60)}h ${minutes % 60}m`
-        return `${Math.floor(minutes / 1440)}d ${Math.floor((minutes % 1440) / 60)}h`
-      },
+      render: (minutes: number) => formatAge(minutes),
       sorter: (a: any, b: any) => a.ageInMinutes - b.ageInMinutes,
     },
     {
@@ -422,31 +371,77 @@ const QueuePage: React.FC = () => {
       render: (hasResponse: boolean) => renderBoolean(hasResponse),
     },
     {
-      title: 'Retries',
+      title: 'Error / Retries',
       dataIndex: 'retryCount',
       key: 'retryCount',
-      width: 80,
+      width: 280,
       render: (retryCount: number | undefined, record: any) => {
         if (!retryCount && retryCount !== 0) return <Text type="secondary">-</Text>
-        
-        const color = retryCount === 0 ? 'green' : retryCount < 2 ? 'orange' : 'red'
-        const icon = retryCount >= 2 && record.permanentlyFailed ? <ExclamationCircleOutlined /> : undefined
-        
+
+        const maxRetries = STALE_TASK_CONSTANTS.MAX_RETRY_COUNT
+        const retryColor = retryCount === 0 ? 'green' : retryCount < maxRetries - 1 ? 'orange' : 'red'
+        const icon = retryCount >= maxRetries - 1 && record.permanentlyFailed ? <ExclamationCircleOutlined /> : undefined
+
+        // Parse error messages using consolidated utility function
+        const { allErrors, primaryError } = parseFailureReason(record.lastFailureReason)
+
         return (
-          <Tooltip title={
-            <div>
-              {record.lastFailureReason || 'No failures'}
-              {record.lastRetryAt && (
-                <div style={{ marginTop: 4, fontSize: '12px' }}>
-                  Last retry: {formatTimestampAsIs(record.lastRetryAt, 'datetime')}
+          <Space direction="vertical" size={2} style={{ width: '100%' }}>
+            {/* Error messages with severity badges */}
+            {allErrors.length > 0 && (
+              <Tooltip title={
+                <div>
+                  {allErrors.map((error, index) => (
+                    <div key={index} style={{ marginBottom: index < allErrors.length - 1 ? 4 : 0 }}>
+                      {error.severity && <strong>[{error.severity}]</strong>} {error.message}
+                    </div>
+                  ))}
+                  {record.lastRetryAt && (
+                    <div style={{ marginTop: 8, fontSize: '12px', borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: 4 }}>
+                      Last retry: {formatTimestampAsIs(record.lastRetryAt, 'datetime')}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          }>
-            <Tag color={color} icon={icon}>
-              {retryCount}/2
+              }>
+                <div style={{ width: '100%' }}>
+                  {/* Show primary (highest severity) error */}
+                  <Space size={4} style={{ width: '100%', marginBottom: 2 }}>
+                    {primaryError?.severity && (
+                      <Tag
+                        color={getSeverityColor(primaryError.severity)}
+                        style={{ margin: 0, fontSize: '11px' }}
+                      >
+                        {primaryError.severity}
+                      </Tag>
+                    )}
+                    <Text
+                      type="secondary"
+                      style={{
+                        fontSize: '12px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        flex: 1
+                      }}
+                    >
+                      {primaryError?.message}
+                    </Text>
+                  </Space>
+                  {/* Show count of additional errors if any */}
+                  {allErrors.length > 1 && (
+                    <Text type="secondary" style={{ fontSize: '11px', fontStyle: 'italic' }}>
+                      +{allErrors.length - 1} more {allErrors.length - 1 === 1 ? 'message' : 'messages'}
+                    </Text>
+                  )}
+                </div>
+              </Tooltip>
+            )}
+
+            {/* Retry count badge */}
+            <Tag color={retryColor} icon={icon} style={{ margin: 0 }}>
+              {retryCount}/{maxRetries} retries
             </Tag>
-          </Tooltip>
+          </Space>
         )
       },
       sorter: (a: any, b: any) => (a.retryCount || 0) - (b.retryCount || 0),
