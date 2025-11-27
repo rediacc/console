@@ -6,6 +6,14 @@ import { outputService } from '../services/output.js'
 import { queueService } from '../services/queue.js'
 import { withSpinner, startSpinner, stopSpinner } from '../utils/spinner.js'
 import { handleError } from '../utils/errors.js'
+import {
+  formatStatus,
+  formatAge,
+  formatError,
+  formatPriority,
+  formatRetryCount,
+  formatBoolean
+} from '../utils/queueFormatters.js'
 import type { OutputFormat } from '../types/index.js'
 import { getFirstRow, type QueueItemResponse } from '../types/api-responses.js'
 
@@ -102,17 +110,42 @@ export async function traceAction(
       const trace = getFirstRow<QueueItemResponse>(response.resultSets)
 
       if (trace) {
-        spinner.text = `Status: ${trace.status} | ${trace.progress || 'No progress'}`
+        // Format spinner text with colored status and age
+        const statusText = formatStatus(trace.status || 'UNKNOWN')
+        const ageText = trace.ageInMinutes !== undefined ? formatAge(trace.ageInMinutes) : 'unknown'
+        const progressText = trace.progress || 'No progress'
+        spinner.text = `${statusText} | Age: ${ageText} | ${progressText}`
 
         // Check for terminal status
         const terminalStatuses = ['COMPLETED', 'FAILED', 'CANCELLED']
         if (trace.status && terminalStatuses.includes(trace.status.toUpperCase())) {
           isComplete = true
-          stopSpinner(trace.status === 'COMPLETED', `Final status: ${trace.status}`)
+          const success = trace.status === 'COMPLETED'
+          stopSpinner(success, `Final status: ${formatStatus(trace.status)}`)
+
+          // Show error if present
+          if (!success && trace.lastFailureReason) {
+            outputService.error('\nError Details:')
+            console.log(formatError(trace.lastFailureReason, true))
+          }
 
           // Output final trace
           const format = program.opts().output as OutputFormat
-          outputService.print(trace, format)
+          if (format === 'table') {
+            // Format trace for table display
+            const formattedTrace = {
+              taskId: trace.taskId,
+              status: formatStatus(trace.status),
+              age: trace.ageInMinutes !== undefined ? formatAge(trace.ageInMinutes) : '-',
+              priority: trace.priority ? formatPriority(trace.priority) : '-',
+              retries: trace.retryCount !== undefined ? formatRetryCount(trace.retryCount) : '-',
+              progress: trace.progress || '-',
+              consoleOutput: trace.consoleOutput || '-'
+            }
+            outputService.print(formattedTrace, format)
+          } else {
+            outputService.print(trace, format)
+          }
         }
       }
 
@@ -132,7 +165,28 @@ export async function traceAction(
     const format = program.opts().output as OutputFormat
 
     if (trace) {
-      outputService.print(trace, format)
+      // Show formatted error if task failed
+      if (trace.status === 'FAILED' && trace.lastFailureReason) {
+        outputService.error('\nError Details:')
+        console.log(formatError(trace.lastFailureReason, true))
+        console.log('') // Empty line for spacing
+      }
+
+      // Format trace for table display
+      if (format === 'table') {
+        const formattedTrace = {
+          taskId: trace.taskId,
+          status: formatStatus(trace.status || 'UNKNOWN'),
+          age: trace.ageInMinutes !== undefined ? formatAge(trace.ageInMinutes) : '-',
+          priority: trace.priority ? formatPriority(trace.priority) : '-',
+          retries: trace.retryCount !== undefined ? formatRetryCount(trace.retryCount) : '-',
+          progress: trace.progress || '-',
+          consoleOutput: trace.consoleOutput || '-'
+        }
+        outputService.print(formattedTrace, format)
+      } else {
+        outputService.print(trace, format)
+      }
     } else {
       outputService.info('No trace found for this task')
     }
@@ -200,6 +254,23 @@ export function registerQueueCommands(program: Command): void {
         }
 
         const format = program.opts().output as OutputFormat
+
+        // Format items for better CLI display (table format only)
+        if (format === 'table' && items.length > 0) {
+          items = items.map((item: any) => ({
+            taskId: item.taskId,
+            status: formatStatus(item.status || item.healthStatus),
+            priority: item.priority ? formatPriority(item.priority) : '-',
+            age: item.ageInMinutes !== undefined ? formatAge(item.ageInMinutes) : '-',
+            team: item.teamName || '-',
+            machine: item.machineName || '-',
+            bridge: item.bridgeName || '-',
+            retries: item.retryCount !== undefined ? formatRetryCount(item.retryCount) : '-',
+            hasResponse: formatBoolean(item.hasResponse),
+            error: item.lastFailureReason ? formatError(item.lastFailureReason) : '-'
+          }))
+        }
+
         outputService.print(items, format)
       } catch (error) {
         handleError(error)
