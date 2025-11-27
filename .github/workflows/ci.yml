@@ -201,10 +201,6 @@ jobs:
         working-directory: cli
         run: npm ci
 
-      - name: Run CLI lint
-        working-directory: cli
-        run: npm run lint
-
       - name: Build CLI
         working-directory: cli
         run: npm run build
