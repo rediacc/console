@@ -13,14 +13,13 @@ import { registerContextCommands } from './commands/context.js'
 import { registerPermissionCommands } from './commands/permission.js'
 import { registerAuditCommands } from './commands/audit.js'
 import { registerShortcuts } from './commands/shortcuts.js'
-
-const VERSION = '1.0.0'
+import { VERSION } from './version.js'
 
 export const cli = new Command()
 
 cli
-  .name('rediacc')
-  .description('Rediacc CLI - Command line interface for Rediacc operations')
+  .name('rdc')
+  .description('Rediacc Console CLI - Command line interface for Rediacc operations')
   .version(VERSION)
   .option('-o, --output <format>', 'Output format (table|json|yaml|csv)', 'table')
 

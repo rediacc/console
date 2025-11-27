@@ -955,12 +955,14 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({
     functionCategories.length > 0
 
   // Auto-open function modal if we're in create mode with existing data (for repository functions)
+  // WARNING: The !functionModal.isOpen check is critical to prevent infinite render loops!
+  // Without it, each call to functionModal.open() triggers a state change, causing re-render,
+  // which triggers this effect again, leading to "Maximum update depth exceeded" error.
   useEffect(() => {
-    if (open && mode === 'create' && existingData && showFunctions) {
-      // Open modal immediately (no delay)
+    if (open && mode === 'create' && existingData && showFunctions && !functionModal.isOpen) {
       functionModal.open()
     }
-  }, [open, mode, existingData, showFunctions, functionModal])
+  }, [open, mode, existingData, showFunctions, functionModal.isOpen, functionModal.open])
 
   // If we're in vault mode, show the vault editor directly
   if (mode === 'vault' && existingData && onUpdateVault) {

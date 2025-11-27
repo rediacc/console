@@ -1,5 +1,45 @@
-import { createGlobalStyle } from 'styled-components'
+import { createGlobalStyle, css } from 'styled-components'
 import { colorTokens } from '@/config/antdTheme'
+
+const toCssVars = (tokens: Record<string, string>) =>
+  Object.entries(tokens)
+    .filter(([, value]) => typeof value === 'string')
+    .map(([key, value]) => `--color-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value};`)
+    .join('\n')
+
+const MODAL_SIZES = {
+  sm: { width: 480, height: 640, vh: 85, widthPct: 90 },
+  md: { width: 720, height: 800, vh: 88, widthPct: 92 },
+  lg: { width: 1200, height: 960, vh: 90, widthPct: 90 },
+  xl: { width: 1400, height: 1120, vh: 92, widthPct: 95 },
+  full: { width: 1600, height: 1280, vh: 95, widthPct: 98 },
+} as const
+
+const fontStack = css`
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji' !important;
+`
+
+const focusStyles = css`
+  border-color: ${({ theme }) => theme.colors.primary} !important;
+  box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.primary} !important;
+  outline: none !important;
+`
+
+const scrollbarStyles = css`
+  scrollbar-color: #4a4a4a #1a1a1a;
+
+  &::-webkit-scrollbar {
+    background-color: #1a1a1a;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: #4a4a4a;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: #5a5a5a;
+  }
+`
 
 export const GlobalStyles = createGlobalStyle`
   /* ============================================
@@ -79,55 +119,18 @@ export const GlobalStyles = createGlobalStyle`
      CSS COLOR VARIABLES (replacing themes.css)
      ============================================ */
   
+
+  
   :root {
-    --color-primary: ${colorTokens.primary};
-    --color-primary-hover: ${colorTokens.primaryHover};
-    --color-primary-bg: ${colorTokens.primaryBg};
-    --color-secondary: ${colorTokens.secondary};
-    --color-secondary-hover: ${colorTokens.secondaryHover};
-    --color-accent: ${colorTokens.accent};
-    --color-success: ${colorTokens.success};
-    --color-warning: ${colorTokens.warning};
-    --color-error: ${colorTokens.error};
-    --color-info: ${colorTokens.info};
+    ${toCssVars(colorTokens as unknown as Record<string, string>)}
   }
   
   [data-theme="light"] {
-    --color-bg-primary: ${colorTokens.light.bgPrimary};
-    --color-bg-secondary: ${colorTokens.light.bgSecondary};
-    --color-bg-tertiary: ${colorTokens.light.bgTertiary};
-    --color-bg-hover: ${colorTokens.light.bgHover};
-    --color-bg-active: ${colorTokens.light.bgActive};
-    --color-bg-selected: ${colorTokens.light.bgSelected};
-    --color-text-primary: ${colorTokens.light.textPrimary};
-    --color-text-secondary: ${colorTokens.light.textSecondary};
-    --color-text-tertiary: ${colorTokens.light.textTertiary};
-    --color-text-muted: ${colorTokens.light.textMuted};
-    --color-text-inverse: ${colorTokens.light.textInverse};
-    --color-text-selected: ${colorTokens.light.textSelected};
-    --color-border-primary: ${colorTokens.light.borderPrimary};
-    --color-border-secondary: ${colorTokens.light.borderSecondary};
-    --color-border-hover: ${colorTokens.light.borderHover};
-    --color-shadow: ${colorTokens.light.shadow};
+    ${toCssVars(colorTokens.light)}
   }
   
   [data-theme="dark"] {
-    --color-bg-primary: ${colorTokens.dark.bgPrimary};
-    --color-bg-secondary: ${colorTokens.dark.bgSecondary};
-    --color-bg-tertiary: ${colorTokens.dark.bgTertiary};
-    --color-bg-hover: ${colorTokens.dark.bgHover};
-    --color-bg-active: ${colorTokens.dark.bgActive};
-    --color-bg-selected: ${colorTokens.dark.bgSelected};
-    --color-text-primary: ${colorTokens.dark.textPrimary};
-    --color-text-secondary: ${colorTokens.dark.textSecondary};
-    --color-text-tertiary: ${colorTokens.dark.textTertiary};
-    --color-text-muted: ${colorTokens.dark.textMuted};
-    --color-text-inverse: ${colorTokens.dark.textInverse};
-    --color-text-selected: ${colorTokens.dark.textSelected};
-    --color-border-primary: ${colorTokens.dark.borderPrimary};
-    --color-border-secondary: ${colorTokens.dark.borderSecondary};
-    --color-border-hover: ${colorTokens.dark.borderHover};
-    --color-shadow: ${colorTokens.dark.shadow};
+    ${toCssVars(colorTokens.dark)}
   }
 
   /* ============================================
@@ -169,18 +172,11 @@ export const GlobalStyles = createGlobalStyle`
      ============================================ */
   
   /* Dropdown container - emoji font support */
-  .ant-select-dropdown {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji' !important;
-  }
-
-  /* Dropdown option content */
-  .ant-select-item-option-content {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji' !important;
-  }
-
-  /* Selected item in dropdown */
+  /* Dropdown container - emoji font support */
+  .ant-select-dropdown,
+  .ant-select-item-option-content,
   .ant-select-selection-item {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji' !important;
+    ${fontStack}
   }
 
   /* Fix suffix icon alignment and spacing */
@@ -223,13 +219,9 @@ export const GlobalStyles = createGlobalStyle`
      ============================================ */
   
   /* Smaller, subtle focus shadows */
+  /* Smaller, subtle focus shadows */
   .ant-select-focused .ant-select-selector,
-  .ant-picker-focused {
-    border-color: ${({ theme }) => theme.colors.primary} !important;
-    box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.primary} !important;
-    outline: none !important;
-  }
-
+  .ant-picker-focused,
   .ant-btn:focus,
   .ant-switch:focus,
   .ant-checkbox-wrapper:focus-within,
@@ -239,9 +231,7 @@ export const GlobalStyles = createGlobalStyle`
   .ant-dropdown-trigger:focus,
   .ant-table-tbody > tr:focus,
   .ant-pagination-item:focus {
-    border-color: ${({ theme }) => theme.colors.primary} !important;
-    box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.primary} !important;
-    outline: none !important;
+    ${focusStyles}
   }
 
   /* ============================================
@@ -279,19 +269,7 @@ export const GlobalStyles = createGlobalStyle`
      ============================================ */
   
   [data-theme="dark"] {
-    scrollbar-color: #4a4a4a #1a1a1a;
-  }
-
-  [data-theme="dark"]::-webkit-scrollbar {
-    background-color: #1a1a1a;
-  }
-
-  [data-theme="dark"]::-webkit-scrollbar-thumb {
-    background-color: #4a4a4a;
-  }
-
-  [data-theme="dark"]::-webkit-scrollbar-thumb:hover {
-    background-color: #5a5a5a;
+    ${scrollbarStyles}
   }
 
   /* ============================================
@@ -726,60 +704,18 @@ export const GlobalStyles = createGlobalStyle`
     }
   }
 
-  /* Small Modal - 480px max-width */
-  .modal-sm {
-    max-width: 480px !important;
-    width: 90% !important;
-  }
+  /* Generated Modal Sizes */
+  ${Object.entries(MODAL_SIZES).map(([size, { width, height, vh, widthPct }]) => css`
+    .modal-${size} {
+      max-width: ${width}px !important;
+      width: ${widthPct}% !important;
+    }
 
-  .modal-sm .ant-modal-body {
-    max-height: min(85vh, 640px);
-    overflow-y: auto;
-  }
-
-  /* Medium Modal - 720px max-width */
-  .modal-md {
-    max-width: 720px !important;
-    width: 92% !important;
-  }
-
-  .modal-md .ant-modal-body {
-    max-height: min(88vh, 800px);
-    overflow-y: auto;
-  }
-
-  /* Large Modal - 1200px max-width */
-  .modal-lg {
-    max-width: 1200px !important;
-    width: 90% !important;
-  }
-
-  .modal-lg .ant-modal-body {
-    max-height: min(90vh, 960px);
-    overflow-y: auto;
-  }
-
-  /* Extra Large Modal - 1400px max-width */
-  .modal-xl {
-    max-width: 1400px !important;
-    width: 95% !important;
-  }
-
-  .modal-xl .ant-modal-body {
-    max-height: min(92vh, 1120px);
-    overflow-y: auto;
-  }
-
-  /* Full Width Modal - 1600px max-width */
-  .modal-full {
-    max-width: 1600px !important;
-    width: 98% !important;
-  }
-
-  .modal-full .ant-modal-body {
-    max-height: min(95vh, 1280px);
-    overflow-y: auto;
-  }
+    .modal-${size} .ant-modal-body {
+      max-height: min(${vh}vh, ${height}px);
+      overflow-y: auto;
+    }
+  `)}
 
   /* Fullscreen Modal - occupies entire browser viewport */
   .modal-fullscreen {

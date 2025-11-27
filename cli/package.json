@@ -1,11 +1,11 @@
 {
   "name": "@rediacc/cli",
-  "version": "1.0.0",
+  "version": "0.2.92",
   "description": "Rediacc CLI - Command line interface for Rediacc operations",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "rediacc": "./bin/rediacc"
+    "rdc": "./bin/rdc"
   },
   "scripts": {
     "build": "tsc",

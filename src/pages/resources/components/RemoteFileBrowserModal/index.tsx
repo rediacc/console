@@ -596,6 +596,7 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
     title: t('resources:remoteFiles.name'),
     dataIndex: 'name',
     key: 'name',
+    maxLength: 50, // Increased from default 12 to show more of the file name
     sorter: createCustomSorter<RemoteFile>((file) => `${file.isDirectory ? '0' : '1'}${file.name.toLowerCase()}`),
   });
 

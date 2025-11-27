@@ -12,6 +12,14 @@ export function registerRegionCommands(program: Command): void {
       create: '/CreateRegion',
       rename: '/UpdateRegionName',
       delete: '/DeleteRegion'
+    },
+    vaultConfig: {
+      endpoint: '/GetCompanyVaults',
+      vaultType: 'Region'
+    },
+    vaultUpdateConfig: {
+      endpoint: '/UpdateRegionVault',
+      vaultFieldName: 'regionVault'
     }
   })
 }
