@@ -603,33 +603,52 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
   const columns: ColumnsType<RemoteFile> = [
     {
       ...nameColumn,
-      render: (name: string, record: RemoteFile, index) => {
-        const truncated = nameColumn.render?.(name, record, index) as React.ReactNode;
-        const nameContent = record.isDirectory ? (
+      render: (name: string, record: RemoteFile) => {
+        // Build the icon content
+        const icon = record.isDirectory ? (
+          <FolderIcon><FolderOutlined /></FolderIcon>
+        ) : (
+          <FileIcon><FileOutlined /></FileIcon>
+        );
+
+        // Build the clickable/display name without nested tooltip
+        const displayName = record.isDirectory ? (
           <a
             onClick={() => handleNavigate(currentPath ? `${currentPath}/${name}` : name)}
             data-testid={`file-browser-folder-${name}`}
           >
-            {truncated}
+            {name}
           </a>
         ) : (
-          <span data-testid={`file-browser-file-${name}`}>{truncated}</span>
+          <span data-testid={`file-browser-file-${name}`}>{name}</span>
         );
 
         const content = (
           <Space>
-            {record.isDirectory ? (
-              <FolderIcon><FolderOutlined /></FolderIcon>
-            ) : (
-              <FileIcon><FileOutlined /></FileIcon>
-            )}
-            {nameContent}
+            {icon}
+            {displayName}
           </Space>
         );
 
+        // Combine tooltip information: show both full name and original GUID if available
         if (record.originalGuid) {
+          const tooltipContent = (
+            <div>
+              <div>{name}</div>
+              <div style={{ marginTop: '4px', opacity: 0.85 }}>Original file: {record.originalGuid}</div>
+            </div>
+          );
           return (
-            <Tooltip title={`Original file: ${record.originalGuid}`}>
+            <Tooltip title={tooltipContent}>
+              {content}
+            </Tooltip>
+          );
+        }
+
+        // If name is long, show tooltip with full name
+        if (name.length > 50) {
+          return (
+            <Tooltip title={name}>
               {content}
             </Tooltip>
           );
