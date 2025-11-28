@@ -1,4 +1,4 @@
-import { QueueVaultBuilder, type QueueVaultBuilderConfig } from '@rediacc/queue-vault'
+import { QueueVaultBuilder, type QueueVaultBuilderConfig, type FunctionRequirements, type QueueRequestContext } from '@rediacc/queue-vault'
 import type {
   QueueItem,
   QueueItemData,
