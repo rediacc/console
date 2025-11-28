@@ -206,49 +206,17 @@ Shared formatting utilities for time and data display.
 
 ---
 
-## Next Steps: Identify Additional Consolidation Opportunities
+## Next: Remaining Consolidation Opportunities
 
-### 🔍 Analysis Needed: What Else Can Be Shared?
+### Potential Candidates for Batch Extraction:
 
-To continue the incremental approach, we need to identify additional duplication between web and CLI:
+1. **API Client Utilities** - Shared axios configuration, token management
+2. **Validation Utilities** - Common validation rules (machine names, repos, etc.)
+3. **Storage Provider Logic** - Provider implementations and configurations
+4. **Type Definitions** - Core domain types (Machine, Repository, Team)
+5. **Configuration Management** - Config file/storage handling
 
-#### Potential Candidates for Next Packages:
-
-1. **API Client Utilities**
-   - Both web and CLI use axios for API calls
-   - Shared authentication token management logic
-   - Common request/response formatting
-   - Could create `@rediacc/api-client` package
-
-2. **Validation Utilities**
-   - Both platforms validate machine names, repository names, etc.
-   - Shared validation rules and error messages
-   - Could create `@rediacc/validation` package
-
-3. **Storage Provider Logic**
-   - CLI has storage provider implementations
-   - Web has storage provider configurations
-   - Check for duplication in provider handling
-   - Could create `@rediacc/storage-providers` package
-
-4. **Type Definitions**
-   - Core domain types (Machine, Repository, Team, etc.)
-   - Shared between web and CLI
-   - Could create `@rediacc/types` package
-
-5. **Configuration Management**
-   - CLI has config file handling
-   - Web has local storage config
-   - Could extract common config schema
-   - Could create `@rediacc/config` package
-
-#### Action Items:
-
-- [ ] Analyze web `src/` and CLI `cli/src/` for additional duplication
-- [ ] Create detailed comparison of API client implementations
-- [ ] Review type definitions for consolidation opportunities
-- [ ] Check for duplicated validation logic
-- [ ] Prioritize next package based on duplication severity
+**Note:** All consolidation work will be done in batches, not incrementally. Each batch will extract multiple related utilities at once.
 
 ---
 
