@@ -1402,7 +1402,6 @@ const VaultEditor: React.FC<VaultEditorProps> = ({
                               functionName: 'ssh_test',
                               params: {},
                               priority: 1,
-                              description: 'SSH connection test',
                               addedVia: 'vault-editor',
                               machineVault: testMachineVault,
                               teamVault: teamVaultData

@@ -1,6 +1,6 @@
 {
   "name": "@rediacc/cli",
-  "version": "0.2.93",
+  "version": "0.2.103",
   "description": "Rediacc CLI - Command line interface for Rediacc operations",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -18,6 +18,9 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
+    "@rediacc/error-parser": "file:../packages/error-parser",
+    "@rediacc/formatters": "file:../packages/formatters",
+    "@rediacc/queue-vault": "file:../packages/queue-vault",
     "axios": "^1.7.9",
     "chalk": "^5.4.1",
     "cli-table3": "^0.6.5",

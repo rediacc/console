@@ -3,6 +3,9 @@
  * These utilities are framework-agnostic and can be used in both React and CLI
  */
 
+import type { ErrorSeverity } from '@rediacc/error-parser'
+import { getSeverityLevel } from '@rediacc/error-parser'
+
 /**
  * Queue health status types
  */
@@ -180,17 +183,6 @@ export function isStaleTask(minutesSinceAssigned: number): boolean {
 }
 
 /**
- * Format age in minutes to human-readable string
- * @param minutes - Age in minutes
- * @returns Formatted age string (e.g., "2h 30m", "1d 5h")
- */
-export function formatAge(minutes: number): string {
-  if (minutes < 60) return `${minutes}m`
-  if (minutes < 1440) return `${Math.floor(minutes / 60)}h ${minutes % 60}m`
-  return `${Math.floor(minutes / 1440)}d ${Math.floor((minutes % 1440) / 60)}h`
-}
-
-/**
  * Filter active queue items (not terminal)
  * @param items - Array of queue items with healthStatus property
  * @returns Filtered array of active items
@@ -227,205 +219,18 @@ export function filterCancelledItems<T extends { healthStatus: string }>(items: 
 }
 
 /**
- * Error severity levels for parsing queue errors
- */
-export type ErrorSeverity = 'CRITICAL' | 'ERROR' | 'WARNING' | 'INFO' | 'UNKNOWN'
-
-/**
- * Parsed error information from queue output
- */
-export interface ParsedError {
-  severity: ErrorSeverity
-  message: string
-  fullLine: string
-}
-
-/**
- * Extract first error line from command output
- * Searches for lines with severity prefixes: CRITICAL:, ERROR:, WARNING:, INFO:
- *
- * @param output - Command output string to parse
- * @returns ParsedError object with severity and message, or null if no error found
- *
- * @example
- * const output = "Some output\nERROR: Repository not found\nMore output"
- * const error = extractFirstError(output)
- * // Returns: { severity: 'ERROR', message: 'Repository not found', fullLine: 'ERROR: Repository not found' }
- */
-export function extractFirstError(output: string | null | undefined): ParsedError | null {
-  if (!output) return null
-
-  // Split into lines and search for first line with severity prefix
-  const lines = output.split('\n')
-  const severityPattern = /^(CRITICAL|ERROR|WARNING|INFO):\s*(.+)$/
-
-  for (const line of lines) {
-    const trimmedLine = line.trim()
-    const match = trimmedLine.match(severityPattern)
-
-    if (match) {
-      const [, severity, message] = match
-      return {
-        severity: severity as ErrorSeverity,
-        message: message.trim(),
-        fullLine: trimmedLine
-      }
-    }
-  }
-
-  // If no severity prefix found, look for lines containing "error" or "failed" (case-insensitive)
-  for (const line of lines) {
-    const trimmedLine = line.trim()
-    const lowerLine = trimmedLine.toLowerCase()
-
-    if (lowerLine.includes('error') || lowerLine.includes('failed')) {
-      return {
-        severity: 'UNKNOWN',
-        message: trimmedLine,
-        fullLine: trimmedLine
-      }
-    }
-  }
-
-  return null
-}
-
-/**
- * Extract all severity-prefixed lines from command output
- * Searches for ALL lines with severity prefixes: CRITICAL:, ERROR:, WARNING:, INFO:
- *
- * @param output - Command output string to parse
- * @returns Array of ParsedError objects, empty array if none found
- *
- * @example
- * const output = "Some output\nERROR: Repository not found\nWARNING: Disk space low\nMore output"
- * const errors = extractAllErrors(output)
- * // Returns: [
- * //   { severity: 'ERROR', message: 'Repository not found', fullLine: 'ERROR: Repository not found' },
- * //   { severity: 'WARNING', message: 'Disk space low', fullLine: 'WARNING: Disk space low' }
- * // ]
- */
-export function extractAllErrors(output: string | null | undefined): ParsedError[] {
-  if (!output) return []
-
-  const errors: ParsedError[] = []
-  const lines = output.split('\n')
-  const severityPattern = /^(CRITICAL|ERROR|WARNING|INFO):\s*(.+)$/
-
-  for (const line of lines) {
-    const trimmedLine = line.trim()
-    const match = trimmedLine.match(severityPattern)
-
-    if (match) {
-      const [, severity, message] = match
-      errors.push({
-        severity: severity as ErrorSeverity,
-        message: message.trim(),
-        fullLine: trimmedLine
-      })
-    }
-  }
-
-  return errors
-}
-
-/**
- * Get color for error severity level
+ * Get color for error severity level (web-specific using Ant Design colors)
  * @param severity - Error severity level
  * @returns Ant Design color string
  */
 export function getSeverityColor(severity: ErrorSeverity): string {
-  switch (severity) {
-    case 'CRITICAL':
-      return 'red'
-    case 'ERROR':
-      return 'error'
-    case 'WARNING':
-      return 'warning'
-    case 'INFO':
-      return 'blue'
-    case 'UNKNOWN':
-      return 'default'
-    default:
-      return 'default'
+  const level = getSeverityLevel(severity)
+  const colorMap: Record<string, string> = {
+    'critical': 'red',
+    'error': 'error',
+    'warning': 'warning',
+    'info': 'blue',
+    'default': 'default'
   }
-}
-
-/**
- * Parsed error result with all errors and prioritization
- */
-export interface ParsedErrorResult {
-  /** All errors found in the text */
-  allErrors: ParsedError[]
-  /** The highest severity error (for display priority) */
-  primaryError: ParsedError | null
-}
-
-/**
- * Parse failure reason text to extract all severity-prefixed errors
- * This is the consolidated parsing logic used across the application
- *
- * @param failureReason - Text containing error messages (e.g., from lastFailureReason)
- * @returns ParsedErrorResult with all errors and the primary (highest severity) error
- *
- * @example
- * const text = "ERROR: Repository not found\nWARNING: Disk space low"
- * const result = parseFailureReason(text)
- * // Returns:
- * // {
- * //   allErrors: [
- * //     { severity: 'ERROR', message: 'Repository not found', ... },
- * //     { severity: 'WARNING', message: 'Disk space low', ... }
- * //   ],
- * //   primaryError: { severity: 'ERROR', message: 'Repository not found', ... }
- * // }
- */
-export function parseFailureReason(failureReason: string | null | undefined): ParsedErrorResult {
-  if (!failureReason) {
-    return { allErrors: [], primaryError: null }
-  }
-
-  const errors: ParsedError[] = []
-  const lines = failureReason.split('\n')
-  const severityPattern = /^(CRITICAL|ERROR|WARNING|INFO):\s*(.+)$/
-
-  // Extract all severity-prefixed lines
-  for (const line of lines) {
-    const trimmedLine = line.trim()
-    const match = trimmedLine.match(severityPattern)
-
-    if (match) {
-      const [, severity, message] = match
-      errors.push({
-        severity: severity as ErrorSeverity,
-        message: message.trim(),
-        fullLine: trimmedLine
-      })
-    }
-  }
-
-  // If no severity-prefixed errors found, treat entire message as single unknown error
-  if (errors.length === 0 && failureReason.trim()) {
-    errors.push({
-      severity: 'UNKNOWN',
-      message: failureReason.trim(),
-      fullLine: failureReason.trim()
-    })
-  }
-
-  // Find the highest severity error (CRITICAL > ERROR > WARNING > INFO > UNKNOWN)
-  const primaryError = errors.length > 0 ? errors.reduce((highest, current) => {
-    const severityOrder: Record<ErrorSeverity, number> = {
-      CRITICAL: 0,
-      ERROR: 1,
-      WARNING: 2,
-      INFO: 3,
-      UNKNOWN: 4
-    }
-    const highestOrder = severityOrder[highest.severity]
-    const currentOrder = severityOrder[current.severity]
-    return currentOrder < highestOrder ? current : highest
-  }) : null
-
-  return { allErrors: errors, primaryError }
+  return colorMap[level] || 'default'
 }

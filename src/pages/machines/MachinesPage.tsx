@@ -142,7 +142,6 @@ const MachinesPage: React.FC = () => {
                   install_nvidia_driver: 'auto'
                 },
                 priority: 3,
-                description: `Auto-setup for machine ${formData.machineName}`,
                 addedVia: 'machine-creation-auto-setup',
                 machineVault: formData.machineVault || '{}'
               })
@@ -254,7 +253,6 @@ const MachinesPage: React.FC = () => {
           functionName: functionData.function.name,
           params: functionData.params,
           priority: functionData.priority,
-          description: functionData.description,
           addedVia: 'machine-table',
           teamVault: teamData?.vaultContent || '{}',
           machineVault: currentResource.vaultContent || '{}'
@@ -360,7 +358,6 @@ const MachinesPage: React.FC = () => {
         functionName,
         params: defaultParams,
         priority: 4, // Normal priority
-        description: `${functionName} for ${machine.machineName}`,
         addedVia: 'machine-table-quick',
         teamVault: teamData?.vaultContent || '{}',
         machineVault: machine.vaultContent || '{}',

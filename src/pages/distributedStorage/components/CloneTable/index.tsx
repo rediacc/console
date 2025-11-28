@@ -124,7 +124,6 @@ const CloneTable: React.FC<CloneTableProps> = ({ snapshot, image, pool }) => {
             clone_name: clone?.cloneName || '',
           },
           priority: 3,
-          description: `Execute ${functionName}`,
           addedVia: 'DistributedStorage',
         })
 

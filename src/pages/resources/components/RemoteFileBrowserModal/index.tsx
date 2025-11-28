@@ -235,7 +235,6 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
           format: 'json'
         },
         priority: 4,
-        description: `List files from ${selectedSource}`,
         addedVia: 'file-browser',
         ...additionalVaultData
       });
@@ -551,7 +550,6 @@ export const RemoteFileBrowserModal: React.FC<RemoteFileBrowserModalProps> = ({
             sourceType: isStorageSource ? 'storage' : 'machine'
           },
           priority: 3,
-          description: `Pull ${file.repositoryName || file.name} from ${selectedSource}`,
           addedVia: 'file-browser',
           ...additionalVaultData
         });

@@ -207,7 +207,6 @@ export const RepositoryContainerTable: React.FC<RepositoryContainerTableProps> =
         container: container.id
       },
       priority: 4,
-      description: `${functionName} for container ${container.name}`,
       addedVia: 'container-action',
       machineVault: machine.vaultContent || '{}',
       repositoryGuid: repositoryData?.repositoryGuid,

@@ -391,7 +391,7 @@ const QueuePage: React.FC = () => {
             {allErrors.length > 0 && (
               <Tooltip title={
                 <div>
-                  {allErrors.map((error, index) => (
+                  {allErrors.map((error: any, index: number) => (
                     <div key={index} style={{ marginBottom: index < allErrors.length - 1 ? 4 : 0 }}>
                       {error.severity && <strong>[{error.severity}]</strong>} {error.message}
                     </div>
