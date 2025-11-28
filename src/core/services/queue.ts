@@ -5,6 +5,7 @@ import type {
   QueueItemStatus,
   ActiveTask,
 } from '../types/queue'
+import { encodeBase64 } from '../utils/encoding'
 
 // Optional chrome declaration for browser extensions
 declare const chrome:
@@ -46,18 +47,7 @@ export class QueueService {
         }
         return ''
       },
-      encodeBase64: (value: string) => {
-        try {
-          return btoa(value)
-        } catch {
-          // Handle non-Latin1 characters by encoding to UTF-8 first
-          const utf8Bytes = new TextEncoder().encode(value)
-          const binaryString = Array.from(utf8Bytes)
-            .map((byte) => String.fromCharCode(byte))
-            .join('')
-          return btoa(binaryString)
-        }
-      },
+      encodeBase64,
     }
 
     this.builder = new QueueVaultBuilder(builderConfig)

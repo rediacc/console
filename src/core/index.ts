@@ -5,6 +5,7 @@ export * from './types'
 export * from './utils/json'
 export * from './utils/validation'
 export * from './utils/crypto'
+export * from './utils/encoding'
 
 // New utilities
 export * from './utils/time'

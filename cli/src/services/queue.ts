@@ -52,8 +52,8 @@ export class CliQueueService {
       storageVault: vaults.storageVault,
       bridgeVault: vaults.bridgeVault,
       repositoryGuid: context.params.repo as string | undefined,
-      repositoryLoopbackIp: vaults.repositoryVault ? (vaults.repositoryVault as any).repoLoopbackIp : undefined,
-      repositoryNetworkMode: vaults.repositoryVault ? (vaults.repositoryVault as any).networkMode : undefined,
+      repositoryLoopbackIp: (vaults.repositoryVault as { repoLoopbackIp?: string })?.repoLoopbackIp,
+      repositoryNetworkMode: (vaults.repositoryVault as { networkMode?: string })?.networkMode,
       storageName: (context.params.to || context.params.from) as string | undefined,
     }
 
