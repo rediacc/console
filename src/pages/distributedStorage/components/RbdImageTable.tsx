@@ -110,7 +110,6 @@ const RbdImageTable: React.FC<RbdImageTableProps> = ({ pool, teamFilter }) => {
           image_name: image?.imageName || '',
         },
         priority: 3,
-        description: `Execute ${functionName}`,
         addedVia: 'DistributedStorage'
       })
       
