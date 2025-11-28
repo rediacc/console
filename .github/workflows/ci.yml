@@ -179,6 +179,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build shared packages
+        run: |
+          cd packages/error-parser && npm run build
+          cd ../formatters && npm run build
+          cd ../queue-vault && npm run build
+
       - name: Run TypeScript type check
         run: npx tsc --noEmit
 
@@ -196,6 +202,15 @@ jobs:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: cli/package-lock.json
+
+      - name: Install root dependencies (for shared packages)
+        run: npm ci
+
+      - name: Build shared packages
+        run: |
+          cd packages/error-parser && npm run build
+          cd ../formatters && npm run build
+          cd ../queue-vault && npm run build
 
       - name: Install CLI dependencies
         working-directory: cli
@@ -239,6 +254,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Build shared packages
+        run: |
+          cd packages/error-parser && npm run build
+          cd ../formatters && npm run build
+          cd ../queue-vault && npm run build
 
       - name: Build application (${{ matrix.build-type }})
         env:
@@ -336,6 +357,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Build shared packages
+        run: |
+          cd packages/error-parser && npm run build
+          cd ../formatters && npm run build
+          cd ../queue-vault && npm run build
 
       - name: Build for production
         env:

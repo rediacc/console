@@ -3,9 +3,8 @@
  * These utilities are framework-agnostic and can be used in both React and CLI
  */
 
-import type { ErrorSeverity, ParsedError, ParsedErrorResult } from '@rediacc/error-parser'
-import { extractFirstError, extractAllErrors, parseFailureReason, getSeverityLevel } from '@rediacc/error-parser'
-import { formatAge } from '@rediacc/formatters'
+import type { ErrorSeverity } from '@rediacc/error-parser'
+import { getSeverityLevel } from '@rediacc/error-parser'
 
 /**
  * Queue health status types
