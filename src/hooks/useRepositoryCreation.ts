@@ -130,7 +130,6 @@ export function useRepositoryCreation(
             functionName: 'new',
             params: params,
             priority: 3,
-            description: `Create repository ${data.repositoryName} with size ${size}`,
             addedVia: 'repository-creation',
             teamVault: team?.vaultContent || '{}',
             machineVault: fullMachine?.vaultContent || '{}',

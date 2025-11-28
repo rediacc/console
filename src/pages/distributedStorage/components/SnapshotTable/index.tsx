@@ -104,7 +104,6 @@ const SnapshotTable: React.FC<SnapshotTableProps> = ({ image, pool, teamFilter }
             snapshot_name: snapshot?.snapshotName || '',
           },
           priority: 3,
-          description: `Execute ${functionName}`,
           addedVia: 'DistributedStorage',
         })
 

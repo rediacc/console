@@ -1,8 +1,9 @@
 # Console Monorepo Restructure - Migration Plan
 
-**Status:** READY FOR REVIEW
+**Status:** INCREMENTAL APPROACH IN PROGRESS
 **Created:** 2025-11-27
-**Last Updated:** 2025-11-27
+**Last Updated:** 2025-11-28 (Updated with error-parser and formatters completion)
+**Approach:** Incremental shared package extraction (not full restructure)
 
 ## Executive Summary
 
@@ -57,6 +58,177 @@ This document outlines the detailed plan to restructure the Rediacc console repo
 ├── package.json                  # Root workspace config
 └── tsconfig.json                 # Base TypeScript config
 ```
+
+---
+
+## Current Approach: Incremental Package Extraction
+
+Rather than doing a full monorepo restructure (moving `src/` → `packages/web/`, `cli/` → `packages/cli/`), we're taking an **incremental approach** by extracting shared functionality into focused packages. This reduces risk, provides immediate value, and keeps the codebase stable.
+
+### Benefits of Incremental Approach:
+- ✅ Immediate reduction in code duplication
+- ✅ Lower risk than full restructure
+- ✅ Each package provides standalone value
+- ✅ Web and CLI stay in current locations
+- ✅ Can be done iteratively over time
+
+---
+
+## Implementation Status Update
+
+### ✅ Completed: Three Shared Packages Created
+
+#### 1. Queue Vault Package (2025-11-27)
+
+**Package Created:** `@rediacc/queue-vault` at `/console/packages/queue-vault/`
+
+The heavily duplicated queue vault building logic (~650 lines) has been extracted into a shared, isomorphic package.
+
+#### What Was Done:
+
+1. **Created Shared Package** (`packages/queue-vault/`)
+   - Extracted `QueueVaultBuilder` class from web console (source of truth)
+   - Created platform-agnostic implementation with dependency injection
+   - Built dual CJS + ESM + TypeScript definitions
+   - Auto-sync mechanism for `functions.json` via prebuild script
+
+2. **Integrated with Web Console**
+   - Removed duplicate QueueVaultBuilder class (~390 lines)
+   - Updated imports to use `@rediacc/queue-vault`
+   - Created WebAdapter for browser-specific operations
+   - Successfully building: ✅
+
+3. **Integrated with CLI**
+   - Removed duplicate vault building logic (~260 lines)
+   - Removed hardcoded function requirements (20 functions)
+   - CLI now has access to all 42+ functions from functions.json
+   - Created NodeAdapter for Node.js-specific operations
+   - Successfully building: ✅
+
+#### Code Reduction:
+- **Web console:** 868 → 475 lines (-393 lines, -45%)
+- **CLI:** 324 → 203 lines (-121 lines, -37%)
+- **Total duplication eliminated:** ~514 lines
+- **New shared package:** 1 package with auto-generated functions.json
+
+#### Key Benefits Already Realized:
+- ✅ Single source of truth for queue vault logic
+- ✅ Guaranteed consistency between web and CLI
+- ✅ CLI gains 22+ additional functions automatically
+- ✅ Type safety enforced across both platforms
+- ✅ Platform-specific operations cleanly abstracted
+
+#### Files Modified:
+- Created: `/console/packages/queue-vault/` (entire package)
+- Modified: `/console/src/core/services/queue.ts` (removed QueueVaultBuilder)
+- Modified: `/console/cli/src/services/queue.ts` (removed duplicate logic)
+- Modified: `/console/src/core/types/queue.ts` (re-exports shared types)
+- Updated: `/console/package.json` & `/console/cli/package.json` (added dependency)
+
+#### 2. Error Parser Package (2025-11-28)
+
+**Package Created:** `@rediacc/error-parser` at `/console/packages/error-parser/`
+
+Platform-agnostic error parsing utilities extracted from web console (source of truth).
+
+**What Was Done:**
+1. **Created Shared Package** (`packages/error-parser/`)
+   - Extracted error parsing logic from web console (lines 230-431)
+   - Created platform-agnostic formatters with color adapters
+   - Built dual CJS + ESM + TypeScript definitions
+   - Exported constants for advanced usage (SEVERITY_PATTERNS, etc.)
+
+2. **Integrated with Web Console**
+   - Removed ~220 lines of error parsing code
+   - Updated imports to use `@rediacc/error-parser`
+   - Kept web-specific `getSeverityColor()` (Ant Design colors)
+   - Successfully building: ✅
+
+3. **Integrated with CLI**
+   - Deleted `cli/src/utils/errorParser.ts` entirely (124 lines)
+   - Updated `queueFormatters.ts` to use shared package
+   - CLI gains improved error parsing (fallback detection)
+   - Created chalk color adapter for terminal output
+   - Successfully building: ✅
+
+**Code Reduction:**
+- Web console: ~220 lines removed
+- CLI: 124 lines deleted (errorParser.ts)
+- CLI formatters: ~30 lines moved to shared
+- **Total duplication eliminated:** ~250 lines
+
+**Key Features:**
+- Types: `ErrorSeverity`, `ParsedError`, `ParsedErrorResult`
+- Functions: `parseFailureReason()`, `extractFirstError()`, `extractAllErrors()`
+- New: `getSeverityLevel()`, `formatError()`, `formatErrors()` with color adapters
+- Constants: `SEVERITY_PATTERNS`, `SEVERITY_HIERARCHY`, `SEVERITY_REGEX`
+
+#### 3. Formatters Package (2025-11-28)
+
+**Package Created:** `@rediacc/formatters` at `/console/packages/formatters/`
+
+Shared formatting utilities for time and data display.
+
+**What Was Done:**
+1. **Created Shared Package** (`packages/formatters/`)
+   - Extracted `formatAge()` from web console
+   - Platform-agnostic implementation
+   - Built dual CJS + ESM + TypeScript definitions
+   - Foundation for future shared formatters
+
+2. **Integrated with Both Platforms**
+   - Web console imports from `@rediacc/formatters`
+   - CLI re-exports for backwards compatibility
+   - ~20 lines of duplication eliminated
+   - Successfully building: ✅
+
+**Functions:**
+- `formatAge(minutes)` - Human-readable time formatting (e.g., "2h 30m", "1d 5h")
+
+---
+
+## Total Progress Summary
+
+**Packages Created:** 3 shared packages
+- `@rediacc/queue-vault` - Queue vault building logic
+- `@rediacc/error-parser` - Error parsing and formatting
+- `@rediacc/formatters` - Time and data formatters
+
+**Code Reduction:**
+- Queue vault: ~514 lines eliminated
+- Error parser: ~250 lines eliminated
+- **Grand total: ~764 lines of duplication removed**
+
+**Build Status:** All packages building successfully ✅
+- Web console: ✅ Passing
+- CLI console: ✅ Passing
+- All 3 shared packages: ✅ Dual CJS + ESM builds
+
+---
+
+## Next: Remaining Consolidation Opportunities
+
+### Potential Candidates for Batch Extraction:
+
+1. **API Client Utilities** - Shared axios configuration, token management
+2. **Validation Utilities** - Common validation rules (machine names, repos, etc.)
+3. **Storage Provider Logic** - Provider implementations and configurations
+4. **Type Definitions** - Core domain types (Machine, Repository, Team)
+5. **Configuration Management** - Config file/storage handling
+
+**Note:** All consolidation work will be done in batches, not incrementally. Each batch will extract multiple related utilities at once.
+
+---
+
+## Full Monorepo Restructure (Future Consideration)
+
+The detailed plan below (Phase 2-4) outlines a **full restructure** into `packages/web/`, `packages/cli/`, `packages/shared/`. This is **not currently being pursued** but remains documented for future reference.
+
+**Decision Point:** After extracting all practical shared packages incrementally, we can revisit whether a full restructure is still needed or if the incremental approach has achieved the goals.
+
+**Current Status:** On hold - focusing on incremental package extraction
+
+---
 
 ---
 

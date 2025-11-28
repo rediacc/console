@@ -7,7 +7,6 @@ export interface QueueActionParams {
   functionName: string
   params: Record<string, unknown>
   priority: number
-  description: string
   addedVia: string
   machineVault: string
   repositoryGuid?: string
@@ -55,7 +54,6 @@ export class QueueActionService {
       functionName: params.functionName,
       params: params.params,
       priority: params.priority,
-      description: params.description,
       addedVia: params.addedVia,
       teamVault,
       machineVault: params.machineVault,
