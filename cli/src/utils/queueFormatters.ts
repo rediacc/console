@@ -4,25 +4,11 @@
  */
 
 import chalk from 'chalk'
-import { parseFailureReason } from './errorParser.js'
+import type { ErrorSeverity, ParsedError } from '@rediacc/error-parser'
+import { parseFailureReason, formatError as formatErrorShared, formatErrors, getSeverityLevel } from '@rediacc/error-parser'
 
-/**
- * Format age in minutes to human-readable string
- * Same logic as web console's formatAge function
- *
- * @param minutes - Age in minutes
- * @returns Formatted string like "2h 30m" or "1d 5h"
- *
- * @example
- * formatAge(150) // "2h 30m"
- * formatAge(45) // "45m"
- * formatAge(2000) // "1d 9h"
- */
-export function formatAge(minutes: number): string {
-  if (minutes < 60) return `${minutes}m`
-  if (minutes < 1440) return `${Math.floor(minutes / 60)}h ${minutes % 60}m`
-  return `${Math.floor(minutes / 1440)}d ${Math.floor((minutes % 1440) / 60)}h`
-}
+// Re-export formatAge for backwards compatibility
+export { formatAge } from '@rediacc/formatters'
 
 /**
  * Get chalk color function for queue status
@@ -96,30 +82,46 @@ export function formatPriority(priority: number | undefined): string {
 }
 
 /**
+ * Chalk color adapter function for error formatting
+ * Maps generic severity levels to chalk colors
+ *
+ * @param text - Text to color
+ * @param level - Generic level string ('critical', 'error', 'warning', 'info', 'default')
+ * @returns Colored text
+ */
+function chalkColorFn(text: string, level: string): string {
+  const colorMap: Record<string, string> = {
+    'critical': chalk.red.bold(text),
+    'error': chalk.red(text),
+    'warning': chalk.yellow(text),
+    'info': chalk.blue(text),
+    'default': chalk.gray(text)
+  }
+  return colorMap[level] || chalk.gray(text)
+}
+
+/**
  * Get chalk color function for error severity
+ * Uses shared getSeverityLevel for consistency
  *
  * @param severity - Error severity level
  * @returns Chalk color function
  */
-export function getSeverityColor(severity: string): (text: string) => string {
-  switch (severity) {
-    case 'CRITICAL':
-      return chalk.red.bold
-    case 'ERROR':
-      return chalk.red
-    case 'WARNING':
-      return chalk.yellow
-    case 'INFO':
-      return chalk.blue
-    case 'UNKNOWN':
-    default:
-      return chalk.gray
+export function getSeverityColor(severity: ErrorSeverity): (text: string) => string {
+  const level = getSeverityLevel(severity)
+  const colorMap: Record<string, (text: string) => string> = {
+    'critical': chalk.red.bold,
+    'error': chalk.red,
+    'warning': chalk.yellow,
+    'info': chalk.blue,
+    'default': chalk.gray
   }
+  return colorMap[level] || chalk.gray
 }
 
 /**
  * Format error message with severity badge
- * Parses lastFailureReason and highlights severity levels
+ * Uses shared error parsing and formatting logic with chalk colors
  *
  * @param failureReason - Raw failure reason text
  * @param showAll - Whether to show all errors or just primary (default: false)
@@ -138,34 +140,26 @@ export function getSeverityColor(severity: string): (text: string) => string {
 export function formatError(failureReason: string | undefined, showAll: boolean = false): string {
   if (!failureReason) return chalk.gray('No errors')
 
-  const { primaryError, allErrors } = parseFailureReason(failureReason)
+  const result = parseFailureReason(failureReason)
 
-  if (!primaryError) {
+  if (!result.primaryError) {
     // No severity prefix found, return original message
     return failureReason
   }
 
-  if (showAll && allErrors.length > 1) {
-    // Show all errors
-    return allErrors
-      .map(error => {
-        const colorFn = getSeverityColor(error.severity)
-        const badge = `[${error.severity}]`
-        return `${colorFn(badge)} ${error.message}`
-      })
-      .join('\n')
+  if (showAll && result.allErrors.length > 1) {
+    // Use shared formatErrors with chalk color function
+    return formatErrors(result, { showAll: true, colorFn: chalkColorFn })
   }
 
-  // Show primary error only
-  const colorFn = getSeverityColor(primaryError.severity)
-  const badge = `[${primaryError.severity}]`
-  const message = primaryError.message
+  // Show primary error only with count indicator
+  const formatted = formatErrorShared(result.primaryError, chalkColorFn)
 
-  if (allErrors.length > 1) {
-    return `${colorFn(badge)} ${message} ${chalk.dim(`(+${allErrors.length - 1} more)`)}`
+  if (result.allErrors.length > 1) {
+    return `${formatted} ${chalk.dim(`(+${result.allErrors.length - 1} more)`)}`
   }
 
-  return `${colorFn(badge)} ${message}`
+  return formatted
 }
 
 /**

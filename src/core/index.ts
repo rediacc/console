@@ -14,15 +14,15 @@ export * from './utils/search'
 export * from './utils/export'
 export * from './utils/array'
 export * from './utils/action-mapping'
+// Re-export types from shared packages
+export type { ErrorSeverity, ParsedError, ParsedErrorResult } from '@rediacc/error-parser'
+
 export type {
   // Export types from queue-status
   QueueHealthStatus,
   QueueStatus,
   StatusConfig,
-  PriorityConfig,
-  ErrorSeverity,
-  ParsedError,
-  ParsedErrorResult
+  PriorityConfig
 } from './utils/queue-status'
 export {
   // Export values from queue-status (exclude duplicates that are in validation.ts)
@@ -39,16 +39,16 @@ export {
   getPriorityConfig,
   isRetryEligible,
   isStaleTask,
-  formatAge,
   filterActiveItems,
   filterCompletedItems,
   filterFailedItems,
   filterCancelledItems,
-  extractFirstError,
-  extractAllErrors,
-  getSeverityColor,
-  parseFailureReason
+  getSeverityColor
 } from './utils/queue-status'
+
+// Re-export functions from shared packages
+export { formatAge } from '@rediacc/formatters'
+export { extractFirstError, extractAllErrors, parseFailureReason } from '@rediacc/error-parser'
 export * from './utils/normalize'
 export * from './utils/progress-parser'
 export * from './utils/batch'

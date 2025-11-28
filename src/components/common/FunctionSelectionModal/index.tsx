@@ -1037,18 +1037,6 @@ const FunctionSelectionModal: React.FC<FunctionSelectionModalProps> = ({
                         )}
                     </Form.Item>
                   )}
-                  
-                  {/* Description */}
-                  <Form.Item label={t('functions:description')}>
-                    <Input.TextArea
-                      value={functionDescription}
-                      onChange={(e) => setFunctionDescription(e.target.value)}
-                      placeholder={t('functions:descriptionPlaceholder')}
-                      rows={2}
-                      autoComplete="off"
-                      data-testid="function-modal-description"
-                    />
-                  </Form.Item>
                 </Form>
               </ConfigCard>
             </ContentStack>

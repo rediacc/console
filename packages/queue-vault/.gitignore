@@ -1,0 +1,6 @@
+dist/
+node_modules/
+*.log
+
+# Auto-copied from source - do not commit
+src/data/functions.json

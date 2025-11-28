@@ -1104,7 +1104,8 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
               to: targetMachine,
               dest: newRepo.repositoryGuid,
               repo: repositoryData.repositoryGuid,
-              grand: repositoryData.grandGuid || repositoryData.repositoryGuid || ''
+              grand: repositoryData.grandGuid || repositoryData.repositoryGuid || '',
+              state: selectedRepository.mounted ? 'online' : 'offline'
             }
 
             const result = await executeAction({
@@ -1114,7 +1115,6 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
               functionName: 'deploy',
               params: deployParams,
               priority: functionData.priority,
-              description: `${functionData.description} → ${targetMachine}`,
               addedVia: 'machine-repository-list',
               machineVault: machine.vaultContent || '{}',
               destinationMachineVault: destinationMachine.vaultContent || '{}',
@@ -1190,8 +1190,10 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
               // Convert storages array to comma-separated string for bash script
               storages: storagesArray.join(','),
               to: targetStorage,
+              dest: repositoryData.repositoryGuid,
               repo: repositoryData.repositoryGuid,
-              grand: repositoryData.grandGuid || repositoryData.repositoryGuid || ''
+              grand: repositoryData.grandGuid || repositoryData.repositoryGuid || '',
+              state: selectedRepository.mounted ? 'online' : 'offline'
             }
 
             const result = await executeAction({
@@ -1201,7 +1203,6 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
               functionName: 'backup',
               params: backupParams,
               priority: functionData.priority,
-              description: `${functionData.description} → ${targetStorage}`,
               addedVia: 'machine-repository-list',
               machineVault: machine.vaultContent || '{}',
               destinationStorageVault: destinationStorage.vaultContent || '{}',
@@ -2173,20 +2174,19 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
         loading={isExecuting}
         showMachineSelection={false}
         teamName={machine.teamName}
-        hiddenParams={['repo', 'grand']}
+        hiddenParams={['repo', 'grand', 'dest', 'state']}
         defaultParams={{
           repo: (() => {
             const repo = teamRepositories.find(r => r.repositoryName === selectedRepository?.name && r.repoTag === selectedRepository?.repoTag);
             return repo?.repositoryGuid || '';
           })(),
-          grand: teamRepositories.find(r => r.repositoryName === selectedRepository?.name && r.repoTag === selectedRepository?.repoTag)?.grandGuid || ''
-        }}
-        initialParams={
-          selectedFunction === 'push' && selectedRepository ? (() => {
+          grand: teamRepositories.find(r => r.repositoryName === selectedRepository?.name && r.repoTag === selectedRepository?.repoTag)?.grandGuid || '',
+          // Auto-generate dest and state for backup and push functions
+          ...((selectedFunction === 'backup' || selectedFunction === 'push') && selectedRepository ? (() => {
             // Find the current repository data
             const currentRepoData = teamRepositories.find(r => r.repositoryName === selectedRepository.name && r.repoTag === selectedRepository.repoTag);
 
-            // Find the grand repository if it exists
+            // Find the grand repository if it exists (for forks)
             let baseRepoName = selectedRepository.name;
             if (currentRepoData?.grandGuid) {
               const grandRepo = teamRepositories.find(r => r.repositoryGuid === currentRepoData.grandGuid);
@@ -2195,13 +2195,15 @@ export const MachineRepositoryTable: React.FC<MachineRepositoryTableProps> = ({ 
               }
             }
 
-            // Generate destination with the base name
-            return {
-              dest: `${baseRepoName}-${selectedRepository.mounted ? 'online' : 'offline'}-${new Date().toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '-')}`,
-              state: selectedRepository.mounted ? 'online' : 'offline'
-            };
-          })() : {}
-        }
+            // Generate destination filename and state
+            const state = selectedRepository.mounted ? 'online' : 'offline';
+            const timestamp = new Date().toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '-');
+            const dest = `${baseRepoName}-${state}-${timestamp}`;
+
+            return { dest, state };
+          })() : {})
+        }}
+        initialParams={{}}
         preselectedFunction={selectedFunction || undefined}
         currentMachineName={machine.machineName}
         additionalContext={
