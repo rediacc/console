@@ -1,0 +1,575 @@
+{
+  "additionalOptions": "Options supplémentaires (avancées)",
+  "availableFunctions": "Fonctions disponibles",
+  "categories": {
+    "backup": {
+      "description": "Opérations de sauvegarde et de restauration",
+      "name": "Fonctions de sauvegarde"
+    },
+    "container": {
+      "description": "Opérations de gestion des conteneurs Docker",
+      "name": "Fonctions du conteneur"
+    },
+    "machine": {
+      "description": "Fonctions de configuration et de maintenance du système de base",
+      "name": "Fonctions de la machine"
+    },
+    "network": {
+      "description": "Opérations de mappage de réseau et de socket",
+      "name": "Fonctions réseau"
+    },
+    "repo": {
+      "description": "Gestion et opérations du référentiel",
+      "name": "Fonctions du référentiel"
+    }
+  },
+  "checkboxOptions": {
+    "mountRepoFirst": "Monter le référentiel en premier",
+    "overrideExistingFile": "Remplacer le fichier existant",
+    "preparationOnly": "Préparation uniquement",
+    "unmountAfterStopping": "Démonter après l'arrêt"
+  },
+  "configure": "Configurer",
+  "currentPriority": "Actuelle",
+  "description": "Description (facultatif)",
+  "descriptionPlaceholder": "Ajouter une description personnalisée pour cet élément de file d'attente",
+  "functions": {
+    "apply_template": {
+      "description": "Appliquer une configuration de modèle à ce référentiel",
+      "name": "modèles",
+      "params": {
+        "grand": {
+          "help": "GUID du grand référentiel",
+          "label": "Grand dépôt"
+        },
+        "repo": {
+          "help": "Nom du référentiel",
+          "label": "Dépôt"
+        },
+        "tmpl": {
+          "help": "Sélectionnez un modèle à appliquer au référentiel",
+          "label": "Modèle"
+        }
+      }
+    },
+    "backup": {
+      "description": "Référentiel de sauvegarde sur plusieurs systèmes de stockage",
+      "name": "sauvegarde",
+      "params": {
+        "checkpoint": {
+          "help": "Activer le mode de sauvegarde à chaud avec point de contrôle (nécessite CRIU, aucun temps d'arrêt pour les dépôts en ligne)",
+          "label": "Activer le point de contrôle"
+        },
+        "dest": {
+          "help": "Nom du fichier de sauvegarde",
+          "label": "Nom du fichier de destination"
+        },
+        "option": {
+          "help": "Options (par exemple, remplacement)",
+          "label": "Possibilités"
+        },
+        "repo": {
+          "help": "Nom(s) du référentiel, séparés par des virgules",
+          "label": "Dépôt"
+        },
+        "state": {
+          "help": "Vérifiez que le référentiel est en ligne ou hors ligne avant de sauvegarder",
+          "label": "État requis"
+        },
+        "storages": {
+          "help": "Sélectionnez un ou plusieurs systèmes de stockage cibles pour la sauvegarde",
+          "label": "Systèmes de stockage cibles"
+        }
+      }
+    },
+    "clone": {
+      "description": "Cloner le référentiel sur la même machine",
+      "name": "cloner"
+    },
+    "container_inspect": {
+      "description": "Inspecter les détails du conteneur Docker",
+      "name": "conteneur_inspecter",
+      "params": {
+        "container": {
+          "help": "Nom ou ID du conteneur",
+          "label": "Récipient"
+        }
+      }
+    },
+    "container_logs": {
+      "description": "Afficher les journaux du conteneur Docker",
+      "name": "journaux_conteneur",
+      "params": {
+        "container": {
+          "help": "Nom ou ID du conteneur",
+          "label": "Récipient"
+        },
+        "follow": {
+          "help": "Suivez la sortie du journal en temps réel",
+          "label": "Suivre les journaux"
+        },
+        "lines": {
+          "help": "Nombre de lignes à afficher (par défaut : 100)",
+          "label": "Lignes"
+        }
+      }
+    },
+    "container_pause": {
+      "description": "Suspendre un conteneur Docker en cours d'exécution",
+      "name": "pause",
+      "params": {
+        "container": {
+          "help": "Nom ou ID du conteneur",
+          "label": "Récipient"
+        }
+      }
+    },
+    "container_remove": {
+      "description": "Supprimer un conteneur Docker",
+      "name": "retirer",
+      "params": {
+        "container": {
+          "help": "Nom ou ID du conteneur",
+          "label": "Récipient"
+        },
+        "force": {
+          "help": "Forcer la suppression du conteneur en cours d'exécution",
+          "label": "Forcer la suppression"
+        }
+      }
+    },
+    "container_restart": {
+      "description": "Redémarrer un conteneur Docker",
+      "name": "redémarrage",
+      "params": {
+        "container": {
+          "help": "Nom ou ID du conteneur",
+          "label": "Récipient"
+        }
+      }
+    },
+    "container_start": {
+      "description": "Démarrer un conteneur Docker",
+      "name": "commencer",
+      "params": {
+        "container": {
+          "help": "Nom ou ID du conteneur",
+          "label": "Récipient"
+        }
+      }
+    },
+    "container_stats": {
+      "description": "Afficher les statistiques d'utilisation des ressources du conteneur Docker",
+      "name": "conteneur_stats",
+      "params": {
+        "container": {
+          "help": "Nom ou ID du conteneur (facultatif - affiche tout s'il est vide)",
+          "label": "Récipient"
+        }
+      }
+    },
+    "container_stop": {
+      "description": "Arrêter un conteneur Docker en cours d'exécution",
+      "name": "arrêt",
+      "params": {
+        "container": {
+          "help": "Nom ou ID du conteneur",
+          "label": "Récipient"
+        }
+      }
+    },
+    "container_unpause": {
+      "description": "Réactiver un conteneur Docker en pause",
+      "name": "reprendre la pause",
+      "params": {
+        "container": {
+          "help": "Nom ou ID du conteneur",
+          "label": "Récipient"
+        }
+      }
+    },
+    "deploy": {
+      "description": "Déployer le référentiel sur plusieurs machines",
+      "name": "déployer",
+      "params": {
+        "checkpoint": {
+          "help": "Activer le mode de déploiement à chaud avec point de contrôle (nécessite CRIU, aucun temps d'arrêt pour les dépôts en ligne)",
+          "label": "Activer le point de contrôle"
+        },
+        "dest": {
+          "help": "Nom du fichier de déploiement",
+          "label": "Nom du fichier de destination"
+        },
+        "machines": {
+          "help": "Sélectionnez une ou plusieurs machines cibles pour le déploiement",
+          "label": "Machines cibles"
+        },
+        "option": {
+          "help": "Options (par exemple, remplacement)",
+          "label": "Possibilités"
+        },
+        "repo": {
+          "help": "Nom(s) du référentiel, séparés par des virgules",
+          "label": "Dépôt"
+        },
+        "state": {
+          "help": "Vérifier que le référentiel est en ligne ou hors ligne avant le déploiement",
+          "label": "État requis"
+        }
+      }
+    },
+    "down": {
+      "description": "Arrêter les services de référentiel",
+      "name": "vers le bas",
+      "params": {
+        "option": {
+          "help": "Options supplémentaires",
+          "label": "Possibilités"
+        },
+        "repo": {
+          "help": "Nom(s) du référentiel, séparés par des virgules",
+          "label": "Dépôt"
+        }
+      }
+    },
+    "expand": {
+      "description": "Développez le stockage du référentiel en ligne sans aucun temps d'arrêt",
+      "name": "développer",
+      "params": {
+        "grand": {
+          "help": "GUID du grand référentiel",
+          "label": "Grand dépôt"
+        },
+        "repo": {
+          "help": "Nom du référentiel",
+          "label": "Dépôt"
+        },
+        "size": {
+          "help": "Nouvelle taille (par exemple, 20 G) : doit être plus grande que la taille actuelle",
+          "label": "Nouvelle taille"
+        }
+      }
+    },
+    "fork": {
+      "description": "Dépôt Fork avec balise basée sur l'horodatage",
+      "name": "fourchette"
+    },
+    "hello": {
+      "description": "Fonction de test simple qui imprime le bonjour à partir du nom d'hôte",
+      "name": "Bonjour"
+    },
+    "list": {
+      "description": "Répertorier les fichiers dans des emplacements de stockage distants",
+      "name": "Liste des fichiers distants",
+      "params": {
+        "format": {
+          "help": "Format pour la liste des fichiers",
+          "label": "Format de sortie"
+        },
+        "from": {
+          "help": "Machine ou système de stockage à partir duquel répertorier les fichiers",
+          "label": "Emplacement de la source"
+        },
+        "path": {
+          "help": "Chemin facultatif dans le stockage",
+          "label": "Chemin"
+        }
+      }
+    },
+    "mount": {
+      "description": "Monter les systèmes de fichiers du référentiel",
+      "name": "monter",
+      "params": {
+        "checkpoint": {
+          "help": "Restaurer les conteneurs depuis le point de contrôle si disponible (nécessite CRIU)",
+          "label": "Activer la restauration du point de contrôle"
+        },
+        "from": {
+          "help": "Machine distante à partir de laquelle monter",
+          "label": "De la machine"
+        },
+        "repo": {
+          "help": "Nom(s) du référentiel, séparés par des virgules",
+          "label": "Dépôt"
+        }
+      }
+    },
+    "new": {
+      "description": "Créer un nouveau référentiel",
+      "name": "nouvelle",
+      "params": {
+        "repo": {
+          "help": "Nom du référentiel",
+          "label": "Dépôt"
+        },
+        "size": {
+          "help": "Taille du référentiel (par exemple, 10 G)",
+          "label": "Taille"
+        }
+      }
+    },
+    "ownership": {
+      "description": "Modifier la propriété du référentiel",
+      "name": "possession",
+      "params": {
+        "from": {
+          "help": "Propriétaire actuel",
+          "label": "Propriétaire actuel"
+        },
+        "repo": {
+          "help": "Nom du référentiel",
+          "label": "Dépôt"
+        },
+        "to": {
+          "help": "Nouveau propriétaire (par défaut : utilisateur universel)",
+          "label": "Nouveau propriétaire"
+        }
+      }
+    },
+    "ping": {
+      "description": "Tester la connectivité réseau à la machine",
+      "name": "pinger"
+    },
+    "plugin": {
+      "description": "Activer les plugins du référentiel",
+      "name": "plugin",
+      "params": {
+        "plugin": {
+          "help": "Nom(s) du plugin, séparés par des virgules",
+          "label": "Plugin"
+        },
+        "repo": {
+          "help": "Nom(s) du référentiel, séparés par des virgules",
+          "label": "Dépôt"
+        }
+      }
+    },
+    "plugout": {
+      "description": "Désactiver les plugins du référentiel",
+      "name": "déconnexion",
+      "params": {
+        "plugin": {
+          "help": "Nom(s) du plugin, séparés par des virgules",
+          "label": "Plugin"
+        },
+        "repo": {
+          "help": "Nom(s) du référentiel, séparés par des virgules",
+          "label": "Dépôt"
+        }
+      }
+    },
+    "pull": {
+      "description": "Extraire le référentiel du stockage distant",
+      "name": "Tirer",
+      "params": {
+        "from": {
+          "help": "Sélectionnez la machine ou le stockage source",
+          "label": "Source"
+        },
+        "repo": {
+          "help": "Nom(s) du référentiel, séparés par des virgules",
+          "label": "Dépôt"
+        },
+        "sourceType": {
+          "help": "Sélectionnez s'il faut extraire depuis une machine ou un stockage",
+          "label": "Type de source"
+        }
+      }
+    },
+    "push": {
+      "description": "Transférer le référentiel vers le stockage distant",
+      "name": "pousser",
+      "params": {
+        "checkpoint": {
+          "help": "Activer le mode de sauvegarde à chaud avec point de contrôle (nécessite CRIU, aucun temps d'arrêt pour les dépôts en ligne)",
+          "label": "Activer le point de contrôle"
+        },
+        "dest": {
+          "help": "Nom du fichier de sauvegarde",
+          "label": "Nom du fichier de destination"
+        },
+        "destinationType": {
+          "help": "Sélectionnez s'il faut transférer vers une machine ou un stockage",
+          "label": "Type de destination"
+        },
+        "option": {
+          "help": "Options (par exemple, remplacement)",
+          "label": "Possibilités"
+        },
+        "repo": {
+          "help": "Nom(s) du référentiel, séparés par des virgules",
+          "label": "Dépôt"
+        },
+        "state": {
+          "help": "Vérifiez que le référentiel est en ligne ou hors ligne avant de pousser",
+          "label": "État requis"
+        },
+        "to": {
+          "help": "Sélectionnez la machine ou le stockage de destination",
+          "label": "Destination"
+        }
+      }
+    },
+    "resize": {
+      "description": "Redimensionner le stockage du référentiel (opération hors ligne - le référentiel doit être démonté)",
+      "name": "redimensionner",
+      "params": {
+        "repo": {
+          "help": "Nom du référentiel",
+          "label": "Dépôt"
+        },
+        "size": {
+          "help": "Nouvelle taille (par exemple, 20 G) : peut être plus grande ou plus petite que la taille actuelle",
+          "label": "Nouvelle taille"
+        }
+      }
+    },
+    "rm": {
+      "description": "Supprimer le référentiel",
+      "name": "rm",
+      "params": {
+        "repo": {
+          "help": "Nom du référentiel",
+          "label": "Dépôt"
+        }
+      }
+    },
+    "setup": {
+      "description": "Configurer le système d'exploitation avec les outils et configurations requis",
+      "name": "installation",
+      "params": {
+        "datastore_size": {
+          "help": "Taille de la banque de données (par exemple, 95 %, 100 G)",
+          "label": "Taille de la banque de données"
+        },
+        "docker_source": {
+          "help": "Comment installer Docker (docker-repo = référentiel officiel, package-manager = packages du système d'exploitation, snap = snap store, manuel = ignorer)",
+          "label": "Source d'installation de Docker"
+        },
+        "install_amd_driver": {
+          "help": "Installez les pilotes GPU AMD (auto = détecter d'abord le GPU, true = toujours installer, false = ignorer)",
+          "label": "Installer le pilote GPU AMD"
+        },
+        "install_criu": {
+          "help": "Installez CRIU pour la prise en charge des points de contrôle/restauration (auto = installer si le noyau >= 3.11, true = forcer l'installation, false = ignorer, manuel = installations utilisateur)",
+          "label": "Installer CRÉER"
+        },
+        "install_nvidia_driver": {
+          "help": "Installez les pilotes GPU NVIDIA (auto = détecter d'abord le GPU, true = toujours installer, false = ignorer)",
+          "label": "Installer le pilote GPU NVIDIA"
+        },
+        "rclone_source": {
+          "help": "Comment installer rclone (install-script = script officiel, package-manager = apt/dnf, manuel = sauter)",
+          "label": "Source d'installation de Rclone"
+        },
+        "source": {
+          "help": "Source du paquet",
+          "label": "Source"
+        }
+      }
+    },
+    "uninstall": {
+      "description": "Nettoyer et désinstaller les composants du système",
+      "name": "désinstaller"
+    },
+    "unmount": {
+      "description": "Démonter les systèmes de fichiers du référentiel",
+      "name": "démonter",
+      "params": {
+        "checkpoint": {
+          "help": "Créer un point de contrôle avant le démontage (nécessite CRIU)",
+          "label": "Créer un point de contrôle"
+        },
+        "from": {
+          "help": "Machine distante à démonter",
+          "label": "De la machine"
+        },
+        "repo": {
+          "help": "Nom(s) du référentiel, séparés par des virgules",
+          "label": "Dépôt"
+        }
+      }
+    },
+    "up": {
+      "description": "Démarrez les services de référentiel à l'aide de Rediaccfile",
+      "name": "en haut",
+      "params": {
+        "option": {
+          "help": "Options (par exemple, préparation uniquement)",
+          "label": "Possibilités"
+        },
+        "repo": {
+          "help": "Nom(s) du référentiel, séparés par des virgules",
+          "label": "Dépôt"
+        }
+      }
+    },
+    "validate": {
+      "description": "Validez le référentiel en exécutant prep, up, vérifications de l'état, test et down",
+      "name": "valider",
+      "params": {
+        "cleanup": {
+          "help": "Démonter le référentiel une fois la validation terminée",
+          "label": "Nettoyage"
+        },
+        "grand": {
+          "help": "Nom du référentiel parent",
+          "label": "Grand dépôt"
+        },
+        "repo": {
+          "help": "Nom du référentiel à valider",
+          "label": "Dépôt"
+        },
+        "skip_down": {
+          "help": "Laisser les services fonctionner après validation",
+          "label": "Sauter vers le bas"
+        },
+        "skip_prep": {
+          "help": "Ignorer la phase de préparation si elle a déjà été exécutée récemment",
+          "label": "Sauter la préparation"
+        },
+        "timeout": {
+          "help": "Temps maximum par fonction en secondes (par défaut : 300)",
+          "label": "Délai d'expiration (secondes)"
+        }
+      }
+    }
+  },
+  "missingRequiredParams": "Veuillez remplir tous les paramètres requis : {{params}}",
+  "onlinePushLearnMore": "En savoir plus sur les push en ligne et hors ligne →",
+  "onlinePushWarningMessage": "Le fait de pousser un référentiel monté pendant que les services sont en cours d'exécution peut entraîner des incohérences de données.",
+  "onlinePushWarningTitle": "Avertissement push en ligne",
+  "priority": "Priorité",
+  "priorityAboveNormal": "Au-dessus de la normale",
+  "priorityBelowNormal": "Normale",
+  "priorityHelp": "Les tâches sont traitées par priorité d'abord, puis par âge",
+  "priorityHigh": "Haut",
+  "priorityHighDescription": "Permet plusieurs tâches simultanées de haute priorité. À utiliser pour les tâches importantes nécessitant un traitement plus rapide.",
+  "priorityHighWarning": "Haute priorité (2)",
+  "priorityHighest": "Le plus haut",
+  "priorityHighestDescription": "La soumission d’une tâche la plus prioritaire annulera automatiquement toutes les tâches existantes ayant la plus haute priorité. À utiliser uniquement pour les tâches critiques urgentes nécessitant une attention immédiate.",
+  "priorityHighestTimeout": "Délai d'expiration des tâches P1 après 33 secondes",
+  "priorityHighestTimeoutWarning": "Idéal pour les opérations rapides telles que les tests SSH, les contrôles de santé et les requêtes d'état. Pour les tâches critiques plus longues, utilisez P2 (délai d'expiration basé sur le niveau : 2 à 96 heures).",
+  "priorityHighestWarning": "Priorité la plus élevée (1)",
+  "priorityLow": "Faible",
+  "priorityLowDescription": "Vitesse de traitement standard. Recommandé pour la plupart des opérations et tâches quotidiennes.",
+  "priorityLowWarning": "Priorité normale (4)",
+  "priorityLowestDescription": "Vitesse de traitement la plus lente. À utiliser pour des opérations ou des tâches par lots sans contrainte de temps.",
+  "priorityLowestWarning": "Priorité la plus basse (5)",
+  "priorityNormal": "Au-dessus de la normale",
+  "priorityNormalDescription": "Plus rapide que la vitesse de traitement standard. À utiliser pour les tâches nécessitant un traitement plus rapide que la normale.",
+  "priorityNormalWarning": "Au-dessus de la priorité normale (3)",
+  "priorityPopoverLevels": "Niveaux de priorité :",
+  "priorityPopoverP1": "Délai d'attente de 33 secondes. Pour des opérations rapides telles que les tests SSH, les contrôles de santé et les requêtes d'état. Emplacements réservés pour une exécution immédiate.",
+  "priorityPopoverP2": "Délai d'expiration du niveau (2-96 h). Emplacements réservés. Pour les tâches critiques importantes.",
+  "priorityPopoverP3": "Délai d'expiration du niveau (2-96 h). Machines à sous normales. Pour les tâches nécessitant un traitement plus rapide.",
+  "priorityPopoverP4": "Délai d'expiration du niveau (2-96 h). Traitement standard pour la plupart des opérations.",
+  "priorityPopoverP5": "Délai d'expiration du niveau (2-96 h). Pour des opérations par lots sans contrainte de temps.",
+  "priorityPopoverTitle": "Système de priorité",
+  "quickTaskBadge": "Tâche rapide",
+  "quickTaskDescription": "Se termine en moins de 30 secondes",
+  "searchFunctions": "Fonctions de recherche...",
+  "selectFunction": "Sélectionner une fonction",
+  "selectFunctionToConfigure": "Sélectionnez une fonction à configurer",
+  "validationError": "Erreur de validation"
+}

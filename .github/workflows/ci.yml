@@ -179,14 +179,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build shared packages
-        run: |
-          cd packages/error-parser && npm run build
-          cd ../formatters && npm run build
-          cd ../queue-vault && npm run build
-
-      - name: Run TypeScript type check
-        run: npx tsc --noEmit
+      - name: Run TypeScript project references
+        run: npm run typecheck
 
   cli-check:
     name: 🔧 Code Quality - CLI
@@ -201,38 +195,28 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: cli/package-lock.json
 
-      - name: Install root dependencies (for shared packages)
+      - name: Install dependencies
         run: npm ci
 
-      - name: Build shared packages
-        run: |
-          cd packages/error-parser && npm run build
-          cd ../formatters && npm run build
-          cd ../queue-vault && npm run build
+      - name: Build shared libraries
+        run: npm run build:packages
 
-      - name: Install CLI dependencies
-        working-directory: cli
-        run: npm ci
-
-      - name: Build CLI
-        working-directory: cli
-        run: npm run build
+      - name: Build CLI workspace
+        run: npm run build:cli
 
       - name: Check CLI build output
-        working-directory: cli
         run: |
-          if [ ! -d "dist" ]; then
+          if [ ! -d "packages/cli/dist" ]; then
             echo "Error: CLI dist directory not created"
             exit 1
           fi
-          if [ ! -f "dist/index.js" ]; then
+          if [ ! -f "packages/cli/dist/index.js" ]; then
             echo "Error: CLI index.js not found in dist"
             exit 1
           fi
           echo "CLI build successful!"
-          ls -lah dist/
+          ls -lah packages/cli/dist/
 
   build:
     name: 🏗️ Build - DEBUG & RELEASE
@@ -255,38 +239,35 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build shared packages
-        run: |
-          cd packages/error-parser && npm run build
-          cd ../formatters && npm run build
-          cd ../queue-vault && npm run build
+      - name: Build shared libraries
+        run: npm run build:packages
 
-      - name: Build application (${{ matrix.build-type }})
+      - name: Build web application (${{ matrix.build-type }})
         env:
           REDIACC_BUILD_TYPE: ${{ matrix.build-type }}
           VITE_APP_VERSION: ${{ github.sha }}
           VITE_BASE_PATH: /
           NODE_ENV: production
-        run: npm run build
+        run: npm run build:web
 
       - name: Check build output
         run: |
-          if [ ! -d "dist" ]; then
+          if [ ! -d "packages/web/dist" ]; then
             echo "Error: dist directory not created"
             exit 1
           fi
-          if [ ! -f "dist/index.html" ]; then
+          if [ ! -f "packages/web/dist/index.html" ]; then
             echo "Error: index.html not found in dist"
             exit 1
           fi
           echo "Build successful!"
-          ls -lah dist/
+          ls -lah packages/web/dist/
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # v4
         with:
           name: build-${{ matrix.build-type }}-${{ github.sha }}
-          path: dist/
+          path: packages/web/dist/
           retention-days: 90
 
   test-api:
@@ -358,17 +339,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build shared packages
-        run: |
-          cd packages/error-parser && npm run build
-          cd ../formatters && npm run build
-          cd ../queue-vault && npm run build
+      - name: Build shared libraries
+        run: npm run build:packages
 
       - name: Build for production
         env:
           REDIACC_BUILD_TYPE: RELEASE
+          VITE_APP_VERSION: ${{ github.sha }}
+          VITE_BASE_PATH: /
           NODE_ENV: production
-        run: npm run build
+        run: npm run build:web
 
       - name: Analyze bundle size
         run: |
@@ -376,17 +356,17 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Main Bundles" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          du -h dist/assets/js/*.js | sort -h >> $GITHUB_STEP_SUMMARY
+          du -h packages/web/dist/assets/js/*.js | sort -h >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Total Size" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          du -sh dist/ >> $GITHUB_STEP_SUMMARY
+          du -sh packages/web/dist/ >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Check bundle size limits
         run: |
-          TOTAL_SIZE=$(du -sb dist/ | cut -f1)
+          TOTAL_SIZE=$(du -sb packages/web/dist/ | cut -f1)
           MAX_SIZE=$((10 * 1024 * 1024))  # 10MB limit
 
           if [ $TOTAL_SIZE -gt $MAX_SIZE ]; then

@@ -1,0 +1,328 @@
+{
+  "accessControl": {
+    "expertOnlyMessage": "切换到专家模式查看此页面。",
+    "expertOnlyTitle": "需要专家模式"
+  },
+  "actions": {
+    "activate": "激活",
+    "addMember": "添加会员",
+    "addPermission": "添加权限",
+    "assignUser": "分配用户",
+    "changePassword": "更改密码",
+    "configureVault": "配置保管库",
+    "createGroup": "创建群组",
+    "createTeam": "创建团队",
+    "createUser": "创建用户",
+    "deactivate": "停用",
+    "edit": "编辑",
+    "members": "会员",
+    "permissions": "权限",
+    "resetAuth": "重置验证",
+    "token": "代币",
+    "trace": "痕迹",
+    "twoFactorAuth": "双因素身份验证"
+  },
+  "architecture": {
+    "bridges": "桥梁",
+    "clearAll": "全部清除",
+    "fetchError": "获取架构数据失败",
+    "filterEntities": "过滤实体",
+    "legend": "传奇",
+    "machines": "机器",
+    "noData": "没有可用的架构数据",
+    "noEntitiesSelected": "未选择任何实体。 请至少选择一种要显示的实体类型。",
+    "nodeBridge": "桥",
+    "nodeCompany": "公司",
+    "nodeMachine": "机器",
+    "nodeRegion": "地区",
+    "nodeRepo": "存储库",
+    "nodeStorage": "贮存",
+    "nodeTeam": "团队",
+    "nodeUser": "用户",
+    "regions": "地区",
+    "repos": "存储库",
+    "schedules": "时间表",
+    "selectAll": "选择全部",
+    "selectEntities": "选择要显示的实体类型",
+    "storages": "存储",
+    "teams": "团队",
+    "title": "公司架构",
+    "users": "用户",
+    "viewForce": "力量",
+    "viewHierarchy": "等级制度",
+    "viewRadial": "径向"
+  },
+  "audit": {
+    "columns": {
+      "action": "行动",
+      "details": "细节",
+      "entityName": "实体名称",
+      "entityType": "实体类型",
+      "timestamp": "时间戳",
+      "user": "用户"
+    },
+    "empty": {
+      "clearFilters": "清除过滤器并扩大日期范围",
+      "noLogsInRange": "未找到所选日期范围内的审核日志",
+      "noMatchingFilters": "没有日志与您当前的过滤器匹配"
+    },
+    "errors": {
+      "loadDescription": "加载审核日志时出错。 请尝试刷新或调整您的日期范围。",
+      "loadTitle": "无法加载审核日志",
+      "tryAgain": "再试一次",
+      "unableToLoad": "无法加载审核日志"
+    },
+    "export": {
+      "noData": "没有可导出的数据",
+      "successCSV": "已将 {{count}} 个审核日志导出到 CSV",
+      "successJSON": "已将 {{count}} 审核日志导出到 JSON",
+      "tooltip": "将审核日志导出为 CSV 或 JSON"
+    },
+    "filters": {
+      "actions": "行动",
+      "allEntities": "所有实体",
+      "dateRange": "日期范围",
+      "entityType": "实体类型",
+      "export": "出口",
+      "search": "搜索",
+      "searchPlaceholder": "在日志中搜索..."
+    },
+    "pagination": {
+      "showing": "显示 {{start}}-{{end}}，共 {{total}} 条日志"
+    },
+    "subtitle": "跟踪组织中的所有活动和变化",
+    "title": "审核日志"
+  },
+  "company": {
+    "errors": {
+      "blockRequestsFailed": "无法更新用户请求阻止状态",
+      "importFailed": "导入公司数据失败",
+      "noExportData": "没有返回导出数据",
+      "vaultUpdateFailed": "无法更新保管库配置"
+    },
+    "success": {
+      "errorCount": "{{count}} 个错误",
+      "importComplete": "导入完成：{{summary}}",
+      "importedCount": "已导入 {{count}} 件商品",
+      "requestsBlocked": "用户请求已成功阻止",
+      "requestsBlockedWithTerminations": "用户请求被阻止。 {{count}} 个活动会话已终止。",
+      "requestsUnblocked": "用户请求解禁成功",
+      "skippedCount": "已跳过 {{count}} 项",
+      "vaultUpdated": "保管库配置更新成功"
+    }
+  },
+  "dangerZone": {
+    "blockUserRequests": {
+      "blockButton": "阻止用户请求",
+      "confirmBlock": {
+        "confirm": "您确定要继续吗？",
+        "description": "这一行动将：",
+        "effect1": "阻止所有非管理员用户访问系统",
+        "effect2": "终止所有活动用户会话（管理员除外）",
+        "effect3": "需要手动解锁用户才能重新获得访问权限",
+        "okText": "是，阻止用户",
+        "title": "阻止用户请求"
+      },
+      "confirmUnblock": {
+        "description": "这将允许所有用户再次向系统发出请求。 你确定吗？",
+        "okText": "是的，解锁",
+        "title": "解除阻止用户请求"
+      },
+      "description": "阻止所有非管理员用户向系统发出请求。 这将立即终止除管理员之外的所有活动用户会话。 用户需要手动解锁才能重新获得访问权限。",
+      "title": "阻止用户请求",
+      "unblockButton": "解除阻止用户请求"
+    },
+    "exportData": {
+      "button": "导出公司数据",
+      "description": "导出所有公司数据，包括用户、团队、权限、区域、桥梁、机器、存储库、存储配置和计划。 此导出可用于备份或迁移目的。",
+      "downloading": "正在准备导出...",
+      "error": "导出公司数据失败",
+      "success": "公司数据导出成功",
+      "title": "导出公司数据"
+    },
+    "exportVaults": {
+      "button": "导出所有保管库",
+      "description": "下载所有公司保管库配置，包括团队、区域、桥梁、计算机、存储库、存储和计划。 此导出包含敏感凭据信息，应安全处理。",
+      "error": "导出保管库失败",
+      "success": "保管库导出成功",
+      "title": "导出所有保管库"
+    },
+    "importData": {
+      "button": "导入公司数据",
+      "description": "从以前导出的文件导入公司数据。 您可以选择跳过现有项目或使用导入的数据覆盖它们。",
+      "error": "导入公司数据失败",
+      "modal": {
+        "cancel": "取消",
+        "fileRequired": "请选择要导入的文件",
+        "import": "进口",
+        "importMode": "导入方式",
+        "importing": "输入...",
+        "invalidFile": "文件格式无效。 请选择有效的公司数据导出文件。",
+        "modeOverride": "覆盖现有项目",
+        "modeOverrideDesc": "用导入的数据替换现有项目",
+        "modeSkip": "跳过现有项目",
+        "modeSkipDesc": "仅导入尚不存在的项目",
+        "selectFile": "选择文件",
+        "title": "导入公司数据",
+        "warning": "警告",
+        "warningText": "导入数据将修改您的公司配置。 在继续之前请确保您有备份。"
+      },
+      "success": "公司数据导入成功",
+      "title": "导入公司数据"
+    },
+    "title": "危险区",
+    "updateMasterPassword": {
+      "button": "加密设置",
+      "description": "配置客户端加密密码以保护组织中的所有敏感保管库数据。 该密码在所有用户之间共享，并且 Rediacc 永远无法访问该密码，以增强安全性。",
+      "effect1": "使用新密码重新加密所有保管库",
+      "effect2": "注销所有用户（除您之外）",
+      "effect3": "要求所有用户完成后重新登录",
+      "error": {
+        "fetchVaults": "无法获取当前保管库",
+        "noVaults": "找不到要更新的保管库",
+        "partialSuccess": "已成功更新 {{updated}} 个保管库，但 {{failed}} 失败。 检查日志以获取详细信息。",
+        "updateFailed": "无法使用新的加密密码更新保管库"
+      },
+      "modal": {
+        "cancel": "取消",
+        "confirmPasswordLabel": "确认主密码",
+        "confirmPasswordMatch": "密码不匹配",
+        "confirmPasswordPlaceholder": "确认新的主密码",
+        "confirmPasswordRequired": "请确认主密码",
+        "importantNote": "更新加密密码后，所有用户都需要使用新的共享密码来访问保管库配置。 该密码应安全地分发给所有授权用户。 注意：带有 RequestToken 的 Global Bridges 需要手动解锁。",
+        "importantNoteCreate": "创建加密密码后，所有用户都需要此共享密码才能访问保管库配置。 将其安全地分发给所有授权的公司成员 - Rediacc 无权访问此密码。",
+        "importantNoteRemove": "删除加密密码后，无需客户端加密即可访问保管库配置。 考虑敏感数据的安全影响。",
+        "newPasswordLabel": "新主密码",
+        "newPasswordMinLength": "密码长度必须至少为 12 个字符",
+        "newPasswordPattern": "密码必须包含大写、小写、数字和特殊字符",
+        "newPasswordPlaceholder": "输入新的主密码",
+        "newPasswordRequired": "请输入新的主密码",
+        "operationCreate": "创建主密码",
+        "operationRemove": "删除主密码",
+        "operationType": "选择操作",
+        "operationUpdate": "更新主密码",
+        "submit": "执行操作",
+        "submitCreate": "创建加密密码",
+        "submitRemove": "删除加密密码",
+        "submitUpdate": "更新加密密码",
+        "title": "加密密码配置",
+        "warningDescription": "您即将修改整个公司的主密码。 这将：",
+        "warningDescriptionCreate": "您将为整个公司创建一个主密码。 这将：",
+        "warningDescriptionRemove": "您即将删除整个公司的主密码。 这将：",
+        "warningDescriptionUpdate": "您即将更新整个公司的主密码。 这将：",
+        "warningEffect1": "操作过程中暂时锁定系统",
+        "warningEffect2": "注销除您之外的所有活跃用户",
+        "warningEffect3": "使用新密码重新加密所有保管库数据",
+        "warningEffect3Create": "使用主密码加密所有保管库数据",
+        "warningEffect3Remove": "解密所有保管库数据（保管库将以未加密的方式存储）",
+        "warningEffect3Update": "使用新密码重新加密所有保管库数据",
+        "warningEffect4": "需要手动重新配置所有网桥",
+        "warningPermanent": "此操作是永久性的且无法撤消。",
+        "warningSecure": "您是否安全地存储了新密码？",
+        "warningSecureRemove": "您确定要从所有保管库中删除加密吗？",
+        "warningTitle": "⚠️ 关键安全操作"
+      },
+      "success": {
+        "loginNow": "立即登录",
+        "nextSteps": "后续步骤：",
+        "redirecting": "重定向到登录页面",
+        "seconds": "秒",
+        "step1": "所有用户必须使用其现有凭据重新登录",
+        "step2": "与组织中的所有授权用户安全地共享新的加密密码",
+        "step2Remove": "通知管理员保管库现已未加密",
+        "step3": "您自己的网桥必须使用新的加密密码手动重新配置",
+        "step3Remove": "您自己的网桥必须在没有客户端加密的情况下手动重新配置",
+        "step4": "使用新的共享加密密码更新公司的密码管理系统",
+        "step4Remove": "从公司的密码管理系统中删除加密密码",
+        "systemReady": "系统现已解锁并可供使用。",
+        "title": "操作成功完成",
+        "titleCreate": "加密密码创建成功",
+        "titleRemove": "加密密码已成功删除",
+        "titleUpdate": "加密密码更新成功"
+      },
+      "title": "加密密码设置",
+      "warning": "将新密码存储在安全位置 - 如果丢失则无法恢复。"
+    }
+  },
+  "regionsInfrastructure": {
+    "title": "地区及基础设施"
+  },
+  "tables": {
+    "permissionGroups": {
+      "actions": "行动",
+      "groupName": "群组名称",
+      "permissions": "权限",
+      "users": "用户"
+    },
+    "teams": {
+      "actions": "行动",
+      "machines": "机器",
+      "members": "会员",
+      "repos": "存储库",
+      "storage": "贮存",
+      "teamName": "团队名称",
+      "vaultVersion": "保险库版本"
+    },
+    "users": {
+      "actions": "行动",
+      "email": "电子邮件",
+      "lastActive": "最后活跃",
+      "permissionGroup": "权限组",
+      "status": "地位"
+    }
+  },
+  "userSessions": {
+    "active": "积极的",
+    "activeSessions": "活跃会话",
+    "averageDuration": "平均持续时间",
+    "columns": {
+      "actions": "行动",
+      "createdAt": "登录时间",
+      "duration": "期间",
+      "ipAddress": "IP地址",
+      "lastActivity": "上次活动",
+      "sessionName": "会议",
+      "status": "地位",
+      "user": "用户",
+      "userAgent": "用户代理"
+    },
+    "confirmTerminate": "终止会话",
+    "confirmTerminateOther": "您确定要终止 {{email}} 的会话吗？",
+    "confirmTerminateSelf": "这是您当前的会话。 终止它将使您注销。 你确定吗？",
+    "currentSession": "你",
+    "fork": "叉",
+    "forkToken": "这是一个分叉令牌（子会话）",
+    "hasChildren": "{{count}} 个子会话",
+    "inactive": "不活跃",
+    "minutes": "分钟",
+    "notAvailable": "不适用",
+    "searchPlaceholder": "按电子邮件、IP 或会话名称搜索...",
+    "selfTerminateWarning": "您的会话将被终止。 您将需要重新登录。",
+    "terminate": "终止",
+    "title": "用户会话",
+    "totalCount": "总计：{{count}} 场次",
+    "totalSessions": "总会话数",
+    "uniqueUsers": "独特用户"
+  },
+  "users": {
+    "activate": {
+      "confirmDescription": "您确定要激活“{{email}}”吗？",
+      "confirmTitle": "激活用户"
+    },
+    "deactivate": {
+      "confirmDescription": "您确定要停用“{{email}}”吗？",
+      "confirmTitle": "停用用户"
+    }
+  },
+  "vaultProtocol": {
+    "errors": {
+      "disableFailed": "无法禁用保管库加密",
+      "enableFailed": "无法启用保管库加密",
+      "noCompanySelected": "没有选择任何公司。 请在更新加密前选择一家公司。"
+    },
+    "success": {
+      "disabled": "保管库加密已禁用。 不再需要主密码。",
+      "enabled": "保管库加密已成功启用。 所有用户现在都必须使用此主密码。"
+    }
+  }
+}

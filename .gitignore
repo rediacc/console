@@ -5,6 +5,7 @@ node_modules/
 dist/
 bin/
 packages/*/dist
+*.tsbuildinfo
 
 # Editor directories and files
 .vscode/*

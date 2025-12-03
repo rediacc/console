@@ -1,0 +1,547 @@
+{
+  "additionalOptions": "Additional options (advanced)",
+  "availableFunctions": "Available Functions",
+  "categories": {
+    "backup": {
+      "description": "Backup and restore operations",
+      "name": "Backup Functions"
+    },
+    "container": {
+      "description": "Docker container management operations",
+      "name": "Container Functions"
+    },
+    "machine": {
+      "description": "Core system setup and maintenance functions",
+      "name": "Machine Functions"
+    },
+    "network": {
+      "description": "Network and socket mapping operations",
+      "name": "Network Functions"
+    },
+    "repo": {
+      "description": "Repository management and operations",
+      "name": "Repository Functions"
+    }
+  },
+  "checkboxOptions": {
+    "mountRepoFirst": "Mount repository first",
+    "overrideExistingFile": "Override existing file",
+    "preparationOnly": "Preparation only",
+    "unmountAfterStopping": "Unmount after stopping"
+  },
+  "configure": "Configure",
+  "currentPriority": "Current",
+  "description": "Description (optional)",
+  "descriptionPlaceholder": "Add a custom description for this queue item",
+  "functions": {
+    "fork": {
+      "description": "Fork repository with timestamp-based tag",
+      "name": "fork"
+    },
+    "container_inspect": {
+      "description": "Inspect Docker container details",
+      "name": "container_inspect",
+      "params": {
+        "container": {
+          "help": "Container name or ID",
+          "label": "Container"
+        }
+      }
+    },
+    "container_logs": {
+      "description": "View Docker container logs",
+      "name": "container_logs",
+      "params": {
+        "container": {
+          "help": "Container name or ID",
+          "label": "Container"
+        },
+        "follow": {
+          "help": "Follow log output in real-time",
+          "label": "Follow Logs"
+        },
+        "lines": {
+          "help": "Number of lines to show (default: 100)",
+          "label": "Lines"
+        }
+      }
+    },
+    "container_pause": {
+      "description": "Pause a running Docker container",
+      "name": "pause",
+      "params": {
+        "container": {
+          "help": "Container name or ID",
+          "label": "Container"
+        }
+      }
+    },
+    "container_remove": {
+      "description": "Remove a Docker container",
+      "name": "remove",
+      "params": {
+        "container": {
+          "help": "Container name or ID",
+          "label": "Container"
+        },
+        "force": {
+          "help": "Force removal of running container",
+          "label": "Force Remove"
+        }
+      }
+    },
+    "container_restart": {
+      "description": "Restart a Docker container",
+      "name": "restart",
+      "params": {
+        "container": {
+          "help": "Container name or ID",
+          "label": "Container"
+        }
+      }
+    },
+    "container_start": {
+      "description": "Start a Docker container",
+      "name": "start",
+      "params": {
+        "container": {
+          "help": "Container name or ID",
+          "label": "Container"
+        }
+      }
+    },
+    "container_stats": {
+      "description": "Display Docker container resource usage statistics",
+      "name": "container_stats",
+      "params": {
+        "container": {
+          "help": "Container name or ID (optional - shows all if empty)",
+          "label": "Container"
+        }
+      }
+    },
+    "container_stop": {
+      "description": "Stop a running Docker container",
+      "name": "stop",
+      "params": {
+        "container": {
+          "help": "Container name or ID",
+          "label": "Container"
+        }
+      }
+    },
+    "container_unpause": {
+      "description": "Unpause a paused Docker container",
+      "name": "unpause",
+      "params": {
+        "container": {
+          "help": "Container name or ID",
+          "label": "Container"
+        }
+      }
+    },
+    "down": {
+      "description": "Stop repository services",
+      "name": "down",
+      "params": {
+        "option": {
+          "help": "Additional options",
+          "label": "Options"
+        },
+        "repo": {
+          "help": "Repository name(s), comma-separated",
+          "label": "Repository"
+        }
+      }
+    },
+    "deploy": {
+      "description": "Deploy repository to multiple machines",
+      "name": "deploy",
+      "params": {
+        "machines": {
+          "help": "Select one or more target machines for deployment",
+          "label": "Target Machines"
+        },
+        "option": {
+          "help": "Options (e.g., override)",
+          "label": "Options"
+        },
+        "checkpoint": {
+          "help": "Enable hot deploy mode with checkpoint (requires CRIU, zero downtime for online repos)",
+          "label": "Enable Checkpoint"
+        }
+      }
+    },
+    "backup": {
+      "description": "Backup repository to multiple storage systems",
+      "name": "backup",
+      "params": {
+        "storages": {
+          "help": "Select one or more target storage systems for backup",
+          "label": "Target Storage Systems"
+        },
+        "option": {
+          "help": "Options (e.g., override)",
+          "label": "Options"
+        },
+        "checkpoint": {
+          "help": "Enable hot backup mode with checkpoint (requires CRIU, zero downtime for online repos)",
+          "label": "Enable Checkpoint"
+        }
+      }
+    },
+    "validate": {
+      "description": "Validate repository by running prep, up, health checks, test, and down",
+      "name": "validate",
+      "params": {
+        "repo": {
+          "help": "Repository name to validate",
+          "label": "Repository"
+        },
+        "grand": {
+          "help": "Parent repository name",
+          "label": "Grand Repository"
+        },
+        "skip_prep": {
+          "help": "Skip the prep phase if already run recently",
+          "label": "Skip Prep"
+        },
+        "skip_down": {
+          "help": "Leave services running after validation",
+          "label": "Skip Down"
+        },
+        "cleanup": {
+          "help": "Unmount repository after validation completes",
+          "label": "Cleanup"
+        },
+        "timeout": {
+          "help": "Maximum time per function in seconds (default: 300)",
+          "label": "Timeout (seconds)"
+        }
+      }
+    },
+    "expand": {
+      "description": "Expand repository storage online with zero downtime",
+      "name": "expand",
+      "params": {
+        "grand": {
+          "help": "Grand repository GUID",
+          "label": "Grand Repository"
+        },
+        "repo": {
+          "help": "Repository name",
+          "label": "Repository"
+        },
+        "size": {
+          "help": "New size (e.g., 20G) - must be larger than current size",
+          "label": "New Size"
+        }
+      }
+    },
+    "hello": {
+      "description": "Simple test function that prints hello from hostname",
+      "name": "hello"
+    },
+    "list": {
+      "description": "List files in remote storage locations",
+      "name": "list files",
+      "params": {
+        "format": {
+          "help": "Format for the file listing",
+          "label": "Output Format"
+        },
+        "from": {
+          "help": "Machine or storage system to list files from",
+          "label": "Source Location"
+        },
+        "path": {
+          "help": "Optional path within the storage",
+          "label": "Path"
+        }
+      }
+    },
+    "mount": {
+      "description": "Mount repository filesystems",
+      "name": "mount",
+      "params": {
+        "from": {
+          "help": "Remote machine to mount from",
+          "label": "From Machine"
+        },
+        "repo": {
+          "help": "Repository name(s), comma-separated",
+          "label": "Repository"
+        },
+        "checkpoint": {
+          "help": "Restore containers from checkpoint if available (requires CRIU)",
+          "label": "Enable Checkpoint Restore"
+        }
+      }
+    },
+    "new": {
+      "description": "Create a new repository",
+      "name": "new",
+      "params": {
+        "repo": {
+          "help": "Repository name",
+          "label": "Repository"
+        },
+        "size": {
+          "help": "Repository size (e.g., 10G)",
+          "label": "Size"
+        }
+      }
+    },
+    "ownership": {
+      "description": "Change repository ownership",
+      "name": "ownership",
+      "params": {
+        "from": {
+          "help": "Current owner",
+          "label": "Current Owner"
+        },
+        "repo": {
+          "help": "Repository name",
+          "label": "Repository"
+        },
+        "to": {
+          "help": "New owner (default: universal user)",
+          "label": "New Owner"
+        }
+      }
+    },
+    "ping": {
+      "description": "Test network connectivity to the machine",
+      "name": "ping"
+    },
+    "plugin": {
+      "description": "Activate repository plugins",
+      "name": "plugin",
+      "params": {
+        "plugin": {
+          "help": "Plugin name(s), comma-separated",
+          "label": "Plugin"
+        },
+        "repo": {
+          "help": "Repository name(s), comma-separated",
+          "label": "Repository"
+        }
+      }
+    },
+    "plugout": {
+      "description": "Deactivate repository plugins",
+      "name": "plugout",
+      "params": {
+        "plugin": {
+          "help": "Plugin name(s), comma-separated",
+          "label": "Plugin"
+        },
+        "repo": {
+          "help": "Repository name(s), comma-separated",
+          "label": "Repository"
+        }
+      }
+    },
+    "apply_template": {
+      "description": "Apply a template configuration to this repository",
+      "name": "templates",
+      "params": {
+        "grand": {
+          "help": "Grand repository GUID",
+          "label": "Grand Repository"
+        },
+        "repo": {
+          "help": "Repository name",
+          "label": "Repository"
+        },
+        "tmpl": {
+          "help": "Select a template to apply to the repository",
+          "label": "Template"
+        }
+      }
+    },
+    "pull": {
+      "description": "Pull repository from remote storage",
+      "name": "pull",
+      "params": {
+        "from": {
+          "help": "Select the source machine or storage",
+          "label": "Source"
+        },
+        "repo": {
+          "help": "Repository name(s), comma-separated",
+          "label": "Repository"
+        },
+        "sourceType": {
+          "help": "Select whether to pull from a machine or storage",
+          "label": "Source Type"
+        }
+      }
+    },
+    "push": {
+      "description": "Push repository to remote storage",
+      "name": "push",
+      "params": {
+        "dest": {
+          "help": "Name for the backup file",
+          "label": "Destination Filename"
+        },
+        "destinationType": {
+          "help": "Select whether to push to a machine or storage",
+          "label": "Destination Type"
+        },
+        "option": {
+          "help": "Options (e.g., override)",
+          "label": "Options"
+        },
+        "repo": {
+          "help": "Repository name(s), comma-separated",
+          "label": "Repository"
+        },
+        "state": {
+          "help": "Validate repository is online or offline before pushing",
+          "label": "Required State"
+        },
+        "checkpoint": {
+          "help": "Enable hot backup mode with checkpoint (requires CRIU, zero downtime for online repos)",
+          "label": "Enable Checkpoint"
+        },
+        "to": {
+          "help": "Select the destination machine or storage",
+          "label": "Destination"
+        }
+      }
+    },
+    "resize": {
+      "description": "Resize repository storage (offline operation - repository must be unmounted)",
+      "name": "resize",
+      "params": {
+        "repo": {
+          "help": "Repository name",
+          "label": "Repository"
+        },
+        "size": {
+          "help": "New size (e.g., 20G) - can be larger or smaller than current size",
+          "label": "New Size"
+        }
+      }
+    },
+    "rm": {
+      "description": "Delete repository",
+      "name": "rm",
+      "params": {
+        "repo": {
+          "help": "Repository name",
+          "label": "Repository"
+        }
+      }
+    },
+    "setup": {
+      "description": "Setup operating system with required tools and configurations",
+      "name": "setup",
+      "params": {
+        "datastore_size": {
+          "help": "Datastore size (e.g., 95%, 100G)",
+          "label": "Datastore Size"
+        },
+        "docker_source": {
+          "help": "How to install Docker (docker-repo = official repository, package-manager = OS packages, snap = snap store, manual = skip)",
+          "label": "Docker Installation Source"
+        },
+        "install_amd_driver": {
+          "help": "Install AMD GPU drivers (auto = detect GPU first, true = always install, false = skip)",
+          "label": "Install AMD GPU Driver"
+        },
+        "install_criu": {
+          "help": "Install CRIU for checkpoint/restore support (auto = install if kernel >= 3.11, true = force install, false = skip, manual = user installs)",
+          "label": "Install CRIU"
+        },
+        "install_nvidia_driver": {
+          "help": "Install NVIDIA GPU drivers (auto = detect GPU first, true = always install, false = skip)",
+          "label": "Install NVIDIA GPU Driver"
+        },
+        "rclone_source": {
+          "help": "How to install rclone (install-script = official script, package-manager = apt/dnf, manual = skip)",
+          "label": "Rclone Installation Source"
+        },
+        "source": {
+          "help": "Package source",
+          "label": "Source"
+        }
+      }
+    },
+    "uninstall": {
+      "description": "Cleanup and uninstall system components",
+      "name": "uninstall"
+    },
+    "unmount": {
+      "description": "Unmount repository filesystems",
+      "name": "unmount",
+      "params": {
+        "from": {
+          "help": "Remote machine to unmount from",
+          "label": "From Machine"
+        },
+        "repo": {
+          "help": "Repository name(s), comma-separated",
+          "label": "Repository"
+        },
+        "checkpoint": {
+          "help": "Create checkpoint before unmounting (requires CRIU)",
+          "label": "Create Checkpoint"
+        }
+      }
+    },
+    "up": {
+      "description": "Start repository services using Rediaccfile",
+      "name": "up",
+      "params": {
+        "option": {
+          "help": "Options (e.g., prep-only)",
+          "label": "Options"
+        },
+        "repo": {
+          "help": "Repository name(s), comma-separated",
+          "label": "Repository"
+        }
+      }
+    }
+  },
+  "missingRequiredParams": "Please fill in all required parameters: {{params}}",
+  "priority": "Priority",
+  "priorityAboveNormal": "Above Normal",
+  "priorityBelowNormal": "Normal",
+  "priorityHelp": "Tasks are processed by priority first, then by age",
+  "priorityHigh": "High",
+  "priorityHighDescription": "Allows multiple concurrent high priority tasks. Use for important tasks that need faster processing.",
+  "priorityHighWarning": "High Priority (2)",
+  "priorityHighest": "Highest",
+  "priorityHighestDescription": "Submitting a highest priority task will automatically cancel any existing highest priority tasks you have. Use only for urgent critical tasks that need immediate attention.",
+  "priorityHighestTimeout": "P1 tasks timeout after 33 seconds",
+  "priorityHighestTimeoutWarning": "Best for quick operations like SSH tests, health checks, and status queries. For longer critical tasks, use P2 (tier-based timeout: 2-96 hours).",
+  "priorityHighestWarning": "Highest Priority (1)",
+  "priorityLow": "Low",
+  "priorityLowDescription": "Standard processing speed. Recommended for most operations and day-to-day tasks.",
+  "priorityLowWarning": "Normal Priority (4)",
+  "priorityLowestDescription": "Slowest processing speed. Use for batch operations or tasks with no time constraints.",
+  "priorityLowestWarning": "Lowest Priority (5)",
+  "priorityNormal": "Above Normal",
+  "priorityNormalDescription": "Faster than standard processing speed. Use for tasks that need quicker processing than normal.",
+  "priorityNormalWarning": "Above Normal Priority (3)",
+  "priorityPopoverTitle": "Priority System",
+  "priorityPopoverLevels": "Priority Levels:",
+  "priorityPopoverP1": "33-second timeout. For quick operations like SSH tests, health checks, and status queries. Reserved slots for immediate execution.",
+  "priorityPopoverP2": "Tier timeout (2-96h). Reserved slots. For important critical tasks.",
+  "priorityPopoverP3": "Tier timeout (2-96h). Normal slots. For tasks needing faster processing.",
+  "priorityPopoverP4": "Tier timeout (2-96h). Standard processing for most operations.",
+  "priorityPopoverP5": "Tier timeout (2-96h). For batch operations with no time constraints.",
+  "quickTaskBadge": "Quick Task",
+  "quickTaskDescription": "Completes in under 30 seconds",
+  "searchFunctions": "Search functions...",
+  "selectFunction": "Select Function",
+  "selectFunctionToConfigure": "Select a function to configure",
+  "validationError": "Validation Error",
+  "onlinePushWarningTitle": "Online Push Warning",
+  "onlinePushWarningMessage": "Pushing a mounted repository while services are running may cause data inconsistencies.",
+  "onlinePushLearnMore": "Learn more about online vs offline pushes →"
+}
